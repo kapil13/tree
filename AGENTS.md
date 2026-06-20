@@ -40,9 +40,13 @@ sudo redis-server /etc/redis/redis.conf --daemonize yes
 - Tests: `cd backend && .venv/bin/pytest -q`.
 
 ### Frontend (Next.js) — port 3000
-- Requires `frontend/.env.local` with `NEXT_PUBLIC_API_URL=http://localhost:8000`.
-  Without it the axios client falls back to baseURL `/api` and every backend call
-  hits the Next.js server instead of FastAPI (login/dashboard silently fail).
+- Requires `frontend/.env.local` with `NEXT_PUBLIC_API_URL=http://localhost:8000/api`.
+  The axios client (`lib/api.ts`) calls paths like `/v1/auth/login`, and the
+  FastAPI router is mounted under `/api/v1`, so the base URL **must include the
+  `/api` suffix** (the client's empty-env fallback is `/api`). Note the committed
+  `infrastructure/docker-compose.yml` sets `NEXT_PUBLIC_API_URL=http://localhost:8000`
+  (no `/api`), which is wrong for the running backend — use the `/api` suffix.
+  Without the correct value every backend call 404s and login/dashboard fail.
 - Run (dev): `cd frontend && npm run dev`. Typecheck: `npm run typecheck`.
 - The map page needs `NEXT_PUBLIC_MAPBOX_TOKEN`; it is optional and the rest of
   the app works without it.
