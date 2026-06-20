@@ -56,6 +56,8 @@ make seed     # demo user + trees (after backend is healthy)
 ### Quality gates
 
 ```bash
-make test     # backend pytest
-make lint     # backend ruff + frontend typecheck
+make backend-dev   # once: creates backend/.venv with pytest + ruff
+make frontend-dev  # once: npm install in frontend/
+make test          # backend pytest
+make lint          # backend ruff + frontend typecheck
 ```
