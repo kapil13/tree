@@ -4,7 +4,8 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E","F","W","I","B","UP","SIM","C4","TID","RUF"]
-ignore = ["E501"]
+# UP042/UP046 nudge to StrEnum / PEP-695 generics — we keep py3.10-compatible style.
+ignore = ["E501", "UP042", "UP046", "RUF012"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

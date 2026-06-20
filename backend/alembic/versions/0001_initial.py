@@ -12,9 +12,10 @@ Create Date: 2025-01-01
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from geoalchemy2 import Geography
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0001_initial"
 down_revision = None

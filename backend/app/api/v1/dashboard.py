@@ -7,7 +7,7 @@ from sqlalchemy import case, func, select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.tree import Tree
-from app.schemas.dashboard import DashboardResponse, KPI, SeriesPoint
+from app.schemas.dashboard import KPI, DashboardResponse, SeriesPoint
 
 router = APIRouter(tags=["dashboard"])
 

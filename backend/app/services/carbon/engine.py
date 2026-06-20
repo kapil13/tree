@@ -125,7 +125,8 @@ def _interp_growth(curve: dict[int, float], age: float) -> float:
         return pts[0][1] * (age / ages[0]) if ages[0] > 0 else pts[0][1]
     if age >= ages[-1]:
         return pts[-1][1]
-    for (a0, v0), (a1, v1) in zip(pts, pts[1:], strict=True):
+    from itertools import pairwise
+    for (a0, v0), (a1, v1) in pairwise(pts):
         if a0 <= age <= a1:
             t = (age - a0) / (a1 - a0)
             return v0 + t * (v1 - v0)

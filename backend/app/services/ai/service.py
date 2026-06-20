@@ -16,7 +16,6 @@ import hashlib
 import random
 from typing import Protocol
 
-from app.core.config import settings
 from app.services.ai.types import (
     AnalysisResult,
     DiseaseFinding,
@@ -125,7 +124,7 @@ class StubAIService:
         rng = self._rng(seed)
         age = ctx.age_years if ctx.age_years is not None else rng.uniform(2, 8)
         if sp and sp.growth_curve:
-            from app.services.carbon.engine import _interp_growth  # noqa: WPS433
+            from app.services.carbon.engine import _interp_growth
 
             dbh = _interp_growth(sp.growth_curve, age)
         else:

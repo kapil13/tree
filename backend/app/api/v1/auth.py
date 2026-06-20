@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -16,7 +17,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.core.config import settings
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
@@ -160,5 +160,5 @@ async def google_login() -> dict[str, str]:
 
 
 @router.get("/google/callback", response_model=TokenResponse)
-async def google_callback(code: str, db: DB) -> TokenResponse:  # noqa: ARG001
+async def google_callback(code: str, db: DB) -> TokenResponse:
     raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail="google_oauth_not_implemented")

@@ -17,13 +17,12 @@ from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse
 
-
 configure_logging()
 log = get_logger("byot.main")
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # noqa: ARG001
+async def lifespan(app: FastAPI):
     log.info("startup", env=settings.app_env, version=__version__)
     yield
     log.info("shutdown")

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-worker
+  namespace: byot
+  labels: { app: backend-worker }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: backend-worker }
+  template:
+    metadata:
+      labels: { app: backend-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/byot/backend:latest
+          command: ["celery", "-A", "app.workers.celery_app", "worker", "-l", "info", "-Q", "default,ai,satellite,carbon,notifications"]
+          envFrom:
+            - secretRef: { name: backend-secrets }
+            - configMapRef: { name: backend-config }
+          resources:
+            requests: { cpu: "500m", memory: "512Mi" }
+            limits:   { cpu: "2", memory: "2Gi" }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-beat
+  namespace: byot
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: backend-beat } }
+  template:
+    metadata:
+      labels: { app: backend-beat }
+    spec:
+      containers:
+        - name: beat
+          image: ghcr.io/byot/backend:latest
+          command: ["celery", "-A", "app.workers.celery_app", "beat", "-l", "info"]
+          envFrom:
+            - secretRef: { name: backend-secrets }
+            - configMapRef: { name: backend-config }
+          resources:
+            requests: { cpu: "50m", memory: "128Mi" }
+            limits:   { cpu: "200m", memory: "256Mi" }

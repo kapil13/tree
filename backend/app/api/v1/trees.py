@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 import string
 import uuid
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from geoalchemy2.shape import to_shape
