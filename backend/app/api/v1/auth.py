@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import UTC, datetime
 
@@ -37,6 +38,16 @@ def _slugify(s: str) -> str:
     return "".join(c.lower() if c.isalnum() else "-" for c in s).strip("-")[:60] or "org"
 
 
+async def _unique_org_slug(db: DB, base_slug: str) -> str:
+    slug = base_slug
+    for _ in range(8):
+        existing = await db.execute(select(Organization).where(Organization.slug == slug))
+        if existing.scalar_one_or_none() is None:
+            return slug
+        slug = f"{base_slug}-{secrets.token_hex(3)}"
+    return f"{base_slug}-{uuid.uuid4().hex[:8]}"
+
+
 def _tokens_for(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(
@@ -55,7 +66,7 @@ async def register(payload: RegisterRequest, db: DB) -> UserOut:
 
     org_id: uuid.UUID | None = None
     if payload.organization_name:
-        slug = _slugify(payload.organization_name)
+        slug = await _unique_org_slug(db, _slugify(payload.organization_name))
         org = Organization(name=payload.organization_name, slug=slug, type=payload.role)
         db.add(org)
         await db.flush()
