@@ -47,7 +47,8 @@ make seed     # demo user + trees (after backend is healthy)
 
 ### Non-obvious gotchas
 
-- **Docker 29+ on nested VMs** requires `fuse-overlayfs` storage driver and `"containerd-snapshotter": false` in `/etc/docker/daemon.json`. The setup script handles this.
+- **Login broken after git pull?** Run `make down && make up`. The frontend runs in dev mode via Docker; if you still use the old production image, API calls can hit `/api/api/...` and fail.
+- **Frontend API URL:** set `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local` (include `/api`).
 - **MinIO bucket** is auto-created by the `minio-init` compose service (`byot-media`).
 - **Frontend Docker build** requires `frontend/public/` to exist (even if empty).
 - **AI / satellite keys** are optional in dev — services fall back to stubs when unset.

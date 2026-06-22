@@ -1,4 +1,14 @@
 /** @type {import('next').NextConfig} */
+
+function apiRewriteTarget() {
+  // Support both:
+  // - NEXT_PUBLIC_API_URL=http://localhost:8000        (proxy mode)
+  // - NEXT_PUBLIC_API_URL=http://localhost:8000/api    (direct mode; strip /api for rewrites)
+  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const origin = raw.replace(/\/api\/?$/, "");
+  return `${origin}/api/:path*`;
+}
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -11,7 +21,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/:path*`,
+        destination: apiRewriteTarget(),
       },
     ];
   },
