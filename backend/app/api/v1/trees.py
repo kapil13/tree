@@ -6,7 +6,7 @@ import secrets
 import string
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, File, HTTPException, Query, Response, UploadFile, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -24,8 +24,18 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.passport.generator import generate_passport_pdf, generate_qr_png
+from app.services.storage.s3 import get_storage
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+_MAX_PHOTO_BYTES = 10 * 1024 * 1024
+_EXT_BY_TYPE = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+}
 
 _ALPHABET = string.ascii_uppercase + string.digits
 
@@ -78,6 +88,29 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
     await db.commit()
     await db.refresh(tree)
     return _to_out(tree)
+
+
+@router.post("/uploads/photo")
+async def upload_tree_photo(
+    user: CurrentUser,
+    file: UploadFile = File(...),
+) -> dict[str, str | None]:
+    """Upload a tree photo to object storage; returns the S3 key for TreeCreate.photo_keys."""
+    if not file.content_type or file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="invalid_image_type")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_file")
+    if len(data) > _MAX_PHOTO_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="file_too_large")
+
+    ext = _EXT_BY_TYPE[file.content_type]
+    key = f"trees/{user.id}/{uuid.uuid4()}.{ext}"
+    storage = get_storage()
+    storage.put_bytes(key, data, content_type=file.content_type)
+    preview_url = storage.presigned_get(key) if storage.is_available() else None
+    return {"key": key, "preview_url": preview_url}
 
 
 @router.get("", response_model=Page[TreeListItem])
