@@ -47,7 +47,7 @@ make seed     # demo user + trees (after backend is healthy)
 
 ### Non-obvious gotchas
 
-- **Login broken after git pull?** Run `make down && make up`. The frontend runs in dev mode via Docker; if you still use the old production image, API calls can hit `/api/api/...` and fail.
+- **Postgres host port** is `5433` (not `5432`) in `docker-compose.yml` to avoid clashing with a local Postgres install. Containers still talk to `postgres:5432` internally; only use `localhost:5433` when connecting from your Mac (e.g. hybrid dev).
 - **Frontend API URL:** set `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local` (include `/api`).
 - **MinIO bucket** is auto-created by the `minio-init` compose service (`byot-media`).
 - **Frontend Docker build** requires `frontend/public/` to exist (even if empty).
