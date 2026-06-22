@@ -70,11 +70,14 @@ services:
       - ../backend:/app
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install --no-fund --no-audit --legacy-peer-deps && npm run dev"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    volumes:
+      - ../frontend:/app
+      - frontend-node-modules:/app/node_modules
     depends_on:
       - backend
     ports: ["3000:3000"]
@@ -82,3 +85,4 @@ services:
 volumes:
   pg-data:
   minio-data:
+  frontend-node-modules:
