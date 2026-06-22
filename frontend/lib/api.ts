@@ -121,6 +121,17 @@ export const trees = {
   }) {
     return (await api.post("/v1/trees", payload)).data;
   },
+  async uploadPhoto(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return (
+      await api.post<{ key: string; preview_url: string | null }>(
+        "/v1/trees/uploads/photo",
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      )
+    ).data;
+  },
   async get(id: string) {
     return (await api.get(`/v1/trees/${id}`)).data;
   },
