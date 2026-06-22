@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     app_debug: bool = False
 
     # Database
-    database_url: str = "postgresql+asyncpg://byot:byot@localhost:5432/byot"
-    database_url_sync: str = "postgresql+psycopg2://byot:byot@localhost:5432/byot"
+    database_url: str = "postgresql+asyncpg://byot:byot@localhost:5433/byot"
+    database_url_sync: str = "postgresql+psycopg2://byot:byot@localhost:5433/byot"
     db_pool_size: int = 20
     db_max_overflow: int = 10
 
