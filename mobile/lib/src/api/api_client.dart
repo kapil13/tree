@@ -71,6 +71,7 @@ class ApiClient {
     required double lon,
     double? altitude,
     double? accuracy,
+    List<String> photoKeys = const [],
   }) async {
     final r = await _dio.post('/trees', data: {
       'species_text': speciesText,
@@ -79,9 +80,37 @@ class ApiClient {
       'longitude': lon,
       'altitude_m': altitude,
       'accuracy_m': accuracy,
-      'photo_keys': [],
+      'photo_keys': photoKeys,
     });
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<String> uploadTreePhoto(String filePath) async {
+    final filename = filePath.split('/').last;
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: filename,
+        contentType: DioMediaType.parse(_mimeForPath(filePath)),
+      ),
+    });
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/trees/uploads/photo',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    return r.data!['key'] as String;
+  }
+
+  static String _mimeForPath(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'gif' => 'image/gif',
+      _ => 'image/jpeg',
+    };
   }
 
   Future<Map<String, dynamic>> runAnalysis(String treeId) async {

@@ -97,4 +97,4 @@ flutter run -d "iPhone 17" --dart-define=BYOT_API=http://localhost:8000
 
 ## Screens
 
-splash · login · home · trees · add-tree · tree-detail · map · assistant · notifications · profile
+splash · login · home · trees · add-tree (GPS + photos) · tree-detail · map · assistant · notifications · profile
