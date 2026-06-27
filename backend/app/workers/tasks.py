@@ -1,8 +1,13 @@
-"""Celery task stubs. Logic lives in services/* and is called from here."""
+"""Celery tasks. Logic lives in services/* and is called from here."""
 
 from __future__ import annotations
 
+import asyncio
+import uuid
+
+from app.core.database import AsyncSessionLocal
 from app.core.logging import get_logger
+from app.services.satellite.operations import scan_tree_by_id
 from app.workers.celery_app import celery_app
 
 log = get_logger("worker")
@@ -14,10 +19,28 @@ def run_ai_analysis(tree_id: str) -> dict:
     return {"tree_id": tree_id, "status": "queued"}
 
 
+async def _run_satellite_scan_async(tree_id: str):
+    async with AsyncSessionLocal() as db:
+        return await scan_tree_by_id(uuid.UUID(tree_id), db)
+
+
 @celery_app.task(name="app.workers.tasks.run_satellite_scan")
 def run_satellite_scan(tree_id: str) -> dict:
     log.info("worker.run_satellite_scan", tree_id=tree_id)
-    return {"tree_id": tree_id, "status": "queued"}
+    try:
+        rec = asyncio.run(_run_satellite_scan_async(tree_id))
+    except Exception as exc:
+        log.exception("worker.run_satellite_scan_failed", tree_id=tree_id)
+        return {"tree_id": tree_id, "status": "failed", "error": str(exc)}
+    if rec is None:
+        return {"tree_id": tree_id, "status": "tree_not_found"}
+    return {
+        "tree_id": tree_id,
+        "status": "completed",
+        "record_id": str(rec.id),
+        "ndvi_mean": float(rec.ndvi_mean or 0),
+        "presence_confirmed": bool(rec.presence_confirmed),
+    }
 
 
 @celery_app.task(name="app.workers.tasks.recalc_carbon")

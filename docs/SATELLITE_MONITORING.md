@@ -1,5 +1,27 @@
 # BYOT — Satellite Monitoring Architecture
 
+## Implementation status (backend)
+
+| Component | Status |
+|-----------|--------|
+| `StubSatelliteService` | ✅ default when no credentials |
+| `SentinelHubSatelliteService` | ✅ Copernicus Data Space Statistical API |
+| `POST /api/v1/satellite/scan` | ✅ on-demand NDVI sample |
+| `GET /api/v1/satellite-monitoring/{tree_id}` | ✅ monthly NDVI series |
+| Celery `run_satellite_scan` | ✅ called after tree registration |
+| Google Earth Engine adapter | 🔜 planned |
+
+Enable real Sentinel-2 data in `backend/.env`:
+
+```bash
+SENTINEL_HUB_CLIENT_ID=<from CDSE dashboard → User settings → OAuth clients>
+SENTINEL_HUB_CLIENT_SECRET=<secret>
+```
+
+Register at [Copernicus Data Space](https://dataspace.copernicus.eu/), create an OAuth client, then restart the API and Celery worker.
+
+---
+
 ## 1. Goals
 
 * Independently verify each registered tree exists and is growing.

@@ -5,6 +5,14 @@ from __future__ import annotations
 import pytest
 
 from app.services.satellite import get_satellite_service
+from app.services.satellite.service import reset_satellite_service
+
+
+@pytest.fixture(autouse=True)
+def _reset_satellite_factory():
+    reset_satellite_service()
+    yield
+    reset_satellite_service()
 
 
 @pytest.mark.asyncio
