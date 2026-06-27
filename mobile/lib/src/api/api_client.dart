@@ -17,6 +17,8 @@ class ApiClient {
     defaultValue: 'http://localhost:8000',
   );
 
+  String get baseUrl => _dio.options.baseUrl;
+
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
     final base = prefs.getString(_baseUrlKey) ?? _defaultBaseUrl;
@@ -43,31 +45,64 @@ class ApiClient {
     return client;
   }
 
+  static String? _parseDetail(dynamic data) {
+    if (data == null) return null;
+    if (data is String) return data;
+    if (data is Map && data['detail'] != null) {
+      final detail = data['detail'];
+      if (detail is String) return detail;
+      if (detail is List) {
+        return detail
+            .map((item) {
+              if (item is Map) return item['msg']?.toString() ?? item.toString();
+              return item.toString();
+            })
+            .join('; ');
+      }
+      return detail.toString();
+    }
+    return data.toString();
+  }
+
   static String errorMessage(Object error) {
     if (error is! DioException) return error.toString();
 
     final status = error.response?.statusCode;
-    final data = error.response?.data;
-    String? detail;
-    if (data is Map && data['detail'] != null) {
-      detail = data['detail'].toString();
-    }
+    final detail = _parseDetail(error.response?.data);
+    final method = error.requestOptions.method;
+    final uri = error.requestOptions.uri;
 
     if (error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout) {
-      return 'Cannot reach the API at $_defaultBaseUrl. '
-          'Start the backend with `make up` from the repo root.';
+        error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'Cannot reach the API at ${uri.origin}. '
+          'From the repo root run: make up';
     }
 
-    if (status == 401) {
-      if (detail == 'invalid_credentials') {
-        return 'Invalid email or password. If using the demo account, run `make seed`.';
+    if (error.type == DioExceptionType.badResponse && status != null) {
+      final message = switch (status) {
+        401 => detail == 'invalid_credentials'
+            ? 'Invalid email or password. Run `make seed` for the demo account.'
+            : 'Not signed in or session expired. Sign out and sign in again.',
+        403 => detail ?? 'You do not have permission for this action.',
+        404 => detail ?? 'API route not found. Pull the latest code and check BYOT_API.',
+        413 => detail ?? 'File too large (max 10 MB per photo).',
+        422 => detail ?? 'Invalid request data.',
+        500 || 502 || 503 => detail ?? 'Server error. Run `make logs` and check the backend.',
+        _ => detail,
+      };
+      if (message != null && message.isNotEmpty) {
+        return 'HTTP $status ($method $uri): $message';
       }
-      return 'Session expired or not signed in. Please sign in again.';
+      return 'HTTP $status on $method $uri';
     }
 
-    return detail ?? error.message ?? error.toString();
+    if (detail != null && detail.isNotEmpty) return detail;
+    return error.message ?? error.toString();
   }
+
+  static bool isUnauthorized(Object error) =>
+      error is DioException && error.response?.statusCode == 401;
 
   bool get isAuthenticated => _dio.options.headers['Authorization'] != null;
 

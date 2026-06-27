@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers.dart';
+import '../widgets/api_error_view.dart';
 
 class TreeListScreen extends ConsumerWidget {
   const TreeListScreen({super.key});
@@ -13,7 +14,10 @@ class TreeListScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Trees')),
       body: trees.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ApiErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(treesProvider),
+        ),
         data: (items) => RefreshIndicator(
           onRefresh: () async => ref.invalidate(treesProvider),
           child: ListView.separated(

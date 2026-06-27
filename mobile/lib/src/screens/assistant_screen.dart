@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_client.dart';
 import '../providers.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
@@ -29,7 +30,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         _input.clear();
       });
     } catch (e) {
-      setState(() => _msgs.add((role: 'assistant', text: e.toString())));
+      setState(() => _msgs.add((role: 'assistant', text: ApiClient.errorMessage(e))));
     } finally {
       if (mounted) setState(() => busy = false);
     }

@@ -93,6 +93,18 @@ curl -s -X POST http://localhost:8000/api/v1/auth/login \
 
 You should get JSON with `access_token`. If not, fix the backend before debugging the app.
 
+### 7. `DioException [bad response]`
+
+The app now shows the real HTTP status and URL (for example `HTTP 401 (GET http://localhost:8000/api/v1/dashboard): …`).
+
+| Status | Meaning | Fix |
+|--------|---------|-----|
+| 401 | Not signed in / stale token | Profile → Sign out → sign in again; run `make seed` |
+| 404 | Wrong API URL or old backend | `flutter run --dart-define=BYOT_API=http://localhost:8000` |
+| 422 | Bad form data | Check required fields (GPS before save) |
+| 500 | Backend crash | `make logs` in repo root |
+| connection error | API unreachable | `make up` |
+
 ## API URL reference
 
 | Target | `BYOT_API` |
