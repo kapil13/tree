@@ -50,6 +50,8 @@ cd ios && pod install && cd ..
 
 Always build with `flutter run` (or open `ios/Runner.xcworkspace` after `pod install`), not `Runner.xcodeproj` alone.
 
+`ios/Runner/Info.plist` includes location, camera, and photo usage descriptions required by geolocator and image capture plugins.
+
 ### 4. Start backend + run app
 
 ```bash
