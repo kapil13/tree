@@ -72,6 +72,27 @@ Use the exact simulator name from `flutter devices`.
 - Email: `demo@byot.earth`
 - Password: `byotdemo1234!`
 
+The demo user is created by `make seed` (run once after `make up`).
+
+### 6. HTTP 401 on the simulator
+
+| Cause | Fix |
+|-------|-----|
+| Backend not running | `cd tree && make up` |
+| Demo user missing | `make seed` |
+| Stale saved token | **Profile → Sign out**, or delete the app from the simulator and reinstall |
+| Wrong API URL | `flutter run --dart-define=BYOT_API=http://localhost:8000` |
+
+Quick check from your Mac terminal:
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"demo@byot.earth","password":"byotdemo1234!"}'
+```
+
+You should get JSON with `access_token`. If not, fix the backend before debugging the app.
+
 ## API URL reference
 
 | Target | `BYOT_API` |

@@ -26,12 +26,50 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
     ));
+    final client = ApiClient._(dio);
     final token = prefs.getString(_tokenKey);
     if (token != null) {
       dio.options.headers['Authorization'] = 'Bearer $token';
     }
-    return ApiClient._(dio);
+    dio.interceptors.add(InterceptorsWrapper(
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 401 &&
+            !error.requestOptions.path.contains('/auth/login')) {
+          await client._clearToken();
+        }
+        handler.next(error);
+      },
+    ));
+    return client;
   }
+
+  static String errorMessage(Object error) {
+    if (error is! DioException) return error.toString();
+
+    final status = error.response?.statusCode;
+    final data = error.response?.data;
+    String? detail;
+    if (data is Map && data['detail'] != null) {
+      detail = data['detail'].toString();
+    }
+
+    if (error.type == DioExceptionType.connectionError ||
+        error.type == DioExceptionType.connectionTimeout) {
+      return 'Cannot reach the API at $_defaultBaseUrl. '
+          'Start the backend with `make up` from the repo root.';
+    }
+
+    if (status == 401) {
+      if (detail == 'invalid_credentials') {
+        return 'Invalid email or password. If using the demo account, run `make seed`.';
+      }
+      return 'Session expired or not signed in. Please sign in again.';
+    }
+
+    return detail ?? error.message ?? error.toString();
+  }
+
+  bool get isAuthenticated => _dio.options.headers['Authorization'] != null;
 
   Future<void> setToken(String token) async {
     _dio.options.headers['Authorization'] = 'Bearer $token';
@@ -39,10 +77,23 @@ class ApiClient {
     await prefs.setString(_tokenKey, token);
   }
 
-  Future<void> logout() async {
+  Future<void> _clearToken() async {
     _dio.options.headers.remove('Authorization');
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+  }
+
+  Future<void> logout() async => _clearToken();
+
+  Future<bool> validateSession() async {
+    if (!isAuthenticated) return false;
+    try {
+      await me();
+      return true;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) await _clearToken();
+      return false;
+    }
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -97,7 +148,10 @@ class ApiClient {
     final r = await _dio.post<Map<String, dynamic>>(
       '/trees/uploads/photo',
       data: formData,
-      options: Options(contentType: 'multipart/form-data'),
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: Map<String, dynamic>.from(_dio.options.headers),
+      ),
     );
     return r.data!['key'] as String;
   }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -17,10 +18,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _route() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasToken = prefs.getString('byot_access_token') != null;
+    final api = await ref.read(apiClientProvider.future);
+    final ok = await api.validateSession();
     if (!mounted) return;
-    context.go(hasToken ? '/home' : '/login');
+    context.go(ok ? '/home' : '/login');
   }
 
   @override

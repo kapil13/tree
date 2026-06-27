@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../api/api_client.dart';
 import '../providers.dart';
 
 const _maxPhotos = 10;
@@ -126,7 +127,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save tree: $e')),
+        SnackBar(content: Text(ApiClient.errorMessage(e))),
       );
     } finally {
       if (mounted) {

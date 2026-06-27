@@ -23,6 +23,7 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () async {
               final api = await ref.read(apiClientProvider.future);
               await api.logout();
+              invalidateSessionData(ref);
               if (context.mounted) context.go('/login');
             },
           ),

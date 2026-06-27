@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_client.dart';
 import '../providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -25,10 +26,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final api = await ref.read(apiClientProvider.future);
       final tokens = await api.login(_email.text.trim(), _pwd.text);
       await api.setToken(tokens['access_token'] as String);
+      invalidateSessionData(ref);
       if (!mounted) return;
       context.go('/home');
     } catch (e) {
-      setState(() => _err = e.toString());
+      setState(() => _err = ApiClient.errorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_client.dart';
 import '../providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -26,7 +28,32 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () async => ref.invalidate(dashboardProvider),
         child: dashAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (e, _) {
+            final message = ApiClient.errorMessage(e is DioException ? e : e);
+            final unauthorized = e is DioException && e.response?.statusCode == 401;
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(message, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    if (unauthorized)
+                      FilledButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text('Sign in'),
+                      )
+                    else
+                      FilledButton(
+                        onPressed: () => ref.invalidate(dashboardProvider),
+                        child: const Text('Retry'),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
           data: (data) {
             final k = data['kpi'] as Map<String, dynamic>;
             return ListView(
