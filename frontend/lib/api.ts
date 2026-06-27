@@ -32,7 +32,11 @@ export function isApiError(err: unknown): err is AxiosError<{ error: ApiError }>
 
 export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
-    return err.response?.data?.error?.message || err.message;
+    const data = err.response?.data as { error?: ApiError; detail?: string | { msg: string }[] } | undefined;
+    if (data?.error?.message) return data.error.message;
+    if (typeof data?.detail === "string") return data.detail;
+    if (Array.isArray(data?.detail)) return data.detail.map((d) => d.msg).join("; ");
+    return err.message;
   }
   return (err as Error)?.message || "Unknown error";
 }
@@ -139,7 +143,21 @@ export const trees = {
     return (await api.post("/v1/tree-analysis", { tree_id: id, mode: "full" })).data;
   },
   async satellite(id: string) {
-    return (await api.get(`/v1/satellite-monitoring/${id}`)).data;
+    return (await api.get(`/v1/satellite-monitoring/${id}`)).data as {
+      tree_id: string;
+      points: { ts: string; ndvi: number; provider?: string }[];
+      latest: {
+        ndvi_mean: number | null;
+        presence_confirmed: boolean | null;
+        scene_acquired_at: string;
+        provider: string;
+      } | null;
+    };
+  },
+  async scanSatellite(id: string) {
+    return (
+      await api.post("/v1/satellite/scan", null, { params: { tree_id: id } })
+    ).data;
   },
 };
 
