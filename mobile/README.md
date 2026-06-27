@@ -4,75 +4,78 @@ Field-first app for tree registration with offline-friendly capture.
 
 ## Mac setup (quick start)
 
-### 1. Install Flutter
+### 1. Install Flutter + Xcode
 
 ```bash
-brew install --cask flutter
+# Flutter (Homebrew or https://docs.flutter.dev/get-started/install/macos)
 flutter doctor
 ```
 
-### 2. Start the backend (repo root)
+- Install **Xcode** from App Store
+- **Xcode → Settings → Platforms** → download **iOS**
+- `sudo xcodebuild -license accept`
+- `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`
+
+### 2. Pull the repo (includes `ios/` + `android/`)
+
+This repo **includes** `ios/` and `android/` — you do **not** need `flutter create`.
 
 ```bash
-make up
-make seed
-curl http://localhost:8000/health
+git pull
+cd mobile
+flutter pub get
 ```
 
-### 3. Pick a target
+### 3. No Podfile? That is normal
 
-#### Option A — iOS Simulator (needs Xcode)
+**Flutter 3.22+** often uses **Swift Package Manager** and does **not** ship a `Podfile` until some plugins need CocoaPods.
+
+- Do **not** run `pod install` if `ios/Podfile` is missing
+- Run `flutter run` — Flutter creates `Podfile` automatically if needed
+
+### 4. Start backend + run app
 
 ```bash
-# Install Xcode from App Store, then:
-sudo xcodebuild -license accept
+# Terminal 1 — repo root
+make up && make seed
+
+# Terminal 2
 open -a Simulator
-
 cd mobile
-flutter pub get
-flutter run --dart-define=BYOT_API=http://localhost:8000
+flutter devices
+flutter run -d "iPhone 17" --dart-define=BYOT_API=http://localhost:8000
 ```
 
-#### Option B — Android Emulator (no Xcode)
+Use the exact simulator name from `flutter devices`.
 
-1. Install [Android Studio](https://developer.android.com/studio)
-2. **Device Manager** → create a virtual device → start it
-3. Run:
-
-```bash
-cd mobile
-flutter pub get
-flutter run --dart-define=BYOT_API=http://10.0.2.2:8000
-```
-
-(`10.0.2.2` is how the Android emulator reaches your Mac's `localhost`.)
-
-### 4. Log in
-
-After `make seed`:
+### 5. Log in
 
 - Email: `demo@byot.earth`
 - Password: `byotdemo1234!`
 
 ## API URL reference
 
-| Where you run the app | `BYOT_API` value |
-|-----------------------|------------------|
-| iOS Simulator on Mac | `http://localhost:8000` |
+| Target | `BYOT_API` |
+|--------|------------|
+| iOS Simulator | `http://localhost:8000` |
 | Android Emulator | `http://10.0.2.2:8000` |
-| Physical phone (same Wi‑Fi) | `http://<your-mac-ip>:8000` |
+| Physical phone | `http://<mac-ip>:8000` |
 
-Find Mac IP: `ipconfig getifaddr en0`
+## If `flutter create` says "Wrote 0 files"
+
+Your `ios/` folder already exists. Skip `flutter create` and run:
+
+```bash
+cd mobile
+flutter pub get
+flutter run -d "iPhone 17" --dart-define=BYOT_API=http://localhost:8000
+```
 
 ## Stack
 
 * Flutter 3.22+ (Material 3)
-* Riverpod (state), go_router (nav)
-* dio + shared_preferences (network + token storage)
-* geolocator (GPS), camera/image_picker (photos)
-* mapbox_maps_flutter (maps), fl_chart (charts), qr_flutter (passports)
+* Riverpod, go_router, dio, geolocator, image_picker, mapbox_maps_flutter
 
 ## Screens
 
-splash · login · home (KPIs) · trees · add-tree · tree-detail · map ·
-assistant · notifications · profile
+splash · login · home · trees · add-tree · tree-detail · map · assistant · notifications · profile
