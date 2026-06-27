@@ -8,7 +8,14 @@ class ApiClient {
 
   static const _tokenKey = 'byot_access_token';
   static const _baseUrlKey = 'byot_base_url';
-  static const _defaultBaseUrl = 'http://10.0.2.2:8000'; // Android emulator → host
+  /// Override at run time:
+  ///   iOS Simulator (Mac): --dart-define=BYOT_API=http://localhost:8000
+  ///   Android emulator:    --dart-define=BYOT_API=http://10.0.2.2:8000
+  ///   Physical device:     --dart-define=BYOT_API=http://192.168.x.x:8000
+  static const _defaultBaseUrl = String.fromEnvironment(
+    'BYOT_API',
+    defaultValue: 'http://localhost:8000',
+  );
 
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
