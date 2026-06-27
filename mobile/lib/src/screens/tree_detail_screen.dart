@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../providers.dart';
@@ -35,11 +36,22 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
     if (mounted) setState(() => analyzing = false);
   }
 
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = tree;
     return Scaffold(
-      appBar: AppBar(title: Text(t?['species_text'] ?? 'Tree')),
+      appBar: AppBar(
+        leading: BackButton(onPressed: _goBack),
+        title: Text(t?['species_text'] ?? 'Tree'),
+      ),
       body: t == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -79,6 +91,12 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                   onPressed: analyzing ? null : _analyze,
                   icon: const Icon(Icons.auto_awesome),
                   label: Text(analyzing ? 'Analyzing…' : 'Run AI analysis'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _goBack,
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Back'),
                 ),
               ],
             ),

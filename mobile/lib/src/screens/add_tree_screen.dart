@@ -123,7 +123,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         photoKeys: photoKeys,
       );
       if (!mounted) return;
-      context.go('/trees/${t['id']}');
+      ref.invalidate(treesProvider);
+      context.replace('/trees/${t['id']}');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
