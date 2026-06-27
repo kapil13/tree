@@ -26,12 +26,29 @@ cd mobile
 flutter pub get
 ```
 
-### 3. No Podfile? That is normal
+### 3. iOS uses CocoaPods (not Swift Package Manager)
 
-**Flutter 3.22+** often uses **Swift Package Manager** and does **not** ship a `Podfile` until some plugins need CocoaPods.
+This project disables Flutter's Swift Package Manager integration to avoid an Xcode 26 SPM crash when resolving plugin dependencies.
 
-- Do **not** run `pod install` if `ios/Podfile` is missing
-- Run `flutter run` — Flutter creates `Podfile` automatically if needed
+```bash
+flutter config --no-enable-swift-package-manager
+cd mobile
+flutter pub get
+cd ios && pod install && cd ..
+```
+
+If you previously opened the project in Xcode and hit an SPM error, clean stale artifacts first:
+
+```bash
+cd mobile
+flutter clean
+rm -rf ios/Pods ios/Podfile.lock ios/.symlinks ios/Flutter/ephemeral
+rm -rf ~/Library/Developer/Xcode/DerivedData/*
+flutter pub get
+cd ios && pod install && cd ..
+```
+
+Always build with `flutter run` (or open `ios/Runner.xcworkspace` after `pod install`), not `Runner.xcodeproj` alone.
 
 ### 4. Start backend + run app
 
@@ -73,8 +90,8 @@ flutter run -d "iPhone 17" --dart-define=BYOT_API=http://localhost:8000
 
 ## Stack
 
-* Flutter 3.22+ (Material 3)
-* Riverpod, go_router, dio, geolocator, image_picker, mapbox_maps_flutter
+* Flutter 3.22+ (Material 3), CocoaPods for iOS
+* Riverpod, go_router, dio, geolocator, image_picker
 
 ## Screens
 
