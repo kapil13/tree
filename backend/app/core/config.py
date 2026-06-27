@@ -52,9 +52,13 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     gemini_api_key: str | None = None
 
-    # Satellite providers
+    # Satellite providers (Copernicus Data Space / Sentinel Hub)
     sentinel_hub_client_id: str | None = None
     sentinel_hub_client_secret: str | None = None
+    sentinel_hub_api_url: str = "https://sh.dataspace.copernicus.eu"
+    sentinel_hub_token_url: str = (
+        "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+    )
     gee_service_account_json: str | None = None
 
     # OAuth

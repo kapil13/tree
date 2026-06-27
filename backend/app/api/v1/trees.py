@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.logging import get_logger
 from app.models.tree import Tree
 from app.models.tree_image import TreeImage
 from app.schemas.common import Page
@@ -26,6 +27,7 @@ from app.schemas.tree import (
 from app.services.passport.generator import generate_passport_pdf, generate_qr_png
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+log = get_logger(__name__)
 
 _ALPHABET = string.ascii_uppercase + string.digits
 
@@ -45,6 +47,15 @@ def _to_out(tree: Tree) -> TreeOut:
     except Exception:
         pass
     return out
+
+
+def _enqueue_satellite_scan(tree_id: uuid.UUID) -> None:
+    try:
+        from app.workers.tasks import run_satellite_scan
+
+        run_satellite_scan.delay(str(tree_id))
+    except Exception as exc:
+        log.warning("satellite_scan_enqueue_failed", tree_id=str(tree_id), error=str(exc))
 
 
 @router.post("", response_model=TreeOut, status_code=status.HTTP_201_CREATED)
@@ -77,6 +88,7 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         )
     await db.commit()
     await db.refresh(tree)
+    _enqueue_satellite_scan(tree.id)
     return _to_out(tree)
 
 
