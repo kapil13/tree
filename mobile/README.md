@@ -55,7 +55,9 @@ Always build with `flutter run` (or open `ios/Runner.xcworkspace` after `pod ins
 ### 4. Start backend + run app
 
 ```bash
-# Terminal 1 — repo root
+# Terminal 1 — repo root (Docker uses inline env; optional for API keys):
+# cp backend/.env.example backend/.env
+
 make up && make seed
 
 # Terminal 2

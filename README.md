@@ -111,14 +111,17 @@ byot/
 # 1. Clone
 git clone https://github.com/<your-org>/byot.git && cd byot
 
-# 2. Bring up Postgres+PostGIS, Redis, MinIO, backend, frontend
+# 2. (Optional) Backend env — template is backend/.env.example, not repo root
+cp backend/.env.example backend/.env
+
+# 3. Bring up Postgres+PostGIS, Redis, MinIO, backend, frontend
 docker compose -f infrastructure/docker-compose.yml up --build
 
-# 3. Run migrations + seed
+# 4. Run migrations + seed
 docker compose exec backend alembic upgrade head
 docker compose exec backend python -m app.scripts.seed_demo
 
-# 4. Visit
+# 5. Visit
 open http://localhost:3000       # Web dashboard
 open http://localhost:8000/docs  # Swagger / OpenAPI
 ```

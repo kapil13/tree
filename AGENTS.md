@@ -33,9 +33,19 @@ sudo chmod 666 /var/run/docker.sock
 ### Start the local stack
 
 ```bash
+# Optional: copy backend env template (only needed for local uvicorn or API keys)
+cp backend/.env.example backend/.env
+
 make up       # postgres, redis, minio, backend, frontend
 make seed     # demo user + trees (after backend is healthy)
 ```
+
+**Env files** (not at repo root):
+
+| File | Purpose |
+|------|---------|
+| `backend/.env.example` → `backend/.env` | API secrets (JWT, Sentinel Hub, OpenAI, S3). Docker `make up` works without this; create it to override defaults or add keys. |
+| `frontend/.env.example` → `frontend/.env.local` | `NEXT_PUBLIC_API_URL`, Mapbox token |
 
 | Service | URL |
 |---|---|
@@ -51,7 +61,7 @@ make seed     # demo user + trees (after backend is healthy)
 - **Frontend API URL:** set `NEXT_PUBLIC_API_URL=http://localhost:8000/api` in `frontend/.env.local` (include `/api`).
 - **MinIO bucket** is auto-created by the `minio-init` compose service (`byot-media`).
 - **Frontend Docker build** requires `frontend/public/` to exist (even if empty).
-- **AI / satellite keys** are optional in dev — services fall back to stubs when unset.
+- **AI / satellite keys** are optional in dev — services fall back to stubs when unset. Add them to `backend/.env` (copy from `backend/.env.example`).
 - **Mapbox token** is optional; set `NEXT_PUBLIC_MAPBOX_TOKEN` in `frontend/.env.local` for the map view.
 
 ### Quality gates
