@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     google_client_secret: str | None = None
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
 
+    # OTP
+    otp_length: int = 6
+    otp_ttl_seconds: int = 600
+    otp_max_attempts: int = 5
+
     # Notifications
     ses_sender: str = "no-reply@byot.earth"
     sns_sms_sender_id: str = "BYOT"
