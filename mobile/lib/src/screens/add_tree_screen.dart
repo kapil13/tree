@@ -9,7 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import '../providers.dart';
 
-const _maxPhotos = 10;
+const _minPhotos = 3;
+const _maxPhotos = 5;
 const _maxPhotoBytes = 10 * 1024 * 1024;
 
 class AddTreeScreen extends ConsumerStatefulWidget {
@@ -100,6 +101,12 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use GPS to capture location first')));
       return;
     }
+    if (_photos.length < _minPhotos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Add at least $_minPhotos photos (currently ${_photos.length}).')),
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _status = null;
@@ -165,11 +172,14 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 ),
               ),
             const SizedBox(height: 20),
-            Text('Photos (optional)', style: Theme.of(context).textTheme.titleSmall),
+            Text('Photos (required)', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 4),
             Text(
-              'Add up to $_maxPhotos images. The first photo is used as the primary image for AI analysis.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              'Add $_minPhotos–$_maxPhotos images. The first photo is used as the primary image for AI analysis. '
+              '${_photos.length} / $_minPhotos minimum.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _photos.length < _minPhotos ? Colors.amber.shade800 : Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 12),
             if (_photos.isNotEmpty)
@@ -253,7 +263,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 child: Text(_status!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
               ),
             FilledButton(
-              onPressed: _busy ? null : _save,
+              onPressed: _busy || _lat == null || _photos.length < _minPhotos ? null : _save,
               child: Text(_busy ? 'Saving…' : 'Register tree'),
             ),
           ],

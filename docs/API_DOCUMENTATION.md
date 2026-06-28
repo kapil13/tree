@@ -81,7 +81,7 @@ POST /api/v1/trees
   "longitude": 77.5946,
   "altitude_m": 920,
   "accuracy_m": 4.8,
-  "photo_keys": ["uploads/2025/05/01/abc.jpg"]
+  "photo_keys": ["uploads/2025/05/01/a.jpg", "uploads/2025/05/01/b.jpg", "uploads/2025/05/01/c.jpg"]
 }
 
 201

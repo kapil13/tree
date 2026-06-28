@@ -16,7 +16,7 @@ class TreeCreate(BaseModel):
     altitude_m: float | None = None
     accuracy_m: float | None = Field(default=None, ge=0)
     plantation_id: uuid.UUID | None = None
-    photo_keys: list[str] = Field(default_factory=list, max_length=10)
+    photo_keys: list[str] = Field(..., min_length=3, max_length=5)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

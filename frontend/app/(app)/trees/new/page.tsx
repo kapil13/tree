@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
 import { trees, errorMessage } from "@/lib/api";
 
-const MAX_PHOTOS = 10;
+const MIN_PHOTOS = 3;
+const MAX_PHOTOS = 5;
 const MAX_BYTES = 10 * 1024 * 1024;
 
 type PendingPhoto = {
@@ -94,6 +95,14 @@ export default function NewTreePage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (photos.length < MIN_PHOTOS) {
+      setError(`Add at least ${MIN_PHOTOS} photos (currently ${photos.length}).`);
+      return;
+    }
+    if (photos.length > MAX_PHOTOS) {
+      setError(`You can attach at most ${MAX_PHOTOS} photos.`);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -180,9 +189,15 @@ export default function NewTreePage() {
         </div>
 
         <div>
-          <label className="label">Photos (optional)</label>
+          <label className="label">
+            Photos <span className="text-rose-600">*</span>
+          </label>
           <p className="mb-3 text-xs text-stone-500">
-            Add up to {MAX_PHOTOS} images. The first photo is used as the primary image for AI analysis.
+            Add {MIN_PHOTOS}–{MAX_PHOTOS} images (required). The first photo is used as the primary
+            image for AI analysis.{" "}
+            <span className={photos.length < MIN_PHOTOS ? "font-medium text-amber-700" : "text-forest-700"}>
+              {photos.length} / {MIN_PHOTOS} minimum
+            </span>
           </p>
 
           <input
@@ -231,7 +246,7 @@ export default function NewTreePage() {
           <button type="button" onClick={geo} className="btn-secondary">
             Use my location
           </button>
-          <button type="submit" disabled={busy} className="btn-primary">
+          <button type="submit" disabled={busy || photos.length < MIN_PHOTOS} className="btn-primary">
             {busy ? "Saving…" : "Register tree"}
           </button>
         </div>
