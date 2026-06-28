@@ -23,6 +23,7 @@ from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
     OTPRequest,
+    OTPRequestResponse,
     OTPVerify,
     RefreshRequest,
     RegisterRequest,
@@ -30,8 +31,13 @@ from app.schemas.auth import (
     UpdateProfile,
     UserOut,
 )
+from app.services.auth import otp as otp_service
+from app.services.notifications.notifier import get_notifier
+
+from app.core.logging import get_logger
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = get_logger("auth")
 
 
 def _slugify(s: str) -> str:
@@ -95,6 +101,8 @@ async def login(payload: LoginRequest, db: DB) -> TokenResponse:
         payload.password, user.hashed_password
     ):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_credentials")
+    if not user.is_verified:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="email_not_verified")
     user.last_login_at = datetime.now(UTC)
     await db.commit()
     return _tokens_for(user)
@@ -116,26 +124,86 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     return _tokens_for(user)
 
 
-@router.post("/otp/request")
-async def request_otp(payload: OTPRequest) -> dict[str, str]:
+@router.post("/otp/request", response_model=OTPRequestResponse)
+async def request_otp(payload: OTPRequest, db: DB) -> OTPRequestResponse:
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
-    # In production: generate, store in Redis with TTL, deliver via SES/SNS.
-    return {"status": "sent"}
+
+    channel: otp_service.Channel
+    identifier: str
+    if payload.email:
+        channel = "email"
+        identifier = payload.email.lower()
+        res = await db.execute(select(User).where(User.email == identifier))
+        user = res.scalar_one_or_none()
+        if user is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+        if user.is_verified:
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="already_verified")
+    else:
+        channel = "sms"
+        identifier = payload.phone or ""
+        res = await db.execute(select(User).where(User.phone == identifier))
+        user = res.scalar_one_or_none()
+        if user is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+        if user.is_verified:
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="already_verified")
+
+    code = otp_service.generate_code()
+    try:
+        await otp_service.store_code(channel, identifier, code)
+    except RuntimeError:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="otp_storage_unavailable"
+        ) from None
+
+    notifier = get_notifier()
+    to = identifier if channel == "email" else identifier
+    await notifier.send(
+        channel=channel,
+        to=to,
+        title="Your BYOT verification code",
+        message=f"Your verification code is {code}. It expires in {settings.otp_ttl_seconds // 60} minutes.",
+    )
+    log.info("otp.requested", channel=channel, identifier=identifier, code=code)
+
+    dev_code = code if settings.app_env == "development" else None
+    return OTPRequestResponse(status="sent", channel=channel, dev_code=dev_code)
 
 
 @router.post("/otp/verify", response_model=TokenResponse)
 async def verify_otp(payload: OTPVerify, db: DB) -> TokenResponse:
-    # Dev stub: accept code "000000" for any known email.
-    if payload.code != "000000":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
-    if not payload.email:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_required")
-    res = await db.execute(select(User).where(User.email == payload.email))
+    if not payload.email and not payload.phone:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
+
+    channel: otp_service.Channel
+    identifier: str
+    if payload.email:
+        channel = "email"
+        identifier = payload.email.lower()
+        res = await db.execute(select(User).where(User.email == identifier))
+    else:
+        channel = "sms"
+        identifier = payload.phone or ""
+        res = await db.execute(select(User).where(User.phone == identifier))
+
     user = res.scalar_one_or_none()
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+
+    try:
+        valid = await otp_service.verify_code(channel, identifier, payload.code)
+    except RuntimeError:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, detail="otp_storage_unavailable"
+        ) from None
+
+    if not valid:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+
     user.is_verified = True
+    user.last_login_at = datetime.now(UTC)
     await db.commit()
     return _tokens_for(user)
 

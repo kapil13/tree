@@ -100,6 +100,17 @@ export const auth = {
   async login(email: string, password: string) {
     return (await api.post<Tokens>("/v1/auth/login", { email, password })).data;
   },
+  async requestOtp(payload: { email?: string; phone?: string }) {
+    return (
+      await api.post<{ status: string; channel?: string; dev_code?: string }>(
+        "/v1/auth/otp/request",
+        payload
+      )
+    ).data;
+  },
+  async verifyOtp(payload: { email?: string; phone?: string; code: string }) {
+    return (await api.post<Tokens>("/v1/auth/otp/verify", payload)).data;
+  },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
   },

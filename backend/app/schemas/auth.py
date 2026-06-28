@@ -36,6 +36,15 @@ class OTPRequest(BaseModel):
     phone: str | None = None
 
 
+class OTPRequestResponse(BaseModel):
+    status: str = "sent"
+    channel: Literal["email", "sms"] | None = None
+    dev_code: str | None = Field(
+        default=None,
+        description="Present only in development — use to verify without email/SMS delivery.",
+    )
+
+
 class OTPVerify(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
