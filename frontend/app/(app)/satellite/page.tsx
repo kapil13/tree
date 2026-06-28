@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LineChart, Radar, RefreshCw, Satellite as SatelliteIcon } from "lucide-react";
+import { Radar, RefreshCw, Satellite as SatelliteIcon } from "lucide-react";
+import { TreesSatelliteMap } from "@/components/trees-satellite-map";
 import { dashboard, errorMessage, trees, type Tree } from "@/lib/api";
 
 export default function SatellitePage() {
   const qc = useQueryClient();
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboard.get });
-  const treeList = useQuery({ queryKey: ["trees"], queryFn: () => trees.list({ page_size: 100 }) });
+  const treeList = useQuery({
+    queryKey: ["trees-satellite"],
+    queryFn: () => trees.list({ page_size: 500 }),
+  });
 
   const scan = useMutation({
     mutationFn: (treeId: string) => trees.scanSatellite(treeId),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["trees-satellite"] });
       qc.invalidateQueries({ queryKey: ["trees"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
@@ -29,57 +34,51 @@ export default function SatellitePage() {
         <div>
           <h1 className="text-2xl font-semibold">Satellite</h1>
           <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            Sentinel-2 NDVI monitoring verifies vegetation at each registered tree.
-            New trees are queued for a baseline scan; open a tree for the full NDVI chart.
+            Satellite imagery with all registered trees. Green markers are Sentinel-2 verified;
+            grey markers are awaiting a baseline NDVI scan.
           </p>
         </div>
-        <Link href="/trees" className="btn-secondary">
-          <LineChart className="h-4 w-4" />
-          All trees
-        </Link>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="card">
-          <div className="text-xs uppercase tracking-wide text-stone-500">Trees monitored</div>
-          <div className="mt-1 text-2xl font-semibold">{k?.total_trees ?? "—"}</div>
+          <div className="text-xs uppercase tracking-wide text-stone-500">Trees on map</div>
+          <div className="mt-1 text-2xl font-semibold">{items.length}</div>
         </div>
         <div className="card">
           <div className="text-xs uppercase tracking-wide text-stone-500">Satellite verified</div>
           <div className="mt-1 text-2xl font-semibold text-forest-700">
-            {k ? `${k.pct_satellite_verified}%` : "—"}
+            {k ? `${k.pct_satellite_verified}%` : verified}
           </div>
           <div className="text-xs text-stone-500">
             {verified} verified · {pending} pending
           </div>
         </div>
         <div className="card">
-          <div className="text-xs uppercase tracking-wide text-stone-500">Data source</div>
+          <div className="text-xs uppercase tracking-wide text-stone-500">Imagery</div>
           <div className="mt-1 flex items-center gap-2 text-lg font-medium">
             <SatelliteIcon className="h-5 w-5 text-forest-700" />
-            Sentinel-2 L2A
+            Mapbox + Sentinel-2 NDVI
           </div>
-          <div className="text-xs text-stone-500">NDVI / EVI · 10 m · monthly series</div>
         </div>
       </div>
 
-      <div className="card space-y-3">
-        <h2 className="text-sm font-medium text-stone-800">How it works</h2>
-        <ol className="list-decimal space-y-2 pl-5 text-sm text-stone-700">
-          <li>Register a tree with GPS — a baseline Sentinel-2 scan is queued automatically.</li>
-          <li>NDVI is sampled in a ~30 m box around the tree (cloud-free scenes, max 20% cloud).</li>
-          <li>
-            <code className="rounded bg-stone-100 px-1">satellite_verified</code> is set when mean
-            NDVI ≥ 0.25 (vegetation present).
-          </li>
-          <li>Open any tree below for the 12-month NDVI time-series chart.</li>
-        </ol>
-        <p className="text-xs text-stone-500">
-          Dev mode uses synthetic NDVI unless{" "}
-          <code className="rounded bg-stone-100 px-1">SENTINEL_HUB_CLIENT_ID</code> is set in{" "}
-          <code className="rounded bg-stone-100 px-1">backend/.env</code>. Plantation-level maps
-          arrive in a follow-up sprint.
-        </p>
+      <div className="relative overflow-hidden rounded-xl border border-stone-200 bg-stone-900">
+        <TreesSatelliteMap
+          trees={items}
+          className="h-[min(70vh,720px)] w-full"
+        />
+        <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-black/60 px-3 py-2 text-xs text-white backdrop-blur-sm">
+          <div className="font-medium">Legend</div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="inline-block h-3 w-3 rounded-full bg-forest-600 ring-2 ring-white" />
+            Verified (NDVI ≥ 0.25)
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="inline-block h-3 w-3 rounded-full bg-stone-400 ring-2 ring-white" />
+            Pending scan
+          </div>
+        </div>
       </div>
 
       {scan.error && (
@@ -90,13 +89,14 @@ export default function SatellitePage() {
 
       <div className="card overflow-hidden p-0">
         <div className="border-b border-stone-100 bg-stone-50 px-4 py-2 text-sm font-medium dark:border-stone-800 dark:bg-stone-900">
-          Per-tree satellite status
+          Tree list
         </div>
         <table className="min-w-full text-sm">
           <thead className="bg-stone-50 text-stone-600 dark:bg-stone-900">
             <tr>
               <th className="px-4 py-2 text-left">Tree</th>
               <th className="px-4 py-2 text-left">Species</th>
+              <th className="px-4 py-2 text-left">Coordinates</th>
               <th className="px-4 py-2 text-left">Status</th>
               <th className="px-4 py-2 text-right">Actions</th>
             </tr>
@@ -104,7 +104,7 @@ export default function SatellitePage() {
           <tbody>
             {treeList.isLoading && (
               <tr>
-                <td colSpan={4} className="p-6 text-center text-stone-500">
+                <td colSpan={5} className="p-6 text-center text-stone-500">
                   Loading trees…
                 </td>
               </tr>
@@ -113,11 +113,14 @@ export default function SatellitePage() {
               <tr key={t.id} className="border-t border-stone-100 dark:border-stone-800">
                 <td className="px-4 py-2 font-mono text-xs">{t.public_code}</td>
                 <td className="px-4 py-2">{t.species_text || "—"}</td>
+                <td className="px-4 py-2 font-mono text-xs text-stone-500">
+                  {t.latitude?.toFixed(5)}, {t.longitude?.toFixed(5)}
+                </td>
                 <td className="px-4 py-2">
                   {t.satellite_verified ? (
                     <span className="badge-healthy">Verified</span>
                   ) : (
-                    <span className="badge-unknown">Pending scan</span>
+                    <span className="badge-unknown">Pending</span>
                   )}
                 </td>
                 <td className="px-4 py-2">
@@ -129,11 +132,11 @@ export default function SatellitePage() {
                       onClick={() => scan.mutate(t.id)}
                     >
                       <RefreshCw className={`h-3 w-3 ${scan.isPending ? "animate-spin" : ""}`} />
-                      Scan now
+                      Scan
                     </button>
                     <Link href={`/trees/${t.id}`} className="btn-primary text-xs">
                       <Radar className="h-3 w-3" />
-                      NDVI chart
+                      NDVI
                     </Link>
                   </div>
                 </td>
@@ -141,12 +144,12 @@ export default function SatellitePage() {
             ))}
             {!treeList.isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={4} className="p-6 text-center text-stone-500">
+                <td colSpan={5} className="p-6 text-center text-stone-500">
                   No trees yet —{" "}
                   <Link className="text-forest-700 underline" href="/trees/new">
                     register one
                   </Link>{" "}
-                  to start satellite monitoring.
+                  to see it on the satellite map.
                 </td>
               </tr>
             )}
