@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: byot
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.example.yaml
+  - backend-api.yaml
+  - backend-worker.yaml
+  - frontend.yaml
+  - ingress.yaml
+  - migration-job.yaml
+commonLabels:
+  app.kubernetes.io/part-of: byot
