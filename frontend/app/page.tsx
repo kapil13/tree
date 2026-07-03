@@ -57,7 +57,7 @@ export default function HomePage() {
                 "Health classification + disease detection + recommendations",
                 "Sentinel-2 / Landsat NDVI monitoring with change detection",
                 "Carbon engine: IPCC AR6, Verra VM0047, Gold Standard, revenue projection",
-                "Interactive Mapbox map, dashboards, alerts, PDF/Excel reports",
+                "Interactive Google Maps view, dashboards, alerts, PDF/Excel reports",
               ].map((line) => (
                 <li key={line} className="flex gap-2">
                   <span className="mt-1 text-forest-600">✓</span>
