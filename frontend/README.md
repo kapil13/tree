@@ -17,13 +17,20 @@ npm run dev                     # http://localhost:3000
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable **Maps JavaScript API**
 3. Create an API key (restrict to HTTP referrers `http://localhost:3000/*` for dev)
-4. Add to `frontend/.env.local`:
+4. Add to `frontend/.env.local` (or export before `make up` — Docker reads it from the shell):
 
 ```env
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here
 ```
 
-Restart `npm run dev` after changing env vars.
+For Docker (`make up`), export the key in your shell or add it to a root `.env` file next to `infrastructure/docker-compose.yml`:
+
+```bash
+export NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here
+make up
+```
+
+Restart / rebuild after changing env vars (`make up` rebuilds the frontend image).
 
 ## Layout
 ```
