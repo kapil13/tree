@@ -1,7 +1,13 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --no-fund --no-audit --legacy-peer-deps
+COPY package.json ./
+# package-lock.json is optional — use npm ci when present, else npm install
+COPY package-lock.json* ./
+RUN if [ -f package-lock.json ]; then \
+      npm ci --no-fund --no-audit --legacy-peer-deps; \
+    else \
+      npm install --no-fund --no-audit --legacy-peer-deps; \
+    fi
 
 FROM node:20-alpine AS builder
 WORKDIR /app
