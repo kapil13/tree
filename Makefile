@@ -1,9 +1,11 @@
-.PHONY: help up down logs backend-shell frontend-shell migrate seed test lint
+.PHONY: help up down logs backend-shell frontend-shell migrate seed test lint status fix
 
 help:
 	@echo "BYOT — common commands"
 	@echo "  make up               Bring up local stack (postgres, redis, minio, backend, frontend)"
 	@echo "  make down             Tear down"
+	@echo "  make status           Show container status + API health"
+	@echo "  make fix              Rebuild and restart backend only"
 	@echo "  make logs             Tail backend logs"
 	@echo "  make migrate          Run Alembic migrations"
 	@echo "  make seed             Seed demo data"
@@ -15,6 +17,21 @@ up:
 
 down:
 	docker compose -f infrastructure/docker-compose.yml down
+
+status:
+	@docker compose -f infrastructure/docker-compose.yml ps -a
+	@echo ""
+	@echo "Backend health:"
+	@curl -sf http://localhost:8000/health && echo "" || echo "  FAILED — backend not reachable on :8000"
+	@echo "Frontend:"
+	@curl -sf -o /dev/null -w "  HTTP %{http_code}\n" http://localhost:3000 || echo "  FAILED — frontend not reachable on :3000"
+
+fix:
+	docker compose -f infrastructure/docker-compose.yml up -d --build --force-recreate backend
+	@echo "Waiting for backend..."
+	@sleep 8
+	docker compose -f infrastructure/docker-compose.yml logs backend --tail 40
+	@curl -sf http://localhost:8000/health && echo "" || echo "Backend still down — run: make logs"
 
 logs:
 	docker compose -f infrastructure/docker-compose.yml logs -f backend

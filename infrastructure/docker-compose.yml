@@ -58,10 +58,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      start_period: 45s
     volumes:
       - ../backend:/app
 
