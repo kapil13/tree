@@ -32,6 +32,31 @@ stop_if_running() {
 stop_if_running "$BACKEND_PID" "backend"
 stop_if_running "$FRONTEND_PID" "frontend"
 
+# Kill anything else on our ports (stale Docker / crashed processes)
+for port in 8000 3000; do
+  if lsof -ti :"$port" >/dev/null 2>&1; then
+    echo "Freeing port $port..."
+    lsof -ti :"$port" | xargs kill -9 2>/dev/null || true
+    sleep 1
+  fi
+done
+
+echo "=== Preflight ==="
+if ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+  echo "ERROR: Postgres not running."
+  echo "  brew services start postgresql@16"
+  echo "  createdb byot && psql byot -c \"CREATE EXTENSION IF NOT EXISTS postgis;\""
+  exit 1
+fi
+echo "  Postgres: OK"
+
+if ! redis-cli ping >/dev/null 2>&1; then
+  echo "ERROR: Redis not running."
+  echo "  brew services start redis"
+  exit 1
+fi
+echo "  Redis: OK"
+
 # --- Backend ---
 if [ ! -f "$ROOT/backend/.env" ]; then
   echo "Missing backend/.env — copy backend/.env.native.example to backend/.env and edit it."
