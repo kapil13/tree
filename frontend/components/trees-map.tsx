@@ -62,15 +62,19 @@ export function TreesMap({
   if (!apiKey) {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl border border-stone-200 bg-stone-100 p-8 text-stone-600 ${className}`}
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-100 p-8 text-center text-stone-600 ${className}`}
         style={{ height }}
       >
-        Set{" "}
-        <code className="mx-1 font-mono text-sm">
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-        </code>{" "}
-        in <code className="mx-1 font-mono text-sm">frontend/.env.local</code>{" "}
-        to enable the map.
+        <p>
+          Set{" "}
+          <code className="font-mono text-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{" "}
+          in <code className="font-mono text-sm">frontend/.env.local</code>
+        </p>
+        <p className="text-sm text-stone-500">
+          Then rebuild the frontend:{" "}
+          <code className="font-mono">make fix-frontend</code>{" "}
+          (Docker bakes this key in at build time — restarting alone is not enough)
+        </p>
       </div>
     );
   }

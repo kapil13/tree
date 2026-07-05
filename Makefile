@@ -14,6 +14,7 @@ help:
 	@echo "  make lint             Lint backend and frontend"
 
 up:
+	@set -a && [ -f frontend/.env.local ] && . ./frontend/.env.local; set +a; \
 	docker compose -f infrastructure/docker-compose.yml up --build -d
 
 down:
@@ -37,9 +38,15 @@ fix:
 	@curl -sf http://localhost:8000/health && echo "" || echo "Backend still down — run: make logs"
 
 fix-frontend:
-	docker compose -f infrastructure/docker-compose.yml build --no-cache frontend
-	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate frontend
-	@echo "Frontend rebuilt — API calls go to http://localhost:8000/api"
+	@set -a && [ -f frontend/.env.local ] && . ./frontend/.env.local; set +a; \
+	docker compose -f infrastructure/docker-compose.yml build --no-cache frontend && \
+	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate frontend; \
+	echo "Frontend rebuilt — API: http://localhost:8000/api"; \
+	if [ -z "$$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" ]; then \
+	  echo "Note: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set — maps will be disabled"; \
+	else \
+	  echo "Google Maps key was included in the build"; \
+	fi
 
 logs:
 	docker compose -f infrastructure/docker-compose.yml logs -f backend

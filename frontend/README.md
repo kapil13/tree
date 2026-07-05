@@ -17,19 +17,19 @@ npm run dev                     # http://localhost:3000
 1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable **Maps JavaScript API**
 3. Create an API key (restrict to HTTP referrers `http://localhost:3000/*` for dev)
-4. Add to `frontend/.env.local` (or export before `make up` — Docker reads it from the shell):
+4. Add to `frontend/.env.local`:
 
 ```env
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here
 ```
 
-For Docker (`make up`), the browser uses `/api` and Next.js proxies to `http://backend:8000` inside the Docker network. You do **not** need `NEXT_PUBLIC_API_URL` in Docker.
-
-Restart / rebuild after changing env vars:
+**Docker users:** the key is read from `frontend/.env.local` when you run `make up` or `make fix-frontend`, but it is **baked into the image at build time**. After adding or changing the key you must rebuild:
 
 ```bash
-docker compose -f infrastructure/docker-compose.yml up --build -d
+make fix-frontend
 ```
+
+Do not commit `.env.local` (it is gitignored).
 
 ### Network Error on login?
 
