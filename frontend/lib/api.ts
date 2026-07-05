@@ -4,8 +4,15 @@
  */
 import axios, { AxiosError, AxiosInstance } from "axios";
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "/api";
+/** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
+function resolveApiBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!raw) return "/api";
+  const base = raw.replace(/\/$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
+}
+
+export const API_URL = resolveApiBaseUrl();
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -32,7 +39,20 @@ export function isApiError(err: unknown): err is AxiosError<{ error: ApiError }>
 
 export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
-    return err.response?.data?.error?.message || err.message;
+    if (!err.response) {
+      if (err.code === "ERR_NETWORK") {
+        return "Cannot reach the API. Is the backend running on port 8000? Try: docker compose -f infrastructure/docker-compose.yml ps";
+      }
+      return err.message;
+    }
+    const data = err.response?.data as {
+      error?: ApiError;
+      detail?: string | { msg: string }[];
+    } | undefined;
+    if (data?.error?.message) return data.error.message;
+    if (typeof data?.detail === "string") return data.detail;
+    if (Array.isArray(data?.detail)) return data.detail.map((d) => d.msg).join("; ");
+    return err.message;
   }
   return (err as Error)?.message || "Unknown error";
 }

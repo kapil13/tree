@@ -23,14 +23,19 @@ npm run dev                     # http://localhost:3000
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here
 ```
 
-For Docker (`make up`), export the key in your shell or add it to a root `.env` file next to `infrastructure/docker-compose.yml`:
+For Docker (`make up`), the browser uses `/api` and Next.js proxies to `http://backend:8000` inside the Docker network. You do **not** need `NEXT_PUBLIC_API_URL` in Docker.
+
+Restart / rebuild after changing env vars:
 
 ```bash
-export NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key-here
-make up
+docker compose -f infrastructure/docker-compose.yml up --build -d
 ```
 
-Restart / rebuild after changing env vars (`make up` rebuilds the frontend image).
+### Network Error on login?
+
+1. Check backend is up: `curl http://localhost:8000/health`
+2. Check containers: `docker compose -f infrastructure/docker-compose.yml ps`
+3. Rebuild frontend after pull: `docker compose -f infrastructure/docker-compose.yml up --build -d`
 
 ## Layout
 ```

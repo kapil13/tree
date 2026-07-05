@@ -63,10 +63,8 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        API_PROXY_TARGET: http://backend:8000
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
       - backend
     ports: ["3000:3000"]

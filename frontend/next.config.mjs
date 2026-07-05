@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
+const backendUrl =
+  process.env.API_PROXY_TARGET ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000";
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -11,7 +16,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/:path*`,
+        destination: `${backendUrl.replace(/\/$/, "")}/api/:path*`,
       },
     ];
   },

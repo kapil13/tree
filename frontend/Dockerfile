@@ -11,9 +11,9 @@ RUN if [ -f package-lock.json ]; then \
 
 FROM node:20-alpine AS builder
 WORKDIR /app
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ARG API_PROXY_TARGET=http://localhost:8000
 ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV API_PROXY_TARGET=$API_PROXY_TARGET
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
