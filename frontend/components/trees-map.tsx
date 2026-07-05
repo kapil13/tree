@@ -9,7 +9,7 @@ import {
   Map,
   Marker,
 } from "@vis.gl/react-google-maps";
-import { trees, type Tree } from "@/lib/api";
+import { trees, errorMessage, type Tree } from "@/lib/api";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
@@ -46,7 +46,7 @@ export function TreesMap({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["trees-map"],
-    queryFn: () => trees.list({ page_size: 500 }),
+    queryFn: () => trees.list({ page_size: 200 }),
   });
 
   const center = useMemo(() => {
@@ -96,7 +96,14 @@ export function TreesMap({
         className={`rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700 ${className}`}
         style={{ height }}
       >
-        Failed to load trees for the map. Are you signed in?
+        <p className="font-medium">Failed to load trees for the map.</p>
+        <p className="mt-1 text-sm">{errorMessage(error)}</p>
+        <p className="mt-2 text-sm">
+          <Link href="/login" className="underline">
+            Sign in
+          </Link>{" "}
+          if you are not logged in, or check that the backend is running.
+        </p>
       </div>
     );
   }

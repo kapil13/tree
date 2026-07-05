@@ -7,7 +7,7 @@ import { trees } from "@/lib/api";
 export default function SatellitePage() {
   const { data } = useQuery({
     queryKey: ["trees-map"],
-    queryFn: () => trees.list({ page_size: 500 }),
+    queryFn: () => trees.list({ page_size: 200 }),
   });
 
   const items = data?.items ?? [];
