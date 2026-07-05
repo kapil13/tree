@@ -21,4 +21,4 @@ RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 8000
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]

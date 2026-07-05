@@ -22,5 +22,5 @@ echo "[byot] postgres is up"
 echo "[byot] running alembic migrations..."
 alembic upgrade head
 
-echo "[byot] starting uvicorn on :8000"
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+echo "[byot] starting uvicorn on :8000 (no --reload in Docker)"
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers

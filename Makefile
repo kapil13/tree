@@ -27,9 +27,11 @@ status:
 	@curl -sf -o /dev/null -w "  HTTP %{http_code}\n" http://localhost:3000 || echo "  FAILED — frontend not reachable on :3000"
 
 fix:
-	docker compose -f infrastructure/docker-compose.yml up -d --build --force-recreate backend
+	docker compose -f infrastructure/docker-compose.yml build --no-cache backend
+	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate backend
 	@echo "Waiting for backend..."
-	@sleep 8
+	@sleep 10
+	docker compose -f infrastructure/docker-compose.yml ps backend
 	docker compose -f infrastructure/docker-compose.yml logs backend --tail 40
 	@curl -sf http://localhost:8000/health && echo "" || echo "Backend still down — run: make logs"
 
