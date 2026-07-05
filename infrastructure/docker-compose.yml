@@ -36,6 +36,7 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://byot:byot@postgres:5432/byot
       DATABASE_URL_SYNC: postgresql+psycopg2://byot:byot@postgres:5432/byot
@@ -52,6 +53,12 @@ services:
       redis:
         condition: service_started
     ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
