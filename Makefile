@@ -1,4 +1,4 @@
-.PHONY: help up down logs backend-shell frontend-shell migrate seed test lint status fix
+.PHONY: help up down logs backend-shell frontend-shell migrate seed test lint status fix fix-frontend
 
 help:
 	@echo "BYOT — common commands"
@@ -6,6 +6,7 @@ help:
 	@echo "  make down             Tear down"
 	@echo "  make status           Show container status + API health"
 	@echo "  make fix              Rebuild and restart backend only"
+	@echo "  make fix-frontend     Rebuild frontend (fixes API 404 / Not found on login)"
 	@echo "  make logs             Tail backend logs"
 	@echo "  make migrate          Run Alembic migrations"
 	@echo "  make seed             Seed demo data"
@@ -34,6 +35,11 @@ fix:
 	docker compose -f infrastructure/docker-compose.yml ps backend
 	docker compose -f infrastructure/docker-compose.yml logs backend --tail 40
 	@curl -sf http://localhost:8000/health && echo "" || echo "Backend still down — run: make logs"
+
+fix-frontend:
+	docker compose -f infrastructure/docker-compose.yml build --no-cache frontend
+	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate frontend
+	@echo "Frontend rebuilt — API calls go to http://localhost:8000/api"
 
 logs:
 	docker compose -f infrastructure/docker-compose.yml logs -f backend

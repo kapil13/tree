@@ -50,7 +50,12 @@ export function errorMessage(err: unknown): string {
       detail?: string | { msg: string }[];
     } | undefined;
     if (data?.error?.message) return data.error.message;
-    if (typeof data?.detail === "string") return data.detail;
+    if (typeof data?.detail === "string") {
+      if (err.response.status === 404 && data.detail === "Not Found") {
+        return "API route not found (404). Rebuild the frontend: make fix-frontend";
+      }
+      return data.detail;
+    }
     if (Array.isArray(data?.detail)) return data.detail.map((d) => d.msg).join("; ");
     return err.message;
   }
