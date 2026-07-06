@@ -42,15 +42,13 @@ for port in 8000 3000; do
 done
 
 echo "=== Preflight ==="
-if pg_isready -h localhost -p 5433 >/dev/null 2>&1; then
-  echo "  Postgres: OK (Docker :5433)"
-elif pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
-  echo "  Postgres: OK (:5432)"
-else
-  echo "ERROR: Postgres not running."
-  echo "  ./scripts/dev-db-start.sh   # recommended: Docker PostGIS on :5433"
+if ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+  echo "ERROR: Postgres not running on :5432"
+  echo "  Open Postgres.app (https://postgresapp.com/) and click Initialize"
+  echo "  Then: createdb byot && psql byot -c 'CREATE EXTENSION postgis;'"
   exit 1
 fi
+echo "  Postgres: OK (:5432)"
 
 if ! redis-cli ping >/dev/null 2>&1; then
   echo "ERROR: Redis not running."
@@ -67,7 +65,12 @@ fi
 
 if [ ! -d "$ROOT/backend/.venv" ]; then
   echo "Creating backend venv..."
-  python3 -m venv "$ROOT/backend/.venv"
+  PY=$("$ROOT/scripts/python312.sh")
+  if [ -z "$PY" ]; then
+    echo "ERROR: Python 3.12 required. Run: brew install python@3.12"
+    exit 1
+  fi
+  "$PY" -m venv "$ROOT/backend/.venv"
 fi
 
 echo "Starting backend on http://localhost:8000 ..."

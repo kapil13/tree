@@ -30,7 +30,7 @@ curl -sf -o /dev/null -w "  frontend: HTTP %{http_code}\n" http://localhost:3000
 
 echo ""
 echo "=== Postgres / Redis ==="
-pg_isready -h localhost -p 5432 2>/dev/null || echo "  postgres: not ready (brew services start postgresql@16)"
+pg_isready -h localhost -p 5432 2>/dev/null || echo "  postgres: not ready — open Postgres.app"
 redis-cli ping 2>/dev/null || echo "  redis: not ready (brew services start redis)"
 
 echo ""

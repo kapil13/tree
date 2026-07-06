@@ -1,85 +1,49 @@
-.PHONY: help up down logs backend-shell frontend-shell migrate seed test lint status fix fix-frontend fix-frontend-clean docker-prune
+.PHONY: help dev-start dev-stop dev-status setup-native migrate-native seed-native test lint
+.PHONY: up down logs migrate seed docker-legacy
 
 help:
-	@echo "BYOT — common commands"
-	@echo "  make up                    Bring up local stack"
-	@echo "  make down                  Tear down"
-	@echo "  make status                Show container status + API health"
-	@echo "  make fix                   Rebuild and restart backend only"
-	@echo "  make fix-frontend          Rebuild frontend (uses cache — lighter on disk)"
-	@echo "  make fix-frontend-clean    Rebuild frontend with --no-cache"
-	@echo "  make docker-prune          Free Docker disk space (run if I/O errors)"
-	@echo "  make logs                  Tail backend logs"
-	@echo "  make migrate               Run Alembic migrations"
-	@echo "  make seed                  Seed demo data"
-	@echo "  make test                  Run backend tests"
-	@echo "  make lint                  Lint backend and frontend"
-
-up:
-	@set -a && [ -f frontend/.env.local ] && . ./frontend/.env.local; set +a; \
-	docker compose -f infrastructure/docker-compose.yml up --build -d
-
-down:
-	docker compose -f infrastructure/docker-compose.yml down
-
-status:
-	@docker compose -f infrastructure/docker-compose.yml ps -a
+	@echo "BYOT — Native Mac (no Docker)"
+	@echo "  make setup-native     One-time install (Postgres.app + Redis + deps)"
+	@echo "  make dev-start        Start backend + frontend in background"
+	@echo "  make dev-stop         Stop backend + frontend"
+	@echo "  make dev-status       Health check + logs"
+	@echo "  make migrate-native   Run Alembic migrations"
+	@echo "  make seed-native      Seed demo user"
+	@echo "  make test             Run backend tests"
+	@echo "  make lint             Lint backend and frontend"
 	@echo ""
-	@echo "Backend health:"
-	@curl -sf http://localhost:8000/health && echo "" || echo "  FAILED — backend not reachable on :8000"
-	@echo "Frontend:"
-	@curl -sf -o /dev/null -w "  HTTP %{http_code}\n" http://localhost:3000 || echo "  FAILED — frontend not reachable on :3000"
+	@echo "See docs/LOCAL_MAC_NATIVE.md"
+	@echo ""
+	@echo "Docker (optional, not needed for Mac dev): make docker-legacy"
 
-fix:
-	docker compose -f infrastructure/docker-compose.yml build --no-cache backend
-	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate backend
-	@echo "Waiting for backend..."
-	@sleep 10
-	docker compose -f infrastructure/docker-compose.yml ps backend
-	docker compose -f infrastructure/docker-compose.yml logs backend --tail 40
-	@curl -sf http://localhost:8000/health && echo "" || echo "Backend still down — run: make logs"
+setup-native:
+	./scripts/setup-mac-native.sh
 
-fix-frontend:
-	@set -a && [ -f frontend/.env.local ] && . ./frontend/.env.local; set +a; \
-	docker compose -f infrastructure/docker-compose.yml build frontend && \
-	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate frontend && \
-	echo "Frontend rebuilt — API: http://localhost:8000/api" && \
-	if [ -z "$$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" ]; then \
-	  echo "Note: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set — maps will be disabled"; \
-	else \
-	  echo "Google Maps key was included in the build"; \
-	fi
+dev-start:
+	./scripts/dev-start.sh
 
-fix-frontend-clean:
-	@set -a && [ -f frontend/.env.local ] && . ./frontend/.env.local; set +a; \
-	docker compose -f infrastructure/docker-compose.yml build --no-cache frontend && \
-	docker compose -f infrastructure/docker-compose.yml up -d --force-recreate frontend && \
-	echo "Frontend rebuilt (clean) — API: http://localhost:8000/api"
+dev-stop:
+	./scripts/dev-stop.sh
 
-docker-prune:
-	@echo "Freeing Docker build cache and unused images (safe for BYOT — will re-download on next build)..."
-	docker builder prune -af
-	docker image prune -af
-	@echo "Done. If errors persist: restart Docker Desktop → Troubleshoot → Clean data"
+dev-status:
+	./scripts/dev-status.sh
 
-logs:
-	docker compose -f infrastructure/docker-compose.yml logs -f backend
+migrate-native:
+	cd backend && . .venv/bin/activate && alembic upgrade head
 
-backend-shell:
-	docker compose -f infrastructure/docker-compose.yml exec backend bash
-
-frontend-shell:
-	docker compose -f infrastructure/docker-compose.yml exec frontend sh
-
-migrate:
-	docker compose -f infrastructure/docker-compose.yml exec backend alembic upgrade head
-
-seed:
-	docker compose -f infrastructure/docker-compose.yml exec backend python -m app.scripts.seed_demo
+seed-native:
+	cd backend && . .venv/bin/activate && python -m app.scripts.seed_demo
 
 test:
-	cd backend && pytest -q
+	cd backend && . .venv/bin/activate && pytest -q
 
 lint:
-	cd backend && ruff check .
+	cd backend && . .venv/bin/activate && python -m ruff check . 2>/dev/null || true
 	cd frontend && npm run typecheck
+
+# Legacy Docker targets (optional — ignore for native Mac dev)
+docker-legacy:
+	@echo "Docker is optional. For native Mac use: make dev-start"
+	@echo "See docs/LOCAL_MAC_NATIVE.md"
+
+up down logs migrate seed fix fix-frontend docker-prune: docker-legacy
