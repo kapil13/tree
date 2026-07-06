@@ -42,13 +42,15 @@ for port in 8000 3000; do
 done
 
 echo "=== Preflight ==="
-if ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+if pg_isready -h localhost -p 5433 >/dev/null 2>&1; then
+  echo "  Postgres: OK (Docker :5433)"
+elif pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+  echo "  Postgres: OK (:5432)"
+else
   echo "ERROR: Postgres not running."
-  echo "  brew services start postgresql@16"
-  echo "  createdb byot && psql byot -c \"CREATE EXTENSION IF NOT EXISTS postgis;\""
+  echo "  ./scripts/dev-db-start.sh   # recommended: Docker PostGIS on :5433"
   exit 1
 fi
-echo "  Postgres: OK"
 
 if ! redis-cli ping >/dev/null 2>&1; then
   echo "ERROR: Redis not running."
@@ -70,11 +72,12 @@ fi
 
 echo "Starting backend on http://localhost:8000 ..."
 (
+  set -e
   cd "$ROOT/backend"
   source .venv/bin/activate
   pip install -q -r requirements.txt
   alembic upgrade head
-  exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+  exec uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ) >>"$BACKEND_LOG" 2>&1 &
 echo $! >"$BACKEND_PID"
 
@@ -122,5 +125,6 @@ echo "Logs:"
 echo "  tail -f $BACKEND_LOG"
 echo "  tail -f $FRONTEND_LOG"
 echo ""
-echo "Stop: ./scripts/dev-stop.sh"
+echo "Status: ./scripts/dev-status.sh"
+echo "Stop:   ./scripts/dev-stop.sh"
 echo "Login: demo@byot.earth / byotdemo1234!  (run: cd backend && source .venv/bin/activate && python -m app.scripts.seed_demo)"
