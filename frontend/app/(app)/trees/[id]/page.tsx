@@ -87,7 +87,7 @@ export default function TreeDetailPage() {
           <div className="card">
             <div className="mb-3 flex items-center gap-2">
               <Satellite className="h-4 w-4 text-forest-700" />
-              <h2 className="text-sm font-medium">NDVI map (30 m chip)</h2>
+              <h2 className="text-sm font-medium">NDVI map (10 m chip)</h2>
             </div>
             <NdviImagePreview
               treeId={id}

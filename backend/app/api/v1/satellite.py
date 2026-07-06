@@ -112,7 +112,7 @@ async def get_series(
 
 @router.get("/ndvi-image/{tree_id}")
 async def ndvi_image(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
-    """False-color NDVI chip (~30 m) centred on the tree. Requires auth."""
+    """False-color NDVI chip (10 m, Sentinel-2 resolution) centred on the tree. Requires auth."""
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     lat, lon = pt.y, pt.x

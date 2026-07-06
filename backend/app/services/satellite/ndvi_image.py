@@ -10,6 +10,10 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw
 
+# Sentinel-2 native resolution (B2/B3/B4/B8); preview chip extent around tree.
+CHIP_RESOLUTION_M = 10
+CHIP_EXTENT_M = 10
+
 
 def _ndvi_rgb(value: float) -> tuple[int, int, int]:
     """Classic NDVI colormap: brown → yellow → green."""
@@ -26,17 +30,26 @@ def _ndvi_rgb(value: float) -> tuple[int, int, int]:
     return (int(155 - 80 * t), int(200 + 20 * t), int(60 + 30 * t))
 
 
-def _ndvi_grid(lat: float, lon: float, center_ndvi: float, size: int = 128) -> np.ndarray:
-    """Synthetic ~30 m NDVI patch around a tree point (deterministic per location)."""
+def _ndvi_grid(
+    lat: float,
+    lon: float,
+    center_ndvi: float,
+    size: int = 128,
+    *,
+    extent_m: float = CHIP_EXTENT_M,
+) -> np.ndarray:
+    """Synthetic NDVI patch for a {extent_m} m chip around a tree (deterministic)."""
     seed = int.from_bytes(hashlib.sha256(f"{lat:.6f}:{lon:.6f}".encode()).digest()[:4], "big")
     rng = random.Random(seed)
     grid = np.zeros((size, size), dtype=np.float32)
     cx, cy = size // 2, size // 2
+    # Tighter canopy footprint on smaller (10 m) chips.
+    falloff_scale = 0.55 if extent_m <= CHIP_EXTENT_M else 0.35
     for y in range(size):
         for x in range(size):
             dist = math.hypot(x - cx, y - cy) / (size * 0.45)
             noise = rng.uniform(-0.06, 0.06)
-            falloff = max(0.0, 1.0 - dist * 0.35)
+            falloff = max(0.0, 1.0 - dist * falloff_scale)
             grid[y, x] = center_ndvi * falloff + 0.15 * (1 - falloff) + noise
     return np.clip(grid, 0.0, 1.0)
 
@@ -48,9 +61,10 @@ def render_ndvi_png(
     *,
     size: int = 256,
     label: str | None = None,
+    extent_m: float = CHIP_EXTENT_M,
 ) -> bytes:
     """PNG bytes for an NDVI false-color chip centred on the tree."""
-    grid = _ndvi_grid(lat, lon, ndvi_mean, size=size)
+    grid = _ndvi_grid(lat, lon, ndvi_mean, size=size, extent_m=extent_m)
     rgb = np.zeros((size, size, 3), dtype=np.uint8)
     for y in range(size):
         for x in range(size):
