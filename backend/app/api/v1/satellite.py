@@ -6,6 +6,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 
@@ -14,6 +15,7 @@ from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
 from app.services.satellite import get_satellite_service
+from app.services.satellite.ndvi_image import render_ndvi_png
 
 router = APIRouter(prefix="/satellite", tags=["satellite"])
 
@@ -104,4 +106,35 @@ async def get_series(
         tree_id=tree.id,
         points=points,
         latest=SatelliteRecordOut.model_validate(latest) if latest else None,
+        ndvi_image_url=f"/api/v1/satellite/ndvi-image/{tree.id}",
+    )
+
+
+@router.get("/ndvi-image/{tree_id}")
+async def ndvi_image(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+    """False-color NDVI chip (~30 m) centred on the tree. Requires auth."""
+    tree = await _load_tree(tree_id, user, db)
+    pt = to_shape(tree.location)
+    lat, lon = pt.y, pt.x
+
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree.id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(1)
+    )
+    latest = res.scalar_one_or_none()
+    if latest and latest.ndvi_mean is not None:
+        ndvi = float(latest.ndvi_mean)
+        label = f"NDVI {ndvi:.2f} · {latest.provider}"
+    else:
+        sample = await get_satellite_service().sample(lat, lon)
+        ndvi = sample.ndvi_mean
+        label = f"NDVI {ndvi:.2f} · {sample.provider}"
+
+    png = render_ndvi_png(lat, lon, ndvi, label=label)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=3600"},
     )
