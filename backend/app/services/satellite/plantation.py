@@ -123,14 +123,21 @@ async def series_plantation_polygon(
 
 async def ndvi_image_for_polygon(boundary_geojson: dict, ndvi_mean: float, label: str) -> bytes:
     """PNG bytes for plantation NDVI — Copernicus Process API or synthetic fallback."""
+    from app.services.satellite.ndvi_image import (
+        png_is_mostly_grey_nodata,
+        render_ndvi_png_polygon,
+    )
+
     coords = polygon_coordinates(boundary_geojson)
+    preview_label = f"{label} · preview" if "preview" not in label else label
 
     if has_sentinel_credentials():
         try:
-            return await _sentinel_client().fetch_polygon_ndvi_image(coords)
+            png = await _sentinel_client().fetch_polygon_ndvi_image(coords)
+            if not png_is_mostly_grey_nodata(png):
+                return png
+            log.warning("sentinel_grey_image_using_colormap_preview", ndvi=ndvi_mean)
         except Exception as exc:
             log.warning("sentinel_process_fallback", error=str(exc))
 
-    from app.services.satellite.ndvi_image import render_ndvi_png_polygon
-
-    return render_ndvi_png_polygon(coords, ndvi_mean, label=label)
+    return render_ndvi_png_polygon(coords, ndvi_mean, label=preview_label)

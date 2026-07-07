@@ -39,7 +39,7 @@ NDVI_IMAGE_EVALSCRIPT = """//VERSION=3
 function setup() {
   return {
     input: [{ bands: ["B04", "B08", "SCL", "dataMask"] }],
-    output: { bands: 3 }
+    output: { bands: 4, sampleType: "AUTO" }
   };
 }
 function ndviColor(v) {
@@ -56,11 +56,13 @@ function ndviColor(v) {
   return [0.61 - 0.31 * t3, 0.78 + 0.08 * t3, 0.23 + 0.12 * t3];
 }
 function evaluatePixel(samples) {
-  if (samples.SCL == 6 || samples.SCL == 8 || samples.SCL == 9 || samples.SCL == 10)
-    return [0.45, 0.45, 0.45];
-  if (samples.B08 + samples.B04 == 0) return [0.45, 0.45, 0.45];
+  if (!samples.dataMask) return [0, 0, 0, 0];
+  if (samples.B08 + samples.B04 == 0) return [0, 0, 0, 0];
+  // Exclude only thick cloud / cirrus; keep partial vegetation signal.
+  if (samples.SCL == 9 || samples.SCL == 10) return [0, 0, 0, 0];
   var ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
-  return ndviColor(ndvi);
+  var c = ndviColor(ndvi);
+  return [c[0], c[1], c[2], 1];
 }
 """
 
@@ -268,7 +270,7 @@ class SentinelHubClient:
         """False-color NDVI PNG for a plantation polygon via Process API."""
         token = await self._get_token()
         now = datetime.now(UTC)
-        time_from = now - timedelta(days=45)
+        time_from = now - timedelta(days=120)
         body = {
             "input": {
                 "bounds": self._bounds_from_polygon(polygon_coords),
@@ -280,7 +282,7 @@ class SentinelHubClient:
                                 "from": time_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
                                 "to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                             },
-                            "maxCloudCoverage": 20,
+                            "maxCloudCoverage": 60,
                             "mosaickingOrder": "leastCC",
                         },
                     }

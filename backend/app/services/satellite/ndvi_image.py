@@ -97,6 +97,19 @@ def render_ndvi_png(
     return buf.getvalue()
 
 
+def png_is_mostly_grey_nodata(png_bytes: bytes, *, threshold: float = 0.7) -> bool:
+    """True when a Copernicus NDVI PNG is mostly empty/cloud grey pixels."""
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+    arr = np.array(img, dtype=np.int16)
+    # Legacy nodata grey (0.45) and flat mid-greys from empty mosaics.
+    legacy_grey = np.all(np.abs(arr - 115) <= 18, axis=2)
+    flat_grey = np.all(np.abs(arr - arr[:, :, :1]) <= 3, axis=2) & (
+        (arr[:, :, 0] > 90) & (arr[:, :, 0] < 140)
+    )
+    nodata = legacy_grey | flat_grey
+    return float(nodata.mean()) >= threshold
+
+
 def render_ndvi_png_polygon(
     polygon_coords: list[list[float]],
     ndvi_mean: float,
@@ -109,8 +122,12 @@ def render_ndvi_png_polygon(
     minx, miny, maxx, maxy = poly.bounds
     lat_mid = (miny + maxy) / 2.0
     lon_mid = (minx + maxx) / 2.0
+    cos_lat = max(0.1, math.cos(math.radians(lat_mid)))
+    width_m = (maxx - minx) * 111_320.0 * cos_lat
+    height_m = (maxy - miny) * 111_320.0
+    extent_m = max(50.0, min(max(width_m, height_m) / 6.0, 800.0))
 
-    grid = _ndvi_grid(lat_mid, lon_mid, ndvi_mean, size=size, extent_m=50)
+    grid = _ndvi_grid(lat_mid, lon_mid, ndvi_mean, size=size, extent_m=extent_m)
     rgb = np.full((size, size, 3), 220, dtype=np.uint8)
 
     for y in range(size):
