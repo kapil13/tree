@@ -34,6 +34,10 @@ from app.services.satellite.plantation import (
 router = APIRouter(prefix="/plantation-fences", tags=["plantation-fences"])
 log = get_logger(__name__)
 
+# Click-drawn fences above this are usually a zoom mistake; block save with a clear error.
+MAX_FENCE_AREA_HA = 5000.0
+WARN_FENCE_AREA_HA = 500.0
+
 
 def _can_access_fence(user, fence: PlantationFence) -> bool:
     if user.role == "admin":
@@ -138,7 +142,17 @@ async def create_fence(
     area_res = await db.execute(
         select(func.ST_Area(func.ST_GeogFromText(wkt)) / 10000.0)
     )
-    fence.area_ha = round(float(area_res.scalar_one()), 4)
+    area_ha = round(float(area_res.scalar_one()), 4)
+    if area_ha > MAX_FENCE_AREA_HA:
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"fence_too_large:{area_ha:.1f}ha exceeds {MAX_FENCE_AREA_HA:.0f} ha. "
+                "Zoom in on the map and draw a smaller block (typical plantation: 5–500 ha)."
+            ),
+        )
+    fence.area_ha = area_ha
     await db.commit()
     await db.refresh(fence)
     return _to_out(fence)

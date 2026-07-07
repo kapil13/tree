@@ -18,6 +18,13 @@ import {
   type Tree,
 } from "@/lib/api";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
+import {
+  estimatePolygonAreaHa,
+  formatAreaHa,
+  FENCE_AREA_MAX_HA,
+  FENCE_AREA_WARN_HA,
+  polygonBBoxKm,
+} from "@/lib/geo";
 
 const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
 
@@ -105,6 +112,17 @@ export function PlantationFenceMap({
   const [draftPaths, setDraftPaths] = useState<google.maps.LatLngLiteral[]>([]);
   const [pendingName, setPendingName] = useState("");
   const [pendingPaths, setPendingPaths] = useState<google.maps.LatLngLiteral[] | null>(null);
+  const [confirmLargeFence, setConfirmLargeFence] = useState(false);
+
+  const pendingAreaHa = useMemo(
+    () => (pendingPaths ? estimatePolygonAreaHa(pendingPaths) : 0),
+    [pendingPaths]
+  );
+  const pendingBBox = useMemo(
+    () => (pendingPaths ? polygonBBoxKm(pendingPaths) : null),
+    [pendingPaths]
+  );
+  const draftAreaHa = useMemo(() => estimatePolygonAreaHa(draftPaths), [draftPaths]);
 
   const { data: fencePage, isLoading: fencesLoading } = useQuery({
     queryKey: ["plantation-fences"],
@@ -177,10 +195,12 @@ export function PlantationFenceMap({
     setPendingPaths(draftPaths);
     setDraftPaths([]);
     setDrawMode(false);
+    setConfirmLargeFence(false);
   };
 
   const submitFence = () => {
     if (!pendingPaths?.length || !pendingName.trim()) return;
+    if (pendingAreaHa > FENCE_AREA_WARN_HA && !confirmLargeFence) return;
     createFence.mutate({
       name: pendingName.trim(),
       boundary: pathsToGeoJson(pendingPaths),
@@ -234,41 +254,81 @@ export function PlantationFenceMap({
               </button>
             </>
           )}
+          {drawMode && draftPaths.length >= 2 && (
+            <span className="text-xs font-medium text-forest-800">
+              Area so far: {formatAreaHa(draftAreaHa)}
+            </span>
+          )}
           <span className="text-xs text-stone-500">
-            Click corners on the map to outline your plantation. NDVI uses Copernicus Sentinel-2
-            (10 m).
+            Zoom in first, then click corners. Best NDVI: 5–500 ha per fence.
           </span>
         </div>
 
         {pendingPaths && (
-          <div className="card flex flex-wrap items-end gap-3">
-            <div className="flex-1">
-              <label className="kpi-label">Fence name</label>
-              <input
-                className="input mt-1"
-                placeholder="e.g. North block"
-                value={pendingName}
-                onChange={(e) => setPendingName(e.target.value)}
-              />
+          <div className="card space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1">
+                <label className="kpi-label">Fence name</label>
+                <input
+                  className="input mt-1"
+                  placeholder="e.g. North block"
+                  value={pendingName}
+                  onChange={(e) => setPendingName(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={
+                  !pendingName.trim() ||
+                  createFence.isPending ||
+                  (pendingAreaHa > FENCE_AREA_WARN_HA && !confirmLargeFence)
+                }
+                onClick={submitFence}
+              >
+                {createFence.isPending ? "Saving…" : "Save fence & scan NDVI"}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setPendingPaths(null);
+                  setPendingName("");
+                  setConfirmLargeFence(false);
+                }}
+              >
+                Cancel
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={!pendingName.trim() || createFence.isPending}
-              onClick={submitFence}
-            >
-              {createFence.isPending ? "Saving…" : "Save fence & scan NDVI"}
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setPendingPaths(null);
-                setPendingName("");
-              }}
-            >
-              Cancel
-            </button>
+            <div className="text-sm text-stone-700">
+              <strong>Estimated area:</strong> {formatAreaHa(pendingAreaHa)}
+              {pendingBBox && (
+                <span className="text-stone-500">
+                  {" "}
+                  · ~{pendingBBox.widthKm.toFixed(1)} × {pendingBBox.heightKm.toFixed(1)} km
+                </span>
+              )}
+            </div>
+            {pendingAreaHa > FENCE_AREA_MAX_HA && (
+              <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                This fence is too large ({formatAreaHa(pendingAreaHa)}). Zoom in on the map,
+                delete this outline, and redraw a smaller block (max {FENCE_AREA_MAX_HA} ha).
+              </p>
+            )}
+            {pendingAreaHa > FENCE_AREA_WARN_HA && pendingAreaHa <= FENCE_AREA_MAX_HA && (
+              <label className="flex items-start gap-2 text-sm text-amber-900">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={confirmLargeFence}
+                  onChange={(e) => setConfirmLargeFence(e.target.checked)}
+                />
+                <span>
+                  This area is very large — NDVI images work best under{" "}
+                  {FENCE_AREA_WARN_HA} ha. I confirm this outline is correct.
+                </span>
+              </label>
+            )}
           </div>
         )}
 
@@ -355,8 +415,15 @@ export function PlantationFenceMap({
                   onClick={() => setSelectedId(fence.id)}
                 >
                   <div className="font-medium">{fence.name}</div>
-                  <div className="text-xs text-stone-500">
-                    {fence.area_ha != null ? `${fence.area_ha.toFixed(2)} ha` : "—"}
+                  <div
+                    className={`text-xs ${
+                      (fence.area_ha ?? 0) > FENCE_AREA_WARN_HA
+                        ? "font-medium text-amber-800"
+                        : "text-stone-500"
+                    }`}
+                  >
+                    {fence.area_ha != null ? formatAreaHa(fence.area_ha) : "—"}
+                    {(fence.area_ha ?? 0) > FENCE_AREA_WARN_HA && " · very large"}
                     {fence.latest_ndvi_mean != null &&
                       ` · NDVI ${fence.latest_ndvi_mean.toFixed(2)}`}
                   </div>
@@ -367,6 +434,7 @@ export function PlantationFenceMap({
                     <PlantationNdviPreview
                       fenceId={fence.id}
                       ndvi={fence.latest_ndvi_mean ?? undefined}
+                      refreshKey={ndviRefresh}
                     />
                     <div className="flex gap-2">
                       <button
