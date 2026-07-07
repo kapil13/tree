@@ -24,12 +24,14 @@ from app.schemas.plantation_fence import (
     PlantationSatelliteRecordOut,
     PlantationSatelliteSeries,
 )
-from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon, polygon_coordinates
+from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon, polygon_centroid, polygon_coordinates
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
     scan_plantation_polygon,
     series_plantation_polygon,
 )
+from app.services.weather.open_meteo import fetch_forecast
+from app.schemas.weather import WeatherForecast
 
 router = APIRouter(prefix="/plantation-fences", tags=["plantation-fences"])
 log = get_logger(__name__)
@@ -301,3 +303,23 @@ async def fence_ndvi_image(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Re
         media_type="image/png",
         headers={"Cache-Control": "private, max-age=3600"},
     )
+
+
+@router.get("/{fence_id}/weather", response_model=WeatherForecast)
+async def fence_weather(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    days: int = Query(5, ge=1, le=7),
+) -> WeatherForecast:
+    """5-day weather forecast for the plantation fence (polygon centroid)."""
+    fence = await _load_fence(fence_id, user, db)
+    boundary = geography_to_geojson_polygon(fence.boundary)
+    lat, lon = polygon_centroid(boundary)
+    try:
+        return await fetch_forecast(lat, lon, days=days)
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            detail=f"weather_forecast_unavailable: {exc}",
+        ) from exc

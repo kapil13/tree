@@ -212,6 +212,21 @@ export const plantationFences = {
   async satellite(id: string) {
     return (await api.get(`/v1/plantation-fences/${id}/satellite-monitoring`)).data;
   },
+  async weather(id: string, days = 5) {
+    return (
+      await api.get(`/v1/plantation-fences/${id}/weather`, { params: { days } })
+    ).data as import("@/components/weather-forecast").WeatherForecast;
+  },
+};
+
+export const weather = {
+  async forecast(latitude: number, longitude: number, days = 5) {
+    return (
+      await api.get("/v1/weather/forecast", {
+        params: { latitude, longitude, days },
+      })
+    ).data as import("@/components/weather-forecast").WeatherForecast;
+  },
 };
 
 export const dashboard = {

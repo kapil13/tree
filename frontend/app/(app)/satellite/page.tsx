@@ -22,8 +22,8 @@ export default function SatellitePage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Satellite</h1>
       <p className="text-sm text-stone-600">
-        Draw plantation fences on the map, then fetch Copernicus Sentinel-2 NDVI (10 m) for each
-        fenced area. Tree markers show registered trees inside your plantation.
+        Draw plantation fences on the map for Sentinel-2 NDVI, and view a 5-day weather
+        forecast for each fenced area.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-4">

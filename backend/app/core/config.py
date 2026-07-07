@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     )
     gee_service_account_json: str | None = None
 
+    # Weather (Open-Meteo — free, no API key)
+    open_meteo_api_url: str = "https://api.open-meteo.com/v1"
+
     # OAuth
     google_client_id: str | None = None
     google_client_secret: str | None = None

@@ -18,6 +18,7 @@ import {
   type Tree,
 } from "@/lib/api";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
+import { WeatherForecastPanel } from "@/components/weather-forecast";
 import {
   estimatePolygonAreaHa,
   formatAreaHa,
@@ -436,6 +437,7 @@ export function PlantationFenceMap({
                       ndvi={fence.latest_ndvi_mean ?? undefined}
                       refreshKey={ndviRefresh}
                     />
+                    <WeatherForecastPanel fenceId={fence.id} fenceName={fence.name} />
                     <div className="flex gap-2">
                       <button
                         type="button"
