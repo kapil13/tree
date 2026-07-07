@@ -100,6 +100,7 @@ export function PlantationFenceMap({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ndviRefresh, setNdviRefresh] = useState(0);
   const [drawMode, setDrawMode] = useState(false);
   const [draftPaths, setDraftPaths] = useState<google.maps.LatLngLiteral[]>([]);
   const [pendingName, setPendingName] = useState("");
@@ -139,7 +140,10 @@ export function PlantationFenceMap({
 
   const scanFence = useMutation({
     mutationFn: (id: string) => plantationFences.scan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["plantation-fences"] }),
+    onSuccess: () => {
+      setNdviRefresh((n) => n + 1);
+      qc.invalidateQueries({ queryKey: ["plantation-fences"] });
+    },
   });
 
   const createFence = useMutation({

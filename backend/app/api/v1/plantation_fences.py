@@ -10,6 +10,7 @@ from fastapi.responses import Response
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.schemas.common import Page
@@ -23,7 +24,7 @@ from app.schemas.plantation_fence import (
     PlantationSatelliteRecordOut,
     PlantationSatelliteSeries,
 )
-from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon
+from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon, polygon_coordinates
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
     scan_plantation_polygon,
@@ -31,6 +32,7 @@ from app.services.satellite.plantation import (
 )
 
 router = APIRouter(prefix="/plantation-fences", tags=["plantation-fences"])
+log = get_logger(__name__)
 
 
 def _can_access_fence(user, fence: PlantationFence) -> bool:
@@ -175,7 +177,7 @@ async def scan_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Plantati
     fence = await _load_fence(fence_id, user, db)
     boundary = geography_to_geojson_polygon(fence.boundary)
     try:
-        result = await scan_plantation_polygon(boundary)
+        result = await scan_plantation_polygon(boundary, require_sentinel=True)
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
@@ -267,14 +269,19 @@ async def fence_ndvi_image(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Re
         ndvi = latest
         label = f"NDVI {ndvi:.2f} · sentinel-2"
     else:
-        try:
-            result = await scan_plantation_polygon(boundary)
-            ndvi = result.sample.ndvi_mean
-            label = f"NDVI {ndvi:.2f} · {result.provider}"
-        except RuntimeError as exc:
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+        result = await scan_plantation_polygon(boundary, require_sentinel=False)
+        ndvi = result.sample.ndvi_mean
+        label = f"NDVI {ndvi:.2f} · {result.provider}"
 
-    png = await ndvi_image_for_polygon(boundary, ndvi, label)
+    try:
+        png = await ndvi_image_for_polygon(boundary, ndvi, label)
+    except Exception as exc:
+        from app.services.satellite.ndvi_image import render_ndvi_png_polygon
+
+        coords = polygon_coordinates(boundary)
+        png = render_ndvi_png_polygon(coords, ndvi, label=label)
+        log.warning("ndvi_image_fallback", error=str(exc))
+
     return Response(
         content=png,
         media_type="image/png",

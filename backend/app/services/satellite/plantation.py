@@ -63,18 +63,37 @@ def has_sentinel_credentials() -> bool:
     return bool(settings.sentinel_hub_client_id and settings.sentinel_hub_client_secret)
 
 
-async def scan_plantation_polygon(boundary_geojson: dict) -> PlantationScanResult:
-    """Sample NDVI for a plantation polygon."""
+async def scan_plantation_polygon(
+    boundary_geojson: dict,
+    *,
+    require_sentinel: bool = False,
+) -> PlantationScanResult:
+    """Sample NDVI for a plantation polygon.
+
+    When `require_sentinel` is False (e.g. NDVI preview), Copernicus failures fall back
+    to the dev stub so users still get an image.
+    """
     coords = polygon_coordinates(boundary_geojson)
     lat, lon = polygon_centroid(boundary_geojson)
 
     if has_sentinel_credentials():
-        latest = await _sentinel_client().fetch_polygon_latest_sample(coords)
-        if latest is None:
-            raise RuntimeError("no_sentinel2_scene_for_polygon")
-        ts, stats = latest
-        sample = _sample_from_stats(lat, lon, ts, stats)
-        return PlantationScanResult(sample=sample, provider="sentinel-2")
+        try:
+            latest = await _sentinel_client().fetch_polygon_latest_sample(coords)
+            if latest is not None:
+                ts, stats = latest
+                sample = _sample_from_stats(lat, lon, ts, stats)
+                return PlantationScanResult(sample=sample, provider="sentinel-2")
+            if require_sentinel:
+                raise RuntimeError("no_sentinel2_scene_for_polygon")
+            log.warning("sentinel_no_scene_for_polygon", lat=lat, lon=lon)
+        except RuntimeError:
+            if require_sentinel:
+                raise
+            log.warning("sentinel_scan_failed_using_stub")
+        except Exception as exc:
+            if require_sentinel:
+                raise RuntimeError(f"sentinel_hub_error: {exc}") from exc
+            log.warning("sentinel_scan_failed_using_stub", error=str(exc))
 
     sample = await get_satellite_service().sample(lat, lon)
     return PlantationScanResult(sample=sample, provider=sample.provider)

@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 
 type Props = {
   fenceId: string;
   ndvi?: number;
   className?: string;
+  refreshKey?: number;
 };
 
 /** Fetches authenticated plantation NDVI PNG for a fenced area. */
-export function PlantationNdviPreview({ fenceId, ndvi, className = "" }: Props) {
+export function PlantationNdviPreview({ fenceId, ndvi, className = "", refreshKey = 0 }: Props) {
   const [src, setSrc] = useState<string | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let objectUrl: string | null = null;
     let cancelled = false;
+    setSrc(null);
+    setError(null);
 
     (async () => {
       try {
@@ -24,11 +27,14 @@ export function PlantationNdviPreview({ fenceId, ndvi, className = "" }: Props) 
           responseType: "blob",
         });
         if (cancelled) return;
+        if (!res.data?.type?.startsWith("image/")) {
+          setError("Server did not return an image — check backend logs");
+          return;
+        }
         objectUrl = URL.createObjectURL(res.data);
         setSrc(objectUrl);
-        setError(false);
-      } catch {
-        if (!cancelled) setError(true);
+      } catch (err) {
+        if (!cancelled) setError(errorMessage(err));
       }
     })();
 
@@ -36,12 +42,17 @@ export function PlantationNdviPreview({ fenceId, ndvi, className = "" }: Props) 
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [fenceId]);
+  }, [fenceId, refreshKey]);
 
   if (error) {
     return (
-      <div className={`rounded-lg bg-stone-100 p-4 text-sm text-stone-500 ${className}`}>
-        NDVI image unavailable — run a scan or check Copernicus credentials
+      <div className={`rounded-lg bg-stone-100 p-4 text-sm text-stone-600 ${className}`}>
+        <p className="font-medium text-stone-700">NDVI image unavailable</p>
+        <p className="mt-1">{error}</p>
+        <p className="mt-2 text-xs text-stone-500">
+          Try <strong>Rescan NDVI</strong>. For live Sentinel-2, set Copernicus credentials in{" "}
+          <code className="font-mono">backend/.env</code> and restart the backend.
+        </p>
       </div>
     );
   }
