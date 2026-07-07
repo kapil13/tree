@@ -41,7 +41,7 @@ export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
     if (!err.response) {
       if (err.code === "ERR_NETWORK") {
-        return "Cannot reach the API. Is the backend running on port 8000? Try: docker compose -f infrastructure/docker-compose.yml ps";
+        return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
       }
       return err.message;
     }
