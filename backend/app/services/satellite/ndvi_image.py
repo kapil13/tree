@@ -9,6 +9,7 @@ import random
 
 import numpy as np
 from PIL import Image, ImageDraw
+from shapely.geometry import Point, Polygon
 
 # Sentinel-2 native resolution (B2/B3/B4/B8); preview chip extent around tree.
 CHIP_RESOLUTION_M = 10
@@ -89,6 +90,52 @@ def render_ndvi_png(
 
     if label:
         draw.rectangle((8, 8, size - 8, 28), fill=(0, 0, 0, 128))
+        draw.text((12, 10), label, fill=(255, 255, 255))
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def render_ndvi_png_polygon(
+    polygon_coords: list[list[float]],
+    ndvi_mean: float,
+    *,
+    size: int = 512,
+    label: str | None = None,
+) -> bytes:
+    """Synthetic NDVI false-color PNG masked to a plantation polygon (dev fallback)."""
+    poly = Polygon(polygon_coords)
+    minx, miny, maxx, maxy = poly.bounds
+    lat_mid = (miny + maxy) / 2.0
+    lon_mid = (minx + maxx) / 2.0
+
+    grid = _ndvi_grid(lat_mid, lon_mid, ndvi_mean, size=size, extent_m=50)
+    rgb = np.full((size, size, 3), 220, dtype=np.uint8)
+
+    for y in range(size):
+        lat = maxy - (y / max(1, size - 1)) * (maxy - miny)
+        for x in range(size):
+            lon = minx + (x / max(1, size - 1)) * (maxx - minx)
+            if poly.contains(Point(lon, lat)):
+                rgb[y, x] = _ndvi_rgb(float(grid[y, x]))
+
+    img = Image.fromarray(rgb, mode="RGB")
+    draw = ImageDraw.Draw(img)
+
+    # Outline fence
+    px_ring = [
+        (
+            int((lng - minx) / max(maxx - minx, 1e-9) * (size - 1)),
+            int((maxy - lat) / max(maxy - miny, 1e-9) * (size - 1)),
+        )
+        for lng, lat in polygon_coords
+    ]
+    if len(px_ring) >= 2:
+        draw.line(px_ring + [px_ring[0]], fill=(255, 255, 255), width=2)
+
+    if label:
+        draw.rectangle((8, 8, size - 8, 28), fill=(0, 0, 0))
         draw.text((12, 10), label, fill=(255, 255, 255))
 
     buf = io.BytesIO()

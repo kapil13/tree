@@ -91,6 +91,36 @@ export type Tree = {
   created_at: string;
 };
 
+export type GeoJsonPolygon = {
+  type: "Polygon";
+  coordinates: number[][][];
+};
+
+export type PlantationFence = {
+  id: string;
+  name: string;
+  area_ha: number | null;
+  last_satellite_at: string | null;
+  latest_ndvi_mean: number | null;
+  boundary: GeoJsonPolygon;
+  ndvi_image_url?: string;
+};
+
+export type PlantationSatelliteRecord = {
+  id: string;
+  fence_id: string;
+  provider: string;
+  scene_id: string;
+  scene_acquired_at: string;
+  ndvi_mean: number | null;
+  ndvi_max: number | null;
+  ndvi_min: number | null;
+  evi_mean: number | null;
+  presence_confirmed: boolean | null;
+  change_vs_baseline: number | null;
+  created_at: string;
+};
+
 export type Dashboard = {
   kpi: {
     total_trees: number;
@@ -154,6 +184,33 @@ export const trees = {
   },
   async satellite(id: string) {
     return (await api.get(`/v1/satellite-monitoring/${id}`)).data;
+  },
+};
+
+export const plantationFences = {
+  async list(params?: { page?: number; page_size?: number }) {
+    return (await api.get("/v1/plantation-fences", { params })).data as {
+      items: PlantationFence[];
+      page: number;
+      page_size: number;
+      total: number;
+    };
+  },
+  async create(payload: { name: string; boundary: GeoJsonPolygon }) {
+    return (await api.post<PlantationFence>("/v1/plantation-fences", payload)).data;
+  },
+  async get(id: string) {
+    return (await api.get<PlantationFence>(`/v1/plantation-fences/${id}`)).data;
+  },
+  async remove(id: string) {
+    await api.delete(`/v1/plantation-fences/${id}`);
+  },
+  async scan(id: string) {
+    return (await api.post<PlantationSatelliteRecord>(`/v1/plantation-fences/${id}/scan`))
+      .data;
+  },
+  async satellite(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/satellite-monitoring`)).data;
   },
 };
 

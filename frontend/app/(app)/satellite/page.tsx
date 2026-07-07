@@ -1,34 +1,39 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { TreesMap } from "@/components/trees-map";
-import { trees } from "@/lib/api";
+import { PlantationFenceMap } from "@/components/plantation-fence-map";
+import { plantationFences, trees } from "@/lib/api";
 
 export default function SatellitePage() {
-  const { data } = useQuery({
+  const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
     queryFn: () => trees.list({ page_size: 200 }),
   });
+  const { data: fencePage } = useQuery({
+    queryKey: ["plantation-fences"],
+    queryFn: () => plantationFences.list(),
+  });
 
-  const items = data?.items ?? [];
+  const items = treePage?.items ?? [];
   const verified = items.filter((t) => t.satellite_verified).length;
-  const pending = items.length - verified;
+  const fences = fencePage?.items ?? [];
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Satellite</h1>
       <p className="text-sm text-stone-600">
-        Plantation view on Google satellite imagery. Sentinel-2 / Landsat NDVI scans run
-        monthly per tree — open a tree for its time-series chart.
+        Draw plantation fences on the map, then fetch Copernicus Sentinel-2 NDVI (10 m) for each
+        fenced area. Tree markers show registered trees inside your plantation.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <Stat label="Trees on map" value={items.length} />
         <Stat label="Satellite verified" value={verified} />
-        <Stat label="Pending scan" value={pending} />
+        <Stat label="Plantation fences" value={fences.length} />
+        <Stat label="Pending tree scan" value={items.length - verified} />
       </div>
 
-      <TreesMap mapType="satellite" height="65vh" />
+      <PlantationFenceMap mapType="satellite" height="65vh" />
     </div>
   );
 }

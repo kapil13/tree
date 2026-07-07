@@ -2,6 +2,8 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.carbon import CarbonCalculation
 from app.models.organization import Organization
+from app.models.plantation_fence import PlantationFence
+from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
 from app.models.species import Species
@@ -15,6 +17,8 @@ __all__ = [
     "AuditLog",
     "CarbonCalculation",
     "Organization",
+    "PlantationFence",
+    "PlantationSatelliteRecord",
     "Report",
     "SatelliteRecord",
     "Species",
