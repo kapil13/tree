@@ -4,11 +4,12 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models._mixins import TimestampMixin, UUIDPKMixin
+from app.services.alerts.defaults import default_notification_preferences
 
 
 class User(UUIDPKMixin, TimestampMixin, Base):
@@ -26,6 +27,9 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notification_preferences: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=default_notification_preferences
+    )
 
     organization = relationship("Organization", back_populates="users")
     trees = relationship("Tree", back_populates="owner", foreign_keys="Tree.owner_user_id")

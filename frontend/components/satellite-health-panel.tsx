@@ -30,6 +30,7 @@ export type SatelliteHealthAnalysis = {
   }[];
   monitoring_plan: string[];
   overall_confidence: number | null;
+  llm_narrative?: string | null;
   created_at: string;
 };
 
@@ -113,6 +114,9 @@ export function SatelliteHealthPanel({ kind, targetId }: Props) {
           >
             <div className="font-semibold capitalize">{data.risk_level} risk · {data.health_status.replace(/_/g, " ")}</div>
             <p className="mt-1">{data.summary}</p>
+            {data.llm_narrative && data.llm_narrative !== data.summary && (
+              <p className="mt-2 text-xs text-stone-600 italic">AI narrative included above.</p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">

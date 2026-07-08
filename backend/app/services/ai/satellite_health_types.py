@@ -54,4 +54,5 @@ class SatelliteHealthResult:
     confidence: float
     data_points: int
     pipeline: str
+    llm_narrative: str | None = None
     raw_signals: dict[str, Any] = field(default_factory=dict)

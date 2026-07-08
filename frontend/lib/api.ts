@@ -293,6 +293,43 @@ export const weather = {
   },
 };
 
+export const alerts = {
+  async list(unreadOnly = false) {
+    return (
+      await api.get("/v1/alerts", { params: unreadOnly ? { unread_only: true } : {} })
+    ).data as AlertItem[];
+  },
+  async markRead(alertId: string) {
+    return (await api.post(`/v1/alerts/${alertId}/read`)).data;
+  },
+  async getPreferences() {
+    return (await api.get("/v1/alerts/preferences")).data as NotificationPreferences;
+  },
+  async updatePreferences(prefs: Partial<NotificationPreferences>) {
+    return (await api.patch("/v1/alerts/preferences", prefs)).data as NotificationPreferences;
+  },
+};
+
+export type AlertItem = {
+  id: string;
+  kind: string;
+  severity: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  tree_id: string | null;
+  payload?: Record<string, unknown>;
+};
+
+export type NotificationPreferences = {
+  satellite_health: {
+    enabled: boolean;
+    channels: string[];
+    sms_on_critical: boolean;
+  };
+};
+
 export const dashboard = {
   async get() {
     return (await api.get<Dashboard>("/v1/dashboard")).data;

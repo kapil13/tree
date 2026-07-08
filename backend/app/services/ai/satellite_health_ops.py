@@ -7,12 +7,17 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.satellite import SatelliteRecord
 from app.models.satellite_health_analysis import SatelliteHealthAnalysis
+from app.models.tree import Tree
+from app.models.user import User
 from app.schemas.satellite_health import SatelliteHealthAnalysisOut
 from app.services.ai.satellite_health import analyze_satellite_ndvi_health
-from app.services.ai.satellite_health_types import NdviObservation
+from app.services.ai.satellite_health_llm import enrich_satellite_health_narrative
+from app.services.ai.satellite_health_types import NdviObservation, SatelliteHealthResult
+from app.services.alerts.service import create_satellite_health_alert
 
 
 def _record_to_obs_tree(rec: SatelliteRecord) -> NdviObservation:
@@ -45,13 +50,52 @@ def _record_to_obs_fence(rec: PlantationSatelliteRecord) -> NdviObservation:
     )
 
 
+async def _prior_risk(
+    db: AsyncSession,
+    *,
+    tree_id: uuid.UUID | None,
+    fence_id: uuid.UUID | None,
+) -> str | None:
+    stmt = select(SatelliteHealthAnalysis).order_by(SatelliteHealthAnalysis.created_at.desc()).limit(1)
+    if tree_id:
+        stmt = stmt.where(SatelliteHealthAnalysis.tree_id == tree_id)
+    else:
+        stmt = stmt.where(SatelliteHealthAnalysis.fence_id == fence_id)
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    return row.risk_level if row else None
+
+
+async def _apply_llm_enrichment(
+    result: SatelliteHealthResult,
+    obs: list[NdviObservation],
+    *,
+    species_hint: str | None,
+    target_label: str,
+) -> SatelliteHealthResult:
+    narrative = await enrich_satellite_health_narrative(
+        result, obs, species_hint=species_hint, target_label=target_label
+    )
+    if not narrative:
+        return result
+
+    result.llm_narrative = narrative
+    result.raw_signals = {**result.raw_signals, "rule_summary": result.summary}
+    result.summary = narrative
+    result.pipeline = f"{result.pipeline}+gpt-4o-mini-narrative"
+    return result
+
+
 def _result_to_row(
-    result,
+    result: SatelliteHealthResult,
     *,
     tree_id: uuid.UUID | None,
     fence_id: uuid.UUID | None,
     user_id: uuid.UUID | None,
 ) -> SatelliteHealthAnalysis:
+    raw = dict(result.raw_signals)
+    if result.llm_narrative:
+        raw["llm_narrative"] = result.llm_narrative
+
     return SatelliteHealthAnalysis(
         tree_id=tree_id,
         fence_id=fence_id,
@@ -88,8 +132,46 @@ def _result_to_row(
         ],
         monitoring_plan=result.monitoring_plan,
         overall_confidence=result.confidence,
-        raw_output=result.raw_signals,
+        raw_output=raw,
     )
+
+
+def _out_from_row(row: SatelliteHealthAnalysis) -> SatelliteHealthAnalysisOut:
+    out = SatelliteHealthAnalysisOut.model_validate(row)
+    if row.raw_output and row.raw_output.get("llm_narrative"):
+        out.llm_narrative = row.raw_output["llm_narrative"]
+    return out
+
+
+async def _notify_if_needed(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID | None,
+    result: SatelliteHealthResult,
+    analysis_id: uuid.UUID,
+    tree_id: uuid.UUID | None,
+    fence_id: uuid.UUID | None,
+    target_label: str,
+    prior_risk: str | None,
+) -> None:
+    if user_id is None:
+        return
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None:
+        return
+    try:
+        await create_satellite_health_alert(
+            db,
+            user=user,
+            result=result,
+            analysis_id=analysis_id,
+            tree_id=tree_id,
+            fence_id=fence_id,
+            target_label=target_label,
+            prior_risk=prior_risk,
+        )
+    except Exception:
+        pass
 
 
 async def analyze_tree_satellite_health(
@@ -109,13 +191,32 @@ async def analyze_tree_satellite_health(
     if not records:
         raise ValueError("no_satellite_records")
 
+    tree = (await db.execute(select(Tree).where(Tree.id == tree_id))).scalar_one_or_none()
+    hint = species_hint or (tree.species_text if tree else None)
+    target_label = hint or f"tree {str(tree_id)[:8]}"
+
+    prior = await _prior_risk(db, tree_id=tree_id, fence_id=None)
     obs = [_record_to_obs_tree(r) for r in records]
-    result = analyze_satellite_ndvi_health(obs, species_hint=species_hint)
+    result = analyze_satellite_ndvi_health(obs, species_hint=hint)
+    result = await _apply_llm_enrichment(result, obs, species_hint=hint, target_label=target_label)
+
     row = _result_to_row(result, tree_id=tree_id, fence_id=None, user_id=user_id)
     db.add(row)
     await db.commit()
     await db.refresh(row)
-    return SatelliteHealthAnalysisOut.model_validate(row)
+
+    notify_user = user_id or (tree.owner_user_id if tree else None)
+    await _notify_if_needed(
+        db,
+        user_id=notify_user,
+        result=result,
+        analysis_id=row.id,
+        tree_id=tree_id,
+        fence_id=None,
+        target_label=target_label,
+        prior_risk=prior,
+    )
+    return _out_from_row(row)
 
 
 async def analyze_fence_satellite_health(
@@ -135,13 +236,35 @@ async def analyze_fence_satellite_health(
     if not records:
         raise ValueError("no_satellite_records")
 
+    fence = (
+        await db.execute(select(PlantationFence).where(PlantationFence.id == fence_id))
+    ).scalar_one_or_none()
+    target_label = fence.name if fence else f"fence {str(fence_id)[:8]}"
+
+    prior = await _prior_risk(db, tree_id=None, fence_id=fence_id)
     obs = [_record_to_obs_fence(r) for r in records]
     result = analyze_satellite_ndvi_health(obs, area_ha=area_ha)
+    result = await _apply_llm_enrichment(
+        result, obs, species_hint=None, target_label=target_label
+    )
+
     row = _result_to_row(result, tree_id=None, fence_id=fence_id, user_id=user_id)
     db.add(row)
     await db.commit()
     await db.refresh(row)
-    return SatelliteHealthAnalysisOut.model_validate(row)
+
+    notify_user = user_id or (fence.owner_user_id if fence else None)
+    await _notify_if_needed(
+        db,
+        user_id=notify_user,
+        result=result,
+        analysis_id=row.id,
+        tree_id=None,
+        fence_id=fence_id,
+        target_label=target_label,
+        prior_risk=prior,
+    )
+    return _out_from_row(row)
 
 
 async def latest_tree_analysis(
@@ -154,7 +277,7 @@ async def latest_tree_analysis(
         .limit(1)
     )
     row = res.scalar_one_or_none()
-    return SatelliteHealthAnalysisOut.model_validate(row) if row else None
+    return _out_from_row(row) if row else None
 
 
 async def latest_fence_analysis(
@@ -167,4 +290,4 @@ async def latest_fence_analysis(
         .limit(1)
     )
     row = res.scalar_one_or_none()
-    return SatelliteHealthAnalysisOut.model_validate(row) if row else None
+    return _out_from_row(row) if row else None

@@ -1,17 +1,93 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, Check } from "lucide-react";
+import { alerts, errorMessage } from "@/lib/api";
 
 export default function AlertsPage() {
+  const qc = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ["alerts"],
-    queryFn: async () => (await api.get("/v1/alerts")).data as any[],
+    queryFn: () => alerts.list(),
   });
 
+  const { data: prefs } = useQuery({
+    queryKey: ["alert-preferences"],
+    queryFn: () => alerts.getPreferences(),
+  });
+
+  const markRead = useMutation({
+    mutationFn: (id: string) => alerts.markRead(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["alerts"] }),
+  });
+
+  const savePrefs = useMutation({
+    mutationFn: (payload: Parameters<typeof alerts.updatePreferences>[0]) =>
+      alerts.updatePreferences(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["alert-preferences"] }),
+  });
+
+  const sh = prefs?.satellite_health;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Alerts</h1>
+
+      <div className="card space-y-4">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Bell className="h-4 w-4 text-forest-700" />
+          Satellite health notifications
+        </div>
+        {sh && (
+          <div className="space-y-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={sh.enabled}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    satellite_health: { ...sh, enabled: e.target.checked },
+                  })
+                }
+              />
+              Email/SMS when NDVI risk is high or critical
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={sh.channels.includes("email")}
+                onChange={(e) => {
+                  const channels = new Set(sh.channels);
+                  if (e.target.checked) channels.add("email");
+                  else channels.delete("email");
+                  if (!channels.has("in_app")) channels.add("in_app");
+                  savePrefs.mutate({
+                    satellite_health: { ...sh, channels: [...channels] },
+                  });
+                }}
+              />
+              Email alerts
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={sh.sms_on_critical}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    satellite_health: { ...sh, sms_on_critical: e.target.checked },
+                  })
+                }
+              />
+              SMS on critical risk (requires phone on profile)
+            </label>
+            {savePrefs.error && (
+              <p className="text-rose-700">{errorMessage(savePrefs.error)}</p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="card divide-y divide-stone-100">
         {isLoading && <div className="text-stone-500">Loading…</div>}
         {data?.length === 0 && (
@@ -26,7 +102,20 @@ export default function AlertsPage() {
                 {a.kind} · {a.severity} · {new Date(a.created_at).toLocaleString()}
               </div>
             </div>
-            {!a.is_read && <span className="badge-moderate">unread</span>}
+            <div className="flex shrink-0 items-center gap-2">
+              {!a.is_read && <span className="badge-moderate">unread</span>}
+              {!a.is_read && (
+                <button
+                  type="button"
+                  className="btn-secondary text-xs"
+                  disabled={markRead.isPending}
+                  onClick={() => markRead.mutate(a.id)}
+                >
+                  <Check className="h-3 w-3" />
+                  Read
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

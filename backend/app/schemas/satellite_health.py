@@ -43,4 +43,5 @@ class SatelliteHealthAnalysisOut(BaseModel):
     treatments: list[dict[str, Any]]
     monitoring_plan: list[str]
     overall_confidence: float | None
+    llm_narrative: str | None = None
     created_at: datetime
