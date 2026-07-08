@@ -55,6 +55,14 @@ async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecord
     tree.last_satellite_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(rec)
+
+    try:
+        from app.services.ai.satellite_health_ops import analyze_tree_satellite_health
+
+        await analyze_tree_satellite_health(db, tree.id, user.id, species_hint=tree.species_text)
+    except Exception:
+        pass
+
     return SatelliteRecordOut.model_validate(rec)
 
 

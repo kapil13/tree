@@ -6,6 +6,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
+from app.models.satellite_health_analysis import SatelliteHealthAnalysis
 from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
@@ -21,6 +22,7 @@ __all__ = [
     "PlantationSatelliteRecord",
     "Report",
     "SatelliteRecord",
+    "SatelliteHealthAnalysis",
     "Species",
     "Tree",
     "TreeAnalysis",

@@ -218,6 +218,37 @@ export const trees = {
   },
 };
 
+export const satelliteHealth = {
+  async analyzeTree(treeId: string) {
+    return (
+      await api.post<import("@/components/satellite-health-panel").SatelliteHealthAnalysis>(
+        `/v1/satellite-health/trees/${treeId}`,
+      )
+    ).data;
+  },
+  async latestTree(treeId: string) {
+    return (
+      await api.get<import("@/components/satellite-health-panel").SatelliteHealthAnalysis>(
+        `/v1/satellite-health/trees/${treeId}/latest`,
+      )
+    ).data;
+  },
+  async analyzeFence(fenceId: string) {
+    return (
+      await api.post<import("@/components/satellite-health-panel").SatelliteHealthAnalysis>(
+        `/v1/satellite-health/plantation-fences/${fenceId}`,
+      )
+    ).data;
+  },
+  async latestFence(fenceId: string) {
+    return (
+      await api.get<import("@/components/satellite-health-panel").SatelliteHealthAnalysis>(
+        `/v1/satellite-health/plantation-fences/${fenceId}/latest`,
+      )
+    ).data;
+  },
+};
+
 export const plantationFences = {
   async list(params?: { page?: number; page_size?: number }) {
     return (await api.get("/v1/plantation-fences", { params })).data as {

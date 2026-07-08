@@ -19,6 +19,7 @@ import {
 } from "@/lib/api";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
+import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast";
 import {
   estimatePolygonAreaHa,
@@ -172,6 +173,7 @@ export function PlantationFenceMap({
       setNdviRefresh((n) => n + 1);
       qc.invalidateQueries({ queryKey: ["plantation-fences"] });
       qc.invalidateQueries({ queryKey: ["fence-sat", fenceId] });
+      qc.invalidateQueries({ queryKey: ["satellite-health", "fence", fenceId] });
     },
   });
 
@@ -453,6 +455,7 @@ export function PlantationFenceMap({
                       }
                       resolutionLabel="polygon"
                     />
+                    <SatelliteHealthPanel kind="fence" targetId={fence.id} />
                     <WeatherForecastPanel fenceId={fence.id} fenceName={fence.name} />
                     <div className="flex gap-2">
                       <button

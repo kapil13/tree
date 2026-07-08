@@ -215,6 +215,15 @@ async def scan_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Plantati
     fence.last_satellite_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(rec)
+
+    try:
+        from app.services.ai.satellite_health_ops import analyze_fence_satellite_health
+
+        area = float(fence.area_ha) if fence.area_ha is not None else None
+        await analyze_fence_satellite_health(db, fence.id, user.id, area_ha=area)
+    except Exception:
+        pass
+
     return PlantationSatelliteRecordOut.model_validate(rec)
 
 

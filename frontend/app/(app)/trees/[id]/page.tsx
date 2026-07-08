@@ -14,6 +14,7 @@ import {
 import { trees, errorMessage } from "@/lib/api";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
+import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { Sparkles, Satellite, Download } from "lucide-react";
 
 export default function TreeDetailPage() {
@@ -105,6 +106,8 @@ export default function TreeDetailPage() {
               <NdviStatsPanel latest={sat.latest} resolutionLabel="10 m chip" />
             </div>
           </div>
+
+          <SatelliteHealthPanel kind="tree" targetId={id} />
 
           <div className="card">
             <div className="mb-2 flex items-center gap-2">
