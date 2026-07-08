@@ -112,6 +112,7 @@ export type PlantationSatelliteRecord = {
   provider: string;
   scene_id: string;
   scene_acquired_at: string;
+  cloud_cover_pct: number | null;
   ndvi_mean: number | null;
   ndvi_max: number | null;
   ndvi_min: number | null;
@@ -119,6 +120,36 @@ export type PlantationSatelliteRecord = {
   presence_confirmed: boolean | null;
   change_vs_baseline: number | null;
   created_at: string;
+};
+
+export type SatelliteRecord = {
+  id: string;
+  tree_id: string;
+  provider: string;
+  scene_id: string;
+  scene_acquired_at: string;
+  cloud_cover_pct: number | null;
+  ndvi_mean: number | null;
+  ndvi_max: number | null;
+  ndvi_min: number | null;
+  evi_mean: number | null;
+  presence_confirmed: boolean | null;
+  change_vs_baseline: number | null;
+  created_at: string;
+};
+
+export type SatelliteSeries = {
+  tree_id: string;
+  points: { ts: string; ndvi: number; provider?: string }[];
+  latest: SatelliteRecord | null;
+  ndvi_image_url?: string;
+};
+
+export type PlantationSatelliteSeries = {
+  fence_id: string;
+  points: { ts: string; ndvi: number; provider?: string }[];
+  latest: PlantationSatelliteRecord | null;
+  ndvi_image_url?: string;
 };
 
 export type Dashboard = {
@@ -183,7 +214,7 @@ export const trees = {
     return (await api.post("/v1/tree-analysis", { tree_id: id, mode: "full" })).data;
   },
   async satellite(id: string) {
-    return (await api.get(`/v1/satellite-monitoring/${id}`)).data;
+    return (await api.get<SatelliteSeries>(`/v1/satellite-monitoring/${id}`)).data;
   },
 };
 
@@ -210,7 +241,9 @@ export const plantationFences = {
       .data;
   },
   async satellite(id: string) {
-    return (await api.get(`/v1/plantation-fences/${id}/satellite-monitoring`)).data;
+    return (
+      await api.get<PlantationSatelliteSeries>(`/v1/plantation-fences/${id}/satellite-monitoring`)
+    ).data;
   },
   async weather(id: string, days = 5) {
     return (

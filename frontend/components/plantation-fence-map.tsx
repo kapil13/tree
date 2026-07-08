@@ -18,6 +18,7 @@ import {
   type Tree,
 } from "@/lib/api";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
+import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast";
 import {
   estimatePolygonAreaHa,
@@ -137,6 +138,14 @@ export function PlantationFenceMap({
 
   const fences = fencePage?.items ?? [];
   const treeItems = treePage?.items ?? [];
+  const activeFenceId =
+    selectedId ?? (fences.length === 1 ? fences[0]?.id ?? null : null);
+
+  const { data: selectedSat } = useQuery({
+    queryKey: ["fence-sat", activeFenceId],
+    queryFn: () => plantationFences.satellite(activeFenceId!),
+    enabled: !!activeFenceId,
+  });
 
   const center = useMemo(() => {
     if (fences.length) {
@@ -159,9 +168,10 @@ export function PlantationFenceMap({
 
   const scanFence = useMutation({
     mutationFn: (id: string) => plantationFences.scan(id),
-    onSuccess: () => {
+    onSuccess: (_data, fenceId) => {
       setNdviRefresh((n) => n + 1);
       qc.invalidateQueries({ queryKey: ["plantation-fences"] });
+      qc.invalidateQueries({ queryKey: ["fence-sat", fenceId] });
     },
   });
 
@@ -436,6 +446,12 @@ export function PlantationFenceMap({
                       fenceId={fence.id}
                       ndvi={fence.latest_ndvi_mean ?? undefined}
                       refreshKey={ndviRefresh}
+                    />
+                    <NdviStatsPanel
+                      latest={
+                        fence.id === activeFenceId ? selectedSat?.latest : undefined
+                      }
+                      resolutionLabel="polygon"
                     />
                     <WeatherForecastPanel fenceId={fence.id} fenceName={fence.name} />
                     <div className="flex gap-2">
