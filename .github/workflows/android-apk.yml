@@ -1,0 +1,60 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      byot_api:
+        description: "API URL baked into APK (use your Mac LAN IP for physical phone)"
+        required: false
+        default: "http://10.0.2.2:8000"
+  push:
+    branches:
+      - cursor/android-apk-build-f2ba
+
+jobs:
+  build-apk:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.22.0"
+          channel: stable
+          cache: true
+
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses || true
+
+      - name: Enable cleartext HTTP (local dev API)
+        run: |
+          MANIFEST=mobile/android/app/src/main/AndroidManifest.xml
+          if ! grep -q usesCleartextTraffic "$MANIFEST"; then
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
+          fi
+
+      - name: Build APK
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter build apk --release \
+            --dart-define="BYOT_API=${{ github.event.inputs.byot_api || 'http://10.0.2.2:8000' }}"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: byot-android-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "### BYOT Android APK built" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download from **Artifacts** → \`byot-android-apk\` on this workflow run." >> "$GITHUB_STEP_SUMMARY"
+          echo "API URL: \`${{ github.event.inputs.byot_api || 'http://10.0.2.2:8000' }}\`" >> "$GITHUB_STEP_SUMMARY"
