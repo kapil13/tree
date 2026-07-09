@@ -16,6 +16,12 @@ dist/
 # Flutter
 .dart_tool/
 build/
+.flutter/
+android-sdk/
+byot-release.apk
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/**/GeneratedPluginRegistrant.java
 
 # Terraform
 .terraform/

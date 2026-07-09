@@ -11,6 +11,7 @@ help:
 	@echo "  make seed-native      Seed demo user"
 	@echo "  make test             Run backend tests"
 	@echo "  make lint             Lint backend and frontend"
+	@echo "  make mobile-apk       Build Android release APK (requires Flutter)"
 	@echo ""
 	@echo "See docs/LOCAL_MAC_NATIVE.md"
 	@echo ""
@@ -40,6 +41,9 @@ test:
 lint:
 	cd backend && . .venv/bin/activate && python -m ruff check . 2>/dev/null || true
 	cd frontend && npm run typecheck
+
+mobile-apk:
+	./scripts/build-android-apk.sh
 
 # Legacy Docker targets (optional — ignore for native Mac dev)
 docker-legacy:

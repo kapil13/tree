@@ -1,6 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// API base URL without trailing slash, e.g. http://192.168.1.10:8000
+const String kByotApiBase = String.fromEnvironment(
+  'BYOT_API',
+  defaultValue: 'http://10.0.2.2:8000',
+);
+
 class ApiClient {
   ApiClient._(this._dio);
 
@@ -8,15 +14,14 @@ class ApiClient {
 
   static const _tokenKey = 'byot_access_token';
   static const _baseUrlKey = 'byot_base_url';
-  static const _defaultBaseUrl = 'http://10.0.2.2:8000'; // Android emulator → host
 
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
-    final base = prefs.getString(_baseUrlKey) ?? _defaultBaseUrl;
+    final base = prefs.getString(_baseUrlKey) ?? kByotApiBase;
     final dio = Dio(BaseOptions(
       baseUrl: '$base/api/v1',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 45),
       headers: {'Content-Type': 'application/json'},
     ));
     final token = prefs.getString(_tokenKey);
@@ -37,6 +42,8 @@ class ApiClient {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
   }
+
+  String get baseUrl => _dio.options.baseUrl.replaceAll('/api/v1', '');
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final r = await _dio.post('/auth/login', data: {'email': email, 'password': password});
