@@ -73,14 +73,14 @@ if [ ! -d "$ROOT/backend/.venv" ]; then
   "$PY" -m venv "$ROOT/backend/.venv"
 fi
 
-echo "Starting backend on http://localhost:8000 ..."
+echo "Starting backend on http://0.0.0.0:8000 (LAN + localhost) ..."
 (
   set -e
   cd "$ROOT/backend"
   source .venv/bin/activate
   pip install -q -r requirements.txt
   alembic upgrade head
-  exec uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+  exec uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ) >>"$BACKEND_LOG" 2>&1 &
 echo $! >"$BACKEND_PID"
 
@@ -131,3 +131,10 @@ echo ""
 echo "Status: ./scripts/dev-status.sh"
 echo "Stop:   ./scripts/dev-stop.sh"
 echo "Login: demo@byot.earth / byotdemo1234!  (run: cd backend && source .venv/bin/activate && python -m app.scripts.seed_demo)"
+LAN_IP=""
+if command -v ipconfig >/dev/null 2>&1; then
+  LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)
+fi
+if [ -n "$LAN_IP" ]; then
+  echo "Android phone (same Wi-Fi): set API to http://${LAN_IP}:8000 in the app login screen"
+fi

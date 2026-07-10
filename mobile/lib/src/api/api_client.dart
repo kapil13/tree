@@ -15,9 +15,20 @@ class ApiClient {
   static const _tokenKey = 'byot_access_token';
   static const _baseUrlKey = 'byot_base_url';
 
+  static Future<String> loadBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_baseUrlKey) ?? kByotApiBase;
+  }
+
+  static Future<void> saveBaseUrl(String url) async {
+    final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_baseUrlKey, normalized);
+  }
+
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
-    final base = prefs.getString(_baseUrlKey) ?? kByotApiBase;
+    final base = await loadBaseUrl();
     final dio = Dio(BaseOptions(
       baseUrl: '$base/api/v1',
       connectTimeout: const Duration(seconds: 15),
