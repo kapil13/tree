@@ -13,7 +13,8 @@ help:
 	@echo "  make lint             Lint backend and frontend"
 	@echo "  make mobile-apk       Build Android release APK (requires Flutter)"
 	@echo ""
-	@echo "See docs/LOCAL_MAC_NATIVE.md"
+	@echo "Production (Hostinger KVM 4): see docs/DEPLOYMENT_HOSTINGER.md"
+	@echo "  cd infrastructure/hostinger && cp .env.production.example .env.production && ./deploy.sh"
 	@echo ""
 	@echo "Docker (optional, not needed for Mac dev): make docker-legacy"
 
