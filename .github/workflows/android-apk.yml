@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       byot_api:
-        description: "API URL baked into APK (Mac LAN IP for physical phone, e.g. http://192.168.1.42:8000)"
+        description: "API URL baked into APK (production: https://api.aranyix.tech)"
         required: false
-        default: "http://10.0.2.2:8000"
+        default: "https://api.aranyix.tech"
   push:
     branches:
       - cursor/android-apk-build-f2ba
+      - cursor/hostinger-kvm4-deploy-f2ba
       - main
 
 jobs:
@@ -49,7 +50,7 @@ jobs:
       - name: Build release APK
         working-directory: mobile
         env:
-          BYOT_API: ${{ github.event.inputs.byot_api || 'http://10.0.2.2:8000' }}
+          BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
         run: |
           flutter pub get
           flutter build apk --release --dart-define="BYOT_API=${BYOT_API}"
@@ -64,7 +65,7 @@ jobs:
 
       - name: Job summary
         env:
-          BYOT_API: ${{ github.event.inputs.byot_api || 'http://10.0.2.2:8000' }}
+          BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
         run: |
           {
             echo "### BYOT Android APK built successfully"
@@ -72,6 +73,6 @@ jobs:
             echo "1. Open this workflow run → **Artifacts** → download \`byot-android-apk\`"
             echo "2. Unzip and install \`app-release.apk\` on your Android phone"
             echo "3. API URL baked in: \`${BYOT_API}\`"
-            echo "4. Start backend on your Mac: \`make dev-start\`"
+            echo "4. Production API: https://api.aranyix.tech/health"
             echo "5. Login: demo@byot.earth / byotdemo1234!"
           } >> "$GITHUB_STEP_SUMMARY"
