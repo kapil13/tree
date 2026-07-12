@@ -1,13 +1,13 @@
 # Caddy reverse proxy + automatic HTTPS (Let's Encrypt)
 # Domains are injected via environment variables from .env.production
+#
+# Note: www is NOT a separate site block — that caused a second TLS cert
+# and Let's Encrypt HTTP-01 failures on www.aranyix.tech. Add www later
+# via DNS redirect or after HTTPS is working on the apex domain.
 
 {$APP_DOMAIN} {
 	encode gzip zstd
 	reverse_proxy frontend:3000
-}
-
-www.{$APP_DOMAIN} {
-	redir https://{$APP_DOMAIN}{uri} permanent
 }
 
 {$API_DOMAIN} {
