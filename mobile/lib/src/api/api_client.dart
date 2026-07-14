@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_errors.dart';
 import '../session.dart';
 
 /// API base URL without trailing slash, e.g. https://api.aranyix.tech
@@ -62,6 +63,14 @@ class ApiClient {
             }
           }
           await client._clearSession();
+          return handler.reject(
+            DioException(
+              requestOptions: error.requestOptions,
+              response: error.response,
+              type: DioExceptionType.badResponse,
+              error: const SessionExpiredException(),
+            ),
+          );
         }
         handler.next(error);
       },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -27,29 +28,34 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () async => ref.invalidate(dashboardProvider),
         child: dashAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ListView(
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(apiErrorMessage(e), textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => ref.invalidate(dashboardProvider),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+          error: (e, _) {
+            if (maybeRedirectUnauthorized(ref, context, e)) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          FilledButton(
+                            onPressed: () => ref.invalidate(dashboardProvider),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
           data: (data) {
             final k = data['kpi'] as Map<String, dynamic>;
             return ListView(

@@ -1,7 +1,27 @@
 import 'package:dio/dio.dart';
 
+/// Thrown when the session is no longer valid and the user must sign in again.
+class SessionExpiredException implements Exception {
+  const SessionExpiredException();
+}
+
+bool isUnauthorizedError(Object err) {
+  if (err is SessionExpiredException) return true;
+  if (err is DioException) {
+    if (err.error is SessionExpiredException) return true;
+    return err.response?.statusCode == 401;
+  }
+  return false;
+}
+
 /// User-facing message for API and network failures (mirrors web `errorMessage`).
 String apiErrorMessage(Object err) {
+  if (err is SessionExpiredException) {
+    return 'Session expired. Please sign in again.';
+  }
+  if (err is DioException && err.error is SessionExpiredException) {
+    return 'Session expired. Please sign in again.';
+  }
   if (err is DioException) {
     if (err.response == null) {
       final type = err.type;
@@ -38,6 +58,10 @@ String apiErrorMessage(Object err) {
       }
     }
     if (err.response?.statusCode == 401) return 'Session expired. Please sign in again.';
+    // Avoid showing Dio's long default 401 boilerplate.
+    if (err.type == DioExceptionType.badResponse) {
+      return 'Request failed (${err.response?.statusCode ?? 'unknown'}).';
+    }
     return err.message ?? 'Request failed';
   }
   return err.toString();

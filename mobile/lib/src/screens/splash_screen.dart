@@ -33,6 +33,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       context.go('/home');
     } catch (_) {
       await api.logout();
+      ref.invalidate(apiClientProvider);
       if (!mounted) return;
       context.go('/login');
     }
