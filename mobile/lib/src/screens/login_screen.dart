@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_client.dart';
+import '../api/api_errors.dart';
 import '../providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -31,17 +32,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (mounted) setState(() => _loaded = true);
   }
 
-  String _friendlyError(Object e) {
-    final msg = e.toString();
-    if (msg.contains('connection timeout') || msg.contains('Connection timed out')) {
-      return 'Cannot reach the API. Use your Mac Wi-Fi IP (not localhost), e.g. http://192.168.1.42:8000 — phone and Mac must be on the same Wi-Fi, and run make dev-start on the Mac.';
-    }
-    if (msg.contains('Connection refused') || msg.contains('Failed host lookup')) {
-      return 'Cannot connect to server. Check API URL and that make dev-start is running on your Mac.';
-    }
-    return msg;
-  }
-
   Future<void> _submit() async {
     setState(() {
       _busy = true;
@@ -52,11 +42,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ref.invalidate(apiClientProvider);
       final api = await ref.read(apiClientProvider.future);
       final tokens = await api.login(_email.text.trim(), _pwd.text);
-      await api.setToken(tokens['access_token'] as String);
+      await api.setTokens(
+        accessToken: tokens['access_token'] as String,
+        refreshToken: tokens['refresh_token'] as String?,
+      );
       if (!mounted) return;
       context.go('/home');
     } catch (e) {
-      setState(() => _err = _friendlyError(e));
+      setState(() => _err = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -92,8 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 autocorrect: false,
                 decoration: const InputDecoration(
                   labelText: 'API server',
-                  hintText: 'http://192.168.1.42:8000',
-                  helperText: 'Mac IP + port 8000. Same Wi-Fi as phone. Not localhost.',
+                  hintText: 'https://api.aranyix.tech',
+                  helperText: 'Production: https://api.aranyix.tech — local dev: http://YOUR_MAC_IP:8000',
                 ),
               ),
               const SizedBox(height: 12),
