@@ -65,6 +65,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _navTile(context, 'Trees', Icons.park_outlined, '/trees'),
                 _navTile(context, 'Map', Icons.map_outlined, '/map'),
+                _navTile(context, 'Bioacoustic', Icons.graphic_eq, '/bioacoustic'),
                 _navTile(context, 'AI assistant', Icons.auto_awesome, '/assistant'),
               ],
             );

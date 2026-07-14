@@ -24,3 +24,8 @@ final userProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.me();
 });
+
+final bioacousticRecordingsProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.listBioacousticRecordings();
+});

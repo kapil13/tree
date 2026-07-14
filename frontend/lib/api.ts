@@ -167,6 +167,12 @@ export type Dashboard = {
   carbon_growth: { label: string; value: number }[];
   health_distribution: { label: string; value: number }[];
   species_distribution: { label: string; value: number }[];
+  bioacoustic?: {
+    total_recordings: number;
+    avg_health_score: number;
+    avg_shannon_index: number;
+    total_species_detected: number;
+  };
 };
 
 export const auth = {
@@ -357,5 +363,81 @@ export const assistant = {
         { prompt }
       )
     ).data;
+  },
+};
+
+export type BioacousticSpecies = {
+  scientific_name: string;
+  common_name: string;
+  taxon_group: string;
+  confidence: number;
+  call_count: number;
+  iucn_status: string;
+  population_trend: string;
+  threat_status: string;
+  iucn_taxon_id: string | null;
+  iucn_url: string | null;
+};
+
+export type BioacousticRecording = {
+  id: string;
+  s3_key: string;
+  duration_seconds: number;
+  recorded_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  plantation_fence_id: string | null;
+  status: string;
+  species_detections: BioacousticSpecies[];
+  total_species_count: number | null;
+  total_calls_detected: number | null;
+  shannon_diversity_index: number | null;
+  bioacoustic_health_score: number | null;
+  ai_confidence_score: number | null;
+  analysis_summary: string | null;
+  analyzed_at: string | null;
+  created_at: string;
+};
+
+export const bioacoustic = {
+  async presign(filename: string, contentType = "audio/webm") {
+    return (
+      await api.post<{ upload_url: string; s3_key: string; content_type: string }>(
+        "/v1/uploads/presign",
+        { filename, content_type: contentType }
+      )
+    ).data;
+  },
+  async uploadDirect(form: FormData) {
+    return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings/upload", form)).data;
+  },
+  async register(payload: {
+    s3_key: string;
+    duration_seconds: number;
+    latitude: number;
+    longitude: number;
+    plantation_fence_id?: string;
+  }) {
+    return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings", payload)).data;
+  },
+  async list() {
+    return (await api.get<BioacousticRecording[]>("/v1/bioacoustic/recordings")).data;
+  },
+  async get(id: string) {
+    return (await api.get<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}`)).data;
+  },
+  async analyze(id: string) {
+    return (await api.post<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}/analyze`)).data;
+  },
+  async summary() {
+    return (await api.get("/v1/bioacoustic/summary")).data as {
+      total_recordings: number;
+      analyzed_recordings: number;
+      avg_health_score: number;
+      avg_shannon_index: number;
+      total_species_detected: number;
+      threatened_species_count: number;
+      recent_recordings: BioacousticRecording[];
+    };
   },
 };

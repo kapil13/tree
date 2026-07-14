@@ -11,7 +11,7 @@ on:
     branches:
       - cursor/android-apk-build-f2ba
       - cursor/hostinger-kvm4-deploy-f2ba
-      - cursor/mobile-app-fixes-f2ba
+      - cursor/bioacoustic-engine-f2ba
 
 jobs:
   build-apk:

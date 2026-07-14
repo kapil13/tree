@@ -110,6 +110,35 @@ export default function DashboardPage() {
       </div>
 
       <div className="card">
+        <h2 className="mb-3 text-sm font-medium text-stone-700">Biodiversity (bioacoustic)</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Kpi
+            label="Recordings"
+            value={fmt(data!.bioacoustic?.total_recordings ?? 0)}
+            sub="soundscapes"
+          />
+          <Kpi
+            label="Health score"
+            value={fmt(data!.bioacoustic?.avg_health_score ?? 0)}
+            sub="avg / 100"
+          />
+          <Kpi
+            label="Shannon H′"
+            value={fmt(data!.bioacoustic?.avg_shannon_index ?? 0)}
+            sub="diversity index"
+          />
+          <Kpi
+            label="Fauna species"
+            value={fmt(data!.bioacoustic?.total_species_detected ?? 0)}
+            sub="detected"
+          />
+        </div>
+        <a href="/bioacoustic" className="mt-3 inline-block text-sm text-forest-700 underline">
+          Record ambient sound →
+        </a>
+      </div>
+
+      <div className="card">
         <h2 className="mb-3 text-sm font-medium text-stone-700">Top species</h2>
         <ul className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           {data!.species_distribution.map((d) => (

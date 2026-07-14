@@ -13,6 +13,7 @@ import 'screens/tree_detail_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/assistant_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/bioacoustic_screen.dart';
 import 'screens/profile_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -38,6 +39,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
+      GoRoute(path: '/bioacoustic', builder: (_, __) => const BioacousticScreen()),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
     ],

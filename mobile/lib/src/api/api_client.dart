@@ -211,4 +211,37 @@ class ApiClient {
     final r = await _dio.post('/assistant/query', data: {'prompt': prompt});
     return Map<String, dynamic>.from(r.data);
   }
+
+  Future<List<dynamic>> listBioacousticRecordings() async {
+    final r = await _dio.get('/bioacoustic/recordings');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> uploadBioacousticRecording({
+    required String filePath,
+    required double durationSeconds,
+    required double latitude,
+    required double longitude,
+    String? plantationFenceId,
+  }) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: 'recording.m4a'),
+      'duration_seconds': durationSeconds,
+      'latitude': latitude,
+      'longitude': longitude,
+      if (plantationFenceId != null) 'plantation_fence_id': plantationFenceId,
+    });
+    final r = await _dio.post('/bioacoustic/recordings/upload', data: form);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id) async {
+    final r = await _dio.post('/bioacoustic/recordings/$id/analyze');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> bioacousticSummary() async {
+    final r = await _dio.get('/bioacoustic/summary');
+    return Map<String, dynamic>.from(r.data);
+  }
 }
