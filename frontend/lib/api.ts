@@ -12,6 +12,34 @@ function resolveApiBaseUrl(): string {
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
+/** Same-origin JSON API (proxied). File uploads must bypass Next.js — use direct API host. */
+function resolveDirectUploadApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
+      return "https://api.aranyix.tech/api";
+    }
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000/api";
+    }
+  }
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (raw) {
+    try {
+      const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+      if (!url.hostname.startsWith("api.")) {
+        url.hostname = `api.${url.hostname.replace(/^www\./, "")}`;
+      }
+      return url.href.replace(/\/$/, "").endsWith("/api")
+        ? url.href.replace(/\/$/, "")
+        : `${url.origin}/api`;
+    } catch {
+      /* fall through */
+    }
+  }
+  return API_URL;
+}
+
 export const API_URL = resolveApiBaseUrl();
 
 export const api: AxiosInstance = axios.create({
@@ -57,6 +85,12 @@ export function errorMessage(err: unknown): string {
     if (typeof data?.detail === "string") {
       if (err.response.status === 404 && data.detail === "Not Found") {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
+      }
+      if (data.detail === "storage_upload_failed") {
+        return "Audio storage failed. Check MinIO/S3 on the server.";
+      }
+      if (data.detail === "recording_create_failed") {
+        return "Could not save recording. Run database migration: alembic upgrade head";
       }
       return data.detail;
     }
@@ -413,7 +447,21 @@ export const bioacoustic = {
     ).data;
   },
   async uploadDirect(form: FormData) {
-    return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings/upload", form)).data;
+    const uploadBase = resolveDirectUploadApiBaseUrl();
+    const tok =
+      typeof window !== "undefined" ? localStorage.getItem("byot_access_token") : null;
+    const { data } = await axios.post<BioacousticRecording>(
+      `${uploadBase}/v1/bioacoustic/recordings/upload`,
+      form,
+      {
+        headers: {
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+        },
+        maxBodyLength: 25 * 1024 * 1024,
+        maxContentLength: 25 * 1024 * 1024,
+      }
+    );
+    return data;
   },
   async register(payload: {
     s3_key: string;

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, CurrentUser
@@ -63,18 +63,24 @@ async def upload_recording(
     user: CurrentUser,
     db: DB,
     file: UploadFile = File(...),
-    duration_seconds: float = 45.0,
-    latitude: float = 0.0,
-    longitude: float = 0.0,
-    plantation_fence_id: uuid.UUID | None = None,
+    duration_seconds: float = Form(45.0),
+    latitude: float = Form(0.0),
+    longitude: float = Form(0.0),
+    plantation_fence_id: uuid.UUID | None = Form(None),
 ) -> BioacousticRecordingOut:
-    """Dev-friendly direct upload when S3 presign is unavailable."""
+    """Direct multipart upload (mobile + web)."""
     data = await file.read()
     if len(data) < 1000:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="audio_too_short")
     key = f"bioacoustic/{user.id}/{uuid.uuid4()}.m4a"
     storage = get_storage()
-    storage.put_bytes(key, data, content_type=file.content_type or "audio/m4a")
+    try:
+        storage.put_bytes(key, data, content_type=file.content_type or "audio/webm")
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="storage_upload_failed",
+        ) from exc
     try:
         return await create_recording(
             db,
@@ -84,10 +90,15 @@ async def upload_recording(
             latitude=latitude,
             longitude=longitude,
             plantation_fence_id=plantation_fence_id,
-            metadata={"filename": file.filename or "recording.m4a"},
+            metadata={"filename": file.filename or "recording.webm"},
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="recording_create_failed",
+        ) from exc
 
 
 @router.get("/recordings", response_model=list[BioacousticRecordingOut])
