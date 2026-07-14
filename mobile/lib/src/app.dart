@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'theme.dart';
+import 'session.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -17,6 +18,14 @@ import 'screens/profile_screen.dart';
 final _routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: sessionController,
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final public = loc == '/' || loc == '/login';
+      if (!sessionController.authenticated && !public) return '/login';
+      if (sessionController.authenticated && loc == '/login') return '/home';
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
