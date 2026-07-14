@@ -41,7 +41,11 @@ export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
     if (!err.response) {
       if (err.code === "ERR_NETWORK") {
-        return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        const host = typeof window !== "undefined" ? window.location.hostname : "";
+        if (host === "localhost" || host === "127.0.0.1") {
+          return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        }
+        return `Cannot reach the API (${API_URL}). Check https://api.aranyix.tech/health in your browser, sign out and sign in again, or ask your admin to rebuild the frontend with NEXT_PUBLIC_API_URL=https://api.aranyix.tech`;
       }
       return err.message;
     }
