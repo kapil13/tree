@@ -20,8 +20,16 @@ class SeriesPoint(BaseModel):
     value: float
 
 
+class BioacousticDashboardKpi(BaseModel):
+    total_recordings: int = 0
+    avg_health_score: float = 0.0
+    avg_shannon_index: float = 0.0
+    total_species_detected: int = 0
+
+
 class DashboardResponse(BaseModel):
     kpi: KPI
     carbon_growth: list[SeriesPoint]
     health_distribution: list[SeriesPoint]
     species_distribution: list[SeriesPoint]
+    bioacoustic: BioacousticDashboardKpi = BioacousticDashboardKpi()

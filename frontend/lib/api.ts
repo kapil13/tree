@@ -12,6 +12,34 @@ function resolveApiBaseUrl(): string {
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
+/** Same-origin JSON API (proxied). File uploads must bypass Next.js — use direct API host. */
+function resolveDirectUploadApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
+      return "https://api.aranyix.tech/api";
+    }
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000/api";
+    }
+  }
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (raw) {
+    try {
+      const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+      if (!url.hostname.startsWith("api.")) {
+        url.hostname = `api.${url.hostname.replace(/^www\./, "")}`;
+      }
+      return url.href.replace(/\/$/, "").endsWith("/api")
+        ? url.href.replace(/\/$/, "")
+        : `${url.origin}/api`;
+    } catch {
+      /* fall through */
+    }
+  }
+  return API_URL;
+}
+
 export const API_URL = resolveApiBaseUrl();
 
 export const api: AxiosInstance = axios.create({
@@ -41,7 +69,11 @@ export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
     if (!err.response) {
       if (err.code === "ERR_NETWORK") {
-        return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        const host = typeof window !== "undefined" ? window.location.hostname : "";
+        if (host === "localhost" || host === "127.0.0.1") {
+          return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        }
+        return `Cannot reach the API (${API_URL}). Check https://api.aranyix.tech/health in your browser, sign out and sign in again, or ask your admin to rebuild the frontend with NEXT_PUBLIC_API_URL=https://api.aranyix.tech`;
       }
       return err.message;
     }
@@ -53,6 +85,12 @@ export function errorMessage(err: unknown): string {
     if (typeof data?.detail === "string") {
       if (err.response.status === 404 && data.detail === "Not Found") {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
+      }
+      if (data.detail === "storage_upload_failed") {
+        return "Audio storage failed. Check MinIO/S3 on the server.";
+      }
+      if (data.detail === "recording_create_failed") {
+        return "Could not save recording. Run database migration: alembic upgrade head";
       }
       return data.detail;
     }
@@ -167,6 +205,12 @@ export type Dashboard = {
   carbon_growth: { label: string; value: number }[];
   health_distribution: { label: string; value: number }[];
   species_distribution: { label: string; value: number }[];
+  bioacoustic?: {
+    total_recordings: number;
+    avg_health_score: number;
+    avg_shannon_index: number;
+    total_species_detected: number;
+  };
 };
 
 export const auth = {
@@ -357,5 +401,95 @@ export const assistant = {
         { prompt }
       )
     ).data;
+  },
+};
+
+export type BioacousticSpecies = {
+  scientific_name: string;
+  common_name: string;
+  taxon_group: string;
+  confidence: number;
+  call_count: number;
+  iucn_status: string;
+  population_trend: string;
+  threat_status: string;
+  iucn_taxon_id: string | null;
+  iucn_url: string | null;
+};
+
+export type BioacousticRecording = {
+  id: string;
+  s3_key: string;
+  duration_seconds: number;
+  recorded_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  plantation_fence_id: string | null;
+  status: string;
+  species_detections: BioacousticSpecies[];
+  total_species_count: number | null;
+  total_calls_detected: number | null;
+  shannon_diversity_index: number | null;
+  bioacoustic_health_score: number | null;
+  ai_confidence_score: number | null;
+  analysis_summary: string | null;
+  analyzed_at: string | null;
+  created_at: string;
+};
+
+export const bioacoustic = {
+  async presign(filename: string, contentType = "audio/webm") {
+    return (
+      await api.post<{ upload_url: string; s3_key: string; content_type: string }>(
+        "/v1/uploads/presign",
+        { filename, content_type: contentType }
+      )
+    ).data;
+  },
+  async uploadDirect(form: FormData) {
+    const uploadBase = resolveDirectUploadApiBaseUrl();
+    const tok =
+      typeof window !== "undefined" ? localStorage.getItem("byot_access_token") : null;
+    const { data } = await axios.post<BioacousticRecording>(
+      `${uploadBase}/v1/bioacoustic/recordings/upload`,
+      form,
+      {
+        headers: {
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+        },
+        maxBodyLength: 25 * 1024 * 1024,
+        maxContentLength: 25 * 1024 * 1024,
+      }
+    );
+    return data;
+  },
+  async register(payload: {
+    s3_key: string;
+    duration_seconds: number;
+    latitude: number;
+    longitude: number;
+    plantation_fence_id?: string;
+  }) {
+    return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings", payload)).data;
+  },
+  async list() {
+    return (await api.get<BioacousticRecording[]>("/v1/bioacoustic/recordings")).data;
+  },
+  async get(id: string) {
+    return (await api.get<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}`)).data;
+  },
+  async analyze(id: string) {
+    return (await api.post<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}/analyze`)).data;
+  },
+  async summary() {
+    return (await api.get("/v1/bioacoustic/summary")).data as {
+      total_recordings: number;
+      analyzed_recordings: number;
+      avg_health_score: number;
+      avg_shannon_index: number;
+      total_species_detected: number;
+      threatened_species_count: number;
+      recent_recordings: BioacousticRecording[];
+    };
   },
 };

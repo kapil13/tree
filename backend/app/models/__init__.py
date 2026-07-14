@@ -1,3 +1,4 @@
+from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.carbon import CarbonCalculation
@@ -14,6 +15,7 @@ from app.models.tree_image import TreeImage
 from app.models.user import User
 
 __all__ = [
+    "BioacousticRecording",
     "Alert",
     "AuditLog",
     "CarbonCalculation",

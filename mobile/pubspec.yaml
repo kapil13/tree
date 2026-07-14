@@ -27,9 +27,12 @@ dependencies:
   camera: ^0.11.0
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
+  record: ^5.1.2
+  path_provider: ^2.1.4
 
-  # Map (placeholder screen — Mapbox optional later)
-  # mapbox_maps_flutter: ^2.2.0
+  # Map (OpenStreetMap tiles — no API key required)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   # Charts
   fl_chart: ^0.68.0
   # Auth
