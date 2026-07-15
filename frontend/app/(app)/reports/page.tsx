@@ -1,14 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { api, errorMessage } from "@/lib/api";
+import { api, errorMessage, plantationFences } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ReportsPage() {
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
+  const [fenceId, setFenceId] = useState("");
   const [list, setList] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const { data: fences } = useQuery({
+    queryKey: ["plantation-fences"],
+    queryFn: () => plantationFences.list({ page_size: 100 }),
+  });
+
+  const needsFence = kind === "biodiversity" || kind === "plantation" || kind === "esg";
 
   async function refresh() {
     try {
@@ -23,7 +32,9 @@ export default function ReportsPage() {
     setBusy(true);
     setError(null);
     try {
-      await api.post(`/v1/reports?kind=${kind}&format=${format}`);
+      const params = new URLSearchParams({ kind, format });
+      if (needsFence && fenceId) params.set("plantation_fence_id", fenceId);
+      await api.post(`/v1/reports?${params.toString()}`);
       await refresh();
     } catch (e) {
       setError(errorMessage(e));
@@ -35,11 +46,14 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Reports</h1>
+      <p className="text-sm text-stone-600">
+        Carbon, biodiversity (bioacoustic + NDVI), and combined ESG reports.
+      </p>
       <div className="card flex flex-wrap items-end gap-3">
         <div>
           <label className="label">Kind</label>
           <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
-            {["tree", "plantation", "carbon", "esg"].map((k) => (
+            {["carbon", "tree", "biodiversity", "esg", "plantation"].map((k) => (
               <option key={k} value={k}>{k}</option>
             ))}
           </select>
@@ -55,7 +69,18 @@ export default function ReportsPage() {
             <option value="xlsx">Excel</option>
           </select>
         </div>
-        <button className="btn-primary" onClick={queue} disabled={busy}>
+        {needsFence && (
+          <div>
+            <label className="label">Plantation site</label>
+            <select className="input" value={fenceId} onChange={(e) => setFenceId(e.target.value)}>
+              <option value="">Select site…</option>
+              {fences?.items.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button className="btn-primary" onClick={queue} disabled={busy || (needsFence && !fenceId)}>
           {busy ? "Queuing…" : "Queue report"}
         </button>
         <button className="btn-secondary" onClick={refresh}>

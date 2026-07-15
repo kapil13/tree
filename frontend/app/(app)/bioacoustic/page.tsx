@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mic, Square, Waves } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { bioacoustic, errorMessage } from "@/lib/api";
+import { bioacoustic, errorMessage, plantationFences } from "@/lib/api";
 
 const MIN_SECONDS = 30;
 const MAX_SECONDS = 60;
@@ -25,9 +25,21 @@ export default function BioacousticPage() {
   const [elapsed, setElapsed] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fenceId, setFenceId] = useState<string>("");
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: fences } = useQuery({
+    queryKey: ["plantation-fences"],
+    queryFn: () => plantationFences.list({ page_size: 100 }),
+  });
+
+  const { data: ecosystem } = useQuery({
+    queryKey: ["ecosystem-health", fenceId],
+    queryFn: () => plantationFences.ecosystemHealth(fenceId),
+    enabled: Boolean(fenceId),
+  });
 
   const { data: recordings, isLoading } = useQuery({
     queryKey: ["bioacoustic-recordings"],
@@ -70,7 +82,7 @@ export default function BioacousticPage() {
             lat = pos.coords.latitude;
             lon = pos.coords.longitude;
           } catch {
-            // fallback Hyderabad
+            // fallback
           }
 
           const duration = Math.max(elapsed, MIN_SECONDS);
@@ -79,13 +91,15 @@ export default function BioacousticPage() {
           form.append("duration_seconds", String(duration));
           form.append("latitude", String(lat));
           form.append("longitude", String(lon));
+          if (fenceId) form.append("plantation_fence_id", fenceId);
 
           const rec = await bioacoustic.uploadDirect(form);
-          setStatus("Queued for BirdNET analysis…");
+          setStatus("Queued for composite analysis (birds + frogs + insects)…");
           await bioacoustic.analyze(rec.id);
           setStatus("Recording analyzed successfully.");
           qc.invalidateQueries({ queryKey: ["bioacoustic-recordings"] });
           qc.invalidateQueries({ queryKey: ["dashboard"] });
+          if (fenceId) qc.invalidateQueries({ queryKey: ["ecosystem-health", fenceId] });
         } catch (e) {
           setError(errorMessage(e));
         }
@@ -103,17 +117,84 @@ export default function BioacousticPage() {
     } catch (e) {
       setError(errorMessage(e));
     }
-  }, [elapsed, qc, stopRecording]);
+  }, [elapsed, fenceId, qc, stopRecording]);
+
+  async function downloadReport(kind: "biodiversity" | "esg") {
+    if (!fenceId) {
+      setError("Select a plantation site first to generate a report.");
+      return;
+    }
+    try {
+      const job = await bioacoustic.queueReport(fenceId, kind);
+      window.open(`/api/v1/reports/${job.id}/download`, "_blank");
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Bioacoustic monitoring</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Record 30–60 seconds of ambient sound. AI identifies wildlife, validates IUCN status, and
-          computes Shannon diversity and a bioacoustic health score.
+          Record 30–60 seconds of ambient sound. Composite AI detects birds (BirdNET), frogs, and
+          insect activity — correlated with satellite NDVI when linked to a plantation site.
         </p>
       </div>
+
+      <div className="card grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="label">Plantation site (optional)</label>
+          <select
+            className="input w-full"
+            value={fenceId}
+            onChange={(e) => setFenceId(e.target.value)}
+          >
+            <option value="">No site — GPS only</option>
+            {fences?.items.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-stone-500">
+            Link recordings to a fence for biodiversity reports and NDVI correlation.
+          </p>
+        </div>
+        {fenceId && (
+          <div className="flex flex-wrap items-end gap-2">
+            <button type="button" className="btn-secondary text-sm" onClick={() => downloadReport("biodiversity")}>
+              Biodiversity PDF
+            </button>
+            <button type="button" className="btn-secondary text-sm" onClick={() => downloadReport("esg")}>
+              ESG PDF
+            </button>
+          </div>
+        )}
+      </div>
+
+      {ecosystem && (
+        <div className="card">
+          <h2 className="mb-3 text-sm font-medium text-stone-700">
+            Ecosystem health — {ecosystem.fence_name}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Metric label="Ecosystem score" value={`${ecosystem.ecosystem_health_score}/100`} />
+            <Metric label="Bioacoustic health" value={`${ecosystem.bioacoustic.avg_health_score}/100`} />
+            <Metric label="NDVI" value={ecosystem.ndvi_mean?.toFixed(2) ?? "—"} />
+            <Metric label="Correlation" value={ecosystem.correlation_score?.toFixed(2) ?? "—"} />
+          </div>
+          <p className="mt-3 text-sm text-stone-600">{ecosystem.interpretation}</p>
+          {Object.keys(ecosystem.bioacoustic.taxon_breakdown || {}).length > 0 && (
+            <p className="mt-2 text-xs text-stone-500">
+              Taxa:{" "}
+              {Object.entries(ecosystem.bioacoustic.taxon_breakdown)
+                .map(([k, v]) => `${k} ${v}`)
+                .join(" · ")}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="card flex flex-col items-center gap-4 py-8">
         <Waves className="h-10 w-10 text-forest-700" />
@@ -154,6 +235,7 @@ export default function BioacousticPage() {
                   </div>
                   <div className="text-xs text-stone-500">
                     {r.latitude?.toFixed(4)}, {r.longitude?.toFixed(4)} · {r.status}
+                    {r.plantation_fence_id ? " · linked to site" : ""}
                   </div>
                 </div>
                 {r.status !== "analyzed" && r.status !== "failed" && (
@@ -200,16 +282,6 @@ export default function BioacousticPage() {
                         <span className={`rounded px-2 py-0.5 text-xs ${iucnBadge(s.iucn_status)}`}>
                           {s.iucn_status}
                         </span>
-                        {s.iucn_url && (
-                          <a
-                            href={s.iucn_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-forest-700 underline"
-                          >
-                            IUCN
-                          </a>
-                        )}
                       </div>
                     </li>
                   ))}

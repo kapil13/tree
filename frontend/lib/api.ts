@@ -325,6 +325,45 @@ export const plantationFences = {
       await api.get(`/v1/plantation-fences/${id}/weather`, { params: { days } })
     ).data as import("@/components/weather-forecast").WeatherForecast;
   },
+  async biodiversity(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/biodiversity`)).data as FenceBiodiversity;
+  },
+  async ecosystemHealth(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/ecosystem-health`)).data as EcosystemHealth;
+  },
+};
+
+export type FenceBiodiversity = {
+  fence_id: string;
+  fence_name: string;
+  recording_count: number;
+  avg_health_score: number;
+  avg_shannon_index: number;
+  avg_simpson_index: number;
+  total_species_detected: number;
+  threatened_species_count: number;
+  taxon_breakdown: Record<string, number>;
+  species_list: Array<{
+    scientific_name: string;
+    common_name: string;
+    taxon_group: string;
+    call_count: number;
+    iucn_status: string;
+  }>;
+};
+
+export type EcosystemHealth = {
+  fence_id: string;
+  fence_name: string;
+  area_ha: number | null;
+  bioacoustic: FenceBiodiversity;
+  ndvi_mean: number | null;
+  ndvi_trend: string | null;
+  ndvi_series: Array<{ date: string; ndvi: number }>;
+  satellite_health: Record<string, unknown>;
+  correlation_score: number | null;
+  ecosystem_health_score: number;
+  interpretation: string;
 };
 
 export const weather = {
@@ -510,8 +549,10 @@ export const bioacoustic = {
     }
     return bioacoustic.pollUntilAnalyzed(id);
   },
-  async summary() {
-    return (await api.get("/v1/bioacoustic/summary")).data as {
+  async summary(plantationFenceId?: string) {
+    return (await api.get("/v1/bioacoustic/summary", {
+      params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined,
+    })).data as {
       total_recordings: number;
       analyzed_recordings: number;
       avg_health_score: number;
@@ -519,7 +560,13 @@ export const bioacoustic = {
       avg_simpson_index: number;
       total_species_detected: number;
       threatened_species_count: number;
+      taxon_breakdown: Record<string, number>;
       recent_recordings: BioacousticRecording[];
     };
+  },
+  async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
+    return (
+      await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
+    ).data as { id: string; status: string };
   },
 };

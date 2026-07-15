@@ -130,4 +130,32 @@ class BioacousticSummary(BaseModel):
     avg_simpson_index: float
     total_species_detected: int
     threatened_species_count: int
+    taxon_breakdown: dict[str, int] = Field(default_factory=dict)
     recent_recordings: list[BioacousticRecordingOut] = Field(default_factory=list)
+
+
+class FenceBiodiversityOut(BaseModel):
+    fence_id: uuid.UUID
+    fence_name: str
+    recording_count: int
+    avg_health_score: float
+    avg_shannon_index: float
+    avg_simpson_index: float
+    total_species_detected: int
+    threatened_species_count: int
+    taxon_breakdown: dict[str, int] = Field(default_factory=dict)
+    species_list: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class EcosystemHealthOut(BaseModel):
+    fence_id: uuid.UUID
+    fence_name: str
+    area_ha: float | None = None
+    bioacoustic: FenceBiodiversityOut
+    ndvi_mean: float | None = None
+    ndvi_trend: str | None = None
+    ndvi_series: list[dict[str, Any]] = Field(default_factory=list)
+    satellite_health: dict[str, Any] = Field(default_factory=dict)
+    correlation_score: float | None = None
+    ecosystem_health_score: float = 0.0
+    interpretation: str = ""
