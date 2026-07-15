@@ -1,11 +1,19 @@
-"""Celery task stubs. Logic lives in services/* and is called from here."""
-
 from __future__ import annotations
+
+import uuid
 
 from app.core.logging import get_logger
 from app.workers.celery_app import celery_app
 
 log = get_logger("worker")
+
+
+@celery_app.task(name="app.workers.tasks.run_bioacoustic_analysis")
+def run_bioacoustic_analysis(recording_id: str) -> dict:
+    log.info("worker.run_bioacoustic_analysis", recording_id=recording_id)
+    from app.services.bioacoustic.ops import analyze_bioacoustic_recording_sync
+
+    return analyze_bioacoustic_recording_sync(uuid.UUID(recording_id))
 
 
 @celery_app.task(name="app.workers.tasks.run_ai_analysis")

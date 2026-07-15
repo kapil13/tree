@@ -430,12 +430,24 @@ export type BioacousticRecording = {
   total_species_count: number | null;
   total_calls_detected: number | null;
   shannon_diversity_index: number | null;
+  simpson_diversity_index: number | null;
   bioacoustic_health_score: number | null;
   ai_confidence_score: number | null;
   analysis_summary: string | null;
+  analysis_error: string | null;
   analyzed_at: string | null;
   created_at: string;
 };
+
+export type BioacousticAnalyzeJob = {
+  recording_id: string;
+  status: string;
+  celery_task_id: string | null;
+};
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export const bioacoustic = {
   async presign(filename: string, contentType = "audio/webm") {
@@ -478,8 +490,25 @@ export const bioacoustic = {
   async get(id: string) {
     return (await api.get<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}`)).data;
   },
+  async pollUntilAnalyzed(id: string, attempts = 90, intervalMs = 2000) {
+    for (let i = 0; i < attempts; i++) {
+      const rec = await bioacoustic.get(id);
+      if (rec.status === "analyzed") return rec;
+      if (rec.status === "failed") {
+        throw new Error(rec.analysis_error || "Bioacoustic analysis failed");
+      }
+      await sleep(intervalMs);
+    }
+    throw new Error("Bioacoustic analysis timed out");
+  },
   async analyze(id: string) {
-    return (await api.post<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}/analyze`)).data;
+    const job = (
+      await api.post<BioacousticAnalyzeJob>(`/v1/bioacoustic/recordings/${id}/analyze`)
+    ).data;
+    if (job.status === "analyzed") {
+      return bioacoustic.get(id);
+    }
+    return bioacoustic.pollUntilAnalyzed(id);
   },
   async summary() {
     return (await api.get("/v1/bioacoustic/summary")).data as {
@@ -487,6 +516,7 @@ export const bioacoustic = {
       analyzed_recordings: number;
       avg_health_score: number;
       avg_shannon_index: number;
+      avg_simpson_index: number;
       total_species_detected: number;
       threatened_species_count: number;
       recent_recordings: BioacousticRecording[];

@@ -24,6 +24,7 @@ class BioacousticDashboardKpi(BaseModel):
     total_recordings: int = 0
     avg_health_score: float = 0.0
     avg_shannon_index: float = 0.0
+    avg_simpson_index: float = 0.0
     total_species_detected: int = 0
 
 

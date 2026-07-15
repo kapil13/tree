@@ -151,28 +151,7 @@ def lookup_iucn(scientific_name: str) -> IucnSpecies | None:
 
 
 def enrich_detection(scientific_name: str, common_name: str, taxon_group: str) -> dict:
-    """Attach IUCN fields to an AI detection."""
-    row = lookup_iucn(scientific_name)
-    if row is None:
-        return {
-            "scientific_name": scientific_name,
-            "common_name": common_name,
-            "taxon_group": taxon_group,
-            "confidence": 0.0,
-            "call_count": 0,
-            "iucn_status": "Not Evaluated",
-            "population_trend": "Unknown",
-            "threat_status": "unknown",
-            "iucn_taxon_id": None,
-            "iucn_url": "https://www.iucnredlist.org",
-        }
-    return {
-        "scientific_name": row.scientific_name,
-        "common_name": row.common_name,
-        "taxon_group": row.taxon_group,
-        "iucn_status": row.iucn_status,
-        "population_trend": row.population_trend,
-        "threat_status": row.threat_status,
-        "iucn_taxon_id": row.iucn_taxon_id or None,
-        "iucn_url": row.iucn_url,
-    }
+    """Attach IUCN + GBIF fields to an AI detection (backward-compatible wrapper)."""
+    from app.services.bioacoustic.enrichment import enrich_detection as _enrich
+
+    return _enrich(scientific_name, common_name, taxon_group)

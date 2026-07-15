@@ -7,13 +7,15 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.plantation_fence import PlantationFence
 from app.models.user import User
-from app.schemas.bioacoustic import BioacousticRecordingOut
+from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecordingOut
 from app.services.ai.bioacoustic import identify_species_from_audio
-from app.services.bioacoustic.iucn_catalog import enrich_detection
+from app.services.bioacoustic.birdnet_runner import cleanup_wav
+from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.metrics import aggregate_metrics
 from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.storage import get_storage
@@ -21,6 +23,62 @@ from app.services.storage import get_storage
 
 def _point_wkt(lon: float, lat: float) -> str:
     return f"POINT({lon} {lat})"
+
+
+def _coords_from_recording(rec: BioacousticRecording) -> tuple[float | None, float | None]:
+    if rec.location is None:
+        return None, None
+    from geoalchemy2.shape import to_shape
+
+    pt = to_shape(rec.location)
+    return float(pt.y), float(pt.x)
+
+
+def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> None:
+    lat, lon = _coords_from_recording(rec)
+    preprocessing = preprocess_audio(audio_bytes, s3_key=rec.s3_key)
+    try:
+        ai = identify_species_from_audio(
+            audio_bytes,
+            duration_seconds=float(rec.duration_seconds),
+            latitude=lat,
+            longitude=lon,
+            preprocessing=preprocessing,
+            recorded_at=rec.recorded_at,
+        )
+
+        enriched: list[dict] = []
+        for det in ai.detections:
+            row = enrich_detection(
+                det.scientific_name,
+                det.common_name,
+                det.taxon_group,
+                confidence=det.confidence,
+                call_count=det.call_count,
+            )
+            enriched.append(row)
+
+        metrics = aggregate_metrics(enriched)
+        rec.status = "analyzed"
+        rec.preprocessing = {k: v for k, v in preprocessing.items() if k != "wav_temp_path"}
+        rec.spectrogram_s3_key = preprocessing.get("spectrogram_s3_key")
+        rec.species_detections = enriched
+        rec.total_species_count = metrics["total_species_count"]
+        rec.total_calls_detected = metrics["total_calls_detected"]
+        rec.shannon_diversity_index = metrics["shannon_diversity_index"]
+        rec.simpson_diversity_index = metrics["simpson_diversity_index"]
+        rec.bioacoustic_health_score = metrics["bioacoustic_health_score"]
+        rec.ai_confidence_score = metrics["ai_confidence_score"]
+        rec.analysis_summary = ai.summary
+        rec.analysis_error = None
+        rec.raw_output = {
+            "pipeline": ai.pipeline,
+            "detections": enriched,
+            "metrics": metrics,
+        }
+        rec.analyzed_at = datetime.now(UTC)
+    finally:
+        cleanup_wav(preprocessing)
 
 
 async def _load_owned_recording(
@@ -40,55 +98,105 @@ async def _load_owned_recording(
     return rec
 
 
+def _load_recording_sync(recording_id: uuid.UUID, db: Session) -> BioacousticRecording:
+    rec = db.get(BioacousticRecording, recording_id)
+    if rec is None:
+        raise ValueError("not_found")
+    return rec
+
+
+def analyze_bioacoustic_recording_sync(recording_id: uuid.UUID) -> dict:
+    """Celery worker entry: run full analysis synchronously."""
+    from app.core.database_sync import get_sync_db
+
+    with get_sync_db() as db:
+        rec = _load_recording_sync(recording_id, db)
+        if rec.status == "analyzed":
+            return {"recording_id": str(recording_id), "status": "analyzed"}
+        rec.status = "analyzing"
+        rec.analysis_error = None
+        db.commit()
+
+        storage = get_storage()
+        audio_bytes = storage.get_bytes(rec.s3_key) or b""
+        if not audio_bytes:
+            audio_bytes = rec.s3_key.encode("utf-8")
+
+        try:
+            _run_analysis_pipeline(rec, audio_bytes)
+            db.commit()
+            return {"recording_id": str(recording_id), "status": "analyzed"}
+        except Exception as exc:
+            rec.status = "failed"
+            rec.analysis_error = str(exc)[:2000]
+            db.commit()
+            return {"recording_id": str(recording_id), "status": "failed", "error": str(exc)}
+
+
+async def enqueue_bioacoustic_analysis(
+    db: AsyncSession, recording_id: uuid.UUID, user: User
+) -> BioacousticAnalyzeResponse:
+    rec = await _load_owned_recording(recording_id, user, db)
+    if rec.status in {"queued", "analyzing"}:
+        return BioacousticAnalyzeResponse(
+            recording_id=rec.id,
+            status=rec.status,
+            celery_task_id=rec.celery_task_id,
+        )
+    if rec.status == "analyzed":
+        return BioacousticAnalyzeResponse(
+            recording_id=rec.id,
+            status="analyzed",
+            celery_task_id=rec.celery_task_id,
+        )
+
+    from app.workers.tasks import run_bioacoustic_analysis
+
+    rec.status = "queued"
+    rec.analysis_error = None
+    await db.commit()
+
+    try:
+        task = run_bioacoustic_analysis.delay(str(recording_id))
+        rec.celery_task_id = task.id
+        await db.commit()
+        await db.refresh(rec)
+        return BioacousticAnalyzeResponse(
+            recording_id=rec.id,
+            status=rec.status,
+            celery_task_id=task.id,
+        )
+    except Exception:
+        result = analyze_bioacoustic_recording_sync(recording_id)
+        await db.refresh(rec)
+        return BioacousticAnalyzeResponse(
+            recording_id=rec.id,
+            status=result.get("status", rec.status),
+            celery_task_id=None,
+        )
+
+
 async def analyze_bioacoustic_recording(
     db: AsyncSession, recording_id: uuid.UUID, user: User
 ) -> BioacousticRecordingOut:
+    """Synchronous analyze (dev/tests). Production clients should use enqueue."""
     rec = await _load_owned_recording(recording_id, user, db)
     storage = get_storage()
     audio_bytes = storage.get_bytes(rec.s3_key) or b""
     if not audio_bytes:
-        # Dev stub: synthesize bytes from recording id for deterministic output.
         audio_bytes = rec.s3_key.encode("utf-8")
 
-    lat = lon = None
-    if rec.location is not None:
-        from geoalchemy2.shape import to_shape
+    rec.status = "analyzing"
+    await db.commit()
+    try:
+        _run_analysis_pipeline(rec, audio_bytes)
+    except Exception as exc:
+        rec.status = "failed"
+        rec.analysis_error = str(exc)[:2000]
+        await db.commit()
+        await db.refresh(rec)
+        raise ValueError("analysis_failed") from exc
 
-        pt = to_shape(rec.location)
-        lon, lat = float(pt.x), float(pt.y)
-
-    preprocessing = preprocess_audio(audio_bytes, s3_key=rec.s3_key)
-    ai = identify_species_from_audio(
-        audio_bytes,
-        duration_seconds=float(rec.duration_seconds),
-        latitude=lat,
-        longitude=lon,
-    )
-
-    enriched: list[dict] = []
-    for det in ai.detections:
-        row = enrich_detection(det.scientific_name, det.common_name, det.taxon_group)
-        row["confidence"] = det.confidence
-        row["call_count"] = det.call_count
-        enriched.append(row)
-
-    metrics = aggregate_metrics(enriched)
-    rec.status = "analyzed"
-    rec.preprocessing = preprocessing
-    rec.spectrogram_s3_key = preprocessing.get("spectrogram_s3_key")
-    rec.species_detections = enriched
-    rec.total_species_count = metrics["total_species_count"]
-    rec.total_calls_detected = metrics["total_calls_detected"]
-    rec.shannon_diversity_index = metrics["shannon_diversity_index"]
-    rec.bioacoustic_health_score = metrics["bioacoustic_health_score"]
-    rec.ai_confidence_score = metrics["ai_confidence_score"]
-    rec.analysis_summary = ai.summary
-    rec.raw_output = {
-        "pipeline": ai.pipeline,
-        "detections": enriched,
-        "metrics": metrics,
-    }
-    rec.analyzed_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(rec)
     return BioacousticRecordingOut.from_model(rec)

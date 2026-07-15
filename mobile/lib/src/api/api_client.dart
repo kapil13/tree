@@ -235,9 +235,38 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> getBioacousticRecording(String id) async {
+    final r = await _dio.get('/bioacoustic/recordings/$id');
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> analyzeBioacousticRecording(String id) async {
     final r = await _dio.post('/bioacoustic/recordings/$id/analyze');
-    return Map<String, dynamic>.from(r.data);
+    final data = Map<String, dynamic>.from(r.data);
+    final status = data['status'] as String? ?? '';
+    if (status == 'analyzed') {
+      return getBioacousticRecording(id);
+    }
+    return _pollBioacousticRecording(id);
+  }
+
+  Future<Map<String, dynamic>> _pollBioacousticRecording(String id) async {
+    for (var i = 0; i < 90; i++) {
+      await Future.delayed(const Duration(seconds: 2));
+      final rec = await getBioacousticRecording(id);
+      final status = rec['status'] as String? ?? '';
+      if (status == 'analyzed') return rec;
+      if (status == 'failed') {
+        throw DioException(
+          requestOptions: RequestOptions(path: '/bioacoustic/recordings/$id'),
+          error: rec['analysis_error'] ?? 'Bioacoustic analysis failed',
+        );
+      }
+    }
+    throw DioException(
+      requestOptions: RequestOptions(path: '/bioacoustic/recordings/$id'),
+      error: 'Bioacoustic analysis timed out',
+    );
   }
 
   Future<Map<String, dynamic>> bioacousticSummary() async {

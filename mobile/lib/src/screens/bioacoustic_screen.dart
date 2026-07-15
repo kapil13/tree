@@ -355,6 +355,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                               Text(
                                 'Health ${r['bioacoustic_health_score']}/100 · '
                                 'Shannon ${r['shannon_diversity_index']} · '
+                                'Simpson ${r['simpson_diversity_index']} · '
                                 '${r['total_species_count']} species',
                               ),
                             if (r['analysis_summary'] != null)

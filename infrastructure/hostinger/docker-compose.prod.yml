@@ -154,14 +154,14 @@ services:
         "-l",
         "info",
         "-Q",
-        "default,ai,satellite,carbon,notifications",
+        "default,ai,satellite,carbon,notifications,bioacoustic",
         "--concurrency",
         "2",
       ]
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2560M
 
   beat:
     build:

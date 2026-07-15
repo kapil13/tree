@@ -10,11 +10,12 @@ from sqlalchemy import func, select
 from app.api.v1.deps import DB, CurrentUser
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.schemas.bioacoustic import (
+    BioacousticAnalyzeResponse,
     BioacousticRecordingCreate,
     BioacousticRecordingOut,
     BioacousticSummary,
 )
-from app.services.bioacoustic.ops import analyze_bioacoustic_recording, create_recording
+from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
@@ -124,12 +125,17 @@ async def get_recording(recording_id: uuid.UUID, user: CurrentUser, db: DB) -> B
     return BioacousticRecordingOut.from_model(rec)
 
 
-@router.post("/recordings/{recording_id}/analyze", response_model=BioacousticRecordingOut)
+@router.post(
+    "/recordings/{recording_id}/analyze",
+    response_model=BioacousticAnalyzeResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def analyze_recording(
     recording_id: uuid.UUID, user: CurrentUser, db: DB
-) -> BioacousticRecordingOut:
+) -> BioacousticAnalyzeResponse:
+    """Queue BirdNET analysis on the Celery worker (poll GET /recordings/{id})."""
     try:
-        return await analyze_bioacoustic_recording(db, recording_id, user)
+        return await enqueue_bioacoustic_analysis(db, recording_id, user)
     except ValueError as exc:
         code = str(exc)
         if code == "not_found":
@@ -153,13 +159,16 @@ async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
 
     avg_health = 0.0
     avg_shannon = 0.0
+    avg_simpson = 0.0
     species_set: set[str] = set()
     threatened = 0
     if analyzed_rows:
         health_scores = [float(r.bioacoustic_health_score or 0) for r in analyzed_rows]
         shannon_scores = [float(r.shannon_diversity_index or 0) for r in analyzed_rows]
+        simpson_scores = [float(r.simpson_diversity_index or 0) for r in analyzed_rows]
         avg_health = round(sum(health_scores) / len(health_scores), 2)
         avg_shannon = round(sum(shannon_scores) / len(shannon_scores), 4)
+        avg_simpson = round(sum(simpson_scores) / len(simpson_scores), 4)
         for r in analyzed_rows:
             for det in r.species_detections or []:
                 species_set.add(det.get("scientific_name", ""))
@@ -178,6 +187,7 @@ async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
         analyzed_recordings=analyzed,
         avg_health_score=avg_health,
         avg_shannon_index=avg_shannon,
+        avg_simpson_index=avg_simpson,
         total_species_detected=len(species_set),
         threatened_species_count=threatened,
         recent_recordings=[BioacousticRecordingOut.from_model(r) for r in recent],
