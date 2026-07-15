@@ -146,14 +146,26 @@ async def analyze_recording(
 
 
 @router.get("/summary", response_model=BioacousticSummary)
-async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
+async def bioacoustic_summary(
+    user: CurrentUser,
+    db: DB,
+    plantation_fence_id: uuid.UUID | None = None,
+) -> BioacousticSummary:
     total_stmt = select(func.count(BioacousticRecording.id))
     total_stmt = _scope(total_stmt, user)
+    if plantation_fence_id:
+        total_stmt = total_stmt.where(
+            BioacousticRecording.plantation_fence_id == plantation_fence_id
+        )
     total = int((await db.execute(total_stmt)).scalar() or 0)
 
     analyzed_stmt = _scope(select(BioacousticRecording), user).where(
         BioacousticRecording.status == "analyzed"
     )
+    if plantation_fence_id:
+        analyzed_stmt = analyzed_stmt.where(
+            BioacousticRecording.plantation_fence_id == plantation_fence_id
+        )
     analyzed_rows = (await db.execute(analyzed_stmt)).scalars().all()
     analyzed = len(analyzed_rows)
 
@@ -162,6 +174,7 @@ async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
     avg_simpson = 0.0
     species_set: set[str] = set()
     threatened = 0
+    taxon_calls: dict[str, int] = {}
     if analyzed_rows:
         health_scores = [float(r.bioacoustic_health_score or 0) for r in analyzed_rows]
         shannon_scores = [float(r.shannon_diversity_index or 0) for r in analyzed_rows]
@@ -174,12 +187,18 @@ async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
                 species_set.add(det.get("scientific_name", ""))
                 if det.get("iucn_status") in _THREATENED:
                     threatened += 1
+                tg = det.get("taxon_group", "unknown")
+                taxon_calls[tg] = taxon_calls.get(tg, 0) + int(det.get("call_count") or 0)
 
     recent_stmt = (
         _scope(select(BioacousticRecording), user)
         .order_by(BioacousticRecording.recorded_at.desc())
         .limit(5)
     )
+    if plantation_fence_id:
+        recent_stmt = recent_stmt.where(
+            BioacousticRecording.plantation_fence_id == plantation_fence_id
+        )
     recent = (await db.execute(recent_stmt)).scalars().all()
 
     return BioacousticSummary(
@@ -190,5 +209,6 @@ async def bioacoustic_summary(user: CurrentUser, db: DB) -> BioacousticSummary:
         avg_simpson_index=avg_simpson,
         total_species_detected=len(species_set),
         threatened_species_count=threatened,
+        taxon_breakdown=taxon_calls,
         recent_recordings=[BioacousticRecordingOut.from_model(r) for r in recent],
     )

@@ -16,6 +16,7 @@ from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecor
 from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.birdnet_runner import cleanup_wav
 from app.services.bioacoustic.enrichment import enrich_detection
+from app.services.bioacoustic.merge_detections import taxon_breakdown
 from app.services.bioacoustic.metrics import aggregate_metrics
 from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.storage import get_storage
@@ -59,6 +60,18 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             enriched.append(row)
 
         metrics = aggregate_metrics(enriched)
+        from app.services.ai.bioacoustic_types import SpeciesDetection
+
+        taxon_rows = [
+            SpeciesDetection(
+                scientific_name=d["scientific_name"],
+                common_name=d["common_name"],
+                taxon_group=d["taxon_group"],
+                confidence=float(d["confidence"]),
+                call_count=int(d["call_count"]),
+            )
+            for d in enriched
+        ]
         rec.status = "analyzed"
         rec.preprocessing = {k: v for k, v in preprocessing.items() if k != "wav_temp_path"}
         rec.spectrogram_s3_key = preprocessing.get("spectrogram_s3_key")
@@ -75,6 +88,7 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             "pipeline": ai.pipeline,
             "detections": enriched,
             "metrics": metrics,
+            "taxon_breakdown": taxon_breakdown(taxon_rows),
         }
         rec.analyzed_at = datetime.now(UTC)
     finally:

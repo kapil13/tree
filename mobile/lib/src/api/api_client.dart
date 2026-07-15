@@ -217,6 +217,16 @@ class ApiClient {
     return List<dynamic>.from(r.data);
   }
 
+  Future<List<dynamic>> listPlantationFences() async {
+    final r = await _dio.get('/plantation-fences', queryParameters: {'page_size': 100});
+    return List<dynamic>.from(r.data['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getEcosystemHealth(String fenceId) async {
+    final r = await _dio.get('/plantation-fences/$fenceId/ecosystem-health');
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> uploadBioacousticRecording({
     required String filePath,
     required double durationSeconds,

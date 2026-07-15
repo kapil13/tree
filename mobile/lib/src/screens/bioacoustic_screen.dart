@@ -30,12 +30,19 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
   String? _status;
   String? _error;
   bool _busy = false;
+  String? _selectedFenceId;
+  List<dynamic> _fences = [];
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       await ref.read(bioacousticQueueProvider).init();
+      try {
+        final api = await ref.read(apiClientProvider.future);
+        final fences = await api.listPlantationFences();
+        if (mounted) setState(() => _fences = fences);
+      } catch (_) {}
       if (mounted) setState(() {});
     });
   }
@@ -128,6 +135,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
           durationSeconds: _elapsed.toDouble(),
           latitude: gps.lat,
           longitude: gps.lon,
+          plantationFenceId: _selectedFenceId,
         );
         await api.analyzeBioacousticRecording(rec['id'] as String);
         ref.invalidate(bioacousticRecordingsProvider);
@@ -259,6 +267,36 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Plantation site (optional)', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String?>(
+                      value: _selectedFenceId,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Link to site for NDVI reports',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(value: null, child: Text('No site — GPS only')),
+                        ..._fences.map((f) {
+                          final m = f as Map<String, dynamic>;
+                          return DropdownMenuItem<String?>(
+                            value: m['id'] as String,
+                            child: Text(m['name'] as String? ?? 'Site'),
+                          );
+                        }),
+                      ],
+                      onChanged: _busy ? null : (v) => setState(() => _selectedFenceId = v),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
