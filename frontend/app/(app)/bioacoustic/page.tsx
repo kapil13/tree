@@ -81,7 +81,7 @@ export default function BioacousticPage() {
           form.append("longitude", String(lon));
 
           const rec = await bioacoustic.uploadDirect(form);
-          setStatus("Analyzing biodiversity…");
+          setStatus("Queued for BirdNET analysis…");
           await bioacoustic.analyze(rec.id);
           setStatus("Recording analyzed successfully.");
           qc.invalidateQueries({ queryKey: ["bioacoustic-recordings"] });
@@ -156,23 +156,27 @@ export default function BioacousticPage() {
                     {r.latitude?.toFixed(4)}, {r.longitude?.toFixed(4)} · {r.status}
                   </div>
                 </div>
-                {r.status !== "analyzed" && (
+                {r.status !== "analyzed" && r.status !== "failed" && (
                   <button
                     className="btn-secondary text-sm"
-                    disabled={analyzeMut.isPending}
+                    disabled={analyzeMut.isPending || r.status === "queued" || r.status === "analyzing"}
                     onClick={() => analyzeMut.mutate(r.id)}
                   >
-                    Analyze
+                    {r.status === "queued" || r.status === "analyzing" ? "Analyzing…" : "Analyze"}
                   </button>
                 )}
               </div>
               {r.status === "analyzed" && (
-                <div className="mt-3 grid gap-3 md:grid-cols-4">
+                <div className="mt-3 grid gap-3 md:grid-cols-5">
                   <Metric label="Health score" value={`${r.bioacoustic_health_score ?? "—"}/100`} />
                   <Metric label="Shannon H′" value={String(r.shannon_diversity_index ?? "—")} />
+                  <Metric label="Simpson D" value={String(r.simpson_diversity_index ?? "—")} />
                   <Metric label="Species" value={String(r.total_species_count ?? "—")} />
                   <Metric label="AI confidence" value={`${((r.ai_confidence_score ?? 0) * 100).toFixed(0)}%`} />
                 </div>
+              )}
+              {r.status === "failed" && r.analysis_error && (
+                <p className="mt-2 text-sm text-rose-700">{r.analysis_error}</p>
               )}
               {r.analysis_summary && (
                 <p className="mt-2 text-sm text-stone-600">{r.analysis_summary}</p>

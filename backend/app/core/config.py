@@ -77,6 +77,13 @@ class Settings(BaseSettings):
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
 
+    # Bioacoustic pipeline
+    bioacoustic_pipeline: Literal["stub", "birdnet"] = "stub"
+    bioacoustic_min_confidence: float = Field(default=0.25, ge=0.05, le=0.99)
+    iucn_api_token: str | None = None
+    iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
+    gbif_api_url: str = "https://api.gbif.org/v1"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

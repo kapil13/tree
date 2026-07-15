@@ -109,6 +109,11 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         )
         if bio_analyzed
         else 0.0,
+        avg_simpson_index=round(
+            sum(float(r.simpson_diversity_index or 0) for r in bio_analyzed) / len(bio_analyzed), 4
+        )
+        if bio_analyzed
+        else 0.0,
         total_species_detected=len(
             {
                 d.get("scientific_name")

@@ -30,6 +30,8 @@ class BioacousticRecordingCreate(BaseModel):
 
 
 class SpeciesDetectionOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     scientific_name: str
     common_name: str
     taxon_group: str
@@ -40,6 +42,14 @@ class SpeciesDetectionOut(BaseModel):
     threat_status: str
     iucn_taxon_id: str | None = None
     iucn_url: str | None = None
+    gbif_usage_key: int | None = None
+    gbif_match_type: str | None = None
+
+
+class BioacousticAnalyzeResponse(BaseModel):
+    recording_id: uuid.UUID
+    status: str
+    celery_task_id: str | None = None
 
 
 class BioacousticRecordingOut(BaseModel):
@@ -59,9 +69,11 @@ class BioacousticRecordingOut(BaseModel):
     total_species_count: int | None = None
     total_calls_detected: int | None = None
     shannon_diversity_index: float | None = None
+    simpson_diversity_index: float | None = None
     bioacoustic_health_score: float | None = None
     ai_confidence_score: float | None = None
     analysis_summary: str | None = None
+    analysis_error: str | None = None
     analyzed_at: datetime | None = None
     created_at: datetime
 
@@ -94,6 +106,9 @@ class BioacousticRecordingOut(BaseModel):
             shannon_diversity_index=float(rec.shannon_diversity_index)
             if rec.shannon_diversity_index is not None
             else None,
+            simpson_diversity_index=float(rec.simpson_diversity_index)
+            if rec.simpson_diversity_index is not None
+            else None,
             bioacoustic_health_score=float(rec.bioacoustic_health_score)
             if rec.bioacoustic_health_score is not None
             else None,
@@ -101,6 +116,7 @@ class BioacousticRecordingOut(BaseModel):
             if rec.ai_confidence_score is not None
             else None,
             analysis_summary=rec.analysis_summary,
+            analysis_error=rec.analysis_error,
             analyzed_at=rec.analyzed_at,
             created_at=rec.created_at,
         )
@@ -111,6 +127,7 @@ class BioacousticSummary(BaseModel):
     analyzed_recordings: int
     avg_health_score: float
     avg_shannon_index: float
+    avg_simpson_index: float
     total_species_detected: int
     threatened_species_count: int
     recent_recordings: list[BioacousticRecordingOut] = Field(default_factory=list)

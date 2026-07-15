@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../api/api_errors.dart';
+import '../location_helper.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/bioacoustic_sync.dart';
 import '../providers.dart';
@@ -88,26 +88,9 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     await _saveOrUpload(path);
   }
 
-  Future<({double lat, double lon})> _captureGps() async {
-    double lat = 17.385;
-    double lon = 78.4867;
-    try {
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 8),
-      );
-      lat = pos.latitude;
-      lon = pos.longitude;
-    } catch (_) {
-      try {
-        final last = await Geolocator.getLastKnownPosition();
-        if (last != null) {
-          lat = last.latitude;
-          lon = last.longitude;
-        }
-      } catch (_) {}
-    }
-    return (lat: lat, lon: lon);
+  Future<({double lat, double lon, String? note})> _captureGps() async {
+    final gps = await captureLocation();
+    return (lat: gps.latitude, lon: gps.longitude, note: gps.message);
   }
 
   Future<void> _saveOrUpload(String path) async {
@@ -120,6 +103,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
       final gps = await _captureGps();
       final sync = ref.read(bioacousticSyncProvider);
       final online = await sync.isOnline();
+      final gpsNote = gps.note;
 
       if (!online) {
         await ref.read(bioacousticQueueProvider).enqueue(
@@ -129,13 +113,14 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
               longitude: gps.lon,
             );
         if (mounted) {
-          setState(() => _status =
-              'Saved offline. Will upload and analyze automatically when you have signal.');
+          setState(() => _status = gpsNote != null
+              ? 'Saved offline. $gpsNote'
+              : 'Saved offline. Will upload and analyze automatically when you have signal.');
         }
         return;
       }
 
-      setState(() => _status = 'Uploading and analyzing…');
+      setState(() => _status = gpsNote ?? 'Uploading and analyzing…');
       try {
         final api = await ref.read(apiClientProvider.future);
         final rec = await api.uploadBioacousticRecording(
@@ -355,6 +340,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                               Text(
                                 'Health ${r['bioacoustic_health_score']}/100 · '
                                 'Shannon ${r['shannon_diversity_index']} · '
+                                'Simpson ${r['simpson_diversity_index']} · '
                                 '${r['total_species_count']} species',
                               ),
                             if (r['analysis_summary'] != null)
@@ -470,7 +456,7 @@ class _OfflineQueueSectionState extends State<_OfflineQueueSection> {
               ),
               subtitle: Text(
                 '${item.createdAt.toLocal().toString().substring(0, 16)}\n'
-                'GPS ${item.latitude.toStringAsFixed(4)}, ${item.longitude.toStringAsFixed(4)}'
+                'Location ${formatCoordinates(item.latitude, item.longitude)}'
                 '${item.errorMessage != null ? '\n${item.errorMessage}' : ''}',
               ),
               isThreeLine: item.errorMessage != null,

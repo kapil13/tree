@@ -31,6 +31,7 @@ celery_app.conf.update(
         "app.workers.tasks.run_satellite_scan": {"queue": "satellite"},
         "app.workers.tasks.recalc_carbon": {"queue": "carbon"},
         "app.workers.tasks.send_notification": {"queue": "notifications"},
+        "app.workers.tasks.run_bioacoustic_analysis": {"queue": "bioacoustic"},
     },
     beat_schedule={
         "monthly-satellite-scan": {

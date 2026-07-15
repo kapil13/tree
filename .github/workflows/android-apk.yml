@@ -12,6 +12,8 @@ on:
       - cursor/android-apk-build-f2ba
       - cursor/hostinger-kvm4-deploy-f2ba
       - cursor/bioacoustic-engine-f2ba
+      - cursor/bioacoustic-offline-sync-f2ba
+      - cursor/bioacoustic-birdnet-phase1-f2ba
 
 jobs:
   build-apk:
