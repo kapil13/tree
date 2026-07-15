@@ -8,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../api/api_errors.dart';
+import '../offline/bioacoustic_queue.dart';
+import '../offline/bioacoustic_sync.dart';
 import '../providers.dart';
 
 class BioacousticScreen extends ConsumerStatefulWidget {
@@ -28,6 +30,15 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
   String? _status;
   String? _error;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(bioacousticQueueProvider).init();
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -74,43 +85,122 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     }
     final path = _recordPath;
     if (path == null) return;
-    await _uploadAndAnalyze(path);
+    await _saveOrUpload(path);
   }
 
-  Future<void> _uploadAndAnalyze(String path) async {
+  Future<({double lat, double lon})> _captureGps() async {
+    double lat = 17.385;
+    double lon = 78.4867;
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
+      );
+      lat = pos.latitude;
+      lon = pos.longitude;
+    } catch (_) {
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          lat = last.latitude;
+          lon = last.longitude;
+        }
+      } catch (_) {}
+    }
+    return (lat: lat, lon: lon);
+  }
+
+  Future<void> _saveOrUpload(String path) async {
     setState(() {
       _busy = true;
-      _status = 'Capturing GPS and uploading…';
+      _status = 'Saving recording…';
       _error = null;
     });
     try {
-      double lat = 17.385;
-      double lon = 78.4867;
-      try {
-        final pos = await Geolocator.getCurrentPosition();
-        lat = pos.latitude;
-        lon = pos.longitude;
-      } catch (_) {}
+      final gps = await _captureGps();
+      final sync = ref.read(bioacousticSyncProvider);
+      final online = await sync.isOnline();
 
-      final api = await ref.read(apiClientProvider.future);
-      final rec = await api.uploadBioacousticRecording(
-        filePath: path,
-        durationSeconds: _elapsed.toDouble(),
-        latitude: lat,
-        longitude: lon,
-      );
-      setState(() => _status = 'Running AI species identification…');
-      await api.analyzeBioacousticRecording(rec['id'] as String);
-      ref.invalidate(bioacousticRecordingsProvider);
-      ref.invalidate(dashboardProvider);
-      if (mounted) {
-        setState(() => _status = 'Analysis complete. See results below.');
+      if (!online) {
+        await ref.read(bioacousticQueueProvider).enqueue(
+              tempFilePath: path,
+              durationSeconds: _elapsed.toDouble(),
+              latitude: gps.lat,
+              longitude: gps.lon,
+            );
+        if (mounted) {
+          setState(() => _status =
+              'Saved offline. Will upload and analyze automatically when you have signal.');
+        }
+        return;
+      }
+
+      setState(() => _status = 'Uploading and analyzing…');
+      try {
+        final api = await ref.read(apiClientProvider.future);
+        final rec = await api.uploadBioacousticRecording(
+          filePath: path,
+          durationSeconds: _elapsed.toDouble(),
+          latitude: gps.lat,
+          longitude: gps.lon,
+        );
+        await api.analyzeBioacousticRecording(rec['id'] as String);
+        ref.invalidate(bioacousticRecordingsProvider);
+        ref.invalidate(dashboardProvider);
+        if (mounted) {
+          setState(() => _status = 'Analysis complete. See results below.');
+        }
+      } catch (e) {
+        if (isUnauthorizedError(e)) rethrow;
+        await ref.read(bioacousticQueueProvider).enqueue(
+              tempFilePath: path,
+              durationSeconds: _elapsed.toDouble(),
+              latitude: gps.lat,
+              longitude: gps.lon,
+            );
+        if (mounted) {
+          setState(() => _status =
+              'Upload failed — saved offline. Tap “Sync now” when your connection is stable.');
+          _error = apiErrorMessage(e);
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _syncNow() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _status = 'Syncing offline recordings…';
+    });
+    try {
+      final sync = ref.read(bioacousticSyncProvider);
+      final count = await sync.syncAll(() => ref.read(apiClientProvider.future));
+      ref.invalidate(bioacousticRecordingsProvider);
+      ref.invalidate(dashboardProvider);
+      if (mounted) {
+        if (count > 0) {
+          setState(() => _status = 'Synced $count recording${count == 1 ? '' : 's'}.');
+        } else if (sync.lastError != null) {
+          setState(() => _error = sync.lastError);
+        } else {
+          setState(() => _status = 'No pending recordings to sync.');
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _retryItem(QueuedBioacousticRecording item) async {
+    await ref.read(bioacousticQueueProvider).markPending(item.id);
+    await _syncNow();
   }
 
   Color _iucnColor(String? status) {
@@ -127,13 +217,60 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     }
   }
 
+  String _queueStatusLabel(BioacousticQueueStatus status) {
+    switch (status) {
+      case BioacousticQueueStatus.pending:
+        return 'Waiting to sync';
+      case BioacousticQueueStatus.syncing:
+        return 'Syncing…';
+      case BioacousticQueueStatus.failed:
+        return 'Sync failed';
+    }
+  }
+
+  IconData _queueStatusIcon(BioacousticQueueStatus status) {
+    switch (status) {
+      case BioacousticQueueStatus.pending:
+        return Icons.cloud_off;
+      case BioacousticQueueStatus.syncing:
+        return Icons.cloud_upload;
+      case BioacousticQueueStatus.failed:
+        return Icons.error_outline;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final recordings = ref.watch(bioacousticRecordingsProvider);
+    final queue = ref.watch(bioacousticQueueProvider);
+    final sync = ref.watch(bioacousticSyncProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Bioacoustic')),
+      appBar: AppBar(
+        title: const Text('Bioacoustic'),
+        actions: [
+          if (sync.syncing)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: 'Sync offline recordings',
+              onPressed: _busy ? null : _syncNow,
+              icon: const Icon(Icons.sync),
+            ),
+        ],
+      ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(bioacousticRecordingsProvider),
+        onRefresh: () async {
+          ref.invalidate(bioacousticRecordingsProvider);
+          await _syncNow();
+        },
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -147,6 +284,12 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                     Text('$_elapsed s', style: Theme.of(context).textTheme.headlineMedium),
                     Text('Target: $_minSeconds–$_maxSeconds seconds',
                         style: const TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Works offline — recordings queue locally and sync when you regain signal.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                     const SizedBox(height: 16),
                     if (!_recording)
                       FilledButton.icon(
@@ -160,7 +303,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                         icon: const Icon(Icons.stop),
                         label: Text(_elapsed < _minSeconds
                             ? 'Stop (${_minSeconds - _elapsed}s min)'
-                            : 'Stop & analyze'),
+                            : 'Stop & save'),
                       ),
                     if (_status != null) ...[
                       const SizedBox(height: 12),
@@ -174,15 +317,24 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                 ),
               ),
             ),
+            _OfflineQueueSection(
+              queue: queue,
+              busy: _busy,
+              sync: sync,
+              onSync: _syncNow,
+              onRetry: _retryItem,
+              statusLabel: _queueStatusLabel,
+              statusIcon: _queueStatusIcon,
+            ),
             const SizedBox(height: 16),
-            Text('Recordings', style: Theme.of(context).textTheme.titleMedium),
+            Text('Synced recordings', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             recordings.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text(apiErrorMessage(e)),
               data: (items) {
                 if (items.isEmpty) {
-                  return const Text('No recordings yet.');
+                  return const Text('No synced recordings yet.');
                 }
                 return Column(
                   children: items.map((raw) {
@@ -241,6 +393,98 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OfflineQueueSection extends StatefulWidget {
+  const _OfflineQueueSection({
+    required this.queue,
+    required this.busy,
+    required this.sync,
+    required this.onSync,
+    required this.onRetry,
+    required this.statusLabel,
+    required this.statusIcon,
+  });
+
+  final BioacousticQueue queue;
+  final bool busy;
+  final BioacousticSyncService sync;
+  final Future<void> Function() onSync;
+  final Future<void> Function(QueuedBioacousticRecording) onRetry;
+  final String Function(BioacousticQueueStatus) statusLabel;
+  final IconData Function(BioacousticQueueStatus) statusIcon;
+
+  @override
+  State<_OfflineQueueSection> createState() => _OfflineQueueSectionState();
+}
+
+class _OfflineQueueSectionState extends State<_OfflineQueueSection> {
+  List<QueuedBioacousticRecording> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    widget.queue.addListener(_reload);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    widget.queue.removeListener(_reload);
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    final items = await widget.queue.listAll();
+    if (mounted) setState(() => _items = items);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Text('Offline queue', style: Theme.of(context).textTheme.titleMedium),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: widget.busy || widget.sync.syncing ? null : widget.onSync,
+              icon: const Icon(Icons.sync, size: 18),
+              label: const Text('Sync now'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ..._items.map((item) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: Icon(widget.statusIcon(item.status)),
+              title: Text(
+                '${item.durationSeconds.toStringAsFixed(0)}s · ${widget.statusLabel(item.status)}',
+              ),
+              subtitle: Text(
+                '${item.createdAt.toLocal().toString().substring(0, 16)}\n'
+                'GPS ${item.latitude.toStringAsFixed(4)}, ${item.longitude.toStringAsFixed(4)}'
+                '${item.errorMessage != null ? '\n${item.errorMessage}' : ''}',
+              ),
+              isThreeLine: item.errorMessage != null,
+              trailing: item.status == BioacousticQueueStatus.failed
+                  ? IconButton(
+                      tooltip: 'Retry',
+                      onPressed: widget.busy ? null : () => widget.onRetry(item),
+                      icon: const Icon(Icons.refresh),
+                    )
+                  : null,
+            ),
+          );
+        }),
+      ],
     );
   }
 }
