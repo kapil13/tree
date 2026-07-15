@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +31,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     try {
       await api.me();
       sessionController.setAuthenticated(true);
+      final queue = ref.read(bioacousticQueueProvider);
+      await queue.init();
+      final sync = ref.read(bioacousticSyncProvider);
+      sync.startListening(() => ref.read(apiClientProvider.future));
+      unawaited(sync.syncAll(() => ref.read(apiClientProvider.future)));
       if (!mounted) return;
       context.go('/home');
     } catch (_) {

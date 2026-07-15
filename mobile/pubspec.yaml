@@ -29,6 +29,9 @@ dependencies:
   permission_handler: ^11.3.1
   record: ^5.1.2
   path_provider: ^2.1.4
+  path: ^1.9.0
+  sqflite: ^2.3.3
+  connectivity_plus: ^6.0.5
 
   # Map (OpenStreetMap tiles — no API key required)
   flutter_map: ^7.0.2
