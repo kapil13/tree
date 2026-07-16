@@ -134,7 +134,7 @@ def analyze_bioacoustic_recording_sync(recording_id: uuid.UUID) -> dict:
         storage = get_storage()
         audio_bytes = storage.get_bytes(rec.s3_key) or b""
         if not audio_bytes:
-            audio_bytes = rec.s3_key.encode("utf-8")
+            raise ValueError("audio_missing")
 
         try:
             _run_analysis_pipeline(rec, audio_bytes)
@@ -198,7 +198,7 @@ async def analyze_bioacoustic_recording(
     storage = get_storage()
     audio_bytes = storage.get_bytes(rec.s3_key) or b""
     if not audio_bytes:
-        audio_bytes = rec.s3_key.encode("utf-8")
+        raise ValueError("audio_missing")
 
     rec.status = "analyzing"
     await db.commit()

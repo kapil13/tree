@@ -79,7 +79,9 @@ class Settings(BaseSettings):
 
     # Bioacoustic pipeline
     bioacoustic_pipeline: Literal["stub", "birdnet", "composite"] = "stub"
-    bioacoustic_min_confidence: float = Field(default=0.25, ge=0.05, le=0.99)
+    bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)
+    bioacoustic_return_all_detections: bool = True
+    bioacoustic_noise_reduction: bool = False
     bioacoustic_enable_frogs: bool = True
     bioacoustic_enable_insects: bool = True
     iucn_api_token: str | None = None
