@@ -110,6 +110,7 @@ def _run_composite(
             log.exception("composite_insect_failed", error=str(exc))
 
     if not all_detections:
+        log.warning("composite_no_detections", latitude=latitude, longitude=longitude)
         raise RuntimeError("composite_no_detections")
 
     merged = merge_species_detections(all_detections)
@@ -160,13 +161,17 @@ def identify_species_from_audio(
 
         if birdnet_available():
             try:
-                return run_birdnet(
+                result = run_birdnet(
                     wav_path,
                     duration_seconds=duration_seconds,
                     latitude=latitude,
                     longitude=longitude,
                     recorded_at=recorded_at,
                 )
+                if result.detections:
+                    return result
+                log.warning("birdnet_zero_detections")
+                return result
             except Exception as exc:
                 log.exception("birdnet_failed", error=str(exc))
         else:
