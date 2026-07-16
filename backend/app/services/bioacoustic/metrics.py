@@ -66,8 +66,29 @@ def bioacoustic_health_score(
     return round(max(0.0, min(score, 100.0)), 2)
 
 
-def aggregate_metrics(detections: list[dict[str, Any]]) -> dict[str, Any]:
+def filter_detections_for_metrics(
+    detections: list[dict[str, Any]],
+    *,
+    taxon_groups: set[str] | None = None,
+    min_confidence: float | None = None,
+) -> list[dict[str, Any]]:
+    """Subset detections used for health/diversity scores."""
+    out = detections
+    if taxon_groups is not None:
+        out = [d for d in out if d.get("taxon_group") in taxon_groups]
+    if min_confidence is not None:
+        out = [d for d in out if float(d.get("confidence") or 0) >= min_confidence]
+    return out
+
+
+def aggregate_metrics(
+    detections: list[dict[str, Any]],
+    *,
+    metric_detections: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Compute totals and scores from enriched species detections."""
+    scored = metric_detections if metric_detections is not None else detections
+
     if not detections:
         return {
             "total_species_count": 0,
@@ -78,21 +99,21 @@ def aggregate_metrics(detections: list[dict[str, Any]]) -> dict[str, Any]:
             "ai_confidence_score": 0.0,
         }
 
-    call_counts = [int(d.get("call_count") or 0) for d in detections]
-    confidences = [float(d.get("confidence") or 0) for d in detections]
+    call_counts = [int(d.get("call_count") or 0) for d in scored]
+    confidences = [float(d.get("confidence") or 0) for d in scored]
     shannon = shannon_diversity_index(call_counts)
     simpson = simpson_diversity_index(call_counts)
     avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
     health = bioacoustic_health_score(
         shannon_index=shannon,
         simpson_index=simpson,
-        unique_species=len(detections),
+        unique_species=len(scored),
         avg_confidence=avg_conf,
-        detections=detections,
+        detections=scored,
     )
     return {
         "total_species_count": len(detections),
-        "total_calls_detected": sum(call_counts),
+        "total_calls_detected": sum(int(d.get("call_count") or 0) for d in detections),
         "shannon_diversity_index": shannon,
         "simpson_diversity_index": simpson,
         "bioacoustic_health_score": health,

@@ -66,11 +66,19 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     }
     final dir = await getTemporaryDirectory();
     _recordPath = '${dir.path}/byot_bio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    await _recorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: _recordPath!);
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        sampleRate: 48000,
+        bitRate: 128000,
+        numChannels: 1,
+      ),
+      path: _recordPath!,
+    );
     setState(() {
       _recording = true;
       _elapsed = 0;
-      _status = 'Recording… hold device steady in a quiet outdoor spot.';
+      _status = 'Recording… point mic toward birds outdoors (dawn is best).';
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;

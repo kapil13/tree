@@ -17,7 +17,7 @@ from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.birdnet_runner import cleanup_wav
 from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.merge_detections import taxon_breakdown
-from app.services.bioacoustic.metrics import aggregate_metrics
+from app.services.bioacoustic.metrics import aggregate_metrics, filter_detections_for_metrics
 from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.storage import get_storage
 
@@ -57,9 +57,19 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
                 confidence=det.confidence,
                 call_count=det.call_count,
             )
+            row["pipeline_source"] = ai.pipeline
             enriched.append(row)
 
-        metrics = aggregate_metrics(enriched)
+        # Health scores use bird detections only — heuristic frogs/insects skew metrics.
+        bird_for_metrics = filter_detections_for_metrics(
+            enriched,
+            taxon_groups={"bird"},
+            min_confidence=0.12,
+        )
+        metrics = aggregate_metrics(
+            enriched,
+            metric_detections=bird_for_metrics if bird_for_metrics else enriched,
+        )
         from app.services.ai.bioacoustic_types import SpeciesDetection
 
         taxon_rows = [
@@ -148,7 +158,7 @@ def analyze_bioacoustic_recording_sync(recording_id: uuid.UUID) -> dict:
 
 
 async def enqueue_bioacoustic_analysis(
-    db: AsyncSession, recording_id: uuid.UUID, user: User
+    db: AsyncSession, recording_id: uuid.UUID, user: User, *, force: bool = False
 ) -> BioacousticAnalyzeResponse:
     rec = await _load_owned_recording(recording_id, user, db)
     if rec.status in {"queued", "analyzing"}:
@@ -157,7 +167,7 @@ async def enqueue_bioacoustic_analysis(
             status=rec.status,
             celery_task_id=rec.celery_task_id,
         )
-    if rec.status == "analyzed":
+    if rec.status == "analyzed" and not force:
         return BioacousticAnalyzeResponse(
             recording_id=rec.id,
             status="analyzed",

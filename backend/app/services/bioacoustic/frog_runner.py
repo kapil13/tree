@@ -75,10 +75,12 @@ def run_frog_classifier(
     frog_energy = _band_energy(y, sr, 200, 4000)
     total_energy = _band_energy(y, sr, 80, 12000) or 1e-9
     ratio = frog_energy / total_energy
-    if ratio < 0.08:
+    if ratio < 0.28:
         return []
 
     onsets = _count_onsets(y, sr)
+    if onsets < 4:
+        return []
     seed = int(hashlib.sha256(y[: min(len(y), 16000)].tobytes()).hexdigest()[:8], 16)
     rng = random.Random(seed)
 

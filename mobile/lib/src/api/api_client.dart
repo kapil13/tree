@@ -250,8 +250,11 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id) async {
-    final r = await _dio.post('/bioacoustic/recordings/$id/analyze');
+  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id, {bool force = false}) async {
+    final r = await _dio.post(
+      '/bioacoustic/recordings/$id/analyze',
+      queryParameters: force ? {'force': true} : null,
+    );
     final data = Map<String, dynamic>.from(r.data);
     final status = data['status'] as String? ?? '';
     if (status == 'analyzed') {

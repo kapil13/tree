@@ -5,6 +5,7 @@ from app.services.bioacoustic.iucn_catalog import enrich_detection, lookup_iucn
 from app.services.bioacoustic.metrics import (
     aggregate_metrics,
     bioacoustic_health_score,
+    filter_detections_for_metrics,
     shannon_diversity_index,
     simpson_diversity_index,
 )
@@ -55,6 +56,20 @@ def test_stub_ai_identification():
     result = identify_species_from_audio(audio, duration_seconds=45.0, latitude=17.38, longitude=78.48)
     assert len(result.detections) >= 3
     assert result.summary
+
+
+def test_aggregate_metrics_bird_only_scoring():
+    detections = [
+        {**enrich_detection("Corvus splendens", "House Crow", "bird"), "confidence": 0.9, "call_count": 5},
+        {**enrich_detection("Pycnonotus cafer", "Red-vented Bulbul", "bird"), "confidence": 0.8, "call_count": 3},
+        {**enrich_detection("Fejervarya limnocharis", "Cricket Frog", "frog"), "confidence": 0.95, "call_count": 200},
+    ]
+    birds = filter_detections_for_metrics(detections, taxon_groups={"bird"}, min_confidence=0.12)
+    metrics = aggregate_metrics(detections, metric_detections=birds)
+    assert metrics["total_species_count"] == 3
+    assert metrics["total_calls_detected"] == 208
+    assert metrics["shannon_diversity_index"] == shannon_diversity_index([5, 3])
+    assert metrics["bioacoustic_health_score"] > 0
 
 
 def test_aggregate_metrics():

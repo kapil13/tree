@@ -77,13 +77,13 @@ class Settings(BaseSettings):
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
 
-    # Bioacoustic pipeline
-    bioacoustic_pipeline: Literal["stub", "birdnet", "composite"] = "stub"
+    # Bioacoustic pipeline (birdnet = production; composite adds experimental heuristics)
+    bioacoustic_pipeline: Literal["stub", "birdnet", "composite"] = "birdnet"
     bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)
     bioacoustic_return_all_detections: bool = True
     bioacoustic_noise_reduction: bool = False
-    bioacoustic_enable_frogs: bool = True
-    bioacoustic_enable_insects: bool = True
+    bioacoustic_enable_frogs: bool = False
+    bioacoustic_enable_insects: bool = False
     iucn_api_token: str | None = None
     iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
     gbif_api_url: str = "https://api.gbif.org/v1"

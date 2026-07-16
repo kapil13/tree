@@ -57,7 +57,7 @@ def run_insect_activity(
         return []
 
     activity = _high_band_rms(y, 48000)
-    if activity < 0.008:
+    if activity < 0.025:
         return []
 
     seed = int(hashlib.sha256(y[::100].tobytes()).hexdigest()[:8], 16)
