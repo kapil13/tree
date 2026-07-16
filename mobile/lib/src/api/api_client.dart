@@ -283,4 +283,36 @@ class ApiClient {
     final r = await _dio.get('/bioacoustic/summary');
     return Map<String, dynamic>.from(r.data);
   }
+
+  Future<Map<String, dynamic>> weatherForecast({
+    required double latitude,
+    required double longitude,
+    int days = 3,
+  }) async {
+    final r = await _dio.get(
+      '/weather/forecast',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'days': days,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> queueReport({
+    required String kind,
+    required String format,
+    String? plantationFenceId,
+  }) async {
+    final r = await _dio.post(
+      '/reports',
+      queryParameters: {
+        'kind': kind,
+        'format': format,
+        if (plantationFenceId != null) 'plantation_fence_id': plantationFenceId,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
 }
