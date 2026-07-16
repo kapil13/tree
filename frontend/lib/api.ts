@@ -540,9 +540,13 @@ export const bioacoustic = {
     }
     throw new Error("Bioacoustic analysis timed out");
   },
-  async analyze(id: string) {
+  async analyze(id: string, options?: { force?: boolean }) {
     const job = (
-      await api.post<BioacousticAnalyzeJob>(`/v1/bioacoustic/recordings/${id}/analyze`)
+      await api.post<BioacousticAnalyzeJob>(
+        `/v1/bioacoustic/recordings/${id}/analyze`,
+        undefined,
+        { params: options?.force ? { force: true } : undefined }
+      )
     ).data;
     if (job.status === "analyzed") {
       return bioacoustic.get(id);

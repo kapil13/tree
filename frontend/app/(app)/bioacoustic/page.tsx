@@ -47,7 +47,8 @@ export default function BioacousticPage() {
   });
 
   const analyzeMut = useMutation({
-    mutationFn: (id: string) => bioacoustic.analyze(id),
+    mutationFn: ({ id, force }: { id: string; force?: boolean }) =>
+      bioacoustic.analyze(id, { force }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bioacoustic-recordings"] }),
   });
 
@@ -94,7 +95,7 @@ export default function BioacousticPage() {
           if (fenceId) form.append("plantation_fence_id", fenceId);
 
           const rec = await bioacoustic.uploadDirect(form);
-          setStatus("Queued for composite analysis (birds + frogs + insects)…");
+          setStatus("Queued for BirdNET analysis…");
           await bioacoustic.analyze(rec.id);
           setStatus("Recording analyzed successfully.");
           qc.invalidateQueries({ queryKey: ["bioacoustic-recordings"] });
@@ -137,8 +138,8 @@ export default function BioacousticPage() {
       <div>
         <h1 className="text-2xl font-semibold">Bioacoustic monitoring</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Record 30–60 seconds of ambient sound. Composite AI detects birds (BirdNET), frogs, and
-          insect activity — correlated with satellite NDVI when linked to a plantation site.
+          Record 30–60 seconds outdoors. BirdNET identifies bird species from your soundscape.
+          Health scores are based on bird detections only.
         </p>
       </div>
 
@@ -238,11 +239,20 @@ export default function BioacousticPage() {
                     {r.plantation_fence_id ? " · linked to site" : ""}
                   </div>
                 </div>
+                {r.status === "analyzed" && (
+                  <button
+                    className="btn-secondary text-sm"
+                    disabled={analyzeMut.isPending}
+                    onClick={() => analyzeMut.mutate({ id: r.id, force: true })}
+                  >
+                    Re-analyze
+                  </button>
+                )}
                 {r.status !== "analyzed" && r.status !== "failed" && (
                   <button
                     className="btn-secondary text-sm"
                     disabled={analyzeMut.isPending || r.status === "queued" || r.status === "analyzing"}
-                    onClick={() => analyzeMut.mutate(r.id)}
+                    onClick={() => analyzeMut.mutate({ id: r.id })}
                   >
                     {r.status === "queued" || r.status === "analyzing" ? "Analyzing…" : "Analyze"}
                   </button>
@@ -265,7 +275,13 @@ export default function BioacousticPage() {
               )}
               {r.species_detections?.length > 0 && (
                 <ul className="mt-3 space-y-2">
-                  {r.species_detections.map((s) => (
+                  {[...r.species_detections]
+                    .sort((a, b) => {
+                      if (a.taxon_group === "bird" && b.taxon_group !== "bird") return -1;
+                      if (b.taxon_group === "bird" && a.taxon_group !== "bird") return 1;
+                      return b.call_count - a.call_count;
+                    })
+                    .map((s) => (
                     <li
                       key={`${r.id}-${s.scientific_name}`}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-stone-50 px-3 py-2 text-sm dark:bg-stone-900"
@@ -273,7 +289,10 @@ export default function BioacousticPage() {
                       <div>
                         <span className="font-medium">{s.common_name}</span>
                         <span className="ml-2 text-stone-500 italic">{s.scientific_name}</span>
-                        <span className="ml-2 text-xs uppercase text-stone-400">{s.taxon_group}</span>
+                        <span className="ml-2 text-xs uppercase text-stone-400">
+                          {s.taxon_group}
+                          {s.taxon_group !== "bird" ? " · experimental" : ""}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-stone-500">

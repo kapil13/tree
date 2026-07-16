@@ -96,18 +96,22 @@ def _run_composite(
             frogs = run_frog_classifier(wav_path, duration_seconds=duration_seconds)
             all_detections.extend(frogs)
             if frogs:
-                pipelines.append("frog-heuristic-v1")
+                pipelines.append("frog-heuristic-experimental")
         except Exception as exc:
             log.exception("composite_frog_failed", error=str(exc))
+    elif settings.bioacoustic_pipeline == "composite":
+        log.debug("composite_frogs_disabled")
 
     if settings.bioacoustic_enable_insects and insect_classifier_available():
         try:
             insects = run_insect_activity(wav_path, duration_seconds=duration_seconds)
             all_detections.extend(insects)
             if insects:
-                pipelines.append("insect-activity-v1")
+                pipelines.append("insect-heuristic-experimental")
         except Exception as exc:
             log.exception("composite_insect_failed", error=str(exc))
+    elif settings.bioacoustic_pipeline == "composite":
+        log.debug("composite_insects_disabled")
 
     if not all_detections:
         log.warning("composite_no_detections", latitude=latitude, longitude=longitude)
@@ -119,12 +123,24 @@ def _run_composite(
     if latitude is not None and longitude is not None:
         loc = f" near ({latitude:.4f}, {longitude:.4f})"
 
-    taxa_parts = [f"{k}: {v} calls" for k, v in sorted(breakdown.items())]
-    summary = (
-        f"Composite analysis: {len(merged)} species"
-        f" ({', '.join(taxa_parts)}){loc}. "
-        f"Duration {duration_seconds:.0f}s."
-    )
+    bird_calls = sum(d.call_count for d in merged if d.taxon_group == "bird")
+    bird_species = sum(1 for d in merged if d.taxon_group == "bird")
+    if bird_species > 0:
+        summary = (
+            f"BirdNET identified {bird_species} bird species ({bird_calls} calls){loc}. "
+            f"Duration {duration_seconds:.0f}s."
+        )
+        extra = [k for k in breakdown if k != "bird"]
+        if extra:
+            taxa_parts = [f"{k}: {breakdown[k]} calls" for k in sorted(extra)]
+            summary += f" Experimental taxa: {', '.join(taxa_parts)}."
+    else:
+        taxa_parts = [f"{k}: {v} calls" for k, v in sorted(breakdown.items())]
+        summary = (
+            f"Analysis found {len(merged)} species"
+            f" ({', '.join(taxa_parts)}){loc}. "
+            f"No birds met confidence threshold — record outdoors during dawn chorus."
+        )
 
     return BioacousticAnalysisResult(
         detections=merged,

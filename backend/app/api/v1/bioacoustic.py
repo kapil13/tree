@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, CurrentUser
@@ -131,11 +131,14 @@ async def get_recording(recording_id: uuid.UUID, user: CurrentUser, db: DB) -> B
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def analyze_recording(
-    recording_id: uuid.UUID, user: CurrentUser, db: DB
+    recording_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    force: bool = False,
 ) -> BioacousticAnalyzeResponse:
     """Queue BirdNET analysis on the Celery worker (poll GET /recordings/{id})."""
     try:
-        return await enqueue_bioacoustic_analysis(db, recording_id, user)
+        return await enqueue_bioacoustic_analysis(db, recording_id, user, force=force)
     except ValueError as exc:
         code = str(exc)
         if code == "not_found":
