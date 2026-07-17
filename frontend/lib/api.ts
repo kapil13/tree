@@ -454,6 +454,29 @@ export type BioacousticSpecies = {
   threat_status: string;
   iucn_taxon_id: string | null;
   iucn_url: string | null;
+  gbif_usage_key?: number | null;
+  regional_occurrence_match?: boolean | null;
+  metadata_sources?: { gbif?: boolean; iucn?: string };
+  pipeline_source?: string;
+};
+
+export type RegionalFauna = {
+  latitude: number;
+  longitude: number;
+  radius_km: number;
+  provider: string;
+  species_count: number;
+  taxon_breakdown: Record<string, number>;
+  species: Array<{
+    scientific_name: string;
+    common_name: string;
+    taxon_group: string;
+    gbif_usage_key: number;
+    occurrence_count: number;
+    iucn_status: string;
+    iucn_url: string | null;
+  }>;
+  iucn_live: boolean;
 };
 
 export type BioacousticRecording = {
@@ -567,6 +590,17 @@ export const bioacoustic = {
       taxon_breakdown: Record<string, number>;
       recent_recordings: BioacousticRecording[];
     };
+  },
+  async regionalFauna(latitude: number, longitude: number, taxonGroup?: string) {
+    return (
+      await api.get<RegionalFauna>("/v1/bioacoustic/regional-fauna", {
+        params: {
+          latitude,
+          longitude,
+          ...(taxonGroup ? { taxon_group: taxonGroup } : {}),
+        },
+      })
+    ).data;
   },
   async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
     return (

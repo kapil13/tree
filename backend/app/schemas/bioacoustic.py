@@ -44,6 +44,34 @@ class SpeciesDetectionOut(BaseModel):
     iucn_url: str | None = None
     gbif_usage_key: int | None = None
     gbif_match_type: str | None = None
+    regional_occurrence_match: bool | None = None
+    metadata_sources: dict[str, Any] | None = None
+    pipeline_source: str | None = None
+
+
+class RegionalFaunaSpecies(BaseModel):
+    scientific_name: str
+    common_name: str
+    taxon_group: str
+    gbif_usage_key: int
+    occurrence_count: int
+    iucn_status: str
+    population_trend: str
+    threat_status: str
+    iucn_taxon_id: str | None = None
+    iucn_url: str | None = None
+    metadata_sources: dict[str, str] = Field(default_factory=dict)
+
+
+class RegionalFaunaOut(BaseModel):
+    latitude: float
+    longitude: float
+    radius_km: float
+    provider: str
+    species_count: int
+    taxon_breakdown: dict[str, int] = Field(default_factory=dict)
+    species: list[RegionalFaunaSpecies] = Field(default_factory=list)
+    iucn_live: bool = False
 
 
 class BioacousticAnalyzeResponse(BaseModel):

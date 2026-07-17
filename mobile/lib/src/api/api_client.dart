@@ -286,4 +286,20 @@ class ApiClient {
     final r = await _dio.get('/bioacoustic/summary');
     return Map<String, dynamic>.from(r.data);
   }
+
+  Future<Map<String, dynamic>> regionalFauna({
+    required double latitude,
+    required double longitude,
+    String? taxonGroup,
+  }) async {
+    final r = await _dio.get(
+      '/bioacoustic/regional-fauna',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+        if (taxonGroup != null) 'taxon_group': taxonGroup,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
 }

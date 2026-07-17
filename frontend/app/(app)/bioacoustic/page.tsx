@@ -41,6 +41,20 @@ export default function BioacousticPage() {
     enabled: Boolean(fenceId),
   });
 
+  const { data: regionalFauna } = useQuery({
+    queryKey: ["regional-fauna"],
+    queryFn: async () => {
+      try {
+        const pos = await new Promise<GeolocationPosition>((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 })
+        );
+        return bioacoustic.regionalFauna(pos.coords.latitude, pos.coords.longitude);
+      } catch {
+        return bioacoustic.regionalFauna(17.385, 78.4867);
+      }
+    },
+  });
+
   const { data: recordings, isLoading } = useQuery({
     queryKey: ["bioacoustic-recordings"],
     queryFn: bioacoustic.list,
@@ -138,8 +152,9 @@ export default function BioacousticPage() {
       <div>
         <h1 className="text-2xl font-semibold">Bioacoustic monitoring</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Record 30–60 seconds outdoors. BirdNET identifies bird species from your soundscape.
-          Health scores are based on bird detections only.
+          Record 30–60 seconds outdoors. <strong>BirdNET</strong> identifies birds from audio;
+          <strong> GBIF</strong> shows expected species at your GPS; <strong>IUCN</strong> adds
+          conservation status.
         </p>
       </div>
 
@@ -194,6 +209,38 @@ export default function BioacousticPage() {
                 .join(" · ")}
             </p>
           )}
+        </div>
+      )}
+
+      {regionalFauna && (
+        <div className="card">
+          <h2 className="mb-2 text-sm font-medium text-stone-700">
+            Expected fauna at site (GBIF + IUCN)
+          </h2>
+          <p className="mb-3 text-xs text-stone-500">
+            {regionalFauna.species_count} species reported within {regionalFauna.radius_km} km
+            {regionalFauna.iucn_live ? " · live IUCN API" : " · IUCN catalog fallback"}
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs text-stone-600">
+            {Object.entries(regionalFauna.taxon_breakdown).map(([k, v]) => (
+              <span key={k} className="rounded-full bg-stone-100 px-2 py-1 dark:bg-stone-800">
+                {k}: {v}
+              </span>
+            ))}
+          </div>
+          <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm">
+            {regionalFauna.species.slice(0, 12).map((s) => (
+              <li key={s.gbif_usage_key} className="flex justify-between gap-2">
+                <span>
+                  {s.common_name}{" "}
+                  <span className="text-stone-400 italic">{s.scientific_name}</span>
+                </span>
+                <span className="shrink-0 text-xs text-stone-500">
+                  {s.occurrence_count} obs · {s.iucn_status}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -291,7 +338,8 @@ export default function BioacousticPage() {
                         <span className="ml-2 text-stone-500 italic">{s.scientific_name}</span>
                         <span className="ml-2 text-xs uppercase text-stone-400">
                           {s.taxon_group}
-                          {s.taxon_group !== "bird" ? " · experimental" : ""}
+                          {s.regional_occurrence_match === true && " · GBIF site match"}
+                          {s.regional_occurrence_match === false && " · not in GBIF radius"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">

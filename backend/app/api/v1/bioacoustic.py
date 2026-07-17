@@ -14,8 +14,10 @@ from app.schemas.bioacoustic import (
     BioacousticRecordingCreate,
     BioacousticRecordingOut,
     BioacousticSummary,
+    RegionalFaunaOut,
 )
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
+from app.services.bioacoustic.regional_fauna import build_regional_fauna
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
@@ -146,6 +148,23 @@ async def analyze_recording(
         if code == "forbidden":
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
+
+
+@router.get("/regional-fauna", response_model=RegionalFaunaOut)
+async def regional_fauna(
+    user: CurrentUser,
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180),
+    radius_km: float = Query(25.0, ge=1, le=100),
+    taxon_group: str | None = Query(None, description="bird, frog, mammal, insect"),
+) -> RegionalFaunaOut:
+    """
+    GBIF + IUCN regional species checklist for a GPS point.
+    Use before recording to see expected fauna, or to validate detections.
+    """
+    groups = {taxon_group} if taxon_group else None
+    data = build_regional_fauna(latitude, longitude, radius_km=radius_km, taxon_groups=groups)
+    return RegionalFaunaOut(**data)
 
 
 @router.get("/summary", response_model=BioacousticSummary)
