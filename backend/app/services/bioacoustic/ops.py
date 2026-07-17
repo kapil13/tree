@@ -16,6 +16,7 @@ from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecor
 from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.birdnet_runner import cleanup_wav
 from app.services.bioacoustic.enrichment import enrich_detection
+from app.services.bioacoustic.identification_coverage import identification_coverage
 from app.services.bioacoustic.merge_detections import taxon_breakdown
 from app.services.bioacoustic.acoustics import measure_spl_from_wav
 from app.services.bioacoustic.ecoacoustic_indices import compute_ecoacoustic_indices
@@ -129,13 +130,7 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
         rec.raw_output = {
             "engine": "biodiversity_assessment_v1",
             "pipeline": ai.pipeline,
-            "identification_coverage": {
-                "bird": "birdnet",
-                "mammal": "pending_model",
-                "amphibian": "pending_model",
-                "reptile": "pending_model",
-                "insect": "pending_model",
-            },
+            "identification_coverage": identification_coverage(),
             "detections": enriched,
             "metrics": metrics,
             "spl_metrics": spl_metrics,

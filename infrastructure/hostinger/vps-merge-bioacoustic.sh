@@ -33,8 +33,13 @@ BIOACOUSTIC_RETURN_ALL_DETECTIONS=true
 BIOACOUSTIC_NOISE_REDUCTION=false
 BIOACOUSTIC_ENABLE_FROGS=false
 BIOACOUSTIC_ENABLE_INSECTS=false
+BIOACOUSTIC_ENABLE_PERCH=false
 GBIF_OCCURRENCE_RADIUS_KM=25
 EOF
+
+echo "==> Optional: download Perch v2 for multi-taxa (amphibian/mammal/insect/reptile)"
+echo "    bash infrastructure/hostinger/download-perch-model.sh /opt/aranyix/models"
+echo "    Then set BIOACOUSTIC_ENABLE_PERCH=true and BIOACOUSTIC_PIPELINE=composite in .env.production"
 
 echo "==> Running database migrations..."
 cd "$HOSTINGER"
