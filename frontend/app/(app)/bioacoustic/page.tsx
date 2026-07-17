@@ -215,9 +215,9 @@ export default function BioacousticPage() {
         <h1 className="text-2xl font-semibold">Biodiversity Assessment Engine</h1>
         <p className="mt-1 text-sm text-stone-600">
           Convert short ambient environmental recordings into scientifically meaningful biodiversity metrics.
-          Record 60–180 seconds of soundscape (not voice). BirdNET identifies birds today; mammals, amphibians,
-          reptiles, and insects are on the roadmap. GBIF and IUCN enrich detections with regional context and
-          conservation status.
+          Record 60–180 seconds of soundscape (not voice). <strong>BirdNET</strong> identifies birds;
+          <strong>Perch v2</strong> (when enabled) covers amphibians, mammals, insects, and reptiles.
+          GBIF and IUCN enrich detections with regional context and conservation status.
         </p>
       </div>
 

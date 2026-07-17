@@ -45,6 +45,9 @@ class SpeciesDetectionOut(BaseModel):
     gbif_usage_key: int | None = None
     gbif_match_type: str | None = None
     regional_occurrence_match: bool | None = None
+    needs_review: bool | None = None
+    is_native: bool | None = None
+    time_intervals: list[dict[str, float]] | None = None
     metadata_sources: dict[str, Any] | None = None
     pipeline_source: str | None = None
 
