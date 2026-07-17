@@ -87,6 +87,7 @@ class Settings(BaseSettings):
     iucn_api_token: str | None = None
     iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
     gbif_api_url: str = "https://api.gbif.org/v1"
+    gbif_occurrence_radius_km: float = Field(default=25.0, ge=1.0, le=100.0)
 
     @property
     def cors_origins_list(self) -> list[str]:

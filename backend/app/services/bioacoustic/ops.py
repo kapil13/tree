@@ -19,6 +19,7 @@ from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.merge_detections import taxon_breakdown
 from app.services.bioacoustic.metrics import aggregate_metrics, filter_detections_for_metrics
 from app.services.bioacoustic.preprocess import preprocess_audio
+from app.services.bioacoustic.regional_fauna import annotate_regional_match, build_regional_fauna
 from app.services.storage import get_storage
 
 
@@ -60,7 +61,15 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             row["pipeline_source"] = ai.pipeline
             enriched.append(row)
 
-        # Health scores use bird detections only — heuristic frogs/insects skew metrics.
+        enriched = annotate_regional_match(enriched, lat, lon)
+
+        regional_context = None
+        if lat is not None and lon is not None:
+            try:
+                regional_context = build_regional_fauna(lat, lon, limit=30)
+            except Exception:
+                regional_context = None
+
         bird_for_metrics = filter_detections_for_metrics(
             enriched,
             taxon_groups={"bird"},
@@ -99,6 +108,12 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             "detections": enriched,
             "metrics": metrics,
             "taxon_breakdown": taxon_breakdown(taxon_rows),
+            "regional_fauna": regional_context,
+            "data_sources": {
+                "identification": ai.pipeline,
+                "taxonomy": "gbif",
+                "conservation": "iucn_api" if regional_context and regional_context.get("iucn_live") else "iucn_catalog",
+            },
         }
         rec.analyzed_at = datetime.now(UTC)
     finally:
