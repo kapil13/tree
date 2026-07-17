@@ -42,6 +42,8 @@ def taxon_group_from_gbif(gbif: dict[str, Any] | None, fallback: str = "bird") -
         return "insect"
     if klass == "mammalia":
         return "mammal"
+    if klass == "reptilia":
+        return "reptile"
     kingdom = (gbif.get("kingdom") or "").lower()
     if kingdom == "animalia":
         return "animal"

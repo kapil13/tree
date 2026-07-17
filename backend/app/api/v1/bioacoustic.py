@@ -159,13 +159,17 @@ async def regional_fauna(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     radius_km: float = Query(25.0, ge=1, le=100),
-    taxon_group: str | None = Query(None, description="bird, frog, mammal, insect"),
+    taxon_group: str | None = Query(None, description="bird, frog, amphibian, mammal, insect, reptile"),
 ) -> RegionalFaunaOut:
     """
     GBIF + IUCN regional species checklist for a GPS point.
     Use before recording to see expected fauna, or to validate detections.
     """
-    groups = {taxon_group} if taxon_group else None
+    groups = None
+    if taxon_group:
+        from app.services.bioacoustic.taxon_groups import detection_taxon_group
+
+        groups = {detection_taxon_group(taxon_group)}
     data = build_regional_fauna(latitude, longitude, radius_km=radius_km, taxon_groups=groups)
     return RegionalFaunaOut(**data)
 

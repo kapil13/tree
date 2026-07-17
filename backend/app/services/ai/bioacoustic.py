@@ -1,4 +1,4 @@
-"""Bioacoustic species identification — composite BirdNET + frog + insect."""
+"""Bioacoustic species identification — BirdNET + Perch multi-taxa."""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from app.services.bioacoustic.frog_runner import frog_classifier_available, run_
 from app.services.bioacoustic.insect_runner import insect_classifier_available, run_insect_activity
 from app.services.bioacoustic.iucn_catalog import IUCN_CATALOG
 from app.services.bioacoustic.merge_detections import merge_species_detections, taxon_breakdown
+from app.services.bioacoustic.perch_runner import perch_available, run_perch
+from app.services.bioacoustic.taxon_groups import TAXON_BIRD, normalize_taxon_group
 
 log = get_logger("bioacoustic.ai")
 
@@ -66,6 +68,28 @@ def _stub_identify(
     )
 
 
+def _build_multitaxa_summary(
+    merged: list[SpeciesDetection],
+    *,
+    duration_seconds: float,
+    latitude: float | None,
+    longitude: float | None,
+    pipelines: list[str],
+) -> str:
+    breakdown = taxon_breakdown(merged)
+    loc = ""
+    if latitude is not None and longitude is not None:
+        loc = f" near ({latitude:.4f}, {longitude:.4f})"
+
+    parts = [f"{k}: {v} detections" for k, v in sorted(breakdown.items())]
+    taxa_text = ", ".join(parts) if parts else "no species above threshold"
+    engines = "+".join(pipelines) if pipelines else "multitaxa"
+    return (
+        f"Biodiversity assessment ({engines}): {len(merged)} species — {taxa_text}{loc}. "
+        f"Duration {duration_seconds:.0f}s."
+    )
+
+
 def _run_composite(
     wav_path: str,
     *,
@@ -87,11 +111,28 @@ def _run_composite(
                 recorded_at=recorded_at,
             )
             all_detections.extend(bird.detections)
-            pipelines.append("birdnet")
+            if bird.detections:
+                pipelines.append("birdnet")
         except Exception as exc:
             log.exception("composite_birdnet_failed", error=str(exc))
 
-    if settings.bioacoustic_enable_frogs and frog_classifier_available():
+    if perch_available():
+        try:
+            perch_dets = run_perch(
+                wav_path,
+                duration_seconds=duration_seconds,
+                exclude_birds=True,
+            )
+            all_detections.extend(perch_dets)
+            if perch_dets:
+                pipelines.append("perch-v2")
+        except Exception as exc:
+            log.exception("composite_perch_failed", error=str(exc))
+    elif settings.bioacoustic_enable_perch:
+        log.warning("perch_enabled_but_unavailable")
+
+    # Legacy experimental heuristics — off by default; superseded by Perch when enabled.
+    if settings.bioacoustic_enable_frogs and frog_classifier_available() and not perch_available():
         try:
             frogs = run_frog_classifier(wav_path, duration_seconds=duration_seconds)
             all_detections.extend(frogs)
@@ -99,10 +140,8 @@ def _run_composite(
                 pipelines.append("frog-heuristic-experimental")
         except Exception as exc:
             log.exception("composite_frog_failed", error=str(exc))
-    elif settings.bioacoustic_pipeline == "composite":
-        log.debug("composite_frogs_disabled")
 
-    if settings.bioacoustic_enable_insects and insect_classifier_available():
+    if settings.bioacoustic_enable_insects and insect_classifier_available() and not perch_available():
         try:
             insects = run_insect_activity(wav_path, duration_seconds=duration_seconds)
             all_detections.extend(insects)
@@ -110,42 +149,56 @@ def _run_composite(
                 pipelines.append("insect-heuristic-experimental")
         except Exception as exc:
             log.exception("composite_insect_failed", error=str(exc))
-    elif settings.bioacoustic_pipeline == "composite":
-        log.debug("composite_insects_disabled")
 
     if not all_detections:
         log.warning("composite_no_detections", latitude=latitude, longitude=longitude)
         raise RuntimeError("composite_no_detections")
 
     merged = merge_species_detections(all_detections)
-    breakdown = taxon_breakdown(merged)
-    loc = ""
-    if latitude is not None and longitude is not None:
-        loc = f" near ({latitude:.4f}, {longitude:.4f})"
-
-    bird_calls = sum(d.call_count for d in merged if d.taxon_group == "bird")
-    bird_species = sum(1 for d in merged if d.taxon_group == "bird")
-    if bird_species > 0:
-        summary = (
-            f"BirdNET identified {bird_species} bird species ({bird_calls} calls){loc}. "
-            f"Duration {duration_seconds:.0f}s."
-        )
-        extra = [k for k in breakdown if k != "bird"]
-        if extra:
-            taxa_parts = [f"{k}: {breakdown[k]} calls" for k in sorted(extra)]
-            summary += f" Experimental taxa: {', '.join(taxa_parts)}."
-    else:
-        taxa_parts = [f"{k}: {v} calls" for k, v in sorted(breakdown.items())]
-        summary = (
-            f"Analysis found {len(merged)} species"
-            f" ({', '.join(taxa_parts)}){loc}. "
-            f"No birds met confidence threshold — record outdoors during dawn chorus."
-        )
+    summary = _build_multitaxa_summary(
+        merged,
+        duration_seconds=duration_seconds,
+        latitude=latitude,
+        longitude=longitude,
+        pipelines=pipelines,
+    )
 
     return BioacousticAnalysisResult(
         detections=merged,
         summary=summary,
         pipeline="+".join(pipelines) if pipelines else "composite-v1",
+    )
+
+
+def _run_multitaxa_perch(
+    wav_path: str,
+    *,
+    duration_seconds: float,
+    latitude: float | None,
+    longitude: float | None,
+) -> BioacousticAnalysisResult:
+    if not perch_available():
+        raise RuntimeError("perch_unavailable")
+
+    detections = run_perch(
+        wav_path,
+        duration_seconds=duration_seconds,
+        exclude_birds=False,
+    )
+    if not detections:
+        raise RuntimeError("perch_no_detections")
+
+    summary = _build_multitaxa_summary(
+        detections,
+        duration_seconds=duration_seconds,
+        latitude=latitude,
+        longitude=longitude,
+        pipelines=["perch-v2"],
+    )
+    return BioacousticAnalysisResult(
+        detections=detections,
+        summary=summary,
+        pipeline="perch-v2",
     )
 
 
@@ -158,11 +211,11 @@ def identify_species_from_audio(
     preprocessing: dict[str, Any] | None = None,
     recorded_at: datetime | None = None,
 ) -> BioacousticAnalysisResult:
-    """Run composite, BirdNET-only, or stub pipeline."""
+    """Run BirdNET, Perch multi-taxa, composite, or stub pipeline."""
     wav_path = preprocessing.get("wav_temp_path") if preprocessing else None
     pipeline = settings.bioacoustic_pipeline
 
-    if pipeline in {"birdnet", "composite"} and wav_path:
+    if pipeline in {"birdnet", "composite", "multitaxa"} and wav_path:
         if pipeline == "composite":
             try:
                 return _run_composite(
@@ -174,6 +227,17 @@ def identify_species_from_audio(
                 )
             except Exception as exc:
                 log.exception("composite_failed", error=str(exc))
+
+        if pipeline == "multitaxa":
+            try:
+                return _run_multitaxa_perch(
+                    wav_path,
+                    duration_seconds=duration_seconds,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
+            except Exception as exc:
+                log.exception("multitaxa_failed", error=str(exc))
 
         if birdnet_available():
             try:
@@ -187,6 +251,31 @@ def identify_species_from_audio(
                 if result.detections:
                     return result
                 log.warning("birdnet_zero_detections")
+
+                if perch_available():
+                    perch_dets = run_perch(
+                        wav_path,
+                        duration_seconds=duration_seconds,
+                        exclude_birds=False,
+                    )
+                    if perch_dets:
+                        non_bird = [
+                            d for d in perch_dets if normalize_taxon_group(d.taxon_group) != TAXON_BIRD
+                        ]
+                        if non_bird:
+                            merged = merge_species_detections(non_bird)
+                            result = BioacousticAnalysisResult(
+                                detections=merged,
+                                summary=_build_multitaxa_summary(
+                                    merged,
+                                    duration_seconds=duration_seconds,
+                                    latitude=latitude,
+                                    longitude=longitude,
+                                    pipelines=["perch-v2"],
+                                ),
+                                pipeline="perch-v2",
+                            )
+                            return result
                 return result
             except Exception as exc:
                 log.exception("birdnet_failed", error=str(exc))
