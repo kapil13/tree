@@ -25,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/trees/new", label: "Add tree", icon: Leaf },
   { href: "/map", label: "Map", icon: Map },
   { href: "/satellite", label: "Satellite", icon: Satellite },
-  { href: "/bioacoustic", label: "Bioacoustic", icon: Mic },
+  { href: "/bioacoustic", label: "Biodiversity", icon: Mic },
   { href: "/assistant", label: "AI assistant", icon: Sparkles },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/alerts", label: "Alerts", icon: Bell },

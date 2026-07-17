@@ -456,6 +456,9 @@ export type BioacousticSpecies = {
   iucn_url: string | null;
   gbif_usage_key?: number | null;
   regional_occurrence_match?: boolean | null;
+  needs_review?: boolean;
+  is_native?: boolean;
+  time_intervals?: Array<{ start_sec: number; end_sec: number }>;
   metadata_sources?: { gbif?: boolean; iucn?: string };
   pipeline_source?: string;
 };
@@ -488,6 +491,17 @@ export type BioacousticRecording = {
   longitude: number | null;
   plantation_fence_id: string | null;
   status: string;
+  preprocessing?: {
+    spl_metrics?: {
+      avg_db_spl_approx?: number;
+      max_db_spl_approx?: number;
+      background_db_spl_approx?: number;
+      snr_db_approx?: number;
+      warning_high_noise?: boolean;
+      environment_hint?: string;
+    };
+    ecoacoustic_indices?: EcoacousticIndices;
+  };
   species_detections: BioacousticSpecies[];
   total_species_count: number | null;
   total_calls_detected: number | null;
@@ -499,6 +513,15 @@ export type BioacousticRecording = {
   analysis_error: string | null;
   analyzed_at: string | null;
   created_at: string;
+};
+
+export type EcoacousticIndices = {
+  acoustic_complexity_index?: number;
+  acoustic_diversity_index?: number;
+  acoustic_evenness_index?: number;
+  bioacoustic_index?: number;
+  ndsi?: number;
+  aci_normalized?: number;
 };
 
 export type BioacousticAnalyzeJob = {

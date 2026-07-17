@@ -129,6 +129,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
+      - ${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}:/opt/aranyix/models:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
