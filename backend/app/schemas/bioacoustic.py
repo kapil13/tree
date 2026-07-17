@@ -21,7 +21,7 @@ class PresignUploadResponse(BaseModel):
 
 class BioacousticRecordingCreate(BaseModel):
     s3_key: str = Field(..., min_length=1, max_length=512)
-    duration_seconds: float = Field(..., ge=5, le=120)
+    duration_seconds: float = Field(..., ge=60, le=180)
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     plantation_fence_id: uuid.UUID | None = None

@@ -1,4 +1,4 @@
-"""Biodiversity metrics: Shannon, Simpson, and bioacoustic health score."""
+"""Biodiversity assessment metrics — Shannon, ecoacoustic indices, health score."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import math
 from typing import Any
 
 _THREATENED = {"Critically Endangered", "Endangered", "Vulnerable"}
+_REVIEW_CONFIDENCE = 0.70
 
 
 def shannon_diversity_index(call_counts: list[int]) -> float:
@@ -23,45 +24,48 @@ def shannon_diversity_index(call_counts: list[int]) -> float:
 
 
 def simpson_diversity_index(call_counts: list[int]) -> float:
-    """Simpson diversity D = 1 - Σ(pi²). Higher = more diverse."""
+    """Simpson diversity D = 1 - Σ(pi²)."""
     total = sum(call_counts)
     if total <= 0:
         return 0.0
-    d = 0.0
-    for n in call_counts:
-        if n <= 0:
-            continue
-        p = n / total
-        d += p * p
+    d = sum((n / total) ** 2 for n in call_counts if n > 0)
     return round(1.0 - d, 4)
 
 
-def bioacoustic_health_score(
+def species_richness(detections: list[dict[str, Any]], *, min_confidence: float = 0.70) -> int:
+    """Count unique species above review confidence threshold."""
+    names = {
+        d.get("scientific_name")
+        for d in detections
+        if float(d.get("confidence") or 0) >= min_confidence and d.get("scientific_name")
+    }
+    return len(names)
+
+
+def biodiversity_health_score(
     *,
+    species_richness: int,
     shannon_index: float,
-    simpson_index: float,
-    unique_species: int,
-    avg_confidence: float,
-    detections: list[dict[str, Any]],
+    threatened_species: int,
+    aci_normalized: float,
+    native_ratio: float,
 ) -> float:
     """
-    Overall biodiversity score 0–100 from Shannon + Simpson diversity,
-    species richness, AI confidence, and threatened-species presence.
+    Biodiversity Health Score (0–100) per assessment spec:
+    Richness 30%, Shannon 25%, Threatened 20%, ACI 15%, Native ratio 10%.
     """
+    richness_norm = min(species_richness / 15.0, 1.0)
     shannon_norm = min(shannon_index / 3.0, 1.0)
-    simpson_norm = min(simpson_index, 1.0)
-    species_norm = min(unique_species / 12.0, 1.0)
-    confidence_norm = max(0.0, min(avg_confidence, 1.0))
-
-    threatened = sum(1 for d in detections if d.get("iucn_status") in _THREATENED)
-    threatened_norm = min(threatened / 2.0, 1.0) if threatened else 0.35
+    threatened_norm = min(threatened_species / 2.0, 1.0) if threatened_species else 0.15
+    aci_norm = min(max(aci_normalized, 0.0), 1.0)
+    native_norm = min(max(native_ratio, 0.0), 1.0)
 
     score = (
-        0.25 * shannon_norm
-        + 0.15 * simpson_norm
-        + 0.25 * species_norm
-        + 0.20 * confidence_norm
-        + 0.15 * threatened_norm
+        0.30 * richness_norm
+        + 0.25 * shannon_norm
+        + 0.20 * threatened_norm
+        + 0.15 * aci_norm
+        + 0.10 * native_norm
     ) * 100.0
     return round(max(0.0, min(score, 100.0)), 2)
 
@@ -72,7 +76,6 @@ def filter_detections_for_metrics(
     taxon_groups: set[str] | None = None,
     min_confidence: float | None = None,
 ) -> list[dict[str, Any]]:
-    """Subset detections used for health/diversity scores."""
     out = detections
     if taxon_groups is not None:
         out = [d for d in out if d.get("taxon_group") in taxon_groups]
@@ -81,22 +84,30 @@ def filter_detections_for_metrics(
     return out
 
 
-def aggregate_metrics(
+def aggregate_assessment_metrics(
     detections: list[dict[str, Any]],
     *,
     metric_detections: list[dict[str, Any]] | None = None,
+    ecoacoustic: dict[str, Any] | None = None,
+    review_threshold: float = _REVIEW_CONFIDENCE,
 ) -> dict[str, Any]:
-    """Compute totals and scores from enriched species detections."""
+    """Full biodiversity assessment metrics for dashboards and MRV reports."""
     scored = metric_detections if metric_detections is not None else detections
+    eco = ecoacoustic or {}
 
     if not detections:
         return {
+            "species_richness": 0,
             "total_species_count": 0,
             "total_calls_detected": 0,
             "shannon_diversity_index": 0.0,
             "simpson_diversity_index": 0.0,
             "bioacoustic_health_score": 0.0,
+            "biodiversity_health_score": 0.0,
             "ai_confidence_score": 0.0,
+            "ecoacoustic_indices": eco,
+            "review_threshold": review_threshold,
+            "species_above_threshold": 0,
         }
 
     call_counts = [int(d.get("call_count") or 0) for d in scored]
@@ -104,18 +115,53 @@ def aggregate_metrics(
     shannon = shannon_diversity_index(call_counts)
     simpson = simpson_diversity_index(call_counts)
     avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
-    health = bioacoustic_health_score(
+
+    richness = species_richness(detections, min_confidence=review_threshold)
+    threatened = sum(1 for d in scored if d.get("iucn_status") in _THREATENED)
+    native_matches = sum(1 for d in detections if d.get("regional_occurrence_match") is True)
+    native_ratio = native_matches / len(detections) if detections else 0.0
+
+    health = biodiversity_health_score(
+        species_richness=richness,
         shannon_index=shannon,
-        simpson_index=simpson,
-        unique_species=len(scored),
-        avg_confidence=avg_conf,
-        detections=scored,
+        threatened_species=threatened,
+        aci_normalized=float(eco.get("aci_normalized") or 0),
+        native_ratio=native_ratio,
     )
+
     return {
+        "species_richness": richness,
         "total_species_count": len(detections),
+        "species_above_threshold": richness,
         "total_calls_detected": sum(int(d.get("call_count") or 0) for d in detections),
         "shannon_diversity_index": shannon,
         "simpson_diversity_index": simpson,
         "bioacoustic_health_score": health,
+        "biodiversity_health_score": health,
         "ai_confidence_score": round(avg_conf, 4),
+        "ecoacoustic_indices": eco,
+        "review_threshold": review_threshold,
+        "threatened_species_count": threatened,
+        "native_species_ratio": round(native_ratio, 4),
     }
+
+
+# Backward-compatible alias
+def aggregate_metrics(
+    detections: list[dict[str, Any]],
+    *,
+    metric_detections: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return aggregate_assessment_metrics(detections, metric_detections=metric_detections)
+
+
+def bioacoustic_health_score(**kwargs: Any) -> float:
+    return biodiversity_health_score(
+        species_richness=kwargs.get("unique_species", 0),
+        shannon_index=kwargs.get("shannon_index", 0.0),
+        threatened_species=sum(
+            1 for d in kwargs.get("detections", []) if d.get("iucn_status") in _THREATENED
+        ),
+        aci_normalized=0.0,
+        native_ratio=0.0,
+    )

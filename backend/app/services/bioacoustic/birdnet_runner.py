@@ -32,13 +32,24 @@ def _select_location_detections(raw: list[Any], *, return_all: bool) -> list[Any
 
 def _group_species(raw: list[Any]) -> list[SpeciesDetection]:
     grouped: dict[str, dict[str, Any]] = defaultdict(
-        lambda: {"common_name": "", "confidence_sum": 0.0, "call_count": 0}
+        lambda: {
+            "common_name": "",
+            "confidence_sum": 0.0,
+            "call_count": 0,
+            "intervals": [],
+        }
     )
     for det in raw:
         sci = _det_get(det, "scientific_name") or "Unknown"
         grouped[sci]["common_name"] = _det_get(det, "common_name") or sci
         grouped[sci]["confidence_sum"] += float(_det_get(det, "confidence") or 0)
         grouped[sci]["call_count"] += 1
+        start = _det_get(det, "start_time")
+        end = _det_get(det, "end_time")
+        if start is not None and end is not None:
+            grouped[sci]["intervals"].append(
+                {"start_s": float(start), "end_s": float(end)}
+            )
 
     detections: list[SpeciesDetection] = []
     for sci, row in grouped.items():
@@ -51,6 +62,7 @@ def _group_species(raw: list[Any]) -> list[SpeciesDetection]:
                 taxon_group="bird",
                 confidence=round(avg_conf, 4),
                 call_count=calls,
+                time_intervals=row["intervals"] or None,
             )
         )
     detections.sort(key=lambda d: d.call_count, reverse=True)
@@ -160,8 +172,8 @@ def run_birdnet(
 
     if detections:
         summary = (
-            f"BirdNET detected {len(detections)} bird species"
-            f" ({sum(d.call_count for d in detections)} calls){loc}. "
+            f"Biodiversity assessment: {len(detections)} bird species"
+            f" ({sum(d.call_count for d in detections)} vocalizations){loc}. "
             f"Recording duration {duration_seconds:.0f}s."
         )
     else:

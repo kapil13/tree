@@ -8,6 +8,9 @@ from app.services.bioacoustic.gbif_client import match_species, taxon_group_from
 from app.services.bioacoustic.iucn_api_client import resolve_iucn
 
 
+from app.core.config import settings
+
+
 def enrich_detection(
     scientific_name: str,
     common_name: str,
@@ -15,6 +18,8 @@ def enrich_detection(
     *,
     confidence: float = 0.0,
     call_count: int = 0,
+    time_intervals: list[dict[str, float]] | None = None,
+    regional_occurrence_match: bool | None = None,
 ) -> dict[str, Any]:
     gbif = match_species(scientific_name)
     resolved_group = taxon_group_from_gbif(gbif, fallback=taxon_group or "bird")
@@ -25,12 +30,20 @@ def enrich_detection(
     if gbif and gbif.get("vernacularName"):
         vernacular = gbif["vernacularName"]
 
+    review_threshold = settings.bioacoustic_review_confidence
+    needs_review = confidence < review_threshold
+
     return {
         "scientific_name": canonical_name,
         "common_name": vernacular,
         "taxon_group": resolved_group,
         "confidence": confidence,
         "call_count": call_count,
+        "time_intervals": time_intervals or [],
+        "needs_review": needs_review,
+        "included_in_richness": not needs_review,
+        "is_native": regional_occurrence_match is True,
+        "is_invasive": False,
         "gbif_usage_key": gbif.get("usageKey") if gbif else None,
         "gbif_match_type": gbif.get("matchType") if gbif else None,
         "gbif_kingdom": gbif.get("kingdom") if gbif else None,
@@ -39,6 +52,7 @@ def enrich_detection(
         "threat_status": iucn["threat_status"],
         "iucn_taxon_id": iucn.get("iucn_taxon_id"),
         "iucn_url": iucn.get("iucn_url"),
+        "regional_occurrence_match": regional_occurrence_match,
         "metadata_sources": {
             "gbif": bool(gbif),
             "iucn": iucn.get("source"),

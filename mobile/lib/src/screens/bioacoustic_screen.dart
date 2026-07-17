@@ -19,13 +19,17 @@ class BioacousticScreen extends ConsumerStatefulWidget {
 }
 
 class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
-  static const _minSeconds = 30;
-  static const _maxSeconds = 60;
+  static const _minSeconds = 60;
+  static const _maxSeconds = 180;
+  static const _preferredSeconds = 120;
 
   final _recorder = AudioRecorder();
   bool _recording = false;
   int _elapsed = 0;
+  double _approxSpl = 0;
+  bool _noiseWarning = false;
   Timer? _timer;
+  StreamSubscription<Amplitude>? _ampSub;
   String? _recordPath;
   String? _status;
   String? _error;
@@ -50,6 +54,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _ampSub?.cancel();
     _recorder.dispose();
     super.dispose();
   }
@@ -65,20 +70,32 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
       return;
     }
     final dir = await getTemporaryDirectory();
-    _recordPath = '${dir.path}/byot_bio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    _recordPath = '${dir.path}/byot_bio_${DateTime.now().millisecondsSinceEpoch}.wav';
     await _recorder.start(
       const RecordConfig(
-        encoder: AudioEncoder.aacLc,
+        encoder: AudioEncoder.wav,
         sampleRate: 48000,
-        bitRate: 128000,
         numChannels: 1,
+        bitRate: 768000,
       ),
       path: _recordPath!,
     );
+    _ampSub?.cancel();
+    _ampSub = _recorder.onAmplitudeChanged(const Duration(milliseconds: 300)).listen((amp) {
+      if (!mounted || !_recording) return;
+      final approx = amp.current + 90;
+      setState(() {
+        _approxSpl = approx;
+        _noiseWarning = approx >= 62;
+      });
+    });
     setState(() {
       _recording = true;
       _elapsed = 0;
-      _status = 'Recording… point mic toward birds outdoors (dawn is best).';
+      _approxSpl = 0;
+      _noiseWarning = false;
+      _status =
+          'Recording ambient soundscape… hold phone 1–1.5 m above ground, stay still.';
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
@@ -91,6 +108,8 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
 
   Future<void> _stop() async {
     _timer?.cancel();
+    await _ampSub?.cancel();
+    _ampSub = null;
     if (!_recording) return;
     await _recorder.stop();
     setState(() => _recording = false);
@@ -248,7 +267,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bioacoustic'),
+        title: const Text('Biodiversity Assessment'),
         actions: [
           if (sync.syncing)
             const Padding(
@@ -313,11 +332,31 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                     const Icon(Icons.graphic_eq, size: 48, color: Color(0xFF15803D)),
                     const SizedBox(height: 8),
                     Text('$_elapsed s', style: Theme.of(context).textTheme.headlineMedium),
-                    Text('Target: $_minSeconds–$_maxSeconds seconds',
+                    Text('Target: $_minSeconds–$_maxSeconds s · 48 kHz mono WAV',
                         style: const TextStyle(color: Colors.grey)),
+                    if (_recording || _approxSpl > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ambient SPL ≈ ${_approxSpl.toStringAsFixed(0)} dB',
+                        style: TextStyle(
+                          color: _noiseWarning ? Colors.orange.shade800 : Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_noiseWarning)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'High background noise — traffic, wind, or machinery may reduce accuracy.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: 8),
                     const Text(
-                      'Works offline — recordings queue locally and sync when you regain signal.',
+                      'Record ambient environmental sound (not voice). Hold phone 1–1.5 m above ground, stay still. '
+                      'Best at sunrise or sunset. Works offline — syncs when you regain signal.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
@@ -326,7 +365,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                       FilledButton.icon(
                         onPressed: _busy ? null : _start,
                         icon: const Icon(Icons.mic),
-                        label: const Text('Start recording'),
+                        label: const Text('Start ambient recording'),
                       )
                     else
                       OutlinedButton.icon(
@@ -384,10 +423,9 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
                             ),
                             if (r['bioacoustic_health_score'] != null)
                               Text(
-                                'Health ${r['bioacoustic_health_score']}/100 · '
-                                'Shannon ${r['shannon_diversity_index']} · '
-                                'Simpson ${r['simpson_diversity_index']} · '
-                                '${r['total_species_count']} species',
+                                'Biodiversity ${r['bioacoustic_health_score']}/100 · '
+                                'Richness ${r['species_richness'] ?? r['total_species_count']} · '
+                                'Shannon ${r['shannon_diversity_index']}',
                               ),
                             if (r['analysis_summary'] != null)
                               Padding(
