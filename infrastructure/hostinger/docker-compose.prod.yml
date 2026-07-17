@@ -129,6 +129,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
+      - ${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}:/opt/aranyix/models:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
@@ -154,14 +155,14 @@ services:
         "-l",
         "info",
         "-Q",
-        "default,ai,satellite,carbon,notifications",
+        "default,ai,satellite,carbon,notifications,bioacoustic",
         "--concurrency",
         "2",
       ]
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2560M
 
   beat:
     build:
@@ -191,7 +192,7 @@ services:
       context: ../../frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
         API_PROXY_TARGET: http://backend:8000
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
     restart: unless-stopped

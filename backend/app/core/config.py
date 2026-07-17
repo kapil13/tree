@@ -77,6 +77,27 @@ class Settings(BaseSettings):
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
 
+    # Bioacoustic pipeline (birdnet = production; composite adds Perch multi-taxa)
+    bioacoustic_pipeline: Literal["stub", "birdnet", "composite", "multitaxa"] = "birdnet"
+    bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)
+    bioacoustic_return_all_detections: bool = True
+    bioacoustic_noise_reduction: bool = False
+    bioacoustic_enable_frogs: bool = False
+    bioacoustic_enable_insects: bool = False
+    bioacoustic_enable_perch: bool = False
+    bioacoustic_perch_model_path: str | None = None
+    bioacoustic_perch_labels_path: str | None = None
+    bioacoustic_perch_min_confidence: float = Field(default=0.20, ge=0.05, le=0.99)
+    bioacoustic_perch_top_k: int = Field(default=12, ge=1, le=50)
+    bioacoustic_perch_hop_samples: int = Field(default=80_000, ge=16_000, le=160_000)
+    bioacoustic_perch_taxa: str = "amphibian,mammal,insect,reptile"
+    iucn_api_token: str | None = None
+    iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
+    gbif_api_url: str = "https://api.gbif.org/v1"
+    gbif_occurrence_radius_km: float = Field(default=25.0, ge=1.0, le=100.0)
+    bioacoustic_review_confidence: float = Field(default=0.70, ge=0.05, le=0.99)
+    bioacoustic_spl_warning_db: float = Field(default=62.0, ge=40.0, le=90.0)
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

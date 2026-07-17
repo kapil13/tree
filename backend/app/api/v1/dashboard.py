@@ -6,8 +6,9 @@ from fastapi import APIRouter
 from sqlalchemy import case, func, select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.tree import Tree
-from app.schemas.dashboard import KPI, DashboardResponse, SeriesPoint
+from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
 
 router = APIRouter(tags=["dashboard"])
 
@@ -20,6 +21,17 @@ def _scope(stmt, user):
             (Tree.owner_user_id == user.id) | (Tree.organization_id == user.organization_id)
         )
     return stmt.where(Tree.owner_user_id == user.id)
+
+
+def _bioacoustic_scope(stmt, user):
+    if user.role == "admin":
+        return stmt
+    if user.organization_id:
+        return stmt.where(
+            (BioacousticRecording.owner_user_id == user.id)
+            | (BioacousticRecording.organization_id == user.organization_id)
+        )
+    return stmt.where(BioacousticRecording.owner_user_id == user.id)
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
@@ -82,6 +94,36 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         for i in range(6, 0, -1)
     ]
 
+    all_bio_stmt = _bioacoustic_scope(select(BioacousticRecording), user)
+    all_bio = (await db.execute(all_bio_stmt)).scalars().all()
+    bio_analyzed = [r for r in all_bio if r.status == "analyzed"]
+    bio_kpi = BioacousticDashboardKpi(
+        total_recordings=len(all_bio),
+        avg_health_score=round(
+            sum(float(r.bioacoustic_health_score or 0) for r in bio_analyzed) / len(bio_analyzed), 2
+        )
+        if bio_analyzed
+        else 0.0,
+        avg_shannon_index=round(
+            sum(float(r.shannon_diversity_index or 0) for r in bio_analyzed) / len(bio_analyzed), 4
+        )
+        if bio_analyzed
+        else 0.0,
+        avg_simpson_index=round(
+            sum(float(r.simpson_diversity_index or 0) for r in bio_analyzed) / len(bio_analyzed), 4
+        )
+        if bio_analyzed
+        else 0.0,
+        total_species_detected=len(
+            {
+                d.get("scientific_name")
+                for r in bio_analyzed
+                for d in (r.species_detections or [])
+                if d.get("scientific_name")
+            }
+        ),
+    )
+
     return DashboardResponse(
         kpi=kpi,
         carbon_growth=carbon_growth,
@@ -91,4 +133,5 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         species_distribution=[
             SeriesPoint(label=s or "unknown", value=float(c)) for s, c in species_rows
         ],
+        bioacoustic=bio_kpi,
     )

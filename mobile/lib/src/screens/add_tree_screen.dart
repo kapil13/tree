@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_errors.dart';
+import '../location_helper.dart';
 import '../providers.dart';
 
 class AddTreeScreen extends ConsumerStatefulWidget {
@@ -17,30 +18,36 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   double? _lon;
   double? _acc;
   bool _busy = false;
+  String? _err;
 
   Future<void> _useGps() async {
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
+    try {
+      final gps = await captureLocation(allowFallback: false);
+      setState(() {
+        _lat = gps.latitude;
+        _lon = gps.longitude;
+        _acc = gps.accuracyMeters;
+        _err = gps.message;
+      });
+    } on LocationCaptureException catch (e) {
+      if (!mounted) return;
+      setState(() => _err = e.message);
+    } catch (e) {
+      setState(() => _err = apiErrorMessage(e));
     }
-    if (perm == LocationPermission.deniedForever || perm == LocationPermission.denied) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permission denied')));
-      return;
-    }
-    final pos = await Geolocator.getCurrentPosition();
-    setState(() {
-      _lat = pos.latitude;
-      _lon = pos.longitude;
-      _acc = pos.accuracy;
-    });
   }
 
   Future<void> _save() async {
     if (_lat == null || _lon == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use GPS to capture location first')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tap “Get my location” first — trees need a GPS point on the map.')),
+      );
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _err = null;
+    });
     try {
       final api = await ref.read(apiClientProvider.future);
       final t = await api.createTree(
@@ -49,11 +56,21 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         lon: _lon!,
         accuracy: _acc,
       );
+      ref.invalidate(treesProvider);
+      ref.invalidate(dashboardProvider);
       if (!mounted) return;
       context.go('/trees/${t['id']}');
+    } catch (e) {
+      setState(() => _err = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _species.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,18 +85,19 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
             TextField(controller: _species, decoration: const InputDecoration(labelText: 'Species')),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _useGps,
-              icon: const Icon(Icons.gps_fixed),
-              label: const Text('Capture GPS location'),
+              onPressed: _busy ? null : _useGps,
+              icon: const Icon(Icons.my_location),
+              label: const Text('Get my location'),
             ),
             if (_lat != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'lat ${_lat!.toStringAsFixed(6)} · lon ${_lon!.toStringAsFixed(6)}'
-                  ' · ±${_acc?.toStringAsFixed(1) ?? "?"} m',
-                ),
+                child: Text(formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
               ),
+            if (_err != null) ...[
+              const SizedBox(height: 12),
+              Text(_err!, style: const TextStyle(color: Colors.red)),
+            ],
             const Spacer(),
             FilledButton(
               onPressed: _busy ? null : _save,

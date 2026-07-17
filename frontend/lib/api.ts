@@ -12,6 +12,34 @@ function resolveApiBaseUrl(): string {
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
+/** Same-origin JSON API (proxied). File uploads must bypass Next.js — use direct API host. */
+function resolveDirectUploadApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
+      return "https://api.aranyix.tech/api";
+    }
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000/api";
+    }
+  }
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (raw) {
+    try {
+      const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+      if (!url.hostname.startsWith("api.")) {
+        url.hostname = `api.${url.hostname.replace(/^www\./, "")}`;
+      }
+      return url.href.replace(/\/$/, "").endsWith("/api")
+        ? url.href.replace(/\/$/, "")
+        : `${url.origin}/api`;
+    } catch {
+      /* fall through */
+    }
+  }
+  return API_URL;
+}
+
 export const API_URL = resolveApiBaseUrl();
 
 export const api: AxiosInstance = axios.create({
@@ -41,7 +69,11 @@ export function errorMessage(err: unknown): string {
   if (isApiError(err)) {
     if (!err.response) {
       if (err.code === "ERR_NETWORK") {
-        return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        const host = typeof window !== "undefined" ? window.location.hostname : "";
+        if (host === "localhost" || host === "127.0.0.1") {
+          return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
+        }
+        return `Cannot reach the API (${API_URL}). Check https://api.aranyix.tech/health in your browser, sign out and sign in again, or ask your admin to rebuild the frontend with NEXT_PUBLIC_API_URL=https://api.aranyix.tech`;
       }
       return err.message;
     }
@@ -53,6 +85,12 @@ export function errorMessage(err: unknown): string {
     if (typeof data?.detail === "string") {
       if (err.response.status === 404 && data.detail === "Not Found") {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
+      }
+      if (data.detail === "storage_upload_failed") {
+        return "Audio storage failed. Check MinIO/S3 on the server.";
+      }
+      if (data.detail === "recording_create_failed") {
+        return "Could not save recording. Run database migration: alembic upgrade head";
       }
       return data.detail;
     }
@@ -167,6 +205,12 @@ export type Dashboard = {
   carbon_growth: { label: string; value: number }[];
   health_distribution: { label: string; value: number }[];
   species_distribution: { label: string; value: number }[];
+  bioacoustic?: {
+    total_recordings: number;
+    avg_health_score: number;
+    avg_shannon_index: number;
+    total_species_detected: number;
+  };
 };
 
 export const auth = {
@@ -281,6 +325,45 @@ export const plantationFences = {
       await api.get(`/v1/plantation-fences/${id}/weather`, { params: { days } })
     ).data as import("@/components/weather-forecast").WeatherForecast;
   },
+  async biodiversity(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/biodiversity`)).data as FenceBiodiversity;
+  },
+  async ecosystemHealth(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/ecosystem-health`)).data as EcosystemHealth;
+  },
+};
+
+export type FenceBiodiversity = {
+  fence_id: string;
+  fence_name: string;
+  recording_count: number;
+  avg_health_score: number;
+  avg_shannon_index: number;
+  avg_simpson_index: number;
+  total_species_detected: number;
+  threatened_species_count: number;
+  taxon_breakdown: Record<string, number>;
+  species_list: Array<{
+    scientific_name: string;
+    common_name: string;
+    taxon_group: string;
+    call_count: number;
+    iucn_status: string;
+  }>;
+};
+
+export type EcosystemHealth = {
+  fence_id: string;
+  fence_name: string;
+  area_ha: number | null;
+  bioacoustic: FenceBiodiversity;
+  ndvi_mean: number | null;
+  ndvi_trend: string | null;
+  ndvi_series: Array<{ date: string; ndvi: number }>;
+  satellite_health: Record<string, unknown>;
+  correlation_score: number | null;
+  ecosystem_health_score: number;
+  interpretation: string;
 };
 
 export const weather = {
@@ -357,5 +440,194 @@ export const assistant = {
         { prompt }
       )
     ).data;
+  },
+};
+
+export type BioacousticSpecies = {
+  scientific_name: string;
+  common_name: string;
+  taxon_group: string;
+  confidence: number;
+  call_count: number;
+  iucn_status: string;
+  population_trend: string;
+  threat_status: string;
+  iucn_taxon_id: string | null;
+  iucn_url: string | null;
+  gbif_usage_key?: number | null;
+  regional_occurrence_match?: boolean | null;
+  needs_review?: boolean;
+  is_native?: boolean;
+  time_intervals?: Array<{ start_sec: number; end_sec: number }>;
+  metadata_sources?: { gbif?: boolean; iucn?: string };
+  pipeline_source?: string;
+};
+
+export type RegionalFauna = {
+  latitude: number;
+  longitude: number;
+  radius_km: number;
+  provider: string;
+  species_count: number;
+  taxon_breakdown: Record<string, number>;
+  species: Array<{
+    scientific_name: string;
+    common_name: string;
+    taxon_group: string;
+    gbif_usage_key: number;
+    occurrence_count: number;
+    iucn_status: string;
+    iucn_url: string | null;
+  }>;
+  iucn_live: boolean;
+};
+
+export type BioacousticRecording = {
+  id: string;
+  s3_key: string;
+  duration_seconds: number;
+  recorded_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  plantation_fence_id: string | null;
+  status: string;
+  preprocessing?: {
+    spl_metrics?: {
+      avg_db_spl_approx?: number;
+      max_db_spl_approx?: number;
+      background_db_spl_approx?: number;
+      snr_db_approx?: number;
+      warning_high_noise?: boolean;
+      environment_hint?: string;
+    };
+    ecoacoustic_indices?: EcoacousticIndices;
+  };
+  species_detections: BioacousticSpecies[];
+  total_species_count: number | null;
+  total_calls_detected: number | null;
+  shannon_diversity_index: number | null;
+  simpson_diversity_index: number | null;
+  bioacoustic_health_score: number | null;
+  ai_confidence_score: number | null;
+  analysis_summary: string | null;
+  analysis_error: string | null;
+  analyzed_at: string | null;
+  created_at: string;
+};
+
+export type EcoacousticIndices = {
+  acoustic_complexity_index?: number;
+  acoustic_diversity_index?: number;
+  acoustic_evenness_index?: number;
+  bioacoustic_index?: number;
+  ndsi?: number;
+  aci_normalized?: number;
+};
+
+export type BioacousticAnalyzeJob = {
+  recording_id: string;
+  status: string;
+  celery_task_id: string | null;
+};
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export const bioacoustic = {
+  async presign(filename: string, contentType = "audio/webm") {
+    return (
+      await api.post<{ upload_url: string; s3_key: string; content_type: string }>(
+        "/v1/uploads/presign",
+        { filename, content_type: contentType }
+      )
+    ).data;
+  },
+  async uploadDirect(form: FormData) {
+    const uploadBase = resolveDirectUploadApiBaseUrl();
+    const tok =
+      typeof window !== "undefined" ? localStorage.getItem("byot_access_token") : null;
+    const { data } = await axios.post<BioacousticRecording>(
+      `${uploadBase}/v1/bioacoustic/recordings/upload`,
+      form,
+      {
+        headers: {
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+        },
+        maxBodyLength: 25 * 1024 * 1024,
+        maxContentLength: 25 * 1024 * 1024,
+      }
+    );
+    return data;
+  },
+  async register(payload: {
+    s3_key: string;
+    duration_seconds: number;
+    latitude: number;
+    longitude: number;
+    plantation_fence_id?: string;
+  }) {
+    return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings", payload)).data;
+  },
+  async list() {
+    return (await api.get<BioacousticRecording[]>("/v1/bioacoustic/recordings")).data;
+  },
+  async get(id: string) {
+    return (await api.get<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}`)).data;
+  },
+  async pollUntilAnalyzed(id: string, attempts = 90, intervalMs = 2000) {
+    for (let i = 0; i < attempts; i++) {
+      const rec = await bioacoustic.get(id);
+      if (rec.status === "analyzed") return rec;
+      if (rec.status === "failed") {
+        throw new Error(rec.analysis_error || "Bioacoustic analysis failed");
+      }
+      await sleep(intervalMs);
+    }
+    throw new Error("Bioacoustic analysis timed out");
+  },
+  async analyze(id: string, options?: { force?: boolean }) {
+    const job = (
+      await api.post<BioacousticAnalyzeJob>(
+        `/v1/bioacoustic/recordings/${id}/analyze`,
+        undefined,
+        { params: options?.force ? { force: true } : undefined }
+      )
+    ).data;
+    if (job.status === "analyzed") {
+      return bioacoustic.get(id);
+    }
+    return bioacoustic.pollUntilAnalyzed(id);
+  },
+  async summary(plantationFenceId?: string) {
+    return (await api.get("/v1/bioacoustic/summary", {
+      params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined,
+    })).data as {
+      total_recordings: number;
+      analyzed_recordings: number;
+      avg_health_score: number;
+      avg_shannon_index: number;
+      avg_simpson_index: number;
+      total_species_detected: number;
+      threatened_species_count: number;
+      taxon_breakdown: Record<string, number>;
+      recent_recordings: BioacousticRecording[];
+    };
+  },
+  async regionalFauna(latitude: number, longitude: number, taxonGroup?: string) {
+    return (
+      await api.get<RegionalFauna>("/v1/bioacoustic/regional-fauna", {
+        params: {
+          latitude,
+          longitude,
+          ...(taxonGroup ? { taxon_group: taxonGroup } : {}),
+        },
+      })
+    ).data;
+  },
+  async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
+    return (
+      await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
+    ).data as { id: string; status: string };
   },
 };

@@ -24,6 +24,8 @@ from app.schemas.plantation_fence import (
     PlantationSatelliteRecordOut,
     PlantationSatelliteSeries,
 )
+from app.schemas.bioacoustic import EcosystemHealthOut, FenceBiodiversityOut
+from app.services.bioacoustic.correlation import aggregate_fence_bioacoustic, correlate_fence_ecosystem
 from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon, polygon_centroid, polygon_coordinates
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
@@ -332,3 +334,34 @@ async def fence_weather(
             status.HTTP_502_BAD_GATEWAY,
             detail=f"weather_forecast_unavailable: {exc}",
         ) from exc
+
+
+@router.get("/{fence_id}/biodiversity", response_model=FenceBiodiversityOut)
+async def fence_biodiversity(
+    fence_id: uuid.UUID, user: CurrentUser, db: DB
+) -> FenceBiodiversityOut:
+    """Bioacoustic biodiversity summary for a plantation fence (Phase 3)."""
+    fence = await _load_fence(fence_id, user, db)
+    data = await aggregate_fence_bioacoustic(db, fence.id)
+    return FenceBiodiversityOut(
+        fence_id=fence.id,
+        fence_name=fence.name,
+        **data,
+    )
+
+
+@router.get("/{fence_id}/ecosystem-health", response_model=EcosystemHealthOut)
+async def fence_ecosystem_health(
+    fence_id: uuid.UUID, user: CurrentUser, db: DB
+) -> EcosystemHealthOut:
+    """Bioacoustic + NDVI + satellite health correlation (Phase 3)."""
+    fence = await _load_fence(fence_id, user, db)
+    data = await correlate_fence_ecosystem(db, fence)
+    bio = data.pop("bioacoustic")
+    return EcosystemHealthOut(
+        fence_id=fence.id,
+        fence_name=data.pop("fence_name"),
+        area_ha=data.pop("area_ha"),
+        bioacoustic=FenceBiodiversityOut(fence_id=fence.id, fence_name=fence.name, **bio),
+        **data,
+    )
