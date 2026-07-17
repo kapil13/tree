@@ -17,9 +17,12 @@ from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.birdnet_runner import cleanup_wav
 from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.merge_detections import taxon_breakdown
-from app.services.bioacoustic.metrics import aggregate_metrics, filter_detections_for_metrics
+from app.services.bioacoustic.acoustics import measure_spl_from_wav
+from app.services.bioacoustic.ecoacoustic_indices import compute_ecoacoustic_indices
+from app.services.bioacoustic.metrics import aggregate_assessment_metrics, filter_detections_for_metrics
 from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.bioacoustic.regional_fauna import annotate_regional_match, build_regional_fauna
+from app.services.bioacoustic.spectrogram import upload_spectrogram
 from app.services.storage import get_storage
 
 
@@ -39,6 +42,19 @@ def _coords_from_recording(rec: BioacousticRecording) -> tuple[float | None, flo
 def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> None:
     lat, lon = _coords_from_recording(rec)
     preprocessing = preprocess_audio(audio_bytes, s3_key=rec.s3_key)
+    wav_path = preprocessing.get("wav_temp_path")
+    storage = get_storage()
+
+    spl_metrics: dict = {}
+    ecoacoustic: dict = {}
+    if wav_path:
+        spl_metrics = measure_spl_from_wav(wav_path)
+        ecoacoustic = compute_ecoacoustic_indices(wav_path)
+        spec_key = preprocessing.get("spectrogram_s3_key")
+        if spec_key:
+            uploaded = upload_spectrogram(storage, spec_key, wav_path)
+            preprocessing["spectrogram_generated"] = bool(uploaded)
+
     try:
         ai = identify_species_from_audio(
             audio_bytes,
@@ -57,11 +73,14 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
                 det.taxon_group,
                 confidence=det.confidence,
                 call_count=det.call_count,
+                time_intervals=getattr(det, "time_intervals", None),
             )
             row["pipeline_source"] = ai.pipeline
             enriched.append(row)
 
         enriched = annotate_regional_match(enriched, lat, lon)
+        for row in enriched:
+            row["is_native"] = row.get("regional_occurrence_match") is True
 
         regional_context = None
         if lat is not None and lon is not None:
@@ -70,14 +89,14 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             except Exception:
                 regional_context = None
 
-        bird_for_metrics = filter_detections_for_metrics(
+        scored = filter_detections_for_metrics(
             enriched,
-            taxon_groups={"bird"},
             min_confidence=0.12,
         )
-        metrics = aggregate_metrics(
+        metrics = aggregate_assessment_metrics(
             enriched,
-            metric_detections=bird_for_metrics if bird_for_metrics else enriched,
+            metric_detections=scored if scored else enriched,
+            ecoacoustic=ecoacoustic,
         )
         from app.services.ai.bioacoustic_types import SpeciesDetection
 
@@ -92,7 +111,11 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             for d in enriched
         ]
         rec.status = "analyzed"
-        rec.preprocessing = {k: v for k, v in preprocessing.items() if k != "wav_temp_path"}
+        rec.preprocessing = {
+            **{k: v for k, v in preprocessing.items() if k != "wav_temp_path"},
+            "spl_metrics": spl_metrics,
+            "ecoacoustic_indices": ecoacoustic,
+        }
         rec.spectrogram_s3_key = preprocessing.get("spectrogram_s3_key")
         rec.species_detections = enriched
         rec.total_species_count = metrics["total_species_count"]
@@ -104,15 +127,28 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
         rec.analysis_summary = ai.summary
         rec.analysis_error = None
         rec.raw_output = {
+            "engine": "biodiversity_assessment_v1",
             "pipeline": ai.pipeline,
+            "identification_coverage": {
+                "bird": "birdnet",
+                "mammal": "pending_model",
+                "amphibian": "pending_model",
+                "reptile": "pending_model",
+                "insect": "pending_model",
+            },
             "detections": enriched,
             "metrics": metrics,
+            "spl_metrics": spl_metrics,
+            "ecoacoustic_indices": ecoacoustic,
             "taxon_breakdown": taxon_breakdown(taxon_rows),
             "regional_fauna": regional_context,
             "data_sources": {
                 "identification": ai.pipeline,
                 "taxonomy": "gbif",
-                "conservation": "iucn_api" if regional_context and regional_context.get("iucn_live") else "iucn_catalog",
+                "conservation": "iucn_api"
+                if regional_context and regional_context.get("iucn_live")
+                else "iucn_catalog",
+                "ecoacoustic": "librosa",
             },
         }
         rec.analyzed_at = datetime.now(UTC)

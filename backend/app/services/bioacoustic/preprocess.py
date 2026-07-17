@@ -48,8 +48,12 @@ def convert_to_wav(
         src_path = src.name
     wav_path = src_path.rsplit(".", 1)[0] + ".wav"
 
-    # Light highpass removes rumble; aggressive afftdn often strips bird calls.
-    audio_filter = "afftdn=nf=-25" if use_nr else "highpass=f=80"
+    # Wind rumble removal + light denoise for environmental soundscapes
+    audio_filter = (
+        "afftdn=nf=-25"
+        if use_nr
+        else "highpass=f=200,lowpass=f=12000"
+    )
 
     ok = _run_ffmpeg(
         [
@@ -96,7 +100,7 @@ def preprocess_audio(audio_bytes: bytes, *, s3_key: str) -> dict[str, Any]:
         duration_s = round(len(audio_bytes) / 88200, 2) if audio_bytes else 0.0
 
     return {
-        "noise_reduction": "ffmpeg_afftdn" if settings.bioacoustic_noise_reduction else "highpass_80hz",
+        "noise_reduction": "ffmpeg_afftdn" if settings.bioacoustic_noise_reduction else "wind_filter_200_12k",
         "sample_rate_hz": sample_rate,
         "channels": 1,
         "duration_analyzed_s": round(duration_s, 2),

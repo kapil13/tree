@@ -3,11 +3,14 @@
 from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.iucn_catalog import enrich_detection, lookup_iucn
 from app.services.bioacoustic.metrics import (
+    aggregate_assessment_metrics,
     aggregate_metrics,
     bioacoustic_health_score,
+    biodiversity_health_score,
     filter_detections_for_metrics,
     shannon_diversity_index,
     simpson_diversity_index,
+    species_richness,
 )
 
 
@@ -27,7 +30,18 @@ def test_shannon_empty():
     assert simpson_diversity_index([]) == 0.0
 
 
-def test_bioacoustic_health_score_range():
+def test_biodiversity_health_score_range():
+    score = biodiversity_health_score(
+        species_richness=6,
+        shannon_index=2.0,
+        threatened_species=1,
+        aci_normalized=0.6,
+        native_ratio=0.8,
+    )
+    assert 0 <= score <= 100
+
+
+def test_bioacoustic_health_score_backward_compat():
     score = bioacoustic_health_score(
         shannon_index=2.0,
         simpson_index=0.7,
@@ -36,6 +50,14 @@ def test_bioacoustic_health_score_range():
         detections=[{"iucn_status": "Vulnerable"}],
     )
     assert 0 <= score <= 100
+
+
+def test_species_richness_review_threshold():
+    detections = [
+        {"scientific_name": "A", "confidence": 0.95},
+        {"scientific_name": "B", "confidence": 0.65},
+    ]
+    assert species_richness(detections, min_confidence=0.70) == 1
 
 
 def test_iucn_lookup():

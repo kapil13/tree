@@ -12,6 +12,7 @@ class SpeciesDetection:
     taxon_group: str
     confidence: float
     call_count: int
+    time_intervals: list[dict[str, float]] | None = None
 
 
 @dataclass
