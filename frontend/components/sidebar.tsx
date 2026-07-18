@@ -12,13 +12,16 @@ import {
   Mic,
   Satellite,
   Settings,
+  Shield,
   Sparkles,
   TreePine,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-store";
+import { isPlatformAdmin } from "@/lib/auth-utils";
 import { cn } from "@/lib/cn";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+export type NavItem = { href: string; label: string; icon: LucideIcon; adminOnly?: boolean };
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
@@ -32,13 +35,16 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "Superadmin", icon: Shield, adminOnly: true },
 ];
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
+  const { user } = useAuth();
+  const items = NAV_ITEMS.filter((item) => !item.adminOnly || isPlatformAdmin(user?.role));
   return (
     <nav className="space-y-1">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = path === href || (href !== "/dashboard" && path?.startsWith(href));
         return (
           <Link

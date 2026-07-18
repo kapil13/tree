@@ -6,12 +6,13 @@ import uuid
 
 from sqlalchemy import select
 
+from app.core.access import is_platform_admin
 from app.models.planting_project import PlantingProject
 from app.models.plantation_fence import PlantationFence
 
 
 def can_access_project(user, project: PlantingProject) -> bool:
-    if user.role == "admin":
+    if is_platform_admin(user):
         return True
     if project.owner_user_id == user.id:
         return True
@@ -19,7 +20,7 @@ def can_access_project(user, project: PlantingProject) -> bool:
 
 
 def can_access_fence(user, fence: PlantationFence) -> bool:
-    if user.role == "admin":
+    if is_platform_admin(user):
         return True
     if fence.owner_user_id == user.id:
         return True

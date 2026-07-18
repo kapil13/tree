@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
@@ -33,12 +33,14 @@ from app.schemas.auth import (
     OTPRequest,
     OTPRequestOut,
     OTPVerify,
+    PasswordChangeRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
     UpdateProfile,
     UserOut,
 )
+from app.services.admin.audit import write_audit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -185,6 +187,24 @@ async def verify_otp(payload: OTPVerify, db: DB) -> TokenResponse:
 @router.get("/me", response_model=UserOut)
 async def me(user: CurrentUser) -> UserOut:
     return UserOut.model_validate(user)
+
+
+@router.post("/password/change", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(payload: PasswordChangeRequest, user: CurrentUser, db: DB) -> Response:
+    if not user.hashed_password or not verify_password(payload.current_password, user.hashed_password):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="invalid_current_password")
+    user.hashed_password = hash_password(payload.new_password)
+    await db.commit()
+    await write_audit(
+        db,
+        actor_user_id=user.id,
+        action="auth.password.change",
+        resource_type="user",
+        resource_id=user.id,
+        diff={"email": user.email},
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/me", response_model=UserOut)

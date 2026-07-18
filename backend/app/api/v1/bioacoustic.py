@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, sta
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.schemas.bioacoustic import (
     BioacousticAnalyzeResponse,
@@ -26,7 +27,7 @@ _THREATENED = {"Critically Endangered", "Endangered", "Vulnerable"}
 
 
 def _scope(stmt, user):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(

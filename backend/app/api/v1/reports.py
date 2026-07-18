@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.api.v1.plantation_fences import _load_fence
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.report import Report
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 async def _tree_rows(user, db) -> tuple[list[dict], dict]:
     trees_q = select(Tree)
-    if user.organization_id and user.role != "admin":
+    if user.organization_id and not is_platform_admin(user):
         trees_q = trees_q.where(
             (Tree.owner_user_id == user.id) | (Tree.organization_id == user.organization_id)
         )

@@ -6,6 +6,7 @@ from app.models.organization import Organization
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.models.planting_project import PlantingProject
+from app.models.platform_module_rule import PlatformModuleRule
 from app.models.planting_standard import PlantingStandard
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -28,6 +29,7 @@ __all__ = [
     "PlantingProgram",
     "UserPlantingProgram",
     "PlantingProject",
+    "PlatformModuleRule",
     "PlantingStandard",
     "PlantationFence",
     "PlantationSatelliteRecord",

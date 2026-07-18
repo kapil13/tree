@@ -105,6 +105,7 @@ class Role(str, enum.Enum):
     CORPORATE = "corporate"
     GOVERNMENT = "government"
     ADMIN = "admin"
+    SUPERADMIN = "superadmin"
 
 
 class Permission(str, enum.Enum):
@@ -133,6 +134,7 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.CORPORATE: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
     Role.GOVERNMENT: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
     Role.ADMIN: {Permission.ADMIN_ALL},
+    Role.SUPERADMIN: {Permission.ADMIN_ALL},
 }
 
 

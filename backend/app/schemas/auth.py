@@ -64,6 +64,11 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=12, max_length=128)
+
+
 class UpdateProfile(BaseModel):
     full_name: str | None = None
     phone: str | None = None

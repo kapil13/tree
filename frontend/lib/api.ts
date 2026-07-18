@@ -383,6 +383,9 @@ export const auth = {
   async googleAuthorize() {
     return (await api.get<{ authorize_url: string }>("/v1/auth/google/login")).data;
   },
+  async changePassword(current_password: string, new_password: string) {
+    await api.post("/v1/auth/password/change", { current_password, new_password });
+  },
 };
 
 export const plantingPrograms = {
@@ -1181,5 +1184,137 @@ export const bioacoustic = {
     return (
       await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
     ).data as { id: string; status: string };
+  },
+};
+
+export type AdminOverview = {
+  users_total: number;
+  users_active: number;
+  users_by_role: Record<string, number>;
+  organizations_total: number;
+  trees_total: number;
+  trees_by_status: Record<string, number>;
+  plantation_fences_total: number;
+  planting_projects_total: number;
+  bioacoustic_recordings_total: number;
+  compliance_violations_open: number;
+  module_rules_total: number;
+  audit_events_24h: number;
+};
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+  organization_id: string | null;
+  organization_name: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminOrg = {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  user_count: number;
+  tree_count: number;
+  plantation_fence_count: number;
+};
+
+export type ModuleRule = {
+  id: string;
+  module_key: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  allowed_roles: string[];
+  config: Record<string, unknown>;
+  updated_at: string;
+};
+
+export type RolePermission = {
+  role: string;
+  permissions: string[];
+  is_platform_admin: boolean;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  actor_user_id: string | null;
+  actor_email: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  diff: Record<string, unknown> | null;
+  ip: string | null;
+  created_at: string;
+};
+
+export const adminApi = {
+  async overview() {
+    return (await api.get<AdminOverview>("/v1/admin/overview")).data;
+  },
+  async roles() {
+    return (await api.get<RolePermission[]>("/v1/admin/roles")).data;
+  },
+  async users(params?: { q?: string; role?: string }) {
+    return (await api.get<AdminUser[]>("/v1/admin/users", { params })).data;
+  },
+  async createUser(payload: {
+    email: string;
+    password: string;
+    full_name: string;
+    role?: string;
+    organization_id?: string | null;
+    is_active?: boolean;
+  }) {
+    return (await api.post<AdminUser>("/v1/admin/users", payload)).data;
+  },
+  async updateUser(
+    id: string,
+    payload: Partial<{
+      email: string;
+      full_name: string;
+      role: string;
+      organization_id: string | null;
+      is_active: boolean;
+    }>,
+  ) {
+    return (await api.patch<AdminUser>(`/v1/admin/users/${id}`, payload)).data;
+  },
+  async resetPassword(id: string, new_password: string) {
+    await api.post(`/v1/admin/users/${id}/password`, { new_password });
+  },
+  async organizations() {
+    return (await api.get<AdminOrg[]>("/v1/admin/organizations")).data;
+  },
+  async moduleRules() {
+    return (await api.get<ModuleRule[]>("/v1/admin/modules/rules")).data;
+  },
+  async updateModuleRule(
+    moduleKey: string,
+    payload: Partial<{
+      enabled: boolean;
+      allowed_roles: string[];
+      label: string;
+      description: string;
+      config: Record<string, unknown>;
+    }>,
+  ) {
+    return (await api.patch<ModuleRule>(`/v1/admin/modules/rules/${moduleKey}`, payload)).data;
+  },
+  async auditLogs(params?: { action?: string }) {
+    return (await api.get<AuditLogEntry[]>("/v1/admin/audit-logs", { params })).data;
+  },
+  async moduleAccess(moduleKey: string) {
+    return (
+      await api.get<{ module_key: string; allowed: boolean; reason: string }>(
+        "/v1/admin/modules/access-check",
+        { params: { module_key: moduleKey } },
+      )
+    ).data;
   },
 };

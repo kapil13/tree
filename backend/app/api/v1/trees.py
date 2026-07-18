@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.tree import Tree
 from app.models.tree_image import TreeImage
 from app.schemas.common import Page
@@ -286,7 +287,7 @@ async def list_trees(
     ),
 ) -> Page[TreeListItem]:
     stmt = select(Tree).options(selectinload(Tree.planting_program))
-    if user.role != "admin":
+    if not is_platform_admin(user):
         if user.organization_id:
             stmt = stmt.where(
                 (Tree.owner_user_id == user.id)
@@ -349,7 +350,7 @@ async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(404, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
+    if not is_platform_admin(user) and tree.owner_user_id != user.id and (
         not user.organization_id or tree.organization_id != user.organization_id
     ):
         raise HTTPException(403, detail="forbidden")
@@ -546,7 +547,7 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
             "y": y,
             "uid": user.id,
             "oid": user.organization_id or uuid.UUID(int=0),
-            "is_admin": user.role == "admin",
+            "is_admin": is_platform_admin(user),
         },
     )
     tile = res.scalar_one()
