@@ -40,6 +40,14 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: str = "http://localhost:3000"
+    frontend_url: str | None = None
+
+    @property
+    def app_frontend_url(self) -> str:
+        if self.frontend_url:
+            return self.frontend_url.rstrip("/")
+        first = self.cors_origins.split(",")[0].strip()
+        return first or "http://localhost:3000"
 
     # AWS / S3
     aws_region: str = "ap-south-1"

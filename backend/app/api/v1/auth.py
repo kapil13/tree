@@ -6,6 +6,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
@@ -17,6 +18,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
 from app.services.auth.otp import (
     DEV_OTP_CODE,
@@ -200,16 +202,60 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
 async def google_login() -> dict[str, str]:
     if not settings.google_client_id:
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail="google_oauth_not_configured")
-    # In production: redirect to Google with PKCE.
-    return {
-        "authorize_url": (
-            "https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={settings.google_client_id}&response_type=code&scope=openid%20email%20profile"
-            f"&redirect_uri={settings.google_redirect_uri}"
-        )
-    }
+    try:
+        return {
+            "authorize_url": google_authorize_url(),
+            "redirect_uri": settings.google_redirect_uri,
+        }
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)) from exc
 
 
-@router.get("/google/callback", response_model=TokenResponse)
-async def google_callback(code: str, db: DB) -> TokenResponse:
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail="google_oauth_not_implemented")
+@router.get("/google/callback")
+async def google_callback(
+    db: DB,
+    code: str | None = None,
+    error: str | None = None,
+) -> RedirectResponse:
+    frontend = settings.app_frontend_url
+    if error or not code:
+        return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_denied")
+
+    try:
+        profile = await exchange_google_code(code)
+    except Exception as exc:
+        return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_exchange_failed")
+
+    res = await db.execute(select(User).where(User.google_sub == profile.sub))
+    user = res.scalar_one_or_none()
+    if user is None:
+        email_res = await db.execute(select(User).where(User.email == profile.email))
+        user = email_res.scalar_one_or_none()
+        if user is None:
+            user = User(
+                email=profile.email,
+                full_name=profile.name,
+                google_sub=profile.sub,
+                role="user",
+                is_active=True,
+                is_verified=True,
+            )
+            db.add(user)
+            await db.flush()
+            await ensure_default_enrollment(db, user.id)
+        else:
+            user.google_sub = profile.sub
+            if not user.full_name:
+                user.full_name = profile.name
+
+    user.is_verified = True
+    user.last_login_at = datetime.now(UTC)
+    await db.commit()
+
+    tokens = _tokens_for(user)
+    fragment = (
+        f"access_token={tokens.access_token}"
+        f"&refresh_token={tokens.refresh_token}"
+        f"&expires_in={tokens.expires_in}"
+    )
+    return RedirectResponse(f"{frontend}/auth/callback#{fragment}")
