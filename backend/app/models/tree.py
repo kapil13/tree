@@ -33,6 +33,7 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
+    last_geotag_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Geography
     location: Mapped[Any] = mapped_column(

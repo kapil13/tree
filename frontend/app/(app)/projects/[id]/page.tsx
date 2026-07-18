@@ -1,15 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Leaf, ShieldCheck } from "lucide-react";
+import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
+import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
+import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { plantingProjects } from "@/lib/api";
+import { cn } from "@/lib/cn";
+
+const TABS = ["overview", "compliance", "trees"] as const;
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["planting-project", projectId],
@@ -21,6 +30,11 @@ export default function ProjectDetailPage() {
     queryFn: () => plantingProjects.workAreas(projectId),
     enabled: !!projectId,
   });
+
+  const pestAreaId = useMemo(
+    () => selectedAreaId ?? workAreas[0]?.id ?? null,
+    [selectedAreaId, workAreas],
+  );
 
   if (isLoading || !project) {
     return <p className="text-sm text-stone-500">Loading project workspace…</p>;
@@ -35,6 +49,8 @@ export default function ProjectDetailPage() {
   const pitLabel = pitSize
     ? [pitSize.length, pitSize.width, pitSize.depth].filter(Boolean).join("×")
     : null;
+  const surveyDays =
+    (project.metadata?.survey_interval_days as number | undefined) ?? 30;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -45,7 +61,8 @@ export default function ProjectDetailPage() {
           </Link>
           <h1 className="mt-2 text-2xl font-semibold">{project.name}</h1>
           <p className="text-sm text-stone-500">
-            {project.code} · {project.segment.replace(/_/g, " ")} · {project.compliance_mode} mode
+            {project.code} · {project.segment.replace(/_/g, " ")} · {project.compliance_mode}{" "}
+            mode · survival survey every {surveyDays} days
           </p>
         </div>
         <Link
@@ -53,7 +70,7 @@ export default function ProjectDetailPage() {
           className="btn-primary"
         >
           <Leaf className="h-4 w-4" />
-          Register tree in project
+          Register tree
         </Link>
       </div>
 
@@ -61,9 +78,6 @@ export default function ProjectDetailPage() {
         <div className="card">
           <p className="kpi-label">Trees planted</p>
           <p className="text-2xl font-semibold">{project.summary?.tree_count ?? 0}</p>
-          {project.target_tree_count && (
-            <p className="text-xs text-stone-500">Target {project.target_tree_count}</p>
-          )}
         </div>
         <div className="card">
           <p className="kpi-label">Work areas</p>
@@ -81,59 +95,75 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium">Draw work areas</h2>
-          <p className="mb-4 text-xs text-stone-500">
-            Polygon for blocks and green belts. Corridor (line + buffer) for highways and canals.
-            Trees must be planted inside these boundaries.
-          </p>
-          <ProjectWorkAreaMap projectId={project.id} workAreas={workAreas} />
-        </div>
-
-        <aside className="card space-y-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <ShieldCheck className="h-4 w-4 text-forest-700" />
-            Planting standard
-          </div>
-          {project.active_standard ? (
-            <div className="space-y-2 text-sm text-stone-700">
-              <p className="font-medium">{project.active_standard.name}</p>
-              {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
-              {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
-              {rules.max_gps_accuracy_m != null && (
-                <p>Max GPS accuracy: {String(rules.max_gps_accuracy_m)} m</p>
-              )}
-              {rules.min_photos != null && <p>Min photos: {String(rules.min_photos)}</p>}
-              <p className="text-xs text-stone-500">
-                Layout: {String(rules.layout_pattern ?? "—")}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-stone-500">No standard attached.</p>
-          )}
-
-          {workAreas.length > 0 && (
-            <div className="border-t border-stone-100 pt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                Quick plant links
-              </p>
-              <ul className="mt-2 space-y-1">
-                {workAreas.map((area) => (
-                  <li key={area.id}>
-                    <Link
-                      href={`/trees/new?project=${project.id}&work_area=${area.id}`}
-                      className="text-sm text-forest-800 hover:underline"
-                    >
-                      {area.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </aside>
+      <div className="flex gap-2 border-b border-stone-200">
+        {TABS.map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={cn(
+              "border-b-2 px-4 py-2 text-sm font-medium capitalize",
+              tab === t
+                ? "border-forest-700 text-forest-800"
+                : "border-transparent text-stone-500 hover:text-stone-800",
+            )}
+            onClick={() => setTab(t)}
+          >
+            {t}
+          </button>
+        ))}
       </div>
+
+      {tab === "overview" && (
+        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+          <div className="card space-y-4">
+            <h2 className="text-sm font-medium">Work areas</h2>
+            <ProjectWorkAreaMap projectId={project.id} workAreas={workAreas} />
+            {workAreas.length > 0 && (
+              <div>
+                <label className="kpi-label">Pest intel for area</label>
+                <select
+                  className="input mt-1 mb-3"
+                  value={pestAreaId ?? ""}
+                  onChange={(e) => setSelectedAreaId(e.target.value || null)}
+                >
+                  {workAreas.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+                {pestAreaId && <PestIntelPanel kind="work-area" targetId={pestAreaId} />}
+              </div>
+            )}
+          </div>
+          <aside className="card space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShieldCheck className="h-4 w-4 text-forest-700" />
+              Planting standard
+            </div>
+            {project.active_standard ? (
+              <div className="space-y-2 text-sm text-stone-700">
+                <p className="font-medium">{project.active_standard.name}</p>
+                {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
+                {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
+                <p className="text-xs text-stone-500">
+                  Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-stone-500">No standard attached.</p>
+            )}
+          </aside>
+        </div>
+      )}
+
+      {tab === "compliance" && <ProjectComplianceTab projectId={project.id} />}
+
+      {tab === "trees" && (
+        <div className="card">
+          <ProjectTreesByArea projectId={project.id} workAreas={workAreas} />
+        </div>
+      )}
     </div>
   );
 }

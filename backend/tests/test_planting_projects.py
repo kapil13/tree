@@ -57,3 +57,18 @@ def test_open_template_is_permissive():
     tpl = STANDARD_TEMPLATES["open_byot_v1"]
     assert tpl["rules"]["spacing_m"] is None
     assert tpl["compliance_mode"] == "open"
+
+
+def test_risk_from_signals_critical():
+    from app.services.planting_projects.pest_intel import _risk_from_signals
+
+    assert (
+        _risk_from_signals(
+            pest_needed=True,
+            disease_needed=True,
+            ndvi_trend="declining",
+            health_pct=40.0,
+            rain_mm_48h=50.0,
+        )
+        == "critical"
+    )

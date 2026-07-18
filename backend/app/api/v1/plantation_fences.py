@@ -34,6 +34,7 @@ from app.services.satellite.plantation import (
 )
 from app.services.weather.open_meteo import fetch_forecast
 from app.schemas.weather import WeatherForecast
+from app.services.planting_projects.pest_intel import build_pest_intel
 
 router = APIRouter(prefix="/plantation-fences", tags=["plantation-fences"])
 log = get_logger(__name__)
@@ -365,3 +366,23 @@ async def fence_ecosystem_health(
         bioacoustic=FenceBiodiversityOut(fence_id=fence.id, fence_name=fence.name, **bio),
         **data,
     )
+
+
+@router.get("/{fence_id}/pest-intel")
+async def fence_pest_intel(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    weather_days: int = Query(5, ge=1, le=7),
+) -> dict:
+    """Aggregated pest/disease, weather, NDVI, and tree health for a work area."""
+    from app.models.planting_project import PlantingProject
+
+    fence = await _load_fence(fence_id, user, db)
+    project = None
+    if fence.project_id:
+        res = await db.execute(
+            select(PlantingProject).where(PlantingProject.id == fence.project_id)
+        )
+        project = res.scalar_one_or_none()
+    return await build_pest_intel(db, fence=fence, project=project, weather_days=weather_days)

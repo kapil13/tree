@@ -6,6 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.planting_project import PlantingProject
@@ -13,6 +14,7 @@ from app.models.planting_standard import PlantingStandard
 from app.models.plantation_fence import PlantationFence
 from app.models.tree import Tree
 from app.schemas.common import Page
+from app.schemas.tree import TreeListItem
 from app.schemas.plantation_fence import GeoJsonPolygon
 from app.schemas.planting_project import (
     ComplianceCheckOut,
@@ -381,3 +383,150 @@ async def compliance_check(
         chainage_km=result.chainage_km,
         issues=[ComplianceIssueOut.model_validate(i.__dict__) for i in result.issues],
     )
+
+
+@router.get("/{project_id}/compliance-violations")
+async def list_compliance_violations(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    unresolved_only: bool = True,
+) -> list[dict]:
+    from app.models.planting_compliance_violation import PlantingComplianceViolation
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    stmt = select(PlantingComplianceViolation).where(
+        PlantingComplianceViolation.project_id == project.id
+    )
+    if unresolved_only:
+        stmt = stmt.where(PlantingComplianceViolation.resolved_at.is_(None))
+    stmt = stmt.order_by(PlantingComplianceViolation.created_at.desc()).limit(200)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [
+        {
+            "id": str(v.id),
+            "violation_type": v.violation_type,
+            "severity": v.severity,
+            "message": v.message,
+            "work_area_id": str(v.work_area_id) if v.work_area_id else None,
+            "tree_id": str(v.tree_id) if v.tree_id else None,
+            "metadata": v.metadata_ or {},
+            "resolved_at": v.resolved_at.isoformat() if v.resolved_at else None,
+            "created_at": v.created_at.isoformat(),
+        }
+        for v in rows
+    ]
+
+
+@router.get("/{project_id}/trees")
+async def list_project_trees(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=200),
+) -> Page[TreeListItem]:
+    from geoalchemy2.shape import to_shape
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    stmt = select(Tree).options(selectinload(Tree.planting_program)).where(
+        Tree.project_id == project.id,
+        Tree.status != "removed",
+    )
+    if work_area_id:
+        stmt = stmt.where(Tree.plantation_id == work_area_id)
+
+    total = (await db.execute(select(func.count()).select_from(stmt.subquery()))).scalar_one()
+    rows = (
+        await db.execute(
+            stmt.order_by(Tree.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).scalars().all()
+
+    items: list[TreeListItem] = []
+    for t in rows:
+        pt = to_shape(t.location)
+        meta = t.metadata_ or {}
+        items.append(
+            TreeListItem(
+                id=t.id,
+                public_code=t.public_code,
+                species_text=t.species_text,
+                current_health=t.current_health,
+                current_carbon_kg=float(t.current_carbon_kg or 0),
+                satellite_verified=t.satellite_verified,
+                latitude=pt.y,
+                longitude=pt.x,
+                created_at=t.created_at,
+                program_code=t.planting_program.code if t.planting_program else None,
+                project_id=t.project_id,
+                work_area_id=t.plantation_id,
+                last_geotag_at=t.last_geotag_at,
+                survival_status=meta.get("survival_status")
+                if isinstance(meta.get("survival_status"), str)
+                else None,
+                chainage_km=meta.get("chainage_km") if meta.get("chainage_km") is not None else None,
+            )
+        )
+    return Page(items=items, page=page, page_size=page_size, total=total or 0)
+
+
+@router.get("/{project_id}/pest-intel")
+async def project_pest_intel(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID | None = None,
+) -> dict:
+    """Pest intel for one work area or aggregate highest-risk area in project."""
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    from app.services.planting_projects.pest_intel import build_pest_intel
+
+    if work_area_id:
+        res = await db.execute(
+            select(PlantationFence).where(
+                PlantationFence.id == work_area_id,
+                PlantationFence.project_id == project.id,
+            )
+        )
+        fence = res.scalar_one_or_none()
+        if fence is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+        return await build_pest_intel(db, fence=fence, project=project)
+
+    res = await db.execute(
+        select(PlantationFence).where(PlantationFence.project_id == project.id)
+    )
+    fences = list(res.scalars().all())
+    if not fences:
+        return {
+            "project_id": str(project.id),
+            "project_name": project.name,
+            "work_areas": [],
+            "message": "No work areas defined for this project.",
+        }
+
+    intel_list = []
+    for fence in fences:
+        intel_list.append(await build_pest_intel(db, fence=fence, project=project))
+
+    risk_order = {"critical": 4, "high": 3, "moderate": 2, "low": 1}
+    intel_list.sort(key=lambda x: risk_order.get(x["composite_risk"], 0), reverse=True)
+    return {
+        "project_id": str(project.id),
+        "project_name": project.name,
+        "highest_risk": intel_list[0] if intel_list else None,
+        "work_areas": intel_list,
+    }

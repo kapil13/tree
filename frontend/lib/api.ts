@@ -155,6 +155,12 @@ export type Tree = {
   latitude: number;
   longitude: number;
   created_at: string;
+  program_code?: string | null;
+  project_id?: string | null;
+  work_area_id?: string | null;
+  last_geotag_at?: string | null;
+  survival_status?: string | null;
+  chainage_km?: string | null;
 };
 
 export type TreeImage = {
@@ -186,6 +192,9 @@ export type TreeDetail = {
   satellite_verified: boolean;
   last_analysis_at: string | null;
   last_satellite_at: string | null;
+  plantation_id: string | null;
+  project_id: string | null;
+  last_geotag_at: string | null;
   metadata: Record<string, unknown>;
   images: TreeImage[];
   created_at: string;
@@ -541,6 +550,45 @@ export const plantingProjects = {
       )
     ).data;
   },
+  async complianceViolations(projectId: string, unresolvedOnly = true) {
+    return (
+      await api.get<
+        Array<{
+          id: string;
+          violation_type: string;
+          severity: string;
+          message: string;
+          work_area_id: string | null;
+          tree_id: string | null;
+          created_at: string;
+          resolved_at: string | null;
+        }>
+      >(`/v1/planting-projects/${projectId}/compliance-violations`, {
+        params: { unresolved_only: unresolvedOnly },
+      })
+    ).data;
+  },
+  async projectTrees(
+    projectId: string,
+    params?: { work_area_id?: string; page?: number; page_size?: number },
+  ) {
+    return (
+      await api.get<{ items: Tree[]; total: number }>(
+        `/v1/planting-projects/${projectId}/trees`,
+        { params },
+      )
+    ).data;
+  },
+  async pestIntel(projectId: string, workAreaId?: string) {
+    return (
+      await api.get(`/v1/planting-projects/${projectId}/pest-intel`, {
+        params: workAreaId ? { work_area_id: workAreaId } : undefined,
+      })
+    ).data as import("@/components/pest-intel-panel").PestIntel & {
+      highest_risk?: import("@/components/pest-intel-panel").PestIntel;
+      work_areas?: import("@/components/pest-intel-panel").PestIntel[];
+    };
+  },
 };
 
 export const uploads = {
@@ -559,7 +607,13 @@ export const uploads = {
 };
 
 export const trees = {
-  async list(params?: { page?: number; page_size?: number; health?: string }) {
+  async list(params?: {
+    page?: number;
+    page_size?: number;
+    health?: string;
+    project_id?: string;
+    work_area_id?: string;
+  }) {
     return (await api.get("/v1/trees", { params })).data as {
       items: Tree[];
       page: number;
@@ -584,6 +638,18 @@ export const trees = {
   },
   async get(id: string) {
     return (await api.get<TreeDetail>(`/v1/trees/${id}`)).data;
+  },
+  async regeotag(
+    id: string,
+    payload: {
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number;
+      survival_status?: string;
+      remarks?: string;
+    },
+  ) {
+    return (await api.post<TreeDetail>(`/v1/trees/${id}/regeotag`, payload)).data;
   },
   async timeline(id: string) {
     return (await api.get(`/v1/trees/${id}/timeline`)).data as {
@@ -718,6 +784,9 @@ export const plantationFences = {
   },
   async ecosystemHealth(id: string) {
     return (await api.get(`/v1/plantation-fences/${id}/ecosystem-health`)).data as EcosystemHealth;
+  },
+  async pestIntel(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/pest-intel`)).data;
   },
 };
 

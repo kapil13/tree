@@ -23,21 +23,36 @@ class SatelliteHealthNotificationPrefs(BaseModel):
     sms_on_critical: bool = True
 
 
+class SurvivalSurveyNotificationPrefs(BaseModel):
+    enabled: bool = True
+    survey_interval_days: int = Field(default=30, ge=15, le=90)
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+
+
 class NotificationPreferencesOut(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs
+    survival_survey: SurvivalSurveyNotificationPrefs = Field(
+        default_factory=SurvivalSurveyNotificationPrefs
+    )
 
 
 class NotificationPreferencesUpdate(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs | None = None
+    survival_survey: SurvivalSurveyNotificationPrefs | None = None
 
 
 @router.get("")
-async def list_alerts(user: CurrentUser, db: DB, unread_only: bool = False) -> list[dict]:
+async def list_alerts(
+    user: CurrentUser,
+    db: DB,
+    unread_only: bool = False,
+    project_id: uuid.UUID | None = None,
+) -> list[dict]:
     stmt = select(Alert).where(Alert.user_id == user.id).order_by(Alert.created_at.desc())
     if unread_only:
         stmt = stmt.where(Alert.is_read.is_(False))
-    rows = (await db.execute(stmt.limit(100))).scalars().all()
-    return [
+    rows = (await db.execute(stmt.limit(200))).scalars().all()
+    items = [
         {
             "id": str(a.id),
             "kind": a.kind,
@@ -51,12 +66,25 @@ async def list_alerts(user: CurrentUser, db: DB, unread_only: bool = False) -> l
         }
         for a in rows
     ]
+    if project_id:
+        pid = str(project_id)
+        items = [a for a in items if (a.get("payload") or {}).get("project_id") == pid]
+    return items[:100]
 
 
 @router.get("/preferences", response_model=NotificationPreferencesOut)
 async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
     sh = satellite_health_prefs(user)
-    return NotificationPreferencesOut(satellite_health=SatelliteHealthNotificationPrefs(**sh))
+    prefs = user.notification_preferences or default_notification_preferences()
+    ss = prefs.get("survival_survey") or {}
+    return NotificationPreferencesOut(
+        satellite_health=SatelliteHealthNotificationPrefs(**sh),
+        survival_survey=SurvivalSurveyNotificationPrefs(
+            enabled=ss.get("enabled", True),
+            survey_interval_days=ss.get("survey_interval_days", 30),
+            channels=ss.get("channels", ["in_app", "email"]),
+        ),
+    )
 
 
 @router.patch("/preferences", response_model=NotificationPreferencesOut)
@@ -68,11 +96,14 @@ async def update_preferences(
         current = prefs.get("satellite_health", dict(DEFAULT_SATELLITE_HEALTH_PREFS))
         current.update(payload.satellite_health.model_dump())
         prefs["satellite_health"] = current
+    if payload.survival_survey is not None:
+        current = prefs.get("survival_survey", {})
+        current.update(payload.survival_survey.model_dump())
+        prefs["survival_survey"] = current
     user.notification_preferences = prefs
     await db.commit()
     await db.refresh(user)
-    sh = satellite_health_prefs(user)
-    return NotificationPreferencesOut(satellite_health=SatelliteHealthNotificationPrefs(**sh))
+    return await get_preferences(user)
 
 
 @router.post("/{alert_id}/read")
