@@ -11,12 +11,17 @@ from app.core.logging import get_logger
 from app.models.alert import Alert
 from app.models.user import User
 from app.services.ai.satellite_health_types import SatelliteHealthResult
-from app.services.alerts.defaults import DEFAULT_SATELLITE_HEALTH_PREFS
+from app.services.alerts.defaults import (
+    DEFAULT_SATELLITE_HEALTH_PREFS,
+    DEFAULT_THREAT_WATCH_PREFS,
+    default_notification_preferences,
+)
 from app.services.notifications.notifier import Channel, get_notifier
 
 log = get_logger("alerts")
 
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
+
 
 def satellite_health_prefs(user: User) -> dict[str, Any]:
     prefs = user.notification_preferences or default_notification_preferences()
@@ -43,6 +48,39 @@ def resolve_channels(user: User, risk_level: str) -> list[Channel]:
         channels.append("sms")
 
     return channels
+
+
+def threat_watch_prefs(user: User) -> dict[str, Any]:
+    prefs = user.notification_preferences or default_notification_preferences()
+    tw = prefs.get("threat_watch") or {}
+    return {**DEFAULT_THREAT_WATCH_PREFS, **tw}
+
+
+async def dispatch_alert_channels(
+    user: User,
+    channels: list[str],
+    *,
+    title: str,
+    message: str,
+) -> dict[str, Any]:
+    """Send alert through configured channels; returns delivery status map."""
+    notifier = get_notifier()
+    delivered: dict[str, Any] = {}
+    for channel in channels:
+        if channel == "in_app":
+            delivered["in_app"] = {"delivered": True}
+            continue
+        to = user.email if channel == "email" else user.phone if channel == "sms" else ""
+        if not to:
+            delivered[channel] = {"delivered": False, "info": "no_destination"}
+            continue
+        try:
+            nr = await notifier.send(channel=channel, to=to, title=title, message=message)
+            delivered[channel] = {"delivered": nr.delivered, "info": nr.info}
+        except Exception as exc:
+            log.warning("alert.dispatch_failed", channel=channel, error=str(exc))
+            delivered[channel] = {"delivered": False, "info": str(exc)}
+    return delivered
 
 
 def should_alert_satellite_health(
@@ -115,24 +153,7 @@ async def create_satellite_health_alert(
     db.add(alert)
     await db.flush()
 
-    notifier = get_notifier()
-    delivered: dict[str, Any] = {}
-    for channel in channels:
-        if channel == "in_app":
-            delivered["in_app"] = {"delivered": True}
-            continue
-        to = user.email if channel == "email" else user.phone if channel == "sms" else ""
-        if not to:
-            delivered[channel] = {"delivered": False, "info": "no_destination"}
-            continue
-        try:
-            nr = await notifier.send(channel=channel, to=to, title=title, message=message)
-            delivered[channel] = {"delivered": nr.delivered, "info": nr.info}
-        except Exception as exc:
-            log.warning("alert.dispatch_failed", channel=channel, error=str(exc))
-            delivered[channel] = {"delivered": False, "info": str(exc)}
-
-    alert.delivered = delivered
+    alert.delivered = await dispatch_alert_channels(user, channels, title=title, message=message)
     await db.commit()
     await db.refresh(alert)
     log.info(

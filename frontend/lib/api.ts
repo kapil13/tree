@@ -874,6 +874,13 @@ export const dashboard = {
   async get() {
     return (await api.get<Dashboard>("/v1/dashboard")).data;
   },
+  async threatWatch() {
+    return (
+      await api.get<import("@/components/dashboard/threat-watch-panel").ThreatWatchData>(
+        "/v1/dashboard/threat-watch",
+      )
+    ).data;
+  },
 };
 
 export const carbon = {

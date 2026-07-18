@@ -18,6 +18,8 @@ export type PestIntel = {
   tree_count: number;
   healthy_pct?: number | null;
   rain_mm_next_48h?: number;
+  weather_alerts?: Array<{ kind: string; severity: string; title: string; message: string }>;
+  early_warnings?: Array<{ kind: string; severity: string; title: string; message: string }>;
   recommended_actions: string[];
   satellite_health?: { summary?: string; risk_level?: string } | null;
   weather?: {
@@ -116,6 +118,34 @@ export function PestIntelPanel(props: Props) {
           {data.disease_control_needed && (
             <span className="rounded bg-rose-100 px-2 py-1 text-rose-900">Disease risk</span>
           )}
+        </div>
+      )}
+
+      {(data.early_warnings?.length ?? 0) > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-stone-700">Early warnings</div>
+          {(data.early_warnings ?? []).map((w, i) => (
+            <div
+              key={i}
+              className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-900"
+            >
+              <span className="font-medium">{w.title}</span> — {w.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(data.weather_alerts?.length ?? 0) > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-stone-700">Weather alerts</div>
+          {(data.weather_alerts ?? []).slice(0, 3).map((w, i) => (
+            <div
+              key={i}
+              className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1.5 text-xs text-sky-900"
+            >
+              <span className="font-medium">{w.title}</span> — {w.message}
+            </div>
+          ))}
         </div>
       )}
 

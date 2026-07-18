@@ -15,6 +15,8 @@ from app.models.satellite_health_analysis import SatelliteHealthAnalysis
 from app.models.tree import Tree
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
+from app.services.threats.locust import locust_early_warning
+from app.services.weather.alerts import evaluate_weather_alerts
 from app.services.weather.open_meteo import fetch_forecast
 
 
@@ -120,6 +122,34 @@ async def build_pest_intel(
     if not actions:
         actions.append("No urgent pest or disease signals. Continue routine monitoring.")
 
+    weather_alerts: list[dict[str, Any]] = []
+    early_warnings: list[dict[str, Any]] = []
+    if weather:
+        weather_alerts = evaluate_weather_alerts(weather, days=weather_days)
+    locust = locust_early_warning(lat, lon)
+    if locust:
+        early_warnings.append(locust)
+    if pest_needed and rain_48h >= 25:
+        early_warnings.append(
+            {
+                "kind": "pest_outbreak",
+                "severity": "warning" if composite_risk in ("high", "critical") else "info",
+                "title": "Pest outbreak risk after rain",
+                "message": "Satellite pest signal with heavy rain forecast — scout within 72h.",
+                "source": "composite",
+            }
+        )
+    if disease_needed and rain_48h >= 20:
+        early_warnings.append(
+            {
+                "kind": "fungal_disease",
+                "severity": "warning",
+                "title": "Fungal disease risk",
+                "message": "Disease signal plus wet weather — inspect for leaf spots and blight.",
+                "source": "composite",
+            }
+        )
+
     return {
         "work_area_id": str(fence.id),
         "work_area_name": fence.name,
@@ -148,6 +178,10 @@ async def build_pest_intel(
         else None,
         "weather": weather.model_dump(mode="json") if weather else None,
         "rain_mm_next_48h": round(rain_48h, 1),
+        "weather_alerts": weather_alerts,
+        "early_warnings": early_warnings,
+        "latitude": round(lat, 5),
+        "longitude": round(lon, 5),
         "bioacoustic": {
             "recording_count": bio.get("recording_count", 0),
             "species_detected": bio.get("species_detected", 0),

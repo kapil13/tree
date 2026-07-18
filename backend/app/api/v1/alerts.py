@@ -11,8 +11,12 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.alert import Alert
-from app.services.alerts.defaults import DEFAULT_SATELLITE_HEALTH_PREFS, default_notification_preferences
-from app.services.alerts.service import satellite_health_prefs
+from app.services.alerts.defaults import (
+    DEFAULT_SATELLITE_HEALTH_PREFS,
+    DEFAULT_THREAT_WATCH_PREFS,
+    default_notification_preferences,
+)
+from app.services.alerts.service import satellite_health_prefs, threat_watch_prefs
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -29,16 +33,24 @@ class SurvivalSurveyNotificationPrefs(BaseModel):
     channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
 
 
+class ThreatWatchNotificationPrefs(BaseModel):
+    enabled: bool = True
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+    sms_on_critical: bool = False
+
+
 class NotificationPreferencesOut(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs
     survival_survey: SurvivalSurveyNotificationPrefs = Field(
         default_factory=SurvivalSurveyNotificationPrefs
     )
+    threat_watch: ThreatWatchNotificationPrefs = Field(default_factory=ThreatWatchNotificationPrefs)
 
 
 class NotificationPreferencesUpdate(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs | None = None
     survival_survey: SurvivalSurveyNotificationPrefs | None = None
+    threat_watch: ThreatWatchNotificationPrefs | None = None
 
 
 @router.get("")
@@ -77,6 +89,7 @@ async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
     sh = satellite_health_prefs(user)
     prefs = user.notification_preferences or default_notification_preferences()
     ss = prefs.get("survival_survey") or {}
+    tw = threat_watch_prefs(user)
     return NotificationPreferencesOut(
         satellite_health=SatelliteHealthNotificationPrefs(**sh),
         survival_survey=SurvivalSurveyNotificationPrefs(
@@ -84,6 +97,7 @@ async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
             survey_interval_days=ss.get("survey_interval_days", 30),
             channels=ss.get("channels", ["in_app", "email"]),
         ),
+        threat_watch=ThreatWatchNotificationPrefs(**tw),
     )
 
 
@@ -100,6 +114,10 @@ async def update_preferences(
         current = prefs.get("survival_survey", {})
         current.update(payload.survival_survey.model_dump())
         prefs["survival_survey"] = current
+    if payload.threat_watch is not None:
+        current = prefs.get("threat_watch", dict(DEFAULT_THREAT_WATCH_PREFS))
+        current.update(payload.threat_watch.model_dump())
+        prefs["threat_watch"] = current
     user.notification_preferences = prefs
     await db.commit()
     await db.refresh(user)

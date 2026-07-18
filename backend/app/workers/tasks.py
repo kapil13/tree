@@ -66,3 +66,19 @@ def survival_survey_reminders() -> dict:
             return await create_survival_survey_alerts(db)
 
     return asyncio.run(_run())
+
+
+@celery_app.task(name="app.workers.tasks.threat_watch_scan")
+def threat_watch_scan() -> dict:
+    """Emit weather, pest, and locust early-warning alerts for plantation sites."""
+    log.info("worker.threat_watch_scan")
+    import asyncio
+
+    from app.core.database import AsyncSessionLocal
+    from app.services.planting_projects.threat_alerts import create_threat_watch_alerts
+
+    async def _run() -> dict:
+        async with AsyncSessionLocal() as db:
+            return await create_threat_watch_alerts(db)
+
+    return asyncio.run(_run())
