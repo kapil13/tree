@@ -24,6 +24,8 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.passport import generate_passport_pdf, generate_qr_png
+from app.models.planting_project import PlantingProject
+from app.models.plantation_fence import PlantationFence
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
     list_available_programs,
@@ -33,6 +35,9 @@ from app.services.planting_programs.enrollment import (
     user_can_use_program,
 )
 from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
+from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
+from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/trees", tags=["trees"])
@@ -109,6 +114,8 @@ def _to_out(tree: Tree) -> TreeOut:
         last_satellite_at=tree.last_satellite_at,
         metadata=tree.metadata_ or {},
         images=images,
+        plantation_id=tree.plantation_id,
+        project_id=tree.project_id,
         created_at=tree.created_at,
     )
 
@@ -121,6 +128,29 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
     if not await user_can_use_program(db, user.id, program):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="program_not_enrolled")
 
+    work_area_id = payload.work_area_id or payload.plantation_id
+    work_area: PlantationFence | None = None
+    project: PlantingProject | None = None
+
+    if work_area_id:
+        res = await db.execute(
+            select(PlantationFence).where(PlantationFence.id == work_area_id)
+        )
+        work_area = res.scalar_one_or_none()
+        if work_area is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+        if work_area.project_id:
+            proj_res = await db.execute(
+                select(PlantingProject).where(PlantingProject.id == work_area.project_id)
+            )
+            project = proj_res.scalar_one_or_none()
+
+    compliance_mode = (
+        project.compliance_mode
+        if project
+        else PROGRAM_DEFAULT_COMPLIANCE.get(program.code, "open")
+    )
+
     core_values = {
         "species_text": payload.species_text,
         "species_id": payload.species_id,
@@ -129,7 +159,7 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         "longitude": payload.longitude,
         "altitude_m": payload.altitude_m,
         "accuracy_m": payload.accuracy_m,
-        "plantation_id": payload.plantation_id,
+        "plantation_id": work_area_id,
     }
     try:
         metadata = validate_program_payload(
@@ -144,6 +174,37 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
             detail={"validation_errors": exc.errors},
         ) from exc
 
+    rules: dict = {}
+    if project:
+        standard = await get_active_standard(db, project)
+        rules = standard.rules if standard else {}
+
+    compliance = await evaluate_tree_placement(
+        db,
+        project=project,
+        work_area=work_area,
+        rules=rules,
+        compliance_mode=compliance_mode,  # type: ignore[arg-type]
+        latitude=float(core_values["latitude"]),
+        longitude=float(core_values["longitude"]),
+        accuracy_m=core_values.get("accuracy_m"),
+        species_text=core_values.get("species_text"),
+        photo_count=len(payload.photo_keys),
+        metadata=metadata,
+    )
+
+    if not compliance.passed:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "compliance_errors": compliance.to_dict()["issues"],
+                "mode": compliance.mode,
+            },
+        )
+
+    if compliance.chainage_km is not None:
+        metadata["chainage_km"] = str(compliance.chainage_km)
+
     wkt = f"POINT({core_values['longitude']} {core_values['latitude']})"
     tree = Tree(
         public_code=_gen_public_code(),
@@ -156,11 +217,21 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         location=wkt,
         altitude_m=core_values.get("altitude_m"),
         accuracy_m=core_values.get("accuracy_m"),
-        plantation_id=core_values.get("plantation_id"),
+        plantation_id=work_area_id,
+        project_id=project.id if project else None,
         metadata_=metadata,
     )
     db.add(tree)
     await db.flush()
+
+    if compliance.issues:
+        await persist_violations(
+            db,
+            result=compliance,
+            project_id=project.id if project else None,
+            work_area_id=work_area_id,
+            tree_id=tree.id,
+        )
 
     for idx, key in enumerate(payload.photo_keys):
         db.add(

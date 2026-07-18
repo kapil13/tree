@@ -40,7 +40,12 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     )
     altitude_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
     accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
-    plantation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    plantation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plantation_fences.id", ondelete="SET NULL")
+    )
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_projects.id", ondelete="SET NULL")
+    )
     program_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("planting_programs.id", ondelete="SET NULL")
     )
@@ -63,6 +68,8 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     organization = relationship("Organization", back_populates="trees")
     species = relationship("Species")
     planting_program = relationship("PlantingProgram", back_populates="trees")
+    work_area = relationship("PlantationFence", foreign_keys=[plantation_id])
+    project = relationship("PlantingProject", foreign_keys=[project_id])
     images = relationship(
         "TreeImage", back_populates="tree", cascade="all, delete-orphan"
     )
@@ -84,4 +91,6 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
         Index("trees_status_idx", "status"),
         Index("trees_health_idx", "current_health"),
         Index("trees_program_idx", "program_id"),
+        Index("trees_plantation_idx", "plantation_id"),
+        Index("trees_project_idx", "project_id"),
     )

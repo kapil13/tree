@@ -16,6 +16,7 @@ export function splitPayload(
   program: ProgramFormSchema,
   values: ProgramFormValues,
   photoKeys: string[],
+  options?: { workAreaId?: string; projectId?: string },
 ) {
   const core: Record<string, unknown> = {};
   const metadata: Record<string, unknown> = {};
@@ -37,8 +38,13 @@ export function splitPayload(
     longitude: Number(core.longitude),
     altitude_m: core.altitude_m !== undefined ? Number(core.altitude_m) : undefined,
     accuracy_m: core.accuracy_m !== undefined ? Number(core.accuracy_m) : undefined,
+    work_area_id: options?.workAreaId,
+    plantation_id: options?.workAreaId,
     photo_keys: photoKeys,
-    metadata,
+    metadata: {
+      ...metadata,
+      ...(options?.projectId ? { project_id: options.projectId } : {}),
+    },
   };
 }
 

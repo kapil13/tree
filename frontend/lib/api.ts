@@ -79,9 +79,24 @@ export function errorMessage(err: unknown): string {
     }
     const data = err.response?.data as {
       error?: ApiError;
-      detail?: string | { msg: string }[];
+      detail?:
+        | string
+        | { msg: string }[]
+        | { compliance_errors?: Array<{ message: string }>; validation_errors?: string[] };
     } | undefined;
     if (data?.error?.message) return data.error.message;
+    if (data?.detail && typeof data.detail === "object" && !Array.isArray(data.detail)) {
+      const detail = data.detail as {
+        compliance_errors?: Array<{ message: string }>;
+        validation_errors?: string[];
+      };
+      if (detail.compliance_errors?.length) {
+        return detail.compliance_errors.map((e) => e.message).join("; ");
+      }
+      if (detail.validation_errors?.length) {
+        return detail.validation_errors.join("; ");
+      }
+    }
     if (typeof data?.detail === "string") {
       if (err.response.status === 404 && data.detail === "Not Found") {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
@@ -344,6 +359,190 @@ export const plantingPrograms = {
   },
 };
 
+export type ProjectSegment =
+  | "nhai_highway"
+  | "industrial_greenbelt"
+  | "township_landscape"
+  | "ngo_watershed"
+  | "general";
+
+export type ComplianceMode = "open" | "guided" | "strict";
+
+export type StandardTemplate = {
+  code: string;
+  name: string;
+  segment: string;
+  description: string;
+  compliance_mode: ComplianceMode;
+  recommended_program_codes: string[];
+  rules: Record<string, unknown>;
+};
+
+export type PlantingStandard = {
+  id: string;
+  project_id: string | null;
+  template_code: string | null;
+  name: string;
+  is_template_snapshot: boolean;
+  rules: Record<string, unknown>;
+  created_at: string;
+};
+
+export type ProjectSummary = {
+  work_area_count: number;
+  tree_count: number;
+  target_tree_count: number | null;
+  open_violations: number;
+  progress_pct: number | null;
+};
+
+export type PlantingProject = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  segment: ProjectSegment;
+  compliance_mode: ComplianceMode;
+  status: "planning" | "active" | "completed" | "archived";
+  program_code: string | null;
+  standard_template_code: string | null;
+  target_tree_count: number | null;
+  organization_id: string | null;
+  owner_user_id: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  summary?: ProjectSummary;
+  active_standard?: PlantingStandard;
+};
+
+export type GeoJsonLineString = {
+  type: "LineString";
+  coordinates: number[][];
+};
+
+export type WorkArea = {
+  id: string;
+  project_id: string | null;
+  name: string;
+  geometry_type: "polygon" | "corridor";
+  buffer_m: number | null;
+  segment_code: string | null;
+  chainage_start_km: number | null;
+  chainage_end_km: number | null;
+  area_ha: number | null;
+  boundary: GeoJsonPolygon;
+  centerline: GeoJsonLineString | null;
+  tree_count: number;
+  last_satellite_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ComplianceCheck = {
+  passed: boolean;
+  mode: ComplianceMode;
+  chainage_km: number | null;
+  issues: Array<{
+    violation_type: string;
+    severity: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }>;
+};
+
+export const plantingProjects = {
+  async segments() {
+    return (await api.get<{ segments: { code: string; label: string }[] }>(
+      "/v1/planting-projects/segments",
+    )).data;
+  },
+  async templates(segment?: string) {
+    return (
+      await api.get<StandardTemplate[]>("/v1/planting-projects/templates", {
+        params: segment ? { segment } : undefined,
+      })
+    ).data;
+  },
+  async list(params?: { page?: number; segment?: string; status?: string }) {
+    return (
+      await api.get<{ items: PlantingProject[]; total: number }>("/v1/planting-projects", {
+        params,
+      })
+    ).data;
+  },
+  async get(id: string) {
+    return (await api.get<PlantingProject>(`/v1/planting-projects/${id}`)).data;
+  },
+  async create(payload: {
+    code: string;
+    name: string;
+    description?: string;
+    segment: ProjectSegment;
+    compliance_mode?: ComplianceMode;
+    program_code?: string;
+    standard_template_code?: string;
+    target_tree_count?: number;
+    metadata?: Record<string, unknown>;
+  }) {
+    return (await api.post<PlantingProject>("/v1/planting-projects", payload)).data;
+  },
+  async update(
+    id: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      status: PlantingProject["status"];
+      compliance_mode: ComplianceMode;
+      target_tree_count: number;
+      metadata: Record<string, unknown>;
+    }>,
+  ) {
+    return (await api.patch<PlantingProject>(`/v1/planting-projects/${id}`, payload)).data;
+  },
+  async workAreas(projectId: string) {
+    return (
+      await api.get<WorkArea[]>(`/v1/planting-projects/${projectId}/work-areas`)
+    ).data;
+  },
+  async createWorkArea(
+    projectId: string,
+    payload: {
+      name: string;
+      geometry_type: "polygon" | "corridor";
+      boundary?: GeoJsonPolygon;
+      centerline?: GeoJsonLineString;
+      buffer_m?: number;
+      segment_code?: string;
+      chainage_start_km?: number;
+      chainage_end_km?: number;
+    },
+  ) {
+    return (
+      await api.post<WorkArea>(`/v1/planting-projects/${projectId}/work-areas`, payload)
+    ).data;
+  },
+  async complianceCheck(
+    projectId: string,
+    payload: {
+      work_area_id: string;
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number;
+      species_text?: string;
+      photo_count?: number;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return (
+      await api.post<ComplianceCheck>(
+        `/v1/planting-projects/${projectId}/compliance-check`,
+        payload,
+      )
+    ).data;
+  },
+};
+
 export const uploads = {
   async presignImage(file: File) {
     const presign = (
@@ -376,6 +575,8 @@ export const trees = {
     longitude: number;
     altitude_m?: number;
     accuracy_m?: number;
+    plantation_id?: string;
+    work_area_id?: string;
     photo_keys?: string[];
     metadata?: Record<string, unknown>;
   }) {
