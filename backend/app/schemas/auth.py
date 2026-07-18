@@ -38,6 +38,12 @@ class OTPRequest(BaseModel):
     phone: str | None = None
 
 
+class OTPRequestOut(BaseModel):
+    status: str
+    dev_hint: str | None = None
+    sms_enabled: bool = False
+
+
 class OTPVerify(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None

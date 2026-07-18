@@ -20,6 +20,12 @@ import {
   DEFAULT_SIGNUP_PROGRAMS,
   SIGNUP_PROGRAM_OPTIONS,
 } from "@/lib/program-catalog";
+import {
+  formatPhoneDisplay,
+  isValidIndianMobile,
+  phoneForApi,
+  sanitizePhoneDigits,
+} from "@/lib/phone";
 import { auth, errorMessage, plantingPrograms } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
@@ -103,15 +109,27 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       setError("Please accept the terms to create an account.");
       return;
     }
+    if (!isValidIndianMobile(phone)) {
+      setError("Enter a valid 10-digit Indian mobile number starting with 6–9.");
+      return;
+    }
     setBusy(true);
     setError(null);
     setDevHint(null);
     try {
-      const res = await auth.requestOtp({ phone });
+      const res = await auth.requestOtp({ phone: phoneForApi(phone) });
       setOtpSent(true);
       if (res.dev_hint) setDevHint(res.dev_hint);
+      if (!res.sms_enabled) {
+        setDevHint(res.dev_hint ?? "000000");
+      }
     } catch (err) {
-      setError(errorMessage(err));
+      const msg = errorMessage(err);
+      setError(
+        msg === "invalid_phone"
+          ? "Enter a valid 10-digit Indian mobile number starting with 6–9."
+          : msg,
+      );
     } finally {
       setBusy(false);
     }
@@ -122,13 +140,17 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       setError("Please accept the terms to create an account.");
       return;
     }
+    if (!isValidIndianMobile(phone)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const tokens = await auth.verifyOtp({
-        phone,
+        phone: phoneForApi(phone),
         code: otp,
-        full_name: mode === "signup" ? fullName : undefined,
+        full_name: mode === "signup" ? fullName.trim() : undefined,
       });
       setSession(tokens);
       if (mode === "signup") {
@@ -360,21 +382,43 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
                 {method === "phone" ? (
                   <div className="space-y-4">
+                    {mode === "signup" && (
+                      <label className="flex items-start gap-3 text-sm text-stone-600">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={acceptedTerms}
+                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        />
+                        <span>I agree to the platform terms and data use policy.</span>
+                      </label>
+                    )}
+
                     <div>
-                      <label className="label">Mobile number</label>
+                      <label className="label" htmlFor="auth-phone">
+                        Mobile number
+                      </label>
                       <div className="flex gap-2">
-                        <div className="field-input flex w-24 items-center justify-center bg-stone-50 text-sm font-medium text-stone-600">
+                        <div className="phone-prefix" aria-hidden>
                           +91
                         </div>
                         <input
-                          className="field-input flex-1"
+                          id="auth-phone"
+                          name="phone"
+                          className="field-input-flex"
+                          type="tel"
+                          autoComplete="tel-national"
                           inputMode="numeric"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                          pattern="[0-9]*"
+                          value={formatPhoneDisplay(phone)}
+                          onChange={(e) => setPhone(sanitizePhoneDigits(e.target.value))}
                           placeholder="98765 43210"
-                          disabled={otpSent}
+                          disabled={otpSent || busy}
                         />
                       </div>
+                      <p className="mt-1.5 text-xs text-stone-500">
+                        10-digit mobile number. Do not include +91.
+                      </p>
                     </div>
 
                     {otpSent && (
@@ -389,8 +433,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           placeholder="••••••"
                         />
                         {devHint && (
-                          <p className="mt-2 text-xs text-amber-700">
-                            Dev mode OTP: <span className="font-mono font-semibold">{devHint}</span>
+                          <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                            SMS is not enabled yet. Use OTP:{" "}
+                            <span className="font-mono font-bold">{devHint}</span>
                           </p>
                         )}
                       </div>
@@ -398,7 +443,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
                     <button
                       type="button"
-                      disabled={busy || (otpSent ? otp.length < OTP_LENGTH : phone.length < 10)}
+                      disabled={busy || (otpSent ? otp.length < OTP_LENGTH : !isValidIndianMobile(phone))}
                       className="btn-primary w-full"
                       onClick={() => (otpSent ? void verifyOtp() : void sendOtp())}
                     >
@@ -486,17 +531,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   </div>
                 )}
 
-                {mode === "signup" && method === "phone" && !otpSent && (
-                  <label className="flex items-start gap-3 text-sm text-stone-600">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
-                      checked={acceptedTerms}
-                      onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    />
-                    <span>I agree to the platform terms and data use policy.</span>
-                  </label>
-                )}
               </div>
             )}
 

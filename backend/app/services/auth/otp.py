@@ -11,10 +11,14 @@ def normalize_phone(raw: str) -> str:
     digits = re.sub(r"\D", "", raw or "")
     if not digits:
         raise ValueError("invalid_phone")
+    if digits.startswith("91") and len(digits) >= 12:
+        digits = digits[-10:]
+    elif digits.startswith("0") and len(digits) == 11:
+        digits = digits[1:]
     if len(digits) == 10:
+        if digits[0] not in "6789":
+            raise ValueError("invalid_phone")
         return f"+91{digits}"
-    if digits.startswith("91") and len(digits) == 12:
-        return f"+{digits}"
     if raw.strip().startswith("+") and len(digits) >= 10:
         return f"+{digits}"
     raise ValueError("invalid_phone")

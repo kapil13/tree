@@ -29,6 +29,7 @@ from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
     OTPRequest,
+    OTPRequestOut,
     OTPVerify,
     RefreshRequest,
     RegisterRequest,
@@ -117,8 +118,8 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     return _tokens_for(user)
 
 
-@router.post("/otp/request")
-async def request_otp(payload: OTPRequest) -> dict[str, str]:
+@router.post("/otp/request", response_model=OTPRequestOut)
+async def request_otp(payload: OTPRequest) -> OTPRequestOut:
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
     if payload.phone:
@@ -127,7 +128,8 @@ async def request_otp(payload: OTPRequest) -> dict[str, str]:
         except ValueError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_phone") from exc
     # Production: generate code, store in Redis, send via SMS/email provider.
-    return {"status": "sent", "dev_hint": DEV_OTP_CODE if settings.app_env != "production" else None}
+    dev_hint = None if settings.auth_otp_sms_enabled else DEV_OTP_CODE
+    return OTPRequestOut(status="sent", dev_hint=dev_hint, sms_enabled=settings.auth_otp_sms_enabled)
 
 
 async def _user_from_otp(db: DB, payload: OTPVerify) -> User:

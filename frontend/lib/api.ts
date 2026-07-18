@@ -246,7 +246,10 @@ export const auth = {
   },
   async requestOtp(payload: { email?: string; phone?: string }) {
     return (
-      await api.post<{ status: string; dev_hint?: string | null }>("/v1/auth/otp/request", payload)
+      await api.post<{ status: string; dev_hint?: string | null; sms_enabled?: boolean }>(
+        "/v1/auth/otp/request",
+        payload,
+      )
     ).data;
   },
   async verifyOtp(payload: {

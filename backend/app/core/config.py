@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     google_client_secret: str | None = None
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
 
+    # OTP — set auth_otp_sms_enabled=true when MSG91/SNS is wired
+    auth_otp_sms_enabled: bool = False
+
     # Notifications
     ses_sender: str = "no-reply@byot.earth"
     sns_sms_sender_id: str = "BYOT"
