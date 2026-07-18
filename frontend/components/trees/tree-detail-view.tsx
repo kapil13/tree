@@ -27,6 +27,7 @@ import {
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
+import { TreePhoto } from "@/components/trees/tree-photo";
 import { trees, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
@@ -92,9 +93,11 @@ export function TreeDetailView() {
     return (
       <div className="trees-empty">
         <TreePine className="h-10 w-10 text-stone-400" />
-        <h2 className="text-lg font-semibold">Tree not found</h2>
+        <h2 className="text-lg font-semibold text-stone-800">Could not load tree</h2>
         <p className="text-sm text-stone-500">
-          {error ? errorMessage(error) : "This tree may have been removed or you lack access."}
+          {error
+            ? `${errorMessage(error)}. If this persists, redeploy the backend with the latest fix.`
+            : "This tree may have been removed or you lack access."}
         </p>
         <Link href="/trees" className="btn-primary mt-2">
           <ArrowLeft className="h-4 w-4" /> Back to registry
@@ -176,12 +179,12 @@ export function TreeDetailView() {
           </div>
 
           <div className="trees-photo-frame">
-            {primaryImage?.cdn_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={primaryImage.cdn_url}
+            {primaryImage ? (
+              <TreePhoto
+                treeId={tree.id}
+                imageId={primaryImage.id}
                 alt={tree.species_text || tree.public_code}
-                className="h-full w-full object-cover"
+                className="h-full min-h-[220px] w-full object-cover"
               />
             ) : (
               <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-2 text-emerald-100/60">
@@ -285,14 +288,12 @@ export function TreeDetailView() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {tree.images.map((img) => (
               <div key={img.id} className="overflow-hidden rounded-xl border border-stone-200">
-                {img.cdn_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img.cdn_url} alt="" className="aspect-[4/3] w-full object-cover" />
-                ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-stone-100 text-xs text-stone-500">
-                    Image unavailable
-                  </div>
-                )}
+                <TreePhoto
+                  treeId={tree.id}
+                  imageId={img.id}
+                  alt=""
+                  className="aspect-[4/3] w-full object-cover"
+                />
                 {img.is_primary && (
                   <div className="bg-forest-50 px-2 py-1 text-[10px] font-semibold uppercase text-forest-700">
                     Primary photo

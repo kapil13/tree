@@ -29,6 +29,17 @@ class TreeUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TreeImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tree_id: uuid.UUID
+    s3_key: str
+    cdn_url: str | None
+    is_primary: bool
+    created_at: datetime
+
+
 class TreeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -56,7 +67,7 @@ class TreeOut(BaseModel):
     last_analysis_at: datetime | None
     last_satellite_at: datetime | None
     metadata: dict[str, Any] = Field(default_factory=dict)
-    images: list["TreeImageOut"] = Field(default_factory=list)
+    images: list[TreeImageOut] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -84,14 +95,3 @@ class TreePassport(BaseModel):
     satellite_verified: bool
     qr_url: str
     passport_pdf_url: str
-
-
-class TreeImageOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    tree_id: uuid.UUID
-    s3_key: str
-    cdn_url: str | None
-    is_primary: bool
-    created_at: datetime

@@ -46,30 +46,71 @@ def _gen_public_code() -> str:
     return f"BYOT-{p1}-{p2}"
 
 
+def _as_float(value) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
 def _image_out(img: TreeImage) -> TreeImageOut:
-    out = TreeImageOut.model_validate(img)
-    if not out.cdn_url:
-        storage = get_storage()
+    cdn_url = img.cdn_url
+    if not cdn_url:
         try:
-            out.cdn_url = storage.presigned_get(img.s3_key, expires_in=3600)
+            cdn_url = get_storage().presigned_get(img.s3_key, expires_in=3600)
         except Exception:
-            out.cdn_url = None
-    return out
+            cdn_url = None
+    return TreeImageOut(
+        id=img.id,
+        tree_id=img.tree_id,
+        s3_key=img.s3_key,
+        cdn_url=cdn_url,
+        is_primary=img.is_primary,
+        created_at=img.created_at,
+    )
 
 
 def _to_out(tree: Tree) -> TreeOut:
-    out = TreeOut.model_validate(tree)
     try:
         pt = to_shape(tree.location)
-        out.latitude = pt.y
-        out.longitude = pt.x
+        latitude, longitude = pt.y, pt.x
     except Exception:
-        pass
-    if tree.planting_program is not None:
-        out.program_code = tree.planting_program.code
-    out.metadata = tree.metadata_ or {}
-    out.images = [_image_out(img) for img in (tree.images or [])]
-    return out
+        latitude, longitude = None, None
+
+    images: list[TreeImageOut] = []
+    for img in tree.images or []:
+        try:
+            images.append(_image_out(img))
+        except Exception:
+            continue
+
+    return TreeOut(
+        id=tree.id,
+        public_code=tree.public_code,
+        owner_user_id=tree.owner_user_id,
+        organization_id=tree.organization_id,
+        program_id=tree.program_id,
+        program_code=tree.planting_program.code if tree.planting_program else None,
+        species_id=tree.species_id,
+        species_text=tree.species_text,
+        status=tree.status,
+        planted_at=tree.planted_at,
+        registered_at=tree.registered_at,
+        latitude=latitude,
+        longitude=longitude,
+        altitude_m=_as_float(tree.altitude_m),
+        accuracy_m=_as_float(tree.accuracy_m),
+        current_height_m=_as_float(tree.current_height_m),
+        current_dbh_cm=_as_float(tree.current_dbh_cm),
+        current_canopy_m=_as_float(tree.current_canopy_m),
+        current_health=tree.current_health,
+        current_carbon_kg=float(tree.current_carbon_kg or 0),
+        satellite_verified=bool(tree.satellite_verified),
+        last_analysis_at=tree.last_analysis_at,
+        last_satellite_at=tree.last_satellite_at,
+        metadata=tree.metadata_ or {},
+        images=images,
+        created_at=tree.created_at,
+    )
 
 
 @router.post("", response_model=TreeOut, status_code=status.HTTP_201_CREATED)
@@ -211,6 +252,25 @@ async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
 async def get_tree(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> TreeOut:
     tree = await _get_owned_tree(tree_id, user, db)
     return _to_out(tree)
+
+
+@router.get("/{tree_id}/images/{image_id}/file")
+async def get_tree_image_file(
+    tree_id: uuid.UUID, image_id: uuid.UUID, user: CurrentUser, db: DB
+) -> Response:
+    tree = await _get_owned_tree(tree_id, user, db)
+    img = next((i for i in tree.images if i.id == image_id), None)
+    if img is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="image_not_found")
+    data = get_storage().get_bytes(img.s3_key)
+    if not data:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="image_not_available")
+    content_type = "image/jpeg"
+    if img.s3_key.lower().endswith(".png"):
+        content_type = "image/png"
+    elif img.s3_key.lower().endswith(".webp"):
+        content_type = "image/webp"
+    return Response(content=data, media_type=content_type)
 
 
 @router.patch("/{tree_id}", response_model=TreeOut)

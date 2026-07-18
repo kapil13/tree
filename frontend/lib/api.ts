@@ -402,6 +402,12 @@ export const trees = {
     const res = await api.get(`/v1/trees/${id}/passport.pdf`, { responseType: "blob" });
     return URL.createObjectURL(res.data);
   },
+  async imageBlobUrl(treeId: string, imageId: string) {
+    const res = await api.get(`/v1/trees/${treeId}/images/${imageId}/file`, {
+      responseType: "blob",
+    });
+    return URL.createObjectURL(res.data);
+  },
   async analyze(id: string) {
     return (await api.post("/v1/tree-analysis", { tree_id: id, mode: "full" })).data;
   },
