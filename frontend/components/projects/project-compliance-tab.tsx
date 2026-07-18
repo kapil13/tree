@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle } from "lucide-react";
 import { plantingProjects } from "@/lib/api";
 
 const SEVERITY_CLASS: Record<string, string> = {
@@ -11,9 +12,19 @@ const SEVERITY_CLASS: Record<string, string> = {
 };
 
 export function ProjectComplianceTab({ projectId }: { projectId: string }) {
+  const qc = useQueryClient();
   const { data: violations = [], isLoading } = useQuery({
     queryKey: ["project-violations", projectId],
     queryFn: () => plantingProjects.complianceViolations(projectId, true),
+  });
+
+  const resolve = useMutation({
+    mutationFn: (violationId: string) =>
+      plantingProjects.resolveViolation(projectId, violationId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-violations", projectId] });
+      qc.invalidateQueries({ queryKey: ["planting-project", projectId] });
+    },
   });
 
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
@@ -36,6 +47,7 @@ export function ProjectComplianceTab({ projectId }: { projectId: string }) {
             <th className="px-4 py-2.5 font-medium">Message</th>
             <th className="px-4 py-2.5 font-medium">Tree</th>
             <th className="px-4 py-2.5 font-medium">Date</th>
+            <th className="px-4 py-2.5 font-medium" />
           </tr>
         </thead>
         <tbody>
@@ -61,6 +73,17 @@ export function ProjectComplianceTab({ projectId }: { projectId: string }) {
               </td>
               <td className="px-4 py-2.5 text-stone-500">
                 {new Date(v.created_at).toLocaleString()}
+              </td>
+              <td className="px-4 py-2.5 text-right">
+                <button
+                  type="button"
+                  className="btn-secondary text-xs"
+                  disabled={resolve.isPending}
+                  onClick={() => resolve.mutate(v.id)}
+                >
+                  <CheckCircle className="h-3 w-3" />
+                  Resolve
+                </button>
               </td>
             </tr>
           ))}

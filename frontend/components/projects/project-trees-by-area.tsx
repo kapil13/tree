@@ -19,9 +19,11 @@ function healthBadge(h: string) {
 export function ProjectTreesByArea({
   projectId,
   workAreas,
+  surveyIntervalDays = 30,
 }: {
   projectId: string;
   workAreas: WorkArea[];
+  surveyIntervalDays?: number;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["project-trees-all", projectId],
@@ -61,21 +63,36 @@ export function ProjectTreesByArea({
                 Add tree here
               </Link>
             </div>
-            <TreeMiniTable trees={areaTrees} />
+            <TreeMiniTable trees={areaTrees} surveyIntervalDays={surveyIntervalDays} />
           </section>
         );
       })}
       {trees.filter((t) => !t.work_area_id).length > 0 && (
         <section className="space-y-2">
           <h3 className="font-medium text-stone-900">Unassigned to work area</h3>
-          <TreeMiniTable trees={trees.filter((t) => !t.work_area_id)} />
+          <TreeMiniTable
+            trees={trees.filter((t) => !t.work_area_id)}
+            surveyIntervalDays={surveyIntervalDays}
+          />
         </section>
       )}
     </div>
   );
 }
 
-function TreeMiniTable({ trees }: { trees: Tree[] }) {
+function daysSince(iso: string | null | undefined) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+function TreeMiniTable({
+  trees,
+  surveyIntervalDays,
+}: {
+  trees: Tree[];
+  surveyIntervalDays: number;
+}) {
   if (!trees.length) {
     return <p className="text-sm text-stone-500">No trees in this area yet.</p>;
   }
@@ -95,14 +112,24 @@ function TreeMiniTable({ trees }: { trees: Tree[] }) {
           </tr>
         </thead>
         <tbody>
-          {trees.map((t) => (
+          {trees.map((t) => {
+            const dueDays = daysSince(t.last_geotag_at);
+            const geotagDue = dueDays != null && dueDays >= surveyIntervalDays;
+            return (
             <tr key={t.id} className="border-t border-stone-100 hover:bg-stone-50">
               <td className="px-3 py-2 font-mono text-xs">{t.public_code}</td>
               <td className="px-3 py-2">{t.species_text || "—"}</td>
               <td className="px-3 py-2">{healthBadge(t.current_health)}</td>
               <td className="px-3 py-2 capitalize">{t.survival_status || "—"}</td>
               <td className="px-3 py-2 text-stone-500">
-                {t.last_geotag_at ? new Date(t.last_geotag_at).toLocaleDateString() : "—"}
+                {t.last_geotag_at ? (
+                  <span className={geotagDue ? "font-medium text-amber-800" : ""}>
+                    {new Date(t.last_geotag_at).toLocaleDateString()}
+                    {geotagDue ? " · due" : ""}
+                  </span>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="px-3 py-2 text-stone-500">{t.chainage_km || "—"}</td>
               <td className="px-3 py-2 text-right">
@@ -111,7 +138,8 @@ function TreeMiniTable({ trees }: { trees: Tree[] }) {
                 </Link>
               </td>
             </tr>
-          ))}
+          );
+          })}
         </tbody>
       </table>
     </div>

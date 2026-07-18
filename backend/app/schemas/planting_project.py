@@ -113,6 +113,13 @@ class WorkAreaCreate(BaseModel):
     planting_standard_id: uuid.UUID | None = None
 
 
+class WorkAreaUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    segment_code: str | None = Field(default=None, max_length=64)
+    chainage_start_km: float | None = Field(default=None, ge=0)
+    chainage_end_km: float | None = Field(default=None, ge=0)
+
+
 class WorkAreaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

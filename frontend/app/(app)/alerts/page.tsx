@@ -29,6 +29,8 @@ export default function AlertsPage() {
   });
 
   const sh = prefs?.satellite_health;
+  const ss = prefs?.survival_survey;
+  const tw = prefs?.threat_watch;
 
   return (
     <div className="space-y-6">
@@ -87,6 +89,78 @@ export default function AlertsPage() {
           </div>
         )}
       </div>
+
+      {ss && (
+        <div className="card space-y-4">
+          <div className="text-sm font-medium">Survival survey reminders</div>
+          <div className="space-y-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={ss.enabled}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    survival_survey: { ...ss, enabled: e.target.checked },
+                  })
+                }
+              />
+              Alert when trees are due for re-geotagging
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={ss.channels.includes("email")}
+                onChange={(e) => {
+                  const channels = new Set(ss.channels);
+                  if (e.target.checked) channels.add("email");
+                  else channels.delete("email");
+                  if (!channels.has("in_app")) channels.add("in_app");
+                  savePrefs.mutate({
+                    survival_survey: { ...ss, channels: [...channels] },
+                  });
+                }}
+              />
+              Email survival survey alerts
+            </label>
+          </div>
+        </div>
+      )}
+
+      {tw && (
+        <div className="card space-y-4">
+          <div className="text-sm font-medium">Weather & pest early warnings</div>
+          <div className="space-y-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={tw.enabled}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    threat_watch: { ...tw, enabled: e.target.checked },
+                  })
+                }
+              />
+              Location-specific weather, pest, and locust watch alerts
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={tw.channels.includes("email")}
+                onChange={(e) => {
+                  const channels = new Set(tw.channels);
+                  if (e.target.checked) channels.add("email");
+                  else channels.delete("email");
+                  if (!channels.has("in_app")) channels.add("in_app");
+                  savePrefs.mutate({
+                    threat_watch: { ...tw, channels: [...channels] },
+                  });
+                }}
+              />
+              Email threat watch alerts
+            </label>
+          </div>
+        </div>
+      )}
 
       <div className="card divide-y divide-stone-100">
         {isLoading && <div className="text-stone-500">Loading…</div>}

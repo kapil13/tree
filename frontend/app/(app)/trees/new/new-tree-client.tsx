@@ -105,8 +105,12 @@ export function NewTreePageClient() {
   }
 
   async function runCompliancePreview(lat: number, lon: number, accuracy?: number) {
-    if (!projectIdParam || !workAreaId) return;
+    if (!projectIdParam || !workAreaId || !activeProgram) return;
     try {
+      const draft = splitPayload(activeProgram.form_schema, values, photoKeys, {
+        workAreaId: workAreaId ?? undefined,
+        projectId: projectIdParam ?? undefined,
+      });
       const result = await plantingProjects.complianceCheck(projectIdParam, {
         work_area_id: workAreaId,
         latitude: lat,
@@ -114,7 +118,7 @@ export function NewTreePageClient() {
         accuracy_m: accuracy,
         species_text: String(values.species_text || ""),
         photo_count: photoKeys.length,
-        metadata: {},
+        metadata: draft.metadata ?? {},
       });
       setCompliancePreview(result);
     } catch {

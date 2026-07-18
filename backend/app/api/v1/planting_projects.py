@@ -28,6 +28,7 @@ from app.schemas.planting_project import (
     StandardTemplateOut,
     WorkAreaCreate,
     WorkAreaOut,
+    WorkAreaUpdate,
     GeoJsonLineString,
 )
 from app.services.geo import geography_to_geojson_polygon
@@ -257,7 +258,9 @@ async def update_project(
         if value is not None:
             setattr(project, field, value)
     if payload.metadata is not None:
-        project.metadata_ = payload.metadata
+        merged = dict(project.metadata_ or {})
+        merged.update(payload.metadata)
+        project.metadata_ = merged
 
     await db.commit()
     await db.refresh(project)
@@ -341,6 +344,84 @@ async def create_work_area(
     return await _work_area_out(db, fence)
 
 
+@router.patch("/{project_id}/work-areas/{work_area_id}", response_model=WorkAreaOut)
+async def update_work_area(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    payload: WorkAreaUpdate,
+    user: CurrentUser,
+    db: DB,
+) -> WorkAreaOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(
+        select(PlantationFence).where(
+            PlantationFence.id == work_area_id,
+            PlantationFence.project_id == project.id,
+        )
+    )
+    fence = res.scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    if payload.name is not None:
+        fence.name = payload.name
+    if payload.segment_code is not None:
+        fence.segment_code = payload.segment_code
+    if payload.chainage_start_km is not None:
+        fence.chainage_start_km = payload.chainage_start_km
+    if payload.chainage_end_km is not None:
+        fence.chainage_end_km = payload.chainage_end_km
+
+    await db.commit()
+    await db.refresh(fence)
+    return await _work_area_out(db, fence)
+
+
+@router.delete("/{project_id}/work-areas/{work_area_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_work_area(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> None:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(
+        select(PlantationFence).where(
+            PlantationFence.id == work_area_id,
+            PlantationFence.project_id == project.id,
+        )
+    )
+    fence = res.scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    tree_count = int(
+        (
+            await db.execute(
+                select(func.count()).where(
+                    Tree.plantation_id == fence.id,
+                    Tree.status != "removed",
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    if tree_count > 0:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail=f"work_area_has_trees:{tree_count}",
+        )
+
+    await db.delete(fence)
+    await db.commit()
+
+
 @router.post("/{project_id}/compliance-check", response_model=ComplianceCheckOut)
 async def compliance_check(
     project_id: uuid.UUID,
@@ -419,6 +500,50 @@ async def list_compliance_violations(
         }
         for v in rows
     ]
+
+
+@router.post("/{project_id}/compliance-violations/{violation_id}/resolve")
+async def resolve_compliance_violation(
+    project_id: uuid.UUID,
+    violation_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    from app.models.planting_compliance_violation import PlantingComplianceViolation
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(
+        select(PlantingComplianceViolation).where(
+            PlantingComplianceViolation.id == violation_id,
+            PlantingComplianceViolation.project_id == project.id,
+        )
+    )
+    violation = res.scalar_one_or_none()
+    if violation is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="violation_not_found")
+
+    from datetime import UTC, datetime
+
+    violation.resolved_at = datetime.now(UTC)
+    await db.commit()
+    return {"status": "ok", "id": str(violation.id)}
+
+
+@router.get("/{project_id}/survival-due")
+async def project_survival_due(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    from app.services.planting_projects.survival_survey import survival_due_summary
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await survival_due_summary(db, project=project)
 
 
 @router.get("/{project_id}/trees")

@@ -616,6 +616,36 @@ export const plantingProjects = {
       })
     ).data;
   },
+  async resolveViolation(projectId: string, violationId: string) {
+    return (
+      await api.post(`/v1/planting-projects/${projectId}/compliance-violations/${violationId}/resolve`)
+    ).data;
+  },
+  async survivalDue(projectId: string) {
+    return (
+      await api.get<{
+        survey_interval_days: number;
+        trees_total: number;
+        trees_due: number;
+        due_tree_ids: string[];
+      }>(`/v1/planting-projects/${projectId}/survival-due`)
+    ).data;
+  },
+  async updateWorkArea(
+    projectId: string,
+    workAreaId: string,
+    payload: { name?: string; segment_code?: string; chainage_start_km?: number; chainage_end_km?: number },
+  ) {
+    return (
+      await api.patch<WorkArea>(
+        `/v1/planting-projects/${projectId}/work-areas/${workAreaId}`,
+        payload,
+      )
+    ).data;
+  },
+  async deleteWorkArea(projectId: string, workAreaId: string) {
+    await api.delete(`/v1/planting-projects/${projectId}/work-areas/${workAreaId}`);
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -912,6 +942,16 @@ export type AlertItem = {
 
 export type NotificationPreferences = {
   satellite_health: {
+    enabled: boolean;
+    channels: string[];
+    sms_on_critical: boolean;
+  };
+  survival_survey?: {
+    enabled: boolean;
+    survey_interval_days: number;
+    channels: string[];
+  };
+  threat_watch?: {
     enabled: boolean;
     channels: string[];
     sms_on_critical: boolean;

@@ -6,13 +6,14 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
+import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { plantingProjects } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
-const TABS = ["overview", "compliance", "trees"] as const;
+const TABS = ["overview", "compliance", "trees", "settings"] as const;
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -28,6 +29,12 @@ export default function ProjectDetailPage() {
   const { data: workAreas = [] } = useQuery({
     queryKey: ["project-work-areas", projectId],
     queryFn: () => plantingProjects.workAreas(projectId),
+    enabled: !!projectId,
+  });
+
+  const { data: survivalDue } = useQuery({
+    queryKey: ["project-survival-due", projectId],
+    queryFn: () => plantingProjects.survivalDue(projectId),
     enabled: !!projectId,
   });
 
@@ -74,6 +81,14 @@ export default function ProjectDetailPage() {
         </Link>
       </div>
 
+      {survivalDue && survivalDue.trees_due > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <strong>{survivalDue.trees_due}</strong> of {survivalDue.trees_total} trees are due for
+          re-geotagging (every {survivalDue.survey_interval_days} days). Open the Trees tab or
+          individual tree records to update GPS and survival status.
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card">
           <p className="kpi-label">Trees planted</p>
@@ -88,10 +103,8 @@ export default function ProjectDetailPage() {
           <p className="text-2xl font-semibold">{project.summary?.open_violations ?? 0}</p>
         </div>
         <div className="card">
-          <p className="kpi-label">Progress</p>
-          <p className="text-2xl font-semibold">
-            {project.summary?.progress_pct != null ? `${project.summary.progress_pct}%` : "—"}
-          </p>
+          <p className="kpi-label">Geotag due</p>
+          <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
         </div>
       </div>
 
@@ -146,6 +159,10 @@ export default function ProjectDetailPage() {
                 <p className="font-medium">{project.active_standard.name}</p>
                 {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
                 {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
+                {Boolean(rules.guard_type_required) && <p>Tree guard required</p>}
+                {rules.species_native_pct_min != null && (
+                  <p>Native species min: {String(rules.species_native_pct_min)}%</p>
+                )}
                 <p className="text-xs text-stone-500">
                   Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
                 </p>
@@ -161,9 +178,15 @@ export default function ProjectDetailPage() {
 
       {tab === "trees" && (
         <div className="card">
-          <ProjectTreesByArea projectId={project.id} workAreas={workAreas} />
+          <ProjectTreesByArea
+            projectId={project.id}
+            workAreas={workAreas}
+            surveyIntervalDays={surveyDays}
+          />
         </div>
       )}
+
+      {tab === "settings" && <ProjectSettingsPanel project={project} />}
     </div>
   );
 }

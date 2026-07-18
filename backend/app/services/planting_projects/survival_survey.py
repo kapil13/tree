@@ -14,6 +14,8 @@ from app.models.alert import Alert
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.user import User
+from app.services.alerts.defaults import DEFAULT_SURVIVAL_SURVEY_PREFS
+from app.services.alerts.service import dispatch_alert_channels
 
 log = get_logger("survival_survey")
 
@@ -24,10 +26,15 @@ def survey_interval_days(project: PlantingProject) -> int:
     meta = project.metadata_ or {}
     if meta.get("survey_interval_days") in (15, 30):
         return int(meta["survey_interval_days"])
-    rules = meta.get("survey_interval_days")
-    if rules in (15, 30):
-        return int(rules)
     return DEFAULT_SURVEY_INTERVAL_DAYS
+
+
+def survival_survey_prefs(user: User) -> dict[str, Any]:
+    from app.services.alerts.defaults import default_notification_preferences
+
+    prefs = user.notification_preferences or default_notification_preferences()
+    ss = prefs.get("survival_survey") or {}
+    return {**DEFAULT_SURVIVAL_SURVEY_PREFS, **ss}
 
 
 async def _recent_alert_exists(
@@ -93,6 +100,10 @@ async def create_survival_survey_alerts(db: AsyncSession) -> dict[str, Any]:
         if owner is None:
             continue
 
+        prefs = survival_survey_prefs(owner)
+        if not prefs.get("enabled", True):
+            continue
+
         kind = "survival_survey_due"
         if await _recent_alert_exists(db, user_id=owner.id, project_id=project.id, kind=kind):
             continue
@@ -102,6 +113,20 @@ async def create_survival_survey_alerts(db: AsyncSession) -> dict[str, Any]:
             f"{len(due_trees)} of {len(trees)} trees are due for re-geotagging "
             f"(every {interval} days). Verify live count, update GPS, and record survival status."
         )
+        channels = ["in_app"]
+        for ch in prefs.get("channels", ["in_app", "email"]):
+            if ch not in channels:
+                channels.append(ch)
+
+        payload = {
+            "project_id": str(project.id),
+            "project_code": project.code,
+            "survey_interval_days": interval,
+            "trees_due": len(due_trees),
+            "trees_total": len(trees),
+            "due_tree_ids": [str(t.id) for t in due_trees[:50]],
+        }
+
         alert = Alert(
             user_id=owner.id,
             tree_id=None,
@@ -109,21 +134,48 @@ async def create_survival_survey_alerts(db: AsyncSession) -> dict[str, Any]:
             severity="warning",
             title=title,
             message=message,
-            channels=["in_app", "email"],
-            delivered={"in_app": {"delivered": True}},
-            payload={
-                "project_id": str(project.id),
-                "project_code": project.code,
-                "survey_interval_days": interval,
-                "trees_due": len(due_trees),
-                "trees_total": len(trees),
-                "due_tree_ids": [str(t.id) for t in due_trees[:50]],
-            },
+            channels=channels,
+            delivered={},
+            payload=payload,
         )
         db.add(alert)
+        await db.flush()
+        alert.delivered = await dispatch_alert_channels(
+            owner, channels, title=title, message=message
+        )
         created += 1
 
     if created:
         await db.commit()
     log.info("survival_survey.alerts_created", count=created)
     return {"alerts_created": created, "projects_checked": len(projects)}
+
+
+async def survival_due_summary(
+    db: AsyncSession,
+    *,
+    project: PlantingProject,
+) -> dict[str, Any]:
+    """Trees due for re-geotag in a project."""
+    now = datetime.now(UTC)
+    interval = survey_interval_days(project)
+    cutoff = now - timedelta(days=interval)
+
+    trees_res = await db.execute(
+        select(Tree).where(
+            Tree.project_id == project.id,
+            Tree.status != "removed",
+        )
+    )
+    trees = list(trees_res.scalars().all())
+    due = [
+        t
+        for t in trees
+        if (t.last_geotag_at or t.registered_at) <= cutoff
+    ]
+    return {
+        "survey_interval_days": interval,
+        "trees_total": len(trees),
+        "trees_due": len(due),
+        "due_tree_ids": [str(t.id) for t in due[:100]],
+    }

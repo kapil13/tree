@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -44,6 +45,7 @@ function healthBadge(h: string) {
 export function TreeDetailView() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const [survivalStatus, setSurvivalStatus] = useState("live");
 
   const { data: tree, isLoading, error } = useQuery({
     queryKey: ["tree", id],
@@ -82,6 +84,12 @@ export function TreeDetailView() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tree", id] }),
   });
 
+  useEffect(() => {
+    if (tree?.metadata?.survival_status) {
+      setSurvivalStatus(String(tree.metadata.survival_status));
+    }
+  }, [tree?.metadata?.survival_status]);
+
   function handleRegeotag() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -90,7 +98,7 @@ export function TreeDetailView() {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
           accuracy_m: pos.coords.accuracy,
-          survival_status: String(tree?.metadata?.survival_status || "live"),
+          survival_status: survivalStatus,
         });
       },
       () => undefined,
@@ -234,6 +242,20 @@ export function TreeDetailView() {
             <Field label="Altitude" value={tree.altitude_m != null ? `${tree.altitude_m} m` : "—"} />
             <Field label="Accuracy" value={tree.accuracy_m != null ? `±${tree.accuracy_m} m` : "—"} />
           </dl>
+          <div className="mt-4 space-y-2">
+            <label className="kpi-label">Survival status at survey</label>
+            <select
+              className="input"
+              value={survivalStatus}
+              onChange={(e) => setSurvivalStatus(e.target.value)}
+            >
+              <option value="live">Live</option>
+              <option value="stressed">Stressed</option>
+              <option value="dead">Dead</option>
+              <option value="replaced">Replaced</option>
+              <option value="missing">Missing / uprooted</option>
+            </select>
+          </div>
           <button
             type="button"
             className="btn-secondary mt-4"

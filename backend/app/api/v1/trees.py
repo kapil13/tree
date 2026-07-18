@@ -193,6 +193,7 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         longitude=float(core_values["longitude"]),
         accuracy_m=core_values.get("accuracy_m"),
         species_text=core_values.get("species_text"),
+        species_id=core_values.get("species_id"),
         photo_count=len(payload.photo_keys),
         metadata=metadata,
     )

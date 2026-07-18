@@ -44,6 +44,15 @@ export function TreeRegistry() {
     queryFn: () => plantingProjects.list(),
   });
 
+  const projects = projectsData?.items ?? [];
+
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.id === projectId),
+    [projects, projectId],
+  );
+  const surveyIntervalDays =
+    (selectedProject?.metadata?.survey_interval_days as number | undefined) ?? 30;
+
   const { data: workAreas = [] } = useQuery({
     queryKey: ["project-work-areas", projectId],
     queryFn: () => plantingProjects.workAreas(projectId),
@@ -71,8 +80,6 @@ export function TreeRegistry() {
         (t.species_text?.toLowerCase().includes(q) ?? false),
     );
   }, [data?.items, search]);
-
-  const projects = projectsData?.items ?? [];
 
   return (
     <div className="space-y-4">
@@ -190,7 +197,7 @@ export function TreeRegistry() {
               )}
               {filtered.map((t) => {
                 const dueDays = daysSince(t.last_geotag_at);
-                const geotagDue = dueDays != null && dueDays >= 30;
+                const geotagDue = dueDays != null && dueDays >= surveyIntervalDays;
                 return (
                   <tr key={t.id} className="border-t border-stone-100 hover:bg-stone-50/80">
                     <td className="px-4 py-2.5 font-mono text-xs">{t.public_code}</td>
