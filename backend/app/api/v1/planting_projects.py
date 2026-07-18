@@ -29,7 +29,7 @@ from app.schemas.planting_project import (
     GeoJsonLineString,
 )
 from app.services.geo import geography_to_geojson_polygon
-from app.services.planting_projects.access import can_access_project, load_project
+from app.services.planting_projects.access import load_project
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import (
     PROGRAM_DEFAULT_COMPLIANCE,

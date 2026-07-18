@@ -28,6 +28,13 @@ export default function ProjectDetailPage() {
 
   const rules = project.active_standard?.rules ?? {};
   const spacing = rules.spacing_m as { min?: number } | null | undefined;
+  const pitSize = rules.pit_size_cm as
+    | { length?: number; width?: number; depth?: number }
+    | null
+    | undefined;
+  const pitLabel = pitSize
+    ? [pitSize.length, pitSize.width, pitSize.depth].filter(Boolean).join("×")
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -93,19 +100,7 @@ export default function ProjectDetailPage() {
             <div className="space-y-2 text-sm text-stone-700">
               <p className="font-medium">{project.active_standard.name}</p>
               {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
-              {rules.pit_size_cm && (
-                <p>
-                  Pit:{" "}
-                  {[
-                    (rules.pit_size_cm as { length?: number }).length,
-                    (rules.pit_size_cm as { width?: number }).width,
-                    (rules.pit_size_cm as { depth?: number }).depth,
-                  ]
-                    .filter(Boolean)
-                    .join("×")}{" "}
-                  cm
-                </p>
-              )}
+              {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
               {rules.max_gps_accuracy_m != null && (
                 <p>Max GPS accuracy: {String(rules.max_gps_accuracy_m)} m</p>
               )}
