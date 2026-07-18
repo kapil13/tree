@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -386,7 +386,7 @@ async def delete_work_area(
     work_area_id: uuid.UUID,
     user: CurrentUser,
     db: DB,
-) -> None:
+) -> Response:
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -420,6 +420,7 @@ async def delete_work_area(
 
     await db.delete(fence)
     await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{project_id}/compliance-check", response_model=ComplianceCheckOut)
