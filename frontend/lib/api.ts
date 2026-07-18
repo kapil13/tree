@@ -142,6 +142,54 @@ export type Tree = {
   created_at: string;
 };
 
+export type TreeImage = {
+  id: string;
+  tree_id: string;
+  s3_key: string;
+  cdn_url: string | null;
+  is_primary: boolean;
+  created_at: string;
+};
+
+export type TreeDetail = {
+  id: string;
+  public_code: string;
+  program_code: string | null;
+  species_text: string | null;
+  status: string;
+  planted_at: string | null;
+  registered_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  altitude_m: number | null;
+  accuracy_m: number | null;
+  current_height_m: number | null;
+  current_dbh_cm: number | null;
+  current_canopy_m: number | null;
+  current_health: string;
+  current_carbon_kg: number;
+  satellite_verified: boolean;
+  last_analysis_at: string | null;
+  last_satellite_at: string | null;
+  metadata: Record<string, unknown>;
+  images: TreeImage[];
+  created_at: string;
+};
+
+export type TreeAnalysis = {
+  id: string;
+  tree_id: string;
+  health: string | null;
+  health_confidence: number | null;
+  species_confidence: number | null;
+  estimated_height_m: number | null;
+  estimated_dbh_cm: number | null;
+  estimated_biomass_kg: number | null;
+  overall_confidence: number | null;
+  recommendations: Array<{ type: string; text: string; priority: string }> | null;
+  created_at: string;
+};
+
 export type GeoJsonPolygon = {
   type: "Polygon";
   coordinates: number[][][];
@@ -334,7 +382,25 @@ export const trees = {
     return (await api.post("/v1/trees", payload)).data;
   },
   async get(id: string) {
-    return (await api.get(`/v1/trees/${id}`)).data;
+    return (await api.get<TreeDetail>(`/v1/trees/${id}`)).data;
+  },
+  async timeline(id: string) {
+    return (await api.get(`/v1/trees/${id}/timeline`)).data as {
+      tree_id: string;
+      registered_at: string;
+      current: {
+        health: string;
+        carbon_kg: number;
+        satellite_verified: boolean;
+      };
+    };
+  },
+  async analyses(id: string) {
+    return (await api.get<TreeAnalysis[]>(`/v1/trees/${id}/analyses`)).data;
+  },
+  async passportPdfUrl(id: string) {
+    const res = await api.get(`/v1/trees/${id}/passport.pdf`, { responseType: "blob" });
+    return URL.createObjectURL(res.data);
   },
   async analyze(id: string) {
     return (await api.post("/v1/tree-analysis", { tree_id: id, mode: "full" })).data;

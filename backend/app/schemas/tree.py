@@ -56,6 +56,7 @@ class TreeOut(BaseModel):
     last_analysis_at: datetime | None
     last_satellite_at: datetime | None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    images: list["TreeImageOut"] = Field(default_factory=list)
     created_at: datetime
 
 

@@ -23,6 +23,7 @@ from app.schemas.tree import (
     TreePassport,
     TreeUpdate,
 )
+from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
     list_available_programs,
@@ -32,6 +33,7 @@ from app.services.planting_programs.enrollment import (
     user_can_use_program,
 )
 from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.storage import get_storage
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
@@ -42,6 +44,17 @@ def _gen_public_code() -> str:
     p1 = "".join(secrets.choice(_ALPHABET) for _ in range(4))
     p2 = "".join(secrets.choice(_ALPHABET) for _ in range(4))
     return f"BYOT-{p1}-{p2}"
+
+
+def _image_out(img: TreeImage) -> TreeImageOut:
+    out = TreeImageOut.model_validate(img)
+    if not out.cdn_url:
+        storage = get_storage()
+        try:
+            out.cdn_url = storage.presigned_get(img.s3_key, expires_in=3600)
+        except Exception:
+            out.cdn_url = None
+    return out
 
 
 def _to_out(tree: Tree) -> TreeOut:
@@ -55,6 +68,7 @@ def _to_out(tree: Tree) -> TreeOut:
     if tree.planting_program is not None:
         out.program_code = tree.planting_program.code
     out.metadata = tree.metadata_ or {}
+    out.images = [_image_out(img) for img in (tree.images or [])]
     return out
 
 
