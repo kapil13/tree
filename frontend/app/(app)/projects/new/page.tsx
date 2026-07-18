@@ -43,6 +43,7 @@ export default function NewProjectPage() {
   const [complianceMode, setComplianceMode] = useState<ComplianceMode>("strict");
   const [programCode, setProgramCode] = useState("government_nhai");
   const [targetTrees, setTargetTrees] = useState("");
+  const [surveyIntervalDays, setSurveyIntervalDays] = useState<15 | 30>(30);
   const [templateCode, setTemplateCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function NewProjectPage() {
         standard_template_code: selectedTemplate?.code,
         target_tree_count: targetTrees ? Number(targetTrees) : undefined,
         metadata: {
-          permit_reference: "",
+          survey_interval_days: surveyIntervalDays,
         },
       });
       router.push(`/projects/${project.id}`);
@@ -223,6 +224,17 @@ export default function NewProjectPage() {
               value={targetTrees}
               onChange={(e) => setTargetTrees(e.target.value)}
             />
+          </div>
+          <div>
+            <label className="kpi-label">Survival survey interval</label>
+            <select
+              className="input mt-1"
+              value={surveyIntervalDays}
+              onChange={(e) => setSurveyIntervalDays(Number(e.target.value) as 15 | 30)}
+            >
+              <option value={15}>Every 15 days</option>
+              <option value={30}>Every 30 days</option>
+            </select>
           </div>
         </div>
 
