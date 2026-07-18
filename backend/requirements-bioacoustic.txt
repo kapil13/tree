@@ -1,0 +1,9 @@
+# Optional ML stack for BirdNET + Perch multi-taxa bioacoustic analysis (worker image).
+birdnetlib>=0.17.0
+librosa>=0.10.2
+soundfile>=0.12.1
+scipy>=1.14.0
+tensorflow-cpu>=2.16.0
+matplotlib>=3.8.0
+onnxruntime>=1.19.0
+huggingface_hub>=0.24.0
