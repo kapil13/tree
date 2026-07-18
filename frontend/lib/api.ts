@@ -2,7 +2,8 @@
  * Thin axios wrapper for the BYOT REST API.
  * Reads `byot_access_token` from localStorage and sends it as Bearer.
  */
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { useAuth } from "@/lib/auth-store";
 
 /** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
 function resolveApiBaseUrl(): string {
@@ -49,11 +50,53 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const tok = localStorage.getItem("byot_access_token");
+    const tok = useAuth.getState().getAccessToken();
     if (tok) config.headers.Authorization = `Bearer ${tok}`;
   }
   return config;
 });
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = useAuth.getState().refresh;
+  if (!refresh) return null;
+  try {
+    const { data } = await axios.post<Tokens>(`${API_URL}/v1/auth/refresh`, {
+      refresh_token: refresh,
+    });
+    useAuth.getState().setSession(data);
+    return data.access_token;
+  } catch {
+    return null;
+  }
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const config = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    if (!config || error.response?.status !== 401 || config._retry) {
+      return Promise.reject(error);
+    }
+    if (config.url?.includes("/v1/auth/refresh") || config.url?.includes("/v1/auth/login")) {
+      return Promise.reject(error);
+    }
+
+    config._retry = true;
+    if (!refreshInFlight) {
+      refreshInFlight = refreshAccessToken().finally(() => {
+        refreshInFlight = null;
+      });
+    }
+    const newToken = await refreshInFlight;
+    if (!newToken) {
+      return Promise.reject(error);
+    }
+    config.headers.Authorization = `Bearer ${newToken}`;
+    return api(config);
+  },
+);
 
 export type ApiError = {
   code: string;
@@ -315,6 +358,11 @@ export const auth = {
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
+  },
+  async refresh(refreshToken: string) {
+    return (
+      await api.post<Tokens>("/v1/auth/refresh", { refresh_token: refreshToken })
+    ).data;
   },
   async requestOtp(payload: { email?: string; phone?: string }) {
     return (
