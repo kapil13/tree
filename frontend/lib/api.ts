@@ -2,7 +2,8 @@
  * Thin axios wrapper for the BYOT REST API.
  * Reads `byot_access_token` from localStorage and sends it as Bearer.
  */
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { useAuth } from "@/lib/auth-store";
 
 /** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
 function resolveApiBaseUrl(): string {
@@ -49,11 +50,53 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
-    const tok = localStorage.getItem("byot_access_token");
+    const tok = useAuth.getState().getAccessToken();
     if (tok) config.headers.Authorization = `Bearer ${tok}`;
   }
   return config;
 });
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = useAuth.getState().refresh;
+  if (!refresh) return null;
+  try {
+    const { data } = await axios.post<Tokens>(`${API_URL}/v1/auth/refresh`, {
+      refresh_token: refresh,
+    });
+    useAuth.getState().setSession(data);
+    return data.access_token;
+  } catch {
+    return null;
+  }
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const config = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    if (!config || error.response?.status !== 401 || config._retry) {
+      return Promise.reject(error);
+    }
+    if (config.url?.includes("/v1/auth/refresh") || config.url?.includes("/v1/auth/login")) {
+      return Promise.reject(error);
+    }
+
+    config._retry = true;
+    if (!refreshInFlight) {
+      refreshInFlight = refreshAccessToken().finally(() => {
+        refreshInFlight = null;
+      });
+    }
+    const newToken = await refreshInFlight;
+    if (!newToken) {
+      return Promise.reject(error);
+    }
+    config.headers.Authorization = `Bearer ${newToken}`;
+    return api(config);
+  },
+);
 
 export type ApiError = {
   code: string;
@@ -79,9 +122,24 @@ export function errorMessage(err: unknown): string {
     }
     const data = err.response?.data as {
       error?: ApiError;
-      detail?: string | { msg: string }[];
+      detail?:
+        | string
+        | { msg: string }[]
+        | { compliance_errors?: Array<{ message: string }>; validation_errors?: string[] };
     } | undefined;
     if (data?.error?.message) return data.error.message;
+    if (data?.detail && typeof data.detail === "object" && !Array.isArray(data.detail)) {
+      const detail = data.detail as {
+        compliance_errors?: Array<{ message: string }>;
+        validation_errors?: string[];
+      };
+      if (detail.compliance_errors?.length) {
+        return detail.compliance_errors.map((e) => e.message).join("; ");
+      }
+      if (detail.validation_errors?.length) {
+        return detail.validation_errors.join("; ");
+      }
+    }
     if (typeof data?.detail === "string") {
       if (err.response.status === 404 && data.detail === "Not Found") {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
@@ -139,6 +197,63 @@ export type Tree = {
   satellite_verified: boolean;
   latitude: number;
   longitude: number;
+  created_at: string;
+  program_code?: string | null;
+  project_id?: string | null;
+  work_area_id?: string | null;
+  last_geotag_at?: string | null;
+  survival_status?: string | null;
+  chainage_km?: string | null;
+};
+
+export type TreeImage = {
+  id: string;
+  tree_id: string;
+  s3_key: string;
+  cdn_url: string | null;
+  is_primary: boolean;
+  created_at: string;
+};
+
+export type TreeDetail = {
+  id: string;
+  public_code: string;
+  program_code: string | null;
+  species_text: string | null;
+  status: string;
+  planted_at: string | null;
+  registered_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  altitude_m: number | null;
+  accuracy_m: number | null;
+  current_height_m: number | null;
+  current_dbh_cm: number | null;
+  current_canopy_m: number | null;
+  current_health: string;
+  current_carbon_kg: number;
+  satellite_verified: boolean;
+  last_analysis_at: string | null;
+  last_satellite_at: string | null;
+  plantation_id: string | null;
+  project_id: string | null;
+  last_geotag_at: string | null;
+  metadata: Record<string, unknown>;
+  images: TreeImage[];
+  created_at: string;
+};
+
+export type TreeAnalysis = {
+  id: string;
+  tree_id: string;
+  health: string | null;
+  health_confidence: number | null;
+  species_confidence: number | null;
+  estimated_height_m: number | null;
+  estimated_dbh_cm: number | null;
+  estimated_biomass_kg: number | null;
+  overall_confidence: number | null;
+  recommendations: Array<{ type: string; text: string; priority: string }> | null;
   created_at: string;
 };
 
@@ -244,6 +359,11 @@ export const auth = {
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
   },
+  async refresh(refreshToken: string) {
+    return (
+      await api.post<Tokens>("/v1/auth/refresh", { refresh_token: refreshToken })
+    ).data;
+  },
   async requestOtp(payload: { email?: string; phone?: string }) {
     return (
       await api.post<{ status: string; dev_hint?: string | null; sms_enabled?: boolean }>(
@@ -296,6 +416,229 @@ export const plantingPrograms = {
   },
 };
 
+export type ProjectSegment =
+  | "nhai_highway"
+  | "industrial_greenbelt"
+  | "township_landscape"
+  | "ngo_watershed"
+  | "general";
+
+export type ComplianceMode = "open" | "guided" | "strict";
+
+export type StandardTemplate = {
+  code: string;
+  name: string;
+  segment: string;
+  description: string;
+  compliance_mode: ComplianceMode;
+  recommended_program_codes: string[];
+  rules: Record<string, unknown>;
+};
+
+export type PlantingStandard = {
+  id: string;
+  project_id: string | null;
+  template_code: string | null;
+  name: string;
+  is_template_snapshot: boolean;
+  rules: Record<string, unknown>;
+  created_at: string;
+};
+
+export type ProjectSummary = {
+  work_area_count: number;
+  tree_count: number;
+  target_tree_count: number | null;
+  open_violations: number;
+  progress_pct: number | null;
+};
+
+export type PlantingProject = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  segment: ProjectSegment;
+  compliance_mode: ComplianceMode;
+  status: "planning" | "active" | "completed" | "archived";
+  program_code: string | null;
+  standard_template_code: string | null;
+  target_tree_count: number | null;
+  organization_id: string | null;
+  owner_user_id: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  summary?: ProjectSummary;
+  active_standard?: PlantingStandard;
+};
+
+export type GeoJsonLineString = {
+  type: "LineString";
+  coordinates: number[][];
+};
+
+export type WorkArea = {
+  id: string;
+  project_id: string | null;
+  name: string;
+  geometry_type: "polygon" | "corridor";
+  buffer_m: number | null;
+  segment_code: string | null;
+  chainage_start_km: number | null;
+  chainage_end_km: number | null;
+  area_ha: number | null;
+  boundary: GeoJsonPolygon;
+  centerline: GeoJsonLineString | null;
+  tree_count: number;
+  last_satellite_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ComplianceCheck = {
+  passed: boolean;
+  mode: ComplianceMode;
+  chainage_km: number | null;
+  issues: Array<{
+    violation_type: string;
+    severity: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }>;
+};
+
+export const plantingProjects = {
+  async segments() {
+    return (await api.get<{ segments: { code: string; label: string }[] }>(
+      "/v1/planting-projects/segments",
+    )).data;
+  },
+  async templates(segment?: string) {
+    return (
+      await api.get<StandardTemplate[]>("/v1/planting-projects/templates", {
+        params: segment ? { segment } : undefined,
+      })
+    ).data;
+  },
+  async list(params?: { page?: number; segment?: string; status?: string }) {
+    return (
+      await api.get<{ items: PlantingProject[]; total: number }>("/v1/planting-projects", {
+        params,
+      })
+    ).data;
+  },
+  async get(id: string) {
+    return (await api.get<PlantingProject>(`/v1/planting-projects/${id}`)).data;
+  },
+  async create(payload: {
+    code: string;
+    name: string;
+    description?: string;
+    segment: ProjectSegment;
+    compliance_mode?: ComplianceMode;
+    program_code?: string;
+    standard_template_code?: string;
+    target_tree_count?: number;
+    metadata?: Record<string, unknown>;
+  }) {
+    return (await api.post<PlantingProject>("/v1/planting-projects", payload)).data;
+  },
+  async update(
+    id: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      status: PlantingProject["status"];
+      compliance_mode: ComplianceMode;
+      target_tree_count: number;
+      metadata: Record<string, unknown>;
+    }>,
+  ) {
+    return (await api.patch<PlantingProject>(`/v1/planting-projects/${id}`, payload)).data;
+  },
+  async workAreas(projectId: string) {
+    return (
+      await api.get<WorkArea[]>(`/v1/planting-projects/${projectId}/work-areas`)
+    ).data;
+  },
+  async createWorkArea(
+    projectId: string,
+    payload: {
+      name: string;
+      geometry_type: "polygon" | "corridor";
+      boundary?: GeoJsonPolygon;
+      centerline?: GeoJsonLineString;
+      buffer_m?: number;
+      segment_code?: string;
+      chainage_start_km?: number;
+      chainage_end_km?: number;
+    },
+  ) {
+    return (
+      await api.post<WorkArea>(`/v1/planting-projects/${projectId}/work-areas`, payload)
+    ).data;
+  },
+  async complianceCheck(
+    projectId: string,
+    payload: {
+      work_area_id: string;
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number;
+      species_text?: string;
+      photo_count?: number;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return (
+      await api.post<ComplianceCheck>(
+        `/v1/planting-projects/${projectId}/compliance-check`,
+        payload,
+      )
+    ).data;
+  },
+  async complianceViolations(projectId: string, unresolvedOnly = true) {
+    return (
+      await api.get<
+        Array<{
+          id: string;
+          violation_type: string;
+          severity: string;
+          message: string;
+          work_area_id: string | null;
+          tree_id: string | null;
+          created_at: string;
+          resolved_at: string | null;
+        }>
+      >(`/v1/planting-projects/${projectId}/compliance-violations`, {
+        params: { unresolved_only: unresolvedOnly },
+      })
+    ).data;
+  },
+  async projectTrees(
+    projectId: string,
+    params?: { work_area_id?: string; page?: number; page_size?: number },
+  ) {
+    return (
+      await api.get<{ items: Tree[]; total: number }>(
+        `/v1/planting-projects/${projectId}/trees`,
+        { params },
+      )
+    ).data;
+  },
+  async pestIntel(projectId: string, workAreaId?: string) {
+    return (
+      await api.get(`/v1/planting-projects/${projectId}/pest-intel`, {
+        params: workAreaId ? { work_area_id: workAreaId } : undefined,
+      })
+    ).data as import("@/components/pest-intel-panel").PestIntel & {
+      highest_risk?: import("@/components/pest-intel-panel").PestIntel;
+      work_areas?: import("@/components/pest-intel-panel").PestIntel[];
+    };
+  },
+};
+
 export const uploads = {
   async presignImage(file: File) {
     const presign = (
@@ -312,7 +655,13 @@ export const uploads = {
 };
 
 export const trees = {
-  async list(params?: { page?: number; page_size?: number; health?: string }) {
+  async list(params?: {
+    page?: number;
+    page_size?: number;
+    health?: string;
+    project_id?: string;
+    work_area_id?: string;
+  }) {
     return (await api.get("/v1/trees", { params })).data as {
       items: Tree[];
       page: number;
@@ -328,13 +677,51 @@ export const trees = {
     longitude: number;
     altitude_m?: number;
     accuracy_m?: number;
+    plantation_id?: string;
+    work_area_id?: string;
     photo_keys?: string[];
     metadata?: Record<string, unknown>;
   }) {
     return (await api.post("/v1/trees", payload)).data;
   },
   async get(id: string) {
-    return (await api.get(`/v1/trees/${id}`)).data;
+    return (await api.get<TreeDetail>(`/v1/trees/${id}`)).data;
+  },
+  async regeotag(
+    id: string,
+    payload: {
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number;
+      survival_status?: string;
+      remarks?: string;
+    },
+  ) {
+    return (await api.post<TreeDetail>(`/v1/trees/${id}/regeotag`, payload)).data;
+  },
+  async timeline(id: string) {
+    return (await api.get(`/v1/trees/${id}/timeline`)).data as {
+      tree_id: string;
+      registered_at: string;
+      current: {
+        health: string;
+        carbon_kg: number;
+        satellite_verified: boolean;
+      };
+    };
+  },
+  async analyses(id: string) {
+    return (await api.get<TreeAnalysis[]>(`/v1/trees/${id}/analyses`)).data;
+  },
+  async passportPdfUrl(id: string) {
+    const res = await api.get(`/v1/trees/${id}/passport.pdf`, { responseType: "blob" });
+    return URL.createObjectURL(res.data);
+  },
+  async imageBlobUrl(treeId: string, imageId: string) {
+    const res = await api.get(`/v1/trees/${treeId}/images/${imageId}/file`, {
+      responseType: "blob",
+    });
+    return URL.createObjectURL(res.data);
   },
   async analyze(id: string) {
     return (await api.post("/v1/tree-analysis", { tree_id: id, mode: "full" })).data;
@@ -446,6 +833,9 @@ export const plantationFences = {
   async ecosystemHealth(id: string) {
     return (await api.get(`/v1/plantation-fences/${id}/ecosystem-health`)).data as EcosystemHealth;
   },
+  async pestIntel(id: string) {
+    return (await api.get(`/v1/plantation-fences/${id}/pest-intel`)).data;
+  },
 };
 
 export type FenceBiodiversity = {
@@ -531,6 +921,13 @@ export type NotificationPreferences = {
 export const dashboard = {
   async get() {
     return (await api.get<Dashboard>("/v1/dashboard")).data;
+  },
+  async threatWatch() {
+    return (
+      await api.get<import("@/components/dashboard/threat-watch-panel").ThreatWatchData>(
+        "/v1/dashboard/threat-watch",
+      )
+    ).data;
   },
 };
 

@@ -19,6 +19,17 @@ class PlantationFence(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "plantation_fences"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_projects.id", ondelete="CASCADE")
+    )
+    planting_standard_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_standards.id", ondelete="SET NULL")
+    )
+    geometry_type: Mapped[str] = mapped_column(String(16), nullable=False, default="polygon")
+    buffer_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    chainage_start_km: Mapped[float | None] = mapped_column(Numeric(10, 3))
+    chainage_end_km: Mapped[float | None] = mapped_column(Numeric(10, 3))
+    segment_code: Mapped[str | None] = mapped_column(String(64))
     organization_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL")
     )
@@ -36,6 +47,8 @@ class PlantationFence(UUIDPKMixin, TimestampMixin, Base):
 
     owner = relationship("User", foreign_keys=[owner_user_id])
     organization = relationship("Organization")
+    project = relationship("PlantingProject", back_populates="work_areas")
+    planting_standard = relationship("PlantingStandard", back_populates="work_areas")
     satellite_records = relationship(
         "PlantationSatelliteRecord",
         back_populates="fence",
@@ -46,4 +59,5 @@ class PlantationFence(UUIDPKMixin, TimestampMixin, Base):
         Index("plantation_fences_boundary_gix", "boundary", postgresql_using="gist"),
         Index("plantation_fences_owner_idx", "owner_user_id"),
         Index("plantation_fences_org_idx", "organization_id"),
+        Index("plantation_fences_project_idx", "project_id"),
     )

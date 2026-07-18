@@ -50,3 +50,35 @@ def monthly_satellite_sweep() -> dict:
 def daily_health_roundup() -> dict:
     log.info("worker.daily_health_roundup")
     return {"status": "completed"}
+
+
+@celery_app.task(name="app.workers.tasks.survival_survey_reminders")
+def survival_survey_reminders() -> dict:
+    """Create re-geotagging / survival survey alerts for due projects."""
+    log.info("worker.survival_survey_reminders")
+    import asyncio
+
+    from app.core.database import AsyncSessionLocal
+    from app.services.planting_projects.survival_survey import create_survival_survey_alerts
+
+    async def _run() -> dict:
+        async with AsyncSessionLocal() as db:
+            return await create_survival_survey_alerts(db)
+
+    return asyncio.run(_run())
+
+
+@celery_app.task(name="app.workers.tasks.threat_watch_scan")
+def threat_watch_scan() -> dict:
+    """Emit weather, pest, and locust early-warning alerts for plantation sites."""
+    log.info("worker.threat_watch_scan")
+    import asyncio
+
+    from app.core.database import AsyncSessionLocal
+    from app.services.planting_projects.threat_alerts import create_threat_watch_alerts
+
+    async def _run() -> dict:
+        async with AsyncSessionLocal() as db:
+            return await create_threat_watch_alerts(db)
+
+    return asyncio.run(_run())

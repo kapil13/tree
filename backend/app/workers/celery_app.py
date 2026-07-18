@@ -42,5 +42,13 @@ celery_app.conf.update(
             "task": "app.workers.tasks.daily_health_roundup",
             "schedule": crontab(hour="3", minute="0"),
         },
+        "survival-survey-reminders": {
+            "task": "app.workers.tasks.survival_survey_reminders",
+            "schedule": crontab(hour="6", minute="0"),
+        },
+        "threat-watch-scan": {
+            "task": "app.workers.tasks.threat_watch_scan",
+            "schedule": crontab(hour="5", minute="30"),
+        },
     },
 )

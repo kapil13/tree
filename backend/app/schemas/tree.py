@@ -16,7 +16,12 @@ class TreeCreate(BaseModel):
     longitude: float = Field(..., ge=-180, le=180)
     altitude_m: float | None = None
     accuracy_m: float | None = Field(default=None, ge=0)
-    plantation_id: uuid.UUID | None = None
+    plantation_id: uuid.UUID | None = Field(
+        default=None, description="Work area (plantation fence) UUID"
+    )
+    work_area_id: uuid.UUID | None = Field(
+        default=None, description="Alias for plantation_id"
+    )
     photo_keys: list[str] = Field(default_factory=list, max_length=10)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -27,6 +32,17 @@ class TreeUpdate(BaseModel):
     planted_at: date | None = None
     status: str | None = None
     metadata: dict[str, Any] | None = None
+
+
+class TreeImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tree_id: uuid.UUID
+    s3_key: str
+    cdn_url: str | None
+    is_primary: bool
+    created_at: datetime
 
 
 class TreeOut(BaseModel):
@@ -56,6 +72,10 @@ class TreeOut(BaseModel):
     last_analysis_at: datetime | None
     last_satellite_at: datetime | None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    images: list[TreeImageOut] = Field(default_factory=list)
+    plantation_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    last_geotag_at: datetime | None = None
     created_at: datetime
 
 
@@ -69,6 +89,23 @@ class TreeListItem(BaseModel):
     latitude: float
     longitude: float
     created_at: datetime
+    program_code: str | None = None
+    project_id: uuid.UUID | None = None
+    work_area_id: uuid.UUID | None = None
+    last_geotag_at: datetime | None = None
+    survival_status: str | None = None
+    chainage_km: str | None = None
+
+
+class TreeRegeotag(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0)
+    altitude_m: float | None = None
+    survival_status: str | None = Field(
+        default=None, description="live | stressed | dead | replaced"
+    )
+    remarks: str | None = None
 
 
 class TreePassport(BaseModel):
@@ -83,14 +120,3 @@ class TreePassport(BaseModel):
     satellite_verified: bool
     qr_url: str
     passport_pdf_url: str
-
-
-class TreeImageOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    tree_id: uuid.UUID
-    s3_key: str
-    cdn_url: str | None
-    is_primary: bool
-    created_at: datetime
