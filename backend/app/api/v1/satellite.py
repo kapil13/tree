@@ -11,6 +11,7 @@ from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
@@ -25,7 +26,7 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
+    if not is_platform_admin(user) and tree.owner_user_id != user.id and (
         not user.organization_id or tree.organization_id != user.organization_id
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Leaf, Settings2, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
-import { errorMessage, plantingPrograms } from "@/lib/api";
+import { auth, errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +19,20 @@ export default function SettingsPage() {
 
   const [selected, setSelected] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [passwordForm, setPasswordForm] = useState({
+    current: "",
+    next: "",
+    confirm: "",
+  });
+
+  const changePassword = useMutation({
+    mutationFn: () => auth.changePassword(passwordForm.current, passwordForm.next),
+    onSuccess: () => {
+      setMessage("Password updated successfully.");
+      setPasswordForm({ current: "", next: "", confirm: "" });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
 
   useEffect(() => {
     if (data) setSelected(data.enrolled.map((program) => program.code));
@@ -78,6 +92,45 @@ export default function SettingsPage() {
                 {user?.role}
               </p>
             </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-stone-200 bg-white/60 p-4 dark:border-stone-700 dark:bg-stone-900/40">
+            <p className="text-sm font-semibold">Change password</p>
+            <div className="mt-3 space-y-2">
+              <input
+                className="input w-full"
+                type="password"
+                placeholder="Current password"
+                value={passwordForm.current}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, current: e.target.value }))}
+              />
+              <input
+                className="input w-full"
+                type="password"
+                placeholder="New password (min 12 chars)"
+                value={passwordForm.next}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, next: e.target.value }))}
+              />
+              <input
+                className="input w-full"
+                type="password"
+                placeholder="Confirm new password"
+                value={passwordForm.confirm}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, confirm: e.target.value }))}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn-primary mt-3"
+              disabled={
+                changePassword.isPending ||
+                passwordForm.next.length < 12 ||
+                passwordForm.next !== passwordForm.confirm
+              }
+              onClick={() => changePassword.mutate()}
+            >
+              {changePassword.isPending ? "Updating…" : "Update password"}
+            </button>
           </div>
 
           <div className="mt-6 rounded-2xl border border-forest-200 bg-forest-50/70 p-4 text-sm leading-relaxed text-forest-900 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-200">

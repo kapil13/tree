@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from sqlalchemy import case, func, select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.tree import Tree
 from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
@@ -16,7 +17,7 @@ router = APIRouter(tags=["dashboard"])
 
 
 def _scope(stmt, user):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(
@@ -26,7 +27,7 @@ def _scope(stmt, user):
 
 
 def _bioacoustic_scope(stmt, user):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(

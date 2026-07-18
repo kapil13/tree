@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from app.core.access import is_platform_admin
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.plantation_fence import PlantationFence
 from app.models.user import User
@@ -160,7 +161,7 @@ async def _load_owned_recording(
     rec = res.scalar_one_or_none()
     if rec is None:
         raise ValueError("not_found")
-    if user.role != "admin":
+    if not is_platform_admin(user):
         if user.organization_id and rec.organization_id == user.organization_id:
             return rec
         if rec.owner_user_id != user.id:
@@ -291,7 +292,7 @@ async def create_recording(
         fence = fence_res.scalar_one_or_none()
         if fence is None:
             raise ValueError("fence_not_found")
-        if user.role != "admin" and fence.owner_user_id != user.id:
+        if not is_platform_admin(user) and fence.owner_user_id != user.id:
             if not (
                 user.organization_id and fence.organization_id == user.organization_id
             ):

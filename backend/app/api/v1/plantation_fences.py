@@ -10,6 +10,7 @@ from fastapi.responses import Response
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -45,7 +46,7 @@ WARN_FENCE_AREA_HA = 500.0
 
 
 def _can_access_fence(user, fence: PlantationFence) -> bool:
-    if user.role == "admin":
+    if is_platform_admin(user):
         return True
     if fence.owner_user_id == user.id:
         return True
@@ -95,7 +96,7 @@ async def list_fences(
     user: CurrentUser, db: DB, page: int = 1, page_size: int = 50
 ) -> Page[PlantationFenceListItem]:
     stmt = select(PlantationFence)
-    if user.role != "admin":
+    if not is_platform_admin(user):
         if user.organization_id:
             stmt = stmt.where(
                 (PlantationFence.owner_user_id == user.id)

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import Permission, TokenType, decode_token, has_permission
+from app.core.access import is_platform_admin, is_superadmin
 from app.models.user import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -51,3 +52,19 @@ def require(perm: Permission):
         return user
 
     return Depends(dep)
+
+
+async def require_platform_admin(user: CurrentUser) -> User:
+    if not is_platform_admin(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="admin_required")
+    return user
+
+
+async def require_superadmin(user: CurrentUser) -> User:
+    if not is_superadmin(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="superadmin_required")
+    return user
+
+
+PlatformAdmin = Annotated[User, Depends(require_platform_admin)]
+SuperAdmin = Annotated[User, Depends(require_superadmin)]

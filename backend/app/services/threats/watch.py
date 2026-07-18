@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access import is_platform_admin
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
@@ -21,7 +22,7 @@ RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
 
 
 def _fence_scope(stmt, user: User):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(

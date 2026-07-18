@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
 from app.models.plantation_fence import PlantationFence
@@ -149,7 +150,7 @@ async def list_projects(
     status_filter: str | None = Query(None, alias="status"),
 ) -> Page[PlantingProjectOut]:
     stmt = select(PlantingProject)
-    if user.role != "admin":
+    if not is_platform_admin(user):
         if user.organization_id:
             stmt = stmt.where(
                 (PlantingProject.owner_user_id == user.id)

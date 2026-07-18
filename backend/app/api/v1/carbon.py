@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.core.access import is_platform_admin
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
@@ -42,7 +43,7 @@ async def recalculate(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> CarbonEs
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
+    if not is_platform_admin(user) and tree.owner_user_id != user.id and (
         not user.organization_id or tree.organization_id != user.organization_id
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")

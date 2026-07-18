@@ -18,6 +18,7 @@ import httpx
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access import is_platform_admin
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.models.alert import Alert
@@ -141,7 +142,7 @@ class PortfolioContext:
 
 
 def _tree_scope(stmt, user: User):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(
@@ -151,7 +152,7 @@ def _tree_scope(stmt, user: User):
 
 
 def _bio_scope(stmt, user: User):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(
@@ -162,7 +163,7 @@ def _bio_scope(stmt, user: User):
 
 
 def _fence_scope(stmt, user: User):
-    if user.role == "admin":
+    if is_platform_admin(user):
         return stmt
     if user.organization_id:
         return stmt.where(
