@@ -126,7 +126,7 @@ export type PlantingProgram = {
   min_photos: number;
   is_default: boolean;
   is_public: boolean;
-  form_schema: import("@/components/tree-registration-form").ProgramFormSchema;
+  form_schema: import("@/components/registration/types").ProgramFormSchema;
   enrolled: boolean;
 };
 
