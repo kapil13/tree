@@ -12,7 +12,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, Download, ExternalLink, Satellite, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
+import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
@@ -70,6 +71,32 @@ export function TreeDetailView() {
       qc.invalidateQueries({ queryKey: ["tree-analyses", id] });
     },
   });
+
+  const regeotag = useMutation({
+    mutationFn: (payload: {
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number;
+      survival_status?: string;
+    }) => trees.regeotag(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tree", id] }),
+  });
+
+  function handleRegeotag() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        regeotag.mutate({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy_m: pos.coords.accuracy,
+          survival_status: String(tree?.metadata?.survival_status || "live"),
+        });
+      },
+      () => undefined,
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }
 
   const downloadPassport = useMutation({
     mutationFn: () => trees.passportPdfUrl(id),
@@ -157,6 +184,32 @@ export function TreeDetailView() {
             <Field label="Health" value={healthBadge(tree.current_health)} />
             <Field label="Status" value={tree.status} />
             <Field label="Program" value={tree.program_code?.replace(/_/g, " ") || "—"} />
+            {tree.project_id && (
+              <Field
+                label="Project"
+                value={
+                  <Link href={`/projects/${tree.project_id}`} className="text-forest-700 hover:underline">
+                    Open project
+                  </Link>
+                }
+              />
+            )}
+            <Field
+              label="Chainage"
+              value={tree.metadata?.chainage_km ? String(tree.metadata.chainage_km) : "—"}
+            />
+            <Field
+              label="Survival"
+              value={tree.metadata?.survival_status ? String(tree.metadata.survival_status) : "—"}
+            />
+            <Field
+              label="Last geotag"
+              value={
+                tree.last_geotag_at
+                  ? new Date(tree.last_geotag_at).toLocaleString()
+                  : "—"
+              }
+            />
             <Field label="Carbon" value={`${Number(tree.current_carbon_kg).toFixed(2)} kg`} />
             <Field label="CO₂e" value={`${co2e.toFixed(2)} kg`} />
             <Field label="DBH" value={tree.current_dbh_cm ? `${tree.current_dbh_cm} cm` : "—"} />
@@ -181,6 +234,18 @@ export function TreeDetailView() {
             <Field label="Altitude" value={tree.altitude_m != null ? `${tree.altitude_m} m` : "—"} />
             <Field label="Accuracy" value={tree.accuracy_m != null ? `±${tree.accuracy_m} m` : "—"} />
           </dl>
+          <button
+            type="button"
+            className="btn-secondary mt-4"
+            disabled={regeotag.isPending}
+            onClick={handleRegeotag}
+          >
+            <MapPin className="h-4 w-4" />
+            {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
+          </button>
+          {regeotag.error && (
+            <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>
+          )}
         </div>
 
         <div className="card">
@@ -300,6 +365,9 @@ export function TreeDetailView() {
         )}
 
         <SatelliteHealthPanel kind="tree" targetId={id} />
+        {tree.plantation_id && (
+          <PestIntelPanel kind="work-area" targetId={tree.plantation_id} />
+        )}
       </div>
     </div>
   );

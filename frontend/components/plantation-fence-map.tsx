@@ -17,6 +17,7 @@ import {
   type PlantationFence,
   type Tree,
 } from "@/lib/api";
+import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
@@ -456,6 +457,7 @@ export function PlantationFenceMap({
                       resolutionLabel="polygon"
                     />
                     <SatelliteHealthPanel kind="fence" targetId={fence.id} />
+                    <PestIntelPanel kind="work-area" targetId={fence.id} />
                     <WeatherForecastPanel fenceId={fence.id} fenceName={fence.name} />
                     <div className="flex gap-2">
                       <button

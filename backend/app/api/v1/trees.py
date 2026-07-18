@@ -6,6 +6,8 @@ import secrets
 import string
 import uuid
 
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
@@ -21,9 +23,12 @@ from app.schemas.tree import (
     TreeListItem,
     TreeOut,
     TreePassport,
+    TreeRegeotag,
     TreeUpdate,
 )
 from app.services.passport import generate_passport_pdf, generate_qr_png
+from app.models.planting_project import PlantingProject
+from app.models.plantation_fence import PlantationFence
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
     list_available_programs,
@@ -33,6 +38,9 @@ from app.services.planting_programs.enrollment import (
     user_can_use_program,
 )
 from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
+from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
+from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/trees", tags=["trees"])
@@ -109,6 +117,9 @@ def _to_out(tree: Tree) -> TreeOut:
         last_satellite_at=tree.last_satellite_at,
         metadata=tree.metadata_ or {},
         images=images,
+        plantation_id=tree.plantation_id,
+        project_id=tree.project_id,
+        last_geotag_at=tree.last_geotag_at,
         created_at=tree.created_at,
     )
 
@@ -121,6 +132,29 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
     if not await user_can_use_program(db, user.id, program):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="program_not_enrolled")
 
+    work_area_id = payload.work_area_id or payload.plantation_id
+    work_area: PlantationFence | None = None
+    project: PlantingProject | None = None
+
+    if work_area_id:
+        res = await db.execute(
+            select(PlantationFence).where(PlantationFence.id == work_area_id)
+        )
+        work_area = res.scalar_one_or_none()
+        if work_area is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+        if work_area.project_id:
+            proj_res = await db.execute(
+                select(PlantingProject).where(PlantingProject.id == work_area.project_id)
+            )
+            project = proj_res.scalar_one_or_none()
+
+    compliance_mode = (
+        project.compliance_mode
+        if project
+        else PROGRAM_DEFAULT_COMPLIANCE.get(program.code, "open")
+    )
+
     core_values = {
         "species_text": payload.species_text,
         "species_id": payload.species_id,
@@ -129,7 +163,7 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         "longitude": payload.longitude,
         "altitude_m": payload.altitude_m,
         "accuracy_m": payload.accuracy_m,
-        "plantation_id": payload.plantation_id,
+        "plantation_id": work_area_id,
     }
     try:
         metadata = validate_program_payload(
@@ -144,6 +178,55 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
             detail={"validation_errors": exc.errors},
         ) from exc
 
+    rules: dict = {}
+    if project:
+        standard = await get_active_standard(db, project)
+        rules = standard.rules if standard else {}
+
+    compliance = await evaluate_tree_placement(
+        db,
+        project=project,
+        work_area=work_area,
+        rules=rules,
+        compliance_mode=compliance_mode,  # type: ignore[arg-type]
+        latitude=float(core_values["latitude"]),
+        longitude=float(core_values["longitude"]),
+        accuracy_m=core_values.get("accuracy_m"),
+        species_text=core_values.get("species_text"),
+        photo_count=len(payload.photo_keys),
+        metadata=metadata,
+    )
+
+    if not compliance.passed:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "compliance_errors": compliance.to_dict()["issues"],
+                "mode": compliance.mode,
+            },
+        )
+
+    if compliance_mode == "strict" and program.code in (
+        "government_nhai",
+        "corporate_esg",
+    ):
+        if work_area_id is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "compliance_errors": [
+                        {
+                            "violation_type": "work_area_required",
+                            "severity": "block",
+                            "message": "Select a project work area before registering trees for this program.",
+                        }
+                    ],
+                },
+            )
+
+    if compliance.chainage_km is not None:
+        metadata["chainage_km"] = str(compliance.chainage_km)
+
     wkt = f"POINT({core_values['longitude']} {core_values['latitude']})"
     tree = Tree(
         public_code=_gen_public_code(),
@@ -156,11 +239,22 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
         location=wkt,
         altitude_m=core_values.get("altitude_m"),
         accuracy_m=core_values.get("accuracy_m"),
-        plantation_id=core_values.get("plantation_id"),
+        plantation_id=work_area_id,
+        project_id=project.id if project else None,
         metadata_=metadata,
     )
+    tree.last_geotag_at = datetime.now(UTC)
     db.add(tree)
     await db.flush()
+
+    if compliance.issues:
+        await persist_violations(
+            db,
+            result=compliance,
+            project_id=project.id if project else None,
+            work_area_id=work_area_id,
+            tree_id=tree.id,
+        )
 
     for idx, key in enumerate(payload.photo_keys):
         db.add(
@@ -184,11 +278,13 @@ async def list_trees(
     page_size: int = Query(50, ge=1, le=200),
     health: str | None = None,
     species_id: uuid.UUID | None = None,
+    project_id: uuid.UUID | None = None,
+    work_area_id: uuid.UUID | None = None,
     bbox: str | None = Query(
         None, description="minLon,minLat,maxLon,maxLat"
     ),
 ) -> Page[TreeListItem]:
-    stmt = select(Tree)
+    stmt = select(Tree).options(selectinload(Tree.planting_program))
     if user.role != "admin":
         if user.organization_id:
             stmt = stmt.where(
@@ -201,6 +297,10 @@ async def list_trees(
         stmt = stmt.where(Tree.current_health == health)
     if species_id:
         stmt = stmt.where(Tree.species_id == species_id)
+    if project_id:
+        stmt = stmt.where(Tree.project_id == project_id)
+    if work_area_id:
+        stmt = stmt.where(Tree.plantation_id == work_area_id)
     if bbox:
         try:
             min_lon, min_lat, max_lon, max_lat = (float(x) for x in bbox.split(","))
@@ -216,6 +316,7 @@ async def list_trees(
     items: list[TreeListItem] = []
     for t in rows:
         pt = to_shape(t.location)
+        meta = t.metadata_ or {}
         items.append(
             TreeListItem(
                 id=t.id,
@@ -227,6 +328,12 @@ async def list_trees(
                 latitude=pt.y,
                 longitude=pt.x,
                 created_at=t.created_at,
+                program_code=t.planting_program.code if t.planting_program else None,
+                project_id=t.project_id,
+                work_area_id=t.plantation_id,
+                last_geotag_at=t.last_geotag_at,
+                survival_status=meta.get("survival_status") if isinstance(meta.get("survival_status"), str) else None,
+                chainage_km=meta.get("chainage_km") if meta.get("chainage_km") is not None else None,
             )
         )
     return Page[TreeListItem](items=items, page=page, page_size=page_size, total=total or 0)
@@ -271,6 +378,31 @@ async def get_tree_image_file(
     elif img.s3_key.lower().endswith(".webp"):
         content_type = "image/webp"
     return Response(content=data, media_type=content_type)
+
+
+@router.post("/{tree_id}/regeotag", response_model=TreeOut)
+async def regeotag_tree(
+    tree_id: uuid.UUID, payload: TreeRegeotag, user: CurrentUser, db: DB
+) -> TreeOut:
+    """Update tree GPS for survival survey / re-geotagging."""
+    tree = await _get_owned_tree(tree_id, user, db)
+    wkt = f"POINT({payload.longitude} {payload.latitude})"
+    tree.location = wkt
+    if payload.accuracy_m is not None:
+        tree.accuracy_m = payload.accuracy_m
+    if payload.altitude_m is not None:
+        tree.altitude_m = payload.altitude_m
+    tree.last_geotag_at = datetime.now(UTC)
+    meta = dict(tree.metadata_ or {})
+    if payload.survival_status:
+        meta["survival_status"] = payload.survival_status
+    if payload.remarks:
+        meta["regeotag_remarks"] = payload.remarks
+    meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
+    tree.metadata_ = meta
+    await db.commit()
+    await db.refresh(tree, attribute_names=["planting_program"])
+    return _to_out(tree)
 
 
 @router.patch("/{tree_id}", response_model=TreeOut)

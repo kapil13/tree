@@ -41,6 +41,7 @@ import {
 import { TreesMap } from "@/components/trees-map";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
+import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
   CHART_COLORS,
   fmtCompact,
@@ -511,6 +512,23 @@ export function ExecutiveDashboard() {
               <p>Upload ambient recordings to unlock biodiversity analytics.</p>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="dash-panel">
+        <div className="dash-panel-head">
+          <div>
+            <h2 className="dash-panel-title">Weather & pest early warning</h2>
+            <p className="dash-panel-sub">
+              Location-specific forecasts, disease risk, and locust watch per plantation site
+            </p>
+          </div>
+          <Link href="/satellite" className="dash-link">
+            Satellite map <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="mt-4">
+          <ThreatWatchPanel />
         </div>
       </section>
 

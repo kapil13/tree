@@ -9,6 +9,8 @@ from app.api.v1.deps import DB, CurrentUser
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.tree import Tree
 from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
+from app.schemas.threat_watch import ThreatWatchResponse
+from app.services.threats.watch import build_portfolio_threat_watch
 
 router = APIRouter(tags=["dashboard"])
 
@@ -135,3 +137,10 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         ],
         bioacoustic=bio_kpi,
     )
+
+
+@router.get("/dashboard/threat-watch", response_model=ThreatWatchResponse)
+async def threat_watch(user: CurrentUser, db: DB, limit: int = 12) -> ThreatWatchResponse:
+    """Location-specific weather, pest/disease, and locust early warnings."""
+    data = await build_portfolio_threat_watch(db, user=user, limit=min(limit, 20))
+    return ThreatWatchResponse.model_validate(data)
