@@ -174,6 +174,8 @@ def _fence_scope(stmt, user: User):
 
 def detect_intent(prompt: str) -> str:
     text = prompt.lower().strip()
+    if is_greeting_or_smalltalk(text):
+        return "greeting"
     scores: dict[str, int] = {name: 0 for name in INTENT_KEYWORDS}
     for intent, keywords in INTENT_KEYWORDS.items():
         for kw in keywords:
@@ -183,6 +185,31 @@ def detect_intent(prompt: str) -> str:
     if scores[best] > 0:
         return best
     return "general"
+
+
+GREETING_PATTERNS = (
+    r"^hi\b",
+    r"^hello\b",
+    r"^hey\b",
+    r"^hola\b",
+    r"^good\s+(morning|afternoon|evening)\b",
+    r"^thanks?\b",
+    r"^thank\s+you\b",
+    r"^help\b",
+    r"^what can you do\b",
+    r"^who are you\b",
+)
+
+
+def is_greeting_or_smalltalk(text: str) -> bool:
+    normalized = re.sub(r"[^\w\s]", "", text.lower()).strip()
+    if not normalized:
+        return False
+    if len(normalized.split()) <= 3:
+        for pattern in GREETING_PATTERNS:
+            if re.search(pattern, normalized):
+                return True
+    return False
 
 
 def parse_carbon_params(prompt: str, portfolio: PortfolioContext) -> dict[str, Any]:
@@ -579,8 +606,52 @@ def _answer_species(prompt: str, portfolio: PortfolioContext) -> dict[str, Any]:
     }
 
 
+def _answer_greeting(portfolio: PortfolioContext, user_name: str | None = None) -> dict[str, Any]:
+    name = (user_name or "there").split()[0]
+    if portfolio.total_trees == 0:
+        return {
+            "answer": (
+                f"Hello {name}! I'm your Aranyix environmental analyst. "
+                "Your portfolio is empty so far — register your first tree and I can "
+                "summarize carbon, health, satellite NDVI, biodiversity, and alerts for you."
+            ),
+            "calculations": {},
+            "citations": [],
+        }
+
+    lines = [
+        f"Hello {name}! I'm your Aranyix environmental analyst. Here's your live snapshot:",
+        "",
+        f"• {portfolio.total_trees} trees registered",
+        f"• {portfolio.total_co2e_kg / 1000:.2f} tCO₂e stored",
+        f"• {portfolio.pct_healthy:.0f}% healthy · {portfolio.pct_satellite_verified:.0f}% satellite-verified",
+    ]
+    if portfolio.bio_recordings:
+        lines.append(
+            f"• {portfolio.bio_species_detected} fauna species detected across "
+            f"{portfolio.bio_recordings} bioacoustic recordings"
+        )
+    if portfolio.unread_alerts:
+        lines.append(f"• {portfolio.unread_alerts} unread alert(s) need attention")
+    lines.extend(
+        [
+            "",
+            "Ask about carbon projections, tree health, satellite NDVI, biodiversity, "
+            "alerts, or say **portfolio summary** for the full picture.",
+        ]
+    )
+    return {
+        "answer": "\n".join(lines),
+        "calculations": {},
+        "citations": [],
+    }
+
+
 def _answer_general(prompt: str, portfolio: PortfolioContext) -> dict[str, Any]:
     if portfolio.total_trees == 0:
+        return _answer_portfolio(prompt, portfolio)
+    # Short or vague prompts get a concise portfolio summary instead of a help menu.
+    if len(prompt.strip()) < 40:
         return _answer_portfolio(prompt, portfolio)
     return {
         "answer": (
@@ -589,14 +660,26 @@ def _answer_general(prompt: str, portfolio: PortfolioContext) -> dict[str, Any]:
             "Try asking about: **carbon projections**, **tree health**, **satellite NDVI**, "
             "**biodiversity recordings**, **alerts**, or a **portfolio summary**."
         ),
-        "calculations": {"intent": "general", "portfolio_trees": portfolio.total_trees},
+        "calculations": {},
         "citations": ["Aranyix assistant"],
     }
 
 
-def answer_with_rules(prompt: str, portfolio: PortfolioContext) -> dict[str, Any]:
+def _sanitize_response(out: dict[str, Any]) -> dict[str, Any]:
+    """Remove internal metadata before sending to clients."""
+    calcs = dict(out.get("calculations") or {})
+    for key in ("intent", "mode", "portfolio"):
+        calcs.pop(key, None)
+    out["calculations"] = calcs
+    return out
+
+
+def answer_with_rules(
+    prompt: str, portfolio: PortfolioContext, *, user_name: str | None = None
+) -> dict[str, Any]:
     intent = detect_intent(prompt)
     handlers = {
+        "greeting": lambda: _answer_greeting(portfolio, user_name),
         "portfolio": lambda: _answer_portfolio(prompt, portfolio),
         "carbon": lambda: _answer_carbon(prompt, portfolio),
         "health": lambda: _answer_health(portfolio),
@@ -606,9 +689,7 @@ def answer_with_rules(prompt: str, portfolio: PortfolioContext) -> dict[str, Any
         "species": lambda: _answer_species(prompt, portfolio),
         "general": lambda: _answer_general(prompt, portfolio),
     }
-    out = handlers[intent]()
-    out["calculations"] = {**out.get("calculations", {}), "intent": intent, "mode": "rules"}
-    return out
+    return _sanitize_response(handlers[intent]())
 
 
 async def answer_with_openai(prompt: str, portfolio: PortfolioContext) -> dict[str, Any] | None:
@@ -649,15 +730,13 @@ async def answer_with_openai(prompt: str, portfolio: PortfolioContext) -> dict[s
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"].strip()
             if text:
-                return {
-                    "answer": text[:2500],
-                    "calculations": {
-                        "intent": detect_intent(prompt),
-                        "mode": "openai",
-                        "portfolio": portfolio.to_dict(),
-                    },
-                    "citations": ["Aranyix live portfolio", "OpenAI analysis"],
-                }
+                return _sanitize_response(
+                    {
+                        "answer": text[:2500],
+                        "calculations": {},
+                        "citations": ["Aranyix live portfolio", "OpenAI analysis"],
+                    }
+                )
     except Exception as exc:
         log.warning("assistant.openai_failed", error=str(exc))
     return None
@@ -674,4 +753,4 @@ async def run_assistant(
     llm = await answer_with_openai(prompt, portfolio)
     if llm:
         return llm
-    return answer_with_rules(prompt, portfolio)
+    return answer_with_rules(prompt, portfolio, user_name=user.full_name)

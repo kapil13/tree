@@ -36,6 +36,25 @@ def test_parse_carbon_params_extracts_numbers():
     assert params["species"] == "Neem"
 
 
+def test_detect_intent_greeting():
+    assert detect_intent("hi") == "greeting"
+    assert detect_intent("Hello there") == "greeting"
+
+
+def test_answer_greeting_includes_portfolio_snapshot():
+    portfolio = PortfolioContext(
+        total_trees=25,
+        total_co2e_kg=7510.0,
+        pct_healthy=80.0,
+        pct_satellite_verified=40.0,
+    )
+    out = answer_with_rules("hi", portfolio, user_name="Demo Farmer")
+    assert "Hello Demo" in out["answer"]
+    assert "25 trees" in out["answer"]
+    assert "intent" not in out.get("calculations", {})
+    assert "mode" not in out.get("calculations", {})
+
+
 def test_answer_portfolio_uses_live_counts():
     portfolio = PortfolioContext(
         total_trees=12,
@@ -48,7 +67,7 @@ def test_answer_portfolio_uses_live_counts():
     )
     out = answer_with_rules("portfolio summary", portfolio)
     assert "12 trees" in out["answer"]
-    assert out["calculations"]["intent"] == "portfolio"
+    assert out["calculations"].get("total_trees") == 12 or "total_trees" in str(out["calculations"])
 
 
 def test_answer_health_differs_from_carbon():
@@ -61,8 +80,6 @@ def test_answer_health_differs_from_carbon():
     carbon = answer_with_rules("carbon sequestration estimate", portfolio)
     assert health["answer"] != carbon["answer"]
     assert "healthy" in health["answer"].lower()
-    assert health["calculations"]["intent"] == "health"
-    assert carbon["calculations"]["intent"] == "carbon"
 
 
 @pytest.mark.asyncio

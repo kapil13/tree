@@ -4,10 +4,14 @@ import { useState } from "react";
 import { Sparkles, Send, Lightbulb } from "lucide-react";
 import { assistant, errorMessage } from "@/lib/api";
 
-type Msg = { role: "user" | "assistant"; text: string; data?: {
-  calculations?: Record<string, unknown>;
-  citations?: string[];
-} };
+type Msg = {
+  role: "user" | "assistant";
+  text: string;
+  data?: {
+    calculations?: Record<string, unknown>;
+    citations?: string[];
+  };
+};
 
 const SUGGESTIONS = [
   "Give me a portfolio summary",
@@ -17,6 +21,29 @@ const SUGGESTIONS = [
   "What satellite verification coverage do I have?",
   "Any unread alerts I should know about?",
 ];
+
+const HIDDEN_CALC_KEYS = new Set(["intent", "mode", "portfolio"]);
+
+function visibleCalculations(calculations?: Record<string, unknown>) {
+  if (!calculations) return null;
+  const entries = Object.entries(calculations).filter(([key]) => !HIDDEN_CALC_KEYS.has(key));
+  if (entries.length === 0) return null;
+  return Object.fromEntries(entries);
+}
+
+function renderAnswerText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
 
 export default function AssistantPage() {
   const [prompt, setPrompt] = useState("");
@@ -75,30 +102,40 @@ export default function AssistantPage() {
             <span>Pick a suggestion above or ask your own question about your plantation data.</span>
           </div>
         )}
-        {history.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-            <div
-              className={
-                "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap " +
-                (m.role === "user"
-                  ? "bg-forest-600 text-white"
-                  : "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100")
-              }
-            >
-              {m.text}
-              {m.data?.calculations && Object.keys(m.data.calculations).length > 0 && (
-                <pre className="mt-2 max-w-full overflow-x-auto rounded bg-stone-900/70 p-2 text-xs text-stone-100">
-                  {JSON.stringify(m.data.calculations, null, 2)}
-                </pre>
-              )}
-              {m.data?.citations && m.data.citations.length > 0 && (
-                <div className="mt-1 text-[10px] uppercase tracking-wide opacity-80">
-                  Sources: {m.data.citations.join(" · ")}
-                </div>
-              )}
+        {history.map((m, i) => {
+          const metrics = m.role === "assistant" ? visibleCalculations(m.data?.calculations) : null;
+          const citations = m.data?.citations?.filter((c) => c.toLowerCase() !== "aranyix assistant");
+
+          return (
+            <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
+              <div
+                className={
+                  "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap text-left " +
+                  (m.role === "user"
+                    ? "bg-forest-600 text-white"
+                    : "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100")
+                }
+              >
+                {m.role === "assistant" ? renderAnswerText(m.text) : m.text}
+                {metrics && (
+                  <details className="mt-3 rounded-lg border border-stone-200/80 bg-white/70 p-2 text-xs dark:border-stone-700 dark:bg-stone-900/50">
+                    <summary className="cursor-pointer font-medium text-stone-600">
+                      View metrics
+                    </summary>
+                    <pre className="mt-2 max-w-full overflow-x-auto text-[11px] text-stone-700 dark:text-stone-200">
+                      {JSON.stringify(metrics, null, 2)}
+                    </pre>
+                  </details>
+                )}
+                {citations && citations.length > 0 && (
+                  <div className="mt-2 text-[10px] uppercase tracking-wide opacity-70">
+                    Sources: {citations.join(" · ")}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <form onSubmit={ask} className="flex gap-2">
