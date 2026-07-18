@@ -149,21 +149,7 @@ async def list_analyses(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> list[A
 
 @router.post("/assistant/query", response_model=AssistantAnswer)
 async def assistant(payload: AssistantQuery, user: CurrentUser, db: DB) -> AssistantAnswer:
-    # Best-effort context extraction (very simple regex-free heuristic).
-    text = payload.prompt.lower()
-    ctx = {"species": "Neem", "tree_count": 1, "years": 10}
-    for sp in ["neem", "mango", "amla", "peepal", "banyan", "bamboo", "teak"]:
-        if sp in text:
-            ctx["species"] = sp.title()
-    import re
+    from app.services.ai.assistant_service import run_assistant
 
-    m = re.search(r"(\d+)\s*(tree|plantation)", text)
-    if m:
-        ctx["tree_count"] = int(m.group(1))
-    m = re.search(r"(\d+)\s*year", text)
-    if m:
-        ctx["years"] = int(m.group(1))
-
-    ai = get_ai_service()
-    out = await ai.assistant(payload.prompt, ctx)
+    out = await run_assistant(payload.prompt, user, db, tree_id=payload.tree_id)
     return AssistantAnswer(**out)
