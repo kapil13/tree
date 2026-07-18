@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -156,23 +158,63 @@ class ApiClient {
       Map<String, dynamic>.from((await _dio.get('/trees/$id')).data);
 
   Future<Map<String, dynamic>> createTree({
+    required String programCode,
     required String speciesText,
     String? plantedAt,
     required double lat,
     required double lon,
     double? altitude,
     double? accuracy,
+    List<String> photoKeys = const [],
+    Map<String, dynamic> metadata = const {},
   }) async {
     final r = await _dio.post('/trees', data: {
+      'program_code': programCode,
       'species_text': speciesText,
       'planted_at': plantedAt,
       'latitude': lat,
       'longitude': lon,
       'altitude_m': altitude,
       'accuracy_m': accuracy,
-      'photo_keys': [],
+      'photo_keys': photoKeys,
+      'metadata': metadata,
     });
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listEnrolledPlantingPrograms() async {
+    final r = await _dio.get('/planting-programs/enrolled');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> plantingProgramMemberships() async {
+    final r = await _dio.get('/planting-programs/me/memberships');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> updatePlantingProgramMemberships(List<String> programCodes) async {
+    final r = await _dio.put('/planting-programs/me/memberships', data: {
+      'program_codes': programCodes,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<String> uploadImageFile(String filePath, {String? filename}) async {
+    final name = filename ?? filePath.split('/').last;
+    final presign = Map<String, dynamic>.from(
+      (await _dio.post('/uploads/presign', data: {
+        'filename': name,
+        'content_type': 'image/jpeg',
+      })).data,
+    );
+    final uploadUrl = presign['upload_url'] as String;
+    final s3Key = presign['s3_key'] as String;
+    await Dio().put(
+      uploadUrl,
+      data: await File(filePath).readAsBytes(),
+      options: Options(headers: {'Content-Type': presign['content_type'] ?? 'image/jpeg'}),
+    );
+    return s3Key;
   }
 
   Future<Map<String, dynamic>> runAnalysis(String treeId) async {

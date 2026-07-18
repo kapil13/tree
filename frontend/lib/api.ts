@@ -117,6 +117,19 @@ export type User = {
   organization_id: string | null;
 };
 
+export type PlantingProgram = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  audience: string;
+  min_photos: number;
+  is_default: boolean;
+  is_public: boolean;
+  form_schema: import("@/components/tree-registration-form").ProgramFormSchema;
+  enrolled: boolean;
+};
+
 export type Tree = {
   id: string;
   public_code: string;
@@ -231,6 +244,52 @@ export const auth = {
   },
 };
 
+export const plantingPrograms = {
+  async list() {
+    return (
+      await api.get<{ items: PlantingProgram[]; enrolled_codes: string[] }>(
+        "/v1/planting-programs",
+      )
+    ).data;
+  },
+  async enrolled() {
+    return (await api.get<PlantingProgram[]>("/v1/planting-programs/enrolled")).data;
+  },
+  async get(code: string) {
+    return (await api.get<PlantingProgram>(`/v1/planting-programs/${code}`)).data;
+  },
+  async memberships() {
+    return (
+      await api.get<{ enrolled: PlantingProgram[]; available: PlantingProgram[] }>(
+        "/v1/planting-programs/me/memberships",
+      )
+    ).data;
+  },
+  async updateMemberships(programCodes: string[]) {
+    return (
+      await api.put<{ enrolled: PlantingProgram[]; available: PlantingProgram[] }>(
+        "/v1/planting-programs/me/memberships",
+        { program_codes: programCodes },
+      )
+    ).data;
+  },
+};
+
+export const uploads = {
+  async presignImage(file: File) {
+    const presign = (
+      await api.post<{ upload_url: string; s3_key: string; content_type: string }>(
+        "/v1/uploads/presign",
+        { filename: file.name, content_type: file.type || "image/jpeg" },
+      )
+    ).data;
+    await axios.put(presign.upload_url, file, {
+      headers: { "Content-Type": presign.content_type },
+    });
+    return presign.s3_key;
+  },
+};
+
 export const trees = {
   async list(params?: { page?: number; page_size?: number; health?: string }) {
     return (await api.get("/v1/trees", { params })).data as {
@@ -241,6 +300,7 @@ export const trees = {
     };
   },
   async create(payload: {
+    program_code?: string;
     species_text?: string;
     planted_at?: string;
     latitude: number;
@@ -248,6 +308,7 @@ export const trees = {
     altitude_m?: number;
     accuracy_m?: number;
     photo_keys?: string[];
+    metadata?: Record<string, unknown>;
   }) {
     return (await api.post("/v1/trees", payload)).data;
   },

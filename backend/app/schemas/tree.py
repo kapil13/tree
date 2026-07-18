@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class TreeCreate(BaseModel):
+    program_code: str = Field(default="byot", max_length=64)
     species_id: uuid.UUID | None = None
     species_text: str | None = Field(default=None, max_length=255)
     planted_at: date | None = None
@@ -35,6 +36,8 @@ class TreeOut(BaseModel):
     public_code: str
     owner_user_id: uuid.UUID
     organization_id: uuid.UUID | None
+    program_id: uuid.UUID | None = None
+    program_code: str | None = None
     species_id: uuid.UUID | None
     species_text: str | None
     status: str
@@ -52,6 +55,7 @@ class TreeOut(BaseModel):
     satellite_verified: bool
     last_analysis_at: datetime | None
     last_satellite_at: datetime | None
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
 

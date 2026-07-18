@@ -23,7 +23,15 @@ from app.schemas.tree import (
     TreePassport,
     TreeUpdate,
 )
-from app.services.passport.generator import generate_passport_pdf, generate_qr_png
+from app.services.planting_programs.enrollment import (
+    get_program_by_code,
+    list_available_programs,
+    list_enrolled_programs,
+    list_user_program_codes,
+    set_user_programs,
+    user_can_use_program,
+)
+from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
@@ -44,24 +52,57 @@ def _to_out(tree: Tree) -> TreeOut:
         out.longitude = pt.x
     except Exception:
         pass
+    if tree.planting_program is not None:
+        out.program_code = tree.planting_program.code
+    out.metadata = tree.metadata_ or {}
     return out
 
 
 @router.post("", response_model=TreeOut, status_code=status.HTTP_201_CREATED)
 async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut:
-    wkt = f"POINT({payload.longitude} {payload.latitude})"
+    program = await get_program_by_code(db, payload.program_code)
+    if program is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unknown_program")
+    if not await user_can_use_program(db, user.id, program):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="program_not_enrolled")
+
+    core_values = {
+        "species_text": payload.species_text,
+        "species_id": payload.species_id,
+        "planted_at": payload.planted_at,
+        "latitude": payload.latitude,
+        "longitude": payload.longitude,
+        "altitude_m": payload.altitude_m,
+        "accuracy_m": payload.accuracy_m,
+        "plantation_id": payload.plantation_id,
+    }
+    try:
+        metadata = validate_program_payload(
+            program.code,
+            core_values=core_values,
+            metadata=payload.metadata,
+            photo_count=len(payload.photo_keys),
+        )
+    except ProgramValidationError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"validation_errors": exc.errors},
+        ) from exc
+
+    wkt = f"POINT({core_values['longitude']} {core_values['latitude']})"
     tree = Tree(
         public_code=_gen_public_code(),
         owner_user_id=user.id,
         organization_id=user.organization_id,
-        species_id=payload.species_id,
-        species_text=payload.species_text,
-        planted_at=payload.planted_at,
+        program_id=program.id,
+        species_id=core_values.get("species_id"),
+        species_text=core_values.get("species_text"),
+        planted_at=core_values.get("planted_at"),
         location=wkt,
-        altitude_m=payload.altitude_m,
-        accuracy_m=payload.accuracy_m,
-        plantation_id=payload.plantation_id,
-        metadata_=payload.metadata,
+        altitude_m=core_values.get("altitude_m"),
+        accuracy_m=core_values.get("accuracy_m"),
+        plantation_id=core_values.get("plantation_id"),
+        metadata_=metadata,
     )
     db.add(tree)
     await db.flush()
@@ -76,7 +117,7 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
             )
         )
     await db.commit()
-    await db.refresh(tree)
+    await db.refresh(tree, attribute_names=["planting_program"])
     return _to_out(tree)
 
 
@@ -138,7 +179,9 @@ async def list_trees(
 
 async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
     res = await db.execute(
-        select(Tree).where(Tree.id == tree_id).options(selectinload(Tree.images))
+        select(Tree)
+        .where(Tree.id == tree_id)
+        .options(selectinload(Tree.images), selectinload(Tree.planting_program))
     )
     tree = res.scalar_one_or_none()
     if tree is None:

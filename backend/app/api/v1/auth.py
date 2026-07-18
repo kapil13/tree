@@ -17,6 +17,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.services.planting_programs.enrollment import ensure_default_enrollment
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
@@ -71,6 +72,8 @@ async def register(payload: RegisterRequest, db: DB) -> UserOut:
         is_verified=False,
     )
     db.add(user)
+    await db.flush()
+    await ensure_default_enrollment(db, user.id)
     await db.commit()
     await db.refresh(user)
     return UserOut.model_validate(user)

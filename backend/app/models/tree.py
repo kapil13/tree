@@ -41,6 +41,9 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     altitude_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
     accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
     plantation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    program_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_programs.id", ondelete="SET NULL")
+    )
 
     # Cached metrics
     current_height_m: Mapped[float | None] = mapped_column(Numeric(6, 2))
@@ -59,6 +62,7 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     owner = relationship("User", back_populates="trees", foreign_keys=[owner_user_id])
     organization = relationship("Organization", back_populates="trees")
     species = relationship("Species")
+    planting_program = relationship("PlantingProgram", back_populates="trees")
     images = relationship(
         "TreeImage", back_populates="tree", cascade="all, delete-orphan"
     )
@@ -79,4 +83,5 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
         Index("trees_species_idx", "species_id"),
         Index("trees_status_idx", "status"),
         Index("trees_health_idx", "current_health"),
+        Index("trees_program_idx", "program_id"),
     )
