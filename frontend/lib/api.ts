@@ -233,6 +233,8 @@ export const auth = {
     full_name: string;
     role?: string;
     organization_name?: string;
+    phone?: string;
+    program_codes?: string[];
   }) {
     return (await api.post<User>("/v1/auth/register", payload)).data;
   },
@@ -241,6 +243,22 @@ export const auth = {
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
+  },
+  async requestOtp(payload: { email?: string; phone?: string }) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>("/v1/auth/otp/request", payload)
+    ).data;
+  },
+  async verifyOtp(payload: {
+    email?: string;
+    phone?: string;
+    code: string;
+    full_name?: string;
+  }) {
+    return (await api.post<Tokens>("/v1/auth/otp/verify", payload)).data;
+  },
+  async googleAuthorize() {
+    return (await api.get<{ authorize_url: string }>("/v1/auth/google/login")).data;
   },
 };
 

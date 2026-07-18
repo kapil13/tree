@@ -5,11 +5,11 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-b from-forest-50 to-white">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-forest-800">
-          <span aria-hidden>🌳</span> BYOT
+          <span aria-hidden>🌳</span> Aranyix
         </Link>
         <nav className="flex items-center gap-3">
-          <Link href="/login" className="btn-ghost">Sign in</Link>
-          <Link href="/signup" className="btn-primary">Get started</Link>
+          <Link href="/auth?mode=signin" className="btn-ghost">Sign in</Link>
+          <Link href="/auth?mode=signup" className="btn-primary">Get started</Link>
         </nav>
       </header>
 
@@ -26,7 +26,7 @@ export default function HomePage() {
               generate Verra / Gold Standard – ready carbon reports — at planetary scale.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup" className="btn-primary">Register your first tree</Link>
+              <Link href="/auth?mode=signup" className="btn-primary">Register your first tree</Link>
               <Link href="/dashboard" className="btn-secondary">Open the dashboard</Link>
               <a href="/docs" className="btn-ghost">API docs</a>
             </div>

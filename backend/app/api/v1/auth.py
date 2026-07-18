@@ -17,7 +17,13 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.services.planting_programs.enrollment import ensure_default_enrollment
+from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
+from app.services.auth.otp import (
+    DEV_OTP_CODE,
+    normalize_phone,
+    phone_placeholder_email,
+    verify_dev_otp,
+)
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
@@ -68,12 +74,15 @@ async def register(payload: RegisterRequest, db: DB) -> UserOut:
         hashed_password=hash_password(payload.password),
         role=payload.role,
         organization_id=org_id,
+        phone=payload.phone,
         is_active=True,
         is_verified=False,
     )
     db.add(user)
     await db.flush()
     await ensure_default_enrollment(db, user.id)
+    if payload.program_codes:
+        await set_user_programs(db, user.id, payload.program_codes)
     await db.commit()
     await db.refresh(user)
     return UserOut.model_validate(user)
@@ -112,22 +121,59 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
 async def request_otp(payload: OTPRequest) -> dict[str, str]:
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
-    # In production: generate, store in Redis with TTL, deliver via SES/SNS.
-    return {"status": "sent"}
+    if payload.phone:
+        try:
+            normalize_phone(payload.phone)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_phone") from exc
+    # Production: generate code, store in Redis, send via SMS/email provider.
+    return {"status": "sent", "dev_hint": DEV_OTP_CODE if settings.app_env != "production" else None}
 
 
-@router.post("/otp/verify", response_model=TokenResponse)
-async def verify_otp(payload: OTPVerify, db: DB) -> TokenResponse:
-    # Dev stub: accept code "000000" for any known email.
-    if payload.code != "000000":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+async def _user_from_otp(db: DB, payload: OTPVerify) -> User:
+    if payload.phone:
+        try:
+            phone = normalize_phone(payload.phone)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_phone") from exc
+        res = await db.execute(select(User).where(User.phone == phone))
+        user = res.scalar_one_or_none()
+        if user is None:
+            if not payload.full_name:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="registration_required")
+            email = phone_placeholder_email(phone)
+            existing_email = await db.execute(select(User).where(User.email == email))
+            if existing_email.scalar_one_or_none():
+                raise HTTPException(status.HTTP_409_CONFLICT, detail="phone_taken")
+            user = User(
+                email=email,
+                phone=phone,
+                full_name=payload.full_name,
+                role="user",
+                is_active=True,
+                is_verified=True,
+            )
+            db.add(user)
+            await db.flush()
+            await ensure_default_enrollment(db, user.id)
+        return user
+
     if not payload.email:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_required")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone_required")
     res = await db.execute(select(User).where(User.email == payload.email))
     user = res.scalar_one_or_none()
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    return user
+
+
+@router.post("/otp/verify", response_model=TokenResponse)
+async def verify_otp(payload: OTPVerify, db: DB) -> TokenResponse:
+    if not verify_dev_otp(payload.code):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+    user = await _user_from_otp(db, payload)
     user.is_verified = True
+    user.last_login_at = datetime.now(UTC)
     await db.commit()
     return _tokens_for(user)
 

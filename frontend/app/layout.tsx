@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "BYOT — Bring Your Own Tree",
+  title: "Aranyix — Intelligence for a Thriving Planet",
   description:
-    "Register trees, monitor health, estimate carbon sequestration, and generate verifiable carbon-credit reports.",
+    "Register trees, monitor ecosystems, assess biodiversity, and generate verifiable environmental evidence.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -13,6 +13,8 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     role: Literal["user", "farmer", "ngo", "corporate", "government"] = "user"
     organization_name: str | None = None
+    phone: str | None = None
+    program_codes: list[str] = Field(default_factory=list)
 
 
 class LoginRequest(BaseModel):
@@ -40,6 +42,7 @@ class OTPVerify(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     code: str = Field(min_length=4, max_length=8)
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
 
 
 class UserOut(BaseModel):
