@@ -95,6 +95,11 @@ class Settings(BaseSettings):
     iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
     gbif_api_url: str = "https://api.gbif.org/v1"
     gbif_occurrence_radius_km: float = Field(default=25.0, ge=1.0, le=100.0)
+
+    # ISRO Bhoonidhi (NRSC) STAC catalog — requires IP whitelist + API account
+    bhoonidhi_user_id: str | None = None
+    bhoonidhi_password: str | None = None
+    bhoonidhi_api_url: str = "https://bhoonidhi-api.nrsc.gov.in"
     bioacoustic_review_confidence: float = Field(default=0.70, ge=0.05, le=0.99)
     bioacoustic_spl_warning_db: float = Field(default=62.0, ge=40.0, le=90.0)
 

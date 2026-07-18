@@ -293,6 +293,39 @@ export const satelliteHealth = {
   },
 };
 
+export const bhoonidhi = {
+  async status() {
+    return (await api.get("/v1/bhoonidhi/status")).data as {
+      configured: boolean;
+      api_url: string;
+      ip_whitelist_required: boolean;
+      registration_email: string;
+      default_collections: string[];
+      message: string;
+    };
+  },
+  async fenceCatalog(fenceId: string, params?: { days_back?: number; limit?: number }) {
+    return (await api.get(`/v1/bhoonidhi/plantation-fences/${fenceId}/catalog`, { params }))
+      .data as {
+      fence_id: string;
+      fence_name: string;
+      search: {
+        provider: string;
+        returned: number;
+        limit: number;
+        scenes: Array<{
+          id: string;
+          collection: string | null;
+          datetime: string | null;
+          online: string | null;
+          download_path: string | null;
+          properties: Record<string, unknown>;
+        }>;
+      };
+    };
+  },
+};
+
 export const plantationFences = {
   async list(params?: { page?: number; page_size?: number }) {
     return (await api.get("/v1/plantation-fences", { params })).data as {
