@@ -1132,6 +1132,92 @@ export const dashboard = {
   },
 };
 
+export type IntelligenceSummary = {
+  generated_at: string;
+  integrations: { status: string; integrations: Record<string, unknown> };
+  threat_summary: {
+    sites_monitored: number;
+    weather_alerts_count: number;
+    pest_high_count: number;
+    locust_watch_count: number;
+    highest_risk: string;
+  };
+  threat_sites: Array<{
+    work_area_id: string;
+    work_area_name: string;
+    project_id: string | null;
+    project_name: string | null;
+    composite_risk: string;
+    pest_control_needed: boolean;
+    disease_control_needed: boolean;
+    rain_mm_next_48h: number;
+    ndvi_trend: string | null;
+    tree_count: number;
+    forecast_summary: string;
+    weather_alerts: Array<{ kind: string; severity: string; title: string; message: string }>;
+    early_warnings: Array<{
+      kind: string;
+      severity: string;
+      title: string;
+      message: string;
+      work_area_id?: string;
+      work_area_name?: string;
+    }>;
+  }>;
+  pest_hotspots: Array<{
+    work_area_id: string;
+    work_area_name: string;
+    project_id: string | null;
+    project_name: string | null;
+    composite_risk: string;
+    pest_control_needed: boolean;
+    disease_control_needed: boolean;
+    rain_mm_next_48h: number;
+    forecast_summary: string;
+  }>;
+  weather_alerts: Array<{
+    work_area_id: string;
+    work_area_name: string;
+    project_id: string | null;
+    alert: { kind: string; severity: string; title: string; message: string };
+  }>;
+  early_warnings: Array<{
+    work_area_id: string;
+    work_area_name: string;
+    project_id: string | null;
+    kind: string;
+    severity: string;
+    title: string;
+    message: string;
+  }>;
+  biodiversity: {
+    work_areas_with_snapshots: number;
+    unique_species_in_latest_snapshots: number;
+  };
+  highest_risk: string;
+  weather_alert_count: number;
+  pest_high_count: number;
+  project_count: number;
+  tree_count: number;
+};
+
+export const intelligence = {
+  async summary(siteLimit = 15) {
+    return (
+      await api.get<IntelligenceSummary>("/v1/intelligence/summary", {
+        params: { site_limit: siteLimit },
+      })
+    ).data;
+  },
+  async integrations() {
+    return (
+      await api.get<{ status: string; integrations: Record<string, unknown> }>(
+        "/v1/intelligence/integrations",
+      )
+    ).data;
+  },
+};
+
 export const carbon = {
   async estimate(payload: {
     species: string;

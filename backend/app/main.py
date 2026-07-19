@@ -108,6 +108,14 @@ async def worker_health(db: DB) -> WorkerHealthResponse:
     return WorkerHealthResponse.model_validate(await build_worker_health(db))
 
 
+@app.get("/health/integrations", tags=["meta"])
+async def integrations_health():
+    """External data provider reachability (Open-Meteo, GBIF, Sentinel, etc.)."""
+    from app.services.intelligence.integrations import check_all_integrations
+
+    return await check_all_integrations()
+
+
 @app.get("/", include_in_schema=False)
 async def root():
     return {

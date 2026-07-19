@@ -16,6 +16,7 @@ import {
   Sparkles,
   TreePine,
   Activity,
+  Brain,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/field-ops", label: "Field ops", icon: ClipboardList },
   { href: "/monitoring", label: "Monitoring", icon: Activity },
+  { href: "/intelligence", label: "Intelligence", icon: Brain },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/trees", label: "Trees", icon: TreePine },
   { href: "/trees/new", label: "Add tree", icon: Leaf },

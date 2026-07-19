@@ -77,6 +77,25 @@ INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
         "species detect",
     ),
     "alerts": ("alert", "warning", "critical", "notification", "risk flag"),
+    "weather": (
+        "weather",
+        "rain",
+        "storm",
+        "heat",
+        "forecast",
+        "drought",
+        "wind",
+        "thunder",
+        "flood",
+    ),
+    "threat": (
+        "threat",
+        "locust",
+        "hotspot",
+        "early warning",
+        "pest outbreak",
+        "composite risk",
+    ),
     "portfolio": (
         "portfolio",
         "summary",
@@ -114,6 +133,7 @@ class PortfolioContext:
     unread_alerts: int = 0
     recent_alerts: list[dict[str, str]] = field(default_factory=list)
     focus_tree: dict[str, Any] | None = None
+    intelligence: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -137,6 +157,7 @@ class PortfolioContext:
             "unread_alerts": self.unread_alerts,
             "recent_alerts": self.recent_alerts,
             "focus_tree": self.focus_tree,
+            "intelligence": self.intelligence,
         }
 
 
@@ -562,6 +583,38 @@ def _answer_biodiversity(portfolio: PortfolioContext) -> dict[str, Any]:
 
 
 def _answer_alerts(portfolio: PortfolioContext) -> dict[str, Any]:
+    intel = portfolio.intelligence or {}
+    weather_count = intel.get("weather_alert_count", 0)
+    pest_high = intel.get("pest_high_count", 0)
+    if weather_count or pest_high:
+        lines = [
+            f"Intelligence hub: **{weather_count} weather alert(s)** and "
+            f"**{pest_high} high pest-risk site(s)** across your portfolio."
+        ]
+        for alert in intel.get("weather_alerts", [])[:3]:
+            lines.append(
+                f"- Weather [{alert.get('alert', {}).get('severity', 'info').upper()}] "
+                f"{alert.get('work_area_name', 'site')}: "
+                f"{alert.get('alert', {}).get('title', 'alert')}"
+            )
+        for hotspot in intel.get("pest_hotspots", [])[:3]:
+            lines.append(
+                f"- Pest hotspot **{hotspot.get('work_area_name', 'site')}** "
+                f"(risk: {hotspot.get('composite_risk', 'unknown')})"
+            )
+        if portfolio.recent_alerts:
+            lines.append("")
+            lines.append(f"Also **{portfolio.unread_alerts} unread** in-app alert(s).")
+        return {
+            "answer": "\n".join(lines),
+            "calculations": {
+                "weather_alert_count": weather_count,
+                "pest_high_count": pest_high,
+                "unread_alerts": portfolio.unread_alerts,
+            },
+            "citations": ["Aranyix intelligence hub", "Open-Meteo forecasts"],
+        }
+
     if not portfolio.recent_alerts:
         return {
             "answer": "No active alerts — your portfolio looks clear. Satellite health notifications can be enabled on the Alerts page.",
@@ -575,6 +628,62 @@ def _answer_alerts(portfolio: PortfolioContext) -> dict[str, Any]:
         "answer": "\n".join(lines),
         "calculations": {"unread_alerts": portfolio.unread_alerts},
         "citations": ["Aranyix satellite & health alerts"],
+    }
+
+
+def _answer_weather(portfolio: PortfolioContext) -> dict[str, Any]:
+    intel = portfolio.intelligence or {}
+    alerts = intel.get("weather_alerts", [])
+    if not alerts:
+        return {
+            "answer": (
+                "No active weather warnings for your work areas in the next 48 hours. "
+                "Open the **Intelligence** page for live Open-Meteo forecasts per site."
+            ),
+            "calculations": {"weather_alert_count": 0},
+            "citations": ["Open-Meteo", "Aranyix weather intelligence"],
+        }
+    lines = [f"**{len(alerts)} weather alert(s)** across your portfolio:"]
+    for item in alerts[:5]:
+        alert = item.get("alert", {})
+        lines.append(
+            f"- **{item.get('work_area_name', 'Site')}**: "
+            f"[{alert.get('severity', 'info').upper()}] {alert.get('title', 'Alert')} — "
+            f"{alert.get('message', '')}"
+        )
+    return {
+        "answer": "\n".join(lines),
+        "calculations": {"weather_alert_count": intel.get("weather_alert_count", len(alerts))},
+        "citations": ["Open-Meteo", "Aranyix intelligence hub"],
+    }
+
+
+def _answer_threat(portfolio: PortfolioContext) -> dict[str, Any]:
+    intel = portfolio.intelligence or {}
+    risk = intel.get("highest_risk", "low")
+    hotspots = intel.get("pest_hotspots", [])
+    warnings = intel.get("early_warnings", [])
+    lines = [f"Portfolio composite risk is **{risk}**."]
+    if hotspots:
+        lines.append(f"**{len(hotspots)} pest/weather hotspot(s)**:")
+        for h in hotspots[:5]:
+            lines.append(
+                f"- **{h.get('work_area_name', 'Site')}** — risk {h.get('composite_risk', '?')}, "
+                f"rain next 48h: {h.get('rain_mm_next_48h', 0):.0f} mm"
+            )
+    if warnings:
+        lines.append("Early warnings:")
+        for w in warnings[:3]:
+            lines.append(f"- [{w.get('severity', 'info').upper()}] {w.get('title', 'Warning')}")
+    if not hotspots and not warnings:
+        lines.append("No elevated threat signals — continue routine monitoring.")
+    return {
+        "answer": "\n".join(lines),
+        "calculations": {
+            "highest_risk": risk,
+            "pest_high_count": intel.get("pest_high_count", 0),
+        },
+        "citations": ["Aranyix threat watch", "Pest intel v2", "Locust corridor model"],
     }
 
 
@@ -686,13 +795,20 @@ def answer_with_rules(
         "satellite": lambda: _answer_satellite(portfolio),
         "biodiversity": lambda: _answer_biodiversity(portfolio),
         "alerts": lambda: _answer_alerts(portfolio),
+        "weather": lambda: _answer_weather(portfolio),
+        "threat": lambda: _answer_threat(portfolio),
         "species": lambda: _answer_species(prompt, portfolio),
         "general": lambda: _answer_general(prompt, portfolio),
     }
     return _sanitize_response(handlers[intent]())
 
 
-async def answer_with_openai(prompt: str, portfolio: PortfolioContext) -> dict[str, Any] | None:
+async def answer_with_openai(
+    prompt: str,
+    portfolio: PortfolioContext,
+    *,
+    intelligence: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     api_key = settings.openai_api_key
     if not api_key:
         return None
@@ -708,6 +824,8 @@ async def answer_with_openai(prompt: str, portfolio: PortfolioContext) -> dict[s
         f"User question:\n{prompt}\n\n"
         f"Live portfolio JSON:\n{json.dumps(portfolio.to_dict(), indent=2)}"
     )
+    if intelligence:
+        user_content += f"\n\nIntelligence hub JSON:\n{json.dumps(intelligence, indent=2)}"
 
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
@@ -750,7 +868,20 @@ async def run_assistant(
     tree_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     portfolio = await build_portfolio_context(db, user, tree_id=tree_id)
-    llm = await answer_with_openai(prompt, portfolio)
+    intelligence: dict[str, Any] = {}
+    try:
+        from app.services.intelligence.summary import (
+            build_intelligence_summary,
+            intelligence_context_for_assistant,
+        )
+
+        summary = await build_intelligence_summary(db, user, site_limit=10)
+        intelligence = intelligence_context_for_assistant(summary)
+        portfolio.intelligence = intelligence
+    except Exception as exc:
+        log.warning("assistant.intelligence_context_failed", error=str(exc))
+
+    llm = await answer_with_openai(prompt, portfolio, intelligence=intelligence or None)
     if llm:
         return llm
     return answer_with_rules(prompt, portfolio, user_name=user.full_name)

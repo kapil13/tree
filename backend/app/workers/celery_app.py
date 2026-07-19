@@ -50,5 +50,9 @@ celery_app.conf.update(
             "task": "app.workers.tasks.threat_watch_scan",
             "schedule": crontab(hour="5", minute="30"),
         },
+        "biodiversity-baseline": {
+            "task": "app.workers.tasks.biodiversity_baseline",
+            "schedule": crontab(hour="4", minute="30", day_of_week="0"),
+        },
     },
 )
