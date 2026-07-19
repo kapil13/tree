@@ -36,6 +36,7 @@ from app.services.geo import (
     polygon_centroid,
     polygon_coordinates,
 )
+from app.services.intelligence.satellite_fusion import build_fence_satellite_fusion
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
@@ -291,6 +292,27 @@ async def fence_satellite_series(
         points=points,
         latest=PlantationSatelliteRecordOut.model_validate(latest) if latest else None,
         ndvi_image_url=f"/api/v1/plantation-fences/{fence.id}/ndvi-image",
+    )
+
+
+@router.get("/{fence_id}/satellite-fusion")
+async def fence_satellite_fusion(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    live_bhoonidhi: bool = Query(True),
+) -> dict:
+    """Fuse Sentinel NDVI history with Bhoonidhi catalog scenes for one work area."""
+    fence = await _load_fence(fence_id, user, db)
+    project = None
+    if fence.project_id:
+        from app.models.planting_project import PlantingProject
+
+        project = (
+            await db.execute(select(PlantingProject).where(PlantingProject.id == fence.project_id))
+        ).scalar_one_or_none()
+    return await build_fence_satellite_fusion(
+        db, fence, project=project, query_bhoonidhi=live_bhoonidhi
     )
 
 

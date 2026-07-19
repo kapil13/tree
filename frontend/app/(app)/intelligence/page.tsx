@@ -8,6 +8,7 @@ import {
   CloudRain,
   Globe,
   Leaf,
+  Satellite,
   ShieldAlert,
 } from "lucide-react";
 import { intelligence as intelligenceApi } from "@/lib/api";
@@ -47,6 +48,8 @@ export default function IntelligencePage() {
 
   const integrations = data.integrations?.integrations ?? {};
   const integrationStatus = data.integrations?.status ?? "unknown";
+  const fusion = data.satellite_fusion;
+  const fusionSites = fusion?.sites ?? [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -82,6 +85,60 @@ export default function IntelligencePage() {
           value={String(data.biodiversity?.unique_species_in_latest_snapshots ?? 0)}
         />
       </div>
+
+      {fusion?.summary && (
+        <section className="card overflow-hidden p-0">
+          <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">
+            <Satellite className="h-4 w-4 text-stone-500" />
+            <h2 className="font-medium">Sentinel + Bhoonidhi fusion</h2>
+            <span className="ml-auto text-xs text-stone-500">
+              {fusion.summary.aligned_dual_source} dual-source · {fusion.summary.stale_sentinel_scans}{" "}
+              stale NDVI
+            </span>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+              <tr>
+                <th className="px-4 py-2">Work area</th>
+                <th className="px-4 py-2">Fusion</th>
+                <th className="px-4 py-2">NDVI</th>
+                <th className="px-4 py-2">Trend</th>
+                <th className="px-4 py-2">Bhoonidhi scenes</th>
+                <th className="px-4 py-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fusionSites.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-stone-500">
+                    No project work areas yet. Link plantation fences to projects for fusion.
+                  </td>
+                </tr>
+              ) : (
+                fusionSites.map((site) => (
+                  <tr key={site.work_area_id} className="border-t border-stone-100">
+                    <td className="px-4 py-2 font-medium">{site.work_area_name}</td>
+                    <td className="px-4 py-2 capitalize">{site.fusion_status.replace(/_/g, " ")}</td>
+                    <td className="px-4 py-2">
+                      {site.sentinel.latest_ndvi != null ? site.sentinel.latest_ndvi.toFixed(2) : "—"}
+                      {site.sentinel.days_since_scan != null && (
+                        <span className="ml-1 text-xs text-stone-500">
+                          ({site.sentinel.days_since_scan}d)
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 capitalize">{site.sentinel.ndvi_trend}</td>
+                    <td className="px-4 py-2">{site.bhoonidhi.scenes_available ?? 0}</td>
+                    <td className="max-w-xs truncate px-4 py-2 text-xs text-stone-600">
+                      {site.recommended_action}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <section className="card">
         <div className="flex items-center gap-2">

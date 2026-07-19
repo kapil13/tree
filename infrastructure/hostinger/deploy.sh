@@ -39,6 +39,9 @@ until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend c
   TRIES=$((TRIES + 1))
   if [[ $TRIES -ge 40 ]]; then
     echo "API did not become healthy. Check: docker compose -f $COMPOSE_FILE logs backend"
+    if [[ -x ./troubleshoot-deploy.sh ]]; then
+      ./troubleshoot-deploy.sh
+    fi
     exit 1
   fi
   sleep 3
