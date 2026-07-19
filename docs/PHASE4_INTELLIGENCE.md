@@ -59,7 +59,7 @@ Single work-area fusion with recommended next action.
 
 ## Data model
 
-Migration `0013_work_area_biodiversity_snapshots` adds `work_area_biodiversity_snapshots` — JSONB species lists from `build_regional_fauna()` (GBIF occurrences + optional IUCN enrichment).
+Migration `0013_work_area_bio_snap` adds `work_area_biodiversity_snapshots` — JSONB species lists from `build_regional_fauna()` (GBIF occurrences + optional IUCN enrichment).
 
 ## Web supervisor view
 
@@ -73,7 +73,7 @@ After pull, run migrations:
 
 ```bash
 docker compose exec backend alembic upgrade head
-# Expect: 0013_work_area_biodiversity_snapshots (head)
+# Expect: 0013_work_area_bio_snap (head)
 ```
 
 Ensure **Celery worker** and **Celery beat** are running so `biodiversity_baseline` executes on schedule.
