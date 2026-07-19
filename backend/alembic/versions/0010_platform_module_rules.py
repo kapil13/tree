@@ -7,8 +7,9 @@ Revises: 0009_survival_survey
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0010_platform_module_rules"
 down_revision = "0009_survival_survey"

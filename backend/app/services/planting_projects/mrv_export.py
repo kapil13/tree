@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.plantation_fence import PlantationFence
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
-from app.models.plantation_fence import PlantationFence
 from app.models.tree import Tree
 from app.services.planting_projects.service import get_active_standard
 

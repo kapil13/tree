@@ -7,7 +7,6 @@ LLM narrative can be layered later via OPENAI_API_KEY.
 
 from __future__ import annotations
 
-from datetime import datetime
 from statistics import mean
 
 from app.services.ai.satellite_health_types import (
@@ -31,7 +30,7 @@ def _linear_slope(values: list[float]) -> float:
     xs = list(range(n))
     x_mean = mean(xs)
     y_mean = mean(values)
-    num = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, values))
+    num = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, values, strict=False))
     den = sum((x - x_mean) ** 2 for x in xs) or 1.0
     return num / den
 

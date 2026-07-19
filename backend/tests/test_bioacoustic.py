@@ -3,7 +3,6 @@
 from app.services.ai.bioacoustic import identify_species_from_audio
 from app.services.bioacoustic.iucn_catalog import enrich_detection, lookup_iucn
 from app.services.bioacoustic.metrics import (
-    aggregate_assessment_metrics,
     aggregate_metrics,
     bioacoustic_health_score,
     biodiversity_health_score,

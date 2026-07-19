@@ -1,9 +1,10 @@
 """Tests for satellite health alert gating."""
 
+from datetime import UTC, datetime, timedelta
+
 from app.services.ai.satellite_health import analyze_satellite_ndvi_health
 from app.services.ai.satellite_health_types import NdviObservation
 from app.services.alerts.service import should_alert_satellite_health
-from datetime import UTC, datetime, timedelta
 
 
 def _obs(day_offset: int, ndvi: float) -> NdviObservation:

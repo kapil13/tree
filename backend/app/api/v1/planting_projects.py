@@ -9,20 +9,19 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
+from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
-from app.models.plantation_fence import PlantationFence
-from app.models.tree import Tree
-from app.schemas.common import Page
-from app.schemas.tree import TreeListItem
-from app.schemas.plantation_fence import GeoJsonPolygon
 from app.models.project_member import ProjectMember
+from app.models.tree import Tree
 from app.models.user import User
-from app.schemas.project_member import FieldOpsSummaryOut, MonitoringSummaryOut, ProjectMemberCreate, ProjectMemberOut
+from app.schemas.common import Page
+from app.schemas.plantation_fence import GeoJsonPolygon
 from app.schemas.planting_project import (
     ComplianceCheckOut,
     ComplianceCheckRequest,
     ComplianceIssueOut,
+    GeoJsonLineString,
     PlantingProjectCreate,
     PlantingProjectOut,
     PlantingProjectUpdate,
@@ -32,9 +31,17 @@ from app.schemas.planting_project import (
     WorkAreaCreate,
     WorkAreaOut,
     WorkAreaUpdate,
-    GeoJsonLineString,
 )
+from app.schemas.project_member import (
+    FieldOpsSummaryOut,
+    MonitoringSummaryOut,
+    ProjectMemberCreate,
+    ProjectMemberOut,
+)
+from app.schemas.tree import TreeListItem
 from app.services.geo import geography_to_geojson_polygon
+from app.services.monitoring.satellite_sweep import run_project_satellite_scan
+from app.services.monitoring.summary import build_monitoring_summary
 from app.services.planting_projects.access import (
     can_manage_project,
     load_project,
@@ -47,8 +54,6 @@ from app.services.planting_projects.constants import (
     SEGMENT_LABELS,
 )
 from app.services.planting_projects.field_ops import build_field_ops_summary
-from app.services.monitoring.summary import build_monitoring_summary
-from app.services.monitoring.satellite_sweep import run_project_satellite_scan
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,

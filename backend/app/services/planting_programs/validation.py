@@ -16,16 +16,13 @@ class ProgramValidationError(ValueError):
 
 def _iter_fields(program: ProgramDefinition):
     for section in program["sections"]:
-        for field in section["fields"]:
-            yield field
+        yield from section["fields"]
 
 
 def _is_empty(value: Any) -> bool:
     if value is None:
         return True
-    if isinstance(value, str) and not value.strip():
-        return True
-    return False
+    return bool(isinstance(value, str) and not value.strip())
 
 
 def validate_program_payload(

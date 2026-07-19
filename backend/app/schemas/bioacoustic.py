@@ -109,7 +109,7 @@ class BioacousticRecordingOut(BaseModel):
     created_at: datetime
 
     @classmethod
-    def from_model(cls, rec) -> "BioacousticRecordingOut":
+    def from_model(cls, rec) -> BioacousticRecordingOut:
         lat = lon = None
         if rec.location is not None:
             from geoalchemy2.shape import to_shape

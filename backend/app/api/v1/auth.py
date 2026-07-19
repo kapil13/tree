@@ -18,14 +18,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
-from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
-from app.services.auth.otp import (
-    DEV_OTP_CODE,
-    normalize_phone,
-    phone_placeholder_email,
-    verify_dev_otp,
-)
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
@@ -41,6 +33,14 @@ from app.schemas.auth import (
     UserOut,
 )
 from app.services.auth.captcha import verify_captcha_token
+from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
+from app.services.auth.otp import (
+    DEV_OTP_CODE,
+    normalize_phone,
+    phone_placeholder_email,
+    verify_dev_otp,
+)
+from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -240,7 +240,7 @@ async def google_callback(
 
     try:
         profile = await exchange_google_code(code)
-    except Exception as exc:
+    except Exception:
         return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_exchange_failed")
 
     res = await db.execute(select(User).where(User.google_sub == profile.sub))

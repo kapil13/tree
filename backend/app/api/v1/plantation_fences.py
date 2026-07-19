@@ -13,6 +13,7 @@ from app.api.v1.deps import DB, CurrentUser
 from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.schemas.bioacoustic import EcosystemHealthOut, FenceBiodiversityOut
 from app.schemas.common import Page
 from app.schemas.plantation_fence import (
     GeoJsonPolygon,
@@ -24,17 +25,24 @@ from app.schemas.plantation_fence import (
     PlantationSatelliteRecordOut,
     PlantationSatelliteSeries,
 )
-from app.schemas.bioacoustic import EcosystemHealthOut, FenceBiodiversityOut
-from app.services.bioacoustic.correlation import aggregate_fence_bioacoustic, correlate_fence_ecosystem
-from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon, polygon_centroid, polygon_coordinates
+from app.schemas.weather import WeatherForecast
+from app.services.bioacoustic.correlation import (
+    aggregate_fence_bioacoustic,
+    correlate_fence_ecosystem,
+)
+from app.services.geo import (
+    geography_to_geojson_polygon,
+    geojson_polygon_to_wkt,
+    polygon_centroid,
+    polygon_coordinates,
+)
+from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
     scan_plantation_polygon,
     series_plantation_polygon,
 )
 from app.services.weather.open_meteo import fetch_forecast
-from app.schemas.weather import WeatherForecast
-from app.services.planting_projects.pest_intel import build_pest_intel
 
 router = APIRouter(prefix="/plantation-fences", tags=["plantation-fences"])
 log = get_logger(__name__)

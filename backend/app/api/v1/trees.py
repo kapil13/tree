@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 import string
 import uuid
-
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
@@ -14,10 +13,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser
+from app.models.plantation_fence import PlantationFence
+from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.tree_image import TreeImage
 from app.schemas.common import Page
 from app.schemas.tree import (
+    RegeotagComplianceOut,
     TreeCreate,
     TreeImageOut,
     TreeListItem,
@@ -25,21 +27,17 @@ from app.schemas.tree import (
     TreePassport,
     TreeRegeotag,
     TreeRegeotagOut,
-    RegeotagComplianceOut,
     TreeUpdate,
 )
 from app.services.passport import generate_passport_pdf, generate_qr_png
-from app.models.planting_project import PlantingProject
-from app.models.plantation_fence import PlantationFence
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
-    list_available_programs,
-    list_enrolled_programs,
-    list_user_program_codes,
-    set_user_programs,
     user_can_use_program,
 )
-from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.planting_programs.validation import (
+    ProgramValidationError,
+    validate_program_payload,
+)
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
@@ -206,23 +204,23 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
             },
         )
 
-    if compliance_mode == "strict" and program.code in (
-        "government_nhai",
-        "corporate_esg",
+    if (
+        compliance_mode == "strict"
+        and program.code in ("government_nhai", "corporate_esg")
+        and work_area_id is None
     ):
-        if work_area_id is None:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={
-                    "compliance_errors": [
-                        {
-                            "violation_type": "work_area_required",
-                            "severity": "block",
-                            "message": "Select a project work area before registering trees for this program.",
-                        }
-                    ],
-                },
-            )
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "compliance_errors": [
+                    {
+                        "violation_type": "work_area_required",
+                        "severity": "block",
+                        "message": "Select a project work area before registering trees for this program.",
+                    }
+                ],
+            },
+        )
 
     if compliance.chainage_km is not None:
         metadata["chainage_km"] = str(compliance.chainage_km)

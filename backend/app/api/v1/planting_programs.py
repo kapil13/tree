@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.planting_program import PlantingProgram

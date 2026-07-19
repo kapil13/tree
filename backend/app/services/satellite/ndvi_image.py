@@ -149,7 +149,7 @@ def render_ndvi_png_polygon(
         for lng, lat in polygon_coords
     ]
     if len(px_ring) >= 2:
-        draw.line(px_ring + [px_ring[0]], fill=(255, 255, 255), width=2)
+        draw.line([*px_ring, px_ring[0]], fill=(255, 255, 255), width=2)
 
     if label:
         draw.rectangle((8, 8, size - 8, 28), fill=(0, 0, 0))

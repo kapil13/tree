@@ -1,6 +1,6 @@
 """Tests for GBIF regional fauna integration."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from app.services.bioacoustic.regional_fauna import annotate_regional_match, build_regional_fauna
 

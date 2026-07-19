@@ -12,9 +12,9 @@ from app.models.alert import Alert
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
+from app.services.monitoring.job_runs import get_recent_job_runs
 from app.services.planting_projects.access import project_list_filter
 from app.services.planting_projects.field_ops import build_field_ops_summary
-from app.services.monitoring.job_runs import get_recent_job_runs
 
 
 async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:

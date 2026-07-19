@@ -10,8 +10,8 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.planting_project import PlantingProject
 from app.models.plantation_fence import PlantationFence
+from app.models.planting_project import PlantingProject
 from app.models.species import Species
 from app.models.tree import Tree
 from app.services.geo import chainage_km_along_line
@@ -315,17 +315,17 @@ async def evaluate_tree_placement(
                 )
             )
         elif parsed and req_l and req_w and req_d:
-            l, w, d = parsed
-            if l < req_l or w < req_w or d < req_d:
+            pit_l, pit_w, pit_d = parsed
+            if pit_l < req_l or pit_w < req_w or pit_d < req_d:
                 issues.append(
                     ComplianceIssue(
                         "pit_size_insufficient",
                         _issue_severity(compliance_mode),
                         (
-                            f"Pit {l:.0f}×{w:.0f}×{d:.0f} cm is below standard "
+                            f"Pit {pit_l:.0f}×{pit_w:.0f}×{pit_d:.0f} cm is below standard "
                             f"{req_l:.0f}×{req_w:.0f}×{req_d:.0f} cm."
                         ),
-                        {"pit_size_cm": {"length": l, "width": w, "depth": d}, "required_cm": pit_rules},
+                        {"pit_size_cm": {"length": pit_l, "width": pit_w, "depth": pit_d}, "required_cm": pit_rules},
                     )
                 )
 
@@ -453,23 +453,27 @@ async def evaluate_tree_placement(
             chainage_km = chainage_km_along_line(source, latitude, longitude)
             start = work_area.chainage_start_km
             end = work_area.chainage_end_km
-            if chainage_km is not None and start is not None and end is not None:
-                if chainage_km < float(start) or chainage_km > float(end):
-                    issues.append(
-                        ComplianceIssue(
-                            "chainage_out_of_range",
-                            _issue_severity(compliance_mode),
-                            (
-                                f"Chainage {chainage_km:.2f} km is outside work area "
-                                f"range {start}–{end} km."
-                            ),
-                            {
-                                "chainage_km": chainage_km,
-                                "chainage_start_km": start,
-                                "chainage_end_km": end,
-                            },
-                        )
+            if (
+                chainage_km is not None
+                and start is not None
+                and end is not None
+                and (chainage_km < float(start) or chainage_km > float(end))
+            ):
+                issues.append(
+                    ComplianceIssue(
+                        "chainage_out_of_range",
+                        _issue_severity(compliance_mode),
+                        (
+                            f"Chainage {chainage_km:.2f} km is outside work area "
+                            f"range {start}–{end} km."
+                        ),
+                        {
+                            "chainage_km": chainage_km,
+                            "chainage_start_km": start,
+                            "chainage_end_km": end,
+                        },
                     )
+                )
 
     blocking = [i for i in issues if i.severity == "block"]
     passed = len(blocking) == 0

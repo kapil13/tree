@@ -13,9 +13,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.v1 import api_router
+from app.api.v1.deps import DB
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
-from app.api.v1.deps import DB
 from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse, WorkerHealthResponse
 
 configure_logging()

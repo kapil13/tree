@@ -6,7 +6,6 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.services.planting_programs.catalog import default_program_code

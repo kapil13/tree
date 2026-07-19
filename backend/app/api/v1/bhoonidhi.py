@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.v1.deps import CurrentUser, DB
+from app.api.v1.deps import DB, CurrentUser
 from app.api.v1.plantation_fences import _load_fence
 from app.core.config import settings
 from app.schemas.bhoonidhi import (

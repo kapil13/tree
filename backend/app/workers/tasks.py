@@ -41,10 +41,11 @@ def run_satellite_scan(tree_id: str) -> dict:
     log.info("worker.run_satellite_scan", tree_id=tree_id)
 
     async def _run() -> dict:
+        from sqlalchemy import select
+
         from app.core.database import AsyncSessionLocal
         from app.models.tree import Tree
         from app.services.monitoring.satellite_sweep import scan_and_persist_tree
-        from sqlalchemy import select
 
         async with AsyncSessionLocal() as db:
             tree = (
@@ -121,7 +122,9 @@ def daily_health_roundup() -> dict:
 
     async def _run() -> dict:
         from app.core.database import AsyncSessionLocal
-        from app.services.monitoring.compliance_escalation import create_compliance_escalation_alerts
+        from app.services.monitoring.compliance_escalation import (
+            create_compliance_escalation_alerts,
+        )
         from app.services.monitoring.health_roundup import run_daily_health_roundup
 
         async with AsyncSessionLocal() as db:

@@ -55,7 +55,7 @@ def _resolve_labels_path() -> Path | None:
 def _labels() -> tuple[str, ...]:
     labels_path = _resolve_labels_path()
     if not labels_path:
-        return tuple()
+        return ()
     return tuple(load_perch_labels(labels_path))
 
 

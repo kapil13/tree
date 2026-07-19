@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.core.config import settings
 from app.services.bioacoustic.gbif_client import match_species, taxon_group_from_gbif
 from app.services.bioacoustic.iucn_api_client import resolve_iucn
-
-
-from app.core.config import settings
 
 
 def enrich_detection(

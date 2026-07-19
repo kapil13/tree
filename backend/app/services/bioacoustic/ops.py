@@ -14,13 +14,16 @@ from app.models.plantation_fence import PlantationFence
 from app.models.user import User
 from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecordingOut
 from app.services.ai.bioacoustic import identify_species_from_audio
+from app.services.bioacoustic.acoustics import measure_spl_from_wav
 from app.services.bioacoustic.birdnet_runner import cleanup_wav
+from app.services.bioacoustic.ecoacoustic_indices import compute_ecoacoustic_indices
 from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.identification_coverage import identification_coverage
 from app.services.bioacoustic.merge_detections import taxon_breakdown
-from app.services.bioacoustic.acoustics import measure_spl_from_wav
-from app.services.bioacoustic.ecoacoustic_indices import compute_ecoacoustic_indices
-from app.services.bioacoustic.metrics import aggregate_assessment_metrics, filter_detections_for_metrics
+from app.services.bioacoustic.metrics import (
+    aggregate_assessment_metrics,
+    filter_detections_for_metrics,
+)
 from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.bioacoustic.regional_fauna import annotate_regional_match, build_regional_fauna
 from app.services.bioacoustic.spectrogram import upload_spectrogram
@@ -291,11 +294,10 @@ async def create_recording(
         fence = fence_res.scalar_one_or_none()
         if fence is None:
             raise ValueError("fence_not_found")
-        if user.role != "admin" and fence.owner_user_id != user.id:
-            if not (
-                user.organization_id and fence.organization_id == user.organization_id
-            ):
-                raise ValueError("forbidden")
+        if user.role != "admin" and fence.owner_user_id != user.id and not (
+            user.organization_id and fence.organization_id == user.organization_id
+        ):
+            raise ValueError("forbidden")
 
     rec = BioacousticRecording(
         owner_user_id=user.id,

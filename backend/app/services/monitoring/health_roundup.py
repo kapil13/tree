@@ -36,7 +36,7 @@ async def run_daily_health_roundup(db: AsyncSession) -> dict[str, Any]:
         at_risk_by_owner.setdefault(key, []).append(tree)
 
     alerts_created = 0
-    for owner_id, owner_trees in at_risk_by_owner.items():
+    for _owner_id, owner_trees in at_risk_by_owner.items():
         if len(owner_trees) < 1:
             continue
         owner = await db.get(User, owner_trees[0].owner_user_id)

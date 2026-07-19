@@ -7,6 +7,7 @@ Revises: 0008_planting_projects
 from __future__ import annotations
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0009_survival_survey"

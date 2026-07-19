@@ -7,8 +7,9 @@ Revises: 0011_project_members
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0012_monitoring_job_runs"
 down_revision = "0011_project_members"
