@@ -17,12 +17,34 @@ s.close()
   fi
   sleep 2
 done
-echo "[byot] postgres is up"
+echo "[byot] postgres port is open — waiting for query readiness..."
+TRIES=0
+until python -c "
+import os
+import psycopg2
+url = os.environ.get('DATABASE_URL_SYNC', '')
+if not url:
+    raise SystemExit(1)
+conn = psycopg2.connect(url.replace('+psycopg2', ''))
+cur = conn.cursor()
+cur.execute('SELECT 1')
+conn.close()
+" 2>/dev/null; do
+  TRIES=$((TRIES + 1))
+  if [ "$TRIES" -ge 20 ]; then
+    echo "[byot] ERROR: postgres not accepting queries after 40s"
+    exit 1
+  fi
+  sleep 2
+done
+echo "[byot] postgres is ready"
 
 echo "[byot] running alembic migrations..."
 if ! alembic upgrade head; then
-  echo "[byot] ERROR: alembic upgrade failed — check DB connectivity and migration logs above."
-  echo "[byot] On VPS: docker compose -f docker-compose.prod.yml --env-file .env.production logs backend --tail 200"
+  echo "[byot] ERROR: alembic upgrade failed"
+  echo "[byot] Current revision:"
+  alembic current 2>&1 || true
+  echo "[byot] On VPS run: infrastructure/hostinger/troubleshoot-deploy.sh"
   exit 1
 fi
 

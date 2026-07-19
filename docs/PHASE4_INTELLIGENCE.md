@@ -12,8 +12,9 @@ Phase 4 fuses external environmental data into a **segment-agnostic intelligence
 | **4.5** | Threat watch v2 — unified feed in `/intelligence` and assistant grounding |
 | **4.6** | Grounded AI assistant — `intelligence_context_for_assistant` wired into `run_assistant` |
 | **4.4** | GBIF/IUCN biodiversity baseline snapshots per work area (weekly Celery job) |
+| **4.3** | Sentinel + Bhoonidhi fusion — dual-source NDVI + STAC scenes per work area |
 
-Sentinel + Bhoonidhi fusion (4.3) remains on the roadmap; Bhoonidhi and Sentinel credentials are surfaced in integration health today.
+Sentinel Hub and Bhoonidhi credentials are optional; fusion degrades gracefully to whichever source is configured.
 
 ## Automated jobs (Celery beat)
 
@@ -44,13 +45,25 @@ GET /api/v1/health/integrations
 
 Public reachability check for Open-Meteo, GBIF, and credential status for Sentinel Hub, Bhoonidhi, and IUCN.
 
+```http
+GET /api/v1/intelligence/satellite-fusion?site_limit=15&live_bhoonidhi_limit=5
+```
+
+Portfolio fusion of Sentinel-2 NDVI records (DB) with live Bhoonidhi STAC catalog search (capped per request).
+
+```http
+GET /api/v1/plantation-fences/{id}/satellite-fusion?live_bhoonidhi=true
+```
+
+Single work-area fusion with recommended next action.
+
 ## Data model
 
 Migration `0013_work_area_biodiversity_snapshots` adds `work_area_biodiversity_snapshots` — JSONB species lists from `build_regional_fauna()` (GBIF occurrences + optional IUCN enrichment).
 
 ## Web supervisor view
 
-- **Intelligence** (`/intelligence`) — portfolio risk KPIs, integration status, weather alerts, pest hotspots, early warnings, threat watch table.
+- **Intelligence** (`/intelligence`) — portfolio risk KPIs, integration status, weather alerts, pest hotspots, **Sentinel+Bhoonidhi fusion**, threat watch table.
 - **Monitoring** (`/monitoring`) — satellite staleness and job health (Phase 3).
 - **AI assistant** — weather/threat intents and OpenAI grounding include live intelligence JSON.
 
@@ -66,6 +79,16 @@ docker compose exec backend alembic upgrade head
 Ensure **Celery worker** and **Celery beat** are running so `biodiversity_baseline` executes on schedule.
 
 Rebuild **backend** and **frontend**. No mobile change required for Phase 4 web hub; assistant improvements apply to existing mobile/web assistant endpoints.
+
+### Backend failed to start?
+
+```bash
+cd infrastructure/hostinger
+chmod +x troubleshoot-deploy.sh
+./troubleshoot-deploy.sh
+```
+
+Common cause after upgrade: Alembic migration error in `docker-entrypoint.sh` logs. Fix DB revision, then `docker compose ... up -d --build backend`.
 
 ## Verification
 

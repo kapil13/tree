@@ -12,6 +12,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 from app.services.intelligence.integrations import build_integrations_health
+from app.services.intelligence.satellite_fusion import build_portfolio_satellite_fusion
 from app.services.planting_projects.access import project_list_filter
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.threats.watch import build_portfolio_threat_watch
@@ -102,6 +103,10 @@ async def build_intelligence_summary(
 
     threat_summary = threat.get("summary", {})
 
+    fusion = await build_portfolio_satellite_fusion(
+        db, user, site_limit=min(site_limit, 8), live_bhoonidhi_limit=3
+    )
+
     return {
         **field_ops,
         "generated_at": datetime.now(UTC).isoformat(),
@@ -114,6 +119,10 @@ async def build_intelligence_summary(
         "biodiversity": {
             "work_areas_with_snapshots": snapshot_count,
             "unique_species_in_latest_snapshots": species_total,
+        },
+        "satellite_fusion": {
+            "summary": fusion.get("summary", {}),
+            "sites": fusion.get("sites", [])[:8],
         },
         "highest_risk": threat_summary.get("highest_risk", "low"),
         "weather_alert_count": threat_summary.get("weather_alerts_count", 0),
@@ -132,4 +141,5 @@ def intelligence_context_for_assistant(summary: dict[str, Any]) -> dict[str, Any
         "early_warnings": summary.get("early_warnings", [])[:5],
         "biodiversity": summary.get("biodiversity"),
         "integrations_status": summary.get("integrations", {}).get("status"),
+        "satellite_fusion": summary.get("satellite_fusion", {}).get("summary"),
     }

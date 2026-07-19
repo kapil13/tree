@@ -1194,6 +1194,23 @@ export type IntelligenceSummary = {
     work_areas_with_snapshots: number;
     unique_species_in_latest_snapshots: number;
   };
+  satellite_fusion?: {
+    summary: {
+      work_areas_tracked: number;
+      stale_sentinel_scans: number;
+      aligned_dual_source: number;
+      sentinel_configured: boolean;
+      bhoonidhi_configured: boolean;
+    };
+    sites: Array<{
+      work_area_id: string;
+      work_area_name: string;
+      fusion_status: string;
+      recommended_action: string;
+      sentinel: { latest_ndvi: number | null; days_since_scan: number | null; ndvi_trend: string };
+      bhoonidhi: { scenes_available: number; latest_scene_at: string | null };
+    }>;
+  };
   highest_risk: string;
   weather_alert_count: number;
   pest_high_count: number;
@@ -1214,6 +1231,44 @@ export const intelligence = {
       await api.get<{ status: string; integrations: Record<string, unknown> }>(
         "/v1/intelligence/integrations",
       )
+    ).data;
+  },
+  async satelliteFusion(siteLimit = 15, liveBhoonidhiLimit = 5) {
+    return (
+      await api.get<{
+        generated_at: string;
+        summary: {
+          work_areas_tracked: number;
+          sites_in_view: number;
+          stale_sentinel_scans: number;
+          aligned_dual_source: number;
+          sentinel_only: number;
+          bhoonidhi_only: number;
+          sentinel_configured: boolean;
+          bhoonidhi_configured: boolean;
+        };
+        sites: Array<{
+          work_area_id: string;
+          work_area_name: string;
+          project_id: string | null;
+          project_name: string | null;
+          fusion_status: string;
+          recommended_action: string;
+          sentinel: {
+            latest_ndvi: number | null;
+            days_since_scan: number | null;
+            ndvi_trend: string;
+            stale?: boolean;
+          };
+          bhoonidhi: {
+            scenes_available: number;
+            latest_scene_at: string | null;
+            collections: string[];
+          };
+        }>;
+      }>("/v1/intelligence/satellite-fusion", {
+        params: { site_limit: siteLimit, live_bhoonidhi_limit: liveBhoonidhiLimit },
+      })
     ).data;
   },
 };
