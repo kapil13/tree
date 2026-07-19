@@ -19,7 +19,7 @@ class _User:
 
 def test_ndvi_degradation_threshold():
     assert NDVI_DEGRADATION_THRESHOLD == -0.15
-    assert -0.20 <= NDVI_DEGRADATION_THRESHOLD
+    assert NDVI_DEGRADATION_THRESHOLD >= -0.20
 
 
 def test_escalation_days():

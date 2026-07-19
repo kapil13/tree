@@ -7,10 +7,10 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.plantation_fence import PlantationFence
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
-from app.models.plantation_fence import PlantationFence
 from app.models.tree import Tree
 from app.services.planting_projects.templates import get_template, template_for_segment
 

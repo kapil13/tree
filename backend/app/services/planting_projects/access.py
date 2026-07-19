@@ -6,8 +6,8 @@ import uuid
 
 from sqlalchemy import or_, select
 
-from app.models.planting_project import PlantingProject
 from app.models.plantation_fence import PlantationFence
+from app.models.planting_project import PlantingProject
 from app.models.project_member import ProjectMember
 
 FIELD_ROLES = frozenset({"field_supervisor", "field_worker"})

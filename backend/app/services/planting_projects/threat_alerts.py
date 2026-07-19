@@ -70,9 +70,13 @@ async def _create_threat_alert(
         if ch in ("email", "sms", "push") and ch not in channels:
             channels.append(ch)
 
-    if severity == "critical" and prefs.get("sms_on_critical", False) and user.phone:
-        if "sms" not in channels:
-            channels.append("sms")
+    if (
+        severity == "critical"
+        and prefs.get("sms_on_critical", False)
+        and user.phone
+        and "sms" not in channels
+    ):
+        channels.append("sms")
 
     alert = Alert(
         user_id=user.id,

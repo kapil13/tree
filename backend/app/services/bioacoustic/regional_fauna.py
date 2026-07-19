@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.config import settings
-from app.services.bioacoustic.gbif_occurrence import fetch_species_near, _normalize_name
+from app.services.bioacoustic.gbif_occurrence import _normalize_name, fetch_species_near
 from app.services.bioacoustic.iucn_api_client import resolve_iucn
 
 

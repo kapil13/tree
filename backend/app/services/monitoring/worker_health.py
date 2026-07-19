@@ -27,9 +27,7 @@ async def build_worker_health(db: AsyncSession) -> dict[str, Any]:
     recent = await get_recent_job_runs(db, limit=15)
     failed_recent = [j for j in recent if j.get("status") == "error"]
     status = "ok"
-    if not celery["reachable"]:
-        status = "degraded"
-    elif failed_recent:
+    if not celery["reachable"] or failed_recent:
         status = "degraded"
     return {
         "status": status,

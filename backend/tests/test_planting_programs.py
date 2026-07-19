@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.planting_programs.validation import (
+    ProgramValidationError,
+    validate_program_payload,
+)
 
 
 def test_byot_requires_species_and_photo() -> None:

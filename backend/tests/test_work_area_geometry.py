@@ -1,7 +1,5 @@
 """Tests for work area geometry updates."""
 
-import pytest
-from pydantic import ValidationError
 
 from app.schemas.planting_project import GeoJsonLineString, GeoJsonPolygon, WorkAreaUpdate
 from app.services.planting_projects.work_area_geometry import resolve_work_area_geometry_update

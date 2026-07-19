@@ -2,7 +2,24 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import alerts, analysis, auth, bioacoustic, bhoonidhi, carbon, dashboard, plantation_fences, planting_programs, planting_projects, reports, satellite, satellite_health, trees, uploads, weather
+from app.api.v1 import (
+    alerts,
+    analysis,
+    auth,
+    bhoonidhi,
+    bioacoustic,
+    carbon,
+    dashboard,
+    plantation_fences,
+    planting_programs,
+    planting_projects,
+    reports,
+    satellite,
+    satellite_health,
+    trees,
+    uploads,
+    weather,
+)
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)

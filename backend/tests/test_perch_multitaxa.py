@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 
 from app.services.bioacoustic.identification_coverage import identification_coverage
 from app.services.bioacoustic.perch_labels import (
@@ -13,7 +12,11 @@ from app.services.bioacoustic.perch_labels import (
     scientific_name_from_label,
 )
 from app.services.bioacoustic.perch_runner import run_perch
-from app.services.bioacoustic.taxon_groups import detection_taxon_group, normalize_taxon_group, parse_taxa_csv
+from app.services.bioacoustic.taxon_groups import (
+    detection_taxon_group,
+    normalize_taxon_group,
+    parse_taxa_csv,
+)
 
 
 def test_is_probable_species_label_filters_noise():
@@ -35,25 +38,29 @@ def test_taxon_group_normalization():
 
 
 def test_identification_coverage_birdnet_only():
-    with patch("app.services.bioacoustic.identification_coverage.perch_available", return_value=False):
-        with patch("app.services.bioacoustic.identification_coverage.settings") as mock_settings:
-            mock_settings.bioacoustic_enable_perch = False
-            mock_settings.bioacoustic_enable_frogs = False
-            mock_settings.bioacoustic_enable_insects = False
-            mock_settings.bioacoustic_perch_taxa = "amphibian,mammal,insect,reptile"
-            cov = identification_coverage()
+    with (
+        patch("app.services.bioacoustic.identification_coverage.perch_available", return_value=False),
+        patch("app.services.bioacoustic.identification_coverage.settings") as mock_settings,
+    ):
+        mock_settings.bioacoustic_enable_perch = False
+        mock_settings.bioacoustic_enable_frogs = False
+        mock_settings.bioacoustic_enable_insects = False
+        mock_settings.bioacoustic_perch_taxa = "amphibian,mammal,insect,reptile"
+        cov = identification_coverage()
     assert cov["bird"] == "birdnet"
     assert cov["mammal"] == "pending_model"
 
 
 def test_identification_coverage_with_perch():
-    with patch("app.services.bioacoustic.identification_coverage.perch_available", return_value=True):
-        with patch("app.services.bioacoustic.identification_coverage.settings") as mock_settings:
-            mock_settings.bioacoustic_enable_perch = True
-            mock_settings.bioacoustic_enable_frogs = False
-            mock_settings.bioacoustic_enable_insects = False
-            mock_settings.bioacoustic_perch_taxa = "amphibian,mammal,insect,reptile"
-            cov = identification_coverage()
+    with (
+        patch("app.services.bioacoustic.identification_coverage.perch_available", return_value=True),
+        patch("app.services.bioacoustic.identification_coverage.settings") as mock_settings,
+    ):
+        mock_settings.bioacoustic_enable_perch = True
+        mock_settings.bioacoustic_enable_frogs = False
+        mock_settings.bioacoustic_enable_insects = False
+        mock_settings.bioacoustic_perch_taxa = "amphibian,mammal,insect,reptile"
+        cov = identification_coverage()
     assert cov["mammal"] == "perch-v2"
     assert cov["amphibian"] == "perch-v2"
     assert cov["reptile"] == "perch-v2"

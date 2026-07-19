@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import uuid
 
 from sqlalchemy import select
@@ -159,7 +160,7 @@ async def _notify_if_needed(
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if user is None:
         return
-    try:
+    with contextlib.suppress(Exception):
         await create_satellite_health_alert(
             db,
             user=user,
@@ -170,8 +171,6 @@ async def _notify_if_needed(
             target_label=target_label,
             prior_risk=prior_risk,
         )
-    except Exception:
-        pass
 
 
 async def analyze_tree_satellite_health(

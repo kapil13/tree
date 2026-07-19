@@ -138,8 +138,8 @@ async def scan_and_persist_tree(db: AsyncSession, tree: Tree) -> SatelliteRecord
     sample = None
     if has_sentinel_credentials():
         try:
-            from app.services.satellite.sentinel_hub import SentinelHubClient
             from app.core.config import settings
+            from app.services.satellite.sentinel_hub import SentinelHubClient
 
             client = SentinelHubClient(
                 settings.sentinel_hub_client_id or "",

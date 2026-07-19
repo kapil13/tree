@@ -1,9 +1,8 @@
 """Tests for MRV export context builder."""
 
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
-
-import asyncio
 
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 

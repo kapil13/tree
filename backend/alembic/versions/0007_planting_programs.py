@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 from app.services.planting_programs.catalog import PROGRAM_CATALOG, program_form_schema
 
 revision = "0007_planting_programs"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import random
-from pathlib import Path
 
 import numpy as np
 
@@ -34,7 +33,7 @@ def _high_band_rms(y: np.ndarray, sr: int) -> float:
     y_h = librosa.effects.preemphasis(y)
     hop = 512
     rms = librosa.feature.rms(y=y_h, frame_length=2048, hop_length=hop)[0]
-    freqs = librosa.fft_frequencies(sr=sr)
+    librosa.fft_frequencies(sr=sr)
     # Weight upper frequencies via spectral centroid proxy
     centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop)[0]
     high_mask = centroid > 2500
