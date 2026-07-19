@@ -59,6 +59,7 @@ export default function ProjectsPage() {
                 <th className="px-4 py-3">Segment</th>
                 <th className="px-4 py-3">Mode</th>
                 <th className="px-4 py-3">Progress</th>
+                <th className="px-4 py-3">Violations</th>
                 <th className="px-4 py-3">Areas</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
@@ -83,6 +84,13 @@ export default function ProjectsPage() {
                       <span className="ml-1 text-xs text-stone-500">
                         ({project.summary.progress_pct}%)
                       </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(project.summary?.open_violations ?? 0) > 0 ? (
+                      <span className="font-medium text-amber-700">{project.summary?.open_violations}</span>
+                    ) : (
+                      "0"
                     )}
                   </td>
                   <td className="px-4 py-3">{project.summary?.work_area_count ?? 0}</td>

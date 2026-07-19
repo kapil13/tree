@@ -26,7 +26,7 @@ def _nhai_rules() -> dict[str, Any]:
         "allowed_species": None,
         "species_native_pct_min": None,
         "planting_density_per_ha": None,
-        "require_pit_photo": False,
+        "require_pit_photo": True,
         "chainage_enabled": True,
     }
 
@@ -44,6 +44,16 @@ def _industrial_rules() -> dict[str, Any]:
         "planting_density_per_ha": {"min": 400, "max": 1200},
         "require_pit_photo": False,
         "chainage_enabled": False,
+        "native_species_examples": [
+            "Neem",
+            "Peepal",
+            "Banyan",
+            "Jamun",
+            "Arjun",
+            "Gulmohar",
+            "Teak",
+            "Karanj",
+        ],
     }
 
 
@@ -112,7 +122,21 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "description": "Mine, cement, and factory green belts with native species targets and grid density.",
         "compliance_mode": "strict",
         "recommended_program_codes": ["corporate_esg"],
-        "rules": _industrial_rules(),
+        "rules": {
+            **_industrial_rules(),
+            "allowed_species": [
+                "Neem",
+                "Peepal",
+                "Banyan",
+                "Jamun",
+                "Arjun",
+                "Gulmohar",
+                "Teak",
+                "Karanj",
+                "Mahua",
+                "Palash",
+            ],
+        },
     },
     "township_landscape_v1": {
         "code": "township_landscape_v1",

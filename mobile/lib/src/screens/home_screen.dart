@@ -63,6 +63,7 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 _kpiGrid(k),
                 const SizedBox(height: 16),
+                _navTile(context, 'Field projects', Icons.assignment_outlined, '/projects'),
                 _navTile(context, 'Trees', Icons.park_outlined, '/trees'),
                 _navTile(context, 'Map', Icons.map_outlined, '/map'),
                 _navTile(context, 'Bioacoustic', Icons.graphic_eq, '/bioacoustic'),

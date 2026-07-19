@@ -40,6 +40,7 @@ from app.services.planting_programs.enrollment import (
     user_can_use_program,
 )
 from app.services.planting_programs.validation import ProgramValidationError, validate_program_payload
+from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.service import get_active_standard
@@ -139,17 +140,13 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
     project: PlantingProject | None = None
 
     if work_area_id:
-        res = await db.execute(
-            select(PlantationFence).where(PlantationFence.id == work_area_id)
-        )
-        work_area = res.scalar_one_or_none()
+        work_area = await load_work_area(work_area_id, user, db)
         if work_area is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
         if work_area.project_id:
-            proj_res = await db.execute(
-                select(PlantingProject).where(PlantingProject.id == work_area.project_id)
-            )
-            project = proj_res.scalar_one_or_none()
+            project = await load_project(work_area.project_id, user, db)
+            if project is None:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail="project_access_denied")
 
     compliance_mode = (
         project.compliance_mode

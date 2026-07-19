@@ -16,6 +16,38 @@ from app.models.tree import Tree
 from app.services.planting_projects.service import get_active_standard
 
 
+def _segment_report(
+    segment: str,
+    work_areas: list[dict],
+    trees: list[dict],
+    native_pct: float | None,
+) -> dict:
+    if segment == "nhai_highway":
+        chainage_trees = [t for t in trees if t.get("chainage_km") is not None]
+        return {
+            "type": "nhai_chainage",
+            "trees_with_chainage": len(chainage_trees),
+            "work_area_count": len(work_areas),
+        }
+    if segment == "industrial_greenbelt":
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "mine_greenbelt",
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+        }
+    if segment == "township_landscape":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        return {
+            "type": "township_blocks",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+        }
+    return {"type": "general", "tree_count": len(trees)}
+
+
 async def build_project_mrv_context(
     db: AsyncSession, project: PlantingProject
 ) -> dict[str, Any]:
@@ -130,10 +162,14 @@ async def build_project_mrv_context(
             "spacing_m": rules.get("spacing_m"),
             "min_photos": rules.get("min_photos"),
             "pit_size_cm": rules.get("pit_size_cm"),
-            "native_species_min_pct": rules.get("native_species_min_pct"),
-            "max_trees_per_ha": rules.get("max_trees_per_ha"),
-            "min_trees_per_ha": rules.get("min_trees_per_ha"),
+            "allowed_species": rules.get("allowed_species"),
+            "native_species_min_pct": rules.get("species_native_pct_min"),
+            "max_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("max"),
+            "min_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("min"),
+            "layout_pattern": rules.get("layout_pattern"),
+            "chainage_enabled": rules.get("chainage_enabled"),
         },
+        "segment_report": _segment_report(project.segment, work_area_rows, tree_rows, native_pct),
         "summary": {
             "work_area_count": len(work_areas),
             "tree_count": total_trees,

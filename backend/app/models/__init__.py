@@ -17,6 +17,7 @@ from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
 from app.models.user import User
+from app.models.project_member import ProjectMember
 
 __all__ = [
     "BioacousticRecording",
@@ -39,4 +40,5 @@ __all__ = [
     "TreeAnalysis",
     "TreeImage",
     "User",
+    "ProjectMember",
 ]

@@ -167,6 +167,7 @@ class ApiClient {
     double? accuracy,
     List<String> photoKeys = const [],
     Map<String, dynamic> metadata = const {},
+    String? workAreaId,
   }) async {
     final r = await _dio.post('/trees', data: {
       'program_code': programCode,
@@ -177,6 +178,52 @@ class ApiClient {
       'altitude_m': altitude,
       'accuracy_m': accuracy,
       'photo_keys': photoKeys,
+      'metadata': metadata,
+      if (workAreaId != null) ...{
+        'work_area_id': workAreaId,
+        'plantation_id': workAreaId,
+      },
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> fieldOpsSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/field-ops-summary')).data);
+
+  Future<List<dynamic>> listPlantingProjects({String? segment, int pageSize = 100}) async {
+    final r = await _dio.get('/planting-projects', queryParameters: {
+      'page': 1,
+      'page_size': pageSize,
+      if (segment != null) 'segment': segment,
+    });
+    return List<dynamic>.from(r.data['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getPlantingProject(String id) async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/$id')).data);
+
+  Future<List<dynamic>> listWorkAreas(String projectId) async {
+    final r = await _dio.get('/planting-projects/$projectId/work-areas');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> complianceCheck(
+    String projectId, {
+    required String workAreaId,
+    required double lat,
+    required double lon,
+    double? accuracy,
+    String? speciesText,
+    required int photoCount,
+    Map<String, dynamic> metadata = const {},
+  }) async {
+    final r = await _dio.post('/planting-projects/$projectId/compliance-check', data: {
+      'work_area_id': workAreaId,
+      'latitude': lat,
+      'longitude': lon,
+      'accuracy_m': accuracy,
+      'species_text': speciesText,
+      'photo_count': photoCount,
       'metadata': metadata,
     });
     return Map<String, dynamic>.from(r.data);

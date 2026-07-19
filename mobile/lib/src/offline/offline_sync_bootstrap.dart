@@ -43,6 +43,12 @@ class _OfflineSyncBootstrapState extends ConsumerState<OfflineSyncBootstrap> {
     final sync = ref.read(bioacousticSyncProvider);
     sync.startListening(() => ref.read(apiClientProvider.future));
     await sync.syncAll(() => ref.read(apiClientProvider.future));
+
+    final treeQueue = ref.read(treeRegistrationQueueProvider);
+    await treeQueue.init();
+    final treeSync = ref.read(treeRegistrationSyncProvider);
+    treeSync.startListening();
+    await treeSync.syncAll();
   }
 
   @override

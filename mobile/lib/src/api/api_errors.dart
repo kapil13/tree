@@ -56,6 +56,14 @@ String apiErrorMessage(Object err) {
             .map((d) => d is Map ? (d['msg'] ?? d.toString()) : d.toString())
             .join('; ');
       }
+      if (detail is Map) {
+        final compliance = detail['compliance_errors'];
+        if (compliance is List) {
+          return compliance
+              .map((c) => c is Map ? (c['message'] ?? c['violation_type']) : c.toString())
+              .join('\n');
+        }
+      }
     }
     if (err.response?.statusCode == 401) return 'Session expired. Please sign in again.';
     // Avoid showing Dio's long default 401 boilerplate.
