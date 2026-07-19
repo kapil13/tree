@@ -20,7 +20,17 @@ done
 echo "[byot] postgres is up"
 
 echo "[byot] running alembic migrations..."
-alembic upgrade head
+if ! alembic upgrade head; then
+  echo "[byot] ERROR: alembic upgrade failed — check DB connectivity and migration logs above."
+  echo "[byot] On VPS: docker compose -f docker-compose.prod.yml --env-file .env.production logs backend --tail 200"
+  exit 1
+fi
+
+echo "[byot] verifying app import..."
+if ! python -c "from app.main import app"; then
+  echo "[byot] ERROR: failed to import app.main — see traceback above."
+  exit 1
+fi
 
 echo "[byot] starting uvicorn on :8000 (no --reload in Docker)"
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
