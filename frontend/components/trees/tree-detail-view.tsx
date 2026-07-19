@@ -46,6 +46,7 @@ export function TreeDetailView() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [survivalStatus, setSurvivalStatus] = useState("live");
+  const [complianceNote, setComplianceNote] = useState<string | null>(null);
 
   const { data: tree, isLoading, error } = useQuery({
     queryKey: ["tree", id],
@@ -81,7 +82,27 @@ export function TreeDetailView() {
       accuracy_m?: number;
       survival_status?: string;
     }) => trees.regeotag(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tree", id] }),
+    onSuccess: (data) => {
+      setComplianceNote(null);
+      if (data.compliance?.issues?.length) {
+        const msgs = data.compliance.issues.map((i) => i.message).join(" · ");
+        setComplianceNote(
+          data.compliance.passed
+            ? `Re-geotagged with warnings: ${msgs}`
+            : `Re-geotagged with compliance notes: ${msgs}`,
+        );
+      } else if (data.compliance) {
+        setComplianceNote("Re-geotagged — all compliance checks passed.");
+      }
+      qc.invalidateQueries({ queryKey: ["tree", id] });
+    },
+    onError: (err) => {
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      if (detail && typeof detail === "object" && detail !== null && "compliance_errors" in detail) {
+        const issues = (detail as { compliance_errors: { message: string }[] }).compliance_errors;
+        setComplianceNote(issues.map((i) => i.message).join(" · "));
+      }
+    },
   });
 
   useEffect(() => {
@@ -267,6 +288,16 @@ export function TreeDetailView() {
           </button>
           {regeotag.error && (
             <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>
+          )}
+          {complianceNote && (
+            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {complianceNote}
+            </p>
+          )}
+          {tree.project_id && (
+            <p className="mt-2 text-xs text-stone-500">
+              Compliance rules are re-checked on re-geotag for project-linked trees.
+            </p>
           )}
         </div>
 

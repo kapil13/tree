@@ -118,6 +118,10 @@ class WorkAreaUpdate(BaseModel):
     segment_code: str | None = Field(default=None, max_length=64)
     chainage_start_km: float | None = Field(default=None, ge=0)
     chainage_end_km: float | None = Field(default=None, ge=0)
+    geometry_type: Literal["polygon", "corridor"] | None = None
+    boundary: GeoJsonPolygon | None = None
+    centerline: GeoJsonLineString | None = None
+    buffer_m: float | None = Field(default=None, gt=0, le=500)
 
 
 class WorkAreaOut(BaseModel):

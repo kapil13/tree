@@ -108,6 +108,17 @@ class TreeRegeotag(BaseModel):
     remarks: str | None = None
 
 
+class RegeotagComplianceOut(BaseModel):
+    passed: bool
+    mode: str
+    chainage_km: float | None = None
+    issues: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class TreeRegeotagOut(TreeOut):
+    compliance: RegeotagComplianceOut | None = None
+
+
 class TreePassport(BaseModel):
     id: uuid.UUID
     public_code: str

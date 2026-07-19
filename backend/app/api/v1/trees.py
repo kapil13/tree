@@ -24,6 +24,8 @@ from app.schemas.tree import (
     TreeOut,
     TreePassport,
     TreeRegeotag,
+    TreeRegeotagOut,
+    RegeotagComplianceOut,
     TreeUpdate,
 )
 from app.services.passport import generate_passport_pdf, generate_qr_png
@@ -381,12 +383,72 @@ async def get_tree_image_file(
     return Response(content=data, media_type=content_type)
 
 
-@router.post("/{tree_id}/regeotag", response_model=TreeOut)
+@router.post("/{tree_id}/regeotag", response_model=TreeRegeotagOut)
 async def regeotag_tree(
     tree_id: uuid.UUID, payload: TreeRegeotag, user: CurrentUser, db: DB
-) -> TreeOut:
+) -> TreeRegeotagOut:
     """Update tree GPS for survival survey / re-geotagging."""
     tree = await _get_owned_tree(tree_id, user, db)
+    meta = dict(tree.metadata_ or {})
+
+    project: PlantingProject | None = None
+    work_area: PlantationFence | None = None
+    if tree.project_id:
+        project = await db.get(PlantingProject, tree.project_id)
+    if tree.plantation_id:
+        work_area = await db.get(PlantationFence, tree.plantation_id)
+
+    compliance_out = None
+    if project:
+        standard = await get_active_standard(db, project)
+        rules = standard.rules if standard else {}
+        compliance_mode = project.compliance_mode
+        photo_count = len(tree.images) if tree.images else 0
+
+        compliance = await evaluate_tree_placement(
+            db,
+            project=project,
+            work_area=work_area,
+            rules=rules,
+            compliance_mode=compliance_mode,  # type: ignore[arg-type]
+            latitude=payload.latitude,
+            longitude=payload.longitude,
+            accuracy_m=payload.accuracy_m,
+            species_text=tree.species_text,
+            species_id=tree.species_id,
+            photo_count=photo_count,
+            metadata=meta,
+            exclude_tree_id=tree.id,
+        )
+
+        if not compliance.passed and compliance_mode == "strict":
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "compliance_errors": compliance.to_dict()["issues"],
+                    "mode": compliance.mode,
+                },
+            )
+
+        if compliance.issues:
+            await persist_violations(
+                db,
+                result=compliance,
+                project_id=project.id,
+                work_area_id=work_area.id if work_area else None,
+                tree_id=tree.id,
+            )
+
+        if compliance.chainage_km is not None:
+            meta["chainage_km"] = str(compliance.chainage_km)
+
+        compliance_out = {
+            "passed": compliance.passed,
+            "mode": compliance.mode,
+            "chainage_km": compliance.chainage_km,
+            "issues": compliance.to_dict()["issues"],
+        }
+
     wkt = f"POINT({payload.longitude} {payload.latitude})"
     tree.location = wkt
     if payload.accuracy_m is not None:
@@ -394,7 +456,6 @@ async def regeotag_tree(
     if payload.altitude_m is not None:
         tree.altitude_m = payload.altitude_m
     tree.last_geotag_at = datetime.now(UTC)
-    meta = dict(tree.metadata_ or {})
     if payload.survival_status:
         meta["survival_status"] = payload.survival_status
     if payload.remarks:
@@ -402,8 +463,12 @@ async def regeotag_tree(
     meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
     tree.metadata_ = meta
     await db.commit()
-    await db.refresh(tree, attribute_names=["planting_program"])
-    return _to_out(tree)
+    await db.refresh(tree, attribute_names=["planting_program", "images"])
+    base = _to_out(tree)
+    return TreeRegeotagOut(
+        **base.model_dump(),
+        compliance=RegeotagComplianceOut(**compliance_out) if compliance_out else None,
+    )
 
 
 @router.patch("/{tree_id}", response_model=TreeOut)
