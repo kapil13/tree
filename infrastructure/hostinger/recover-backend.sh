@@ -54,6 +54,13 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
   alembic current 2>/dev/null || echo "  (backend not running — fix logs above first)"
 
 echo ""
+echo "==> Common alembic errors"
+echo "  'Can't locate revision identified by 0010_platform_module_rules'"
+echo "    => DB was migrated from superadmin branch; pull latest main (includes 0010 migration file)."
+echo "  FK violation on trees.plantation_id during 0008"
+echo "    => Run orphan cleanup SQL (see recover-backend.sh comments) then redeploy."
+
+echo ""
 echo "==> Attempting rebuild + restart (backend only first)"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build backend
 
