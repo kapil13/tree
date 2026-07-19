@@ -311,6 +311,18 @@ class ApiClient {
     return List<dynamic>.from(r.data['items'] ?? []);
   }
 
+  Future<Map<String, dynamic>> weatherForecast({
+    required double latitude,
+    required double longitude,
+    int days = 3,
+  }) async {
+    final r = await _dio.get(
+      '/weather/forecast',
+      queryParameters: {'latitude': latitude, 'longitude': longitude, 'days': days},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> getEcosystemHealth(String fenceId) async {
     final r = await _dio.get('/plantation-fences/$fenceId/ecosystem-health');
     return Map<String, dynamic>.from(r.data);

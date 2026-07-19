@@ -44,6 +44,17 @@ until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend c
   sleep 3
 done
 
+echo "==> Running database migrations..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic upgrade head
+
+echo "==> Ensuring worker + beat are running..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d worker beat
+
+if [[ -x ./verify-phase3.sh ]]; then
+  echo "==> Phase 3 verification..."
+  ./verify-phase3.sh || true
+fi
+
 echo ""
 echo "Deploy complete."
 echo "  App:  https://${APP_DOMAIN}"
