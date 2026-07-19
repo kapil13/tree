@@ -16,6 +16,7 @@ import 'screens/notifications_screen.dart';
 import 'screens/bioacoustic_screen.dart';
 import 'screens/projects_list_screen.dart';
 import 'screens/project_detail_screen.dart';
+import 'screens/profile_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(

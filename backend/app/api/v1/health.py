@@ -13,8 +13,15 @@ router = APIRouter(prefix="/health", tags=["meta"])
 
 
 @router.get("", response_model=HealthResponse)
-async def api_health() -> HealthResponse:
-    return HealthResponse(status="ok", version=__version__, env=settings.app_env)
+async def api_health(db: DB) -> HealthResponse:
+    db_status = "ok"
+    try:
+        from sqlalchemy import text
+
+        await db.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "error"
+    return HealthResponse(status="ok", version=__version__, env=settings.app_env, db=db_status)
 
 
 @router.get("/workers", response_model=WorkerHealthResponse)

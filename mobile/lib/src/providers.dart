@@ -72,3 +72,26 @@ final bioacousticRecordingsProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.listBioacousticRecordings();
 });
+
+final plantationFencesProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.listPlantationFences();
+});
+
+/// Weather at first registered tree, or null when no trees exist.
+final weatherProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  final trees = await ref.watch(treesProvider.future);
+  if (trees.isEmpty) return null;
+
+  final first = trees.first as Map<String, dynamic>;
+  final lat = (first['latitude'] as num?)?.toDouble();
+  final lon = (first['longitude'] as num?)?.toDouble();
+  if (lat == null || lon == null) return null;
+
+  try {
+    return await api.weatherForecast(latitude: lat, longitude: lon, days: 3);
+  } catch (_) {
+    return null;
+  }
+});

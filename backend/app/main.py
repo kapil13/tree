@@ -90,8 +90,15 @@ async def validation_exc(request: Request, exc: RequestValidationError) -> JSONR
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
-async def health() -> HealthResponse:
-    return HealthResponse(status="ok", version=__version__, env=settings.app_env)
+async def health(db: DB) -> HealthResponse:
+    db_status = "ok"
+    try:
+        from sqlalchemy import text
+
+        await db.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "error"
+    return HealthResponse(status="ok", version=__version__, env=settings.app_env, db=db_status)
 
 
 @app.get("/health/workers", response_model=WorkerHealthResponse, tags=["meta"])
