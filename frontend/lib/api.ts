@@ -347,7 +347,16 @@ export type Dashboard = {
   };
 };
 
+export type CaptchaConfig = {
+  enabled: boolean;
+  provider: string;
+  site_key: string | null;
+};
+
 export const auth = {
+  async captchaConfig() {
+    return (await api.get<CaptchaConfig>("/v1/auth/captcha-config")).data;
+  },
   async register(payload: {
     email: string;
     password: string;
@@ -356,11 +365,12 @@ export const auth = {
     organization_name?: string;
     phone?: string;
     program_codes?: string[];
+    captcha_token?: string;
   }) {
     return (await api.post<User>("/v1/auth/register", payload)).data;
   },
-  async login(email: string, password: string) {
-    return (await api.post<Tokens>("/v1/auth/login", { email, password })).data;
+  async login(email: string, password: string, captcha_token?: string) {
+    return (await api.post<Tokens>("/v1/auth/login", { email, password, captcha_token })).data;
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
@@ -370,7 +380,7 @@ export const auth = {
       await api.post<Tokens>("/v1/auth/refresh", { refresh_token: refreshToken })
     ).data;
   },
-  async requestOtp(payload: { email?: string; phone?: string }) {
+  async requestOtp(payload: { email?: string; phone?: string; captcha_token?: string }) {
     return (
       await api.post<{ status: string; dev_hint?: string | null; sms_enabled?: boolean }>(
         "/v1/auth/otp/request",

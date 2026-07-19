@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
@@ -29,6 +29,7 @@ from app.services.auth.otp import (
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
+    CaptchaConfigOut,
     LoginRequest,
     OTPRequest,
     OTPRequestOut,
@@ -39,6 +40,7 @@ from app.schemas.auth import (
     UpdateProfile,
     UserOut,
 )
+from app.services.auth.captcha import verify_captcha_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -57,8 +59,21 @@ def _tokens_for(user: User) -> TokenResponse:
     )
 
 
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
+@router.get("/captcha-config", response_model=CaptchaConfigOut)
+async def captcha_config() -> CaptchaConfigOut:
+    return CaptchaConfigOut(
+        enabled=settings.captcha_enabled,
+        site_key=settings.turnstile_site_key if settings.captcha_enabled else None,
+    )
+
+
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, db: DB) -> UserOut:
+async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOut:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="email_taken")
@@ -92,7 +107,8 @@ async def register(payload: RegisterRequest, db: DB) -> UserOut:
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, db: DB) -> TokenResponse:
+async def login(payload: LoginRequest, request: Request, db: DB) -> TokenResponse:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     res = await db.execute(select(User).where(User.email == payload.email))
     user = res.scalar_one_or_none()
     if user is None or not user.hashed_password or not verify_password(
@@ -121,7 +137,8 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
 
 
 @router.post("/otp/request", response_model=OTPRequestOut)
-async def request_otp(payload: OTPRequest) -> OTPRequestOut:
+async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
     if payload.phone:

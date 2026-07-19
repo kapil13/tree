@@ -15,11 +15,13 @@ class RegisterRequest(BaseModel):
     organization_name: str | None = None
     phone: str | None = None
     program_codes: list[str] = Field(default_factory=list)
+    captcha_token: str | None = None
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    captcha_token: str | None = None
 
 
 class RefreshRequest(BaseModel):
@@ -36,6 +38,7 @@ class TokenResponse(BaseModel):
 class OTPRequest(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
+    captcha_token: str | None = None
 
 
 class OTPRequestOut(BaseModel):
@@ -49,6 +52,12 @@ class OTPVerify(BaseModel):
     phone: str | None = None
     code: str = Field(min_length=4, max_length=8)
     full_name: str | None = Field(default=None, min_length=2, max_length=255)
+
+
+class CaptchaConfigOut(BaseModel):
+    enabled: bool
+    provider: str = "turnstile"
+    site_key: str | None = None
 
 
 class UserOut(BaseModel):
