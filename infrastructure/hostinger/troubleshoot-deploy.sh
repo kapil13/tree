@@ -30,7 +30,18 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic
   echo "(backend not running — check logs above for alembic/import errors)"
 
 echo ""
+echo "==> Liveness probe (inside container)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend curl -fsS http://localhost:8000/health/live 2>&1 || \
+  echo "(backend not running or curl failed)"
+
+echo ""
+echo "==> Memory limits"
+docker inspect byot-prod-backend-1 --format 'Backend memory limit: {{.HostConfig.Memory}}' 2>/dev/null || true
+
+echo ""
 echo "==> Common fixes"
-echo "  1. alembic duplicate table: docker compose exec backend alembic stamp head  # only if table exists"
-echo "  2. rebuild: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d --build backend"
-echo "  3. manual migrate: docker compose exec backend alembic upgrade head"
+echo "  1. OOM / unhealthy: rebuild slim API image (no TensorFlow on backend):"
+echo "     docker compose -f $COMPOSE_FILE --env-file $ENV_FILE build --no-cache backend worker"
+echo "  2. alembic duplicate table: check logs before stamping head"
+echo "  3. rebuild: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d --build backend"
+echo "  4. manual migrate: docker compose exec backend alembic upgrade head"

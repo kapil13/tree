@@ -40,17 +40,11 @@ done
 echo "[byot] postgres is ready"
 
 echo "[byot] running alembic migrations..."
-if ! alembic upgrade head; then
+if ! alembic upgrade head 2>&1; then
   echo "[byot] ERROR: alembic upgrade failed"
   echo "[byot] Current revision:"
   alembic current 2>&1 || true
   echo "[byot] On VPS run: infrastructure/hostinger/troubleshoot-deploy.sh"
-  exit 1
-fi
-
-echo "[byot] verifying app import..."
-if ! python -c "from app.main import app"; then
-  echo "[byot] ERROR: failed to import app.main — see traceback above."
   exit 1
 fi
 

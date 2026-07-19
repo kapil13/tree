@@ -86,12 +86,15 @@ services:
     build:
       context: ../../backend
       dockerfile: Dockerfile
+      args:
+        INSTALL_BIOACOUSTIC: "0"
     restart: unless-stopped
     env_file:
       - .env.production
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      DB_POOL_SIZE: "8"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       REDIS_URL: redis://redis:6379/0
@@ -115,20 +118,22 @@ services:
     expose:
       - "8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
       interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 8
+      start_period: 120s
     deploy:
       resources:
         limits:
-          memory: 1536M
+          memory: 2048M
 
   worker:
     build:
       context: ../../backend
       dockerfile: Dockerfile
+      args:
+        INSTALL_BIOACOUSTIC: "1"
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
@@ -171,6 +176,8 @@ services:
     build:
       context: ../../backend
       dockerfile: Dockerfile
+      args:
+        INSTALL_BIOACOUSTIC: "0"
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro

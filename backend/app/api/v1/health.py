@@ -7,9 +7,16 @@ from fastapi import APIRouter
 from app import __version__
 from app.api.v1.deps import DB
 from app.core.config import settings
-from app.schemas.common import HealthResponse, WorkerHealthResponse
+from app.schemas.common import HealthResponse, LivenessResponse, WorkerHealthResponse
 
 router = APIRouter(prefix="/health", tags=["meta"])
+
+
+@router.get("/live", response_model=LivenessResponse)
+async def api_health_live() -> LivenessResponse:
+    from app import __version__
+
+    return LivenessResponse(status="ok", version=__version__)
 
 
 @router.get("", response_model=HealthResponse)
