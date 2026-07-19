@@ -15,7 +15,8 @@ from app import __version__
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
-from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse
+from app.api.v1.deps import DB
+from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse, WorkerHealthResponse
 
 configure_logging()
 log = get_logger("byot.main")
@@ -91,6 +92,13 @@ async def validation_exc(request: Request, exc: RequestValidationError) -> JSONR
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
 async def health() -> HealthResponse:
     return HealthResponse(status="ok", version=__version__, env=settings.app_env)
+
+
+@app.get("/health/workers", response_model=WorkerHealthResponse, tags=["meta"])
+async def worker_health(db: DB) -> WorkerHealthResponse:
+    from app.services.monitoring.worker_health import build_worker_health
+
+    return WorkerHealthResponse.model_validate(await build_worker_health(db))
 
 
 @app.get("/", include_in_schema=False)

@@ -66,15 +66,22 @@ class ProjectDetailScreen extends ConsumerWidget {
                       final m = wa as Map<String, dynamic>;
                       final id = m['id'] as String;
                       final density = _densityLabel(m, segment);
+                      final lastScan = m['last_satellite_at'] as String?;
+                      final scanLabel = _satelliteLabel(lastScan);
                       return Card(
                         child: ListTile(
                           title: Text(m['name'] as String? ?? 'Work area'),
                           subtitle: Text(
                             '${m['geometry_type']} · ${m['tree_count'] ?? 0} trees'
                             '${m['segment_code'] != null ? ' · block ${m['segment_code']}' : ''}'
-                            '${density.isNotEmpty ? ' · $density' : ''}',
+                            '${density.isNotEmpty ? ' · $density' : ''}'
+                            '${scanLabel.isNotEmpty ? '\n$scanLabel' : ''}',
                           ),
-                          trailing: const Icon(Icons.eco_outlined),
+                          trailing: Icon(
+                            lastScan != null ? Icons.satellite_alt : Icons.satellite_alt_outlined,
+                            color: _satelliteIconColor(lastScan),
+                          ),
+                          isThreeLine: scanLabel.isNotEmpty,
                           onTap: () => context.push(
                             '/trees/new?project=$projectId&work_area=$id',
                           ),
@@ -97,6 +104,25 @@ class ProjectDetailScreen extends ConsumerWidget {
     final trees = (wa['tree_count'] as num?)?.toInt() ?? 0;
     if (area == null || area <= 0) return '';
     return '${(trees / area).toStringAsFixed(0)} trees/ha';
+  }
+
+  String _satelliteLabel(String? lastScanIso) {
+    if (lastScanIso == null) return 'Satellite: no scan yet';
+    final parsed = DateTime.tryParse(lastScanIso);
+    if (parsed == null) return 'Satellite: scanned';
+    final days = DateTime.now().toUtc().difference(parsed.toUtc()).inDays;
+    if (days > 35) return 'Satellite: stale ($days days ago)';
+    if (days == 0) return 'Satellite: scanned today';
+    return 'Satellite: $days days ago';
+  }
+
+  Color? _satelliteIconColor(String? lastScanIso) {
+    if (lastScanIso == null) return Colors.grey;
+    final parsed = DateTime.tryParse(lastScanIso);
+    if (parsed == null) return Colors.green;
+    final days = DateTime.now().toUtc().difference(parsed.toUtc()).inDays;
+    if (days > 35) return Colors.orange.shade800;
+    return Colors.green.shade700;
   }
 
   Widget _chip(String label, String value, {bool warn = false}) {

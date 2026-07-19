@@ -735,6 +735,69 @@ export const plantingProjects = {
       }>("/v1/planting-projects/field-ops-summary")
     ).data;
   },
+  async monitoringSummary() {
+    return (
+      await api.get<{
+        project_count: number;
+        tree_count: number;
+        open_violations: number;
+        survival_due: number;
+        by_segment: Record<string, number>;
+        projects: Array<{
+          id: string;
+          code: string;
+          name: string;
+          segment: string;
+          compliance_mode: string;
+          status: string;
+          open_violations: number;
+          survival_due: number;
+          tree_count: number;
+          target_tree_count: number | null;
+          progress_pct: number | null;
+        }>;
+        recent_violations: Array<{
+          id: string;
+          project_id: string;
+          project_code: string;
+          project_name: string;
+          segment: string;
+          violation_type: string;
+          severity: string;
+          message: string;
+          tree_id: string | null;
+          created_at: string | null;
+        }>;
+        stale_satellite_work_areas: number;
+        work_area_monitoring: Array<{
+          id: string;
+          name: string;
+          project_id: string | null;
+          project_name: string | null;
+          segment: string | null;
+          last_satellite_at: string | null;
+          days_since_scan: number | null;
+          latest_ndvi: number | null;
+          tree_count: number | null;
+        }>;
+        unread_alerts_by_kind: Record<string, number>;
+        recent_jobs: Array<{
+          job_name: string;
+          status: string;
+          result: Record<string, unknown>;
+          error: string | null;
+          finished_at: string | null;
+        }>;
+      }>("/v1/planting-projects/monitoring-summary")
+    ).data;
+  },
+  async triggerSatelliteScan(projectId: string) {
+    return (
+      await api.post<{ scanned: number; failed: number }>(
+        `/v1/planting-projects/${projectId}/satellite-scan`,
+      )
+    ).data;
+  },
   async listMembers(projectId: string) {
     return (
       await api.get<

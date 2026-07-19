@@ -89,9 +89,14 @@ class NotificationsScreen extends ConsumerWidget {
                           }
                         }
                       }
-                      final treeId = a['tree_id'] as String?;
-                      if (treeId != null && context.mounted) {
+                      if (!context.mounted) return;
+                      final payload = a['payload'] as Map<String, dynamic>?;
+                      final treeId = a['tree_id'] as String? ?? payload?['tree_id'] as String?;
+                      final projectId = payload?['project_id'] as String?;
+                      if (treeId != null) {
                         context.push('/trees/$treeId');
+                      } else if (projectId != null) {
+                        context.push('/projects/$projectId');
                       }
                     },
                   ),

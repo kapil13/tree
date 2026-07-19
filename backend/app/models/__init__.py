@@ -16,6 +16,7 @@ from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
+from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.user import User
 from app.models.project_member import ProjectMember
 
@@ -41,4 +42,5 @@ __all__ = [
     "TreeImage",
     "User",
     "ProjectMember",
+    "MonitoringJobRun",
 ]
