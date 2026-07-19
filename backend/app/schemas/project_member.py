@@ -37,3 +37,10 @@ class FieldOpsSummaryOut(BaseModel):
     by_segment: dict[str, int]
     projects: list[dict]
     recent_violations: list[dict]
+
+
+class MonitoringSummaryOut(FieldOpsSummaryOut):
+    stale_satellite_work_areas: int
+    work_area_monitoring: list[dict]
+    unread_alerts_by_kind: dict[str, int]
+    recent_jobs: list[dict]

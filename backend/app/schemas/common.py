@@ -32,5 +32,12 @@ class HealthResponse(BaseModel):
     db: str = "unknown"
 
 
+class WorkerHealthResponse(BaseModel):
+    status: str
+    celery: dict
+    recent_jobs: list[dict]
+    failed_job_count: int
+
+
 class IDResponse(BaseModel):
     id: str = Field(..., description="Resource identifier")

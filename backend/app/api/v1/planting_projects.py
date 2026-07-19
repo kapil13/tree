@@ -18,7 +18,7 @@ from app.schemas.tree import TreeListItem
 from app.schemas.plantation_fence import GeoJsonPolygon
 from app.models.project_member import ProjectMember
 from app.models.user import User
-from app.schemas.project_member import FieldOpsSummaryOut, ProjectMemberCreate, ProjectMemberOut
+from app.schemas.project_member import FieldOpsSummaryOut, MonitoringSummaryOut, ProjectMemberCreate, ProjectMemberOut
 from app.schemas.planting_project import (
     ComplianceCheckOut,
     ComplianceCheckRequest,
@@ -47,6 +47,8 @@ from app.services.planting_projects.constants import (
     SEGMENT_LABELS,
 )
 from app.services.planting_projects.field_ops import build_field_ops_summary
+from app.services.monitoring.summary import build_monitoring_summary
+from app.services.monitoring.satellite_sweep import run_project_satellite_scan
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
@@ -150,9 +152,28 @@ async def get_standard_template(code: str) -> StandardTemplateOut:
     return StandardTemplateOut.model_validate(tpl)
 
 
+@router.get("/monitoring-summary", response_model=MonitoringSummaryOut)
+async def monitoring_summary(user: CurrentUser, db: DB) -> MonitoringSummaryOut:
+    return MonitoringSummaryOut.model_validate(await build_monitoring_summary(db, user))
+
+
 @router.get("/field-ops-summary", response_model=FieldOpsSummaryOut)
 async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
     return FieldOpsSummaryOut.model_validate(await build_field_ops_summary(db, user))
+
+
+@router.post("/{project_id}/satellite-scan")
+async def trigger_project_satellite_scan(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    return await run_project_satellite_scan(db, project_id)
 
 
 @router.get("", response_model=Page[PlantingProjectOut])
