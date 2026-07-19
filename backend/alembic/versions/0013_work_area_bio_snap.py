@@ -11,13 +11,16 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0013_work_area_biodiversity_snapshots"
+revision = "0013_work_area_bio_snap"
 down_revision = "0012_monitoring_job_runs"
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
+    # Alembic default version_num is VARCHAR(32); allow longer revision ids going forward.
+    op.execute("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(128)")
+
     op.create_table(
         "work_area_biodiversity_snapshots",
         sa.Column(
