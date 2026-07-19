@@ -1219,10 +1219,11 @@ export type IntelligenceSummary = {
 };
 
 export const intelligence = {
-  async summary(siteLimit = 15) {
+  async summary(siteLimit = 15, options?: { fast?: boolean }) {
     return (
       await api.get<IntelligenceSummary>("/v1/intelligence/summary", {
-        params: { site_limit: siteLimit },
+        params: { site_limit: siteLimit, fast: options?.fast ?? true },
+        timeout: 45_000,
       })
     ).data;
   },

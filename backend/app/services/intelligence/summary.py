@@ -23,10 +23,12 @@ async def build_intelligence_summary(
     user,
     *,
     site_limit: int = 15,
+    fast: bool = True,
 ) -> dict[str, Any]:
+    threat_limit = min(site_limit, 6 if fast else site_limit)
     field_ops = await build_field_ops_summary(db, user)
-    threat = await build_portfolio_threat_watch(db, user=user, limit=site_limit)
-    integrations = await build_integrations_health()
+    threat = await build_portfolio_threat_watch(db, user=user, limit=threat_limit)
+    integrations = await build_integrations_health(ping_remote=not fast)
 
     pest_hotspots = [
         {
@@ -104,7 +106,10 @@ async def build_intelligence_summary(
     threat_summary = threat.get("summary", {})
 
     fusion = await build_portfolio_satellite_fusion(
-        db, user, site_limit=min(site_limit, 8), live_bhoonidhi_limit=3
+        db,
+        user,
+        site_limit=min(site_limit, 8 if fast else site_limit),
+        live_bhoonidhi_limit=0 if fast else 3,
     )
 
     return {

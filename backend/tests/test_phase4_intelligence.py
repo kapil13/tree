@@ -53,12 +53,19 @@ async def test_build_integrations_health_structure():
         patch("app.services.intelligence.integrations.has_sentinel_credentials", return_value=False),
         patch("app.services.intelligence.integrations.has_bhoonidhi_credentials", return_value=False),
     ):
-        result = await build_integrations_health()
+        result = await build_integrations_health(ping_remote=True)
 
     assert result["status"] == "ok"
     assert "open_meteo" in result["integrations"]
     assert "gbif" in result["integrations"]
     assert result["integrations"]["sentinel_hub"]["status"] == "not_configured"
+
+
+@pytest.mark.asyncio
+async def test_build_integrations_health_fast_skips_ping():
+    result = await build_integrations_health(ping_remote=False)
+    assert result["integrations"]["open_meteo"]["status"] == "skipped"
+    assert result["status"] == "ok"
 
 
 def test_portfolio_context_includes_intelligence_field():

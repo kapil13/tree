@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bug,
   CloudRain,
   Globe,
   Leaf,
+  RefreshCw,
   Satellite,
   ShieldAlert,
 } from "lucide-react";
@@ -29,20 +31,51 @@ const INTEGRATION_LABEL: Record<string, string> = {
 };
 
 export default function IntelligencePage() {
-  const { data, isLoading, error } = useQuery({
+  const [slowLoad, setSlowLoad] = useState(false);
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["intelligence-summary"],
-    queryFn: () => intelligenceApi.summary(),
+    queryFn: () => intelligenceApi.summary(12, { fast: true }),
+    retry: 1,
+    staleTime: 60_000,
   });
 
-  if (isLoading) {
-    return <p className="text-sm text-stone-500">Loading intelligence hub…</p>;
+  useEffect(() => {
+    if (!isLoading && !isFetching) {
+      setSlowLoad(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSlowLoad(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, isFetching]);
+
+  if (isLoading || (isFetching && !data)) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-stone-500">Loading intelligence hub…</p>
+        {slowLoad && (
+          <p className="text-xs text-stone-400">
+            Fetching weather and threat data for your work areas — this can take up to 30 seconds.
+          </p>
+        )}
+      </div>
+    );
   }
 
   if (error || !data) {
     return (
-      <p className="text-sm text-red-700">
-        Could not load intelligence summary. Check API connectivity and try again.
-      </p>
+      <div className="space-y-3">
+        <p className="text-sm text-red-700">
+          Could not load intelligence summary. The API may still be starting after deploy.
+        </p>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50"
+          onClick={() => refetch()}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </button>
+      </div>
     );
   }
 
@@ -58,6 +91,9 @@ export default function IntelligencePage() {
         <p className="mt-1 text-sm text-stone-600">
           Weather, pest, threat watch, and biodiversity signals fused across your portfolio.
         </p>
+        {isFetching && (
+          <p className="mt-1 text-xs text-stone-400">Refreshing…</p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
