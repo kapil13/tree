@@ -32,6 +32,11 @@ class HealthResponse(BaseModel):
     db: str = "unknown"
 
 
+class LivenessResponse(BaseModel):
+    status: str = "ok"
+    version: str
+
+
 class WorkerHealthResponse(BaseModel):
     status: str
     celery: dict

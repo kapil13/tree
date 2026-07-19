@@ -35,7 +35,7 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
 echo "==> Waiting for API health..."
 TRIES=0
-until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend curl -fsS http://localhost:8000/health >/dev/null 2>&1; do
+until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend curl -fsS http://localhost:8000/health/live >/dev/null 2>&1; do
   TRIES=$((TRIES + 1))
   if [[ $TRIES -ge 40 ]]; then
     echo "API did not become healthy. Check: docker compose -f $COMPOSE_FILE logs backend"

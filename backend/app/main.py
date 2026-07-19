@@ -16,7 +16,13 @@ from app.api.v1 import api_router
 from app.api.v1.deps import DB
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
-from app.schemas.common import ErrorBody, ErrorResponse, HealthResponse, WorkerHealthResponse
+from app.schemas.common import (
+    ErrorBody,
+    ErrorResponse,
+    HealthResponse,
+    LivenessResponse,
+    WorkerHealthResponse,
+)
 
 configure_logging()
 log = get_logger("byot.main")
@@ -87,6 +93,12 @@ async def validation_exc(request: Request, exc: RequestValidationError) -> JSONR
 # ---------------------------------------------------------------------------
 # Health & root
 # ---------------------------------------------------------------------------
+
+
+@app.get("/health/live", response_model=LivenessResponse, tags=["meta"])
+async def health_live() -> LivenessResponse:
+    """Liveness probe — no DB; used by Docker healthcheck."""
+    return LivenessResponse(status="ok", version=__version__)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
