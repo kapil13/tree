@@ -241,6 +241,12 @@ export type TreeDetail = {
   metadata: Record<string, unknown>;
   images: TreeImage[];
   created_at: string;
+  compliance?: {
+    passed: boolean;
+    mode: string;
+    chainage_km?: number | null;
+    issues: { violation_type: string; severity: string; message: string }[];
+  } | null;
 };
 
 export type TreeAnalysis = {
@@ -634,7 +640,16 @@ export const plantingProjects = {
   async updateWorkArea(
     projectId: string,
     workAreaId: string,
-    payload: { name?: string; segment_code?: string; chainage_start_km?: number; chainage_end_km?: number },
+    payload: {
+      name?: string;
+      segment_code?: string;
+      chainage_start_km?: number;
+      chainage_end_km?: number;
+      geometry_type?: "polygon" | "corridor";
+      boundary?: GeoJsonPolygon;
+      centerline?: GeoJsonLineString;
+      buffer_m?: number;
+    },
   ) {
     return (
       await api.patch<WorkArea>(
@@ -645,6 +660,13 @@ export const plantingProjects = {
   },
   async deleteWorkArea(projectId: string, workAreaId: string) {
     await api.delete(`/v1/planting-projects/${projectId}/work-areas/${workAreaId}`);
+  },
+  async exportMrv(projectId: string, format: "pdf" | "xlsx" = "pdf") {
+    const response = await api.get(`/v1/planting-projects/${projectId}/mrv-export`, {
+      params: { format },
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
   async projectTrees(
     projectId: string,

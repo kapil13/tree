@@ -328,3 +328,201 @@ def render_bioacoustic_report_xlsx(ecosystem: dict[str, Any]) -> bytes:
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+def render_compliance_mrv_pdf(ctx: dict[str, Any]) -> bytes:
+    """Project-level MRV / compliance audit PDF."""
+    buf = io.BytesIO()
+    project = ctx["project"]
+    summary = ctx["summary"]
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        title=f"MRV Compliance - {project['name']}",
+        author="Aranyix BYOT",
+        leftMargin=18 * mm,
+        rightMargin=18 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm,
+    )
+    styles = getSampleStyleSheet()
+    h1 = styles["Heading1"]
+    h1.textColor = colors.HexColor("#15803D")
+    h2 = styles["Heading2"]
+    body = styles["BodyText"]
+
+    story: list = []
+    story.append(Paragraph("MRV Compliance Report", h1))
+    story.append(
+        Paragraph(
+            f"<b>{project['name']}</b> ({project['code']}) · "
+            f"{project['segment'].upper()} · mode: {project['compliance_mode']} · "
+            f"generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            body,
+        )
+    )
+    if project.get("standard_name"):
+        story.append(
+            Paragraph(
+                f"Standard: {project['standard_name']} ({project.get('standard_template') or 'custom'})",
+                body,
+            )
+        )
+    story.append(Spacer(1, 6 * mm))
+
+    kpi_rows = [
+        ["Work areas", summary.get("work_area_count", 0)],
+        ["Trees registered", summary.get("tree_count", 0)],
+        ["Open violations", summary.get("open_violations", 0)],
+        ["Resolved violations", summary.get("resolved_violations", 0)],
+        ["Native species %", summary.get("native_species_pct") or "—"],
+    ]
+    t = Table(kpi_rows, colWidths=[80 * mm, 80 * mm])
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#DCFCE7")),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#15803D")),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ]
+        )
+    )
+    story.append(t)
+    story.append(Spacer(1, 6 * mm))
+
+    rules = ctx.get("rules_summary") or {}
+    if any(rules.values()):
+        story.append(Paragraph("Active compliance rules", h2))
+        rule_rows = [[k.replace("_", " "), str(v)] for k, v in rules.items() if v is not None]
+        if rule_rows:
+            story.append(Table(rule_rows, colWidths=[80 * mm, 80 * mm]))
+            story.append(Spacer(1, 6 * mm))
+
+    survival = summary.get("survival_counts") or {}
+    if survival:
+        story.append(Paragraph("Survival survey status", h2))
+        story.append(Table([[s, c] for s, c in sorted(survival.items())], colWidths=[80 * mm, 80 * mm]))
+        story.append(Spacer(1, 6 * mm))
+
+    story.append(Paragraph("Work areas", h2))
+    wa_table = [["Name", "Type", "Area (ha)", "Trees", "Chainage"]]
+    for w in ctx.get("work_areas") or []:
+        chain = ""
+        if w.get("chainage_start_km") is not None:
+            chain = f"{w['chainage_start_km']}–{w.get('chainage_end_km', '')} km"
+        wa_table.append(
+            [
+                w.get("name", ""),
+                w.get("geometry_type", ""),
+                str(w.get("area_ha") or "—"),
+                str(w.get("tree_count", 0)),
+                chain,
+            ]
+        )
+    story.append(Table(wa_table, repeatRows=1))
+    story.append(Spacer(1, 6 * mm))
+
+    story.append(Paragraph("Compliance violations (recent)", h2))
+    v_table = [["Severity", "Type", "Message", "Resolved"]]
+    for v in ctx.get("violations") or []:
+        v_table.append(
+            [
+                v.get("severity", ""),
+                v.get("violation_type", ""),
+                (v.get("message") or "")[:80],
+                "yes" if v.get("resolved") else "no",
+            ]
+        )
+    if len(v_table) == 1:
+        v_table.append(["—", "—", "No violations recorded", "—"])
+    story.append(Table(v_table, repeatRows=1))
+    story.append(Spacer(1, 6 * mm))
+
+    story.append(Paragraph("Tree registry (sample)", h2))
+    tree_table = [["Code", "Species", "Health", "Survival", "Chainage"]]
+    for tr in (ctx.get("trees") or [])[:40]:
+        tree_table.append(
+            [
+                tr.get("public_code", ""),
+                tr.get("species", ""),
+                tr.get("health", ""),
+                tr.get("survival_status", ""),
+                str(tr.get("chainage_km") or "—"),
+            ]
+        )
+    story.append(Table(tree_table, repeatRows=1))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+def render_compliance_mrv_xlsx(ctx: dict[str, Any]) -> bytes:
+    wb = Workbook()
+    project = ctx["project"]
+    summary = ctx["summary"]
+
+    ws = wb.active
+    ws.title = "Summary"
+    ws.append(["field", "value"])
+    ws.append(["project_code", project.get("code")])
+    ws.append(["project_name", project.get("name")])
+    ws.append(["segment", project.get("segment")])
+    ws.append(["compliance_mode", project.get("compliance_mode")])
+    ws.append(["trees", summary.get("tree_count")])
+    ws.append(["open_violations", summary.get("open_violations")])
+    ws.append(["resolved_violations", summary.get("resolved_violations")])
+    ws.append(["native_species_pct", summary.get("native_species_pct")])
+
+    ws2 = wb.create_sheet("Work areas")
+    ws2.append(
+        ["name", "geometry_type", "area_ha", "tree_count", "segment_code", "chainage_start_km", "chainage_end_km"]
+    )
+    for w in ctx.get("work_areas") or []:
+        ws2.append(
+            [
+                w.get("name"),
+                w.get("geometry_type"),
+                w.get("area_ha"),
+                w.get("tree_count"),
+                w.get("segment_code"),
+                w.get("chainage_start_km"),
+                w.get("chainage_end_km"),
+            ]
+        )
+
+    ws3 = wb.create_sheet("Trees")
+    ws3.append(
+        ["public_code", "species", "health", "survival_status", "chainage_km", "lat", "lon", "planted_at", "last_geotag_at"]
+    )
+    for tr in ctx.get("trees") or []:
+        ws3.append(
+            [
+                tr.get("public_code"),
+                tr.get("species"),
+                tr.get("health"),
+                tr.get("survival_status"),
+                tr.get("chainage_km"),
+                tr.get("lat"),
+                tr.get("lon"),
+                tr.get("planted_at"),
+                tr.get("last_geotag_at"),
+            ]
+        )
+
+    ws4 = wb.create_sheet("Violations")
+    ws4.append(["severity", "violation_type", "message", "tree_id", "resolved", "created_at"])
+    for v in ctx.get("violations") or []:
+        ws4.append(
+            [
+                v.get("severity"),
+                v.get("violation_type"),
+                v.get("message"),
+                v.get("tree_id"),
+                v.get("resolved"),
+                v.get("created_at"),
+            ]
+        )
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

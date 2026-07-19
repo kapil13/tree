@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   APIProvider,
   Map,
@@ -41,6 +42,10 @@ function geoJsonToPaths(boundary: GeoJsonPolygon): google.maps.LatLngLiteral[] {
   return open.map(([lng, lat]) => ({ lat, lng }));
 }
 
+function lineGeoJsonToPaths(line: GeoJsonLineString): google.maps.LatLngLiteral[] {
+  return line.coordinates.map(([lng, lat]) => ({ lat, lng }));
+}
+
 function DrawingLayer({
   enabled,
   onAddPoint,
@@ -74,6 +79,7 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
   const qc = useQueryClient();
   const [geometryType, setGeometryType] = useState<"polygon" | "corridor">("polygon");
   const [drawMode, setDrawMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draftPaths, setDraftPaths] = useState<google.maps.LatLngLiteral[]>([]);
   const [pendingName, setPendingName] = useState("");
   const [bufferM, setBufferM] = useState("15");
@@ -81,6 +87,10 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
   const [chainageStart, setChainageStart] = useState("");
   const [chainageEnd, setChainageEnd] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const selectedArea = workAreas.find((a) => a.id === selectedId) ?? null;
+  const isEditing = Boolean(editingId);
 
   const center = useMemo(() => {
     if (workAreas.length) {
@@ -94,6 +104,23 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
     }
     return DEFAULT_CENTER;
   }, [workAreas]);
+
+  const invalidate = async () => {
+    await qc.invalidateQueries({ queryKey: ["project-work-areas", projectId] });
+    await qc.invalidateQueries({ queryKey: ["planting-project", projectId] });
+  };
+
+  const resetForm = () => {
+    setDraftPaths([]);
+    setPendingName("");
+    setSegmentCode("");
+    setChainageStart("");
+    setChainageEnd("");
+    setBufferM("15");
+    setDrawMode(false);
+    setEditingId(null);
+    setFormError(null);
+  };
 
   const createArea = useMutation({
     mutationFn: () => {
@@ -122,18 +149,80 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
       });
     },
     onSuccess: async (area) => {
-      setDraftPaths([]);
-      setPendingName("");
-      setDrawMode(false);
+      resetForm();
       setSelectedId(area.id);
-      await qc.invalidateQueries({ queryKey: ["project-work-areas", projectId] });
-      await qc.invalidateQueries({ queryKey: ["planting-project", projectId] });
+      await invalidate();
     },
+    onError: (err) => setFormError(errorMessage(err)),
+  });
+
+  const updateArea = useMutation({
+    mutationFn: () => {
+      if (!editingId) throw new Error("No work area selected");
+      const name = pendingName.trim();
+      if (!name) throw new Error("Name required");
+      const payload: Parameters<typeof plantingProjects.updateWorkArea>[2] = {
+        name,
+        segment_code: segmentCode || undefined,
+        chainage_start_km: chainageStart ? Number(chainageStart) : undefined,
+        chainage_end_km: chainageEnd ? Number(chainageEnd) : undefined,
+      };
+      if (draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) {
+        payload.geometry_type = geometryType;
+        if (geometryType === "polygon") {
+          payload.boundary = pathsToGeoJson(draftPaths);
+        } else {
+          payload.centerline = lineToGeoJson(draftPaths);
+          payload.buffer_m = Number(bufferM) || 15;
+        }
+      }
+      return plantingProjects.updateWorkArea(projectId, editingId, payload);
+    },
+    onSuccess: async (area) => {
+      resetForm();
+      setSelectedId(area.id);
+      await invalidate();
+    },
+    onError: (err) => setFormError(errorMessage(err)),
+  });
+
+  const deleteArea = useMutation({
+    mutationFn: (workAreaId: string) => plantingProjects.deleteWorkArea(projectId, workAreaId),
+    onSuccess: async () => {
+      resetForm();
+      setSelectedId(null);
+      await invalidate();
+    },
+    onError: (err) => setFormError(errorMessage(err)),
   });
 
   const handleAddPoint = useCallback((pt: google.maps.LatLngLiteral) => {
     setDraftPaths((prev) => [...prev, pt]);
   }, []);
+
+  function startEdit(area: WorkArea) {
+    setEditingId(area.id);
+    setSelectedId(area.id);
+    setGeometryType(area.geometry_type === "corridor" ? "corridor" : "polygon");
+    setPendingName(area.name);
+    setSegmentCode(area.segment_code || "");
+    setChainageStart(area.chainage_start_km != null ? String(area.chainage_start_km) : "");
+    setChainageEnd(area.chainage_end_km != null ? String(area.chainage_end_km) : "");
+    setBufferM(area.buffer_m != null ? String(area.buffer_m) : "15");
+    if (area.geometry_type === "corridor" && area.centerline) {
+      setDraftPaths(lineGeoJsonToPaths(area.centerline));
+    } else {
+      setDraftPaths(geoJsonToPaths(area.boundary));
+    }
+    setDrawMode(false);
+    setFormError(null);
+  }
+
+  function startRedraw() {
+    setDrawMode(true);
+    setDraftPaths([]);
+    setFormError(null);
+  }
 
   if (!apiKey) {
     return (
@@ -148,39 +237,45 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
       ? estimatePolygonAreaHa(draftPaths)
       : 0;
 
+  const showSaveForm =
+    (drawMode && draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) ||
+    (isEditing && pendingName.trim());
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          className="input w-auto text-sm"
-          value={geometryType}
-          onChange={(e) => {
-            setGeometryType(e.target.value as "polygon" | "corridor");
-            setDraftPaths([]);
-          }}
-        >
-          <option value="polygon">Polygon (block / green belt)</option>
-          <option value="corridor">Corridor (highway / canal line)</option>
-        </select>
-        <button
-          type="button"
-          className={drawMode ? "btn-primary" : "btn-secondary"}
-          onClick={() => {
-            setDrawMode((v) => !v);
-            setDraftPaths([]);
-          }}
-        >
-          {drawMode ? "Click map to add points" : "Draw work area"}
-        </button>
+        {!isEditing ? (
+          <>
+            <select
+              className="input w-auto text-sm"
+              value={geometryType}
+              onChange={(e) => {
+                setGeometryType(e.target.value as "polygon" | "corridor");
+                setDraftPaths([]);
+              }}
+            >
+              <option value="polygon">Polygon (block / green belt)</option>
+              <option value="corridor">Corridor (highway / canal line)</option>
+            </select>
+            <button
+              type="button"
+              className={drawMode ? "btn-primary" : "btn-secondary"}
+              onClick={() => {
+                setDrawMode((v) => !v);
+                setDraftPaths([]);
+                setEditingId(null);
+              }}
+            >
+              {drawMode ? "Click map to add points" : "Draw work area"}
+            </button>
+          </>
+        ) : (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+            Editing: {pendingName}
+          </span>
+        )}
         {drawMode && (
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => {
-              setDraftPaths([]);
-              setDrawMode(false);
-            }}
-          >
+          <button type="button" className="btn-secondary" onClick={resetForm}>
             Cancel
           </button>
         )}
@@ -194,8 +289,41 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
         )}
       </div>
 
-      {(drawMode && draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) ||
-      (!drawMode && draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) ? (
+      {selectedArea && !drawMode && !isEditing && (
+        <div className="card flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-medium">{selectedArea.name}</p>
+            <p className="text-xs text-stone-500">
+              {selectedArea.geometry_type} ·{" "}
+              {selectedArea.area_ha != null ? formatAreaHa(selectedArea.area_ha) : "—"} ·{" "}
+              {selectedArea.tree_count} trees
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" className="btn-secondary text-xs" onClick={() => startEdit(selectedArea)}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </button>
+            {selectedArea.tree_count === 0 && (
+              <button
+                type="button"
+                className="btn-secondary text-xs text-rose-700"
+                disabled={deleteArea.isPending}
+                onClick={() => {
+                  if (window.confirm(`Delete work area "${selectedArea.name}"?`)) {
+                    deleteArea.mutate(selectedArea.id);
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showSaveForm && (
         <div className="card grid gap-3 md:grid-cols-2">
           <div>
             <label className="kpi-label">Work area name</label>
@@ -246,21 +374,35 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
               onChange={(e) => setChainageEnd(e.target.value)}
             />
           </div>
-          <div className="flex items-end md:col-span-2">
+          {isEditing && (
+            <div className="flex items-end md:col-span-2">
+              <button type="button" className="btn-secondary" onClick={startRedraw}>
+                Redraw boundary on map
+              </button>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2 md:col-span-2">
             <button
               type="button"
               className="btn-primary"
-              disabled={!pendingName.trim() || createArea.isPending}
-              onClick={() => createArea.mutate()}
+              disabled={!pendingName.trim() || createArea.isPending || updateArea.isPending}
+              onClick={() => (isEditing ? updateArea.mutate() : createArea.mutate())}
             >
-              {createArea.isPending ? "Saving…" : "Save work area"}
+              {createArea.isPending || updateArea.isPending
+                ? "Saving…"
+                : isEditing
+                  ? "Save changes"
+                  : "Save work area"}
             </button>
+            {isEditing && (
+              <button type="button" className="btn-secondary" onClick={resetForm}>
+                Cancel edit
+              </button>
+            )}
           </div>
-          {createArea.error && (
-            <p className="text-sm text-rose-700 md:col-span-2">{errorMessage(createArea.error)}</p>
-          )}
+          {formError && <p className="text-sm text-rose-700 md:col-span-2">{formError}</p>}
         </div>
-      ) : null}
+      )}
 
       <div className="overflow-hidden rounded-xl border border-stone-200" style={{ height }}>
         <APIProvider apiKey={apiKey}>
@@ -289,16 +431,31 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
             {workAreas.map((area) => {
               const paths = geoJsonToPaths(area.boundary);
               const active = area.id === selectedId;
+              const centerlinePaths =
+                area.geometry_type === "corridor" && area.centerline
+                  ? lineGeoJsonToPaths(area.centerline)
+                  : null;
               return (
-                <Polygon
-                  key={area.id}
-                  paths={paths}
-                  fillColor={active ? "#16a34a" : "#22c55e"}
-                  fillOpacity={active ? 0.35 : 0.2}
-                  strokeColor={active ? "#14532d" : "#15803d"}
-                  strokeWeight={active ? 3 : 2}
-                  onClick={() => setSelectedId(area.id)}
-                />
+                <span key={area.id}>
+                  <Polygon
+                    paths={paths}
+                    fillColor={active ? "#16a34a" : "#22c55e"}
+                    fillOpacity={active ? 0.35 : 0.2}
+                    strokeColor={active ? "#14532d" : "#15803d"}
+                    strokeWeight={active ? 3 : 2}
+                    onClick={() => {
+                      setSelectedId(area.id);
+                      if (!isEditing) setFormError(null);
+                    }}
+                  />
+                  {centerlinePaths && (
+                    <Polyline
+                      path={centerlinePaths}
+                      strokeColor={active ? "#f59e0b" : "#d97706"}
+                      strokeWeight={active ? 4 : 2}
+                    />
+                  )}
+                </span>
               );
             })}
           </Map>
@@ -314,7 +471,11 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
                 selectedId === area.id ? "border-forest-500 bg-forest-50" : "border-stone-200"
               }`}
             >
-              <button type="button" className="w-full text-left" onClick={() => setSelectedId(area.id)}>
+              <button
+                type="button"
+                className="w-full text-left"
+                onClick={() => setSelectedId(area.id)}
+              >
                 <div className="font-medium">{area.name}</div>
                 <div className="text-xs text-stone-500">
                   {area.geometry_type} · {area.area_ha != null ? formatAreaHa(area.area_ha) : "—"} ·{" "}

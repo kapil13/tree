@@ -45,7 +45,10 @@ from app.services.planting_projects.service import (
     project_summary,
 )
 from app.services.planting_projects.templates import get_template, list_templates
-from app.services.planting_projects.work_area_geometry import resolve_work_area_geometry
+from app.services.planting_projects.work_area_geometry import (
+    resolve_work_area_geometry,
+    resolve_work_area_geometry_update,
+)
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
@@ -375,6 +378,38 @@ async def update_work_area(
     if payload.chainage_end_km is not None:
         fence.chainage_end_km = payload.chainage_end_km
 
+    try:
+        geom_update = resolve_work_area_geometry_update(fence.geometry_type, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    if geom_update is not None:
+        wkt, meta_updates = geom_update
+        fence.boundary = wkt
+        if payload.geometry_type is not None:
+            fence.geometry_type = payload.geometry_type
+        if payload.buffer_m is not None:
+            fence.buffer_m = payload.buffer_m
+        meta = dict(fence.metadata_ or {})
+        if payload.geometry_type == "polygon" or (
+            payload.geometry_type is None and fence.geometry_type == "polygon"
+        ):
+            meta.pop("source_geometry", None)
+        else:
+            meta.update(meta_updates)
+        fence.metadata_ = meta
+
+        area_res = await db.execute(
+            select(func.ST_Area(func.ST_GeogFromText(wkt)) / 10000.0)
+        )
+        area_ha = round(float(area_res.scalar_one()), 4)
+        if area_ha > MAX_FENCE_AREA_HA:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                detail=f"work_area_too_large:{area_ha:.1f}ha",
+            )
+        fence.area_ha = area_ha
+
     await db.commit()
     await db.refresh(fence)
     return await _work_area_out(db, fence)
@@ -545,6 +580,40 @@ async def project_survival_due(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     return await survival_due_summary(db, project=project)
+
+
+@router.get("/{project_id}/mrv-export")
+async def export_project_mrv(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("pdf", pattern="^(pdf|xlsx)$"),
+) -> Response:
+    from app.services.planting_projects.mrv_export import build_project_mrv_context
+    from app.services.reports.exporter import render_compliance_mrv_pdf, render_compliance_mrv_xlsx
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_project_mrv_context(db, project)
+    safe_code = project.code.replace("/", "-")
+    if format == "xlsx":
+        data = render_compliance_mrv_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ext = "xlsx"
+    else:
+        data = render_compliance_mrv_pdf(ctx)
+        media = "application/pdf"
+        ext = "pdf"
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-mrv-compliance.{ext}"'
+        },
+    )
 
 
 @router.get("/{project_id}/trees")

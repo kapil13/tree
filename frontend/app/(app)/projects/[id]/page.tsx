@@ -174,7 +174,9 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {tab === "compliance" && <ProjectComplianceTab projectId={project.id} />}
+      {tab === "compliance" && (
+        <ProjectComplianceTab projectId={project.id} projectCode={project.code} />
+      )}
 
       {tab === "trees" && (
         <div className="card">
