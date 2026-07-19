@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -39,8 +39,8 @@ def test_summarize_stac_features():
 @pytest.mark.asyncio
 async def test_authenticate_stores_token():
     client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://example.test")
-    mock_resp = AsyncMock()
-    mock_resp.raise_for_status = lambda: None
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
     mock_resp.json.return_value = {
         "access_token": "tok",
         "refresh_token": "ref",

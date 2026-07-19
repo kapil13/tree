@@ -224,7 +224,7 @@ def parse_carbon_params(prompt: str, portfolio: PortfolioContext) -> dict[str, A
 
     tree_count = portfolio.total_trees or 1
     for pattern in (
-        r"(\d+)\s*(?:trees?|saplings?|plants?)",
+        r"(\d+)\s*(?:\w+\s+)?(?:trees?|saplings?|plants?)",
         r"(?:trees?|plants?)\s*(?:of|:)?\s*(\d+)",
         r"(\d+)\s*(?:tree|plantation)",
     ):
