@@ -16,6 +16,9 @@ from app.models.tree import Tree
 from app.schemas.common import Page
 from app.schemas.tree import TreeListItem
 from app.schemas.plantation_fence import GeoJsonPolygon
+from app.models.project_member import ProjectMember
+from app.models.user import User
+from app.schemas.project_member import FieldOpsSummaryOut, ProjectMemberCreate, ProjectMemberOut
 from app.schemas.planting_project import (
     ComplianceCheckOut,
     ComplianceCheckRequest,
@@ -32,13 +35,18 @@ from app.schemas.planting_project import (
     GeoJsonLineString,
 )
 from app.services.geo import geography_to_geojson_polygon
-from app.services.planting_projects.access import load_project
+from app.services.planting_projects.access import (
+    can_manage_project,
+    load_project,
+    project_list_filter,
+)
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import (
     PROGRAM_DEFAULT_COMPLIANCE,
     PROGRAM_DEFAULT_SEGMENT,
     SEGMENT_LABELS,
 )
+from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
@@ -142,6 +150,11 @@ async def get_standard_template(code: str) -> StandardTemplateOut:
     return StandardTemplateOut.model_validate(tpl)
 
 
+@router.get("/field-ops-summary", response_model=FieldOpsSummaryOut)
+async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
+    return FieldOpsSummaryOut.model_validate(await build_field_ops_summary(db, user))
+
+
 @router.get("", response_model=Page[PlantingProjectOut])
 async def list_projects(
     user: CurrentUser,
@@ -152,14 +165,7 @@ async def list_projects(
     status_filter: str | None = Query(None, alias="status"),
 ) -> Page[PlantingProjectOut]:
     stmt = select(PlantingProject)
-    if user.role != "admin":
-        if user.organization_id:
-            stmt = stmt.where(
-                (PlantingProject.owner_user_id == user.id)
-                | (PlantingProject.organization_id == user.organization_id)
-            )
-        else:
-            stmt = stmt.where(PlantingProject.owner_user_id == user.id)
+    stmt = project_list_filter(user, stmt)
     if segment:
         stmt = stmt.where(PlantingProject.segment == segment)
     if status_filter:
@@ -725,3 +731,106 @@ async def project_pest_intel(
         "highest_risk": intel_list[0] if intel_list else None,
         "work_areas": intel_list,
     }
+
+
+def _member_out(member: ProjectMember, user: User | None = None) -> ProjectMemberOut:
+    work_ids = member.work_area_ids
+    parsed_ids = [uuid.UUID(str(w)) for w in work_ids] if work_ids else None
+    return ProjectMemberOut(
+        id=member.id,
+        project_id=member.project_id,
+        user_id=member.user_id,
+        role=member.role,
+        contractor_name=member.contractor_name,
+        work_area_ids=parsed_ids,
+        assigned_at=member.assigned_at,
+        user_email=user.email if user else None,
+        user_name=user.full_name if user else None,
+    )
+
+
+@router.get("/{project_id}/members", response_model=list[ProjectMemberOut])
+async def list_project_members(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> list[ProjectMemberOut]:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    rows = (
+        await db.execute(
+            select(ProjectMember, User)
+            .join(User, User.id == ProjectMember.user_id)
+            .where(ProjectMember.project_id == project.id)
+            .order_by(ProjectMember.assigned_at.desc())
+        )
+    ).all()
+    return [_member_out(member, u) for member, u in rows]
+
+
+@router.post("/{project_id}/members", response_model=ProjectMemberOut, status_code=201)
+async def add_project_member(
+    project_id: uuid.UUID,
+    payload: ProjectMemberCreate,
+    user: CurrentUser,
+    db: DB,
+) -> ProjectMemberOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="project_manage_forbidden")
+
+    target = await db.get(User, payload.user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+
+    existing = await db.execute(
+        select(ProjectMember).where(
+            ProjectMember.project_id == project.id,
+            ProjectMember.user_id == payload.user_id,
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="member_already_assigned")
+
+    work_ids = [str(wid) for wid in payload.work_area_ids] if payload.work_area_ids else None
+    member = ProjectMember(
+        project_id=project.id,
+        user_id=payload.user_id,
+        role=payload.role,
+        contractor_name=payload.contractor_name,
+        work_area_ids=work_ids,
+    )
+    db.add(member)
+    await db.commit()
+    await db.refresh(member)
+    return _member_out(member, target)
+
+
+@router.delete("/{project_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_project_member(
+    project_id: uuid.UUID,
+    member_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="project_manage_forbidden")
+
+    res = await db.execute(
+        select(ProjectMember).where(
+            ProjectMember.id == member_id,
+            ProjectMember.project_id == project.id,
+        )
+    )
+    member = res.scalar_one_or_none()
+    if member is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="member_not_found")
+    await db.delete(member)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

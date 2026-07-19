@@ -104,6 +104,8 @@ class Role(str, enum.Enum):
     NGO = "ngo"
     CORPORATE = "corporate"
     GOVERNMENT = "government"
+    FIELD_WORKER = "field_worker"
+    FIELD_SUPERVISOR = "field_supervisor"
     ADMIN = "admin"
 
 
@@ -132,6 +134,12 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.NGO: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
     Role.CORPORATE: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
     Role.GOVERNMENT: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
+    Role.FIELD_WORKER: {
+        Permission.TREE_CREATE,
+        Permission.TREE_READ,
+        Permission.TREE_UPDATE,
+    },
+    Role.FIELD_SUPERVISOR: _BASE | {Permission.SATELLITE_TRIGGER, Permission.REPORT_GENERATE},
     Role.ADMIN: {Permission.ADMIN_ALL},
 }
 

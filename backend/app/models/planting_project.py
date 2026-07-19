@@ -47,6 +47,11 @@ class PlantingProject(UUIDPKMixin, TimestampMixin, Base):
         back_populates="project",
         cascade="all, delete-orphan",
     )
+    members = relationship(
+        "ProjectMember",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         Index("planting_projects_org_code_idx", "organization_id", "code", unique=True),

@@ -14,7 +14,8 @@ import 'screens/map_screen.dart';
 import 'screens/assistant_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/bioacoustic_screen.dart';
-import 'screens/profile_screen.dart';
+import 'screens/projects_list_screen.dart';
+import 'screens/project_detail_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -32,7 +33,18 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
-      GoRoute(path: '/trees/new', builder: (_, __) => const AddTreeScreen()),
+      GoRoute(
+        path: '/trees/new',
+        builder: (_, state) => AddTreeScreen(
+          projectId: state.uri.queryParameters['project'],
+          workAreaId: state.uri.queryParameters['work_area'],
+        ),
+      ),
+      GoRoute(path: '/projects', builder: (_, __) => const ProjectsListScreen()),
+      GoRoute(
+        path: '/projects/:id',
+        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/trees/:id',
         builder: (_, s) => TreeDetailScreen(id: s.pathParameters['id']!),

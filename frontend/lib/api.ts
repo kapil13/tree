@@ -699,6 +699,72 @@ export const plantingProjects = {
       work_areas?: import("@/components/pest-intel-panel").PestIntel[];
     };
   },
+  async fieldOpsSummary() {
+    return (
+      await api.get<{
+        project_count: number;
+        tree_count: number;
+        open_violations: number;
+        survival_due: number;
+        by_segment: Record<string, number>;
+        projects: Array<{
+          id: string;
+          code: string;
+          name: string;
+          segment: string;
+          compliance_mode: string;
+          status: string;
+          open_violations: number;
+          survival_due: number;
+          tree_count: number;
+          target_tree_count: number | null;
+          progress_pct: number | null;
+        }>;
+        recent_violations: Array<{
+          id: string;
+          project_id: string;
+          project_code: string;
+          project_name: string;
+          segment: string;
+          violation_type: string;
+          severity: string;
+          message: string;
+          tree_id: string | null;
+          created_at: string | null;
+        }>;
+      }>("/v1/planting-projects/field-ops-summary")
+    ).data;
+  },
+  async listMembers(projectId: string) {
+    return (
+      await api.get<
+        Array<{
+          id: string;
+          project_id: string;
+          user_id: string;
+          role: string;
+          contractor_name: string | null;
+          work_area_ids: string[] | null;
+          user_email: string | null;
+          user_name: string | null;
+        }>
+      >(`/v1/planting-projects/${projectId}/members`)
+    ).data;
+  },
+  async addMember(
+    projectId: string,
+    payload: {
+      user_id: string;
+      role: "field_supervisor" | "field_worker";
+      contractor_name?: string;
+      work_area_ids?: string[];
+    },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/members`, payload)).data;
+  },
+  async removeMember(projectId: string, memberId: string) {
+    await api.delete(`/v1/planting-projects/${projectId}/members/${memberId}`);
+  },
 };
 
 export const uploads = {

@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   FileText,
+  ClipboardList,
   FolderKanban,
   Leaf,
   Map,
@@ -22,6 +23,7 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { href: "/field-ops", label: "Field ops", icon: ClipboardList },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/trees", label: "Trees", icon: TreePine },
   { href: "/trees/new", label: "Add tree", icon: Leaf },

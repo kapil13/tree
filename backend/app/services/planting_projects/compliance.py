@@ -270,13 +270,19 @@ async def evaluate_tree_placement(
                 )
 
     allowed_species = rules.get("allowed_species")
-    if allowed_species and not _species_allowed(species_text, allowed_species):
+    effective_species = species_text
+    if species_id and not effective_species:
+        res = await db.execute(select(Species).where(Species.id == species_id))
+        sp = res.scalar_one_or_none()
+        if sp:
+            effective_species = sp.common_name or sp.scientific_name
+    if allowed_species and not _species_allowed(effective_species, allowed_species):
         issues.append(
             ComplianceIssue(
                 "species_not_allowed",
                 _issue_severity(compliance_mode),
-                f"Species '{species_text}' is not in the approved list for this work area.",
-                {"species_text": species_text},
+                f"Species '{effective_species or species_text}' is not in the approved list for this work area.",
+                {"species_text": effective_species or species_text},
             )
         )
 
