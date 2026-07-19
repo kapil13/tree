@@ -80,6 +80,14 @@ class Settings(BaseSettings):
     # OTP — set auth_otp_sms_enabled=true when MSG91/SNS is wired
     auth_otp_sms_enabled: bool = False
 
+    # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
+    turnstile_site_key: str | None = None
+    turnstile_secret_key: str | None = None
+
+    @property
+    def captcha_enabled(self) -> bool:
+        return bool(self.turnstile_secret_key)
+
     # Notifications
     ses_sender: str = "no-reply@byot.earth"
     sns_sms_sender_id: str = "BYOT"

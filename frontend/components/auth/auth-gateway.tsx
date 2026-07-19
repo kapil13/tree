@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Eye,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
+import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import {
   DEFAULT_SIGNUP_PROGRAMS,
@@ -38,6 +40,15 @@ const OTP_LENGTH = 6;
 export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode }) {
   const router = useRouter();
   const { setSession, setUser } = useAuth();
+  const captchaRef = useRef<TurnstileCaptchaHandle>(null);
+
+  const { data: captchaConfig } = useQuery({
+    queryKey: ["auth-captcha-config"],
+    queryFn: () => auth.captchaConfig(),
+    staleTime: 60_000,
+  });
+
+  const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [method, setMethod] = useState<AuthMethod>("phone");
@@ -55,8 +66,33 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const [otp, setOtp] = useState("");
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>(DEFAULT_SIGNUP_PROGRAMS);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const availablePrograms = SIGNUP_PROGRAM_OPTIONS;
+
+  function requireCaptcha(): boolean {
+    if (!captchaEnabled) return true;
+    if (!captchaToken) {
+      setError("Please complete the security check.");
+      return false;
+    }
+    return true;
+  }
+
+  function resetCaptcha() {
+    setCaptchaToken("");
+    captchaRef.current?.reset();
+  }
+
+  function humanizeAuthError(msg: string): string {
+    if (msg === "captcha_required" || msg === "captcha_failed") {
+      return "Security check failed. Please try again.";
+    }
+    if (msg === "captcha_verification_unavailable") {
+      return "Security check is temporarily unavailable. Please try again later.";
+    }
+    return msg;
+  }
 
   const title = useMemo(() => {
     if (mode === "signup" && signupStep === "programs") return "Choose your planting programs";
@@ -113,11 +149,15 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       setError("Enter a valid 10-digit Indian mobile number starting with 6–9.");
       return;
     }
+    if (!requireCaptcha()) return;
     setBusy(true);
     setError(null);
     setDevHint(null);
     try {
-      const res = await auth.requestOtp({ phone: phoneForApi(phone) });
+      const res = await auth.requestOtp({
+        phone: phoneForApi(phone),
+        captcha_token: captchaToken || undefined,
+      });
       setOtpSent(true);
       if (res.dev_hint) setDevHint(res.dev_hint);
       if (!res.sms_enabled) {
@@ -128,8 +168,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       setError(
         msg === "invalid_phone"
           ? "Enter a valid 10-digit Indian mobile number starting with 6–9."
-          : msg,
+          : humanizeAuthError(msg),
       );
+      resetCaptcha();
     } finally {
       setBusy(false);
     }
@@ -187,14 +228,16 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   }
 
   async function emailSignIn() {
+    if (!requireCaptcha()) return;
     setBusy(true);
     setError(null);
     try {
-      const tokens = await auth.login(email, password);
+      const tokens = await auth.login(email, password, captchaToken || undefined);
       setSession(tokens);
       await finishLogin();
     } catch (err) {
-      setError(errorMessage(err));
+      setError(humanizeAuthError(errorMessage(err)));
+      resetCaptcha();
     } finally {
       setBusy(false);
     }
@@ -205,6 +248,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       setError("Please accept the terms to create an account.");
       return;
     }
+    if (!requireCaptcha()) return;
     setBusy(true);
     setError(null);
     try {
@@ -213,12 +257,14 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
         password,
         full_name: fullName,
         program_codes: selectedPrograms,
+        captcha_token: captchaToken || undefined,
       });
-      const tokens = await auth.login(email, password);
+      const tokens = await auth.login(email, password, captchaToken || undefined);
       setSession(tokens);
       await finishLogin();
     } catch (err) {
-      setError(errorMessage(err));
+      setError(humanizeAuthError(errorMessage(err)));
+      resetCaptcha();
     } finally {
       setBusy(false);
     }
@@ -235,7 +281,18 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     setOtpSent(false);
     setOtp("");
     setDevHint(null);
+    resetCaptcha();
   }
+
+  const captchaWidget =
+    captchaEnabled && captchaConfig?.site_key ? (
+      <TurnstileCaptcha
+        ref={captchaRef}
+        siteKey={captchaConfig.site_key}
+        onTokenChange={setCaptchaToken}
+        className="flex justify-center"
+      />
+    ) : null;
 
   return (
     <div className="min-h-screen bg-[#f4faf6]">
@@ -318,6 +375,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     );
                   })}
                 </div>
+                {captchaWidget}
                 <div className="flex gap-3">
                   <button type="button" className="btn-secondary" onClick={() => setSignupStep("account")}>
                     Back
@@ -441,6 +499,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                       </div>
                     )}
 
+                    {!otpSent && captchaWidget}
+
                     <button
                       type="button"
                       disabled={busy || (otpSent ? otp.length < OTP_LENGTH : !isValidIndianMobile(phone))}
@@ -508,6 +568,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                         </span>
                       </label>
                     )}
+
+                    {captchaWidget}
 
                     <button
                       type="button"
