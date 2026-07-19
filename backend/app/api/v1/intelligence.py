@@ -22,10 +22,14 @@ async def intelligence_summary(
     user: CurrentUser,
     db: DB,
     site_limit: int = Query(15, ge=1, le=30),
+    fast: bool = Query(
+        True,
+        description="Fast mode skips live Bhoonidhi queries and remote integration pings",
+    ),
 ) -> IntelligenceSummaryOut:
     """Portfolio intelligence: weather, pest, threat watch, biodiversity, integrations."""
     return IntelligenceSummaryOut.model_validate(
-        await build_intelligence_summary(db, user, site_limit=site_limit)
+        await build_intelligence_summary(db, user, site_limit=site_limit, fast=fast)
     )
 
 

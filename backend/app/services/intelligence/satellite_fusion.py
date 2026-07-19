@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from typing import Any
 
@@ -25,6 +26,7 @@ log = get_logger("intelligence.satellite_fusion")
 
 STALE_SCAN_DAYS = 35
 NDVI_DECLINE_THRESHOLD = -0.08
+BHOONIDHI_LIVE_TIMEOUT_SEC = 15.0
 
 
 def _ndvi_trend(records: list[PlantationSatelliteRecord]) -> str:
@@ -133,7 +135,10 @@ async def _bhoonidhi_layer(
 
     try:
         client = get_bhoonidhi_client()
-        raw = await client.search_polygon(boundary, days_back=120, limit=10, online_only=True)
+        raw = await asyncio.wait_for(
+            client.search_polygon(boundary, days_back=120, limit=10, online_only=True),
+            timeout=BHOONIDHI_LIVE_TIMEOUT_SEC,
+        )
         features = summarize_stac_features(raw)
         ctx = raw.get("context") or {}
         collections = sorted({f.get("collection") for f in features if f.get("collection")})
@@ -152,6 +157,17 @@ async def _bhoonidhi_layer(
             "collections": collections[:5],
             "online_scenes": online,
             "sample_scene_ids": [f.get("id") for f in features[:3] if f.get("id")],
+        }
+    except TimeoutError:
+        log.warning("bhoonidhi_fusion_timeout")
+        return {
+            "configured": True,
+            "live": True,
+            "error": "bhoonidhi_timeout",
+            "scenes_available": 0,
+            "latest_scene_at": None,
+            "collections": [],
+            "online_scenes": 0,
         }
     except Exception as exc:
         log.warning("bhoonidhi_fusion_failed", error=str(exc))

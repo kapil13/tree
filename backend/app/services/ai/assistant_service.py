@@ -875,7 +875,7 @@ async def run_assistant(
             intelligence_context_for_assistant,
         )
 
-        summary = await build_intelligence_summary(db, user, site_limit=10)
+        summary = await build_intelligence_summary(db, user, site_limit=10, fast=True)
         intelligence = intelligence_context_for_assistant(summary)
         portfolio.intelligence = intelligence
     except Exception as exc:

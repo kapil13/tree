@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -11,7 +12,7 @@ from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
 
 
-async def _ping_open_meteo(timeout: float = 5.0) -> dict[str, Any]:
+async def _ping_open_meteo(timeout: float = 3.0) -> dict[str, Any]:
     url = f"{settings.open_meteo_api_url.rstrip('/')}/forecast"
     params = {
         "latitude": 28.6,
@@ -29,7 +30,7 @@ async def _ping_open_meteo(timeout: float = 5.0) -> dict[str, Any]:
         return {"status": "error", "reachable": False, "error": str(exc)}
 
 
-async def _ping_gbif(timeout: float = 5.0) -> dict[str, Any]:
+async def _ping_gbif(timeout: float = 3.0) -> dict[str, Any]:
     url = f"{settings.gbif_api_url.rstrip('/')}/occurrence/search"
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -40,13 +41,16 @@ async def _ping_gbif(timeout: float = 5.0) -> dict[str, Any]:
         return {"status": "error", "reachable": False, "error": str(exc)}
 
 
-async def build_integrations_health() -> dict[str, Any]:
-    open_meteo = await _ping_open_meteo()
-    gbif = await _ping_gbif()
-
+async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, Any]:
     sentinel_configured = has_sentinel_credentials()
     bhoonidhi_configured = has_bhoonidhi_credentials()
     iucn_configured = bool(settings.iucn_api_token)
+
+    if ping_remote:
+        open_meteo, gbif = await asyncio.gather(_ping_open_meteo(), _ping_gbif())
+    else:
+        open_meteo = {"status": "skipped", "reachable": None, "error": None}
+        gbif = {"status": "skipped", "reachable": None, "error": None}
 
     integrations = {
         "open_meteo": open_meteo,
@@ -68,7 +72,7 @@ async def build_integrations_health() -> dict[str, Any]:
         },
     }
 
-    degraded = any(
+    degraded = ping_remote and any(
         v.get("status") == "error" or (v.get("reachable") is False and v.get("status") == "configured")
         for v in integrations.values()
     )
