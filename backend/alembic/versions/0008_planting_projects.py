@@ -143,6 +143,19 @@ def upgrade() -> None:
             sa.ForeignKey("planting_projects.id", ondelete="SET NULL"),
         ),
     )
+    # Clear orphan plantation references before adding the FK (common on upgraded DBs).
+    op.execute(
+        sa.text(
+            """
+            UPDATE trees
+            SET plantation_id = NULL
+            WHERE plantation_id IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM plantation_fences pf WHERE pf.id = trees.plantation_id
+              )
+            """
+        )
+    )
     op.create_foreign_key(
         "trees_plantation_id_fkey",
         "trees",

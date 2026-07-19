@@ -36,7 +36,7 @@ class UserPlantingProgram(UUIDPKMixin, Base):
     )
     program_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("planting_programs.id", on_delete="CASCADE"),
+        ForeignKey("planting_programs.id", ondelete="CASCADE"),
         nullable=False,
     )
     enrolled_at: Mapped[datetime] = mapped_column(
