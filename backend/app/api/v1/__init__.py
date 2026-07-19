@@ -11,6 +11,7 @@ from app.api.v1 import (
     carbon,
     dashboard,
     health,
+    intelligence,
     plantation_fences,
     planting_programs,
     planting_projects,
@@ -35,6 +36,7 @@ api_router.include_router(planting_projects.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(intelligence.router)
 api_router.include_router(alerts.router)
 api_router.include_router(uploads.router)
 api_router.include_router(bioacoustic.router)

@@ -18,7 +18,7 @@ from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
-from app.models.user import User
+from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 
 __all__ = [
     "BioacousticRecording",
@@ -43,4 +43,5 @@ __all__ = [
     "User",
     "ProjectMember",
     "MonitoringJobRun",
+    "WorkAreaBiodiversitySnapshot",
 ]

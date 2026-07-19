@@ -161,6 +161,26 @@ def survival_survey_reminders() -> dict:
         raise
 
 
+@celery_app.task(name="app.workers.tasks.biodiversity_baseline")
+def biodiversity_baseline() -> dict:
+    log.info("worker.biodiversity_baseline")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.intelligence.biodiversity_baseline import run_biodiversity_baseline
+
+        async with AsyncSessionLocal() as db:
+            return await run_biodiversity_baseline(db)
+
+    try:
+        result = _run_async(_run())
+        _run_async(_record("biodiversity_baseline", "ok", result))
+        return result
+    except Exception as exc:
+        _run_async(_record("biodiversity_baseline", "error", error=str(exc)))
+        raise
+
+
 @celery_app.task(name="app.workers.tasks.threat_watch_scan")
 def threat_watch_scan() -> dict:
     log.info("worker.threat_watch_scan")

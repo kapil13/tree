@@ -29,3 +29,10 @@ async def api_worker_health(db: DB) -> WorkerHealthResponse:
     from app.services.monitoring.worker_health import build_worker_health
 
     return WorkerHealthResponse.model_validate(await build_worker_health(db))
+
+
+@router.get("/integrations")
+async def api_integrations_health():
+    from app.services.intelligence.integrations import check_all_integrations
+
+    return await check_all_integrations()
