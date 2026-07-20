@@ -16,6 +16,7 @@ from app.api.v1 import (
     plantation_fences,
     planting_programs,
     planting_projects,
+    reporting,
     reports,
     satellite,
     satellite_health,
@@ -44,3 +45,4 @@ api_router.include_router(uploads.router)
 api_router.include_router(bioacoustic.router)
 api_router.include_router(bhoonidhi.router)
 api_router.include_router(reports.router)
+api_router.include_router(reporting.router)

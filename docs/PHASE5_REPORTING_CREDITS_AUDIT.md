@@ -8,7 +8,7 @@ Phase 5 makes Aranyix **audit-ready** for NHAI, NGT/CAMPA, Verra VM0047, and ESG
 |-------|--------|-------------|
 | **5.1 Audit trail** | Done | Append-only `audit_logs` with org scope, API, UI |
 | **5.3 Evidence bundles** | Done | Zip + SHA-256 manifest per project |
-| 5.2 Framework-mapped reports | Planned | VM0047, REDD+, NGT profile exports |
+| **5.2 Framework-mapped reports** | Done | VM0047, REDD+, NGT, IPCC, ESG profile exports |
 | 5.4 Credit ledger | Planned | Buffer pool accounting, credit states |
 | 5.5 Checklists | Planned | Guided eligibility questionnaires |
 | 5.6–5.7 Webhooks + public verification | Planned | HMAC webhooks, share links |
@@ -40,6 +40,30 @@ Requires role with `audit:read` (NGO, corporate, government, field supervisor, a
 ### Migration
 
 `0014_audit_org_id` — adds `organization_id` to `audit_logs` for workspace filtering.
+
+## 5.2 Framework-mapped reports
+
+### List profiles
+
+```
+GET /api/v1/reporting/frameworks
+```
+
+Profiles: `ipcc_ar6`, `verra_vm0047`, `gold_standard_luf`, `redd_plus`, `paris_ndc`, `ngt_campa`, `esg_general`
+
+### Export
+
+```
+GET /api/v1/reporting/projects/{project_id}/framework-report?profile=verra_vm0047&format=pdf
+```
+
+Each export includes methodology reference, engine version, profile-specific sections, tree sample, and audit disclaimer.
+
+Audit action: `framework_report.export`
+
+### UI
+
+Project → Compliance → **Framework profile** selector + PDF/Excel export
 
 ## 5.3 Evidence bundles
 
