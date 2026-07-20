@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Leaf, ScrollText, Settings2, Sparkles } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-store";
 import { errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";

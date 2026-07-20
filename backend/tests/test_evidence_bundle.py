@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import uuid
 import zipfile
-from datetime import UTC, datetime
 from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock, patch
 

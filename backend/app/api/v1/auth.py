@@ -32,6 +32,7 @@ from app.schemas.auth import (
     UpdateProfile,
     UserOut,
 )
+from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.otp import (
@@ -40,7 +41,6 @@ from app.services.auth.otp import (
     phone_placeholder_email,
     verify_dev_otp,
 )
-from app.services.audit import record_audit
 from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
 
 router = APIRouter(prefix="/auth", tags=["auth"])

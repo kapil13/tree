@@ -5,8 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ScrollText } from "lucide-react";
 import { audit } from "@/lib/api";
 
-const AUDIT_ROLES = new Set(["admin", "ngo", "corporate", "government", "field_supervisor"]);
-
 export default function AuditLogPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["audit-logs"],
@@ -98,5 +96,3 @@ export default function AuditLogPage() {
     </div>
   );
 }
-
-export { AUDIT_ROLES };

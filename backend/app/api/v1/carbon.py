@@ -12,8 +12,8 @@ from app.api.v1.deps import DB, CurrentUser
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
-from app.services.carbon import CarbonInputs, estimate_carbon
 from app.services.audit import record_audit
+from app.services.carbon import CarbonInputs, estimate_carbon
 
 router = APIRouter(prefix="/carbon", tags=["carbon"])
 

@@ -13,6 +13,7 @@ from app.api.v1.plantation_fences import _load_fence
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.report import Report
 from app.models.tree import Tree
+from app.services.audit import record_audit
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
 from app.services.reports import (
     render_bioacoustic_report_pdf,
@@ -21,7 +22,6 @@ from app.services.reports import (
     render_esg_report_pdf,
     render_trees_report_xlsx,
 )
-from app.services.audit import record_audit
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 

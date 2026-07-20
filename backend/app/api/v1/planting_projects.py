@@ -39,6 +39,8 @@ from app.schemas.project_member import (
     ProjectMemberOut,
 )
 from app.schemas.tree import TreeListItem
+from app.services.audit import record_audit
+from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.satellite_sweep import run_project_satellite_scan
 from app.services.monitoring.summary import build_monitoring_summary
@@ -64,8 +66,6 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
-from app.services.audit import record_audit
-from app.services.evidence import build_project_evidence_bundle
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
