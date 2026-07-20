@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, RefreshCw } from "lucide-react";
-import { type CreditLedgerStatus, credits } from "@/lib/api";
+import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
+
+function num(value: number | string | null | undefined): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
 
 const STATUS_CLASS: Record<CreditLedgerStatus, string> = {
   estimated: "bg-stone-100 text-stone-700",
@@ -24,9 +29,10 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
   const [registryRef, setRegistryRef] = useState("");
   const [notes, setNotes] = useState("");
 
-  const { data: ledger, isLoading } = useQuery({
+  const { data: ledger, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["credit-ledger", projectId],
     queryFn: () => credits.projectLedger(projectId),
+    retry: 1,
   });
 
   const sync = useMutation({
@@ -47,9 +53,62 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
     },
   });
 
-  if (isLoading || !ledger) {
+  if (isLoading) {
     return <p className="text-sm text-stone-500">Loading credit ledger…</p>;
   }
+
+  if (error) {
+    const msg = errorMessage(error);
+    const status = isApiError(error) ? error.response?.status : undefined;
+    const needsMigration =
+      status === 500 ||
+      /project_credit_ledgers|credit_ledger|relation .* does not exist|alembic/i.test(msg);
+
+    return (
+      <div className="space-y-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+        <p className="font-medium">Could not load credit ledger</p>
+        <p className="text-rose-800">{msg}</p>
+        {needsMigration ? (
+          <p className="text-xs text-rose-700">
+            On the server, run database migrations:{" "}
+            <code className="rounded bg-rose-100 px-1 py-0.5">
+              docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+            </code>{" "}
+            (revision <code className="rounded bg-rose-100 px-1 py-0.5">0015_credit_ledger</code>
+            ), then rebuild/restart if needed.
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className="btn-secondary text-xs"
+          disabled={isFetching}
+          onClick={() => refetch()}
+        >
+          {isFetching ? "Retrying…" : "Retry"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!ledger) {
+    return (
+      <p className="text-sm text-stone-500">
+        No credit ledger data yet. Add trees to the project, then retry.
+      </p>
+    );
+  }
+
+  const grossCredits = num(ledger.gross_credits_tco2e);
+  const bufferPct = num(ledger.buffer_pct);
+  const bufferWithheld = num(ledger.buffer_withheld_tco2e);
+  const netCredits = num(ledger.net_credits_tco2e);
+  const issuedCredits =
+    ledger.issued_credits_tco2e == null ? null : num(ledger.issued_credits_tco2e);
+  const strata = (ledger.strata ?? []).map((row) => ({
+    ...row,
+    credits_tco2e: num(row.credits_tco2e),
+    tree_count: num(row.tree_count),
+  }));
 
   const next = NEXT_STATUS[ledger.status];
 
@@ -90,19 +149,15 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Gross credits" value={`${ledger.gross_credits_tco2e.toFixed(4)} tCO₂e`} />
+        <Stat label="Gross credits" value={`${grossCredits.toFixed(4)} tCO₂e`} />
         <Stat
-          label={`Buffer (${(ledger.buffer_pct * 100).toFixed(0)}%)`}
-          value={`${ledger.buffer_withheld_tco2e.toFixed(4)} tCO₂e`}
+          label={`Buffer (${(bufferPct * 100).toFixed(0)}%)`}
+          value={`${bufferWithheld.toFixed(4)} tCO₂e`}
         />
-        <Stat label="Net (issuable est.)" value={`${ledger.net_credits_tco2e.toFixed(4)} tCO₂e`} />
+        <Stat label="Net (issuable est.)" value={`${netCredits.toFixed(4)} tCO₂e`} />
         <Stat
           label="Registry issued"
-          value={
-            ledger.issued_credits_tco2e != null
-              ? `${ledger.issued_credits_tco2e.toFixed(4)} tCO₂e`
-              : "—"
-          }
+          value={issuedCredits != null ? `${issuedCredits.toFixed(4)} tCO₂e` : "—"}
         />
       </div>
 
@@ -146,7 +201,13 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      {ledger.strata.length > 0 && (
+      {(sync.error || transition.error) && (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          {errorMessage(sync.error ?? transition.error)}
+        </p>
+      )}
+
+      {strata.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-stone-200">
           <table className="min-w-full text-sm">
             <thead className="bg-stone-50 text-left text-stone-600">
@@ -158,7 +219,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
               </tr>
             </thead>
             <tbody>
-              {ledger.strata.map((row) => (
+              {strata.map((row) => (
                 <tr
                   key={`${row.species}-${row.age_cohort}`}
                   className="border-t border-stone-100"

@@ -150,6 +150,9 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "recording_create_failed") {
         return "Could not save recording. Run database migration: alembic upgrade head";
       }
+      if (err.response.status === 500 && err.config?.url?.includes("/credits/")) {
+        return `${data.detail}. Credit ledger may need migration 0015_credit_ledger — run: alembic upgrade head on the server.`;
+      }
       return data.detail;
     }
     if (Array.isArray(data?.detail)) return data.detail.map((d) => d.msg).join("; ");
