@@ -74,7 +74,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
             <code className="rounded bg-rose-100 px-1 py-0.5">
               docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
             </code>{" "}
-            (revision <code className="rounded bg-rose-100 px-1 py-0.5">0015_credit_ledger</code>
+            (revision <code className="rounded bg-rose-100 px-1 py-0.5">0016_credit_ledger_timestamps</code>
             ), then rebuild/restart if needed.
           </p>
         ) : null}

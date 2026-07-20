@@ -6,6 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
@@ -20,6 +21,20 @@ from app.services.credits.ledger import (
 from app.services.planting_projects.access import can_manage_project, load_project
 
 router = APIRouter(prefix="/credits", tags=["credits"])
+
+
+def _raise_credit_ledger_db_error(exc: Exception) -> None:
+    raw = str(getattr(exc, "orig", exc))
+    if "project_credit_ledgers" in raw or "credit_ledger_events" in raw:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="credit_ledger_migration_required",
+        ) from exc
+    if "null value" in raw.lower() and ("created_at" in raw or "updated_at" in raw):
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="credit_ledger_migration_required",
+        ) from exc
 
 
 async def _ledger_with_events(db: DB, ledger: ProjectCreditLedger) -> dict:
@@ -56,10 +71,15 @@ async def get_project_credit_ledger(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
-    ledger = await sync_project_ledger(db, project)
-    await db.commit()
-    await db.refresh(ledger)
-    return await _ledger_with_events(db, ledger)
+    try:
+        ledger = await sync_project_ledger(db, project)
+        await db.commit()
+        await db.refresh(ledger)
+        return await _ledger_with_events(db, ledger)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_credit_ledger_db_error(exc)
+        raise
 
 
 @router.post("/projects/{project_id}/sync")
