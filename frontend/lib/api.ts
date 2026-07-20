@@ -685,6 +685,17 @@ export const plantingProjects = {
     });
     return response.data as Blob;
   },
+  async exportFrameworkReport(
+    projectId: string,
+    profile: FrameworkProfileCode,
+    format: "pdf" | "xlsx" = "pdf",
+  ) {
+    const response = await api.get(`/v1/reporting/projects/${projectId}/framework-report`, {
+      params: { profile, format },
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -1491,6 +1502,30 @@ export const bioacoustic = {
     return (
       await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
     ).data as { id: string; status: string };
+  },
+};
+
+export type FrameworkProfileCode =
+  | "ipcc_ar6"
+  | "verra_vm0047"
+  | "gold_standard_luf"
+  | "redd_plus"
+  | "paris_ndc"
+  | "ngt_campa"
+  | "esg_general";
+
+export type FrameworkProfile = {
+  code: FrameworkProfileCode;
+  title: string;
+  short_label: string;
+  methodology: string;
+  description: string;
+  reference: string;
+};
+
+export const reporting = {
+  async frameworks() {
+    return (await api.get<FrameworkProfile[]>("/v1/reporting/frameworks")).data;
   },
 };
 

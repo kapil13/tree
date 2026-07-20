@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, Download } from "lucide-react";
-import { plantingProjects } from "@/lib/api";
+import { CheckCircle, Download, FileText } from "lucide-react";
+import {
+  type FrameworkProfileCode,
+  plantingProjects,
+  reporting,
+} from "@/lib/api";
 
 const SEVERITY_CLASS: Record<string, string> = {
   block: "bg-rose-100 text-rose-900",
@@ -28,6 +33,13 @@ export function ProjectComplianceTab({
   projectCode?: string;
 }) {
   const qc = useQueryClient();
+  const [frameworkProfile, setFrameworkProfile] = useState<FrameworkProfileCode>("verra_vm0047");
+
+  const { data: frameworks = [] } = useQuery({
+    queryKey: ["reporting-frameworks"],
+    queryFn: () => reporting.frameworks(),
+  });
+
   const { data: violations = [], isLoading } = useQuery({
     queryKey: ["project-violations", projectId],
     queryFn: () => plantingProjects.complianceViolations(projectId, true),
@@ -58,10 +70,69 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportFramework = useMutation({
+    mutationFn: (format: "pdf" | "xlsx") =>
+      plantingProjects.exportFrameworkReport(projectId, frameworkProfile, format),
+    onSuccess: (blob, format) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-${frameworkProfile}-framework-report.${format}`);
+    },
+  });
+
+  const busy = exportMrv.isPending || exportBundle.isPending || exportFramework.isPending;
+  const selectedFramework = frameworks.find((f) => f.code === frameworkProfile);
+
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
 
   return (
     <div className="space-y-4">
+      <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
+          <FileText className="h-4 w-4 text-forest-700" />
+          Framework-mapped report
+        </div>
+        <p className="text-xs text-stone-600">
+          Export a profile-specific PDF or Excel aligned to VM0047, REDD+, NGT/CAMPA, IPCC, or ESG
+          structures. Prepared for audit — not certification.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px]">
+            <label className="label text-xs">Framework profile</label>
+            <select
+              className="input text-sm"
+              value={frameworkProfile}
+              onChange={(e) => setFrameworkProfile(e.target.value as FrameworkProfileCode)}
+            >
+              {frameworks.map((f) => (
+                <option key={f.code} value={f.code}>
+                  {f.short_label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedFramework && (
+            <p className="max-w-md text-xs text-stone-500">{selectedFramework.description}</p>
+          )}
+          <button
+            type="button"
+            className="btn-primary text-xs"
+            disabled={busy}
+            onClick={() => exportFramework.mutate("pdf")}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exportFramework.isPending ? "Exporting…" : "Framework PDF"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={busy}
+            onClick={() => exportFramework.mutate("xlsx")}
+          >
+            Excel
+          </button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-stone-600">
           Export MRV reports or a full evidence bundle (manifest, PDF, JSON, photos) for audits.
@@ -70,7 +141,7 @@ export function ProjectComplianceTab({
           <button
             type="button"
             className="btn-secondary text-xs"
-            disabled={exportMrv.isPending || exportBundle.isPending}
+            disabled={busy}
             onClick={() => exportMrv.mutate("pdf")}
           >
             <Download className="h-3.5 w-3.5" />
@@ -79,7 +150,7 @@ export function ProjectComplianceTab({
           <button
             type="button"
             className="btn-secondary text-xs"
-            disabled={exportMrv.isPending || exportBundle.isPending}
+            disabled={busy}
             onClick={() => exportMrv.mutate("xlsx")}
           >
             <Download className="h-3.5 w-3.5" />
@@ -88,7 +159,7 @@ export function ProjectComplianceTab({
           <button
             type="button"
             className="btn-primary text-xs"
-            disabled={exportMrv.isPending || exportBundle.isPending}
+            disabled={busy}
             onClick={() => exportBundle.mutate()}
           >
             <Download className="h-3.5 w-3.5" />
