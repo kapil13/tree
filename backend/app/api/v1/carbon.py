@@ -5,13 +5,14 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
+from app.services.audit import record_audit
 from app.services.carbon import CarbonInputs, estimate_carbon
 
 router = APIRouter(prefix="/carbon", tags=["carbon"])
@@ -37,7 +38,9 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
 
 
 @router.post("/recalculate/{tree_id}", response_model=CarbonEstimateResponse)
-async def recalculate(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> CarbonEstimateResponse:
+async def recalculate(
+    tree_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
+) -> CarbonEstimateResponse:
     res = await db.execute(select(Tree).where(Tree.id == tree_id))
     tree = res.scalar_one_or_none()
     if tree is None:
@@ -81,7 +84,23 @@ async def recalculate(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> CarbonEs
         engine_version=calc.engine_version,
     )
     db.add(rec)
+    prev_carbon = float(tree.current_carbon_kg or 0)
     tree.current_carbon_kg = calc.carbon_kg
+    await record_audit(
+        db,
+        actor=user,
+        action="carbon.recalculate",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={
+            "public_code": tree.public_code,
+            "previous_carbon_kg": prev_carbon,
+            "carbon_kg": calc.carbon_kg,
+            "engine_version": calc.engine_version,
+            "methodology": calc.methodology,
+        },
+    )
     await db.commit()
     return CarbonEstimateResponse(**calc.__dict__)
 

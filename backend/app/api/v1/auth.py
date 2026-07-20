@@ -32,6 +32,7 @@ from app.schemas.auth import (
     UpdateProfile,
     UserOut,
 )
+from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.otp import (
@@ -101,6 +102,15 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     await ensure_default_enrollment(db, user.id)
     if payload.program_codes:
         await set_user_programs(db, user.id, payload.program_codes)
+    await record_audit(
+        db,
+        actor=user,
+        action="user.register",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "role": user.role},
+    )
     await db.commit()
     await db.refresh(user)
     return UserOut.model_validate(user)
@@ -116,6 +126,15 @@ async def login(payload: LoginRequest, request: Request, db: DB) -> TokenRespons
     ):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_credentials")
     user.last_login_at = datetime.now(UTC)
+    await record_audit(
+        db,
+        actor=user,
+        action="auth.login",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"method": "password"},
+    )
     await db.commit()
     return _tokens_for(user)
 
@@ -189,12 +208,21 @@ async def _user_from_otp(db: DB, payload: OTPVerify) -> User:
 
 
 @router.post("/otp/verify", response_model=TokenResponse)
-async def verify_otp(payload: OTPVerify, db: DB) -> TokenResponse:
+async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenResponse:
     if not verify_dev_otp(payload.code):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
     user = await _user_from_otp(db, payload)
     user.is_verified = True
     user.last_login_at = datetime.now(UTC)
+    await record_audit(
+        db,
+        actor=user,
+        action="auth.login",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"method": "otp"},
+    )
     await db.commit()
     return _tokens_for(user)
 

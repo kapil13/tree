@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
@@ -13,6 +13,7 @@ from app.api.v1.plantation_fences import _load_fence
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.report import Report
 from app.models.tree import Tree
+from app.services.audit import record_audit
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
 from app.services.reports import (
     render_bioacoustic_report_pdf,
@@ -69,6 +70,7 @@ async def _tree_rows(user, db) -> tuple[list[dict], dict]:
 async def queue_report(
     kind: str,
     format: str,
+    request: Request,
     user: CurrentUser,
     db: DB,
     plantation_fence_id: uuid.UUID | None = Query(None),
@@ -91,6 +93,16 @@ async def queue_report(
         filters=filters,
     )
     db.add(r)
+    await db.flush()
+    await record_audit(
+        db,
+        actor=user,
+        action="report.queue",
+        resource_type="report",
+        resource_id=r.id,
+        request=request,
+        diff={"kind": kind, "format": format, "filters": filters},
+    )
     await db.commit()
     await db.refresh(r)
     return {"id": str(r.id), "status": r.status, "kind": r.kind, "filters": r.filters}
@@ -117,7 +129,9 @@ async def list_reports(user: CurrentUser, db: DB) -> list[dict]:
 
 
 @router.get("/{report_id}/download")
-async def download_report(report_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+async def download_report(
+    report_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
+) -> Response:
     res = await db.execute(
         select(Report).where(Report.id == report_id, Report.requested_by == user.id)
     )
@@ -182,6 +196,15 @@ async def download_report(report_id: uuid.UUID, user: CurrentUser, db: DB) -> Re
 
     rpt.status = "done"
     rpt.completed_at = datetime.utcnow()
+    await record_audit(
+        db,
+        actor=user,
+        action="report.download",
+        resource_type="report",
+        resource_id=rpt.id,
+        request=request,
+        diff={"kind": rpt.kind, "format": rpt.format},
+    )
     await db.commit()
     return Response(
         content=data,

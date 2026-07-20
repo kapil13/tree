@@ -18,6 +18,9 @@ class AuditLog(UUIDPKMixin, Base):
     actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL")
+    )
     action: Mapped[str] = mapped_column(String(120), nullable=False)
     resource_type: Mapped[str | None] = mapped_column(String(64))
     resource_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
@@ -28,4 +31,7 @@ class AuditLog(UUIDPKMixin, Base):
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )
 
-    __table_args__ = (Index("audit_resource_idx", "resource_type", "resource_id", "created_at"),)
+    __table_args__ = (
+        Index("audit_resource_idx", "resource_type", "resource_id", "created_at"),
+        Index("audit_org_created_idx", "organization_id", "created_at"),
+    )

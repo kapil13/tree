@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Leaf, Settings2, Sparkles } from "lucide-react";
+import { Check, Leaf, ScrollText, Settings2, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -88,6 +88,17 @@ export default function SettingsPage() {
             You can tag trees as a citizen with BYOT and also register compliance-grade plantings
             for government or corporate programs from the same login.
           </div>
+
+          <Link
+            href="/settings/audit"
+            className="mt-4 flex items-center gap-3 rounded-2xl border border-stone-200 p-4 text-sm transition hover:border-forest-300 hover:bg-forest-50/50 dark:border-stone-700"
+          >
+            <ScrollText className="h-5 w-5 text-forest-700" />
+            <div>
+              <p className="font-semibold">Audit trail</p>
+              <p className="text-stone-500">View workspace action history for compliance reviews</p>
+            </div>
+          </Link>
         </div>
 
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/85 p-6 shadow-lg backdrop-blur dark:border-stone-800 dark:bg-stone-900/75">

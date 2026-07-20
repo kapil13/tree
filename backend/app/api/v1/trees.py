@@ -7,7 +7,7 @@ import string
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -29,6 +29,7 @@ from app.schemas.tree import (
     TreeRegeotagOut,
     TreeUpdate,
 )
+from app.services.audit import record_audit
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -126,7 +127,9 @@ def _to_out(tree: Tree) -> TreeOut:
 
 
 @router.post("", response_model=TreeOut, status_code=status.HTTP_201_CREATED)
-async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut:
+async def create_tree(
+    payload: TreeCreate, request: Request, user: CurrentUser, db: DB
+) -> TreeOut:
     program = await get_program_by_code(db, payload.program_code)
     if program is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unknown_program")
@@ -263,6 +266,21 @@ async def create_tree(payload: TreeCreate, user: CurrentUser, db: DB) -> TreeOut
                 uploaded_by=user.id,
             )
         )
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.create",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={
+            "public_code": tree.public_code,
+            "species_text": tree.species_text,
+            "project_id": str(project.id) if project else None,
+            "work_area_id": str(work_area_id) if work_area_id else None,
+            "photo_count": len(payload.photo_keys),
+        },
+    )
     await db.commit()
     await db.refresh(tree, attribute_names=["planting_program"])
     return _to_out(tree)
@@ -380,7 +398,11 @@ async def get_tree_image_file(
 
 @router.post("/{tree_id}/regeotag", response_model=TreeRegeotagOut)
 async def regeotag_tree(
-    tree_id: uuid.UUID, payload: TreeRegeotag, user: CurrentUser, db: DB
+    tree_id: uuid.UUID,
+    payload: TreeRegeotag,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
 ) -> TreeRegeotagOut:
     """Update tree GPS for survival survey / re-geotagging."""
     tree = await _get_owned_tree(tree_id, user, db)
@@ -457,6 +479,20 @@ async def regeotag_tree(
         meta["regeotag_remarks"] = payload.remarks
     meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
     tree.metadata_ = meta
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.regeotag",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={
+            "public_code": tree.public_code,
+            "latitude": payload.latitude,
+            "longitude": payload.longitude,
+            "survival_status": payload.survival_status,
+        },
+    )
     await db.commit()
     await db.refresh(tree, attribute_names=["planting_program", "images"])
     base = _to_out(tree)
@@ -468,24 +504,51 @@ async def regeotag_tree(
 
 @router.patch("/{tree_id}", response_model=TreeOut)
 async def update_tree(
-    tree_id: uuid.UUID, payload: TreeUpdate, user: CurrentUser, db: DB
+    tree_id: uuid.UUID,
+    payload: TreeUpdate,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
 ) -> TreeOut:
     tree = await _get_owned_tree(tree_id, user, db)
+    changes: dict = {}
     for field in ("species_id", "species_text", "planted_at", "status"):
         v = getattr(payload, field)
         if v is not None:
+            changes[field] = v
             setattr(tree, field, v)
     if payload.metadata is not None:
+        changes["metadata"] = True
         tree.metadata_ = payload.metadata
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.update",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={"public_code": tree.public_code, "changes": changes},
+    )
     await db.commit()
     await db.refresh(tree)
     return _to_out(tree)
 
 
 @router.delete("/{tree_id}", status_code=204)
-async def delete_tree(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+async def delete_tree(
+    tree_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
+) -> Response:
     tree = await _get_owned_tree(tree_id, user, db)
     tree.status = "removed"
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.delete",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={"public_code": tree.public_code},
+    )
     await db.commit()
     return Response(status_code=204)
 
@@ -494,6 +557,7 @@ async def delete_tree(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response
 async def add_image(
     tree_id: uuid.UUID,
     s3_key: str,
+    request: Request,
     user: CurrentUser,
     db: DB,
     is_primary: bool = False,
@@ -503,6 +567,16 @@ async def add_image(
         tree_id=tree.id, s3_key=s3_key, is_primary=is_primary, uploaded_by=user.id
     )
     db.add(img)
+    await db.flush()
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.image.add",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={"s3_key": s3_key, "image_id": str(img.id), "is_primary": is_primary},
+    )
     await db.commit()
     await db.refresh(img)
     return TreeImageOut.model_validate(img)

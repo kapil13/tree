@@ -50,19 +50,27 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportBundle = useMutation({
+    mutationFn: () => plantingProjects.exportEvidenceBundle(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-evidence-bundle.zip`);
+    },
+  });
+
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-stone-600">
-          Export a full MRV bundle with work areas, tree registry, violations, and survival stats.
+          Export MRV reports or a full evidence bundle (manifest, PDF, JSON, photos) for audits.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="btn-secondary text-xs"
-            disabled={exportMrv.isPending}
+            disabled={exportMrv.isPending || exportBundle.isPending}
             onClick={() => exportMrv.mutate("pdf")}
           >
             <Download className="h-3.5 w-3.5" />
@@ -71,11 +79,20 @@ export function ProjectComplianceTab({
           <button
             type="button"
             className="btn-secondary text-xs"
-            disabled={exportMrv.isPending}
+            disabled={exportMrv.isPending || exportBundle.isPending}
             onClick={() => exportMrv.mutate("xlsx")}
           >
             <Download className="h-3.5 w-3.5" />
             Excel
+          </button>
+          <button
+            type="button"
+            className="btn-primary text-xs"
+            disabled={exportMrv.isPending || exportBundle.isPending}
+            onClick={() => exportBundle.mutate()}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exportBundle.isPending ? "Building…" : "Evidence bundle (.zip)"}
           </button>
         </div>
       </div>
