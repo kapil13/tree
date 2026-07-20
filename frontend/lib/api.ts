@@ -1505,6 +1505,80 @@ export const bioacoustic = {
   },
 };
 
+export type CreditLedgerStatus = "estimated" | "verified" | "buffered" | "issued";
+
+export type CreditLedger = {
+  id: string;
+  project_id: string;
+  organization_id: string | null;
+  methodology: string;
+  status: CreditLedgerStatus;
+  tree_count: number;
+  gross_credits_tco2e: number;
+  buffer_pct: number;
+  buffer_withheld_tco2e: number;
+  net_credits_tco2e: number;
+  issued_credits_tco2e: number | null;
+  registry_reference: string | null;
+  engine_version: string;
+  strata: Array<{
+    species: string;
+    age_cohort: string;
+    tree_count: number;
+    carbon_kg: number;
+    co2e_kg: number;
+    credits_tco2e: number;
+  }>;
+  last_computed_at: string;
+  disclaimer: string;
+  events: Array<{
+    id: string;
+    from_status: string | null;
+    to_status: string;
+    notes: string | null;
+    registry_reference: string | null;
+    created_at: string;
+  }>;
+};
+
+export const credits = {
+  async orgSummary() {
+    return (
+      await api.get<{
+        project_count: number;
+        by_status: Record<string, number>;
+        total_gross_credits_tco2e: number;
+        total_buffer_withheld_tco2e: number;
+        total_net_credits_tco2e: number;
+        total_issued_credits_tco2e: number;
+      }>("/v1/credits/summary")
+    ).data;
+  },
+  async projectLedger(projectId: string) {
+    return (await api.get<CreditLedger>(`/v1/credits/projects/${projectId}`)).data;
+  },
+  async syncProject(
+    projectId: string,
+    methodology: "IPCC_AR6" | "VERRA_VM0047" | "GOLD_STANDARD_LUF" = "VERRA_VM0047",
+  ) {
+    return (
+      await api.post<CreditLedger>(`/v1/credits/projects/${projectId}/sync`, { methodology })
+    ).data;
+  },
+  async transitionProject(
+    projectId: string,
+    payload: {
+      to_status: CreditLedgerStatus;
+      notes?: string;
+      registry_reference?: string;
+    },
+  ) {
+    return (
+      await api.post<CreditLedger>(`/v1/credits/projects/${projectId}/transition`, payload)
+    ).data;
+  },
+};
+
 export type FrameworkProfileCode =
   | "ipcc_ar6"
   | "verra_vm0047"

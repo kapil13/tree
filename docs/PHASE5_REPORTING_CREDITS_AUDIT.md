@@ -9,7 +9,7 @@ Phase 5 makes Aranyix **audit-ready** for NHAI, NGT/CAMPA, Verra VM0047, and ESG
 | **5.1 Audit trail** | Done | Append-only `audit_logs` with org scope, API, UI |
 | **5.3 Evidence bundles** | Done | Zip + SHA-256 manifest per project |
 | **5.2 Framework-mapped reports** | Done | VM0047, REDD+, NGT, IPCC, ESG profile exports |
-| 5.4 Credit ledger | Planned | Buffer pool accounting, credit states |
+| **5.4 Credit ledger** | Done | Buffer pool, strata, status workflow |
 | 5.5 Checklists | Planned | Guided eligibility questionnaires |
 | 5.6–5.7 Webhooks + public verification | Planned | HMAC webhooks, share links |
 
@@ -64,6 +64,33 @@ Audit action: `framework_report.export`
 ### UI
 
 Project → Compliance → **Framework profile** selector + PDF/Excel export
+
+## 5.4 Credit ledger
+
+### Status workflow
+
+`estimated` → `verified` → `buffered` → `issued` (terminal; requires registry reference)
+
+### API
+
+```
+GET  /api/v1/credits/summary
+GET  /api/v1/credits/projects/{project_id}
+POST /api/v1/credits/projects/{project_id}/sync
+POST /api/v1/credits/projects/{project_id}/transition
+```
+
+- VM0047 default methodology with 20% buffer pool
+- Strata by species + age cohort (0-2y, 3-5y, 6-10y, 10+y)
+- Audit actions: `credit_ledger.sync`, `credit_ledger.transition`
+
+### Migration
+
+`0015_credit_ledger` — `project_credit_ledgers`, `credit_ledger_events`
+
+### UI
+
+Project → **Credits** tab
 
 ## 5.3 Evidence bundles
 
