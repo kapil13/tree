@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
+import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
@@ -13,7 +14,7 @@ import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { plantingProjects } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
-const TABS = ["overview", "compliance", "trees", "settings"] as const;
+const TABS = ["overview", "compliance", "credits", "trees", "settings"] as const;
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -176,6 +177,12 @@ export default function ProjectDetailPage() {
 
       {tab === "compliance" && (
         <ProjectComplianceTab projectId={project.id} projectCode={project.code} />
+      )}
+
+      {tab === "credits" && (
+        <div className="card">
+          <ProjectCreditLedgerPanel projectId={project.id} />
+        </div>
       )}
 
       {tab === "trees" && (
