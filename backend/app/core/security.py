@@ -117,6 +117,7 @@ class Permission(str, enum.Enum):
     ANALYSIS_TRIGGER = "analysis:trigger"
     SATELLITE_TRIGGER = "satellite:trigger"
     REPORT_GENERATE = "report:generate"
+    AUDIT_READ = "audit:read"
     ADMIN_ALL = "admin:*"
 
 
@@ -131,15 +132,19 @@ _BASE: set[Permission] = {
 ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.USER: _BASE,
     Role.FARMER: _BASE | {Permission.SATELLITE_TRIGGER},
-    Role.NGO: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
-    Role.CORPORATE: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
-    Role.GOVERNMENT: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
+    Role.NGO: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
+    Role.CORPORATE: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
+    Role.GOVERNMENT: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
     Role.FIELD_WORKER: {
         Permission.TREE_CREATE,
         Permission.TREE_READ,
         Permission.TREE_UPDATE,
     },
-    Role.FIELD_SUPERVISOR: _BASE | {Permission.SATELLITE_TRIGGER, Permission.REPORT_GENERATE},
+    Role.FIELD_SUPERVISOR: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.REPORT_GENERATE, Permission.AUDIT_READ},
     Role.ADMIN: {Permission.ADMIN_ALL},
 }
 

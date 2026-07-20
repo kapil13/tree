@@ -678,6 +678,13 @@ export const plantingProjects = {
     });
     return response.data as Blob;
   },
+  async exportEvidenceBundle(projectId: string, includePhotos = true) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/evidence-bundle`, {
+      params: { include_photos: includePhotos },
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -1484,5 +1491,35 @@ export const bioacoustic = {
     return (
       await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
     ).data as { id: string; status: string };
+  },
+};
+
+export type AuditLog = {
+  id: string;
+  actor_user_id: string | null;
+  organization_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  diff: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export const audit = {
+  async logs(params?: {
+    page?: number;
+    page_size?: number;
+    action?: string;
+    resource_type?: string;
+    resource_id?: string;
+  }) {
+    return (
+      await api.get<{ items: AuditLog[]; total: number; page: number; page_size: number }>(
+        "/v1/audit/logs",
+        { params },
+      )
+    ).data;
   },
 };

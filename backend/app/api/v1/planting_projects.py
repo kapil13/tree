@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
@@ -64,6 +64,8 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.audit import record_audit
+from app.services.evidence import build_project_evidence_bundle
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
@@ -217,7 +219,7 @@ async def list_projects(
 
 @router.post("", response_model=PlantingProjectOut, status_code=status.HTTP_201_CREATED)
 async def create_project(
-    payload: PlantingProjectCreate, user: CurrentUser, db: DB
+    payload: PlantingProjectCreate, request: Request, user: CurrentUser, db: DB
 ) -> PlantingProjectOut:
     segment = payload.segment
     if payload.program_code and segment == "general":
@@ -259,6 +261,15 @@ async def create_project(
     db.add(project)
     await db.flush()
     await create_standard_from_template(db, project=project, template_code=template_code)
+    await record_audit(
+        db,
+        actor=user,
+        action="project.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"code": project.code, "name": project.name, "segment": segment},
+    )
     await db.commit()
     await db.refresh(project)
 
@@ -281,6 +292,7 @@ async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> Plant
 async def update_project(
     project_id: uuid.UUID,
     payload: PlantingProjectUpdate,
+    request: Request,
     user: CurrentUser,
     db: DB,
 ) -> PlantingProjectOut:
@@ -297,6 +309,15 @@ async def update_project(
         merged.update(payload.metadata)
         project.metadata_ = merged
 
+    await record_audit(
+        db,
+        actor=user,
+        action="project.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"code": project.code},
+    )
     await db.commit()
     await db.refresh(project)
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
@@ -574,6 +595,7 @@ async def list_compliance_violations(
 async def resolve_compliance_violation(
     project_id: uuid.UUID,
     violation_id: uuid.UUID,
+    request: Request,
     user: CurrentUser,
     db: DB,
 ) -> dict:
@@ -596,6 +618,19 @@ async def resolve_compliance_violation(
     from datetime import UTC, datetime
 
     violation.resolved_at = datetime.now(UTC)
+    await record_audit(
+        db,
+        actor=user,
+        action="compliance.violation.resolve",
+        resource_type="compliance_violation",
+        resource_id=violation.id,
+        request=request,
+        diff={
+            "project_id": str(project.id),
+            "violation_type": violation.violation_type,
+            "severity": violation.severity,
+        },
+    )
     await db.commit()
     return {"status": "ok", "id": str(violation.id)}
 
@@ -617,6 +652,7 @@ async def project_survival_due(
 @router.get("/{project_id}/mrv-export")
 async def export_project_mrv(
     project_id: uuid.UUID,
+    request: Request,
     user: CurrentUser,
     db: DB,
     format: str = Query("pdf", pattern="^(pdf|xlsx)$"),
@@ -639,11 +675,59 @@ async def export_project_mrv(
         media = "application/pdf"
         ext = "pdf"
 
+    await record_audit(
+        db,
+        actor=user,
+        action="mrv.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"format": format, "project_code": project.code},
+    )
+    await db.commit()
+
     return Response(
         content=data,
         media_type=media,
         headers={
             "Content-Disposition": f'attachment; filename="{safe_code}-mrv-compliance.{ext}"'
+        },
+    )
+
+
+@router.get("/{project_id}/evidence-bundle")
+async def export_evidence_bundle(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    include_photos: bool = Query(True),
+) -> Response:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    zip_bytes, summary = await build_project_evidence_bundle(
+        db, project, include_photos=include_photos
+    )
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="evidence_bundle.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff=summary,
+    )
+    await db.commit()
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-evidence-bundle.zip"'
         },
     )
 
