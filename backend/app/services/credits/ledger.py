@@ -108,6 +108,7 @@ async def sync_project_ledger(
     )
     trees = list(trees_res.scalars().all())
     totals = compute_ledger_totals(trees, methodology)
+    now = datetime.now(UTC)
 
     ledger = await get_or_create_ledger(db, project)
     if ledger is None:
@@ -116,6 +117,8 @@ async def sync_project_ledger(
             organization_id=project.organization_id,
             methodology=methodology,
             status="estimated",
+            created_at=now,
+            updated_at=now,
         )
         db.add(ledger)
 
@@ -129,7 +132,8 @@ async def sync_project_ledger(
     ledger.net_credits_tco2e = totals["net_credits_tco2e"]
     ledger.engine_version = totals["engine_version"]
     ledger.strata = totals["strata"]
-    ledger.last_computed_at = datetime.now(UTC)
+    ledger.last_computed_at = now
+    ledger.updated_at = now
     if ledger.organization_id is None:
         ledger.organization_id = project.organization_id
 
