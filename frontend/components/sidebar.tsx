@@ -8,6 +8,7 @@ import {
   FileText,
   ClipboardList,
   FolderKanban,
+  Globe2,
   Leaf,
   Map,
   Mic,
@@ -19,6 +20,7 @@ import {
   Brain,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -42,9 +44,15 @@ export const NAV_ITEMS: NavItem[] = [
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
+  const { user } = useAuth();
+  const items =
+    user?.role === "admin"
+      ? [...NAV_ITEMS, { href: "/platform/cms", label: "Website CMS", icon: Globe2 }]
+      : NAV_ITEMS;
+
   return (
     <nav className="space-y-1">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const active = path === href || (href !== "/dashboard" && path?.startsWith(href));
         return (
           <Link

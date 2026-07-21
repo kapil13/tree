@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
+import { Check, Globe2, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -110,6 +110,19 @@ export default function SettingsPage() {
               <p className="text-stone-500">HMAC-signed outbound events for integrations</p>
             </div>
           </Link>
+
+          {user?.role === "admin" ? (
+            <Link
+              href="/platform/cms"
+              className="mt-3 flex items-center gap-3 rounded-2xl border border-forest-200 bg-forest-50/50 p-4 text-sm transition hover:border-forest-300 dark:border-forest-900 dark:bg-forest-950/20"
+            >
+              <Globe2 className="h-5 w-5 text-forest-700" />
+              <div>
+                <p className="font-semibold">Website CMS</p>
+                <p className="text-stone-500">Edit aranyix.tech header, footer, pages, and sections</p>
+              </div>
+            </Link>
+          ) : null}
         </div>
 
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/85 p-6 shadow-lg backdrop-blur dark:border-stone-800 dark:bg-stone-900/75">

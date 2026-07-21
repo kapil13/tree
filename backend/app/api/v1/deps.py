@@ -44,6 +44,15 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 DB = Annotated[AsyncSession, Depends(get_db)]
 
 
+async def require_platform_admin(user: CurrentUser) -> User:
+    if user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="platform_admin_required")
+    return user
+
+
+PlatformAdmin = Annotated[User, Depends(require_platform_admin)]
+
+
 def require(perm: Permission):
     async def dep(user: CurrentUser) -> User:
         if not has_permission(user.role, perm):
