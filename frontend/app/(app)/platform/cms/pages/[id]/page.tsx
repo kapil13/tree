@@ -1,24 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { CmsPageEditor } from "@/components/platform/cms-page-editor";
 import { cmsAdmin } from "@/lib/cms-api";
 
-export default function PlatformCmsPageDetail({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function PlatformCmsPageDetail() {
+  const params = useParams();
+  const pageId = params.id as string;
+
   const { data: sectionTypes } = useQuery({
     queryKey: ["cms-section-types"],
     queryFn: () => cmsAdmin.sectionTypes(),
   });
 
   const { data: page, isLoading, error } = useQuery({
-    queryKey: ["cms-admin-page", params.id],
-    queryFn: () => cmsAdmin.getPage(params.id),
+    queryKey: ["cms-admin-page", pageId],
+    queryFn: () => cmsAdmin.getPage(pageId),
   });
 
   return (

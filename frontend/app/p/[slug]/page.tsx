@@ -1,5 +1,10 @@
 import { MarketingPageView } from "@/components/marketing/marketing-page-view";
 
-export default function CmsPageRoute({ params }: { params: { slug: string } }) {
-  return <MarketingPageView slug={params.slug} />;
+export default async function CmsPageRoute({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <MarketingPageView slug={slug} />;
 }
