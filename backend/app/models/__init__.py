@@ -3,7 +3,6 @@ from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
-from app.models.platform_module import PlatformModuleRule
 from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
@@ -14,6 +13,7 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
+from app.models.platform_module import PlatformModuleRule
 from app.models.project_member import ProjectMember
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report

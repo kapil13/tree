@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import CmsManager, DB
+from app.api.v1.deps import DB, CmsManager
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
 from app.schemas.cms import (
     CmsPageCreate,
