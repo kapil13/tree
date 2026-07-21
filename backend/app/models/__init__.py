@@ -3,6 +3,7 @@ from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
+from app.models.platform_module import PlatformModuleRule
 from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
@@ -34,6 +35,7 @@ __all__ = [
     "CmsPage",
     "CmsSection",
     "CmsSiteConfig",
+    "PlatformModuleRule",
     "CreditLedgerEvent",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",

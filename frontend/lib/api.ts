@@ -182,6 +182,11 @@ export type User = {
   full_name: string;
   role: string;
   organization_id: string | null;
+  permissions?: string[];
+  platform_access?: {
+    website_cms: boolean;
+    users_admin: boolean;
+  };
 };
 
 export type PlantingProgram = {

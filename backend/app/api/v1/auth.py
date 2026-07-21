@@ -12,10 +12,13 @@ from sqlalchemy import select
 from app.api.v1.deps import DB, CurrentUser
 from app.core.config import settings
 from app.core.security import (
+    Permission,
     create_access_token,
     create_refresh_token,
     decode_token,
+    has_permission,
     hash_password,
+    permissions_for_role,
     verify_password,
 )
 from app.models.organization import Organization
@@ -42,6 +45,7 @@ from app.services.auth.otp import (
     verify_dev_otp,
 )
 from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
+from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -113,7 +117,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     )
     await db.commit()
     await db.refresh(user)
-    return UserOut.model_validate(user)
+    return _user_out(user)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -227,9 +231,35 @@ async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenRespo
     return _tokens_for(user)
 
 
+def _user_out(user: User, *, platform_access: dict[str, bool] | None = None) -> UserOut:
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        organization_id=user.organization_id,
+        is_active=user.is_active,
+        is_verified=user.is_verified,
+        created_at=user.created_at,
+        permissions=permissions_for_role(user.role),
+        platform_access=platform_access
+        or {
+            "website_cms": user.role == "admin",
+            "users_admin": user.role == "admin",
+        },
+    )
+
+
 @router.get("/me", response_model=UserOut)
-async def me(user: CurrentUser) -> UserOut:
-    return UserOut.model_validate(user)
+async def me(user: CurrentUser, db: DB) -> UserOut:
+    cms_access = await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE)
+    return _user_out(
+        user,
+        platform_access={
+            "website_cms": cms_access,
+            "users_admin": has_permission(user.role, Permission.PLATFORM_USERS_MANAGE),
+        },
+    )
 
 
 @router.patch("/me", response_model=UserOut)
@@ -240,7 +270,14 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
         user.phone = payload.phone
     await db.commit()
     await db.refresh(user)
-    return UserOut.model_validate(user)
+    cms_access = await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE)
+    return _user_out(
+        user,
+        platform_access={
+            "website_cms": cms_access,
+            "users_admin": has_permission(user.role, Permission.PLATFORM_USERS_MANAGE),
+        },
+    )
 
 
 @router.get("/google/login")

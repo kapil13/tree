@@ -118,6 +118,8 @@ class Permission(str, enum.Enum):
     SATELLITE_TRIGGER = "satellite:trigger"
     REPORT_GENERATE = "report:generate"
     AUDIT_READ = "audit:read"
+    CMS_MANAGE = "cms:manage"
+    PLATFORM_USERS_MANAGE = "platform:users:manage"
     ADMIN_ALL = "admin:*"
 
 
@@ -153,3 +155,11 @@ def has_permission(role: Role | str, perm: Permission) -> bool:
     role_enum = Role(role) if isinstance(role, str) else role
     perms = ROLE_PERMISSIONS.get(role_enum, set())
     return Permission.ADMIN_ALL in perms or perm in perms
+
+
+def permissions_for_role(role: Role | str) -> list[str]:
+    role_enum = Role(role) if isinstance(role, str) else role
+    perms = ROLE_PERMISSIONS.get(role_enum, set())
+    if Permission.ADMIN_ALL in perms:
+        return sorted(p.value for p in Permission)
+    return sorted(p.value for p in perms)

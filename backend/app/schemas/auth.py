@@ -71,6 +71,8 @@ class UserOut(BaseModel):
     is_active: bool
     is_verified: bool
     created_at: datetime
+    permissions: list[str] = Field(default_factory=list)
+    platform_access: dict[str, bool] = Field(default_factory=dict)
 
 
 class UpdateProfile(BaseModel):
