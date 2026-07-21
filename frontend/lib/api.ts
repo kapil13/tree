@@ -1713,6 +1713,146 @@ export const compliance = {
   },
 };
 
+export type WebhookEventType =
+  | "tree.registered"
+  | "tree.updated"
+  | "compliance.violation.resolved"
+  | "project.mrv.exported"
+  | "project.evidence_bundle.generated"
+  | "project.framework_report.exported"
+  | "project.credit_ledger.updated"
+  | "compliance.checklist.updated"
+  | "webhook.test";
+
+export type WebhookEndpoint = {
+  id: string;
+  label: string;
+  url: string;
+  events: WebhookEventType[];
+  enabled: boolean;
+  signing_secret_preview: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WebhookEndpointCreated = WebhookEndpoint & { signing_secret: string };
+
+export type WebhookDelivery = {
+  id: string;
+  webhook_id: string;
+  event_type: string;
+  status: string;
+  attempt_count: number;
+  response_status: number | null;
+  error_message: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  payload: Record<string, unknown>;
+};
+
+export const webhooks = {
+  async events() {
+    return (await api.get<WebhookEventType[]>("/v1/webhooks/events")).data;
+  },
+  async list() {
+    return (await api.get<WebhookEndpoint[]>("/v1/webhooks")).data;
+  },
+  async create(payload: { label: string; url: string; events: WebhookEventType[] }) {
+    return (await api.post<WebhookEndpointCreated>("/v1/webhooks", payload)).data;
+  },
+  async update(id: string, payload: Partial<{ label: string; url: string; events: WebhookEventType[]; enabled: boolean }>) {
+    return (await api.patch<WebhookEndpoint>(`/v1/webhooks/${id}`, payload)).data;
+  },
+  async remove(id: string) {
+    return (await api.delete<{ status: string }>(`/v1/webhooks/${id}`)).data;
+  },
+  async rotateSecret(id: string) {
+    return (await api.post<WebhookEndpointCreated>(`/v1/webhooks/${id}/rotate-secret`)).data;
+  },
+  async test(id: string) {
+    return (await api.post<WebhookDelivery>(`/v1/webhooks/${id}/test`)).data;
+  },
+  async deliveries(limit = 50) {
+    return (await api.get<WebhookDelivery[]>("/v1/webhooks/deliveries", { params: { limit } })).data;
+  },
+};
+
+export type VerificationLink = {
+  id: string;
+  token: string;
+  resource_type: "planting_project" | "tree";
+  resource_id: string;
+  label: string;
+  public_url: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  view_count: number;
+  last_viewed_at: string | null;
+  created_at: string;
+};
+
+export type PublicVerificationPayload = {
+  resource_type: "planting_project" | "tree";
+  snapshot_sha256: string;
+  generated_at: string;
+  disclaimer: string;
+  project?: {
+    code: string;
+    name: string;
+    segment: string;
+    status: string;
+    compliance_mode: string;
+  };
+  summary?: {
+    tree_count: number;
+    work_area_count: number;
+    open_violations: number;
+    native_species_pct: number | null;
+  };
+  credit_ledger?: {
+    status: string | null;
+    net_credits_tco2e: number | null;
+    methodology: string | null;
+  };
+  checklists?: Array<{ code: string; eligibility_status: string; score_pct: number }>;
+  sample_trees?: Array<{
+    public_code: string;
+    species: string;
+    health: string;
+    carbon_kg: number;
+    geo_tagged: boolean;
+  }>;
+  tree?: {
+    public_code: string;
+    species: string;
+    health: string;
+    status: string;
+    carbon_kg: number;
+    satellite_verified: boolean;
+  };
+  link?: { label: string; created_at: string; view_count: number };
+};
+
+export const verification = {
+  async publicSnapshot(token: string) {
+    return (await api.get<PublicVerificationPayload>(`/v1/public/verify/${token}`)).data;
+  },
+  async list(params?: { project_id?: string }) {
+    return (await api.get<VerificationLink[]>("/v1/verification-links", { params })).data;
+  },
+  async create(payload: {
+    resource_type: "planting_project" | "tree";
+    resource_id: string;
+    label?: string;
+    expires_in_days?: number;
+  }) {
+    return (await api.post<VerificationLink>("/v1/verification-links", payload)).data;
+  },
+  async revoke(id: string) {
+    return (await api.delete<{ status: string }>(`/v1/verification-links/${id}`)).data;
+  },
+};
+
 export type AuditLog = {
   id: string;
   actor_user_id: string | null;

@@ -199,3 +199,27 @@ def threat_watch_scan() -> dict:
     except Exception as exc:
         _run_async(_record("threat_watch_scan", "error", error=str(exc)))
         raise
+
+
+@celery_app.task(name="app.workers.tasks.deliver_webhook")
+def deliver_webhook(delivery_id: str) -> dict:
+    log.info("worker.deliver_webhook", delivery_id=delivery_id)
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.webhooks.dispatcher import deliver_webhook_once
+
+        async with AsyncSessionLocal() as db:
+            delivery = await deliver_webhook_once(db, uuid.UUID(delivery_id))
+            await db.commit()
+            return {
+                "delivery_id": delivery_id,
+                "status": delivery.status,
+                "response_status": delivery.response_status,
+            }
+
+    try:
+        return _run_async(_run())
+    except Exception as exc:
+        log.exception("deliver_webhook_failed", delivery_id=delivery_id)
+        return {"delivery_id": delivery_id, "status": "error", "error": str(exc)}

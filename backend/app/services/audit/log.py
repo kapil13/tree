@@ -42,4 +42,15 @@ async def record_audit(
         diff=diff,
     )
     db.add(entry)
+    await enqueue_audit_webhooks_safe(db, entry)
     return entry
+
+
+async def enqueue_audit_webhooks_safe(db: AsyncSession, entry: AuditLog) -> None:
+    try:
+        from app.services.webhooks.dispatcher import enqueue_audit_webhooks
+
+        await enqueue_audit_webhooks(db, entry)
+    except Exception:
+        # Webhook tables may be unmigrated in older deployments; never block audit writes.
+        return

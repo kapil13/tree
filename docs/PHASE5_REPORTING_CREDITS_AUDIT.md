@@ -11,7 +11,7 @@ Phase 5 makes Aranyix **audit-ready** for NHAI, NGT/CAMPA, Verra VM0047, and ESG
 | **5.2 Framework-mapped reports** | Done | VM0047, REDD+, NGT, IPCC, ESG profile exports |
 | **5.4 Credit ledger** | Done | Buffer pool, strata, status workflow |
 | **5.5 Checklists** | Done | Guided eligibility questionnaires with auto-checks |
-| 5.6–5.7 Webhooks + public verification | Planned | HMAC webhooks, share links |
+| **5.6–5.7 Webhooks + public verification** | Done | HMAC webhooks, share links |
 
 ## 5.1 Audit trail
 
@@ -116,6 +116,58 @@ Audit action: `compliance.checklist.save`
 ### UI
 
 Project → Compliance → **Eligibility checklist** (profile selector, per-question answers, gaps summary)
+
+## 5.6 Outbound webhooks
+
+HMAC-SHA256 signed HTTPS POSTs when audit-worthy events occur (tree registration, MRV exports, credit ledger updates, checklist saves, etc.).
+
+### Headers
+
+- `X-Aranyix-Event` — event type
+- `X-Aranyix-Timestamp` — Unix timestamp
+- `X-Aranyix-Signature` — `sha256=<hex>` over `{timestamp}.{body}`
+- `X-Aranyix-Delivery-Id` — delivery UUID
+
+### API
+
+```
+GET    /api/v1/webhooks/events
+GET    /api/v1/webhooks
+POST   /api/v1/webhooks
+PATCH  /api/v1/webhooks/{id}
+DELETE /api/v1/webhooks/{id}
+POST   /api/v1/webhooks/{id}/rotate-secret
+POST   /api/v1/webhooks/{id}/test
+GET    /api/v1/webhooks/deliveries
+```
+
+### Migration
+
+`0018_webhooks_public_verification` — `organization_webhooks`, `webhook_deliveries`
+
+### UI
+
+Settings → **Webhooks**
+
+## 5.7 Public verification
+
+Opaque share links expose read-only project/tree snapshots with a SHA-256 integrity hash.
+
+### API
+
+```
+GET  /api/v1/public/verify/{token}          (no auth)
+GET  /api/v1/verification-links
+POST /api/v1/verification-links
+DELETE /api/v1/verification-links/{id}
+```
+
+Audit actions: `verification_link.create`, `verification_link.revoke`
+
+### UI
+
+- Project → Compliance → **Create share link**
+- Public page: `/verify/{token}`
 
 ## 5.3 Evidence bundles
 

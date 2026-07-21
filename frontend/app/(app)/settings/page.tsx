@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Leaf, ScrollText, Settings2, Sparkles } from "lucide-react";
+import { Check, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -97,6 +97,17 @@ export default function SettingsPage() {
             <div>
               <p className="font-semibold">Audit trail</p>
               <p className="text-stone-500">View workspace action history for compliance reviews</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/settings/webhooks"
+            className="mt-3 flex items-center gap-3 rounded-2xl border border-stone-200 p-4 text-sm transition hover:border-forest-300 hover:bg-forest-50/50 dark:border-stone-700"
+          >
+            <Webhook className="h-5 w-5 text-forest-700" />
+            <div>
+              <p className="font-semibold">Webhooks</p>
+              <p className="text-stone-500">HMAC-signed outbound events for integrations</p>
             </div>
           </Link>
         </div>
