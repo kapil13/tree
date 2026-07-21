@@ -11,8 +11,8 @@ import pytest
 from app.services.compliance.checklists import get_checklist, list_checklists
 from app.services.compliance.evaluator import (
     build_auto_signals,
-    score_checklist,
     save_project_checklist_responses,
+    score_checklist,
 )
 
 
