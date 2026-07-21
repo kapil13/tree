@@ -13,6 +13,7 @@ from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
 from app.models.project_member import ProjectMember
+from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
 from app.models.satellite_health_analysis import SatelliteHealthAnalysis
@@ -21,6 +22,7 @@ from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
 from app.models.user import User
+from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 
 __all__ = [
@@ -31,6 +33,9 @@ __all__ = [
     "CreditLedgerEvent",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",
+    "PublicVerificationLink",
+    "OrganizationWebhook",
+    "WebhookDelivery",
     "Organization",
     "PlantingComplianceViolation",
     "PlantingProgram",

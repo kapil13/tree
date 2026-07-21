@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, ClipboardCheck, Download, FileText } from "lucide-react";
+import { CheckCircle, ClipboardCheck, Download, FileText, Link2 } from "lucide-react";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import {
   type FrameworkProfileCode,
+  errorMessage,
   plantingProjects,
   reporting,
+  verification,
 } from "@/lib/api";
 
 const SEVERITY_CLASS: Record<string, string> = {
@@ -35,6 +37,8 @@ export function ProjectComplianceTab({
 }) {
   const qc = useQueryClient();
   const [frameworkProfile, setFrameworkProfile] = useState<FrameworkProfileCode>("verra_vm0047");
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const { data: frameworks = [] } = useQuery({
     queryKey: ["reporting-frameworks"],
@@ -80,6 +84,22 @@ export function ProjectComplianceTab({
     },
   });
 
+  const createVerifyLink = useMutation({
+    mutationFn: () =>
+      verification.create({
+        resource_type: "planting_project",
+        resource_id: projectId,
+        label: projectCode ? `${projectCode} verification` : "Project verification",
+        expires_in_days: 365,
+      }),
+    onSuccess: (link) => {
+      setVerifyUrl(link.public_url);
+      setVerifyError(null);
+      qc.invalidateQueries({ queryKey: ["verification-links", projectId] });
+    },
+    onError: (err) => setVerifyError(errorMessage(err)),
+  });
+
   const busy = exportMrv.isPending || exportBundle.isPending || exportFramework.isPending;
   const selectedFramework = frameworks.find((f) => f.code === frameworkProfile);
 
@@ -93,6 +113,39 @@ export function ProjectComplianceTab({
           Eligibility checklist
         </div>
         <ProjectComplianceChecklistPanel projectId={projectId} />
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
+          <Link2 className="h-4 w-4 text-forest-700" />
+          Public verification link
+        </div>
+        <p className="text-xs text-stone-600">
+          Share a read-only verification page with auditors, registries, or courts. No login required.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn-primary text-xs"
+            disabled={createVerifyLink.isPending}
+            onClick={() => createVerifyLink.mutate()}
+          >
+            {createVerifyLink.isPending ? "Creating…" : "Create share link"}
+          </button>
+          {verifyUrl ? (
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={() => navigator.clipboard.writeText(verifyUrl)}
+            >
+              Copy link
+            </button>
+          ) : null}
+        </div>
+        {verifyUrl ? (
+          <p className="break-all font-mono text-xs text-forest-800">{verifyUrl}</p>
+        ) : null}
+        {verifyError ? <p className="text-xs text-rose-700">{verifyError}</p> : null}
       </div>
 
       <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
