@@ -10,7 +10,7 @@ Phase 5 makes Aranyix **audit-ready** for NHAI, NGT/CAMPA, Verra VM0047, and ESG
 | **5.3 Evidence bundles** | Done | Zip + SHA-256 manifest per project |
 | **5.2 Framework-mapped reports** | Done | VM0047, REDD+, NGT, IPCC, ESG profile exports |
 | **5.4 Credit ledger** | Done | Buffer pool, strata, status workflow |
-| 5.5 Checklists | Planned | Guided eligibility questionnaires |
+| **5.5 Checklists** | Done | Guided eligibility questionnaires with auto-checks |
 | 5.6–5.7 Webhooks + public verification | Planned | HMAC webhooks, share links |
 
 ## 5.1 Audit trail
@@ -91,6 +91,31 @@ POST /api/v1/credits/projects/{project_id}/transition
 ### UI
 
 Project → **Credits** tab
+
+## 5.5 Compliance checklists
+
+Guided self-assessment questionnaires aligned to VM0047, Gold Standard LUF, REDD+, NGT/CAMPA, and ESG disclosure. Items with project data (geo-tags, violations, credit ledger, work areas) are **auto-suggested** from live MRV metrics.
+
+### API
+
+```
+GET /api/v1/compliance/checklists
+GET /api/v1/compliance/projects/{project_id}/checklists
+GET /api/v1/compliance/projects/{project_id}/checklists/{code}
+PUT /api/v1/compliance/projects/{project_id}/checklists/{code}
+```
+
+Eligibility statuses: `not_started`, `in_progress`, `eligible`, `gaps_identified`, `not_eligible`
+
+Audit action: `compliance.checklist.save`
+
+### Migration
+
+`0017_compliance_checklists` — `project_checklist_responses`
+
+### UI
+
+Project → Compliance → **Eligibility checklist** (profile selector, per-question answers, gaps summary)
 
 ## 5.3 Evidence bundles
 

@@ -10,6 +10,7 @@ from app.api.v1 import (
     bhoonidhi,
     bioacoustic,
     carbon,
+    compliance,
     credits,
     dashboard,
     health,
@@ -39,6 +40,7 @@ api_router.include_router(planting_programs.router)
 api_router.include_router(planting_projects.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
+api_router.include_router(compliance.router)
 api_router.include_router(credits.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(intelligence.router)

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, Download, FileText } from "lucide-react";
+import { CheckCircle, ClipboardCheck, Download, FileText } from "lucide-react";
+import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import {
   type FrameworkProfileCode,
   plantingProjects,
@@ -86,6 +87,14 @@ export function ProjectComplianceTab({
 
   return (
     <div className="space-y-4">
+      <div className="card space-y-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
+          <ClipboardCheck className="h-4 w-4 text-forest-700" />
+          Eligibility checklist
+        </div>
+        <ProjectComplianceChecklistPanel projectId={projectId} />
+      </div>
+
       <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
           <FileText className="h-4 w-4 text-forest-700" />
