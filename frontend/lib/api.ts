@@ -1612,6 +1612,107 @@ export const reporting = {
   },
 };
 
+export type ChecklistCode =
+  | "verra_vm0047"
+  | "gold_standard_luf"
+  | "redd_plus"
+  | "ngt_campa"
+  | "esg_general";
+
+export type ChecklistAnswer = "yes" | "no" | "partial" | "na";
+
+export type ChecklistEligibilityStatus =
+  | "not_started"
+  | "in_progress"
+  | "eligible"
+  | "gaps_identified"
+  | "not_eligible";
+
+export type ChecklistSummary = {
+  code: ChecklistCode;
+  title: string;
+  short_label: string;
+  completion_pct: number;
+  score_pct: number;
+  eligibility_status: ChecklistEligibilityStatus;
+  updated_at: string | null;
+};
+
+export type ChecklistItem = {
+  id: string;
+  category: string;
+  question: string;
+  guidance: string;
+  required: boolean;
+  auto_key: string | null;
+  answer: ChecklistAnswer | null;
+  notes: string | null;
+  source: "user" | "auto" | null;
+  suggested_answer: ChecklistAnswer | null;
+};
+
+export type ProjectChecklistState = {
+  checklist: {
+    code: ChecklistCode;
+    title: string;
+    short_label: string;
+    framework_reference: string;
+    description: string;
+    disclaimer: string;
+  };
+  project_id: string;
+  responses: Record<string, { answer?: ChecklistAnswer; notes?: string }>;
+  items: ChecklistItem[];
+  completion_pct: number;
+  score_pct: number;
+  eligibility_status: ChecklistEligibilityStatus;
+  gaps: Array<{ item_id: string; question: string; answer: ChecklistAnswer; category: string }>;
+  answered_required: number;
+  required_count: number;
+  updated_at: string | null;
+};
+
+export const compliance = {
+  async checklists() {
+    return (
+      await api.get<
+        Array<{
+          code: ChecklistCode;
+          title: string;
+          short_label: string;
+          framework_reference: string;
+          description: string;
+          disclaimer: string;
+          item_count: number;
+        }>
+      >("/v1/compliance/checklists")
+    ).data;
+  },
+  async projectSummaries(projectId: string) {
+    return (await api.get<ChecklistSummary[]>(`/v1/compliance/projects/${projectId}/checklists`))
+      .data;
+  },
+  async projectChecklist(projectId: string, code: ChecklistCode) {
+    return (
+      await api.get<ProjectChecklistState>(
+        `/v1/compliance/projects/${projectId}/checklists/${code}`,
+      )
+    ).data;
+  },
+  async saveProjectChecklist(
+    projectId: string,
+    code: ChecklistCode,
+    answers: Record<string, { answer?: ChecklistAnswer; notes?: string }>,
+  ) {
+    return (
+      await api.put<ProjectChecklistState>(
+        `/v1/compliance/projects/${projectId}/checklists/${code}`,
+        { answers },
+      )
+    ).data;
+  },
+};
+
 export type AuditLog = {
   id: string;
   actor_user_id: string | null;

@@ -2,6 +2,7 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
+from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
@@ -28,6 +29,7 @@ __all__ = [
     "AuditLog",
     "CarbonCalculation",
     "CreditLedgerEvent",
+    "ProjectChecklistResponse",
     "ProjectCreditLedger",
     "Organization",
     "PlantingComplianceViolation",
