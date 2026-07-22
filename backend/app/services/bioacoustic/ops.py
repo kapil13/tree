@@ -119,6 +119,7 @@ def _run_analysis_pipeline(rec: BioacousticRecording, audio_bytes: bytes) -> Non
             **{k: v for k, v in preprocessing.items() if k != "wav_temp_path"},
             "spl_metrics": spl_metrics,
             "ecoacoustic_indices": ecoacoustic,
+            "analysis_pipeline": ai.pipeline,
         }
         rec.spectrogram_s3_key = preprocessing.get("spectrogram_s3_key")
         rec.species_detections = enriched

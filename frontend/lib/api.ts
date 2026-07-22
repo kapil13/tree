@@ -1379,6 +1379,7 @@ export type BioacousticRecording = {
   plantation_fence_id: string | null;
   status: string;
   preprocessing?: {
+    analysis_pipeline?: string;
     spl_metrics?: {
       avg_db_spl_approx?: number;
       max_db_spl_approx?: number;

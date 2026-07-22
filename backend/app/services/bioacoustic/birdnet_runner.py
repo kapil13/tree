@@ -21,13 +21,34 @@ def _det_get(det: Any, key: str, default: Any = None) -> Any:
 
 
 def _select_location_detections(raw: list[Any], *, return_all: bool) -> list[Any]:
-    """Prefer species predicted for location/date; keep all if geo filter is too strict."""
+    """
+    When return_all_detections is enabled, birdnetlib already returns the full model output.
+    Do not re-filter to location-predicted species only — that drops valid high-confidence birds.
+    When return_all is off, prefer species predicted for the recording site/date.
+    """
     if not raw:
         return []
-    if not return_all:
+    if return_all:
         return raw
     predicted = [d for d in raw if _det_get(d, "is_predicted_for_location_and_date") is True]
     return predicted if predicted else raw
+
+
+def _merge_detection_passes(*passes: list[Any]) -> list[Any]:
+    """Union detection passes without duplicating the same species interval."""
+    merged: list[Any] = []
+    seen: set[tuple[str, float, float]] = set()
+    for batch in passes:
+        for det in batch:
+            sci = _det_get(det, "scientific_name") or "Unknown"
+            start = float(_det_get(det, "start_time") or 0)
+            end = float(_det_get(det, "end_time") or 0)
+            key = (sci, start, end)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(det)
+    return merged
 
 
 def _group_species(raw: list[Any]) -> list[SpeciesDetection]:
@@ -109,10 +130,11 @@ def run_birdnet(
     return_all = settings.bioacoustic_return_all_detections
     has_location = latitude is not None and longitude is not None
 
-    passes: list[tuple[str, list[Any]]] = []
+    location_raw: list[Any] = []
+    global_raw: list[Any] = []
 
     if has_location:
-        raw = _analyze_pass(
+        location_raw = _analyze_pass(
             analyzer,
             wav_path,
             min_conf=min_conf,
@@ -122,19 +144,19 @@ def run_birdnet(
             return_all_detections=return_all,
             use_location=True,
         )
-        selected = _select_location_detections(raw, return_all=return_all)
-        passes.append(("location_filtered", selected))
+        location_selected = _select_location_detections(location_raw, return_all=return_all)
         log.info(
             "birdnet_pass",
-            pass_name="location_filtered",
-            raw=len(raw),
-            selected=len(selected),
+            pass_name="location_aware",
+            raw=len(location_raw),
+            selected=len(location_selected),
             min_conf=min_conf,
             return_all=return_all,
         )
+        location_raw = location_selected
 
-    if not any(p[1] for p in passes):
-        raw = _analyze_pass(
+    if not location_raw:
+        global_raw = _analyze_pass(
             analyzer,
             wav_path,
             min_conf=min_conf,
@@ -144,10 +166,27 @@ def run_birdnet(
             return_all_detections=False,
             use_location=False,
         )
-        passes.append(("global", raw))
-        log.info("birdnet_pass", pass_name="global", raw=len(raw), min_conf=min_conf)
+        log.info("birdnet_pass", pass_name="global", raw=len(global_raw), min_conf=min_conf)
+    elif has_location and return_all:
+        # Merge location-aware and global passes so geo-boosted and unexpected species are both kept.
+        global_raw = _analyze_pass(
+            analyzer,
+            wav_path,
+            min_conf=min_conf,
+            latitude=None,
+            longitude=None,
+            recorded_at=None,
+            return_all_detections=False,
+            use_location=False,
+        )
+        log.info(
+            "birdnet_pass",
+            pass_name="global_merge",
+            raw=len(global_raw),
+            min_conf=min_conf,
+        )
 
-    selected = next((p[1] for p in passes if p[1]), [])
+    selected = _merge_detection_passes(location_raw, global_raw)
 
     if not selected and min_conf > 0.1:
         raw = _analyze_pass(
@@ -160,7 +199,6 @@ def run_birdnet(
             return_all_detections=False,
             use_location=False,
         )
-        passes.append(("global_low_conf", raw))
         selected = raw
         log.info("birdnet_pass", pass_name="global_low_conf", raw=len(raw), min_conf=0.1)
 

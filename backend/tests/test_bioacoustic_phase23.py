@@ -36,3 +36,24 @@ def test_stub_includes_multiple_taxa():
     result = identify_species_from_audio(audio, duration_seconds=45.0)
     taxa = {d.taxon_group for d in result.detections}
     assert len(taxa) >= 2
+
+
+def test_composite_returns_empty_instead_of_failing(monkeypatch):
+    from app.core.config import settings
+    from app.services.ai import bioacoustic as bio_ai
+
+    monkeypatch.setattr(settings, "bioacoustic_pipeline", "composite")
+    monkeypatch.setattr(bio_ai, "birdnet_available", lambda: False)
+    monkeypatch.setattr(bio_ai, "perch_available", lambda: False)
+    monkeypatch.setattr(bio_ai, "frog_classifier_available", lambda: False)
+    monkeypatch.setattr(bio_ai, "insect_classifier_available", lambda: False)
+
+    result = bio_ai._run_composite(
+        "/tmp/fake.wav",
+        duration_seconds=90.0,
+        latitude=17.38,
+        longitude=78.48,
+        recorded_at=None,
+    )
+    assert result.detections == []
+    assert "no species met the confidence threshold" in result.summary
