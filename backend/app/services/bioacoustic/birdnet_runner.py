@@ -24,7 +24,7 @@ def _select_location_detections(raw: list[Any], *, return_all: bool) -> list[Any
     """
     When return_all_detections is enabled, birdnetlib already returns the full model output.
     Do not re-filter to location-predicted species only — that drops valid high-confidence birds.
-  When return_all is off, prefer species predicted for the recording site/date.
+    When return_all is off, prefer species predicted for the recording site/date.
     """
     if not raw:
         return []
@@ -199,7 +199,6 @@ def run_birdnet(
             return_all_detections=False,
             use_location=False,
         )
-        passes.append(("global_low_conf", raw))
         selected = raw
         log.info("birdnet_pass", pass_name="global_low_conf", raw=len(raw), min_conf=0.1)
 
