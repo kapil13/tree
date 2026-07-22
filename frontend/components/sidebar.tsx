@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
+import { canAccessWebsiteCms } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -45,10 +46,9 @@ export const NAV_ITEMS: NavItem[] = [
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const { user } = useAuth();
-  const items =
-    user?.role === "admin"
-      ? [...NAV_ITEMS, { href: "/platform/cms", label: "Website CMS", icon: Globe2 }]
-      : NAV_ITEMS;
+  const items = canAccessWebsiteCms(user)
+    ? [...NAV_ITEMS, { href: "/platform/cms", label: "Website CMS", icon: Globe2 }]
+    : NAV_ITEMS;
 
   return (
     <nav className="space-y-1">

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, FileText, Globe2 } from "lucide-react";
+import { ArrowLeft, FileText, Globe2, Users } from "lucide-react";
 import { CmsPagesListPanel } from "@/components/platform/cms-pages-list-panel";
 import { CmsSiteSettingsPanel } from "@/components/platform/cms-site-settings-panel";
+import { CmsUsersRolesPanel } from "@/components/platform/cms-users-roles-panel";
 
 export default function PlatformCmsPage() {
-  const [tab, setTab] = useState<"site" | "pages">("site");
+  const [tab, setTab] = useState<"site" | "pages" | "access">("site");
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -53,9 +54,23 @@ export default function PlatformCmsPage() {
           <FileText className="h-4 w-4" />
           Pages
         </button>
+        <button
+          type="button"
+          className={tab === "access" ? "btn-primary" : "btn-ghost"}
+          onClick={() => setTab("access")}
+        >
+          <Users className="h-4 w-4" />
+          Users & roles
+        </button>
       </div>
 
-      {tab === "site" ? <CmsSiteSettingsPanel /> : <CmsPagesListPanel />}
+      {tab === "site" ? (
+        <CmsSiteSettingsPanel />
+      ) : tab === "pages" ? (
+        <CmsPagesListPanel />
+      ) : (
+        <CmsUsersRolesPanel />
+      )}
     </div>
   );
 }

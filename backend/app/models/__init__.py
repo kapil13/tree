@@ -13,6 +13,7 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
+from app.models.platform_module import PlatformModuleRule
 from app.models.project_member import ProjectMember
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
@@ -34,6 +35,7 @@ __all__ = [
     "CmsPage",
     "CmsSection",
     "CmsSiteConfig",
+    "PlatformModuleRule",
     "CreditLedgerEvent",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",

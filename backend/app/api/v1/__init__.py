@@ -19,6 +19,7 @@ from app.api.v1 import (
     plantation_fences,
     planting_programs,
     planting_projects,
+    platform,
     reporting,
     reports,
     satellite,
@@ -46,6 +47,7 @@ api_router.include_router(carbon.router)
 api_router.include_router(compliance.router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
+api_router.include_router(platform.router)
 api_router.include_router(credits.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(intelligence.router)

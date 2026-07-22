@@ -45,7 +45,37 @@ On first API access, the CMS auto-seeds with the current aranyix.tech homepage c
 UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
-## Section types
+## User roles & CMS access
+
+Platform admins can open **Website CMS → Users & roles** to:
+
+1. **CMS access by role** — toggle which workspace roles may use the CMS (`website_cms` module rule). `admin` always has access.
+2. **User roles** — assign roles to individual users (platform admin only).
+
+`/api/v1/auth/me` returns:
+
+```json
+{
+  "permissions": ["cms:manage", "..."],
+  "platform_access": {
+    "website_cms": true,
+    "users_admin": true
+  }
+}
+```
+
+Users must sign in again after role changes to refresh `platform_access`.
+
+### Platform API (admin / CMS manager)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/platform/roles` | List assignable roles |
+| `GET /api/v1/platform/users` | List users (admin only) |
+| `PATCH /api/v1/platform/users/{id}` | Change user role (admin only) |
+| `GET /api/v1/platform/modules` | Module access rules |
+| `PATCH /api/v1/platform/modules/website_cms` | Update CMS allowed roles |
+
 
 `hero`, `features`, `compliance`, `programs`, `steps`, `platform_preview`, `cta`, `rich_text`
 

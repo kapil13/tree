@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, PlatformAdmin
+from app.api.v1.deps import DB, CmsManager
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
 from app.schemas.cms import (
     CmsPageCreate,
@@ -55,12 +55,12 @@ async def public_site_page(slug: str, db: DB) -> dict:
 
 
 @admin_router.get("/section-types")
-async def cms_section_types(_admin: PlatformAdmin) -> list[str]:
+async def cms_section_types(_manager: CmsManager) -> list[str]:
     return list(SECTION_TYPES)
 
 
 @admin_router.get("/site")
-async def cms_get_site(_admin: PlatformAdmin, db: DB) -> dict:
+async def cms_get_site(_manager: CmsManager, db: DB) -> dict:
     return await get_site_config(db)
 
 
@@ -69,7 +69,7 @@ async def cms_update_site(
     config_key: str,
     payload: SiteConfigUpdate,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     if config_key not in ("header", "footer"):
@@ -84,11 +84,11 @@ async def cms_update_site(
         db.add(row)
     else:
         row.data = payload.data
-    row.updated_by_user_id = admin.id
+    row.updated_by_user_id = manager.id
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.site.update",
         resource_type="cms_site_config",
         resource_id=row.id,
@@ -100,7 +100,7 @@ async def cms_update_site(
 
 
 @admin_router.get("/pages")
-async def cms_list_pages(_admin: PlatformAdmin, db: DB) -> list[dict]:
+async def cms_list_pages(_manager: CmsManager, db: DB) -> list[dict]:
     return await list_pages_admin(db)
 
 
@@ -108,7 +108,7 @@ async def cms_list_pages(_admin: PlatformAdmin, db: DB) -> list[dict]:
 async def cms_create_page(
     payload: CmsPageCreate,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     await ensure_cms_seeded(db)
@@ -134,7 +134,7 @@ async def cms_create_page(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.page.create",
         resource_type="cms_page",
         resource_id=page.id,
@@ -148,7 +148,7 @@ async def cms_create_page(
 
 
 @admin_router.get("/pages/{page_id}")
-async def cms_get_page(page_id: uuid.UUID, _admin: PlatformAdmin, db: DB) -> dict:
+async def cms_get_page(page_id: uuid.UUID, _manager: CmsManager, db: DB) -> dict:
     page = await get_page_admin(db, page_id)
     if page is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="page_not_found")
@@ -161,7 +161,7 @@ async def cms_update_page(
     page_id: uuid.UUID,
     payload: CmsPageUpdate,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     page = await get_page_admin(db, page_id)
@@ -193,7 +193,7 @@ async def cms_update_page(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.page.update",
         resource_type="cms_page",
         resource_id=page.id,
@@ -210,7 +210,7 @@ async def cms_update_page(
 async def cms_delete_page(
     page_id: uuid.UUID,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     page = await get_page_admin(db, page_id)
@@ -221,7 +221,7 @@ async def cms_delete_page(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.page.delete",
         resource_type="cms_page",
         resource_id=page.id,
@@ -238,7 +238,7 @@ async def cms_create_section(
     page_id: uuid.UUID,
     payload: CmsSectionCreate,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     page = await get_page_admin(db, page_id)
@@ -261,7 +261,7 @@ async def cms_create_section(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.section.create",
         resource_type="cms_section",
         resource_id=section.id,
@@ -277,7 +277,7 @@ async def cms_update_section(
     section_id: uuid.UUID,
     payload: CmsSectionUpdate,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     section = await db.get(CmsSection, section_id)
@@ -301,7 +301,7 @@ async def cms_update_section(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.section.update",
         resource_type="cms_section",
         resource_id=section.id,
@@ -316,7 +316,7 @@ async def cms_update_section(
 async def cms_delete_section(
     section_id: uuid.UUID,
     request: Request,
-    admin: PlatformAdmin,
+    manager: CmsManager,
     db: DB,
 ) -> dict:
     section = await db.get(CmsSection, section_id)
@@ -325,7 +325,7 @@ async def cms_delete_section(
 
     await record_audit(
         db,
-        actor=admin,
+        actor=manager,
         action="cms.section.delete",
         resource_type="cms_section",
         resource_id=section.id,

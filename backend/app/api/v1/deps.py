@@ -11,8 +11,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import Permission, TokenType, decode_token, has_permission
+from app.core.security import (
+    Permission,
+    TokenType,
+    decode_token,
+    has_permission,
+)
 from app.models.user import User
+from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -45,12 +51,23 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def require_platform_admin(user: CurrentUser) -> User:
-    if user.role != "admin":
+    if not has_permission(user.role, Permission.PLATFORM_USERS_MANAGE):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="platform_admin_required")
     return user
 
 
 PlatformAdmin = Annotated[User, Depends(require_platform_admin)]
+
+
+async def require_cms_manager(user: CurrentUser, db: DB) -> User:
+    if has_permission(user.role, Permission.CMS_MANAGE):
+        return user
+    if await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, detail="cms_access_denied")
+
+
+CmsManager = Annotated[User, Depends(require_cms_manager)]
 
 
 def require(perm: Permission):

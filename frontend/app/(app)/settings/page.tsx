@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Globe2, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
+import { canAccessWebsiteCms } from "@/lib/platform-access";
 import { errorMessage, plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { cn } from "@/lib/cn";
@@ -111,7 +112,7 @@ export default function SettingsPage() {
             </div>
           </Link>
 
-          {user?.role === "admin" ? (
+          {canAccessWebsiteCms(user) ? (
             <Link
               href="/platform/cms"
               className="mt-3 flex items-center gap-3 rounded-2xl border border-forest-200 bg-forest-50/50 p-4 text-sm transition hover:border-forest-300 dark:border-forest-900 dark:bg-forest-950/20"
