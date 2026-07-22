@@ -152,13 +152,19 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
 
 
 def has_permission(role: Role | str, perm: Permission) -> bool:
-    role_enum = Role(role) if isinstance(role, str) else role
+    try:
+        role_enum = Role(role) if isinstance(role, str) else role
+    except ValueError:
+        return False
     perms = ROLE_PERMISSIONS.get(role_enum, set())
     return Permission.ADMIN_ALL in perms or perm in perms
 
 
 def permissions_for_role(role: Role | str) -> list[str]:
-    role_enum = Role(role) if isinstance(role, str) else role
+    try:
+        role_enum = Role(role) if isinstance(role, str) else role
+    except ValueError:
+        return []
     perms = ROLE_PERMISSIONS.get(role_enum, set())
     if Permission.ADMIN_ALL in perms:
         return sorted(p.value for p in Permission)

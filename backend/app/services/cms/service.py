@@ -122,3 +122,22 @@ async def get_page_admin(db: AsyncSession, page_id: uuid.UUID) -> CmsPage | None
         select(CmsPage).options(selectinload(CmsPage.sections)).where(CmsPage.id == page_id)
     )
     return res.scalar_one_or_none()
+
+
+async def get_page_admin_by_slug(db: AsyncSession, slug: str) -> CmsPage | None:
+    await ensure_cms_seeded(db)
+    res = await db.execute(
+        select(CmsPage).options(selectinload(CmsPage.sections)).where(CmsPage.slug == slug)
+    )
+    return res.scalar_one_or_none()
+
+
+async def resolve_page_admin(db: AsyncSession, page_ref: str) -> CmsPage | None:
+    try:
+        page_id = uuid.UUID(page_ref)
+    except ValueError:
+        return await get_page_admin_by_slug(db, page_ref)
+    page = await get_page_admin(db, page_id)
+    if page is not None:
+        return page
+    return await get_page_admin_by_slug(db, page_ref)

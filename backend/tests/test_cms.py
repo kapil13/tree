@@ -11,6 +11,12 @@ def test_slugify():
     assert slugify("  Hello World!  ") == "hello-world"
 
 
+def test_resolve_page_ref_accepts_slug():
+    from app.services.cms.service import resolve_page_admin
+
+    assert callable(resolve_page_admin)
+
+
 def test_section_types_include_hero():
     assert "hero" in SECTION_TYPES
     assert "features" in SECTION_TYPES

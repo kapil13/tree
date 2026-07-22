@@ -6,20 +6,29 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { CmsPageEditor } from "@/components/platform/cms-page-editor";
 import { cmsAdmin } from "@/lib/cms-api";
+import { errorMessage } from "@/lib/api";
 
 export default function PlatformCmsPageDetail() {
   const params = useParams();
-  const pageId = params.id as string;
+  const pageRef = typeof params.id === "string" ? params.id : "";
 
-  const { data: sectionTypes } = useQuery({
+  const sectionTypesQuery = useQuery({
     queryKey: ["cms-section-types"],
     queryFn: () => cmsAdmin.sectionTypes(),
+    retry: 1,
   });
 
-  const { data: page, isLoading, error } = useQuery({
-    queryKey: ["cms-admin-page", pageId],
-    queryFn: () => cmsAdmin.getPage(pageId),
+  const pageQuery = useQuery({
+    queryKey: ["cms-admin-page", pageRef],
+    queryFn: () => cmsAdmin.getPage(pageRef),
+    enabled: Boolean(pageRef),
+    retry: 1,
   });
+
+  const page = pageQuery.data;
+  const sectionTypes = sectionTypesQuery.data;
+  const loading = !pageRef || pageQuery.isPending || sectionTypesQuery.isPending;
+  const loadError = pageQuery.error ?? sectionTypesQuery.error;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -42,11 +51,19 @@ export default function PlatformCmsPageDetail() {
         ) : null}
       </div>
 
-      {isLoading || !sectionTypes ? (
+      {loading ? (
         <p className="text-sm text-stone-500">Loading page…</p>
-      ) : error || !page ? (
+      ) : loadError || !page || !sectionTypes ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Could not load this page. It may have been deleted.
+          <p className="font-medium">Could not load this page.</p>
+          <p className="mt-2">
+            {loadError
+              ? errorMessage(loadError)
+              : "The page may have been deleted, or your session may have expired."}
+          </p>
+          <p className="mt-2 text-xs text-amber-800">
+            Try signing out and back in, then open Website CMS again.
+          </p>
         </div>
       ) : (
         <CmsPageEditor page={page} sectionTypes={sectionTypes} />

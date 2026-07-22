@@ -26,6 +26,7 @@ from app.services.cms.service import (
     get_public_page,
     get_site_config,
     list_pages_admin,
+    resolve_page_admin,
     slugify,
 )
 
@@ -147,9 +148,9 @@ async def cms_create_page(
     return _page_dict(loaded)
 
 
-@admin_router.get("/pages/{page_id}")
-async def cms_get_page(page_id: uuid.UUID, _manager: CmsManager, db: DB) -> dict:
-    page = await get_page_admin(db, page_id)
+@admin_router.get("/pages/{page_ref}")
+async def cms_get_page(page_ref: str, _manager: CmsManager, db: DB) -> dict:
+    page = await resolve_page_admin(db, page_ref)
     if page is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="page_not_found")
     sections = [_section_dict(s) for s in sorted(page.sections, key=lambda x: x.sort_order)]
