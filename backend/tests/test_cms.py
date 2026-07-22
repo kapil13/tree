@@ -17,6 +17,15 @@ def test_resolve_page_ref_accepts_slug():
     assert callable(resolve_page_admin)
 
 
+def test_ensure_cms_seeded_commits_not_only_flush():
+    import inspect
+
+    from app.services.cms.service import ensure_cms_seeded
+
+    source = inspect.getsource(ensure_cms_seeded)
+    assert "await db.commit()" in source
+
+
 def test_section_types_include_hero():
     assert "hero" in SECTION_TYPES
     assert "features" in SECTION_TYPES

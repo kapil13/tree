@@ -7,6 +7,7 @@ import uuid
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,7 +49,10 @@ async def ensure_cms_seeded(db: AsyncSession) -> None:
                 enabled=True,
             )
         )
-    await db.flush()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
 
 
 async def get_site_config(db: AsyncSession) -> dict[str, Any]:
