@@ -31,9 +31,38 @@ def run_bioacoustic_analysis(recording_id: str) -> dict:
 
 
 @celery_app.task(name="app.workers.tasks.run_ai_analysis")
-def run_ai_analysis(tree_id: str) -> dict:
-    log.info("worker.run_ai_analysis", tree_id=tree_id)
-    return {"tree_id": tree_id, "status": "queued"}
+def run_ai_analysis(tree_id: str, user_id: str, mode: str = "full") -> dict:
+    log.info("worker.run_ai_analysis", tree_id=tree_id, user_id=user_id)
+
+    async def _run() -> dict:
+        from app.api.v1.analysis import _run_tree_analysis
+        from app.core.database import AsyncSessionLocal
+        from app.models.user import User
+        from app.schemas.analysis import AnalysisRequest
+
+        async with AsyncSessionLocal() as db:
+            user = await db.get(User, uuid.UUID(user_id))
+            if user is None:
+                return {"status": "user_not_found", "tree_id": tree_id}
+            payload = AnalysisRequest(tree_id=uuid.UUID(tree_id), mode=mode)  # type: ignore[arg-type]
+            try:
+                rec = await _run_tree_analysis(payload, user, db)
+            except Exception as exc:
+                detail = getattr(exc, "detail", str(exc))
+                return {"status": "failed", "tree_id": tree_id, "error": str(detail)}
+            return {
+                "status": "completed",
+                "tree_id": tree_id,
+                "analysis_id": str(rec.id),
+            }
+
+    try:
+        result = _run_async(_run())
+        _run_async(_record("run_ai_analysis", "ok", result))
+        return result
+    except Exception as exc:
+        _run_async(_record("run_ai_analysis", "error", error=str(exc)))
+        raise
 
 
 @celery_app.task(name="app.workers.tasks.run_satellite_scan")
@@ -71,9 +100,38 @@ def run_satellite_scan(tree_id: str) -> dict:
 
 
 @celery_app.task(name="app.workers.tasks.recalc_carbon")
-def recalc_carbon(tree_id: str) -> dict:
-    log.info("worker.recalc_carbon", tree_id=tree_id)
-    return {"tree_id": tree_id, "status": "queued"}
+def recalc_carbon(tree_id: str, user_id: str) -> dict:
+    log.info("worker.recalc_carbon", tree_id=tree_id, user_id=user_id)
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.models.user import User
+        from app.services.carbon.recalc_ops import recalculate_tree_carbon
+
+        async with AsyncSessionLocal() as db:
+            user = await db.get(User, uuid.UUID(user_id))
+            if user is None:
+                return {"status": "user_not_found", "tree_id": tree_id}
+            try:
+                result = await recalculate_tree_carbon(
+                    db, tree_id=uuid.UUID(tree_id), user=user
+                )
+            except Exception as exc:
+                detail = getattr(exc, "detail", str(exc))
+                return {"status": "failed", "tree_id": tree_id, "error": str(detail)}
+            return {
+                "status": "completed",
+                "tree_id": tree_id,
+                "carbon_kg": result.carbon_kg,
+            }
+
+    try:
+        result = _run_async(_run())
+        _run_async(_record("recalc_carbon", "ok", result))
+        return result
+    except Exception as exc:
+        _run_async(_record("recalc_carbon", "error", error=str(exc)))
+        raise
 
 
 @celery_app.task(name="app.workers.tasks.send_notification")

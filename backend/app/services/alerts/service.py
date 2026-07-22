@@ -63,13 +63,23 @@ async def dispatch_alert_channels(
     title: str,
     message: str,
 ) -> dict[str, Any]:
-    """Send alert through configured channels; returns delivery status map."""
-    notifier = get_notifier()
+    """Send alert through configured channels; external channels may be Celery-queued."""
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import send_notification
+
     delivered: dict[str, Any] = {}
+    notifier = get_notifier()
+
     for channel in channels:
         if channel == "in_app":
             delivered["in_app"] = {"delivered": True}
             continue
+
+        task_id = try_enqueue(send_notification, str(user.id), channel, title, message)
+        if task_id:
+            delivered[channel] = {"delivered": True, "queued": True, "task_id": task_id}
+            continue
+
         to = user.email if channel == "email" else user.phone if channel == "sms" else ""
         if not to:
             delivered[channel] = {"delivered": False, "info": "no_destination"}

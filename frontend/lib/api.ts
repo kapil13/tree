@@ -1516,7 +1516,7 @@ export const bioacoustic = {
   async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
     return (
       await api.post(`/v1/reports?kind=${kind}&format=pdf&plantation_fence_id=${plantationFenceId}`)
-    ).data as { id: string; status: string };
+    ).data as { id: string; status: string; download_ready?: boolean };
   },
 };
 

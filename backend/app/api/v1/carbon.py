@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
@@ -41,6 +40,32 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
 async def recalculate(
     tree_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
 ) -> CarbonEstimateResponse:
+    from app.services.carbon.recalc_ops import recalculate_tree_carbon
+
+    result = await recalculate_tree_carbon(db, tree_id=tree_id, user=user)
+    await record_audit(
+        db,
+        actor=user,
+        action="carbon.recalculate",
+        resource_type="tree",
+        resource_id=tree_id,
+        request=request,
+        diff={"carbon_kg": result.carbon_kg, "engine_version": result.engine_version},
+    )
+    await db.commit()
+    return result
+
+
+@router.post("/recalculate/{tree_id}/async", status_code=status.HTTP_202_ACCEPTED)
+async def recalculate_async(
+    tree_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    """Queue carbon recalculation on the Celery worker when available."""
+    from app.services.carbon.recalc_ops import recalculate_tree_carbon
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import recalc_carbon as recalc_carbon_task
+
+    # Access check without mutating data
     res = await db.execute(select(Tree).where(Tree.id == tree_id))
     tree = res.scalar_one_or_none()
     if tree is None:
@@ -50,59 +75,17 @@ async def recalculate(
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
-    age_years = None
-    if tree.planted_at:
-        age_years = (datetime.now(UTC).date() - tree.planted_at).days / 365.25
+    task_id = try_enqueue(recalc_carbon_task, str(tree_id), str(user.id))
+    if task_id:
+        return {"tree_id": str(tree_id), "status": "queued", "celery_task_id": task_id}
 
-    calc = estimate_carbon(
-        CarbonInputs(
-            species=tree.species_text or "Neem",
-            dbh_cm=float(tree.current_dbh_cm) if tree.current_dbh_cm else None,
-            height_m=float(tree.current_height_m) if tree.current_height_m else None,
-            age_years=age_years,
-        )
-    )
-    rec = CarbonCalculation(
-        tree_id=tree.id,
-        methodology=calc.methodology,
-        inputs={
-            "species": tree.species_text,
-            "dbh_cm": float(tree.current_dbh_cm) if tree.current_dbh_cm else None,
-            "height_m": float(tree.current_height_m) if tree.current_height_m else None,
-            "age_years": age_years,
-        },
-        agb_kg=calc.agb_kg,
-        bgb_kg=calc.bgb_kg,
-        total_biomass_kg=calc.total_biomass_kg,
-        carbon_kg=calc.carbon_kg,
-        co2e_kg=calc.co2e_kg,
-        annual_sequestration_kg=calc.annual_sequestration_kg,
-        lifetime_credits_tco2e=calc.lifetime_credits_tco2e,
-        estimated_revenue_usd=calc.estimated_revenue_usd,
-        price_assumption_usd=12.0,
-        confidence=calc.confidence,
-        engine_version=calc.engine_version,
-    )
-    db.add(rec)
-    prev_carbon = float(tree.current_carbon_kg or 0)
-    tree.current_carbon_kg = calc.carbon_kg
-    await record_audit(
-        db,
-        actor=user,
-        action="carbon.recalculate",
-        resource_type="tree",
-        resource_id=tree.id,
-        request=request,
-        diff={
-            "public_code": tree.public_code,
-            "previous_carbon_kg": prev_carbon,
-            "carbon_kg": calc.carbon_kg,
-            "engine_version": calc.engine_version,
-            "methodology": calc.methodology,
-        },
-    )
-    await db.commit()
-    return CarbonEstimateResponse(**calc.__dict__)
+    result = await recalculate_tree_carbon(db, tree_id=tree_id, user=user)
+    return {
+        "tree_id": str(tree_id),
+        "status": "completed",
+        "carbon_kg": result.carbon_kg,
+        "synchronous": True,
+    }
 
 
 @router.get("-report/{tree_id}", name="carbon_report")

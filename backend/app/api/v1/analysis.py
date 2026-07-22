@@ -159,14 +159,31 @@ async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> A
     return AnalysisOut.model_validate(rec)
 
 
-@router.post("/tree-analysis/async", response_model=AnalysisJob)
+@router.post("/tree-analysis/async", response_model=AnalysisJob, status_code=status.HTTP_202_ACCEPTED)
 async def enqueue_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> AnalysisJob:
-    """
-    Synchronous analysis with an async-compatible job envelope.
+    """Queue tree analysis on Celery when available; otherwise run synchronously."""
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import run_ai_analysis
 
-    Returns status `completed` with the persisted analysis id. No background worker
-    is used — callers should prefer `POST /tree-analysis` for the full payload.
-    """
+    res = await db.execute(select(Tree).where(Tree.id == payload.tree_id))
+    tree = res.scalar_one_or_none()
+    if tree is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
+    if user.role != "admin" and tree.owner_user_id != user.id and (
+        not user.organization_id or tree.organization_id != user.organization_id
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    task_id = try_enqueue(
+        run_ai_analysis, str(payload.tree_id), str(user.id), payload.mode
+    )
+    if task_id:
+        return AnalysisJob(
+            job_id=task_id,
+            status="queued",
+            synchronous=False,
+        )
+
     rec = await _run_tree_analysis(payload, user, db)
     return AnalysisJob(
         job_id=str(rec.id),
