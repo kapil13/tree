@@ -3,38 +3,14 @@
 import { Bell, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth, useAuthHydrated } from "@/lib/auth-store";
-import { auth, isApiError } from "@/lib/api";
+import { useState } from "react";
+import { useAuth } from "@/lib/auth-store";
 import { NavLinks } from "@/components/sidebar";
 
 export function Topbar() {
   const router = useRouter();
-  const hydrated = useAuthHydrated();
-  const { user, setUser, logout, getAccessToken } = useAuth();
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (!hydrated) return;
-
-    const token = getAccessToken();
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
-
-    if (!user) {
-      auth
-        .me()
-        .then(setUser)
-        .catch((err) => {
-          if (isApiError(err) && err.response?.status === 401) {
-            logout();
-            router.replace("/login");
-          }
-        });
-    }
-  }, [hydrated, user, router, setUser, logout, getAccessToken]);
 
   return (
     <>
