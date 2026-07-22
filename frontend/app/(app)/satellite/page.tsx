@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
+import { BhoonidhiFenceCatalogPanel } from "@/components/satellite/bhoonidhi-fence-catalog-panel";
 import { bhoonidhi, plantationFences, trees } from "@/lib/api";
 
 export default function SatellitePage() {
+  const [selectedFenceId, setSelectedFenceId] = useState("");
   const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
     queryFn: () => trees.list({ page_size: 200 }),
@@ -21,6 +24,7 @@ export default function SatellitePage() {
   const items = treePage?.items ?? [];
   const verified = items.filter((t) => t.satellite_verified).length;
   const fences = fencePage?.items ?? [];
+  const selectedFence = fences.find((f) => f.id === selectedFenceId);
 
   return (
     <div className="space-y-4">
@@ -44,6 +48,28 @@ export default function SatellitePage() {
             </p>
           )}
         </div>
+      )}
+
+      {fences.length > 0 && (
+        <div className="card">
+          <label className="label">Plantation site for Bhoonidhi catalog</label>
+          <select
+            className="input max-w-md"
+            value={selectedFenceId}
+            onChange={(e) => setSelectedFenceId(e.target.value)}
+          >
+            <option value="">Select a site to browse ISRO scenes…</option>
+            {fences.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {selectedFence && bhoonidhiStatus?.configured && (
+        <BhoonidhiFenceCatalogPanel fenceId={selectedFence.id} fenceName={selectedFence.name} />
       )}
 
       <div className="grid gap-4 sm:grid-cols-4">

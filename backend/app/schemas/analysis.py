@@ -15,9 +15,9 @@ class AnalysisRequest(BaseModel):
 
 class AnalysisJob(BaseModel):
     job_id: str
-    status: str = "completed"
+    status: str = "queued"
     analysis_id: str | None = None
-    synchronous: bool = True
+    synchronous: bool = False
 
 
 class AnalysisOut(BaseModel):

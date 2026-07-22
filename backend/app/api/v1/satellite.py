@@ -66,6 +66,26 @@ async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecord
     return SatelliteRecordOut.model_validate(rec)
 
 
+@router.post("/scan/async", status_code=status.HTTP_202_ACCEPTED)
+async def scan_async(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+    """Queue NDVI satellite scan on the Celery worker when available."""
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import run_satellite_scan
+
+    await _load_tree(tree_id, user, db)
+    task_id = try_enqueue(run_satellite_scan, str(tree_id))
+    if task_id:
+        return {"tree_id": str(tree_id), "status": "queued", "celery_task_id": task_id}
+
+    rec = await scan(tree_id, user, db)
+    return {
+        "tree_id": str(tree_id),
+        "status": "completed",
+        "ndvi_mean": float(rec.ndvi_mean or 0),
+        "synchronous": True,
+    }
+
+
 @router.get("-monitoring/{tree_id}", response_model=SatelliteSeries, name="series")
 async def get_series(
     tree_id: uuid.UUID, user: CurrentUser, db: DB, months: int = 12
