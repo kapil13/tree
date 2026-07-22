@@ -77,7 +77,18 @@ async def upload_recording(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="audio_too_short")
     if duration_seconds < 60:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="duration_below_minimum_60s")
-    ext = ".wav" if (file.filename or "").lower().endswith(".wav") else ".m4a"
+    filename_lower = (file.filename or "").lower()
+    content_type = (file.content_type or "").lower()
+    if filename_lower.endswith(".wav"):
+        ext = ".wav"
+    elif filename_lower.endswith(".webm") or content_type == "audio/webm":
+        ext = ".webm"
+    elif filename_lower.endswith(".m4a") or "mp4" in content_type:
+        ext = ".m4a"
+    elif filename_lower.endswith(".ogg") or content_type == "audio/ogg":
+        ext = ".ogg"
+    else:
+        ext = ".webm"
     key = f"bioacoustic/{user.id}/{uuid.uuid4()}{ext}"
     storage = get_storage()
     try:

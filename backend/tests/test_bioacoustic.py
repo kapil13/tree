@@ -79,6 +79,25 @@ def test_stub_ai_identification():
     assert result.summary
 
 
+def test_production_requires_ml_stack(monkeypatch):
+    from app.core.config import settings
+    from app.services.ai import bioacoustic as bio_ai
+
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(bio_ai, "birdnet_available", lambda: False)
+    monkeypatch.setattr(bio_ai, "perch_available", lambda: False)
+
+    try:
+        identify_species_from_audio(
+            b"x" * 2000,
+            duration_seconds=90.0,
+            preprocessing={"wav_temp_path": "/tmp/fake.wav"},
+        )
+        assert False, "expected RuntimeError"
+    except RuntimeError as exc:
+        assert "bioacoustic_ml_unavailable" in str(exc)
+
+
 def test_aggregate_metrics_bird_only_scoring():
     detections = [
         {**enrich_detection("Corvus splendens", "House Crow", "bird"), "confidence": 0.9, "call_count": 5},

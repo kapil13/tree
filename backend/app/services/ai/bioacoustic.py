@@ -21,6 +21,32 @@ from app.services.bioacoustic.taxon_groups import TAXON_BIRD, normalize_taxon_gr
 log = get_logger("bioacoustic.ai")
 
 
+def _ml_stack_available() -> bool:
+    return birdnet_available() or perch_available()
+
+
+def _require_ml_or_stub(
+    *,
+    wav_path: str | None,
+    pipeline: str,
+) -> None:
+    if pipeline == "stub":
+        return
+    if wav_path:
+        if _ml_stack_available():
+            return
+        if settings.app_env in {"production", "staging"}:
+            raise RuntimeError(
+                "bioacoustic_ml_unavailable: BirdNET requires the dedicated Celery worker "
+                "(INSTALL_BIOACOUSTIC=1). Check worker logs and ffmpeg."
+            )
+        log.warning("birdnet_unavailable_dev_stub_fallback")
+        return
+    if settings.app_env in {"production", "staging"}:
+        raise RuntimeError("audio_preprocessing_failed")
+    log.warning("no_wav_dev_stub_fallback")
+
+
 def _stub_identify(
     audio_bytes: bytes,
     *,
@@ -152,7 +178,19 @@ def _run_composite(
 
     if not all_detections:
         log.warning("composite_no_detections", latitude=latitude, longitude=longitude)
-        raise RuntimeError("composite_no_detections")
+        loc = ""
+        if latitude is not None and longitude is not None:
+            loc = f" near ({latitude:.4f}, {longitude:.4f})"
+        summary = (
+            f"Biodiversity assessment: no species met the confidence threshold{loc}. "
+            f"Duration {duration_seconds:.0f}s. "
+            "Try a longer outdoor recording during active hours."
+        )
+        return BioacousticAnalysisResult(
+            detections=[],
+            summary=summary,
+            pipeline="composite-v1",
+        )
 
     merged = merge_species_detections(all_detections)
     summary = _build_multitaxa_summary(
@@ -214,6 +252,12 @@ def identify_species_from_audio(
     """Run BirdNET, Perch multi-taxa, composite, or stub pipeline."""
     wav_path = preprocessing.get("wav_temp_path") if preprocessing else None
     pipeline = settings.bioacoustic_pipeline
+
+    try:
+        _require_ml_or_stub(wav_path=wav_path, pipeline=pipeline)
+    except RuntimeError:
+        if pipeline != "stub":
+            raise
 
     if pipeline in {"birdnet", "composite", "multitaxa"} and wav_path:
         if pipeline == "composite":

@@ -31,6 +31,12 @@ function ecoacousticIndices(rec: BioacousticRecording): EcoacousticIndices | und
   return undefined;
 }
 
+function analysisPipeline(rec: BioacousticRecording): string | undefined {
+  const fromPre = rec.preprocessing?.analysis_pipeline;
+  if (typeof fromPre === "string") return fromPre;
+  return rec.species_detections?.[0]?.pipeline_source;
+}
+
 function speciesRichness(rec: BioacousticRecording) {
   const aboveThreshold = rec.species_detections?.filter((s) => !s.needs_review && s.confidence >= 0.7);
   return aboveThreshold?.length ?? rec.total_species_count ?? 0;
@@ -48,6 +54,7 @@ export default function BioacousticPage() {
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const splIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -140,7 +147,7 @@ export default function BioacousticPage() {
             // fallback
           }
 
-          const duration = Math.max(elapsed, MIN_SECONDS);
+          const duration = Math.max(elapsedRef.current, MIN_SECONDS);
           const form = new FormData();
           form.append("file", blob, "recording.webm");
           form.append("duration_seconds", String(duration));
@@ -163,6 +170,7 @@ export default function BioacousticPage() {
       recorder.start(1000);
       setRecording(true);
       setElapsed(0);
+      elapsedRef.current = 0;
 
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
@@ -187,14 +195,16 @@ export default function BioacousticPage() {
 
       timerRef.current = setInterval(() => {
         setElapsed((s) => {
-          if (s + 1 >= MAX_SECONDS) stopRecording();
-          return s + 1;
+          const next = s + 1;
+          elapsedRef.current = next;
+          if (next >= MAX_SECONDS) stopRecording();
+          return next;
         });
       }, 1000);
     } catch (e) {
       setError(errorMessage(e));
     }
-  }, [elapsed, fenceId, qc, stopRecording, stopSplMonitor]);
+  }, [fenceId, qc, stopRecording, stopSplMonitor]);
 
   async function downloadReport(kind: "biodiversity" | "esg") {
     if (!fenceId) {
@@ -405,6 +415,12 @@ export default function BioacousticPage() {
                 )}
                 {r.analysis_summary && (
                   <p className="mt-2 text-sm text-stone-600">{r.analysis_summary}</p>
+                )}
+                {r.status === "analyzed" && analysisPipeline(r) === "stub-bioacoustic-v1" && (
+                  <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    This assessment used the development stub engine, not BirdNET. On production, ensure the
+                    Celery worker is running with <code className="text-xs">INSTALL_BIOACOUSTIC=1</code>.
+                  </p>
                 )}
                 {r.species_detections?.length > 0 && (
                   <ul className="mt-3 space-y-2">
