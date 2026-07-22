@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User, Tokens } from "@/lib/api";
+import { clearSessionCookie, setSessionCookie, syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 const ACCESS_TOKEN_KEY = "byot_access_token";
 const PERSIST_KEY = "byot-auth";
@@ -27,6 +28,7 @@ export const useAuth = create<State>()(
       setSession: (tokens) => {
         if (typeof window !== "undefined") {
           localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
+          setSessionCookie(tokens.expires_in ?? 60 * 60 * 24 * 7);
         }
         set({ access: tokens.access_token, refresh: tokens.refresh_token });
       },
@@ -35,6 +37,7 @@ export const useAuth = create<State>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(PERSIST_KEY);
+          clearSessionCookie();
         }
         set({ user: null, access: null, refresh: null });
       },
@@ -60,6 +63,7 @@ export const useAuth = create<State>()(
         if (tok && !state?.access) {
           useAuth.setState({ access: tok });
         }
+        syncSessionCookieFromToken();
       },
     },
   ),

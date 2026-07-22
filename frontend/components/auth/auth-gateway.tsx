@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -37,8 +37,14 @@ type AuthMethod = "phone" | "email";
 
 const OTP_LENGTH = 6;
 
+function getSafeNextPath(next: string | null): string | null {
+  if (!next?.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
 
@@ -116,7 +122,11 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
-    router.push(mode === "signup" ? "/trees/new" : "/dashboard");
+    if (mode === "signup") {
+      router.push("/trees/new");
+      return;
+    }
+    router.push(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
   }
 
   async function handleGoogle() {
