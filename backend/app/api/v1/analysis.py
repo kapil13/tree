@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
+from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
@@ -35,15 +36,15 @@ def _fetch_image_bytes(s3_keys: list[str]) -> list[bytes]:
         if b:
             images.append(b)
     if not images and s3_keys:
-        # use the keys themselves as "image bytes" so the stub is deterministic
         images = [k.encode("utf-8") for k in s3_keys]
     if not images:
         images = [b"no-image"]
     return images
 
 
-@router.post("/tree-analysis", response_model=AnalysisOut)
-async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> AnalysisOut:
+async def _run_tree_analysis(
+    payload: AnalysisRequest, user: CurrentUser, db: DB
+) -> TreeAnalysis:
     res = await db.execute(select(Tree).where(Tree.id == payload.tree_id))
     tree = res.scalar_one_or_none()
     if tree is None:
@@ -73,7 +74,6 @@ async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> A
         ),
     )
 
-    # Carbon recompute
     carbon = estimate_carbon(
         CarbonInputs(
             species=result.species.top.scientific_name,
@@ -113,7 +113,31 @@ async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> A
     )
     db.add(rec)
 
-    # Update tree cache
+    db.add(
+        CarbonCalculation(
+            tree_id=tree.id,
+            methodology=carbon.methodology,
+            inputs={
+                "species": result.species.top.scientific_name,
+                "dbh_cm": result.growth.dbh_cm,
+                "height_m": result.growth.height_m,
+                "age_years": age,
+                "source": "tree_analysis",
+            },
+            agb_kg=carbon.agb_kg,
+            bgb_kg=carbon.bgb_kg,
+            total_biomass_kg=carbon.total_biomass_kg,
+            carbon_kg=carbon.carbon_kg,
+            co2e_kg=carbon.co2e_kg,
+            annual_sequestration_kg=carbon.annual_sequestration_kg,
+            lifetime_credits_tco2e=carbon.lifetime_credits_tco2e,
+            estimated_revenue_usd=carbon.estimated_revenue_usd,
+            price_assumption_usd=12.0,
+            confidence=carbon.confidence,
+            engine_version=carbon.engine_version,
+        )
+    )
+
     tree.species_text = tree.species_text or result.species.top.common_name
     tree.current_health = result.health.health_class
     tree.current_dbh_cm = result.growth.dbh_cm
@@ -126,14 +150,30 @@ async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> A
 
     await db.commit()
     await db.refresh(rec)
+    return rec
+
+
+@router.post("/tree-analysis", response_model=AnalysisOut)
+async def run_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> AnalysisOut:
+    rec = await _run_tree_analysis(payload, user, db)
     return AnalysisOut.model_validate(rec)
 
 
-@router.post("/tree-analysis/async", response_model=AnalysisJob, status_code=202)
+@router.post("/tree-analysis/async", response_model=AnalysisJob)
 async def enqueue_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) -> AnalysisJob:
-    # Celery would be used here; for now we just synchronously process and ack.
-    await run_analysis(payload, user, db)
-    return AnalysisJob(job_id=str(uuid.uuid4()), status="completed")
+    """
+    Synchronous analysis with an async-compatible job envelope.
+
+    Returns status `completed` with the persisted analysis id. No background worker
+    is used — callers should prefer `POST /tree-analysis` for the full payload.
+    """
+    rec = await _run_tree_analysis(payload, user, db)
+    return AnalysisJob(
+        job_id=str(rec.id),
+        analysis_id=str(rec.id),
+        status="completed",
+        synchronous=True,
+    )
 
 
 @router.get("/trees/{tree_id}/analyses", response_model=list[AnalysisOut])

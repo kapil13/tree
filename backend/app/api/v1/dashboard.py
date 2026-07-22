@@ -10,6 +10,7 @@ from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.tree import Tree
 from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
 from app.schemas.threat_watch import ThreatWatchResponse
+from app.services.dashboard.carbon_series import build_carbon_growth_series
 from app.services.threats.watch import build_portfolio_threat_watch
 
 router = APIRouter(tags=["dashboard"])
@@ -90,11 +91,7 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
     )
     species_rows = (await db.execute(_scope(species_stmt, user))).all()
 
-    # Trivial 6-month carbon growth series (front-end can replace with real metrics)
-    carbon_growth = [
-        SeriesPoint(label=f"M-{i}", value=round(total_carbon * (0.7 + 0.05 * i), 2))
-        for i in range(6, 0, -1)
-    ]
+    carbon_growth = await build_carbon_growth_series(db, user)
 
     all_bio_stmt = _bioacoustic_scope(select(BioacousticRecording), user)
     all_bio = (await db.execute(all_bio_stmt)).scalars().all()

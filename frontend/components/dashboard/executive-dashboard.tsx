@@ -291,7 +291,7 @@ export function ExecutiveDashboard() {
           <div className="dash-panel-head">
             <div>
               <h2 className="dash-panel-title">Carbon trajectory</h2>
-              <p className="dash-panel-sub">6-month stored carbon trend (t)</p>
+              <p className="dash-panel-sub">6-month stored carbon trend (t CO₂e, from portfolio data)</p>
             </div>
             <TrendingUp className="h-4 w-4 text-forest-600" />
           </div>
