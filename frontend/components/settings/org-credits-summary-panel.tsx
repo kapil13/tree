@@ -14,12 +14,18 @@ export function OrgCreditsSummaryPanel() {
     return <p className="text-sm text-stone-500">Loading organization credits…</p>;
   }
 
-  if (error || !data) {
+  if (error) {
     return (
-      <p className="text-sm text-stone-500">
-        Credit ledger summary is available for organization accounts with active projects.
-      </p>
+      <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        Could not load credit summary. If you recently deployed, run migrations on the API (
+        <code className="text-xs">alembic upgrade head</code>). Personal accounts show zero until you join an
+        organization with projects.
+      </div>
     );
+  }
+
+  if (!data) {
+    return <p className="text-sm text-stone-500">No credit summary available.</p>;
   }
 
   if (!data.project_count) {

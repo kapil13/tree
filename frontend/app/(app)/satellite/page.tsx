@@ -44,15 +44,16 @@ export default function SatellitePage() {
             </p>
           ) : (
             <p className="mt-2 text-xs text-amber-800">
-              Email {bhoonidhiStatus.registration_email} with your VPS public IP to enable API access.
+              API credentials not configured yet — you can still select a site below; scene search will run once
+              credentials are set. Email {bhoonidhiStatus.registration_email} with your VPS public IP to enable access.
             </p>
           )}
         </div>
       )}
 
-      {fences.length > 0 && (
-        <div className="card">
-          <label className="label">Plantation site for Bhoonidhi catalog</label>
+      <div className="card">
+        <label className="label">Plantation site — Bhoonidhi STAC catalog</label>
+        {fences.length > 0 ? (
           <select
             className="input max-w-md"
             value={selectedFenceId}
@@ -65,11 +66,20 @@ export default function SatellitePage() {
               </option>
             ))}
           </select>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-stone-600">
+            No plantation fences yet. Draw a fence on the map below, then return here to browse IRS / ResourceSat /
+            EOS-06 scenes for that site.
+          </p>
+        )}
+      </div>
 
-      {selectedFence && bhoonidhiStatus?.configured && (
-        <BhoonidhiFenceCatalogPanel fenceId={selectedFence.id} fenceName={selectedFence.name} />
+      {selectedFence && (
+        <BhoonidhiFenceCatalogPanel
+          fenceId={selectedFence.id}
+          fenceName={selectedFence.name}
+          configured={bhoonidhiStatus?.configured ?? false}
+        />
       )}
 
       <div className="grid gap-4 sm:grid-cols-4">

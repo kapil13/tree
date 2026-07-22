@@ -106,11 +106,15 @@ chmod +x deploy.sh worker-entrypoint.sh
 ./deploy.sh
 ```
 
-Or manually:
+Or manually (always rebuild frontend after UI changes):
 
 ```bash
+export GIT_SHA="$(git -C ../.. rev-parse --short HEAD)"
+docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache frontend
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
+
+After login, the app top bar shows the deployed git short SHA (e.g. `802de9e`). If it does not match your latest `git pull`, the frontend image was not rebuilt.
 
 First start runs **Alembic migrations** automatically (via `backend/docker-entrypoint.sh`).
 

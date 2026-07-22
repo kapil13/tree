@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calculator, Check, Globe2, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
+import { Calculator, Check, Coins, Globe2, Leaf, ScrollText, Settings2, Sparkles, Webhook } from "lucide-react";
 import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summary-panel";
 import { useAuth } from "@/lib/auth-store";
 import { canAccessWebsiteCms } from "@/lib/platform-access";
@@ -68,6 +68,34 @@ export default function SettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-6">
+        <div className="rounded-[2rem] border border-forest-200/80 bg-gradient-to-br from-forest-50/90 to-white/85 p-6 shadow-lg backdrop-blur dark:border-forest-900 dark:from-forest-950/40 dark:to-stone-900/75">
+          <div className="mb-4 flex items-center gap-2">
+            <Coins className="h-5 w-5 text-forest-700" />
+            <h2 className="text-lg font-semibold">Carbon tools & credits</h2>
+          </div>
+          <p className="text-sm text-stone-600 dark:text-stone-300">
+            Estimate sequestration for a single tree or review organization-wide credit totals across projects.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/tools/carbon"
+              className="flex flex-col gap-2 rounded-2xl border border-forest-200 bg-white p-4 text-sm transition hover:border-forest-400 hover:shadow-md dark:border-forest-900 dark:bg-stone-900"
+            >
+              <div className="flex items-center gap-2 font-semibold text-forest-800">
+                <Calculator className="h-5 w-5" />
+                Carbon calculator
+              </div>
+              <p className="text-stone-500">POST /carbon/estimate — biomass, CO₂e, and credit potential</p>
+            </Link>
+            <div className="rounded-2xl border border-stone-200 bg-white/80 p-4 text-sm dark:border-stone-700 dark:bg-stone-900/60">
+              <div className="mb-2 font-semibold text-stone-800 dark:text-stone-100">Organization credits</div>
+              <p className="mb-3 text-xs text-stone-500">GET /credits/summary — project counts and tCO₂e totals</p>
+              <OrgCreditsSummaryPanel />
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/85 p-6 shadow-lg backdrop-blur dark:border-stone-800 dark:bg-stone-900/75">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-500">Profile</p>
           <div className="mt-4 flex items-center gap-4">
@@ -126,25 +154,6 @@ export default function SettingsPage() {
               </div>
             </Link>
           ) : null}
-
-          <Link
-            href="/tools/carbon"
-            className="mt-3 flex items-center gap-3 rounded-2xl border border-stone-200 p-4 text-sm transition hover:border-forest-300 hover:bg-forest-50/50 dark:border-stone-700"
-          >
-            <Calculator className="h-5 w-5 text-forest-700" />
-            <div>
-              <p className="font-semibold">Carbon calculator</p>
-              <p className="text-stone-500">Estimate biomass, CO₂e, and credit potential</p>
-            </div>
-          </Link>
-        </div>
-
-        <div className="rounded-[2rem] border border-stone-200/80 bg-white/85 p-6 shadow-lg backdrop-blur dark:border-stone-800 dark:bg-stone-900/75">
-          <h2 className="text-lg font-semibold">Organization credits</h2>
-          <p className="mt-1 text-sm text-stone-500">Aggregated carbon credit ledger across all projects.</p>
-          <div className="mt-4">
-            <OrgCreditsSummaryPanel />
-          </div>
         </div>
         </div>
 
