@@ -109,7 +109,10 @@ export function CmsPagesListPanel() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Link href={`/platform/cms/pages/${page.id}`} className="btn-ghost text-xs">
+                      <Link
+                        href={`/platform/cms/pages/${page.id || page.slug}`}
+                        className="btn-ghost text-xs"
+                      >
                         Edit sections
                       </Link>
                       <a
