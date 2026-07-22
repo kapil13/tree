@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.platform_module import PlatformModuleRule
@@ -26,7 +27,10 @@ async def ensure_platform_modules_seeded(db: AsyncSession) -> None:
         return
     for row in DEFAULT_MODULES:
         db.add(PlatformModuleRule(**row))
-    await db.flush()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
 
 
 async def get_module_rule(db: AsyncSession, module_key: str) -> PlatformModuleRule | None:
