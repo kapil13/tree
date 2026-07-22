@@ -206,6 +206,7 @@ services:
         API_PROXY_TARGET: http://backend:8000
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+        NEXT_PUBLIC_BUILD_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     depends_on:
       backend:

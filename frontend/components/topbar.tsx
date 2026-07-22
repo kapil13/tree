@@ -26,6 +26,11 @@ export function Topbar() {
           </button>
           <div className="text-sm text-stone-600">
             {user?.organization_id ? "Organization view" : "Personal view"}
+            {process.env.NEXT_PUBLIC_BUILD_SHA ? (
+              <span className="ml-2 hidden text-xs text-stone-400 sm:inline" title="Deployed frontend build">
+                · {process.env.NEXT_PUBLIC_BUILD_SHA}
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex items-center gap-3">

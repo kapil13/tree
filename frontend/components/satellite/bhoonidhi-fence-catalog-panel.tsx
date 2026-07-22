@@ -6,40 +6,56 @@ import { bhoonidhi } from "@/lib/api";
 export function BhoonidhiFenceCatalogPanel({
   fenceId,
   fenceName,
+  configured = true,
 }: {
   fenceId: string;
   fenceName: string;
+  configured?: boolean;
 }) {
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["bhoonidhi-catalog", fenceId],
     queryFn: () => bhoonidhi.fenceCatalog(fenceId, { days_back: 90, limit: 12 }),
-    enabled: Boolean(fenceId),
+    enabled: Boolean(fenceId) && configured,
   });
 
   if (!fenceId) return null;
 
   return (
-    <div className="card">
+    <div className="card border-forest-200/60 dark:border-forest-900">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-medium text-stone-800">ISRO Bhoonidhi scenes — {fenceName}</h2>
-          <p className="text-xs text-stone-500">IRS / ResourceSat / EOS-06 catalog for this site (last 90 days)</p>
+          <p className="text-xs text-stone-500">
+            GET /bhoonidhi/plantation-fences/…/catalog — IRS / ResourceSat / EOS-06 (last 90 days)
+          </p>
         </div>
-        <button type="button" className="btn-secondary text-xs" onClick={() => refetch()} disabled={isFetching}>
+        <button
+          type="button"
+          className="btn-secondary text-xs"
+          onClick={() => refetch()}
+          disabled={isFetching || !configured}
+        >
           {isFetching ? "Loading…" : "Refresh"}
         </button>
       </div>
 
-      {isLoading && <p className="text-sm text-stone-500">Searching Bhoonidhi STAC catalog…</p>}
-      {error && (
+      {!configured && (
+        <p className="text-sm text-amber-800">
+          Bhoonidhi API is not configured on this server. Add credentials to{" "}
+          <code className="rounded bg-stone-100 px-1 text-xs dark:bg-stone-800">.env.production</code> and redeploy
+          to search the STAC catalog.
+        </p>
+      )}
+      {configured && isLoading && <p className="text-sm text-stone-500">Searching Bhoonidhi STAC catalog…</p>}
+      {configured && error && (
         <p className="text-sm text-amber-800">
           Bhoonidhi catalog unavailable. Ensure VPS IP is whitelisted and credentials are configured.
         </p>
       )}
-      {data && data.search.scenes.length === 0 && (
+      {configured && data && data.search.scenes.length === 0 && (
         <p className="text-sm text-stone-500">No online scenes found for this polygon in the last 90 days.</p>
       )}
-      {data && data.search.scenes.length > 0 && (
+      {configured && data && data.search.scenes.length > 0 && (
         <ul className="max-h-56 space-y-2 overflow-y-auto text-sm">
           {data.search.scenes.map((scene) => (
             <li

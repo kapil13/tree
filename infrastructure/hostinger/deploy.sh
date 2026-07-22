@@ -30,6 +30,13 @@ for var in POSTGRES_PASSWORD JWT_SECRET MINIO_ROOT_PASSWORD APP_DOMAIN API_DOMAI
 done
 # NEXT_PUBLIC_API_URL is optional; empty = same-origin /api proxy (recommended)
 
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export GIT_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+echo "==> Deploying git revision: $GIT_SHA"
+
+echo "==> Rebuilding frontend (no cache — ensures UI updates are visible)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache frontend
+
 echo "==> Building and starting BYOT stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
@@ -62,6 +69,7 @@ echo ""
 echo "Deploy complete."
 echo "  App:  https://${APP_DOMAIN}"
 echo "  API:  https://${API_DOMAIN}"
+echo "  Git:  ${GIT_SHA} (shown in app top bar after login)"
 echo ""
 echo "Optional — seed demo user:"
 echo "  docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend python -m app.scripts.seed_demo"

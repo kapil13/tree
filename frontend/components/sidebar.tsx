@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
+  Calculator,
   FileText,
   ClipboardList,
   FolderKanban,
@@ -36,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/trees/new", label: "Add tree", icon: Leaf },
   { href: "/map", label: "Map", icon: Map },
   { href: "/satellite", label: "Satellite", icon: Satellite },
+  { href: "/tools/carbon", label: "Carbon calculator", icon: Calculator },
   { href: "/bioacoustic", label: "Biodiversity", icon: Mic },
   { href: "/assistant", label: "AI assistant", icon: Sparkles },
   { href: "/reports", label: "Reports", icon: FileText },
