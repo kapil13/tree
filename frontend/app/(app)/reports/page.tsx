@@ -81,7 +81,7 @@ export default function ReportsPage() {
           </div>
         )}
         <button className="btn-primary" onClick={queue} disabled={busy || (needsFence && !fenceId)}>
-          {busy ? "Queuing…" : "Queue report"}
+          {busy ? "Generating…" : "Generate report"}
         </button>
         <button className="btn-secondary" onClick={refresh}>
           Refresh
@@ -104,7 +104,7 @@ export default function ReportsPage() {
             {list.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-stone-500">
-                  No reports yet — queue one above.
+                  No reports yet — generate one above.
                 </td>
               </tr>
             )}
@@ -112,7 +112,11 @@ export default function ReportsPage() {
               <tr key={r.id} className="border-t border-stone-100">
                 <td className="px-4 py-2">{r.kind}</td>
                 <td className="px-4 py-2">{r.format}</td>
-                <td className="px-4 py-2">{r.status}</td>
+                <td className="px-4 py-2">
+                  <span className={r.status === "ready" ? "text-forest-700" : r.status === "failed" ? "text-rose-700" : ""}>
+                    {r.status}
+                  </span>
+                </td>
                 <td className="px-4 py-2 text-stone-500">
                   {new Date(r.created_at).toLocaleString()}
                 </td>
