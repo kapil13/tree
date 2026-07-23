@@ -11,9 +11,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.core.config import settings
-
-# Register Celery worker lifecycle hooks for async DB access.
-import app.workers.async_runner  # noqa: F401, E402
+from app.workers import async_runner as _async_runner  # noqa: F401
 
 celery_app = Celery(
     "byot",
