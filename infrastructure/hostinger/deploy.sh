@@ -34,11 +34,26 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 export GIT_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 echo "==> Deploying git revision: $GIT_SHA"
 
-echo "==> Rebuilding frontend (no cache — ensures UI updates are visible)..."
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache frontend
+# COMPOSE_PROFILES=bioacoustic enables the heavy TensorFlow worker (see docker-compose.prod.yml).
+COMPOSE_PROFILES="${COMPOSE_PROFILES:-}"
+if [[ -n "$COMPOSE_PROFILES" ]]; then
+  echo "==> Compose profiles: $COMPOSE_PROFILES"
+fi
+
+BUILD_FLAGS=()
+if [[ "${FORCE_FRONTEND_REBUILD:-}" == "1" ]]; then
+  echo "==> Rebuilding frontend (FORCE_FRONTEND_REBUILD=1 — no cache)..."
+  BUILD_FLAGS+=(--no-cache)
+else
+  echo "==> Building frontend (layer cache enabled — set FORCE_FRONTEND_REBUILD=1 to bust cache)..."
+fi
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${BUILD_FLAGS[@]}" frontend
 
 echo "==> Building and starting BYOT stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
+
+echo "==> Pruning dangling Docker images (frees disk from old deploys)..."
+docker image prune -f
 
 echo "==> Waiting for API health..."
 TRIES=0
@@ -59,6 +74,16 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic
 
 echo "==> Ensuring worker + beat are running..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d worker beat
+if [[ "$COMPOSE_PROFILES" == *bioacoustic* ]]; then
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d bioacoustic-worker
+fi
+
+if [[ -x ./resource-check.sh ]]; then
+  echo "==> Disk snapshot after deploy..."
+  df -h / 2>/dev/null || true
+  docker system df 2>/dev/null || true
+  echo "(Full report: ./resource-check.sh — cleanup: ./cleanup-docker-disk.sh)"
+fi
 
 if [[ -x ./verify-phase3.sh ]]; then
   echo "==> Phase 3 verification..."

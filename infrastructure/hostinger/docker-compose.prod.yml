@@ -5,6 +5,14 @@
 #   # edit .env.production with secrets and domain
 #   docker compose -f infrastructure/hostinger/docker-compose.prod.yml --env-file infrastructure/hostinger/.env.production up -d --build
 #
+# Optional bioacoustic ML worker (TensorFlow + Perch — ~3 GB image, ~2 GB RAM):
+#   COMPOSE_PROFILES=bioacoustic docker compose -f ... up -d --build
+#
+# Resource notes:
+#   - deploy.resources.limits is NOT enforced by plain `docker compose` (Swarm only).
+#   - mem_limit below is what actually caps container RAM on a single VPS.
+#   - Run ./resource-check.sh and ./cleanup-docker-disk.sh if disk grows past ~50 GB.
+#
 # Requires: Docker Engine 24+ and Docker Compose v2
 
 name: byot-prod
@@ -24,6 +32,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    mem_limit: 3g
     deploy:
       resources:
         limits:
@@ -41,6 +50,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+    mem_limit: 384m
     deploy:
       resources:
         limits:
@@ -60,6 +70,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    mem_limit: 512m
     deploy:
       resources:
         limits:
@@ -123,21 +134,22 @@ services:
       timeout: 5s
       retries: 8
       start_period: 120s
+    mem_limit: 2g
     deploy:
       resources:
         limits:
           memory: 2048M
 
+  # Slim Celery worker — no TensorFlow/BirdNET (~1 GB image vs ~4 GB with ML stack).
   worker:
     build:
       context: ../../backend
       dockerfile: Dockerfile
       args:
-        INSTALL_BIOACOUSTIC: "1"
+        INSTALL_BIOACOUSTIC: "0"
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
-      - ${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}:/opt/aranyix/models:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
@@ -163,10 +175,59 @@ services:
         "-l",
         "info",
         "-Q",
-        "default,ai,satellite,carbon,notifications,bioacoustic",
+        "default,ai,satellite,carbon,notifications",
         "--concurrency",
         "2",
       ]
+    mem_limit: 1536m
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  # Heavy ML worker — enable only when bioacoustic uploads are needed:
+  #   COMPOSE_PROFILES=bioacoustic ./deploy.sh
+  bioacoustic-worker:
+    profiles: ["bioacoustic"]
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      args:
+        INSTALL_BIOACOUSTIC: "1"
+    restart: unless-stopped
+    volumes:
+      - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
+      - ${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}:/opt/aranyix/models:ro
+    entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
+    env_file:
+      - .env.production
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
+      DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-byot-media}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      worker:
+        condition: service_started
+    command:
+      [
+        "celery",
+        "-A",
+        "app.workers.celery_app",
+        "worker",
+        "-l",
+        "info",
+        "-Q",
+        "bioacoustic",
+        "--concurrency",
+        "1",
+      ]
+    mem_limit: 2560m
     deploy:
       resources:
         limits:
@@ -192,6 +253,7 @@ services:
       worker:
         condition: service_started
     command: ["celery", "-A", "app.workers.celery_app", "beat", "-l", "info"]
+    mem_limit: 256m
     deploy:
       resources:
         limits:
@@ -213,6 +275,7 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    mem_limit: 768m
     deploy:
       resources:
         limits:
@@ -234,6 +297,7 @@ services:
     depends_on:
       - frontend
       - backend
+    mem_limit: 128m
     deploy:
       resources:
         limits:

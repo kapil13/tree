@@ -35,12 +35,21 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend curl -f
   echo "(backend not running or curl failed)"
 
 echo ""
-echo "==> Memory limits"
-docker inspect byot-prod-backend-1 --format 'Backend memory limit: {{.HostConfig.Memory}}' 2>/dev/null || true
+echo "==> Memory limits (0 = unlimited)"
+for name in byot-prod-postgres-1 byot-prod-redis-1 byot-prod-backend-1 byot-prod-worker-1 \
+            byot-prod-bioacoustic-worker-1 byot-prod-beat-1 byot-prod-frontend-1 byot-prod-caddy-1; do
+  docker inspect "$name" --format '{{.Name}} memory limit: {{.HostConfig.Memory}} bytes' 2>/dev/null || true
+done
+
+echo ""
+echo "==> Disk + RAM (run ./resource-check.sh for full report)"
+df -h / 2>/dev/null || true
+docker system df 2>/dev/null || true
 
 echo ""
 echo "==> Common fixes"
-echo "  1. OOM / unhealthy: rebuild slim API image (no TensorFlow on backend):"
+echo "  1. Disk 100+ GB with no data: ./cleanup-docker-disk.sh (old Docker images from deploys)"
+echo "  2. OOM / unhealthy: rebuild slim API image (no TensorFlow on backend):"
 echo "     docker compose -f $COMPOSE_FILE --env-file $ENV_FILE build --no-cache backend worker"
 echo "  2. alembic revision id too long (varchar 32): ensure head is 0018_webhooks_public_verification"
 echo "  3. Credits tab 500/503: run alembic upgrade head (needs 0015 + 0016)"
