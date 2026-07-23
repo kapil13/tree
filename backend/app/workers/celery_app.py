@@ -12,6 +12,9 @@ from celery.schedules import crontab
 
 from app.core.config import settings
 
+# Register Celery worker lifecycle hooks for async DB access.
+import app.workers.async_runner  # noqa: F401, E402
+
 celery_app = Celery(
     "byot",
     broker=settings.redis_url,
