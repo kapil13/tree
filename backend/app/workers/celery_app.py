@@ -11,6 +11,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.core.config import settings
+from app.workers import async_runner as _async_runner  # noqa: F401
 
 celery_app = Celery(
     "byot",

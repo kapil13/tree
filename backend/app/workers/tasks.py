@@ -3,15 +3,10 @@ from __future__ import annotations
 import uuid
 
 from app.core.logging import get_logger
+from app.workers.async_runner import run_async
 from app.workers.celery_app import celery_app
 
 log = get_logger("worker")
-
-
-def _run_async(coro):
-    import asyncio
-
-    return asyncio.run(coro)
 
 
 async def _record(job_name: str, status: str, result=None, error=None):
@@ -20,6 +15,21 @@ async def _record(job_name: str, status: str, result=None, error=None):
 
     async with AsyncSessionLocal() as db:
         await record_job_run(db, job_name=job_name, status=status, result=result, error=error)
+
+
+def _execute_recorded(job_name: str, work):
+    """Run async job work and persist a monitoring job_run row in one event loop."""
+
+    async def _wrapped():
+        try:
+            result = await work()
+            await _record(job_name, "ok", result)
+            return result
+        except Exception as exc:
+            await _record(job_name, "error", error=str(exc))
+            raise
+
+    return run_async(_wrapped())
 
 
 @celery_app.task(name="app.workers.tasks.run_bioacoustic_analysis")
@@ -56,13 +66,7 @@ def run_ai_analysis(tree_id: str, user_id: str, mode: str = "full") -> dict:
                 "analysis_id": str(rec.id),
             }
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("run_ai_analysis", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("run_ai_analysis", "error", error=str(exc)))
-        raise
+    return _execute_recorded("run_ai_analysis", _run)
 
 
 @celery_app.task(name="app.workers.tasks.run_satellite_scan")
@@ -90,13 +94,7 @@ def run_satellite_scan(tree_id: str) -> dict:
                 "ndvi_mean": float(rec.ndvi_mean) if rec and rec.ndvi_mean else None,
             }
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("run_satellite_scan", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("run_satellite_scan", "error", error=str(exc)))
-        raise
+    return _execute_recorded("run_satellite_scan", _run)
 
 
 @celery_app.task(name="app.workers.tasks.recalc_carbon")
@@ -125,13 +123,7 @@ def recalc_carbon(tree_id: str, user_id: str) -> dict:
                 "carbon_kg": result.carbon_kg,
             }
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("recalc_carbon", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("recalc_carbon", "error", error=str(exc)))
-        raise
+    return _execute_recorded("recalc_carbon", _run)
 
 
 @celery_app.task(name="app.workers.tasks.send_notification")
@@ -151,7 +143,7 @@ def send_notification(user_id: str, channel: str, title: str, message: str) -> d
             delivered = await dispatch_alert_channels(user, [channel], title=title, message=message)
             return {"status": "ok", "delivered": delivered}
 
-    return _run_async(_run())
+    return run_async(_run())
 
 
 @celery_app.task(name="app.workers.tasks.monthly_satellite_sweep")
@@ -165,13 +157,7 @@ def monthly_satellite_sweep() -> dict:
         async with AsyncSessionLocal() as db:
             return await run_monthly_satellite_sweep(db)
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("monthly_satellite_sweep", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("monthly_satellite_sweep", "error", error=str(exc)))
-        raise
+    return _execute_recorded("monthly_satellite_sweep", _run)
 
 
 @celery_app.task(name="app.workers.tasks.daily_health_roundup")
@@ -190,13 +176,7 @@ def daily_health_roundup() -> dict:
             compliance = await create_compliance_escalation_alerts(db)
             return {"health": health, "compliance": compliance}
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("daily_health_roundup", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("daily_health_roundup", "error", error=str(exc)))
-        raise
+    return _execute_recorded("daily_health_roundup", _run)
 
 
 @celery_app.task(name="app.workers.tasks.survival_survey_reminders")
@@ -210,13 +190,7 @@ def survival_survey_reminders() -> dict:
         async with AsyncSessionLocal() as db:
             return await create_survival_survey_alerts(db)
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("survival_survey_reminders", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("survival_survey_reminders", "error", error=str(exc)))
-        raise
+    return _execute_recorded("survival_survey_reminders", _run)
 
 
 @celery_app.task(name="app.workers.tasks.biodiversity_baseline")
@@ -230,13 +204,7 @@ def biodiversity_baseline() -> dict:
         async with AsyncSessionLocal() as db:
             return await run_biodiversity_baseline(db)
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("biodiversity_baseline", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("biodiversity_baseline", "error", error=str(exc)))
-        raise
+    return _execute_recorded("biodiversity_baseline", _run)
 
 
 @celery_app.task(name="app.workers.tasks.threat_watch_scan")
@@ -250,13 +218,7 @@ def threat_watch_scan() -> dict:
         async with AsyncSessionLocal() as db:
             return await create_threat_watch_alerts(db)
 
-    try:
-        result = _run_async(_run())
-        _run_async(_record("threat_watch_scan", "ok", result))
-        return result
-    except Exception as exc:
-        _run_async(_record("threat_watch_scan", "error", error=str(exc)))
-        raise
+    return _execute_recorded("threat_watch_scan", _run)
 
 
 @celery_app.task(name="app.workers.tasks.deliver_webhook")
@@ -277,7 +239,7 @@ def deliver_webhook(delivery_id: str) -> dict:
             }
 
     try:
-        return _run_async(_run())
+        return run_async(_run())
     except Exception as exc:
         log.exception("deliver_webhook_failed", delivery_id=delivery_id)
         return {"delivery_id": delivery_id, "status": "error", "error": str(exc)}
