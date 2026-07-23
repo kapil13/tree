@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -16,19 +16,15 @@ import {
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
+import { SignupWizard } from "@/components/auth/signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
-import { getProgramTheme } from "@/components/registration/program-theme";
-import {
-  DEFAULT_SIGNUP_PROGRAMS,
-  SIGNUP_PROGRAM_OPTIONS,
-} from "@/lib/program-catalog";
 import {
   formatPhoneDisplay,
   isValidIndianMobile,
   phoneForApi,
   sanitizePhoneDigits,
 } from "@/lib/phone";
-import { auth, errorMessage, plantingPrograms } from "@/lib/api";
+import { auth, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
 
@@ -58,23 +54,17 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [method, setMethod] = useState<AuthMethod>("phone");
-  const [signupStep, setSignupStep] = useState<"account" | "programs">("account");
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devHint, setDevHint] = useState<string | null>(null);
 
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [selectedPrograms, setSelectedPrograms] = useState<string[]>(DEFAULT_SIGNUP_PROGRAMS);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
-
-  const availablePrograms = SIGNUP_PROGRAM_OPTIONS;
 
   function requireCaptcha(): boolean {
     if (!captchaEnabled) return true;
@@ -100,32 +90,18 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     return msg;
   }
 
-  const title = useMemo(() => {
-    if (mode === "signup" && signupStep === "programs") return "Choose your planting programs";
-    return mode === "signin" ? "Welcome back" : "Create your Aranyix account";
-  }, [mode, signupStep]);
+  const title = mode === "signin" ? "Welcome back" : "Join Aranyix";
 
-  const subtitle = useMemo(() => {
-    if (mode === "signup" && signupStep === "programs") {
-      return "Enable the registration forms you need. You can change these anytime in Settings.";
-    }
-    if (method === "phone") {
-      return otpSent
+  const subtitle =
+    method === "phone"
+      ? otpSent
         ? "Enter the 6-digit code sent to your phone."
-        : "Sign in securely with a one-time password.";
-    }
-    return mode === "signin"
-      ? "Use your email and password to access the platform."
-      : "Start with email, then personalize your registration programs.";
-  }, [mode, method, otpSent, signupStep]);
+        : "Sign in securely with a one-time password."
+      : "Use your email and password to access the platform.";
 
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
-    if (mode === "signup") {
-      router.push("/trees/new");
-      return;
-    }
     router.push(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
   }
 
@@ -147,14 +123,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   }
 
   async function sendOtp() {
-    if (mode === "signup" && !fullName.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-    if (mode === "signup" && !acceptedTerms) {
-      setError("Please accept the terms to create an account.");
-      return;
-    }
     if (!isValidIndianMobile(phone)) {
       setError("Enter a valid 10-digit Indian mobile number starting with 6–9.");
       return;
@@ -187,10 +155,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   }
 
   async function verifyOtp() {
-    if (mode === "signup" && !acceptedTerms) {
-      setError("Please accept the terms to create an account.");
-      return;
-    }
     if (!isValidIndianMobile(phone)) {
       setError("Enter a valid 10-digit Indian mobile number.");
       return;
@@ -201,37 +165,17 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       const tokens = await auth.verifyOtp({
         phone: phoneForApi(phone),
         code: otp,
-        full_name: mode === "signup" ? fullName.trim() : undefined,
       });
       setSession(tokens);
-      if (mode === "signup") {
-        setSignupStep("programs");
-        return;
-      }
       await finishLogin();
     } catch (err) {
       const msg = errorMessage(err);
-      if (msg === "registration_required" && mode === "signin") {
+      if (msg === "registration_required") {
         setMode("signup");
-        setError("No account found for this number. Complete sign up below.");
+        setError("No account found for this number. Create an account below.");
       } else {
         setError(msg);
       }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function completeSignupPrograms() {
-    setBusy(true);
-    setError(null);
-    try {
-      if (selectedPrograms.length) {
-        await plantingPrograms.updateMemberships(selectedPrograms);
-      }
-      await finishLogin();
-    } catch (err) {
-      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -251,40 +195,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     } finally {
       setBusy(false);
     }
-  }
-
-  async function emailSignUp() {
-    if (!acceptedTerms) {
-      setError("Please accept the terms to create an account.");
-      return;
-    }
-    if (!requireCaptcha()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await auth.register({
-        email,
-        password,
-        full_name: fullName,
-        program_codes: selectedPrograms,
-        captcha_token: captchaToken || undefined,
-      });
-      const tokens = await auth.login(email, password, captchaToken || undefined);
-      setSession(tokens);
-      await finishLogin();
-    } catch (err) {
-      setError(humanizeAuthError(errorMessage(err)));
-      resetCaptcha();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function toggleProgram(code: string, isDefault: boolean) {
-    if (isDefault) return;
-    setSelectedPrograms((current) =>
-      current.includes(code) ? current.filter((c) => c !== code) : [...current, code],
-    );
   }
 
   function resetPhoneFlow() {
@@ -325,7 +235,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   type="button"
                   onClick={() => {
                     setMode(tab);
-                    setSignupStep("account");
                     resetPhoneFlow();
                     setError(null);
                   }}
@@ -341,66 +250,24 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
               ))}
             </div>
 
+            {mode === "signup" ? (
+              <div className="mt-6">
+                <SignupWizard
+                  captchaConfig={captchaConfig}
+                  onComplete={() => router.push("/trees/new")}
+                  onSwitchToSignIn={() => setMode("signin")}
+                />
+              </div>
+            ) : (
+              <>
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
-                {mode === "signin" ? "Secure access" : "Join Aranyix"}
+                Secure access
               </p>
               <h2 className="text-2xl font-semibold tracking-tight text-stone-950">{title}</h2>
               <p className="text-sm leading-relaxed text-stone-600">{subtitle}</p>
             </div>
 
-            {signupStep === "programs" ? (
-              <div className="mt-6 space-y-4">
-                <div className="space-y-3">
-                  {availablePrograms.map((program) => {
-                    const checked = selectedPrograms.includes(program.code);
-                    const theme = getProgramTheme(program.code);
-                    const Icon = theme.icon;
-                    return (
-                      <button
-                        key={program.code}
-                        type="button"
-                        disabled={program.is_default}
-                        onClick={() => toggleProgram(program.code, program.is_default)}
-                        className={cn(
-                          "flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition",
-                          checked
-                            ? cn("ring-2", theme.ring, "border-transparent bg-white shadow-md")
-                            : "border-stone-200 hover:border-stone-300",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white",
-                            theme.gradient,
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-stone-900">{program.name}</p>
-                          <p className="mt-1 text-xs text-stone-500">{program.description}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {captchaWidget}
-                <div className="flex gap-3">
-                  <button type="button" className="btn-secondary" onClick={() => setSignupStep("account")}>
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary flex-1"
-                    disabled={busy}
-                    onClick={() => (method === "phone" ? void completeSignupPrograms() : void emailSignUp())}
-                  >
-                    {busy ? "Creating account…" : "Finish and continue"}
-                  </button>
-                </div>
-              </div>
-            ) : (
               <div className="mt-6 space-y-5">
                 <button
                   type="button"
@@ -436,32 +303,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   />
                 </div>
 
-                {mode === "signup" && (
-                  <div>
-                    <label className="label">Full name</label>
-                    <input
-                      className="field-input"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Your name"
-                    />
-                  </div>
-                )}
-
                 {method === "phone" ? (
                   <div className="space-y-4">
-                    {mode === "signup" && (
-                      <label className="flex items-start gap-3 text-sm text-stone-600">
-                        <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={acceptedTerms}
-                          onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        />
-                        <span>I agree to the platform terms and data use policy.</span>
-                      </label>
-                    )}
-
                     <div>
                       <label className="label" htmlFor="auth-phone">
                         Mobile number
@@ -552,7 +395,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           type={showPassword ? "text" : "password"}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder={mode === "signup" ? "Minimum 12 characters" : "Your password"}
+                          placeholder="Your password"
                         />
                         <button
                           type="button"
@@ -564,46 +407,22 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                       </div>
                     </div>
 
-                    {mode === "signup" && (
-                      <label className="flex items-start gap-3 text-sm text-stone-600">
-                        <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={acceptedTerms}
-                          onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        />
-                        <span>
-                          I agree to the platform terms and understand that tree GPS and photos are
-                          used for environmental monitoring and verification.
-                        </span>
-                      </label>
-                    )}
-
                     {captchaWidget}
 
                     <button
                       type="button"
                       disabled={busy}
                       className="btn-primary w-full"
-                      onClick={() => {
-                        if (mode === "signup") {
-                          if (!fullName.trim()) {
-                            setError("Please enter your full name.");
-                            return;
-                          }
-                          setSignupStep("programs");
-                          return;
-                        }
-                        void emailSignIn();
-                      }}
+                      onClick={() => void emailSignIn()}
                     >
-                      {mode === "signin" ? "Sign in" : "Continue"}
+                      Sign in
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 )}
 
               </div>
+              </>
             )}
 
             {error && (

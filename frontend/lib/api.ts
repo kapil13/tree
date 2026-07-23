@@ -378,10 +378,37 @@ export const auth = {
     role?: string;
     organization_name?: string;
     phone?: string;
-    program_codes?: string[];
     captcha_token?: string;
   }) {
     return (await api.post<User>("/v1/auth/register", payload)).data;
+  },
+  async signupStart(payload: {
+    full_name: string;
+    email: string;
+    phone: string;
+    password: string;
+    captcha_token?: string;
+  }) {
+    return (
+      await api.post<{ signup_token: string; dev_hint?: string | null; sms_enabled?: boolean }>(
+        "/v1/auth/signup/start",
+        payload,
+      )
+    ).data;
+  },
+  async signupVerifyPhone(payload: { signup_token: string; code: string }) {
+    return (await api.post<{ status: string }>("/v1/auth/signup/verify-phone", payload)).data;
+  },
+  async signupSendEmailOtp(payload: { signup_token: string }) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>(
+        "/v1/auth/signup/send-email-otp",
+        payload,
+      )
+    ).data;
+  },
+  async signupComplete(payload: { signup_token: string; code: string }) {
+    return (await api.post<Tokens>("/v1/auth/signup/complete", payload)).data;
   },
   async login(email: string, password: string, captcha_token?: string) {
     return (await api.post<Tokens>("/v1/auth/login", { email, password, captcha_token })).data;

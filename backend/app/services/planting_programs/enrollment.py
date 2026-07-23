@@ -122,3 +122,11 @@ async def set_user_programs(
 
     await db.flush()
     return await list_enrolled_programs(db, user_id)
+
+
+async def set_user_programs_self_service(
+    db: AsyncSession, user_id: uuid.UUID, program_codes: list[str]
+) -> list[PlantingProgram]:
+    """Citizens may only self-enroll in the default BYOT program."""
+    allowed = [c for c in program_codes if c == default_program_code()]
+    return await set_user_programs(db, user_id, allowed or [default_program_code()])
