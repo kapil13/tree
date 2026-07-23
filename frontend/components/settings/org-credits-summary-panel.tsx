@@ -11,57 +11,55 @@ export function OrgCreditsSummaryPanel() {
   });
 
   if (isLoading) {
-    return <p className="text-sm text-stone-500">Loading organization credits…</p>;
+    return <p className="text-sm text-stone-500">Loading credits…</p>;
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-        Could not load credit summary. If you recently deployed, run migrations on the API (
-        <code className="text-xs">alembic upgrade head</code>). Personal accounts show zero until you join an
-        organization with projects.
-      </div>
+      <p className="text-sm text-amber-800 dark:text-amber-200">
+        Unable to load credit summary. Try again later, or contact your administrator if this persists.
+      </p>
     );
   }
 
   if (!data) {
-    return <p className="text-sm text-stone-500">No credit summary available.</p>;
+    return <p className="text-sm text-stone-500">No credit data available.</p>;
   }
 
   if (!data.project_count) {
     return (
       <p className="text-sm text-stone-500">
-        No project credit ledgers yet. Open a{" "}
-        <Link href="/projects" className="text-forest-700 underline">
-          planting project
+        No credits recorded yet.{" "}
+        <Link href="/projects" className="text-forest-700 hover:underline">
+          Open a project
         </Link>{" "}
-        to sync credits.
+        to start tracking.
       </p>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Projects" value={String(data.project_count)} />
-        <Stat label="Net credits (tCO₂e)" value={data.total_net_credits_tco2e.toFixed(3)} />
-        <Stat label="Gross credits" value={data.total_gross_credits_tco2e.toFixed(3)} />
-        <Stat label="Issued" value={data.total_issued_credits_tco2e.toFixed(3)} />
+        <Stat label="Net (tCO₂e)" value={data.total_net_credits_tco2e.toFixed(2)} />
+        <Stat label="Gross" value={data.total_gross_credits_tco2e.toFixed(2)} />
+        <Stat label="Issued" value={data.total_issued_credits_tco2e.toFixed(2)} />
       </div>
-      {Object.keys(data.by_status).length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-stone-500">By status</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(data.by_status).map(([status, count]) => (
-              <span key={status} className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs capitalize text-stone-700">
-                {status}: {count}
-              </span>
-            ))}
-          </div>
+      {Object.keys(data.by_status).length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(data.by_status).map(([status, count]) => (
+            <span
+              key={status}
+              className="rounded-full bg-stone-100 px-2 py-0.5 text-xs capitalize text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            >
+              {status.replace(/_/g, " ")}: {count}
+            </span>
+          ))}
         </div>
-      )}
-      <Link href="/projects" className="text-sm text-forest-700 hover:underline">
-        View project ledgers →
+      ) : null}
+      <Link href="/projects" className="inline-block text-sm text-forest-700 hover:underline">
+        View project ledgers
       </Link>
     </div>
   );
@@ -69,9 +67,9 @@ export function OrgCreditsSummaryPanel() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-stone-200/80 bg-white/60 px-3 py-2 dark:border-stone-700 dark:bg-stone-900/40">
+    <div>
       <div className="text-xs text-stone-500">{label}</div>
-      <div className="text-lg font-semibold text-forest-800">{value}</div>
+      <div className="text-base font-semibold text-stone-900 dark:text-stone-50">{value}</div>
     </div>
   );
 }
