@@ -31,6 +31,12 @@ from app.schemas.auth import (
     OTPVerify,
     RefreshRequest,
     RegisterRequest,
+    SignupCompleteRequest,
+    SignupStartOut,
+    SignupStartRequest,
+    SignupStepOut,
+    SignupTokenRequest,
+    SignupVerifyPhoneRequest,
     TokenResponse,
     UpdateProfile,
     UserOut,
@@ -44,7 +50,14 @@ from app.services.auth.otp import (
     phone_placeholder_email,
     verify_dev_otp,
 )
-from app.services.planting_programs.enrollment import ensure_default_enrollment, set_user_programs
+from app.services.auth.signup import (
+    SignupError,
+    complete_signup,
+    send_signup_email_otp,
+    start_signup,
+    verify_signup_phone,
+)
+from app.services.planting_programs.enrollment import ensure_default_enrollment
 from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -104,8 +117,6 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     db.add(user)
     await db.flush()
     await ensure_default_enrollment(db, user.id)
-    if payload.program_codes:
-        await set_user_programs(db, user.id, payload.program_codes)
     await record_audit(
         db,
         actor=user,
@@ -156,6 +167,74 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     user = res.scalar_one_or_none()
     if user is None or not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
+    return _tokens_for(user)
+
+
+def _signup_error(exc: SignupError) -> HTTPException:
+    status_code = status.HTTP_400_BAD_REQUEST
+    if exc.code in {"email_taken", "phone_taken"}:
+        status_code = status.HTTP_409_CONFLICT
+    elif exc.code == "signup_session_expired":
+        status_code = status.HTTP_410_GONE
+    elif exc.code == "invalid_otp":
+        status_code = status.HTTP_401_UNAUTHORIZED
+    return HTTPException(status_code, detail=exc.code)
+
+
+@router.post("/signup/start", response_model=SignupStartOut)
+async def signup_start(payload: SignupStartRequest, request: Request, db: DB) -> SignupStartOut:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    try:
+        token, dev_hint = await start_signup(
+            db,
+            full_name=payload.full_name,
+            email=str(payload.email),
+            phone=payload.phone,
+            password=payload.password,
+        )
+    except SignupError as exc:
+        raise _signup_error(exc) from exc
+    return SignupStartOut(
+        signup_token=token,
+        dev_hint=dev_hint,
+        sms_enabled=settings.auth_otp_sms_enabled,
+    )
+
+
+@router.post("/signup/verify-phone", response_model=SignupStepOut)
+async def signup_verify_phone(payload: SignupVerifyPhoneRequest) -> SignupStepOut:
+    try:
+        await verify_signup_phone(payload.signup_token, payload.code)
+    except SignupError as exc:
+        raise _signup_error(exc) from exc
+    return SignupStepOut(status="phone_verified")
+
+
+@router.post("/signup/send-email-otp", response_model=SignupStepOut)
+async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
+    try:
+        dev_hint = await send_signup_email_otp(payload.signup_token)
+    except SignupError as exc:
+        raise _signup_error(exc) from exc
+    return SignupStepOut(status="email_otp_sent", dev_hint=dev_hint)
+
+
+@router.post("/signup/complete", response_model=TokenResponse)
+async def signup_complete(payload: SignupCompleteRequest, request: Request, db: DB) -> TokenResponse:
+    try:
+        user = await complete_signup(db, payload.signup_token, payload.code)
+    except SignupError as exc:
+        raise _signup_error(exc) from exc
+    await record_audit(
+        db,
+        actor=user,
+        action="user.register",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "method": "signup_otp", "program": "byot"},
+    )
+    await db.commit()
     return _tokens_for(user)
 
 
@@ -217,7 +296,10 @@ async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenRespo
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
     user = await _user_from_otp(db, payload)
     user.is_verified = True
-    user.last_login_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    if payload.phone and user.phone_verified_at is None:
+        user.phone_verified_at = now
+    user.last_login_at = now
     await record_audit(
         db,
         actor=user,
@@ -240,6 +322,8 @@ def _user_out(user: User, *, platform_access: dict[str, bool] | None = None) -> 
         organization_id=user.organization_id,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        phone_verified=user.phone_verified_at is not None,
+        email_verified=user.email_verified_at is not None,
         created_at=user.created_at,
         permissions=permissions_for_role(user.role),
         platform_access=platform_access
@@ -321,6 +405,7 @@ async def google_callback(
                 role="user",
                 is_active=True,
                 is_verified=True,
+                email_verified_at=datetime.now(UTC),
             )
             db.add(user)
             await db.flush()

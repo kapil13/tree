@@ -14,8 +14,40 @@ class RegisterRequest(BaseModel):
     role: Literal["user", "farmer", "ngo", "corporate", "government"] = "user"
     organization_name: str | None = None
     phone: str | None = None
-    program_codes: list[str] = Field(default_factory=list)
     captcha_token: str | None = None
+
+
+class SignupStartRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+    full_name: str = Field(min_length=2, max_length=255)
+    phone: str = Field(min_length=10, max_length=32)
+    captcha_token: str | None = None
+
+
+class SignupStartOut(BaseModel):
+    signup_token: str
+    dev_hint: str | None = None
+    sms_enabled: bool = False
+
+
+class SignupTokenRequest(BaseModel):
+    signup_token: str
+
+
+class SignupVerifyPhoneRequest(BaseModel):
+    signup_token: str
+    code: str = Field(min_length=4, max_length=8)
+
+
+class SignupCompleteRequest(BaseModel):
+    signup_token: str
+    code: str = Field(min_length=4, max_length=8)
+
+
+class SignupStepOut(BaseModel):
+    status: str
+    dev_hint: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -70,6 +102,8 @@ class UserOut(BaseModel):
     organization_id: uuid.UUID | None
     is_active: bool
     is_verified: bool
+    phone_verified: bool = False
+    email_verified: bool = False
     created_at: datetime
     permissions: list[str] = Field(default_factory=list)
     platform_access: dict[str, bool] = Field(default_factory=dict)

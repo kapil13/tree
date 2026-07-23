@@ -1,68 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Lock } from "lucide-react";
 import { SettingsSection } from "@/components/settings/settings-section";
-import { errorMessage, plantingPrograms } from "@/lib/api";
+import { plantingPrograms } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { cn } from "@/lib/cn";
 
 export default function SettingsProgramsPage() {
-  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["planting-programs", "memberships"],
     queryFn: () => plantingPrograms.memberships(),
   });
 
-  const [selected, setSelected] = useState<string[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (data) setSelected(data.enrolled.map((program) => program.code));
-  }, [data]);
-
-  const save = useMutation({
-    mutationFn: () => plantingPrograms.updateMemberships(selected),
-    onSuccess: () => {
-      setMessage("Programs updated.");
-      qc.invalidateQueries({ queryKey: ["planting-programs"] });
-    },
-    onError: (err) => setMessage(errorMessage(err)),
-  });
-
-  function toggle(code: string, isDefault: boolean) {
-    if (isDefault) return;
-    setSelected((current) =>
-      current.includes(code) ? current.filter((item) => item !== code) : [...current, code],
-    );
-  }
+  const enrolled = new Set((data?.enrolled || []).map((p) => p.code));
 
   return (
     <SettingsSection
-      title="Registration programs"
-      description="Choose which planting flows appear when you register trees. BYOT Public is always enabled."
+      title="Your programs"
+      description="BYOT Public is active on every account. Government, NHAI, ESG, and NGO programs require admin approval — request access coming in the next release."
     >
       <div className="card space-y-3">
         {isLoading ? (
           <p className="py-6 text-center text-sm text-stone-500">Loading programs…</p>
         ) : (
           (data?.available || []).map((program) => {
-            const checked = selected.includes(program.code);
+            const checked = enrolled.has(program.code);
             const theme = getProgramTheme(program.code);
             const Icon = theme.icon;
+            const locked = !program.is_default;
+
             return (
-              <button
+              <div
                 key={program.code}
-                type="button"
-                disabled={program.is_default || save.isPending}
-                onClick={() => toggle(program.code, program.is_default)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition",
+                  "flex items-center gap-3 rounded-lg border px-4 py-3",
                   checked
                     ? "border-forest-300 bg-forest-50/50 dark:border-forest-800 dark:bg-forest-950/20"
-                    : "border-stone-200 hover:border-stone-300 dark:border-stone-700",
-                  program.is_default ? "cursor-default opacity-90" : "cursor-pointer",
+                    : "border-stone-200 dark:border-stone-700",
+                  locked && "opacity-80",
                 )}
               >
                 <div
@@ -78,9 +54,14 @@ export default function SettingsProgramsPage() {
                     <p className="font-medium text-stone-900 dark:text-stone-50">{program.name}</p>
                     {program.is_default ? (
                       <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-stone-600 dark:bg-stone-700 dark:text-stone-300">
-                        Required
+                        Active
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                        <Lock className="h-3 w-3" />
+                        Request access
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 text-sm text-stone-500">{program.description}</p>
                 </div>
@@ -95,17 +76,10 @@ export default function SettingsProgramsPage() {
                 >
                   {checked ? <Check className="h-3 w-3" /> : null}
                 </div>
-              </button>
+              </div>
             );
           })
         )}
-
-        <div className="flex flex-col gap-2 border-t border-stone-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-stone-800">
-          <button type="button" className="btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>
-            {save.isPending ? "Saving…" : "Save changes"}
-          </button>
-          {message ? <p className="text-sm text-stone-600 dark:text-stone-400">{message}</p> : null}
-        </div>
       </div>
     </SettingsSection>
   );

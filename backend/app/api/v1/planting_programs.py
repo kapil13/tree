@@ -18,6 +18,7 @@ from app.services.planting_programs.enrollment import (
     list_enrolled_programs,
     list_user_program_codes,
     set_user_programs,
+    set_user_programs_self_service,
 )
 
 router = APIRouter(prefix="/planting-programs", tags=["planting-programs"])
@@ -73,7 +74,10 @@ async def update_my_program_memberships(
     payload: UserProgramsUpdate, user: CurrentUser, db: DB
 ) -> UserProgramsOut:
     try:
-        await set_user_programs(db, user.id, payload.program_codes)
+        if user.role == "admin":
+            await set_user_programs(db, user.id, payload.program_codes)
+        else:
+            await set_user_programs_self_service(db, user.id, payload.program_codes)
         await db.commit()
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
