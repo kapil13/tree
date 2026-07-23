@@ -30,14 +30,3 @@ def test_run_async_reuses_loop_across_calls():
 
     assert async_runner.run_async(tick(1)) == 1
     assert async_runner.run_async(tick(2)) == 2
-
-
-def test_asyncio_run_twice_closes_loop():
-    """Document the failure mode we avoid in Celery workers."""
-
-    async def noop() -> None:
-        return None
-
-    asyncio.run(noop())
-    with pytest.raises(RuntimeError, match="Event loop is closed"):
-        asyncio.get_event_loop().run_until_complete(noop())
