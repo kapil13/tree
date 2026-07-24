@@ -18,10 +18,11 @@ import {
   TreePine,
   Activity,
   Brain,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
-import { canAccessWebsiteCms } from "@/lib/platform-access";
+import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -46,9 +47,18 @@ export const NAV_ITEMS: NavItem[] = [
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const { user } = useAuth();
-  const items = canAccessWebsiteCms(user)
-    ? [...NAV_ITEMS, { href: "/platform/cms", label: "Website CMS", icon: Globe2 }]
-    : NAV_ITEMS;
+  const adminItems: NavItem[] = [];
+  if (canAccessWebsiteCms(user)) {
+    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2 });
+  }
+  if (canManagePlatformUsers(user)) {
+    adminItems.push({
+      href: "/platform/program-access",
+      label: "Program access",
+      icon: UserCheck,
+    });
+  }
+  const items = [...NAV_ITEMS, ...adminItems];
 
   return (
     <nav className="space-y-1">
