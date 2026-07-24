@@ -31,12 +31,6 @@ class UserProgramsUpdate(BaseModel):
     program_codes: list[str] = Field(default_factory=list, min_length=0)
 
 
-class UserProgramsOut(BaseModel):
-    enrolled: list[PlantingProgramOut]
-    available: list[PlantingProgramOut]
-    access_requests: list["ProgramAccessRequestOut"] = Field(default_factory=list)
-
-
 class ProgramAccessRequestCreate(BaseModel):
     program_code: str = Field(min_length=1, max_length=64)
     message: str | None = Field(default=None, max_length=2000)
@@ -53,6 +47,12 @@ class ProgramAccessRequestOut(BaseModel):
     admin_note: str | None = None
     created_at: datetime
     reviewed_at: datetime | None = None
+
+
+class UserProgramsOut(BaseModel):
+    enrolled: list[PlantingProgramOut]
+    available: list[PlantingProgramOut]
+    access_requests: list[ProgramAccessRequestOut] = Field(default_factory=list)
 
 
 class ProgramAccessRequestAdminOut(ProgramAccessRequestOut):
