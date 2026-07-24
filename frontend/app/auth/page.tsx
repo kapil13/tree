@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthGateway } from "@/components/auth/auth-gateway";
 import { auth } from "@/lib/api";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
+import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 function getSafeNextPath(next: string | null): string | null {
   if (!next?.startsWith("/") || next.startsWith("//")) return null;
@@ -15,7 +16,7 @@ function AlreadySignedInRedirect() {
   const router = useRouter();
   const params = useSearchParams();
   const hydrated = useAuthHydrated();
-  const { user, setUser, getAccessToken } = useAuth();
+  const { user, setUser, getAccessToken, logout } = useAuth();
 
   useEffect(() => {
     if (!hydrated) return;
@@ -25,8 +26,14 @@ function AlreadySignedInRedirect() {
 
     const destination = getSafeNextPath(params.get("next")) ?? "/dashboard";
 
-    if (user) {
+    const go = () => {
+      // Edge middleware requires this cookie; localStorage token alone causes /auth ↔ /dashboard loops.
+      syncSessionCookieFromToken();
       router.replace(destination);
+    };
+
+    if (user) {
+      go();
       return;
     }
 
@@ -36,14 +43,17 @@ function AlreadySignedInRedirect() {
       .then((profile) => {
         if (cancelled) return;
         setUser(profile);
-        router.replace(destination);
+        go();
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (cancelled) return;
+        logout();
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [hydrated, user, getAccessToken, setUser, router, params]);
+  }, [hydrated, user, getAccessToken, setUser, logout, router, params]);
 
   return null;
 }

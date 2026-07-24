@@ -26,6 +26,7 @@ import {
 } from "@/lib/phone";
 import { auth, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 import { cn } from "@/lib/cn";
 
 type AuthMode = "signin" | "signup";
@@ -102,7 +103,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
-    router.push(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
+    syncSessionCookieFromToken();
+    router.replace(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
   }
 
   async function handleGoogle() {

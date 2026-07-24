@@ -34,8 +34,9 @@ export function middleware(request: NextRequest) {
 
   if (!request.cookies.get(SESSION_COOKIE)?.value) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    loginUrl.pathname = "/auth";
     loginUrl.search = "";
+    loginUrl.searchParams.set("mode", "signin");
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
