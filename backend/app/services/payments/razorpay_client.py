@@ -54,7 +54,11 @@ async def create_order(
             auth=_auth(),
         )
     if res.status_code >= 400:
-        raise RazorpayError(res.text or "razorpay_order_failed", status_code=res.status_code)
+        try:
+            detail = res.json()
+        except Exception:
+            detail = res.text
+        raise RazorpayError(str(detail), status_code=res.status_code)
     return res.json()
 
 
