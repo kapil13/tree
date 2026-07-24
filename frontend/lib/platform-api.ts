@@ -27,6 +27,20 @@ export type PlatformModuleRule = {
   updated_at: string | null;
 };
 
+export type ProgramAccessRequestAdmin = {
+  id: string;
+  program_code: string;
+  program_name: string;
+  status: string;
+  message: string | null;
+  admin_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  user_id: string;
+  user_email: string;
+  user_full_name: string;
+};
+
 export const platformAdmin = {
   async roles() {
     return (await api.get<PlatformRole[]>("/v1/platform/roles")).data;
@@ -42,5 +56,23 @@ export const platformAdmin = {
   },
   async updateModule(moduleKey: string, payload: { enabled?: boolean; allowed_roles?: string[] }) {
     return (await api.patch<PlatformModuleRule>(`/v1/platform/modules/${moduleKey}`, payload)).data;
+  },
+  async listProgramAccessRequests(status = "pending") {
+    return (
+      await api.get<ProgramAccessRequestAdmin[]>(
+        `/v1/platform/program-access-requests?status=${encodeURIComponent(status)}`,
+      )
+    ).data;
+  },
+  async reviewProgramAccessRequest(
+    id: string,
+    payload: { action: "approve" | "reject"; admin_note?: string },
+  ) {
+    return (
+      await api.patch<ProgramAccessRequestAdmin>(
+        `/v1/platform/program-access-requests/${id}`,
+        payload,
+      )
+    ).data;
   },
 };

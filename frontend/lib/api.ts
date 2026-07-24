@@ -202,6 +202,17 @@ export type PlantingProgram = {
   enrolled: boolean;
 };
 
+export type ProgramAccessRequest = {
+  id: string;
+  program_code: string;
+  program_name: string;
+  status: "pending" | "approved" | "rejected" | "withdrawn";
+  message: string | null;
+  admin_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
 export type Tree = {
   id: string;
   public_code: string;
@@ -458,8 +469,27 @@ export const plantingPrograms = {
   },
   async memberships() {
     return (
-      await api.get<{ enrolled: PlantingProgram[]; available: PlantingProgram[] }>(
-        "/v1/planting-programs/me/memberships",
+      await api.get<{
+        enrolled: PlantingProgram[];
+        available: PlantingProgram[];
+        access_requests: ProgramAccessRequest[];
+      }>("/v1/planting-programs/me/memberships")
+    ).data;
+  },
+  async listAccessRequests() {
+    return (
+      await api.get<ProgramAccessRequest[]>("/v1/planting-programs/me/access-requests")
+    ).data;
+  },
+  async submitAccessRequest(payload: { program_code: string; message?: string }) {
+    return (
+      await api.post<ProgramAccessRequest>("/v1/planting-programs/me/access-requests", payload)
+    ).data;
+  },
+  async withdrawAccessRequest(requestId: string) {
+    return (
+      await api.delete<ProgramAccessRequest>(
+        `/v1/planting-programs/me/access-requests/${requestId}`,
       )
     ).data;
   },

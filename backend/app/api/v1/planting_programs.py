@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, HTTPException, status
 
 from app.api.v1.deps import DB, CurrentUser
@@ -9,8 +11,16 @@ from app.models.planting_program import PlantingProgram
 from app.schemas.planting_program import (
     PlantingProgramListOut,
     PlantingProgramOut,
+    ProgramAccessRequestCreate,
+    ProgramAccessRequestOut,
     UserProgramsOut,
     UserProgramsUpdate,
+)
+from app.services.planting_programs.access_requests import (
+    AccessRequestError,
+    create_access_request,
+    list_user_access_requests,
+    withdraw_access_request,
 )
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -39,6 +49,33 @@ def _program_out(program: PlantingProgram, *, enrolled: bool) -> PlantingProgram
     )
 
 
+def _access_request_out(request) -> ProgramAccessRequestOut:
+    return ProgramAccessRequestOut(
+        id=request.id,
+        program_code=request.program.code,
+        program_name=request.program.name,
+        status=request.status,
+        message=request.message,
+        admin_note=request.admin_note,
+        created_at=request.created_at,
+        reviewed_at=request.reviewed_at,
+    )
+
+
+async def _memberships_out(db, user_id: uuid.UUID) -> UserProgramsOut:
+    enrolled = await list_enrolled_programs(db, user_id)
+    enrolled_codes = {p.code for p in enrolled}
+    available = await list_available_programs(db, user_id)
+    requests = await list_user_access_requests(db, user_id)
+    return UserProgramsOut(
+        enrolled=[_program_out(p, enrolled=True) for p in enrolled],
+        available=[
+            _program_out(p, enrolled=p.code in enrolled_codes) for p in available
+        ],
+        access_requests=[_access_request_out(r) for r in requests],
+    )
+
+
 @router.get("", response_model=PlantingProgramListOut)
 async def list_programs(user: CurrentUser, db: DB) -> PlantingProgramListOut:
     enrolled_codes = await list_user_program_codes(db, user.id)
@@ -58,15 +95,51 @@ async def list_enrolled(user: CurrentUser, db: DB) -> list[PlantingProgramOut]:
 
 @router.get("/me/memberships", response_model=UserProgramsOut)
 async def my_program_memberships(user: CurrentUser, db: DB) -> UserProgramsOut:
-    enrolled = await list_enrolled_programs(db, user.id)
-    enrolled_codes = {p.code for p in enrolled}
-    available = await list_available_programs(db, user.id)
-    return UserProgramsOut(
-        enrolled=[_program_out(p, enrolled=True) for p in enrolled],
-        available=[
-            _program_out(p, enrolled=p.code in enrolled_codes) for p in available
-        ],
-    )
+    return await _memberships_out(db, user.id)
+
+
+@router.get("/me/access-requests", response_model=list[ProgramAccessRequestOut])
+async def my_access_requests(user: CurrentUser, db: DB) -> list[ProgramAccessRequestOut]:
+    requests = await list_user_access_requests(db, user.id)
+    return [_access_request_out(r) for r in requests]
+
+
+@router.post(
+    "/me/access-requests",
+    response_model=ProgramAccessRequestOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def submit_access_request(
+    payload: ProgramAccessRequestCreate, user: CurrentUser, db: DB
+) -> ProgramAccessRequestOut:
+    try:
+        request = await create_access_request(
+            db,
+            user_id=user.id,
+            program_code=payload.program_code,
+            message=payload.message,
+        )
+        await db.commit()
+    except AccessRequestError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    return _access_request_out(request)
+
+
+@router.delete("/me/access-requests/{request_id}", response_model=ProgramAccessRequestOut)
+async def cancel_access_request(
+    request_id: uuid.UUID, user: CurrentUser, db: DB
+) -> ProgramAccessRequestOut:
+    try:
+        request = await withdraw_access_request(db, user_id=user.id, request_id=request_id)
+        await db.commit()
+    except AccessRequestError as exc:
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if exc.code == "request_not_found"
+            else status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
+        raise HTTPException(status_code, detail=exc.code) from exc
+    return _access_request_out(request)
 
 
 @router.put("/me/memberships", response_model=UserProgramsOut)
@@ -81,15 +154,7 @@ async def update_my_program_memberships(
         await db.commit()
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    enrolled = await list_enrolled_programs(db, user.id)
-    enrolled_codes = {p.code for p in enrolled}
-    available = await list_available_programs(db, user.id)
-    return UserProgramsOut(
-        enrolled=[_program_out(p, enrolled=True) for p in enrolled],
-        available=[
-            _program_out(p, enrolled=p.code in enrolled_codes) for p in available
-        ],
-    )
+    return await _memberships_out(db, user.id)
 
 
 @router.get("/{code}", response_model=PlantingProgramOut)

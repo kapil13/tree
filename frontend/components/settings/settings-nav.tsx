@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, Globe2, ScrollText, Settings2, Sprout, Webhook } from "lucide-react";
+import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
-import { canAccessWebsiteCms } from "@/lib/platform-access";
+import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 type NavItem = {
@@ -51,17 +51,25 @@ export function SettingsNav() {
   const path = usePathname();
   const { user } = useAuth();
 
-  const items = canAccessWebsiteCms(user)
-    ? [
-        ...BASE_ITEMS,
-        {
-          href: "/platform/cms",
-          label: "Website CMS",
-          icon: Globe2,
-          match: (p: string) => p.startsWith("/platform/cms"),
-        },
-      ]
-    : BASE_ITEMS;
+  const adminItems: NavItem[] = [];
+  if (canAccessWebsiteCms(user)) {
+    adminItems.push({
+      href: "/platform/cms",
+      label: "Website CMS",
+      icon: Globe2,
+      match: (p: string) => p.startsWith("/platform/cms"),
+    });
+  }
+  if (canManagePlatformUsers(user)) {
+    adminItems.push({
+      href: "/platform/program-access",
+      label: "Program access",
+      icon: UserCheck,
+      match: (p: string) => p.startsWith("/platform/program-access"),
+    });
+  }
+
+  const items = [...BASE_ITEMS, ...adminItems];
 
   return (
     <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">
