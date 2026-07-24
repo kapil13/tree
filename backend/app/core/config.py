@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # BYOT citizen AI scan metering (professional programs are unlimited)
     byot_free_ai_scans: int = Field(default=5, ge=0)
 
+    # Razorpay — BYOT AI scan pack purchases (test keys in .env, never commit secrets)
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
+
     # Bioacoustic pipeline (birdnet = production; composite adds Perch multi-taxa)
     bioacoustic_pipeline: Literal["stub", "birdnet", "composite", "multitaxa"] = "birdnet"
     bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)

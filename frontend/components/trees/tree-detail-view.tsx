@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
+import { BuyAiScanPacks } from "@/components/payments/buy-ai-scan-packs";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
@@ -203,6 +204,14 @@ export function TreeDetailView() {
       </div>
 
       <AiScanUsagePanel compact />
+      {scanUsage?.tier === "byot_metered" && scanUsage.payment_enabled && !scanUsage.can_scan ? (
+        <BuyAiScanPacks
+          compact
+          onSuccess={() => {
+            qc.invalidateQueries({ queryKey: ["ai-scan-usage"] });
+          }}
+        />
+      ) : null}
 
       {analyze.error && (
         <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">

@@ -476,6 +476,58 @@ export const aiScans = {
   },
 };
 
+export type ScanPack = {
+  sku: string;
+  label: string;
+  description: string;
+  credits: number;
+  amount_paise: number;
+  amount_inr: number;
+  currency: string;
+};
+
+export type PaymentCheckoutSession = {
+  order: {
+    id: string;
+    sku: string;
+    credits_granted: number;
+    amount_paise: number;
+    currency: string;
+    razorpay_order_id: string;
+    status: string;
+  };
+  razorpay_key_id: string;
+  amount_paise: number;
+  currency: string;
+  credits: number;
+  label: string;
+};
+
+export const payments = {
+  async catalog() {
+    return (
+      await api.get<{
+        items: ScanPack[];
+        payments_enabled: boolean;
+        razorpay_key_id: string | null;
+      }>("/v1/payments/catalog")
+    ).data;
+  },
+  async createOrder(sku: string) {
+    return (await api.post<PaymentCheckoutSession>("/v1/payments/orders", { sku })).data;
+  },
+  async verify(payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) {
+    return (await api.post("/v1/payments/verify", payload)).data;
+  },
+  async listOrders() {
+    return (await api.get("/v1/payments/orders")).data;
+  },
+};
+
 export const plantingPrograms = {
   async list() {
     return (
