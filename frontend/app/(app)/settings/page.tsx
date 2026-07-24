@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summary-panel";
+import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useAuth } from "@/lib/auth-store";
 
@@ -24,6 +25,13 @@ export default function SettingsGeneralPage() {
             {user?.role}
           </span>
         </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="AI tree scans"
+        description="Citizen BYOT accounts include complimentary scans. Professional programs (government, NHAI, ESG, NGO) are unlimited and funded via work orders — not in-app payments."
+      >
+        <AiScanUsagePanel />
       </SettingsSection>
 
       <SettingsSection

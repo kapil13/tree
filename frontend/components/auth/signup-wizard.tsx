@@ -162,7 +162,7 @@ export function SignupWizard({
 
   const subtitle =
     step === "details"
-      ? "Start with BYOT — tag trees for free. Professional programs can be requested later."
+      ? "Start with BYOT — tag trees for free, including 5 complimentary AI scans. Professional programs can be requested later."
       : step === "verify-phone"
         ? "Enter the 6-digit code sent to your mobile."
         : "Enter the 6-digit code sent to your email address.";

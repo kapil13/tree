@@ -21,6 +21,7 @@ from app.schemas.analysis import (
     AssistantQuery,
 )
 from app.services.ai import get_ai_service
+from app.services.ai.metering import assert_ai_scan_allowed, consume_paid_scan_credit
 from app.services.ai.types import GrowthContext
 from app.services.carbon import CarbonInputs, estimate_carbon
 from app.services.storage import get_storage
@@ -53,6 +54,8 @@ async def _run_tree_analysis(
         not user.organization_id or tree.organization_id != user.organization_id
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    meter_before = await assert_ai_scan_allowed(db, user)
 
     img_rows = (
         await db.execute(select(TreeImage).where(TreeImage.tree_id == tree.id))
@@ -148,6 +151,13 @@ async def _run_tree_analysis(
     if tree.status == "pending":
         tree.status = "active"
 
+    if (
+        meter_before.tier == "byot_metered"
+        and meter_before.complimentary_used >= meter_before.complimentary_limit
+        and meter_before.purchased_balance > 0
+    ):
+        await consume_paid_scan_credit(db, user.id)
+
     await db.commit()
     await db.refresh(rec)
     return rec
@@ -173,6 +183,8 @@ async def enqueue_analysis(payload: AnalysisRequest, user: CurrentUser, db: DB) 
         not user.organization_id or tree.organization_id != user.organization_id
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    await assert_ai_scan_allowed(db, user)
 
     task_id = try_enqueue(
         run_ai_analysis, str(payload.tree_id), str(user.id), payload.mode

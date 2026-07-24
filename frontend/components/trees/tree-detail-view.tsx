@@ -15,11 +15,12 @@ import {
 } from "recharts";
 import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
+import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
-import { trees, errorMessage } from "@/lib/api";
+import { trees, aiScans, errorMessage } from "@/lib/api";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -67,11 +68,17 @@ export function TreeDetailView() {
     enabled: !!id,
   });
 
+  const { data: scanUsage } = useQuery({
+    queryKey: ["ai-scan-usage"],
+    queryFn: () => aiScans.usage(),
+  });
+
   const analyze = useMutation({
     mutationFn: () => trees.analyze(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tree", id] });
       qc.invalidateQueries({ queryKey: ["tree-analyses", id] });
+      qc.invalidateQueries({ queryKey: ["ai-scan-usage"] });
     },
   });
 
@@ -167,7 +174,16 @@ export function TreeDetailView() {
           <p className="font-mono text-sm text-stone-500">{tree.public_code}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="btn-primary" onClick={() => analyze.mutate()} disabled={analyze.isPending}>
+          <button
+            className="btn-primary"
+            onClick={() => analyze.mutate()}
+            disabled={analyze.isPending || scanUsage?.can_scan === false}
+            title={
+              scanUsage?.can_scan === false
+                ? "Complimentary BYOT AI scans used — request a professional program or wait for paid top-ups"
+                : undefined
+            }
+          >
             <Sparkles className="h-4 w-4" />
             {analyze.isPending ? "Analyzing…" : "Run AI analysis"}
           </button>
@@ -185,6 +201,8 @@ export function TreeDetailView() {
           )}
         </div>
       </div>
+
+      <AiScanUsagePanel compact />
 
       {analyze.error && (
         <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
