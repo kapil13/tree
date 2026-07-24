@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { auth, isApiError } from "@/lib/api";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
+import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -20,9 +21,11 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     const token = getAccessToken();
     if (!token) {
       setStatus("unauthenticated");
-      router.replace("/login");
+      router.replace("/auth?mode=signin");
       return;
     }
+
+    syncSessionCookieFromToken();
 
     if (user) {
       setStatus("authenticated");
@@ -43,7 +46,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
           logout();
         }
         setStatus("unauthenticated");
-        router.replace("/login");
+        router.replace("/auth?mode=signin");
       });
 
     return () => {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function GoogleCallbackPage() {
           expires_in: expiresIn,
         });
         setUser(await auth.me());
+        syncSessionCookieFromToken();
         router.replace("/dashboard");
       } catch {
         setMessage("Signed in with Google but session setup failed. Try signing in again.");

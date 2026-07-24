@@ -14,7 +14,18 @@ export function clearSessionCookie(): void {
 
 export function syncSessionCookieFromToken(): void {
   if (typeof window === "undefined") return;
-  const token = localStorage.getItem("byot_access_token");
+  const token =
+    localStorage.getItem("byot_access_token") ||
+    (() => {
+      try {
+        const raw = localStorage.getItem("byot-auth");
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { state?: { access?: string | null } };
+        return parsed.state?.access ?? null;
+      } catch {
+        return null;
+      }
+    })();
   if (token) {
     setSessionCookie();
   } else {
