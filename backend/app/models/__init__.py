@@ -1,4 +1,4 @@
-from app.models.alert import Alert
+from app.models.ai_scan_wallet import UserAiScanWallet
 from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
@@ -30,6 +30,7 @@ from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnaps
 __all__ = [
     "BioacousticRecording",
     "Alert",
+    "UserAiScanWallet",
     "AuditLog",
     "CarbonCalculation",
     "CmsPage",

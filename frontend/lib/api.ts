@@ -128,11 +128,16 @@ export function errorMessage(err: unknown): string {
         | { compliance_errors?: Array<{ message: string }>; validation_errors?: string[] };
     } | undefined;
     if (data?.error?.message) return data.error.message;
-    if (data?.detail && typeof data.detail === "object" && !Array.isArray(data.detail)) {
+    if (typeof data?.detail === "object" && !Array.isArray(data.detail)) {
       const detail = data.detail as {
+        code?: string;
+        message?: string;
         compliance_errors?: Array<{ message: string }>;
         validation_errors?: string[];
       };
+      if (detail.code === "ai_scan_limit_exceeded" && detail.message) {
+        return detail.message;
+      }
       if (detail.compliance_errors?.length) {
         return detail.compliance_errors.map((e) => e.message).join("; ");
       }
@@ -211,6 +216,18 @@ export type ProgramAccessRequest = {
   admin_note: string | null;
   created_at: string;
   reviewed_at: string | null;
+};
+
+export type AiScanMeterStatus = {
+  tier: "byot_metered" | "professional_unlimited" | "platform_admin";
+  complimentary_limit: number;
+  complimentary_used: number;
+  purchased_balance: number;
+  remaining_complimentary: number;
+  remaining_total: number | null;
+  can_scan: boolean;
+  requires_payment: boolean;
+  payment_enabled: boolean;
 };
 
 export type Tree = {
@@ -450,6 +467,12 @@ export const auth = {
   },
   async googleAuthorize() {
     return (await api.get<{ authorize_url: string }>("/v1/auth/google/login")).data;
+  },
+};
+
+export const aiScans = {
+  async usage() {
+    return (await api.get<AiScanMeterStatus>("/v1/ai-scans/usage")).data;
   },
 };
 

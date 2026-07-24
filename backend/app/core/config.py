@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
 
+    # BYOT citizen AI scan metering (professional programs are unlimited)
+    byot_free_ai_scans: int = Field(default=5, ge=0)
+
     # Bioacoustic pipeline (birdnet = production; composite adds Perch multi-taxa)
     bioacoustic_pipeline: Literal["stub", "birdnet", "composite", "multitaxa"] = "birdnet"
     bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)
