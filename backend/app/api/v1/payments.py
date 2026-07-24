@@ -125,6 +125,15 @@ async def get_my_order(order_id: uuid.UUID, user: CurrentUser, db: DB) -> Paymen
     return PaymentOrderOut.model_validate(order)
 
 
+@router.get("/webhook")
+async def razorpay_webhook_ping() -> dict[str, str]:
+    """Razorpay dashboard / browser checks may GET this URL — POST is required for real events."""
+    return {
+        "status": "ok",
+        "message": "Razorpay webhook endpoint. Configure POST to this URL for payment.captured events.",
+    }
+
+
 @router.post("/webhook")
 async def razorpay_webhook(request: Request, db: DB) -> dict[str, str]:
     body = await request.body()
