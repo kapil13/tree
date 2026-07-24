@@ -15,6 +15,7 @@ from app.models.ai_scan_wallet import UserAiScanWallet
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
 from app.models.tree_analysis import TreeAnalysis
 from app.models.user import User
+from app.services.payments.razorpay_client import payments_enabled
 
 MeteringTier = Literal["byot_metered", "professional_unlimited", "platform_admin"]
 
@@ -74,6 +75,7 @@ async def get_purchased_balance(db: AsyncSession, user_id: uuid.UUID) -> int:
 
 
 async def get_ai_scan_meter_status(db: AsyncSession, user: User) -> AiScanMeterStatus:
+    pay_enabled = payments_enabled()
     if user.role == "admin":
         return AiScanMeterStatus(
             tier="platform_admin",
@@ -84,6 +86,7 @@ async def get_ai_scan_meter_status(db: AsyncSession, user: User) -> AiScanMeterS
             remaining_total=None,
             can_scan=True,
             requires_payment=False,
+            payment_enabled=pay_enabled,
         )
 
     if await user_has_professional_enrollment(db, user.id):
@@ -96,6 +99,7 @@ async def get_ai_scan_meter_status(db: AsyncSession, user: User) -> AiScanMeterS
             remaining_total=None,
             can_scan=True,
             requires_payment=False,
+            payment_enabled=False,
         )
 
     used = await count_metered_scans(db, user.id)
@@ -115,6 +119,7 @@ async def get_ai_scan_meter_status(db: AsyncSession, user: User) -> AiScanMeterS
         remaining_total=remaining_total,
         can_scan=can_scan,
         requires_payment=requires_payment,
+        payment_enabled=pay_enabled,
     )
 
 
@@ -128,8 +133,12 @@ async def assert_ai_scan_allowed(db: AsyncSession, user: User) -> AiScanMeterSta
         detail={
             "code": "ai_scan_limit_exceeded",
             "message": (
-                f"You have used all {status_row.complimentary_limit} complimentary BYOT AI scans. "
-                "Additional scans will be available for purchase in a future release."
+                f"You have used all {status_row.complimentary_limit} complimentary BYOT AI scans."
+                + (
+                    " Purchase an AI scan pack to continue."
+                    if status_row.payment_enabled
+                    else " Purchase will be available soon."
+                )
             ),
             **status_row.as_dict(),
         },

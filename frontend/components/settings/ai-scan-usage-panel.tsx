@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
+import { BuyAiScanPacks } from "@/components/payments/buy-ai-scan-packs";
 import { aiScans } from "@/lib/api";
 
 export function AiScanUsagePanel({ compact = false }: { compact?: boolean }) {
@@ -59,7 +60,7 @@ export function AiScanUsagePanel({ compact = false }: { compact?: boolean }) {
             </Link>
             {data.purchased_balance > 0
               ? ` · ${data.purchased_balance} purchased scan(s) available`
-              : " · Paid top-ups coming in a future release."}
+              : null}
           </>
         ) : (
           <>
@@ -71,6 +72,9 @@ export function AiScanUsagePanel({ compact = false }: { compact?: boolean }) {
           </>
         )}
       </p>
+      {data.tier === "byot_metered" && data.payment_enabled ? (
+        <BuyAiScanPacks compact={compact} />
+      ) : null}
     </div>
   );
 }

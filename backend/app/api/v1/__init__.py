@@ -17,6 +17,7 @@ from app.api.v1 import (
     dashboard,
     health,
     intelligence,
+    payments,
     plantation_fences,
     planting_programs,
     planting_projects,
@@ -39,6 +40,7 @@ api_router.include_router(audit.router)
 api_router.include_router(trees.router)
 api_router.include_router(analysis.router)
 api_router.include_router(ai_scans.router)
+api_router.include_router(payments.router)
 api_router.include_router(satellite.router)
 api_router.include_router(satellite_health.router)
 api_router.include_router(plantation_fences.router)

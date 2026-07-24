@@ -1,4 +1,5 @@
 from app.models.ai_scan_wallet import UserAiScanWallet
+from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
@@ -7,6 +8,7 @@ from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
+from app.models.payment import PaymentEvent, PaymentOrder
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_compliance_violation import PlantingComplianceViolation
@@ -31,6 +33,8 @@ __all__ = [
     "BioacousticRecording",
     "Alert",
     "UserAiScanWallet",
+    "PaymentOrder",
+    "PaymentEvent",
     "AuditLog",
     "CarbonCalculation",
     "CmsPage",

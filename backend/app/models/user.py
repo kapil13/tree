@@ -37,5 +37,6 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     trees = relationship("Tree", back_populates="owner", foreign_keys="Tree.owner_user_id")
     planting_programs = relationship("UserPlantingProgram", back_populates="user")
     ai_scan_wallet = relationship("UserAiScanWallet", back_populates="user", uselist=False)
+    payment_orders = relationship("PaymentOrder", back_populates="user")
 
     __table_args__ = (Index("users_org_idx", "organization_id"),)
