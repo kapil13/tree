@@ -11,7 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
-from app.services.auth.gmail_sender import GmailSendError, gmail_otp_configured, send_signup_otp_email
+from app.services.auth.gmail_sender import (
+    GmailSendError,
+    gmail_otp_configured,
+    send_signup_otp_email,
+)
 from app.services.auth.otp import normalize_phone
 from app.services.auth.otp_store import (
     check_otp,
