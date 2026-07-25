@@ -12,7 +12,7 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 export function AppAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const hydrated = useAuthHydrated();
-  const { user, setUser, logout, getAccessToken } = useAuth();
+  const { setUser, logout, getAccessToken } = useAuth();
   const [status, setStatus] = useState<AuthStatus>("loading");
 
   useEffect(() => {
@@ -26,11 +26,6 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     syncSessionCookieFromToken();
-
-    if (user) {
-      setStatus("authenticated");
-      return;
-    }
 
     let cancelled = false;
     auth
@@ -52,7 +47,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, user, router, setUser, logout, getAccessToken]);
+  }, [hydrated, router, setUser, logout, getAccessToken]);
 
   if (!hydrated || status !== "authenticated") {
     return (
