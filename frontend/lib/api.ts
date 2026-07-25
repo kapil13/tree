@@ -429,7 +429,7 @@ export const auth = {
   },
   async signupSendEmailOtp(payload: { signup_token: string }) {
     return (
-      await api.post<{ status: string; dev_hint?: string | null }>(
+      await api.post<{ status: string; dev_hint?: string | null; email_enabled?: boolean }>(
         "/v1/auth/signup/send-email-otp",
         payload,
       )

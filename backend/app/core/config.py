@@ -79,6 +79,10 @@ class Settings(BaseSettings):
 
     # OTP — set auth_otp_sms_enabled=true when MSG91/SNS is wired
     auth_otp_sms_enabled: bool = False
+    # Email OTP — Gmail API + Google Workspace domain delegation
+    auth_otp_email_enabled: bool = False
+    gmail_sender: str | None = None
+    google_service_account_json: str | None = None
 
     # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
     turnstile_site_key: str | None = None

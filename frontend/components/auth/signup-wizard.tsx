@@ -59,7 +59,8 @@ export function SignupWizard({
       invalid_phone: "Enter a valid 10-digit Indian mobile number starting with 6–9.",
       invalid_otp: "Invalid code. Please try again.",
       signup_session_expired: "Your signup session expired. Please start again.",
-      phone_not_verified: "Verify your phone number first.",
+      email_send_failed: "Could not send the verification email. Please try again shortly.",
+      gmail_not_configured: "Email verification is not configured yet. Contact support.",
       captcha_required: "Please complete the security check.",
       captcha_failed: "Security check failed. Please try again.",
     };
@@ -124,7 +125,8 @@ export function SignupWizard({
     try {
       await auth.signupVerifyPhone({ signup_token: signupToken, code: phoneOtp });
       const emailRes = await auth.signupSendEmailOtp({ signup_token: signupToken });
-      if (emailRes.dev_hint) setDevHint(emailRes.dev_hint);
+      if (emailRes.dev_hint && !emailRes.email_enabled) setDevHint(emailRes.dev_hint);
+      else setDevHint(null);
       setStep("verify-email");
     } catch (err) {
       setError(humanize(errorMessage(err)));

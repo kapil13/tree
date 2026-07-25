@@ -48,6 +48,7 @@ class SignupCompleteRequest(BaseModel):
 class SignupStepOut(BaseModel):
     status: str
     dev_hint: str | None = None
+    email_enabled: bool = False
 
 
 class LoginRequest(BaseModel):
