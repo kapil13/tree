@@ -10,15 +10,55 @@ import asyncio
 import random
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models.organization import Organization
+from app.models.planting_program import UserPlantingProgram
 from app.models.species import Species
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.carbon.species_catalog import SPECIES_CATALOG
+from app.services.planting_programs.catalog import default_program_code
+from app.services.planting_programs.enrollment import get_program_by_code, set_user_programs
+
+DEMO_EMAIL = "demo@byot.earth"
+DEMO_PASSWORD = "byotdemo1234!"
+
+
+async def _ensure_demo_user(db, org: Organization) -> User:
+    """Create or reset the demo citizen account (BYOT-only menus)."""
+    user = (await db.execute(select(User).where(User.email == DEMO_EMAIL))).scalar_one_or_none()
+    if user is None:
+        user = User(
+            email=DEMO_EMAIL,
+            full_name="Demo Citizen",
+            hashed_password=hash_password(DEMO_PASSWORD),
+            role="user",
+            organization_id=org.id,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        await db.flush()
+    else:
+        user.full_name = "Demo Citizen"
+        user.hashed_password = hash_password(DEMO_PASSWORD)
+        user.role = "user"
+        user.organization_id = org.id
+        user.is_org_admin = False
+        user.org_role = None
+        user.is_active = True
+        user.is_verified = True
+
+    byot = await get_program_by_code(db, default_program_code())
+    if byot is not None:
+        await db.execute(delete(UserPlantingProgram).where(UserPlantingProgram.user_id == user.id))
+        await db.flush()
+        await set_user_programs(db, user.id, [byot.code])
+
+    return user
 
 
 async def seed() -> None:
@@ -57,29 +97,17 @@ async def seed() -> None:
             db.add(org)
             await db.flush()
 
-        # User
-        user = (
-            await db.execute(select(User).where(User.email == "demo@byot.earth"))
-        ).scalar_one_or_none()
-        if user is None:
-            user = User(
-                email="demo@byot.earth",
-                full_name="Demo Farmer",
-                hashed_password=hash_password("byotdemo1234!"),
-                role="farmer",
-                organization_id=org.id,
-                is_active=True,
-                is_verified=True,
-            )
-            db.add(user)
-            await db.flush()
+        user = await _ensure_demo_user(db, org)
 
         # 25 demo trees around Bangalore
         existing_count = (
             await db.execute(select(Tree).where(Tree.owner_user_id == user.id))
         ).scalars().all()
         if len(existing_count) >= 5:
-            print("Demo trees already exist, skipping.")
+            print(
+                f"Demo user reset: {DEMO_EMAIL} role=user, BYOT-only programs. "
+                "Trees already exist, skipping tree seed."
+            )
             await db.commit()
             return
 
@@ -110,7 +138,7 @@ async def seed() -> None:
             )
             db.add(t)
         await db.commit()
-        print("Seeded demo data.")
+        print(f"Seeded demo data. Login: {DEMO_EMAIL} / {DEMO_PASSWORD} (citizen / BYOT menus only)")
 
 
 if __name__ == "__main__":
