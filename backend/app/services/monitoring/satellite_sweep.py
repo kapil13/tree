@@ -46,6 +46,62 @@ async def _baseline_ndvi_change(
     return round(current_ndvi - baseline, 4)
 
 
+async def _tree_baseline_ndvi_change(
+    db: AsyncSession, tree_id: uuid.UUID, current_ndvi: float
+) -> float:
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(6)
+    )
+    rows = list(res.scalars().all())
+    if len(rows) < MIN_BASELINE_SAMPLES:
+        return 0.0
+    baseline_vals = [float(r.ndvi_mean) for r in rows[1:] if r.ndvi_mean is not None]
+    if not baseline_vals:
+        return 0.0
+    baseline = sum(baseline_vals) / len(baseline_vals)
+    return round(current_ndvi - baseline, 4)
+
+
+async def maybe_alert_tree_ndvi_decline(
+    db: AsyncSession,
+    *,
+    tree: Tree,
+    user: User | None,
+    sample,
+    change: float,
+) -> None:
+    if change is None or change > NDVI_DEGRADATION_THRESHOLD:
+        return
+    notify_user = user
+    if notify_user is None and tree.owner_user_id:
+        notify_user = await db.get(User, tree.owner_user_id)
+    if notify_user is None:
+        return
+    await create_monitoring_alert(
+        db,
+        user=notify_user,
+        kind="ndvi_degradation",
+        severity="high",
+        title=f"NDVI drop — {tree.public_code}",
+        message=(
+            f"Tree vegetation index fell {abs(change):.2f} vs recent baseline "
+            f"(current NDVI {sample.ndvi_mean:.2f}). Inspect on site or re-geotag."
+        ),
+        payload={
+            "tree_id": str(tree.id),
+            "project_id": str(tree.project_id) if tree.project_id else None,
+            "ndvi_mean": float(sample.ndvi_mean) if sample.ndvi_mean is not None else None,
+            "change_vs_baseline": change,
+        },
+        prefs_key="satellite_health",
+        dedupe_hours=168,
+        dedupe_keys=("tree_id",),
+    )
+
+
 async def scan_and_persist_work_area(
     db: AsyncSession,
     fence: PlantationFence,
@@ -125,39 +181,26 @@ async def scan_and_persist_work_area(
     return rec
 
 
-async def scan_and_persist_tree(db: AsyncSession, tree: Tree) -> SatelliteRecord | None:
+async def scan_and_persist_tree(
+    db: AsyncSession,
+    tree: Tree,
+    *,
+    notify_user: User | None = None,
+) -> SatelliteRecord | None:
     try:
         pt = to_shape(tree.location)
         lat, lon = pt.y, pt.x
     except Exception:
         return None
 
-    from app.services.satellite.plantation import has_sentinel_credentials
     from app.services.satellite.service import get_satellite_service
 
-    sample = None
-    if has_sentinel_credentials():
-        try:
-            from app.core.config import settings
-            from app.services.satellite.sentinel_hub import SentinelHubClient
-
-            client = SentinelHubClient(
-                settings.sentinel_hub_client_id or "",
-                settings.sentinel_hub_client_secret or "",
-                api_base_url=settings.sentinel_hub_api_url,
-                token_url=settings.sentinel_hub_token_url,
-            )
-            latest = await client.fetch_latest_sample(lat, lon)
-            if latest:
-                ts, stats = latest
-                from app.services.satellite.plantation import _sample_from_stats
-
-                sample = _sample_from_stats(lat, lon, ts, stats)
-        except Exception as exc:
-            log.warning("tree_sentinel_scan_failed", tree_id=str(tree.id), error=str(exc))
-
-    if sample is None:
-        sample = await get_satellite_service().sample(lat, lon)
+    sample = await get_satellite_service().sample(lat, lon)
+    change = sample.change_vs_baseline
+    if sample.ndvi_mean is not None:
+        computed = await _tree_baseline_ndvi_change(db, tree.id, float(sample.ndvi_mean))
+        if computed != 0.0:
+            change = computed
 
     rec = SatelliteRecord(
         tree_id=tree.id,
@@ -170,12 +213,20 @@ async def scan_and_persist_tree(db: AsyncSession, tree: Tree) -> SatelliteRecord
         ndvi_min=sample.ndvi_min,
         evi_mean=sample.evi_mean,
         presence_confirmed=sample.presence_confirmed,
-        change_vs_baseline=sample.change_vs_baseline,
+        change_vs_baseline=change,
     )
     db.add(rec)
     tree.last_satellite_at = datetime.now(UTC)
     tree.satellite_verified = bool(sample.presence_confirmed)
     await db.flush()
+
+    await maybe_alert_tree_ndvi_decline(
+        db,
+        tree=tree,
+        user=notify_user,
+        sample=sample,
+        change=float(change or 0.0),
+    )
     return rec
 
 
