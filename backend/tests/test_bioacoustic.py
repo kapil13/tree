@@ -97,6 +97,25 @@ def test_production_requires_ml_stack(monkeypatch):
         )
 
 
+def test_production_birdnet_failure_no_stub(monkeypatch):
+    import pytest
+
+    from app.core.config import settings
+    from app.services.ai import bioacoustic as bio_ai
+
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(settings, "bioacoustic_pipeline", "birdnet")
+    monkeypatch.setattr(bio_ai, "birdnet_available", lambda: True)
+    monkeypatch.setattr(bio_ai, "run_birdnet", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    with pytest.raises(RuntimeError, match="bioacoustic_pipeline_failed"):
+        identify_species_from_audio(
+            b"x" * 2000,
+            duration_seconds=90.0,
+            preprocessing={"wav_temp_path": "/tmp/fake.wav"},
+        )
+
+
 def test_aggregate_metrics_bird_only_scoring():
     detections = [
         {**enrich_detection("Corvus splendens", "House Crow", "bird"), "confidence": 0.9, "call_count": 5},

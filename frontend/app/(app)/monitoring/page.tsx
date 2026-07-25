@@ -28,6 +28,8 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   survival_survey: "Survival survey",
   satellite_health: "Satellite health",
   satellite_health_digest: "Satellite digest",
+  compliance_deadline_approaching: "Compliance deadline",
+  compliance_deadline_overdue: "Compliance overdue",
 };
 
 export default function MonitoringPage() {

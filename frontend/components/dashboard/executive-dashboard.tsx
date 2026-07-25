@@ -58,6 +58,7 @@ import {
   api,
   bioacoustic,
   dashboard,
+  intelligence,
   plantationFences,
   plantingPrograms,
   trees,
@@ -107,6 +108,12 @@ export function ExecutiveDashboard() {
       status: string;
       created_at: string;
     }>,
+  });
+
+  const { data: brief } = useQuery({
+    queryKey: ["executive-brief"],
+    queryFn: () => intelligence.brief(),
+    staleTime: 60_000,
   });
 
   const primaryFenceId = fencesQ.data?.items[0]?.id;
@@ -173,6 +180,24 @@ export function ExecutiveDashboard() {
                 your organization&apos;s packages.
               </p>
             </div>
+            {brief && (
+              <div className="rounded-xl border border-forest-200/60 bg-white/70 p-4 text-sm shadow-sm backdrop-blur">
+                <div className="mb-1 flex items-center gap-2 font-medium text-forest-900">
+                  <Sparkles className="h-4 w-4 text-forest-700" />
+                  {brief.headline}
+                </div>
+                <ul className="space-y-1 text-stone-700">
+                  {brief.lines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                {brief.priority_alert && (
+                  <p className="mt-2 text-xs text-amber-800">
+                    Priority: {brief.priority_alert.title} — {brief.priority_alert.work_area_name}
+                  </p>
+                )}
+              </div>
+            )}
             <DataTrustBanner compact />
             <OrgAdminChecklist />
             {enrolledPrograms.length > 0 && (

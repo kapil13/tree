@@ -135,6 +135,9 @@ class Settings(BaseSettings):
     gbif_api_url: str = "https://api.gbif.org/v1"
     gbif_occurrence_radius_km: float = Field(default=25.0, ge=1.0, le=100.0)
 
+    # Intelligence cache (Redis)
+    intelligence_cache_ttl_seconds: int = Field(default=600, ge=60, le=3600)
+
     # ISRO Bhoonidhi (NRSC) STAC catalog — requires IP whitelist + API account
     bhoonidhi_user_id: str | None = None
     bhoonidhi_password: str | None = None

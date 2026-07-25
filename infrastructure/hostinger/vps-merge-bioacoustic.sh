@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Merge and deploy full bioacoustic stack on Aranyix VPS.
+# Merge and deploy full bioacoustic stack on Aranyix VPS (BirdNET + optional Perch multi-taxa).
 # Run on VPS: bash infrastructure/hostinger/vps-merge-bioacoustic.sh
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/opt/aranyix}"
-BRANCH="${BRANCH:-cursor/vps-bioacoustic-deploy-f2ba}"
+BRANCH="${BRANCH:-main}"
 HOSTINGER="${REPO_DIR}/infrastructure/hostinger"
 ENV_FILE="${HOSTINGER}/.env.production"
+MODEL_DIR="${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}"
 
 echo "==> Aranyix bioacoustic VPS deploy"
 echo "    Repo:   $REPO_DIR"
@@ -23,10 +24,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-# Ensure bioacoustic env (append if missing)
 grep -q '^BIOACOUSTIC_PIPELINE=' "$ENV_FILE" || cat >>"$ENV_FILE" <<'EOF'
 
-# Bioacoustic (BirdNET + GBIF + IUCN)
+# Bioacoustic (BirdNET + optional Perch multi-taxa)
 BIOACOUSTIC_PIPELINE=birdnet
 BIOACOUSTIC_MIN_CONFIDENCE=0.15
 BIOACOUSTIC_RETURN_ALL_DETECTIONS=true
@@ -37,24 +37,25 @@ BIOACOUSTIC_ENABLE_PERCH=false
 GBIF_OCCURRENCE_RADIUS_KM=25
 EOF
 
-echo "==> Optional: download Perch v2 for multi-taxa (amphibian/mammal/insect/reptile)"
-echo "    bash infrastructure/hostinger/download-perch-model.sh /opt/aranyix/models"
-echo "    Then set BIOACOUSTIC_ENABLE_PERCH=true and BIOACOUSTIC_PIPELINE=composite in .env.production"
+echo "==> Optional: download Perch v2 for multi-taxa"
+if [[ "${DOWNLOAD_PERCH:-0}" == "1" ]]; then
+  bash "$HOSTINGER/download-perch-model.sh" "$MODEL_DIR"
+fi
 
-echo "==> Running database migrations..."
+export COMPOSE_PROFILES=bioacoustic
+echo "==> Deploying with COMPOSE_PROFILES=bioacoustic (dedicated ML worker)"
 cd "$HOSTINGER"
-docker compose -f docker-compose.prod.yml --env-file .env.production exec -T backend \
-  alembic upgrade head || true
-
-echo "==> Building and restarting stack (worker includes BirdNET)..."
 ./deploy.sh
 
-echo "==> Restarting Celery worker for bioacoustic queue..."
-docker compose -f docker-compose.prod.yml --env-file .env.production restart worker
+echo "==> Verifying bioacoustic stack..."
+if [[ -x ./verify-bioacoustic.sh ]]; then
+  ./verify-bioacoustic.sh || true
+fi
 
 echo ""
 echo "SUCCESS — bioacoustic stack deployed from $BRANCH"
 echo "  Web:  https://aranyix.tech/bioacoustic"
-echo "  API:  https://api.aranyix.tech/v1/bioacoustic/regional-fauna"
+echo "  API:  https://api.aranyix.tech/health/workers"
 echo ""
-echo "Set IUCN_API_TOKEN in .env.production for live Red List data."
+echo "Multi-taxa: DOWNLOAD_PERCH=1 ./vps-merge-bioacoustic.sh"
+echo "Then set BIOACOUSTIC_ENABLE_PERCH=true and BIOACOUSTIC_PIPELINE=composite in .env.production"

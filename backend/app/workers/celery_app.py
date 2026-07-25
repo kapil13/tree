@@ -56,6 +56,10 @@ celery_app.conf.update(
             "task": "app.workers.tasks.daily_satellite_health_digest",
             "schedule": crontab(hour="6", minute="30"),
         },
+        "compliance-deadline-scan": {
+            "task": "app.workers.tasks.compliance_deadline_scan",
+            "schedule": crontab(hour="7", minute="0"),
+        },
         "biodiversity-baseline": {
             "task": "app.workers.tasks.biodiversity_baseline",
             "schedule": crontab(hour="4", minute="30", day_of_week="0"),

@@ -31,6 +31,7 @@ export default function AlertsPage() {
   const sh = prefs?.satellite_health;
   const ss = prefs?.survival_survey;
   const tw = prefs?.threat_watch;
+  const comp = prefs?.compliance;
 
   return (
     <div className="space-y-6">
@@ -169,6 +170,42 @@ export default function AlertsPage() {
                 }}
               />
               Email threat watch alerts
+            </label>
+          </div>
+        </div>
+      )}
+
+      {comp && (
+        <div className="card space-y-4">
+          <div className="text-sm font-medium">Compliance deadline reminders</div>
+          <div className="space-y-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={comp.enabled}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    compliance: { ...comp, enabled: e.target.checked },
+                  })
+                }
+              />
+              Email when compliance violations or checklists are approaching due
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={comp.channels.includes("email")}
+                onChange={(e) => {
+                  const channels = new Set(comp.channels);
+                  if (e.target.checked) channels.add("email");
+                  else channels.delete("email");
+                  if (!channels.has("in_app")) channels.add("in_app");
+                  savePrefs.mutate({
+                    compliance: { ...comp, channels: [...channels] },
+                  });
+                }}
+              />
+              Email compliance deadline alerts
             </label>
           </div>
         </div>

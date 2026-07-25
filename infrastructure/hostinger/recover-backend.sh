@@ -81,6 +81,10 @@ done
 echo ""
 echo "==> Backend healthy — starting frontend + worker"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d frontend worker beat
+if grep -q '^COMPOSE_PROFILES=.*bioacoustic' "$ENV_FILE" 2>/dev/null || \
+   [[ "${COMPOSE_PROFILES:-}" == *bioacoustic* ]]; then
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d bioacoustic-worker
+fi
 
 echo ""
 echo "Recovery complete."
