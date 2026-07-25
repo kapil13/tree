@@ -59,6 +59,8 @@ async def test_build_integrations_health_structure():
     assert "open_meteo" in result["integrations"]
     assert "gbif" in result["integrations"]
     assert result["integrations"]["sentinel_hub"]["status"] == "not_configured"
+    assert result["integrations"]["ai_analysis"]["mode"] == "estimate"
+    assert result["integrations"]["tree_satellite_ndvi"]["mode"] == "estimate"
 
 
 @pytest.mark.asyncio

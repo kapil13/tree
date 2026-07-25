@@ -74,7 +74,7 @@ export function BuyAiScanPacks({
           key: session.razorpay_key_id,
           amount: session.amount_paise,
           currency: session.currency,
-          name: "Aranyix BYOT",
+          name: "Aranyix",
           description: session.label,
           order_id: session.order.razorpay_order_id,
           prefill: {

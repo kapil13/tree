@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DataTrustBanner } from "@/components/data-trust-banner";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
 import { BhoonidhiFenceCatalogPanel } from "@/components/satellite/bhoonidhi-fence-catalog-panel";
 import { bhoonidhi, plantationFences, trees } from "@/lib/api";
@@ -33,6 +34,7 @@ export default function SatellitePage() {
         Draw plantation fences for <strong>Sentinel-2 NDVI</strong> (Copernicus) and browse{" "}
         <strong>ISRO Bhoonidhi</strong> IRS / ResourceSat / EOS-06 scenes for each site.
       </p>
+      <DataTrustBanner />
 
       {bhoonidhiStatus && (
         <div className="card text-sm">

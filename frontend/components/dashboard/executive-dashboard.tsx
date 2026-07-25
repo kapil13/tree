@@ -39,6 +39,7 @@ import {
   YAxis,
 } from "recharts";
 import { TreesMap } from "@/components/trees-map";
+import { DataTrustBanner } from "@/components/data-trust-banner";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
@@ -157,17 +158,18 @@ export function ExecutiveDashboard() {
           <div className="space-y-4">
             <div className="dash-live-pill">
               <span className="dash-live-dot" />
-              Live portfolio summary
+              Portfolio overview
             </div>
             <div>
               <h1 className="dash-hero-title">
                 {greeting}, {user?.full_name?.split(" ")[0] || "steward"}
               </h1>
               <p className="dash-hero-copy">
-                Your environmental intelligence command center — carbon, canopy health, biodiversity,
-                satellite signals, and compliance evidence in one living view.
+                Carbon, canopy health, biodiversity, satellite signals, and compliance evidence for
+                your organization&apos;s packages.
               </p>
             </div>
+            <DataTrustBanner compact />
             {enrolledPrograms.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {enrolledPrograms.map((p) => (

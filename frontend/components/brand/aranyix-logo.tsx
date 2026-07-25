@@ -1,3 +1,26 @@
+/** Compact mark for app chrome (sidebar / mobile drawer). */
+export function AranyixMark({ className = "h-8 w-8" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 104 104" className={className} role="img" aria-label="Aranyix">
+      <defs>
+        <linearGradient id="aranyix-mark-emblem" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#14532d" />
+          <stop offset="100%" stopColor="#4ade80" />
+        </linearGradient>
+      </defs>
+      <circle cx="52" cy="52" r="50" fill="#052e1f" />
+      <circle cx="52" cy="52" r="50" fill="none" stroke="#4ade80" strokeOpacity="0.3" />
+      <ellipse cx="52" cy="78" rx="34" ry="8" fill="#0f766e" opacity="0.35" />
+      <path
+        d="M52 74 C52 58 38 50 38 36 C38 24 46 16 52 12 C58 16 66 24 66 36 C66 50 52 58 52 74Z"
+        fill="url(#aranyix-mark-emblem)"
+      />
+      <path d="M52 74 L52 88 M44 82 L52 88 L60 82" stroke="#86efac" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="52" cy="30" r="2.8" fill="#ffffff" />
+    </svg>
+  );
+}
+
 export function AranyixLogo({ className = "h-12" }: { className?: string }) {
   return (
     <svg

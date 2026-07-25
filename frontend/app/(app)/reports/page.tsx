@@ -1,14 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, errorMessage, plantationFences } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+
+const KIND_LABELS: Record<string, string> = {
+  carbon: "Carbon stock",
+  tree: "Tree inventory",
+  biodiversity: "Biodiversity",
+  esg: "ESG summary",
+  plantation: "Plantation site",
+};
+
+type ReportRow = {
+  id: string;
+  kind: string;
+  format: string;
+  status: string;
+  created_at: string;
+};
 
 export default function ReportsPage() {
+  const qc = useQueryClient();
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
-  const [list, setList] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -17,16 +33,18 @@ export default function ReportsPage() {
     queryFn: () => plantationFences.list({ page_size: 100 }),
   });
 
-  const needsFence = kind === "biodiversity" || kind === "plantation" || kind === "esg";
+  const {
+    data: list = [],
+    isLoading,
+    isError,
+    error: loadError,
+    refetch,
+  } = useQuery({
+    queryKey: ["reports-list"],
+    queryFn: async () => (await api.get<ReportRow[]>("/v1/reports")).data,
+  });
 
-  async function refresh() {
-    try {
-      const r = await api.get("/v1/reports");
-      setList(r.data);
-    } catch (e) {
-      setError(errorMessage(e));
-    }
-  }
+  const needsFence = kind === "biodiversity" || kind === "plantation" || kind === "esg";
 
   async function queue() {
     setBusy(true);
@@ -35,7 +53,7 @@ export default function ReportsPage() {
       const params = new URLSearchParams({ kind, format });
       if (needsFence && fenceId) params.set("plantation_fence_id", fenceId);
       await api.post(`/v1/reports?${params.toString()}`);
-      await refresh();
+      await qc.invalidateQueries({ queryKey: ["reports-list"] });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -53,8 +71,10 @@ export default function ReportsPage() {
         <div>
           <label className="label">Kind</label>
           <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
-            {["carbon", "tree", "biodiversity", "esg", "plantation"].map((k) => (
-              <option key={k} value={k}>{k}</option>
+            {Object.entries(KIND_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
         </div>
@@ -75,19 +95,25 @@ export default function ReportsPage() {
             <select className="input" value={fenceId} onChange={(e) => setFenceId(e.target.value)}>
               <option value="">Select site…</option>
               {fences?.items.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
               ))}
             </select>
           </div>
         )}
-        <button className="btn-primary" onClick={queue} disabled={busy || (needsFence && !fenceId)}>
+        <button className="btn-primary" onClick={() => void queue()} disabled={busy || (needsFence && !fenceId)}>
           {busy ? "Generating…" : "Generate report"}
         </button>
-        <button className="btn-secondary" onClick={refresh}>
+        <button className="btn-secondary" onClick={() => void refetch()}>
           Refresh
         </button>
       </div>
-      {error && <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
+      {(error || isError) && (
+        <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error || errorMessage(loadError)}
+        </div>
+      )}
 
       <div className="card overflow-hidden p-0">
         <table className="min-w-full text-sm">
@@ -101,7 +127,14 @@ export default function ReportsPage() {
             </tr>
           </thead>
           <tbody>
-            {list.length === 0 && (
+            {isLoading && (
+              <tr>
+                <td colSpan={5} className="p-6 text-center text-stone-500">
+                  Loading reports…
+                </td>
+              </tr>
+            )}
+            {!isLoading && list.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-stone-500">
                   No reports yet — generate one above.
@@ -110,10 +143,18 @@ export default function ReportsPage() {
             )}
             {list.map((r) => (
               <tr key={r.id} className="border-t border-stone-100">
-                <td className="px-4 py-2">{r.kind}</td>
-                <td className="px-4 py-2">{r.format}</td>
+                <td className="px-4 py-2">{KIND_LABELS[r.kind] || r.kind}</td>
+                <td className="px-4 py-2 uppercase">{r.format}</td>
                 <td className="px-4 py-2">
-                  <span className={r.status === "ready" ? "text-forest-700" : r.status === "failed" ? "text-rose-700" : ""}>
+                  <span
+                    className={
+                      r.status === "ready"
+                        ? "text-forest-700"
+                        : r.status === "failed"
+                          ? "text-rose-700"
+                          : "text-amber-700"
+                    }
+                  >
                     {r.status}
                   </span>
                 </td>
@@ -121,14 +162,18 @@ export default function ReportsPage() {
                   {new Date(r.created_at).toLocaleString()}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <a
-                    href={`/api/v1/reports/${r.id}/download`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-forest-700 hover:underline"
-                  >
-                    Download
-                  </a>
+                  {r.status === "ready" ? (
+                    <a
+                      href={`/api/v1/reports/${r.id}/download`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-forest-700 hover:underline"
+                    >
+                      Download
+                    </a>
+                  ) : (
+                    <span className="text-xs text-stone-400">—</span>
+                  )}
                 </td>
               </tr>
             ))}

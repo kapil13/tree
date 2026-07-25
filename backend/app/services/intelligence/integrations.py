@@ -41,6 +41,31 @@ async def _ping_gbif(timeout: float = 3.0) -> dict[str, Any]:
         return {"status": "error", "reachable": False, "error": str(exc)}
 
 
+def _ai_pipeline_status() -> dict[str, Any]:
+    """Honest mode for tree AI — currently always stub until OpenAI/Gemini adapters are wired."""
+    # Keep in sync with app.services.ai.service.get_ai_service()
+    return {
+        "status": "estimate",
+        "mode": "estimate",
+        "label": "Deterministic estimate model (live AI adapters not enabled)",
+        "reachable": True,
+        "error": None,
+        "provider": "stub",
+    }
+
+
+def _tree_satellite_status() -> dict[str, Any]:
+    """Per-tree NDVI path uses StubSatelliteService today."""
+    return {
+        "status": "estimate",
+        "mode": "estimate",
+        "label": "Simulated seasonal NDVI for individual trees",
+        "reachable": True,
+        "error": None,
+        "provider": "stub",
+    }
+
+
 async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, Any]:
     sentinel_configured = has_sentinel_credentials()
     bhoonidhi_configured = has_bhoonidhi_credentials()
@@ -55,18 +80,34 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
     integrations = {
         "open_meteo": open_meteo,
         "gbif": gbif,
+        "ai_analysis": _ai_pipeline_status(),
+        "tree_satellite_ndvi": _tree_satellite_status(),
         "sentinel_hub": {
             "status": "configured" if sentinel_configured else "not_configured",
+            "mode": "live" if sentinel_configured else "estimate",
+            "label": (
+                "Sentinel Hub credentials configured for plantation scans"
+                if sentinel_configured
+                else "Sentinel Hub not configured"
+            ),
             "reachable": sentinel_configured,
             "error": None if sentinel_configured else "missing_credentials",
         },
         "bhoonidhi": {
             "status": "configured" if bhoonidhi_configured else "not_configured",
+            "mode": "live" if bhoonidhi_configured else "estimate",
+            "label": (
+                "ISRO Bhoonidhi catalog configured"
+                if bhoonidhi_configured
+                else "Bhoonidhi not configured"
+            ),
             "reachable": bhoonidhi_configured,
             "error": None if bhoonidhi_configured else "missing_credentials",
         },
         "iucn": {
             "status": "configured" if iucn_configured else "optional",
+            "mode": "live" if iucn_configured else "optional",
+            "label": "IUCN Red List API",
             "reachable": iucn_configured,
             "error": None if iucn_configured else "token_optional",
         },
