@@ -57,6 +57,10 @@ from app.services.auth.signup import (
     start_signup,
     verify_signup_phone,
 )
+from app.services.auth.user_profile import (
+    user_enrolled_program_codes,
+    user_has_professional_program,
+)
 from app.services.planting_programs.enrollment import ensure_default_enrollment
 from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
@@ -319,7 +323,14 @@ async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenRespo
     return _tokens_for(user)
 
 
-def _user_out(user: User, *, platform_access: dict[str, bool] | None = None) -> UserOut:
+def _user_out(
+    user: User,
+    *,
+    platform_access: dict[str, bool] | None = None,
+    enrolled_program_codes: list[str] | None = None,
+    organization_name: str | None = None,
+) -> UserOut:
+    codes = enrolled_program_codes or []
     return UserOut(
         id=user.id,
         email=user.email,
@@ -337,19 +348,35 @@ def _user_out(user: User, *, platform_access: dict[str, bool] | None = None) -> 
             "website_cms": user.role == "admin",
             "users_admin": user.role == "admin",
         },
+        is_org_admin=user.is_org_admin,
+        org_role=user.org_role,
+        organization_name=organization_name,
+        enrolled_program_codes=codes,
+        has_professional_program=user_has_professional_program(codes),
     )
 
 
-@router.get("/me", response_model=UserOut)
-async def me(user: CurrentUser, db: DB) -> UserOut:
+async def _user_out_enriched(db: DB, user: User) -> UserOut:
     cms_access = await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE)
+    codes = await user_enrolled_program_codes(db, user.id)
+    org_name = None
+    if user.organization_id:
+        org = await db.get(Organization, user.organization_id)
+        org_name = org.name if org else None
     return _user_out(
         user,
         platform_access={
             "website_cms": cms_access,
             "users_admin": has_permission(user.role, Permission.PLATFORM_USERS_MANAGE),
         },
+        enrolled_program_codes=codes,
+        organization_name=org_name,
     )
+
+
+@router.get("/me", response_model=UserOut)
+async def me(user: CurrentUser, db: DB) -> UserOut:
+    return await _user_out_enriched(db, user)
 
 
 @router.patch("/me", response_model=UserOut)
@@ -360,14 +387,7 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
         user.phone = payload.phone
     await db.commit()
     await db.refresh(user)
-    cms_access = await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE)
-    return _user_out(
-        user,
-        platform_access={
-            "website_cms": cms_access,
-            "users_admin": has_permission(user.role, Permission.PLATFORM_USERS_MANAGE),
-        },
-    )
+    return await _user_out_enriched(db, user)
 
 
 @router.get("/google/login")

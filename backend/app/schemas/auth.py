@@ -108,6 +108,11 @@ class UserOut(BaseModel):
     created_at: datetime
     permissions: list[str] = Field(default_factory=list)
     platform_access: dict[str, bool] = Field(default_factory=dict)
+    is_org_admin: bool = False
+    org_role: str | None = None
+    organization_name: str | None = None
+    enrolled_program_codes: list[str] = Field(default_factory=list)
+    has_professional_program: bool = False
 
 
 class UpdateProfile(BaseModel):

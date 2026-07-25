@@ -66,12 +66,27 @@ export const platformAdmin = {
   },
   async reviewProgramAccessRequest(
     id: string,
-    payload: { action: "approve" | "reject"; admin_note?: string },
+    payload: {
+      action: "approve" | "reject";
+      admin_note?: string;
+      organization_name?: string;
+      organization_slug?: string;
+      organization_id?: string;
+      platform_role?: "government" | "corporate" | "ngo";
+      make_org_admin?: boolean;
+    },
   ) {
     return (
       await api.patch<ProgramAccessRequestAdmin>(
         `/v1/platform/program-access-requests/${id}`,
         payload,
+      )
+    ).data;
+  },
+  async listOrganizations(search = "") {
+    return (
+      await api.get<Array<{ id: string; name: string; slug: string; type: string }>>(
+        `/v1/platform/organizations?search=${encodeURIComponent(search)}`,
       )
     ).data;
   },

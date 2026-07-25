@@ -70,6 +70,28 @@ async def require_cms_manager(user: CurrentUser, db: DB) -> User:
 CmsManager = Annotated[User, Depends(require_cms_manager)]
 
 
+async def require_org_admin(user: CurrentUser) -> User:
+    if user.role == "admin":
+        return user
+    if not user.organization_id or not user.is_org_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_admin_required")
+    return user
+
+
+OrgAdmin = Annotated[User, Depends(require_org_admin)]
+
+
+async def require_org_member(user: CurrentUser) -> User:
+    if user.role == "admin":
+        return user
+    if not user.organization_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    return user
+
+
+OrgMember = Annotated[User, Depends(require_org_member)]
+
+
 def require(perm: Permission):
     async def dep(user: CurrentUser) -> User:
         if not has_permission(user.role, perm):

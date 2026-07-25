@@ -187,6 +187,11 @@ export type User = {
   full_name: string;
   role: string;
   organization_id: string | null;
+  organization_name?: string | null;
+  is_org_admin?: boolean;
+  org_role?: string | null;
+  enrolled_program_codes?: string[];
+  has_professional_program?: boolean;
   permissions?: string[];
   platform_access?: {
     website_cms: boolean;
