@@ -21,10 +21,14 @@ class UserAdminOut(BaseModel):
     full_name: str
     role: str
     organization_id: uuid.UUID | None
+    organization_name: str | None = None
+    org_role: str | None = None
+    is_org_admin: bool = False
     is_active: bool
     is_verified: bool
     created_at: datetime
     last_login_at: datetime | None
+    enrolled_program_codes: list[str] = Field(default_factory=list)
 
 
 class UserRoleUpdate(BaseModel):
@@ -59,3 +63,9 @@ class ModuleRuleUpdate(BaseModel):
 class PlatformAccessOut(BaseModel):
     website_cms: bool
     users_admin: bool
+
+
+class PlatformOverviewOut(BaseModel):
+    users: dict[str, int]
+    organizations: dict[str, int]
+    program_access: dict[str, int]

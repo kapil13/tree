@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, Users } from "lucide-react";
 import { errorMessage } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
-import { useAuth } from "@/lib/auth-store";
 import { canManagePlatformUsers } from "@/lib/platform-access";
+import { useAuth } from "@/lib/auth-store";
 
 const WEBSITE_CMS_MODULE = "website_cms";
 
@@ -21,28 +22,12 @@ export function CmsUsersRolesPanel() {
     queryFn: () => platformAdmin.roles(),
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ["platform-users"],
-    queryFn: () => platformAdmin.listUsers(),
-    enabled: isUsersAdmin,
-  });
-
   const { data: modules, isLoading: modulesLoading } = useQuery({
     queryKey: ["platform-modules"],
     queryFn: () => platformAdmin.listModules(),
   });
 
   const cmsModule = modules?.find((m) => m.module_key === WEBSITE_CMS_MODULE);
-
-  const updateUser = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: string }) =>
-      platformAdmin.updateUser(id, { role }),
-    onSuccess: () => {
-      setMessage("User role updated.");
-      qc.invalidateQueries({ queryKey: ["platform-users"] });
-    },
-    onError: (err) => setMessage(errorMessage(err)),
-  });
 
   const updateModule = useMutation({
     mutationFn: (allowed_roles: string[]) =>
@@ -103,72 +88,22 @@ export function CmsUsersRolesPanel() {
       </div>
 
       {isUsersAdmin ? (
-        <div className="rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
-          <div className="border-b border-stone-200 p-6 dark:border-stone-800">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-forest-700" />
-              <h2 className="text-lg font-semibold">User roles</h2>
-            </div>
-            <p className="mt-1 text-sm text-stone-500">
-              Assign workspace roles. Users need a role allowed above (or admin) to use the CMS.
-            </p>
+        <div className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-forest-700" />
+            <h2 className="text-lg font-semibold">User directory</h2>
           </div>
-          {usersLoading ? (
-            <p className="p-6 text-sm text-stone-500">Loading users…</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-950">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">User</th>
-                    <th className="px-4 py-3 font-medium">Email</th>
-                    <th className="px-4 py-3 font-medium">Role</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(users ?? []).map((row) => (
-                    <tr key={row.id} className="border-t border-stone-100 dark:border-stone-800">
-                      <td className="px-4 py-3 font-medium">{row.full_name}</td>
-                      <td className="px-4 py-3 text-stone-600">{row.email}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          className="input"
-                          value={row.role}
-                          disabled={updateUser.isPending || row.id === user?.id}
-                          onChange={(e) =>
-                            updateUser.mutate({ id: row.id, role: e.target.value })
-                          }
-                        >
-                          {(roles ?? []).map((role) => (
-                            <option key={role.value} value={role.value}>
-                              {role.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={
-                            row.is_active
-                              ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800"
-                              : "rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600"
-                          }
-                        >
-                          {row.is_active ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
+            Search users, change roles, and activate or deactivate accounts from the dedicated users
+            console.
+          </p>
+          <Link href="/platform/users" className="btn-primary mt-4 inline-flex">
+            Open user management
+          </Link>
         </div>
       ) : (
         <p className="text-sm text-stone-500">
-          Only platform admins can change individual user roles. You can still manage which roles have
-          CMS access above.
+          Only platform admins can manage individual user accounts.
         </p>
       )}
 

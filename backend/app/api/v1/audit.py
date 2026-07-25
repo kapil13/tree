@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
 from app.api.v1.deps import DB, AuditReader
+from app.core.security import Permission, has_permission
 from app.models.audit import AuditLog
 from app.schemas.audit import AuditLogOut
 from app.schemas.common import Page
@@ -22,19 +23,21 @@ async def list_audit_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     action: str | None = None,
+    action_prefix: str | None = None,
     resource_type: str | None = None,
     resource_id: uuid.UUID | None = None,
 ) -> Page[AuditLogOut]:
     stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
 
-    if user.role != "admin":
+    is_platform_admin = has_permission(user.role, Permission.PLATFORM_USERS_MANAGE)
+    if not is_platform_admin:
         if user.organization_id is None:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
         stmt = stmt.where(AuditLog.organization_id == user.organization_id)
-    elif user.organization_id:
-        stmt = stmt.where(AuditLog.organization_id == user.organization_id)
 
-    if action:
+    if action_prefix:
+        stmt = stmt.where(AuditLog.action.startswith(action_prefix))
+    elif action:
         stmt = stmt.where(AuditLog.action == action)
     if resource_type:
         stmt = stmt.where(AuditLog.resource_type == resource_type)
