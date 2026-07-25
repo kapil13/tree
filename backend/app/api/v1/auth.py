@@ -178,6 +178,8 @@ def _signup_error(exc: SignupError) -> HTTPException:
         status_code = status.HTTP_410_GONE
     elif exc.code == "invalid_otp":
         status_code = status.HTTP_401_UNAUTHORIZED
+    elif exc.code in {"gmail_send_failed", "gmail_not_configured", "gmail_dependencies_missing"}:
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return HTTPException(status_code, detail=exc.code)
 
 
@@ -216,7 +218,11 @@ async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
         dev_hint = await send_signup_email_otp(payload.signup_token)
     except SignupError as exc:
         raise _signup_error(exc) from exc
-    return SignupStepOut(status="email_otp_sent", dev_hint=dev_hint)
+    return SignupStepOut(
+        status="email_otp_sent",
+        dev_hint=dev_hint,
+        email_enabled=settings.auth_otp_email_enabled and bool(settings.gmail_sender),
+    )
 
 
 @router.post("/signup/complete", response_model=TokenResponse)

@@ -11,6 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
+from app.services.auth.gmail_sender import (
+    GmailSendError,
+    gmail_otp_configured,
+    send_signup_otp_email,
+)
 from app.services.auth.otp import normalize_phone
 from app.services.auth.otp_store import (
     check_otp,
@@ -81,8 +86,14 @@ async def send_signup_email_otp(signup_token: str) -> str | None:
         raise SignupError("signup_session_expired")
     if not session.get("phone_verified"):
         raise SignupError("phone_not_verified")
-    dev_code = await issue_otp("signup_email", signup_token)
-    return dev_code if not settings.auth_otp_sms_enabled else None
+    code = await issue_otp("signup_email", signup_token)
+    if gmail_otp_configured():
+        try:
+            await send_signup_otp_email(to=session["email"], code=code)
+        except GmailSendError as exc:
+            raise SignupError(exc.code) from exc
+        return None
+    return code
 
 
 async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) -> User:

@@ -30,9 +30,9 @@ def _purge_memory() -> None:
 
 
 def _otp_code() -> str:
-    if not settings.auth_otp_sms_enabled:
-        return DEV_OTP_CODE
-    return f"{secrets.randbelow(1_000_000):06d}"
+    if settings.auth_otp_sms_enabled or settings.auth_otp_email_enabled:
+        return f"{secrets.randbelow(1_000_000):06d}"
+    return DEV_OTP_CODE
 
 
 async def issue_otp(purpose: str, identifier: str) -> str:
