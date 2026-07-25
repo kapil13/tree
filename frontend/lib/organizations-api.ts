@@ -39,6 +39,21 @@ export type OrgMembersResponse = {
   pending_invites: OrgInvite[];
 };
 
+export type OrgInviteDelivery = {
+  sms_sent: boolean;
+  email_sent: boolean;
+  invite_link: string;
+};
+
+export type OrgBulkInviteRowError = {
+  row: number;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  org_role?: string;
+  error: string;
+};
+
 export type InvitePreview = {
   organization_name: string;
   org_role: string;
@@ -69,18 +84,22 @@ export const organizations = {
     org_role: "manager" | "supervisor" | "worker" | "viewer";
   }) {
     return (
-      await api.post<{ status: string; member?: OrgMember; invite?: OrgInvite }>(
-        "/v1/organizations/me/members/invite",
-        payload,
-      )
+      await api.post<{
+        status: string;
+        member?: OrgMember;
+        invite?: OrgInvite;
+        delivery?: OrgInviteDelivery;
+      }>("/v1/organizations/me/members/invite", payload)
     ).data;
   },
   async bulkInvite(rows: Array<{ full_name: string; email?: string; phone?: string; org_role?: string }>) {
     return (
-      await api.post<{ added: number; invited: number; errors: number }>(
-        "/v1/organizations/me/members/bulk-invite",
-        { rows },
-      )
+      await api.post<{
+        added: number;
+        invited: number;
+        errors: number;
+        row_errors: OrgBulkInviteRowError[];
+      }>("/v1/organizations/me/members/bulk-invite", { rows })
     ).data;
   },
   async updateMember(
@@ -91,5 +110,17 @@ export const organizations = {
   },
   async acceptInvite(invite_token: string) {
     return (await api.post<OrgMember>("/v1/organizations/invites/accept", { invite_token })).data;
+  },
+  async revokeInvite(inviteId: string) {
+    return (await api.post<OrgInvite>(`/v1/organizations/me/members/invites/${inviteId}/revoke`)).data;
+  },
+  async resendInvite(inviteId: string) {
+    return (
+      await api.post<{
+        status: string;
+        invite?: OrgInvite;
+        delivery?: OrgInviteDelivery;
+      }>(`/v1/organizations/me/members/invites/${inviteId}/resend`)
+    ).data;
   },
 };

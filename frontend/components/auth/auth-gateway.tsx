@@ -27,6 +27,7 @@ import {
 } from "@/lib/phone";
 import { auth, errorMessage } from "@/lib/api";
 import { organizations } from "@/lib/organizations-api";
+import { inviteErrorMessage, inviteLandingPath, storePendingInviteToken } from "@/lib/invite-landing";
 import { useAuth } from "@/lib/auth-store";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 import { cn } from "@/lib/cn";
@@ -116,11 +117,16 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     syncSessionCookieFromToken();
     if (inviteToken) {
       try {
-        await organizations.acceptInvite(inviteToken);
+        const member = await organizations.acceptInvite(inviteToken);
         const refreshed = await auth.me();
         setUser(refreshed);
+        router.replace(
+          getSafeNextPath(searchParams.get("next")) ??
+            inviteLandingPath(member.org_role ?? refreshed.org_role),
+        );
+        return;
       } catch (err) {
-        setError(errorMessage(err));
+        setError(inviteErrorMessage(errorMessage(err)));
         return;
       }
     }
@@ -131,6 +137,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     setError(null);
     setBusy(true);
     try {
+      if (inviteToken) storePendingInviteToken(inviteToken);
       const { authorize_url } = await auth.googleAuthorize();
       window.location.href = authorize_url;
     } catch (err) {
@@ -277,7 +284,23 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
               <div className="mt-6">
                 <SignupWizard
                   captchaConfig={captchaConfig}
-                  onComplete={() => router.push("/trees/new")}
+                  invitePreview={invitePreview}
+                  inviteToken={inviteToken}
+                  onComplete={async () => {
+                    if (inviteToken) {
+                      try {
+                        const member = await organizations.acceptInvite(inviteToken);
+                        const refreshed = await auth.me();
+                        setUser(refreshed);
+                        router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
+                        return;
+                      } catch (err) {
+                        setError(inviteErrorMessage(errorMessage(err)));
+                        return;
+                      }
+                    }
+                    router.push("/trees/new");
+                  }}
                   onSwitchToSignIn={() => setMode("signin")}
                 />
               </div>

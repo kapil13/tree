@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Users } from "lucide-react";
 import { errorMessage } from "@/lib/api";
+import { inviteErrorMessage, inviteLandingPath } from "@/lib/invite-landing";
 import { organizations, type InvitePreview } from "@/lib/organizations-api";
 import { useAuth } from "@/lib/auth-store";
 import { formatOrgRole } from "@/lib/role-labels";
@@ -25,18 +26,18 @@ export function InviteAcceptHandler() {
 
     organizations
       .acceptInvite(inviteToken)
-      .then(async () => {
+      .then(async (member) => {
         if (cancelled) return;
         const { auth } = await import("@/lib/api");
         const profile = await auth.me();
         setUser(profile);
         setStatus("done");
-        router.replace("/dashboard");
+        router.replace(inviteLandingPath(member.org_role ?? profile.org_role));
       })
       .catch((err) => {
         if (cancelled) return;
         setStatus("error");
-        setError(errorMessage(err));
+        setError(inviteErrorMessage(errorMessage(err)));
       });
 
     return () => {

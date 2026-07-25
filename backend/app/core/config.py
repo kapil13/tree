@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     auth_otp_email_enabled: bool = False
     gmail_sender: str | None = None
     google_service_account_json: str | None = None
+    # Org invite notifications (independent toggles — enable when keys are ready)
+    auth_org_invite_sms_enabled: bool = False
+    auth_org_invite_email_enabled: bool = False
+    # MSG91 (India) — https://msg91.com
+    msg91_auth_key: str | None = None
+    msg91_sender_id: str | None = None
+    msg91_otp_template_id: str | None = None
+    msg91_invite_template_id: str | None = None
 
     # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
     turnstile_site_key: str | None = None

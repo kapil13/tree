@@ -11,6 +11,7 @@ import {
   sanitizePhoneDigits,
 } from "@/lib/phone";
 import { useAuth } from "@/lib/auth-store";
+import type { InvitePreview } from "@/lib/organizations-api";
 
 const OTP_LENGTH = 6;
 
@@ -20,11 +21,15 @@ type CaptchaConfig = { enabled: boolean; site_key?: string | null };
 
 export function SignupWizard({
   captchaConfig,
+  invitePreview,
+  inviteToken: _inviteToken,
   onComplete,
   onSwitchToSignIn,
 }: {
   captchaConfig?: CaptchaConfig;
-  onComplete: () => void;
+  invitePreview?: InvitePreview | null;
+  inviteToken?: string | null;
+  onComplete: () => void | Promise<void>;
   onSwitchToSignIn: () => void;
 }) {
   const { setSession, setUser } = useAuth();
@@ -36,9 +41,11 @@ export function SignupWizard({
   const [error, setError] = useState<string | null>(null);
   const [devHint, setDevHint] = useState<string | null>(null);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(invitePreview?.full_name ?? "");
+  const [email, setEmail] = useState(invitePreview?.email ?? "");
+  const [phone, setPhone] = useState(
+    invitePreview?.phone ? sanitizePhoneDigits(invitePreview.phone.replace(/\D/g, "").slice(-10)) : "",
+  );
   const [password, setPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
@@ -147,7 +154,7 @@ export function SignupWizard({
       setSession(tokens);
       const me = await auth.me();
       setUser(me);
-      onComplete();
+      await onComplete();
     } catch (err) {
       setError(humanize(errorMessage(err)));
     } finally {
@@ -164,7 +171,9 @@ export function SignupWizard({
 
   const subtitle =
     step === "details"
-      ? "Start with BYOT — tag trees for free, including 5 complimentary AI scans. Professional programs can be requested later."
+      ? invitePreview
+        ? `Join ${invitePreview.organization_name} as ${invitePreview.org_role.replace("_", " ")}. Verify your phone and email to continue.`
+        : "Start with BYOT — tag trees for free, including 5 complimentary AI scans. Professional programs can be requested later."
       : step === "verify-phone"
         ? "Enter the 6-digit code sent to your mobile."
         : "Enter the 6-digit code sent to your email address.";
@@ -256,7 +265,11 @@ export function SignupWizard({
             onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
             placeholder="000000"
           />
-          {devHint ? <p className="text-xs text-amber-800">Dev code: {devHint}</p> : null}
+          {devHint ? (
+            <p className="text-xs text-amber-800">
+              SMS delivery pending API keys. Dev code: <span className="font-mono font-bold">{devHint}</span>
+            </p>
+          ) : null}
           <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => void verifyPhone()}>
             {busy ? "Verifying…" : "Verify phone"}
           </button>
