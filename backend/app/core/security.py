@@ -169,3 +169,13 @@ def permissions_for_role(role: Role | str) -> list[str]:
     if Permission.ADMIN_ALL in perms:
         return sorted(p.value for p in Permission)
     return sorted(p.value for p in perms)
+
+
+def user_is_org_viewer(user) -> bool:
+    return getattr(user, "org_role", None) == "viewer"
+
+
+def user_can_write(user) -> bool:
+    if getattr(user, "role", None) == "admin":
+        return True
+    return not user_is_org_viewer(user)

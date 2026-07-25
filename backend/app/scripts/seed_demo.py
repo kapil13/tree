@@ -24,6 +24,8 @@ from app.services.planting_programs.catalog import default_program_code
 from app.services.planting_programs.enrollment import get_program_by_code, set_user_programs
 
 DEMO_EMAIL = "demo@byot.earth"
+DEMO_VIEWER_EMAIL = "viewer@byot.earth"
+DEMO_MANAGER_EMAIL = "manager@byot.earth"
 DEMO_PASSWORD = "byotdemo1234!"
 
 
@@ -57,6 +59,71 @@ async def _ensure_demo_user(db, org: Organization) -> User:
         await db.execute(delete(UserPlantingProgram).where(UserPlantingProgram.user_id == user.id))
         await db.flush()
         await set_user_programs(db, user.id, [byot.code])
+
+    return user
+
+
+async def _ensure_demo_manager(db, org: Organization) -> User:
+    """Org admin for team governance demos."""
+    user = (
+        await db.execute(select(User).where(User.email == DEMO_MANAGER_EMAIL))
+    ).scalar_one_or_none()
+    if user is None:
+        user = User(
+            email=DEMO_MANAGER_EMAIL,
+            full_name="Demo Program Manager",
+            hashed_password=hash_password(DEMO_PASSWORD),
+            role="government",
+            organization_id=org.id,
+            org_role="manager",
+            is_org_admin=True,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        await db.flush()
+    else:
+        user.full_name = "Demo Program Manager"
+        user.hashed_password = hash_password(DEMO_PASSWORD)
+        user.role = "government"
+        user.organization_id = org.id
+        user.org_role = "manager"
+        user.is_org_admin = True
+        user.is_active = True
+        user.is_verified = True
+
+    org.owner_user_id = user.id
+    return user
+
+
+async def _ensure_demo_viewer(db, org: Organization) -> User:
+    """Read-only org viewer for RBAC demos (professional nav, no mutations)."""
+    user = (
+        await db.execute(select(User).where(User.email == DEMO_VIEWER_EMAIL))
+    ).scalar_one_or_none()
+    if user is None:
+        user = User(
+            email=DEMO_VIEWER_EMAIL,
+            full_name="Demo Viewer",
+            hashed_password=hash_password(DEMO_PASSWORD),
+            role="government",
+            organization_id=org.id,
+            org_role="viewer",
+            is_org_admin=False,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        await db.flush()
+    else:
+        user.full_name = "Demo Viewer"
+        user.hashed_password = hash_password(DEMO_PASSWORD)
+        user.role = "government"
+        user.organization_id = org.id
+        user.org_role = "viewer"
+        user.is_org_admin = False
+        user.is_active = True
+        user.is_verified = True
 
     return user
 
@@ -98,6 +165,8 @@ async def seed() -> None:
             await db.flush()
 
         user = await _ensure_demo_user(db, org)
+        await _ensure_demo_manager(db, org)
+        await _ensure_demo_viewer(db, org)
 
         # 25 demo trees around Bangalore
         existing_count = (
@@ -105,8 +174,8 @@ async def seed() -> None:
         ).scalars().all()
         if len(existing_count) >= 5:
             print(
-                f"Demo user reset: {DEMO_EMAIL} role=user, BYOT-only programs. "
-                "Trees already exist, skipping tree seed."
+                f"Demo accounts reset ({DEMO_EMAIL} citizen, {DEMO_MANAGER_EMAIL} org admin, "
+                f"{DEMO_VIEWER_EMAIL} read-only viewer). Trees already exist, skipping tree seed."
             )
             await db.commit()
             return
@@ -138,7 +207,12 @@ async def seed() -> None:
             )
             db.add(t)
         await db.commit()
-        print(f"Seeded demo data. Login: {DEMO_EMAIL} / {DEMO_PASSWORD} (citizen / BYOT menus only)")
+        print(
+            f"Seeded demo data. Password for all: {DEMO_PASSWORD}\n"
+            f"  Citizen (BYOT): {DEMO_EMAIL}\n"
+            f"  Org admin:      {DEMO_MANAGER_EMAIL}\n"
+            f"  Viewer (read-only): {DEMO_VIEWER_EMAIL}"
+        )
 
 
 if __name__ == "__main__":

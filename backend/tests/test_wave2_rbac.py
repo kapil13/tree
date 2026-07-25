@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.api.v1.deps import user_can_write, user_is_org_viewer
+from app.core.security import user_can_write, user_is_org_viewer
 from app.services.organizations.members import OrgMemberError, get_invite_preview
 
 

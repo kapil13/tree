@@ -6,6 +6,7 @@ import uuid
 
 from sqlalchemy import or_, select
 
+from app.core.security import user_can_write
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.project_member import ProjectMember
@@ -40,6 +41,8 @@ async def can_access_project(user, project: PlantingProject, db) -> bool:
 
 
 async def can_manage_project(user, project: PlantingProject, db) -> bool:
+    if not user_can_write(user):
+        return False
     if user.role == "admin":
         return True
     if project.owner_user_id == user.id:

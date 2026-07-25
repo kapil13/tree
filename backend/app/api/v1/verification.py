@@ -8,8 +8,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, require
-from app.core.security import Permission
+from app.api.v1.deps import DB, AuditReader, WriteAccess
 from app.models.public_verification import PublicVerificationLink
 from app.models.tree import Tree
 from app.schemas.public_verification import VerificationLinkCreate, VerificationLinkOut
@@ -60,10 +59,9 @@ async def public_verify(token: str, db: DB) -> dict:
 @router.get(
     "/verification-links",
     response_model=list[VerificationLinkOut],
-    dependencies=[require(Permission.AUDIT_READ)],
 )
 async def list_verification_links(
-    user: CurrentUser,
+    user: AuditReader,
     db: DB,
     project_id: uuid.UUID | None = None,
     resource_type: str | None = None,
@@ -88,12 +86,11 @@ async def list_verification_links(
 @router.post(
     "/verification-links",
     response_model=VerificationLinkOut,
-    dependencies=[require(Permission.AUDIT_READ)],
 )
 async def create_verification_link_endpoint(
     payload: VerificationLinkCreate,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> VerificationLinkOut:
     expires_at = None
@@ -147,12 +144,11 @@ async def create_verification_link_endpoint(
 
 @router.delete(
     "/verification-links/{link_id}",
-    dependencies=[require(Permission.AUDIT_READ)],
 )
 async def revoke_verification_link(
     link_id: uuid.UUID,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict[str, str]:
     link = await db.get(PublicVerificationLink, link_id)

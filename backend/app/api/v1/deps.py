@@ -16,6 +16,7 @@ from app.core.security import (
     TokenType,
     decode_token,
     has_permission,
+    user_can_write,
 )
 from app.models.user import User
 from app.services.auth.user_profile import user_has_professional_program
@@ -23,16 +24,6 @@ from app.services.planting_programs.enrollment import list_user_program_codes
 from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
 bearer_scheme = HTTPBearer(auto_error=False)
-
-
-def user_is_org_viewer(user: User) -> bool:
-    return user.org_role == "viewer"
-
-
-def user_can_write(user: User) -> bool:
-    if user.role == "admin":
-        return True
-    return not user_is_org_viewer(user)
 
 
 async def get_current_user(

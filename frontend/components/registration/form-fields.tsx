@@ -7,9 +7,10 @@ type FormFieldsGridProps = {
   fields: ProgramField[];
   values: ProgramFormValues;
   onChange: (values: ProgramFormValues) => void;
+  disabled?: boolean;
 };
 
-export function FormFieldsGrid({ fields, values, onChange }: FormFieldsGridProps) {
+export function FormFieldsGrid({ fields, values, onChange, disabled = false }: FormFieldsGridProps) {
   function setValue(key: string, value: string | number | boolean) {
     onChange({ ...values, [key]: value });
   }
@@ -22,6 +23,7 @@ export function FormFieldsGrid({ fields, values, onChange }: FormFieldsGridProps
           field={field}
           value={values[field.key]}
           onChange={(value) => setValue(field.key, value)}
+          disabled={disabled}
         />
       ))}
     </div>
@@ -32,16 +34,19 @@ function FieldControl({
   field,
   value,
   onChange,
+  disabled = false,
 }: {
   field: ProgramField;
   value: string | number | boolean | undefined;
   onChange: (value: string | number | boolean) => void;
+  disabled?: boolean;
 }) {
   if (field.type === "boolean") {
     return (
       <label
         className={cn(
-          "group flex cursor-pointer items-start gap-4 rounded-2xl border p-4 transition md:col-span-2",
+          "group flex items-start gap-4 rounded-2xl border p-4 transition md:col-span-2",
+          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
           Boolean(value)
             ? "border-forest-300 bg-forest-50/80 dark:border-forest-800 dark:bg-forest-950/40"
             : "border-stone-200 bg-white/70 hover:border-stone-300 dark:border-stone-800 dark:bg-stone-900/50",
@@ -70,6 +75,7 @@ function FieldControl({
           type="checkbox"
           className="sr-only"
           checked={Boolean(value)}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
         />
       </label>
@@ -90,6 +96,7 @@ function FieldControl({
           <select
             className="field-input appearance-none pr-10"
             value={String(value ?? "")}
+            disabled={disabled}
             onChange={(e) => onChange(e.target.value)}
             required={field.required}
           >
@@ -109,6 +116,7 @@ function FieldControl({
           className="field-input min-h-[120px] resize-y"
           value={String(value ?? "")}
           placeholder={field.placeholder}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           required={field.required}
         />
@@ -120,6 +128,7 @@ function FieldControl({
           placeholder={field.placeholder}
           min={field.min}
           max={field.max}
+          disabled={disabled}
           onChange={(e) =>
             onChange(field.type === "number" ? Number(e.target.value) : e.target.value)
           }

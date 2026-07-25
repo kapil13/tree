@@ -8,8 +8,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, require
-from app.core.security import Permission
+from app.api.v1.deps import DB, AuditReader, WriteAccess
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.schemas.webhook import (
     WebhookCreate,
@@ -42,7 +41,7 @@ def _webhook_out(row: OrganizationWebhook) -> WebhookOut:
     )
 
 
-def _require_org(user: CurrentUser) -> uuid.UUID:
+def _require_org(user) -> uuid.UUID:
     if user.organization_id is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
     return user.organization_id
@@ -53,8 +52,8 @@ async def list_webhook_events() -> list[str]:
     return list(WEBHOOK_EVENT_TYPES)
 
 
-@router.get("", response_model=list[WebhookOut], dependencies=[require(Permission.AUDIT_READ)])
-async def list_webhooks(user: CurrentUser, db: DB) -> list[WebhookOut]:
+@router.get("", response_model=list[WebhookOut])
+async def list_webhooks(user: AuditReader, db: DB) -> list[WebhookOut]:
     org_id = _require_org(user)
     rows = (
         await db.execute(
@@ -66,11 +65,11 @@ async def list_webhooks(user: CurrentUser, db: DB) -> list[WebhookOut]:
     return [_webhook_out(row) for row in rows]
 
 
-@router.post("", response_model=WebhookCreatedOut, dependencies=[require(Permission.AUDIT_READ)])
+@router.post("", response_model=WebhookCreatedOut)
 async def create_webhook(
     payload: WebhookCreate,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WebhookCreatedOut:
     org_id = _require_org(user)
@@ -108,12 +107,12 @@ async def create_webhook(
     return WebhookCreatedOut(**base.model_dump(), signing_secret=secret)
 
 
-@router.patch("/{webhook_id}", response_model=WebhookOut, dependencies=[require(Permission.AUDIT_READ)])
+@router.patch("/{webhook_id}", response_model=WebhookOut)
 async def update_webhook(
     webhook_id: uuid.UUID,
     payload: WebhookUpdate,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WebhookOut:
     org_id = _require_org(user)
@@ -150,11 +149,11 @@ async def update_webhook(
     return _webhook_out(row)
 
 
-@router.delete("/{webhook_id}", dependencies=[require(Permission.AUDIT_READ)])
+@router.delete("/{webhook_id}")
 async def delete_webhook(
     webhook_id: uuid.UUID,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict[str, str]:
     org_id = _require_org(user)
@@ -176,11 +175,11 @@ async def delete_webhook(
     return {"status": "deleted"}
 
 
-@router.post("/{webhook_id}/rotate-secret", response_model=WebhookCreatedOut, dependencies=[require(Permission.AUDIT_READ)])
+@router.post("/{webhook_id}/rotate-secret", response_model=WebhookCreatedOut)
 async def rotate_webhook_secret(
     webhook_id: uuid.UUID,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WebhookCreatedOut:
     org_id = _require_org(user)
@@ -204,10 +203,10 @@ async def rotate_webhook_secret(
     return WebhookCreatedOut(**base.model_dump(), signing_secret=secret)
 
 
-@router.post("/{webhook_id}/test", response_model=WebhookDeliveryOut, dependencies=[require(Permission.AUDIT_READ)])
+@router.post("/{webhook_id}/test", response_model=WebhookDeliveryOut)
 async def test_webhook(
     webhook_id: uuid.UUID,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WebhookDeliveryOut:
     org_id = _require_org(user)
@@ -231,9 +230,9 @@ async def test_webhook(
     )
 
 
-@router.get("/deliveries", response_model=list[WebhookDeliveryOut], dependencies=[require(Permission.AUDIT_READ)])
+@router.get("/deliveries", response_model=list[WebhookDeliveryOut])
 async def list_webhook_deliveries(
-    user: CurrentUser,
+    user: AuditReader,
     db: DB,
     limit: int = 50,
 ) -> list[WebhookDeliveryOut]:

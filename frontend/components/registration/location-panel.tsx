@@ -11,6 +11,7 @@ type LocationPanelProps = {
   onChange: (values: ProgramFormValues) => void;
   onUseLocation?: () => void;
   locating?: boolean;
+  disabled?: boolean;
 };
 
 export function LocationPanel({
@@ -19,6 +20,7 @@ export function LocationPanel({
   onChange,
   onUseLocation,
   locating,
+  disabled = false,
 }: LocationPanelProps) {
   const hasCoords = Boolean(values.latitude && values.longitude);
 
@@ -26,7 +28,7 @@ export function LocationPanel({
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="space-y-5">
         <div className="rounded-3xl border border-stone-200 bg-white/80 p-5 backdrop-blur dark:border-stone-800 dark:bg-stone-900/70">
-          <FormFieldsGrid fields={fields} values={values} onChange={onChange} />
+          <FormFieldsGrid fields={fields} values={values} onChange={onChange} disabled={disabled} />
         </div>
       </div>
 
@@ -79,7 +81,7 @@ export function LocationPanel({
               <button
                 type="button"
                 onClick={onUseLocation}
-                disabled={locating}
+                disabled={locating || disabled}
                 className={cn(
                   "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition",
                   "bg-white text-stone-900 hover:bg-emerald-50 disabled:opacity-60",
