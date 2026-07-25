@@ -92,6 +92,36 @@ async def mark_order_paid(
     return order
 
 
+async def mark_order_failed(
+    db: AsyncSession,
+    *,
+    order: PaymentOrder,
+    razorpay_payment_id: str | None = None,
+) -> PaymentOrder:
+    if order.status in {"paid", "failed"}:
+        return order
+    order.status = "failed"
+    if razorpay_payment_id:
+        order.razorpay_payment_id = razorpay_payment_id
+    await db.flush()
+    return order
+
+
+def razorpay_event_id(payload: dict[str, Any], *, signature: str = "") -> str:
+    """Stable idempotency key for Razorpay webhook payloads."""
+    top_id = payload.get("id")
+    if top_id:
+        return str(top_id)
+    event = str(payload.get("event", ""))
+    entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+    payment_id = entity.get("id", "")
+    if event and payment_id:
+        return f"{event}:{payment_id}"
+    if signature:
+        return signature
+    return f"{event or 'unknown'}:{uuid.uuid4()}"
+
+
 async def verify_and_complete_payment(
     db: AsyncSession,
     *,
@@ -138,19 +168,31 @@ async def record_webhook_event(
 async def process_webhook_payload(db: AsyncSession, payload: dict[str, Any]) -> PaymentOrder | None:
     event_type = str(payload.get("event", ""))
     entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
-    if event_type != "payment.captured" or not entity:
+    if not entity:
         return None
 
     razorpay_order_id = entity.get("order_id")
     razorpay_payment_id = entity.get("id")
-    if not razorpay_order_id or not razorpay_payment_id:
+    if not razorpay_order_id:
         return None
 
     order = await get_order_by_razorpay_id(db, razorpay_order_id)
     if order is None:
         return None
 
-    return await mark_order_paid(db, order=order, razorpay_payment_id=razorpay_payment_id)
+    if event_type == "payment.captured":
+        if not razorpay_payment_id:
+            return None
+        return await mark_order_paid(db, order=order, razorpay_payment_id=razorpay_payment_id)
+
+    if event_type == "payment.failed":
+        return await mark_order_failed(
+            db,
+            order=order,
+            razorpay_payment_id=razorpay_payment_id,
+        )
+
+    return None
 
 
 def pack_to_dict(pack: ScanPackSku) -> dict[str, Any]:

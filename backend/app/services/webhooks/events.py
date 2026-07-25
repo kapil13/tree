@@ -11,6 +11,8 @@ WEBHOOK_EVENT_TYPES: tuple[str, ...] = (
     "project.framework_report.exported",
     "project.credit_ledger.updated",
     "compliance.checklist.updated",
+    "payment.completed",
+    "payment.failed",
     "webhook.test",
 )
 
@@ -25,6 +27,8 @@ AUDIT_ACTION_EVENT_MAP: dict[str, str] = {
     "credit_ledger.sync": "project.credit_ledger.updated",
     "credit_ledger.transition": "project.credit_ledger.updated",
     "compliance.checklist.save": "compliance.checklist.updated",
+    "payment.completed": "payment.completed",
+    "payment.failed": "payment.failed",
 }
 
 

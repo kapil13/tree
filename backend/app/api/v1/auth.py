@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.core.config import settings
+from app.core.rate_limit import rate_limit
 from app.core.security import (
     Permission,
     create_access_token,
@@ -135,7 +136,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     return _user_out(user)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[rate_limit(60, 60)])
 async def login(payload: LoginRequest, request: Request, db: DB) -> TokenResponse:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     res = await db.execute(select(User).where(User.email == payload.email))
@@ -248,7 +249,7 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
     return _tokens_for(user)
 
 
-@router.post("/otp/request", response_model=OTPRequestOut)
+@router.post("/otp/request", response_model=OTPRequestOut, dependencies=[rate_limit(10, 60)])
 async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     if not payload.email and not payload.phone:

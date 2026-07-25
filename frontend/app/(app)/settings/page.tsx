@@ -28,10 +28,24 @@ export default function SettingsGeneralPage() {
       </SettingsSection>
 
       <SettingsSection
-        title="AI tree scans"
-        description="Citizen BYOT accounts include complimentary scans. Professional programs (government, NHAI, ESG, NGO) are unlimited and funded via work orders — not in-app payments."
+        title="AI tree scans & billing"
+        description="Complimentary BYOT scans, purchased packs, and payment history."
       >
-        <AiScanUsagePanel />
+        <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
+          <div className="px-5 py-4">
+            <AiScanUsagePanel />
+          </div>
+          <Link
+            href="/settings/billing"
+            className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+          >
+            <div>
+              <p className="font-medium text-stone-900 dark:text-stone-50">Billing & scan packs</p>
+              <p className="text-sm text-stone-500">Buy credits via Razorpay and view payment history</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+          </Link>
+        </div>
       </SettingsSection>
 
       <SettingsSection

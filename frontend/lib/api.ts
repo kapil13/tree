@@ -156,7 +156,10 @@ export function errorMessage(err: unknown): string {
         return "Could not save recording. Run database migration: alembic upgrade head";
       }
       if (data.detail === "credit_ledger_migration_required") {
-        return "Credit ledger database migration required. On the server run: alembic upgrade head (through 0016_credit_ledger_timestamps).";
+        return "Credit ledger database migration required. On the server run: alembic upgrade head.";
+      }
+      if (data.detail === "payments_not_configured") {
+        return "In-app payments are not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on the server.";
       }
       if (data.detail === "viewer_read_only") {
         return "Your viewer role is read-only. Ask your program manager to change your access.";
@@ -511,6 +514,18 @@ export type PaymentCheckoutSession = {
   label: string;
 };
 
+export type PaymentOrder = {
+  id: string;
+  sku: string;
+  credits_granted: number;
+  amount_paise: number;
+  currency: string;
+  razorpay_order_id: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+};
+
 export const payments = {
   async catalog() {
     return (
@@ -532,7 +547,7 @@ export const payments = {
     return (await api.post("/v1/payments/verify", payload)).data;
   },
   async listOrders() {
-    return (await api.get("/v1/payments/orders")).data;
+    return (await api.get<PaymentOrder[]>("/v1/payments/orders")).data;
   },
 };
 

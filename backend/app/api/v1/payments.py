@@ -17,6 +17,7 @@ from app.schemas.payments import (
     PaymentVerifyIn,
     ScanPackOut,
 )
+from app.services.audit.log import record_audit
 from app.services.payments.catalog import list_scan_packs
 from app.services.payments.orders import (
     PaymentError,
@@ -24,6 +25,7 @@ from app.services.payments.orders import (
     get_order_for_user,
     pack_to_dict,
     process_webhook_payload,
+    razorpay_event_id,
     record_webhook_event,
     verify_and_complete_payment,
 )
@@ -81,7 +83,9 @@ async def create_checkout_order(
 
 
 @router.post("/verify", response_model=PaymentOrderOut)
-async def verify_payment(payload: PaymentVerifyIn, user: CurrentUser, db: DB) -> PaymentOrderOut:
+async def verify_payment(
+    payload: PaymentVerifyIn, request: Request, user: CurrentUser, db: DB
+) -> PaymentOrderOut:
     if not payments_enabled():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="payments_not_configured")
     try:
@@ -91,6 +95,20 @@ async def verify_payment(payload: PaymentVerifyIn, user: CurrentUser, db: DB) ->
             razorpay_order_id=payload.razorpay_order_id,
             razorpay_payment_id=payload.razorpay_payment_id,
             razorpay_signature=payload.razorpay_signature,
+        )
+        await record_audit(
+            db,
+            actor=user,
+            action="payment.completed",
+            resource_type="payment_order",
+            resource_id=order.id,
+            request=request,
+            diff={
+                "sku": order.sku,
+                "credits_granted": order.credits_granted,
+                "amount_paise": order.amount_paise,
+                "source": "client_verify",
+            },
         )
         await db.commit()
         await db.refresh(order)
@@ -130,7 +148,7 @@ async def razorpay_webhook_ping() -> dict[str, str]:
     """Razorpay dashboard / browser checks may GET this URL — POST is required for real events."""
     return {
         "status": "ok",
-        "message": "Razorpay webhook endpoint. Configure POST to this URL for payment.captured events.",
+        "message": "Razorpay webhook endpoint. Configure POST for payment.captured and payment.failed events.",
     }
 
 
@@ -144,11 +162,7 @@ async def razorpay_webhook(request: Request, db: DB) -> dict[str, str]:
     import json
 
     payload = json.loads(body.decode("utf-8"))
-    event_id = str(payload.get("event", "")) + ":" + str(
-        payload.get("payload", {}).get("payment", {}).get("entity", {}).get("id", "")
-    )
-    if not event_id or event_id == ":":
-        event_id = signature or "unknown"
+    event_id = razorpay_event_id(payload, signature=signature)
 
     inserted = await record_webhook_event(
         db,
@@ -160,6 +174,22 @@ async def razorpay_webhook(request: Request, db: DB) -> dict[str, str]:
         await db.rollback()
         return {"status": "duplicate"}
 
-    await process_webhook_payload(db, payload)
+    order = await process_webhook_payload(db, payload)
+    if order is not None:
+        action = "payment.completed" if order.status == "paid" else "payment.failed"
+        await record_audit(
+            db,
+            actor_user_id=order.user_id,
+            action=action,
+            resource_type="payment_order",
+            resource_id=order.id,
+            request=request,
+            diff={
+                "sku": order.sku,
+                "status": order.status,
+                "credits_granted": order.credits_granted,
+                "source": "razorpay_webhook",
+            },
+        )
     await db.commit()
     return {"status": "ok"}

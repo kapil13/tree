@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.core.rate_limit import rate_limit
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
@@ -163,13 +164,18 @@ async def _run_tree_analysis(
     return rec
 
 
-@router.post("/tree-analysis", response_model=AnalysisOut)
+@router.post("/tree-analysis", response_model=AnalysisOut, dependencies=[rate_limit(30, 60)])
 async def run_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) -> AnalysisOut:
     rec = await _run_tree_analysis(payload, user, db)
     return AnalysisOut.model_validate(rec)
 
 
-@router.post("/tree-analysis/async", response_model=AnalysisJob, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/tree-analysis/async",
+    response_model=AnalysisJob,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[rate_limit(30, 60)],
+)
 async def enqueue_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) -> AnalysisJob:
     """Queue tree analysis on Celery when available; otherwise run synchronously."""
     from app.services.workers.enqueue import try_enqueue
