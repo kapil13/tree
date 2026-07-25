@@ -207,6 +207,22 @@ def biodiversity_baseline() -> dict:
     return _execute_recorded("biodiversity_baseline", _run)
 
 
+@celery_app.task(name="app.workers.tasks.daily_satellite_health_digest")
+def daily_satellite_health_digest() -> dict:
+    log.info("worker.daily_satellite_health_digest")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.satellite_health_digest import (
+            run_daily_satellite_health_digest,
+        )
+
+        async with AsyncSessionLocal() as db:
+            return await run_daily_satellite_health_digest(db)
+
+    return _execute_recorded("daily_satellite_health_digest", _run)
+
+
 @celery_app.task(name="app.workers.tasks.threat_watch_scan")
 def threat_watch_scan() -> dict:
     log.info("worker.threat_watch_scan")

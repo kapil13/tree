@@ -25,6 +25,7 @@ class SatelliteHealthNotificationPrefs(BaseModel):
     enabled: bool = True
     channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
     sms_on_critical: bool = True
+    daily_digest: bool = True
 
 
 class SurvivalSurveyNotificationPrefs(BaseModel):

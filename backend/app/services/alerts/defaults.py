@@ -8,6 +8,7 @@ DEFAULT_SATELLITE_HEALTH_PREFS: dict[str, Any] = {
     "enabled": True,
     "channels": ["in_app", "email"],
     "sms_on_critical": True,
+    "daily_digest": True,
 }
 
 DEFAULT_THREAT_WATCH_PREFS: dict[str, Any] = {
