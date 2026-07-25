@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import uuid
 
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.v1.deps import DB, CurrentUser, OrgAdmin, OrgMember
