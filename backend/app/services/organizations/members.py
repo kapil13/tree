@@ -5,6 +5,7 @@ from __future__ import annotations
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from app.models.organization import Organization
 from app.models.organization_invite import OrganizationInvite
 from app.models.user import User
 from app.services.auth.otp import normalize_phone, phone_placeholder_email
+from app.services.organizations.invite_notifications import notify_org_invite
 from app.services.organizations.onboarding import (
     ORG_ROLES,
     org_program_codes,
@@ -82,6 +84,12 @@ async def _apply_org_membership(
         await set_user_programs(db, target.id, merged)
 
 
+def _user_matches_invite(user: User, invite: OrganizationInvite) -> bool:
+    if invite.email and user.email.lower() != invite.email.lower():
+        return False
+    return not (invite.phone and user.phone != invite.phone)
+
+
 async def invite_org_member(
     db: AsyncSession,
     *,
@@ -91,7 +99,7 @@ async def invite_org_member(
     email: str | None = None,
     phone: str | None = None,
     org_role: str = "worker",
-) -> tuple[User | None, OrganizationInvite | None]:
+) -> tuple[User | None, OrganizationInvite | None, dict[str, Any] | None]:
     if org_role not in ORG_ROLES:
         raise OrgMemberError("invalid_org_role")
     if not email and not phone:
@@ -120,7 +128,7 @@ async def invite_org_member(
                 org_role=org_role,
                 platform_role=platform_role,
             )
-            return existing, None
+            return existing, None, None
 
     if normalized_phone:
         res = await db.execute(select(User).where(User.phone == normalized_phone))
@@ -135,7 +143,7 @@ async def invite_org_member(
                 org_role=org_role,
                 platform_role=platform_role,
             )
-            return existing, None
+            return existing, None, None
 
     token = secrets.token_urlsafe(32)
     invite = OrganizationInvite(
@@ -152,7 +160,8 @@ async def invite_org_member(
     )
     db.add(invite)
     await db.flush()
-    return None, invite
+    delivery = await notify_org_invite(invite=invite, org=org)
+    return None, invite, delivery
 
 
 async def update_org_member(
@@ -191,7 +200,7 @@ async def get_invite_preview(db: AsyncSession, *, invite_token: str) -> dict:
     )
     invite = res.scalar_one_or_none()
     if invite is None or invite.status != "pending":
-        raise OrgMemberError("invite_not_found")
+        raise OrgMemberError("invite_not_found" if invite is None else "invite_revoked")
     if invite.expires_at < datetime.now(UTC):
         invite.status = "expired"
         await db.flush()
@@ -224,7 +233,7 @@ async def accept_org_invite(
     )
     invite = res.scalar_one_or_none()
     if invite is None or invite.status != "pending":
-        raise OrgMemberError("invite_not_found")
+        raise OrgMemberError("invite_not_found" if invite is None else "invite_revoked")
     if invite.expires_at < datetime.now(UTC):
         invite.status = "expired"
         raise OrgMemberError("invite_expired")
@@ -267,6 +276,8 @@ async def accept_org_invite(
 
     if user.organization_id and user.organization_id != org.id:
         raise OrgMemberError("user_in_other_org")
+    if not _user_matches_invite(user, invite):
+        raise OrgMemberError("invite_contact_mismatch")
 
     await _apply_org_membership(
         db,
@@ -286,28 +297,91 @@ async def bulk_invite_from_rows(
     org: Organization,
     inviter: User,
     rows: list[dict[str, str]],
-) -> dict[str, int]:
+) -> dict[str, Any]:
     created = 0
     invited = 0
     errors = 0
-    for row in rows:
+    row_errors: list[dict[str, Any]] = []
+    for idx, row in enumerate(rows, start=1):
+        email = (row.get("email") or "").strip() or None
+        phone = (row.get("phone") or "").strip() or None
+        org_role = (row.get("org_role") or row.get("role") or "worker").strip().lower()
+        full_name = row.get("full_name") or row.get("name") or "Team member"
         try:
-            user, invite = await invite_org_member(
+            user, invite, _delivery = await invite_org_member(
                 db,
                 org=org,
                 inviter=inviter,
-                full_name=row.get("full_name") or row.get("name") or "Team member",
-                email=row.get("email") or None,
-                phone=row.get("phone") or None,
-                org_role=(row.get("org_role") or row.get("role") or "worker").lower(),
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                org_role=org_role,
             )
             if user:
                 created += 1
             elif invite:
                 invited += 1
-        except OrgMemberError:
+        except OrgMemberError as exc:
             errors += 1
-    return {"added": created, "invited": invited, "errors": errors}
+            row_errors.append(
+                {
+                    "row": idx,
+                    "full_name": full_name,
+                    "email": email,
+                    "phone": phone,
+                    "org_role": org_role,
+                    "error": exc.code,
+                }
+            )
+    return {"added": created, "invited": invited, "errors": errors, "row_errors": row_errors}
+
+
+async def revoke_org_invite(
+    db: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    invite_id: uuid.UUID,
+) -> OrganizationInvite:
+    res = await db.execute(
+        select(OrganizationInvite).where(
+            OrganizationInvite.id == invite_id,
+            OrganizationInvite.organization_id == org_id,
+        )
+    )
+    invite = res.scalar_one_or_none()
+    if invite is None:
+        raise OrgMemberError("invite_not_found")
+    if invite.status == "accepted":
+        raise OrgMemberError("invite_already_accepted")
+    if invite.status == "revoked":
+        raise OrgMemberError("invite_already_revoked")
+    invite.status = "revoked"
+    await db.flush()
+    return invite
+
+
+async def resend_org_invite(
+    db: AsyncSession,
+    *,
+    org: Organization,
+    invite_id: uuid.UUID,
+) -> tuple[OrganizationInvite, dict[str, Any]]:
+    res = await db.execute(
+        select(OrganizationInvite).where(
+            OrganizationInvite.id == invite_id,
+            OrganizationInvite.organization_id == org.id,
+        )
+    )
+    invite = res.scalar_one_or_none()
+    if invite is None:
+        raise OrgMemberError("invite_not_found")
+    if invite.status != "pending":
+        raise OrgMemberError("invite_revoked" if invite.status == "revoked" else "invite_already_accepted")
+    if invite.expires_at < datetime.now(UTC):
+        invite.expires_at = datetime.now(UTC) + timedelta(days=INVITE_TTL_DAYS)
+    delivery = await notify_org_invite(invite=invite, org=org)
+    await db.flush()
+    return invite, delivery
 
 
 async def search_org_user_candidates(

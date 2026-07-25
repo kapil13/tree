@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Loader2, RefreshCw, UserPlus, Users, X } from "lucide-react";
 import { errorMessage } from "@/lib/api";
-import { organizations, type OrgMember } from "@/lib/organizations-api";
+import { organizations, type OrgBulkInviteRowError, type OrgMember } from "@/lib/organizations-api";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin } from "@/lib/nav-access";
 
@@ -15,17 +15,27 @@ const ORG_ROLES = [
   { value: "viewer", label: "Viewer / auditor" },
 ] as const;
 
+const ERROR_LABELS: Record<string, string> = {
+  email_or_phone_required: "Email or phone required",
+  invalid_org_role: "Invalid role",
+  invalid_phone: "Invalid phone number",
+  user_in_other_org: "User belongs to another organization",
+};
+
 export function OrgTeamPanel() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const admin = isOrgAdmin(user);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [orgRole, setOrgRole] = useState<(typeof ORG_ROLES)[number]["value"]>("worker");
   const [csvText, setCsvText] = useState("");
+  const [rowErrors, setRowErrors] = useState<OrgBulkInviteRowError[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["org-members"],
@@ -42,10 +52,15 @@ export function OrgTeamPanel() {
         org_role: orgRole,
       }),
     onSuccess: (res) => {
+      const link = res.delivery?.invite_link ?? inviteLink(res.invite?.invite_token);
+      const deliveryNote =
+        res.delivery?.sms_sent || res.delivery?.email_sent
+          ? ` (${res.delivery.sms_sent ? "SMS sent" : ""}${res.delivery.sms_sent && res.delivery.email_sent ? ", " : ""}${res.delivery.email_sent ? "email sent" : ""})`
+          : " (share link manually — SMS/email pending API keys)";
       setMessage(
         res.status === "added"
           ? `${fullName} was added to your organization.`
-          : `Invite sent to ${email || phone}. Share link: ${inviteLink(res.invite?.invite_token)}`,
+          : `Invite created for ${email || phone}.${deliveryNote} Link: ${link}`,
       );
       setFullName("");
       setEmail("");
@@ -61,8 +76,31 @@ export function OrgTeamPanel() {
       return organizations.bulkInvite(rows);
     },
     onSuccess: (res) => {
+      setRowErrors(res.row_errors ?? []);
       setMessage(`Bulk import: ${res.added} added, ${res.invited} invited, ${res.errors} errors.`);
-      setCsvText("");
+      if (res.errors === 0) setCsvText("");
+      qc.invalidateQueries({ queryKey: ["org-members"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  const resendInvite = useMutation({
+    mutationFn: (inviteId: string) => organizations.resendInvite(inviteId),
+    onSuccess: (res) => {
+      const note =
+        res.delivery?.sms_sent || res.delivery?.email_sent
+          ? "Notification resent."
+          : "Invite link refreshed — share manually until SMS/email keys are configured.";
+      setMessage(note);
+      qc.invalidateQueries({ queryKey: ["org-members"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  const revokeInvite = useMutation({
+    mutationFn: (inviteId: string) => organizations.revokeInvite(inviteId),
+    onSuccess: () => {
+      setMessage("Invite revoked.");
       qc.invalidateQueries({ queryKey: ["org-members"] });
     },
     onError: (err) => setMessage(errorMessage(err)),
@@ -82,6 +120,27 @@ export function OrgTeamPanel() {
     },
     onError: (err) => setMessage(errorMessage(err)),
   });
+
+  async function copyInviteLink(token: string) {
+    const link = inviteLink(token);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 2000);
+    } catch {
+      setMessage(`Copy this link: ${link}`);
+    }
+  }
+
+  function handleCsvFile(file: File | null) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCsvText(String(reader.result ?? ""));
+      setRowErrors([]);
+    };
+    reader.readAsText(file);
+  }
 
   if (!user?.organization_id) {
     return (
@@ -121,6 +180,10 @@ export function OrgTeamPanel() {
             <UserPlus className="h-4 w-4 text-forest-700" />
             <h3 className="font-medium">Invite team member</h3>
           </div>
+          <p className="text-xs text-stone-500">
+            SMS and email delivery use MSG91/Gmail when API keys are configured. Until then, copy the invite link
+            from pending invites below.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="kpi-label">Full name</label>
@@ -175,10 +238,28 @@ export function OrgTeamPanel() {
             <p className="mb-2 text-xs text-stone-500">
               One member per line: full_name, email, phone, org_role (header row optional)
             </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => handleCsvFile(e.target.files?.[0] ?? null)}
+            />
+            <div className="mb-2 flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary text-xs" onClick={() => fileInputRef.current?.click()}>
+                Upload CSV file
+              </button>
+              {csvText ? (
+                <span className="self-center text-xs text-stone-500">{parseCsv(csvText).length} rows loaded</span>
+              ) : null}
+            </div>
             <textarea
               className="input min-h-[100px] font-mono text-xs"
               value={csvText}
-              onChange={(e) => setCsvText(e.target.value)}
+              onChange={(e) => {
+                setCsvText(e.target.value);
+                setRowErrors([]);
+              }}
               placeholder={"full_name,email,phone,org_role\nRavi Kumar,ravi@contractor.in,9876543210,worker"}
             />
             <button
@@ -189,6 +270,30 @@ export function OrgTeamPanel() {
             >
               Import CSV
             </button>
+            {rowErrors.length > 0 ? (
+              <div className="mt-3 overflow-x-auto rounded-lg border border-rose-200">
+                <table className="w-full text-xs">
+                  <thead className="bg-rose-50 text-left text-rose-900">
+                    <tr>
+                      <th className="px-3 py-2">Row</th>
+                      <th className="px-3 py-2">Name</th>
+                      <th className="px-3 py-2">Contact</th>
+                      <th className="px-3 py-2">Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rowErrors.map((row) => (
+                      <tr key={row.row} className="border-t border-rose-100">
+                        <td className="px-3 py-2">{row.row}</td>
+                        <td className="px-3 py-2">{row.full_name}</td>
+                        <td className="px-3 py-2">{row.email || row.phone || "—"}</td>
+                        <td className="px-3 py-2 text-rose-800">{ERROR_LABELS[row.error] ?? row.error}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -221,16 +326,48 @@ export function OrgTeamPanel() {
       </div>
 
       {admin && data.pending_invites.length > 0 ? (
-        <div className="card space-y-2">
+        <div className="card space-y-3">
           <h3 className="font-medium">Pending invites</h3>
           {data.pending_invites.map((inv) => (
-            <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div
+              key={inv.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700"
+            >
               <span>
                 {inv.full_name} · {inv.email || inv.phone} · {inv.org_role}
               </span>
-              <code className="rounded bg-stone-100 px-2 py-1 text-xs dark:bg-stone-800">
-                {inviteLink(inv.invite_token)}
-              </code>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="btn-ghost inline-flex items-center gap-1 text-xs"
+                  onClick={() => void copyInviteLink(inv.invite_token)}
+                >
+                  {copiedToken === inv.invite_token ? (
+                    <Check className="h-3.5 w-3.5 text-forest-700" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost inline-flex items-center gap-1 text-xs"
+                  disabled={resendInvite.isPending}
+                  onClick={() => resendInvite.mutate(inv.id)}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Resend
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost inline-flex items-center gap-1 text-xs text-rose-700"
+                  disabled={revokeInvite.isPending}
+                  onClick={() => revokeInvite.mutate(inv.id)}
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Revoke
+                </button>
+              </div>
             </div>
           ))}
         </div>

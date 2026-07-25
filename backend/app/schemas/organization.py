@@ -48,6 +48,12 @@ class OrgInviteOut(BaseModel):
     created_at: datetime
 
 
+class OrgInviteDeliveryOut(BaseModel):
+    sms_sent: bool = False
+    email_sent: bool = False
+    invite_link: str
+
+
 class OrgMembersOut(BaseModel):
     organization: OrganizationOut
     members: list[OrgMemberOut]
@@ -65,6 +71,7 @@ class OrgMemberInviteResult(BaseModel):
     status: str
     member: OrgMemberOut | None = None
     invite: OrgInviteOut | None = None
+    delivery: OrgInviteDeliveryOut | None = None
 
 
 class OrgMemberUpdate(BaseModel):
@@ -84,10 +91,20 @@ class OrgBulkInviteCreate(BaseModel):
     rows: list[OrgBulkInviteRow] = Field(min_length=1, max_length=500)
 
 
+class OrgBulkInviteRowError(BaseModel):
+    row: int
+    full_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    org_role: str | None = None
+    error: str
+
+
 class OrgBulkInviteResult(BaseModel):
     added: int
     invited: int
     errors: int
+    row_errors: list[OrgBulkInviteRowError] = Field(default_factory=list)
 
 
 class OrgInvitePreviewOut(BaseModel):

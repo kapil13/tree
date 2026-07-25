@@ -14,6 +14,7 @@ from app.schemas.organization import (
     OrgBulkInviteCreate,
     OrgBulkInviteResult,
     OrgInviteAccept,
+    OrgInviteDeliveryOut,
     OrgInviteOut,
     OrgInvitePreviewOut,
     OrgMemberInviteCreate,
@@ -32,6 +33,8 @@ from app.services.organizations.members import (
     invite_org_member,
     list_org_members,
     list_pending_invites,
+    resend_org_invite,
+    revoke_org_invite,
     update_org_member,
     user_is_org_admin,
 )
@@ -95,10 +98,12 @@ def _member_error(exc: OrgMemberError) -> HTTPException:
     status_code = status.HTTP_400_BAD_REQUEST
     if code in {"member_not_found", "invite_not_found"}:
         status_code = status.HTTP_404_NOT_FOUND
-    elif code in {"user_in_other_org", "cannot_remove_own_admin"}:
+    elif code in {"user_in_other_org", "cannot_remove_own_admin", "invite_contact_mismatch"}:
         status_code = status.HTTP_409_CONFLICT
-    elif code == "invite_expired":
+    elif code in {"invite_expired", "invite_revoked", "invite_already_revoked"}:
         status_code = status.HTTP_410_GONE
+    elif code == "invite_already_accepted":
+        status_code = status.HTTP_409_CONFLICT
     return HTTPException(status_code, detail=code)
 
 
@@ -137,7 +142,7 @@ async def invite_member(
     if org is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
     try:
-        member, invite = await invite_org_member(
+        member, invite, delivery = await invite_org_member(
             db,
             org=org,
             inviter=admin,
@@ -168,7 +173,12 @@ async def invite_member(
     if member:
         return OrgMemberInviteResult(status="added", member=_member_out(member))
     assert invite is not None
-    return OrgMemberInviteResult(status="invited", invite=_invite_out(invite))
+    delivery_out = OrgInviteDeliveryOut(**delivery) if delivery else None
+    return OrgMemberInviteResult(
+        status="invited",
+        invite=_invite_out(invite),
+        delivery=delivery_out,
+    )
 
 
 @router.post("/me/members/bulk-invite", response_model=OrgBulkInviteResult)
@@ -277,3 +287,61 @@ async def accept_invite(
     )
     await db.commit()
     return _member_out(member)
+
+
+@router.post("/me/members/invites/{invite_id}/revoke", response_model=OrgInviteOut)
+async def revoke_member_invite(
+    invite_id: uuid.UUID,
+    request: Request,
+    admin: OrgAdmin,
+    db: DB,
+) -> OrgInviteOut:
+    org = await get_user_org(db, admin)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    try:
+        invite = await revoke_org_invite(db, org_id=org.id, invite_id=invite_id)
+    except OrgMemberError as exc:
+        raise _member_error(exc) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="org.invite.revoked",
+        resource_type="organization_invite",
+        resource_id=invite.id,
+        request=request,
+        diff={"email": invite.email, "phone": invite.phone},
+    )
+    await db.commit()
+    return _invite_out(invite)
+
+
+@router.post("/me/members/invites/{invite_id}/resend", response_model=OrgMemberInviteResult)
+async def resend_member_invite(
+    invite_id: uuid.UUID,
+    request: Request,
+    admin: OrgAdmin,
+    db: DB,
+) -> OrgMemberInviteResult:
+    org = await get_user_org(db, admin)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    try:
+        invite, delivery = await resend_org_invite(db, org=org, invite_id=invite_id)
+    except OrgMemberError as exc:
+        raise _member_error(exc) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="org.invite.resent",
+        resource_type="organization_invite",
+        resource_id=invite.id,
+        request=request,
+        diff=delivery,
+    )
+    await db.commit()
+    return OrgMemberInviteResult(
+        status="invited",
+        invite=_invite_out(invite),
+        delivery=OrgInviteDeliveryOut(**delivery),
+    )

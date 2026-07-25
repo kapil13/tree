@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { consumePendingInviteToken, inviteErrorMessage, inviteLandingPath } from "@/lib/invite-landing";
+import { organizations } from "@/lib/organizations-api";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 export default function GoogleCallbackPage() {
@@ -33,8 +35,25 @@ export default function GoogleCallbackPage() {
           token_type: "Bearer",
           expires_in: expiresIn,
         });
-        setUser(await auth.me());
+        const profile = await auth.me();
+        setUser(profile);
         syncSessionCookieFromToken();
+
+        const pendingInvite = consumePendingInviteToken();
+        if (pendingInvite) {
+          try {
+            const member = await organizations.acceptInvite(pendingInvite);
+            const refreshed = await auth.me();
+            setUser(refreshed);
+            router.replace(inviteLandingPath(member.org_role ?? refreshed.org_role));
+            return;
+          } catch (err) {
+            const { errorMessage } = await import("@/lib/api");
+            setMessage(`Signed in, but invite could not be accepted: ${inviteErrorMessage(errorMessage(err))}`);
+            return;
+          }
+        }
+
         router.replace("/dashboard");
       } catch {
         setMessage("Signed in with Google but session setup failed. Try signing in again.");

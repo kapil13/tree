@@ -44,12 +44,12 @@ from app.schemas.auth import (
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
+from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
 from app.services.auth.otp import (
-    DEV_OTP_CODE,
     normalize_phone,
     phone_placeholder_email,
-    verify_dev_otp,
 )
+from app.services.auth.otp_store import check_otp, issue_otp
 from app.services.auth.signup import (
     SignupError,
     complete_signup,
@@ -253,14 +253,34 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
+    phone: str | None = None
     if payload.phone:
         try:
-            normalize_phone(payload.phone)
+            phone = normalize_phone(payload.phone)
         except ValueError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_phone") from exc
-    # Production: generate code, store in Redis, send via SMS/email provider.
-    dev_hint = None if settings.auth_otp_sms_enabled else DEV_OTP_CODE
-    return OTPRequestOut(status="sent", dev_hint=dev_hint, sms_enabled=settings.auth_otp_sms_enabled)
+
+    identifier = phone or (payload.email or "").strip().lower()
+    purpose = "login_phone" if phone else "login_email"
+    code = await issue_otp(purpose, identifier)
+
+    dev_hint: str | None = None
+    if phone:
+        if sms_auth_configured():
+            try:
+                await send_auth_otp_sms(phone=phone, code=code)
+            except SmsSendError:
+                dev_hint = code
+        else:
+            dev_hint = code
+    elif not settings.auth_otp_email_enabled:
+        dev_hint = code
+
+    return OTPRequestOut(
+        status="sent",
+        dev_hint=dev_hint,
+        sms_enabled=settings.auth_otp_sms_enabled and sms_auth_configured(),
+    )
 
 
 async def _user_from_otp(db: DB, payload: OTPVerify) -> User:
@@ -302,8 +322,21 @@ async def _user_from_otp(db: DB, payload: OTPVerify) -> User:
 
 @router.post("/otp/verify", response_model=TokenResponse)
 async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenResponse:
-    if not verify_dev_otp(payload.code):
+    purpose = "login_phone" if payload.phone else "login_email"
+    identifier: str
+    if payload.phone:
+        try:
+            identifier = normalize_phone(payload.phone)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_phone") from exc
+    elif payload.email:
+        identifier = payload.email.strip().lower()
+    else:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone_required")
+
+    if not await check_otp(purpose, identifier, payload.code):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+
     user = await _user_from_otp(db, payload)
     user.is_verified = True
     now = datetime.now(UTC)

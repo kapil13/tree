@@ -30,6 +30,14 @@ def gmail_otp_configured() -> bool:
     )
 
 
+def gmail_invite_configured() -> bool:
+    return bool(
+        settings.auth_org_invite_email_enabled
+        and settings.gmail_sender
+        and settings.google_service_account_json
+    )
+
+
 def _load_service_account_info() -> dict:
     raw = (settings.google_service_account_json or "").strip()
     if not raw:
@@ -96,6 +104,32 @@ async def send_signup_otp_email(*, to: str, code: str) -> None:
         body=_otp_email_body(code),
     )
     log.info("gmail.otp_sent", to=_redact_email(to))
+
+
+async def send_org_invite_email(
+    *,
+    to: str,
+    org_name: str,
+    org_role: str,
+    invite_link: str,
+    full_name: str,
+) -> None:
+    if not gmail_invite_configured():
+        raise GmailSendError("gmail_not_configured")
+    role_label = org_role.replace("_", " ").title()
+    body = (
+        f"Hello {full_name},\n\n"
+        f"You have been invited to join {org_name} on Aranyix as {role_label}.\n\n"
+        f"Accept your invitation:\n{invite_link}\n\n"
+        "This link expires in 14 days. If you did not expect this invite, you can ignore this email."
+    )
+    await asyncio.to_thread(
+        _send_email_sync,
+        to=to,
+        subject=f"Join {org_name} on Aranyix",
+        body=body,
+    )
+    log.info("gmail.invite_sent", to=_redact_email(to), org=org_name)
 
 
 def _redact_email(email: str) -> str:

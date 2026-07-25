@@ -16,6 +16,7 @@ from app.services.auth.gmail_sender import (
     gmail_otp_configured,
     send_signup_otp_email,
 )
+from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
 from app.services.auth.otp import normalize_phone
 from app.services.auth.otp_store import (
     check_otp,
@@ -67,7 +68,14 @@ async def start_signup(
         },
     )
     dev_code = await issue_otp("signup_phone", token)
-    dev_hint = dev_code if not settings.auth_otp_sms_enabled else None
+    if sms_auth_configured():
+        try:
+            await send_auth_otp_sms(phone=normalized_phone, code=dev_code)
+            dev_hint = None
+        except SmsSendError:
+            dev_hint = dev_code
+    else:
+        dev_hint = dev_code if not settings.auth_otp_sms_enabled else None
     return token, dev_hint
 
 

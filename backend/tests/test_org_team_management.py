@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import uuid
-from unittest.mock import MagicMock
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from app.services.auth.user_profile import user_has_professional_program
-from app.services.organizations.members import OrgMemberError, user_is_org_admin
+from app.services.organizations.members import (
+    OrgMemberError,
+    _user_matches_invite,
+    accept_org_invite,
+    user_is_org_admin,
+)
 from app.services.organizations.onboarding import (
     default_platform_role_for_program,
     platform_role_for_org_member,
@@ -59,3 +65,42 @@ async def test_invite_requires_contact():
             phone=None,
         )
     assert exc.value.code == "email_or_phone_required"
+
+
+def test_user_matches_invite():
+    invite = MagicMock(email="worker@example.com", phone="+919876543210")
+    user = MagicMock(email="worker@example.com", phone="+919876543210")
+    assert _user_matches_invite(user, invite) is True
+
+    user.email = "other@example.com"
+    assert _user_matches_invite(user, invite) is False
+
+
+@pytest.mark.asyncio
+async def test_accept_invite_contact_mismatch():
+    org_id = uuid.uuid4()
+    org = MagicMock(id=org_id, type="government")
+    invite = MagicMock(
+        organization_id=org_id,
+        organization=org,
+        status="pending",
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+        email="invited@example.com",
+        phone=None,
+        org_role="worker",
+        platform_role="field_worker",
+        full_name="Invited User",
+    )
+    user = MagicMock(
+        id=uuid.uuid4(),
+        email="other@example.com",
+        phone=None,
+        organization_id=None,
+    )
+
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=invite)))
+
+    with pytest.raises(OrgMemberError) as exc:
+        await accept_org_invite(db, invite_token="token", user=user)
+    assert exc.value.code == "invite_contact_mismatch"
