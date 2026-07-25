@@ -4,13 +4,29 @@ import { Bell, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuth } from "@/lib/auth-store";
+import { useQuery } from "@tanstack/react-query";
+import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { NavLinks } from "@/components/sidebar";
+import { alerts } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
 export function Topbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { data: unreadAlerts = [] } = useQuery({
+    queryKey: ["alerts-unread"],
+    queryFn: () => alerts.list(true),
+    refetchInterval: 60_000,
+    enabled: Boolean(user),
+  });
+  const unreadCount = unreadAlerts.filter((a) => !a.is_read).length;
+
+  const roleLine = user?.org_role
+    ? `${formatOrgRole(user.org_role)} · ${formatPlatformRole(user.role)}`
+    : formatPlatformRole(user?.role);
 
   return (
     <>
@@ -25,27 +41,36 @@ export function Topbar() {
             <Menu className="h-5 w-5" />
           </button>
           <div className="text-sm text-stone-600">
-            {user?.organization_id ? "Organization view" : "Personal view"}
-            {process.env.NEXT_PUBLIC_BUILD_SHA ? (
-              <span className="ml-2 hidden text-xs text-stone-400 sm:inline" title="Deployed frontend build">
-                · {process.env.NEXT_PUBLIC_BUILD_SHA}
-              </span>
-            ) : null}
+            {user?.organization_name
+              ? user.organization_name
+              : user?.organization_id
+                ? "Organization workspace"
+                : "Personal workspace"}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="btn-ghost" aria-label="Notifications">
+          <Link
+            href="/alerts"
+            className="btn-ghost relative"
+            aria-label={unreadCount ? `${unreadCount} unread alerts` : "Alerts"}
+          >
             <Bell className="h-4 w-4" />
-          </button>
+            {unreadCount > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </Link>
           <div className="hidden text-sm sm:block">
             <div className="font-medium text-stone-800 dark:text-stone-100">{user?.full_name || "…"}</div>
-            <div className="text-xs text-stone-500">{user?.role}</div>
+            <div className="text-xs text-stone-500">{roleLine}</div>
           </div>
           <button
             className="btn-ghost"
+            aria-label="Sign out"
             onClick={() => {
               logout();
-              router.push("/login");
+              router.push("/auth?mode=signin");
             }}
           >
             <LogOut className="h-4 w-4" />
@@ -61,14 +86,15 @@ export function Topbar() {
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-white p-4 shadow-xl dark:bg-stone-950">
+          <div className="absolute left-0 top-0 flex h-full w-72 flex-col overflow-y-auto bg-white p-4 shadow-xl dark:bg-stone-950">
             <div className="mb-4 flex items-center justify-between">
               <Link
                 href="/dashboard"
-                className="text-lg font-bold text-forest-800"
+                className="flex items-center gap-2"
                 onClick={() => setMenuOpen(false)}
               >
-                🌳 BYOT
+                <AranyixMark className="h-8 w-8" />
+                <span className="text-lg font-bold text-forest-900">Aranyix</span>
               </Link>
               <button type="button" className="btn-ghost" onClick={() => setMenuOpen(false)}>
                 <X className="h-5 w-5" />

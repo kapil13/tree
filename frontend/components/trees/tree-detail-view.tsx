@@ -360,7 +360,15 @@ export function TreeDetailView() {
       )}
 
       <div className="card">
-        <h2 className="mb-3 text-sm font-medium text-stone-700">AI analysis</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-stone-700">AI analysis</h2>
+          <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+            Estimate
+          </span>
+        </div>
+        <p className="mb-3 text-xs text-stone-500">
+          Results currently use the built-in estimate model until live AI providers are enabled.
+        </p>
         {!analyses?.length ? (
           <p className="text-sm text-stone-500">No analysis yet. Run AI analysis to populate metrics.</p>
         ) : (
@@ -398,10 +406,19 @@ export function TreeDetailView() {
       </div>
 
       <div className="card space-y-4">
-        <h2 className="text-sm font-medium text-stone-700">
-          <Satellite className="mr-1 inline h-4 w-4" />
-          Satellite monitoring
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-stone-700">
+            <Satellite className="mr-1 inline h-4 w-4" />
+            Satellite monitoring
+          </h2>
+          <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+            Estimate
+          </span>
+        </div>
+        <p className="text-xs text-stone-500">
+          Individual-tree NDVI is simulated until per-tree live scenes are enabled. Plantation fence
+          scans can use live Sentinel Hub when configured.
+        </p>
 
         {sat?.points?.length ? (
           <>
