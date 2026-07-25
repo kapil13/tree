@@ -27,6 +27,7 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   threat_watch: "Threat watch",
   survival_survey: "Survival survey",
   satellite_health: "Satellite health",
+  satellite_health_digest: "Satellite digest",
 };
 
 export default function MonitoringPage() {

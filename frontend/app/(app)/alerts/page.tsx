@@ -83,6 +83,18 @@ export default function AlertsPage() {
               />
               SMS on critical risk (requires phone on profile)
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={sh.daily_digest !== false}
+                onChange={(e) =>
+                  savePrefs.mutate({
+                    satellite_health: { ...sh, daily_digest: e.target.checked },
+                  })
+                }
+              />
+              Daily email/SMS digest of satellite alerts (once per day)
+            </label>
             {savePrefs.error && (
               <p className="text-rose-700">{errorMessage(savePrefs.error)}</p>
             )}

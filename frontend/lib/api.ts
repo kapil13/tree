@@ -1293,6 +1293,7 @@ export type NotificationPreferences = {
     enabled: boolean;
     channels: string[];
     sms_on_critical: boolean;
+    daily_digest?: boolean;
   };
   survival_survey?: {
     enabled: boolean;
