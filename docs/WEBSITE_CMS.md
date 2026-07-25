@@ -41,6 +41,13 @@ On first API access, the CMS auto-seeds with the current aranyix.tech homepage c
 
 ## Grant platform admin
 
+```bash
+cd backend
+python -m app.scripts.promote_admin you@example.com
+```
+
+Or via SQL:
+
 ```sql
 UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
 ```

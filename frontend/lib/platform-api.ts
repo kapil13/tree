@@ -6,10 +6,27 @@ export type PlatformUser = {
   full_name: string;
   role: string;
   organization_id: string | null;
+  organization_name?: string | null;
+  org_role?: string | null;
+  is_org_admin?: boolean;
   is_active: boolean;
   is_verified: boolean;
   created_at: string;
   last_login_at: string | null;
+  enrolled_program_codes?: string[];
+};
+
+export type PlatformOverview = {
+  users: { total: number; active: number; inactive: number; admins: number };
+  organizations: { total: number };
+  program_access: { pending: number };
+};
+
+export type PlatformUserPage = {
+  items: PlatformUser[];
+  total: number;
+  page: number;
+  page_size: number;
 };
 
 export type PlatformRole = {
@@ -42,11 +59,23 @@ export type ProgramAccessRequestAdmin = {
 };
 
 export const platformAdmin = {
+  async overview() {
+    return (await api.get<PlatformOverview>("/v1/platform/overview")).data;
+  },
   async roles() {
     return (await api.get<PlatformRole[]>("/v1/platform/roles")).data;
   },
-  async listUsers() {
-    return (await api.get<PlatformUser[]>("/v1/platform/users")).data;
+  async listUsers(params?: {
+    search?: string;
+    role?: string;
+    is_active?: boolean;
+    page?: number;
+    page_size?: number;
+  }) {
+    return (await api.get<PlatformUserPage>("/v1/platform/users", { params })).data;
+  },
+  async getUser(id: string) {
+    return (await api.get<PlatformUser>(`/v1/platform/users/${id}`)).data;
   },
   async updateUser(id: string, payload: { role: string; is_active?: boolean }) {
     return (await api.patch<PlatformUser>(`/v1/platform/users/${id}`, payload)).data;

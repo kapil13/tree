@@ -10,12 +10,14 @@ import {
   FolderKanban,
   Globe2,
   Leaf,
+  LayoutDashboard,
   Map,
   Mic,
   Satellite,
   Settings,
   Sparkles,
   TreePine,
+  Users,
   Activity,
   Brain,
   UserCheck,
@@ -100,16 +102,29 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
 
   const adminItems: NavItem[] = [];
-  if (canAccessWebsiteCms(user)) {
-    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2, audience: "all" });
-  }
   if (canManagePlatformUsers(user)) {
+    adminItems.push({
+      href: "/platform",
+      label: "Platform admin",
+      icon: LayoutDashboard,
+      audience: "all",
+      exact: true,
+    });
+    adminItems.push({
+      href: "/platform/users",
+      label: "Users",
+      icon: Users,
+      audience: "all",
+    });
     adminItems.push({
       href: "/platform/program-access",
       label: "Program access",
       icon: UserCheck,
       audience: "all",
     });
+  }
+  if (canAccessWebsiteCms(user)) {
+    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2, audience: "all" });
   }
 
   const groups = NAV_GROUPS.map((group) => ({

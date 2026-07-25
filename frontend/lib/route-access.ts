@@ -1,6 +1,6 @@
 import type { User } from "@/lib/api";
 import { canSeeNavItem, isOrgAdmin, type NavAudience, viewerReadOnlyMessage } from "@/lib/nav-access";
-import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
+import { canAccessPlatformPath } from "@/lib/platform-access";
 
 type RouteRule = {
   prefix: string;
@@ -23,14 +23,8 @@ const ROUTE_RULES: RouteRule[] = [
 export function canAccessPath(user: User | null | undefined, pathname: string): boolean {
   if (!user) return false;
 
-  if (pathname.startsWith("/platform/cms")) {
-    return canAccessWebsiteCms(user);
-  }
-  if (pathname.startsWith("/platform/program-access")) {
-    return canManagePlatformUsers(user);
-  }
   if (pathname.startsWith("/platform")) {
-    return canAccessWebsiteCms(user) || canManagePlatformUsers(user);
+    return canAccessPlatformPath(user, pathname);
   }
 
   for (const rule of ROUTE_RULES) {

@@ -11,6 +11,7 @@ from app.api.v1.deps import DB, CmsManager, PlatformAdmin
 from app.core.security import Role
 from app.models.organization import Organization
 from app.models.user import User
+from app.schemas.common import Page
 from app.schemas.planting_program import (
     ProgramAccessRequestAdminOut,
     ProgramAccessRequestReview,
@@ -19,6 +20,7 @@ from app.schemas.platform import (
     ASSIGNABLE_ROLES,
     ModuleRuleOut,
     ModuleRuleUpdate,
+    PlatformOverviewOut,
     UserAdminOut,
     UserRoleUpdate,
 )
@@ -33,6 +35,11 @@ from app.services.planting_programs.access_requests import (
     list_access_requests,
     review_access_request,
 )
+from app.services.platform.admin import (
+    build_platform_overview,
+    get_platform_user,
+    query_platform_users,
+)
 from app.services.platform.modules import (
     WEBSITE_CMS_MODULE,
     list_module_rules,
@@ -42,17 +49,53 @@ from app.services.platform.modules import (
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
 
 
+@router.get("/overview", response_model=PlatformOverviewOut)
+async def platform_overview(_admin: PlatformAdmin, db: DB) -> PlatformOverviewOut:
+    """Counts for platform admin dashboard."""
+    return PlatformOverviewOut.model_validate(await build_platform_overview(db))
+
+
 @router.get("/roles")
 async def platform_roles(_manager: CmsManager) -> list[dict[str, str]]:
     return [{"value": role.value, "label": role.value.replace("_", " ").title()} for role in Role]
 
 
-@router.get("/users", response_model=list[UserAdminOut])
-async def platform_list_users(_admin: PlatformAdmin, db: DB) -> list[User]:
-    rows = (
-        await db.execute(select(User).order_by(User.created_at.desc()).limit(500))
-    ).scalars().all()
-    return list(rows)
+@router.get("/users", response_model=Page[UserAdminOut])
+async def platform_list_users(
+    _admin: PlatformAdmin,
+    db: DB,
+    search: str = "",
+    role: str | None = None,
+    is_active: bool | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[UserAdminOut]:
+    items, total = await query_platform_users(
+        db,
+        search=search,
+        role=role,
+        is_active=is_active,
+        page=page,
+        page_size=page_size,
+    )
+    return Page(
+        items=[UserAdminOut.model_validate(i) for i in items],
+        total=total,
+        page=max(page, 1),
+        page_size=min(max(page_size, 1), 100),
+    )
+
+
+@router.get("/users/{user_id}", response_model=UserAdminOut)
+async def platform_get_user(
+    user_id: uuid.UUID,
+    _admin: PlatformAdmin,
+    db: DB,
+) -> UserAdminOut:
+    row = await get_platform_user(db, user_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    return UserAdminOut.model_validate(row)
 
 
 @router.patch("/users/{user_id}", response_model=UserAdminOut)
@@ -91,7 +134,8 @@ async def platform_update_user(
     )
     await db.commit()
     await db.refresh(user)
-    return user
+    row = await get_platform_user(db, user.id)
+    return UserAdminOut.model_validate(row or user)
 
 
 @router.get("/modules", response_model=list[ModuleRuleOut])

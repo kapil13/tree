@@ -2063,6 +2063,7 @@ export const audit = {
     page?: number;
     page_size?: number;
     action?: string;
+    action_prefix?: string;
     resource_type?: string;
     resource_id?: string;
   }) {

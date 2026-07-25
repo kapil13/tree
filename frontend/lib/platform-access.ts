@@ -12,3 +12,17 @@ export function canManagePlatformUsers(user: { role?: string; platform_access?: 
   if (!user) return false;
   return user.platform_access?.users_admin ?? user.role === "admin";
 }
+
+export function canAccessPlatformPath(
+  user: { role?: string; platform_access?: PlatformAccess } | null,
+  pathname: string,
+) {
+  if (!user) return false;
+  if (pathname.startsWith("/platform/cms")) {
+    return canAccessWebsiteCms(user);
+  }
+  if (pathname.startsWith("/platform")) {
+    return canManagePlatformUsers(user);
+  }
+  return false;
+}
