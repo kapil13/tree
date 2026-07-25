@@ -8,6 +8,7 @@ from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
+from app.models.organization_invite import OrganizationInvite
 from app.models.payment import PaymentEvent, PaymentOrder
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -48,6 +49,7 @@ __all__ = [
     "OrganizationWebhook",
     "WebhookDelivery",
     "Organization",
+    "OrganizationInvite",
     "PlantingComplianceViolation",
     "PlantingProgram",
     "ProgramAccessRequest",

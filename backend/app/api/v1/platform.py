@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CmsManager, PlatformAdmin
 from app.core.security import Role
+from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.planting_program import (
     ProgramAccessRequestAdminOut,
@@ -22,6 +23,10 @@ from app.schemas.platform import (
     UserRoleUpdate,
 )
 from app.services.audit import record_audit
+from app.services.organizations.onboarding import (
+    OrgOnboardingError,
+    onboard_user_on_program_approval,
+)
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
     get_access_request,
@@ -146,6 +151,29 @@ def _access_request_admin_out(request) -> ProgramAccessRequestAdminOut:
     )
 
 
+@router.get("/organizations")
+async def platform_list_organizations(
+    _admin: PlatformAdmin,
+    db: DB,
+    search: str = "",
+    limit: int = 50,
+) -> list[dict]:
+    stmt = select(Organization).order_by(Organization.name).limit(min(limit, 100))
+    if search.strip():
+        q = f"%{search.strip()}%"
+        stmt = stmt.where(Organization.name.ilike(q) | Organization.slug.ilike(q))
+    rows = (await db.execute(stmt)).scalars().all()
+    return [
+        {
+            "id": str(o.id),
+            "name": o.name,
+            "slug": o.slug,
+            "type": o.type,
+        }
+        for o in rows
+    ]
+
+
 @router.get("/program-access-requests", response_model=list[ProgramAccessRequestAdminOut])
 async def platform_list_program_access_requests(
     _admin: PlatformAdmin,
@@ -175,6 +203,27 @@ async def platform_review_program_access_request(
             action=payload.action,
             admin_note=payload.admin_note,
         )
+        if payload.action == "approve":
+            row = await get_access_request(db, request_id)
+            assert row is not None
+            try:
+                org = await onboard_user_on_program_approval(
+                    db,
+                    request=row,
+                    user=row.user,
+                    organization_name=payload.organization_name,
+                    organization_slug=payload.organization_slug,
+                    organization_id=payload.organization_id,
+                    platform_role=payload.platform_role,
+                    make_org_admin=payload.make_org_admin,
+                )
+                org_diff = {"organization_id": str(org.id), "organization_name": org.name}
+            except OrgOnboardingError as exc:
+                raise HTTPException(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code
+                ) from exc
+        else:
+            org_diff = {}
         await record_audit(
             db,
             actor=admin,
@@ -186,6 +235,7 @@ async def platform_review_program_access_request(
                 "program_code": reviewed.program.code,
                 "user_id": str(reviewed.user_id),
                 "admin_note": payload.admin_note,
+                **org_diff,
             },
         )
         await db.commit()

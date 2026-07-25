@@ -8,13 +8,14 @@ import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
+import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { plantingProjects } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
-const TABS = ["overview", "compliance", "credits", "trees", "settings"] as const;
+const TABS = ["overview", "compliance", "credits", "trees", "team", "settings"] as const;
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -193,6 +194,13 @@ export default function ProjectDetailPage() {
             surveyIntervalDays={surveyDays}
           />
         </div>
+      )}
+
+      {tab === "team" && (
+        <ProjectTeamPanel
+          projectId={project.id}
+          workAreas={workAreas.map((a) => ({ id: a.id, name: a.name }))}
+        />
       )}
 
       {tab === "settings" && <ProjectSettingsPanel project={project} />}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Webhook } from "lucide-react";
+import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
@@ -14,38 +14,51 @@ type NavItem = {
   match?: (path: string) => boolean;
 };
 
-const BASE_ITEMS: NavItem[] = [
-  {
-    href: "/settings",
-    label: "General",
-    icon: Settings2,
-    match: (path) => path === "/settings",
-  },
-  {
-    href: "/settings/programs",
-    label: "Programs",
-    icon: Sprout,
-    match: (path) => path.startsWith("/settings/programs"),
-  },
-  {
-    href: "/settings/carbon",
-    label: "Carbon calculator",
-    icon: Calculator,
-    match: (path) => path.startsWith("/settings/carbon"),
-  },
-  {
-    href: "/settings/audit",
-    label: "Audit trail",
-    icon: ScrollText,
-    match: (path) => path.startsWith("/settings/audit"),
-  },
-  {
-    href: "/settings/webhooks",
-    label: "Webhooks",
-    icon: Webhook,
-    match: (path) => path.startsWith("/settings/webhooks"),
-  },
-];
+function baseItems(showTeam: boolean): NavItem[] {
+  const items: NavItem[] = [
+    {
+      href: "/settings",
+      label: "General",
+      icon: Settings2,
+      match: (path) => path === "/settings",
+    },
+    {
+      href: "/settings/programs",
+      label: "Programs",
+      icon: Sprout,
+      match: (path) => path.startsWith("/settings/programs"),
+    },
+  ];
+  if (showTeam) {
+    items.push({
+      href: "/settings/team",
+      label: "Team",
+      icon: Users,
+      match: (p) => p.startsWith("/settings/team"),
+    });
+  }
+  items.push(
+    {
+      href: "/settings/carbon",
+      label: "Carbon calculator",
+      icon: Calculator,
+      match: (path) => path.startsWith("/settings/carbon"),
+    },
+    {
+      href: "/settings/audit",
+      label: "Audit trail",
+      icon: ScrollText,
+      match: (path) => path.startsWith("/settings/audit"),
+    },
+    {
+      href: "/settings/webhooks",
+      label: "Webhooks",
+      icon: Webhook,
+      match: (path) => path.startsWith("/settings/webhooks"),
+    },
+  );
+  return items;
+}
 
 export function SettingsNav() {
   const path = usePathname();
@@ -69,7 +82,7 @@ export function SettingsNav() {
     });
   }
 
-  const items = [...BASE_ITEMS, ...adminItems];
+  const items = [...baseItems(Boolean(user?.organization_id)), ...adminItems];
 
   return (
     <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">

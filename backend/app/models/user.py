@@ -24,6 +24,8 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     hashed_password: Mapped[str | None] = mapped_column(String(255))
     google_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
+    org_role: Mapped[str | None] = mapped_column(String(32))
+    is_org_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -33,7 +35,9 @@ class User(UUIDPKMixin, TimestampMixin, Base):
         JSONB, nullable=False, default=default_notification_preferences
     )
 
-    organization = relationship("Organization", back_populates="users")
+    organization = relationship(
+        "Organization", back_populates="users", foreign_keys=[organization_id]
+    )
     trees = relationship("Tree", back_populates="owner", foreign_keys="Tree.owner_user_id")
     planting_programs = relationship("UserPlantingProgram", back_populates="user")
     ai_scan_wallet = relationship("UserAiScanWallet", back_populates="user", uselist=False)

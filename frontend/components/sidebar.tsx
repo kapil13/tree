@@ -22,26 +22,32 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
+import { canSeeNavItem } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  audience?: import("@/lib/nav-access").NavAudience | import("@/lib/nav-access").NavAudience[];
+};
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/field-ops", label: "Field ops", icon: ClipboardList },
-  { href: "/monitoring", label: "Monitoring", icon: Activity },
-  { href: "/intelligence", label: "Intelligence", icon: Brain },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/trees", label: "Trees", icon: TreePine },
-  { href: "/trees/new", label: "Add tree", icon: Leaf },
-  { href: "/map", label: "Map", icon: Map },
-  { href: "/satellite", label: "Satellite", icon: Satellite },
-  { href: "/bioacoustic", label: "Biodiversity", icon: Mic },
-  { href: "/assistant", label: "AI assistant", icon: Sparkles },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3, audience: "all" },
+  { href: "/field-ops", label: "Field ops", icon: ClipboardList, audience: ["professional", "field_supervisor"] },
+  { href: "/monitoring", label: "Monitoring", icon: Activity, audience: ["professional", "field_supervisor"] },
+  { href: "/intelligence", label: "Intelligence", icon: Brain, audience: ["professional", "field_supervisor"] },
+  { href: "/projects", label: "Projects", icon: FolderKanban, audience: ["professional", "field_supervisor", "field_worker"] },
+  { href: "/trees", label: "Trees", icon: TreePine, audience: "all" },
+  { href: "/trees/new", label: "Add tree", icon: Leaf, audience: "all" },
+  { href: "/map", label: "Map", icon: Map, audience: "all" },
+  { href: "/satellite", label: "Satellite", icon: Satellite, audience: ["professional", "field_supervisor"] },
+  { href: "/bioacoustic", label: "Biodiversity", icon: Mic, audience: "professional" },
+  { href: "/assistant", label: "AI assistant", icon: Sparkles, audience: "all" },
+  { href: "/reports", label: "Reports", icon: FileText, audience: ["professional", "field_supervisor"] },
+  { href: "/alerts", label: "Alerts", icon: Bell, audience: "all" },
+  { href: "/settings", label: "Settings", icon: Settings, audience: "all" },
 ];
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -49,16 +55,19 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const adminItems: NavItem[] = [];
   if (canAccessWebsiteCms(user)) {
-    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2 });
+    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2, audience: "all" });
   }
   if (canManagePlatformUsers(user)) {
     adminItems.push({
       href: "/platform/program-access",
       label: "Program access",
       icon: UserCheck,
+      audience: "all",
     });
   }
-  const items = [...NAV_ITEMS, ...adminItems];
+  const items = [...NAV_ITEMS, ...adminItems].filter((item) =>
+    canSeeNavItem(user, item.audience ?? "all"),
+  );
 
   return (
     <nav className="space-y-1">
@@ -73,7 +82,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
               active
                 ? "bg-forest-100 text-forest-800"
-                : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800"
+                : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800",
             )}
           >
             <Icon className="h-4 w-4" />

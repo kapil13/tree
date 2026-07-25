@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -64,3 +64,8 @@ class ProgramAccessRequestAdminOut(ProgramAccessRequestOut):
 class ProgramAccessRequestReview(BaseModel):
     action: str = Field(pattern="^(approve|reject)$")
     admin_note: str | None = Field(default=None, max_length=2000)
+    organization_name: str | None = Field(default=None, max_length=255)
+    organization_slug: str | None = Field(default=None, max_length=120)
+    organization_id: uuid.UUID | None = None
+    platform_role: Literal["government", "corporate", "ngo"] | None = None
+    make_org_admin: bool = True
