@@ -401,7 +401,7 @@ async def regeotag_tree(
     tree_id: uuid.UUID,
     payload: TreeRegeotag,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> TreeRegeotagOut:
     """Update tree GPS for survival survey / re-geotagging."""
@@ -507,7 +507,7 @@ async def update_tree(
     tree_id: uuid.UUID,
     payload: TreeUpdate,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> TreeOut:
     tree = await _get_owned_tree(tree_id, user, db)
@@ -536,7 +536,7 @@ async def update_tree(
 
 @router.delete("/{tree_id}", status_code=204)
 async def delete_tree(
-    tree_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
+    tree_id: uuid.UUID, request: Request, user: WriteAccess, db: DB
 ) -> Response:
     tree = await _get_owned_tree(tree_id, user, db)
     tree.status = "removed"
@@ -558,7 +558,7 @@ async def add_image(
     tree_id: uuid.UUID,
     s3_key: str,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
     is_primary: bool = False,
 ) -> TreeImageOut:

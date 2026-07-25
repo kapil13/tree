@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.schemas.bioacoustic import (
     BioacousticAnalyzeResponse,
@@ -38,7 +38,7 @@ def _scope(stmt, user):
 
 @router.post("/recordings", response_model=BioacousticRecordingOut, status_code=status.HTTP_201_CREATED)
 async def register_recording(
-    payload: BioacousticRecordingCreate, user: CurrentUser, db: DB
+    payload: BioacousticRecordingCreate, user: WriteProfessional, db: DB
 ) -> BioacousticRecordingOut:
     try:
         return await create_recording(
@@ -63,7 +63,7 @@ async def register_recording(
 
 @router.post("/recordings/upload", response_model=BioacousticRecordingOut, status_code=status.HTTP_201_CREATED)
 async def upload_recording(
-    user: CurrentUser,
+    user: WriteProfessional,
     db: DB,
     file: UploadFile = File(...),
     duration_seconds: float = Form(45.0),
@@ -148,7 +148,7 @@ async def get_recording(recording_id: uuid.UUID, user: CurrentUser, db: DB) -> B
 )
 async def analyze_recording(
     recording_id: uuid.UUID,
-    user: CurrentUser,
+    user: WriteProfessional,
     db: DB,
     force: bool = False,
 ) -> BioacousticAnalyzeResponse:

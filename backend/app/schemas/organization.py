@@ -122,3 +122,7 @@ class OrgInviteAccept(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     password: str | None = Field(default=None, min_length=12, max_length=128)
+
+
+class OrgTransferOwnership(BaseModel):
+    new_owner_user_id: uuid.UUID
