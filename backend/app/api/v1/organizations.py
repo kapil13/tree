@@ -5,10 +5,13 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi.responses import Response
 
 from app.api.v1.deps import DB, CurrentUser, OrgAdmin, OrgMember
 from app.models.organization import Organization
 from app.models.user import User
+from app.schemas.audit import AuditLogOut
+from app.schemas.common import Page
 from app.schemas.organization import (
     OrganizationOut,
     OrgBulkInviteCreate,
@@ -22,19 +25,23 @@ from app.schemas.organization import (
     OrgMemberOut,
     OrgMembersOut,
     OrgMemberUpdate,
+    OrgTransferOwnership,
 )
 from app.services.audit import record_audit
 from app.services.organizations.members import (
     OrgMemberError,
     accept_org_invite,
     bulk_invite_from_rows,
+    export_org_members_csv,
     get_invite_preview,
     get_user_org,
     invite_org_member,
     list_org_members,
+    list_org_team_audit_logs,
     list_pending_invites,
     resend_org_invite,
     revoke_org_invite,
+    transfer_org_ownership,
     update_org_member,
     user_is_org_admin,
 )
@@ -345,3 +352,78 @@ async def resend_member_invite(
         invite=_invite_out(invite),
         delivery=OrgInviteDeliveryOut(**delivery),
     )
+
+
+@router.get("/me/members/export")
+async def export_org_members(admin: OrgAdmin, db: DB) -> Response:
+    org = await get_user_org(db, admin)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    csv_body = await export_org_members_csv(db, org.id)
+    filename = f"{org.slug}-team.csv"
+    return Response(
+        content=csv_body,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/me/activity", response_model=Page[AuditLogOut])
+async def org_team_activity(
+    admin: OrgAdmin,
+    db: DB,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> Page[AuditLogOut]:
+    org = await get_user_org(db, admin)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    rows, total = await list_org_team_audit_logs(db, org_id=org.id, page=page, page_size=page_size)
+    items = [
+        AuditLogOut(
+            id=r.id,
+            actor_user_id=r.actor_user_id,
+            organization_id=r.organization_id,
+            action=r.action,
+            resource_type=r.resource_type,
+            resource_id=r.resource_id,
+            ip=str(r.ip) if r.ip is not None else None,
+            user_agent=r.user_agent,
+            diff=r.diff,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
+    return Page(items=items, total=total, page=page, page_size=page_size)
+
+
+@router.post("/me/transfer-ownership", response_model=OrgMemberOut)
+async def transfer_ownership(
+    payload: OrgTransferOwnership,
+    request: Request,
+    admin: OrgAdmin,
+    db: DB,
+) -> OrgMemberOut:
+    org = await get_user_org(db, admin)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    try:
+        member = await transfer_org_ownership(
+            db,
+            org=org,
+            new_owner_id=payload.new_owner_user_id,
+        )
+    except OrgMemberError as exc:
+        raise _member_error(exc) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="org.ownership.transfer",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"new_owner_user_id": str(payload.new_owner_user_id)},
+    )
+    await db.commit()
+    await db.refresh(member)
+    return _member_out(member)

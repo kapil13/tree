@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.v1.deps import CurrentUser
+from app.api.v1.deps import WriteAccess
 from app.schemas.bioacoustic import PresignUploadRequest, PresignUploadResponse
 from app.services.storage import get_storage
 
@@ -24,7 +24,7 @@ _ALLOWED_AUDIO = {
 
 
 @router.post("/presign", response_model=PresignUploadResponse)
-async def presign_upload(payload: PresignUploadRequest, user: CurrentUser) -> PresignUploadResponse:
+async def presign_upload(payload: PresignUploadRequest, user: WriteAccess) -> PresignUploadResponse:
     ct = payload.content_type.lower().strip()
     if ct not in _ALLOWED_AUDIO and not ct.startswith("image/"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="unsupported_content_type")

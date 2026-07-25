@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.planting_program import PlantingProgram
 from app.schemas.planting_program import (
     PlantingProgramListOut,
@@ -144,7 +144,7 @@ async def cancel_access_request(
 
 @router.put("/me/memberships", response_model=UserProgramsOut)
 async def update_my_program_memberships(
-    payload: UserProgramsUpdate, user: CurrentUser, db: DB
+    payload: UserProgramsUpdate, user: WriteAccess, db: DB
 ) -> UserProgramsOut:
     try:
         if user.role == "admin":

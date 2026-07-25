@@ -7,8 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
-from app.api.v1.deps import DB, CurrentUser, require
-from app.core.security import Permission
+from app.api.v1.deps import DB, AuditReader
 from app.models.audit import AuditLog
 from app.schemas.audit import AuditLogOut
 from app.schemas.common import Page
@@ -16,9 +15,9 @@ from app.schemas.common import Page
 router = APIRouter(prefix="/audit", tags=["audit"])
 
 
-@router.get("/logs", response_model=Page[AuditLogOut], dependencies=[require(Permission.AUDIT_READ)])
+@router.get("/logs", response_model=Page[AuditLogOut])
 async def list_audit_logs(
-    user: CurrentUser,
+    user: AuditReader,
     db: DB,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),

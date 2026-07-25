@@ -18,6 +18,8 @@ from app.core.security import (
     has_permission,
 )
 from app.models.user import User
+from app.services.auth.user_profile import user_has_professional_program
+from app.services.planting_programs.enrollment import list_user_program_codes
 from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -109,6 +111,48 @@ async def require_write_access(user: CurrentUser) -> User:
 
 
 WriteAccess = Annotated[User, Depends(require_write_access)]
+
+PROFESSIONAL_ROLES = frozenset({"government", "corporate", "ngo", "field_supervisor"})
+
+
+def user_has_professional_role(user: User) -> bool:
+    if user.role == "admin":
+        return True
+    return user.role in PROFESSIONAL_ROLES
+
+
+async def require_professional_access(user: CurrentUser, db: DB) -> User:
+    if user_has_professional_role(user):
+        return user
+    codes = await list_user_program_codes(db, user.id)
+    if user_has_professional_program(codes):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, detail="professional_access_required")
+
+
+ProfessionalAccess = Annotated[User, Depends(require_professional_access)]
+
+
+async def require_write_professional(user: CurrentUser, db: DB) -> User:
+    if not user_can_write(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="viewer_read_only")
+    return await require_professional_access(user, db)
+
+
+WriteProfessional = Annotated[User, Depends(require_write_professional)]
+
+
+async def require_audit_reader(user: CurrentUser) -> User:
+    if user.role == "admin":
+        return user
+    if user.organization_id and user.is_org_admin:
+        return user
+    if has_permission(user.role, Permission.AUDIT_READ):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, detail="audit_access_denied")
+
+
+AuditReader = Annotated[User, Depends(require_audit_reader)]
 
 
 def require(perm: Permission):

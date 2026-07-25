@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -12,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password
+from app.models.audit import AuditLog
 from app.models.organization import Organization
 from app.models.organization_invite import OrganizationInvite
 from app.models.user import User
@@ -397,3 +400,78 @@ async def search_org_user_candidates(
         .limit(limit)
     )
     return list(res.scalars().all())
+
+
+ORG_TEAM_AUDIT_ACTIONS = (
+    "org.user.invite",
+    "org.user.bulk_invite",
+    "org.invite.revoked",
+    "org.invite.resent",
+    "org.user.invite_accept",
+    "org.user.role_change",
+    "org.ownership.transfer",
+)
+
+
+async def export_org_members_csv(db: AsyncSession, org_id: uuid.UUID) -> str:
+    members = await list_org_members(db, org_id)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        ["full_name", "email", "phone", "role", "org_role", "is_org_admin", "is_active", "created_at"]
+    )
+    for member in members:
+        writer.writerow(
+            [
+                member.full_name,
+                member.email,
+                member.phone or "",
+                member.role,
+                member.org_role or "",
+                member.is_org_admin,
+                member.is_active,
+                member.created_at.isoformat(),
+            ]
+        )
+    return buf.getvalue()
+
+
+async def transfer_org_ownership(
+    db: AsyncSession,
+    *,
+    org: Organization,
+    new_owner_id: uuid.UUID,
+) -> User:
+    member = await db.get(User, new_owner_id)
+    if member is None or member.organization_id != org.id:
+        raise OrgMemberError("member_not_found")
+    org.owner_user_id = new_owner_id
+    member.is_org_admin = True
+    await db.flush()
+    return member
+
+
+async def list_org_team_audit_logs(
+    db: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    page: int = 1,
+    page_size: int = 50,
+) -> tuple[list[AuditLog], int]:
+    from sqlalchemy import func
+
+    base = select(AuditLog).where(
+        AuditLog.organization_id == org_id,
+        AuditLog.action.in_(ORG_TEAM_AUDIT_ACTIONS),
+    )
+    total = (
+        await db.execute(select(func.count()).select_from(base.subquery()))
+    ).scalar_one()
+    rows = (
+        await db.execute(
+            base.order_by(AuditLog.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).scalars().all()
+    return list(rows), total

@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import func, select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -141,7 +141,7 @@ async def list_fences(
 
 @router.post("", response_model=PlantationFenceOut, status_code=status.HTTP_201_CREATED)
 async def create_fence(
-    payload: PlantationFenceCreate, user: CurrentUser, db: DB
+    payload: PlantationFenceCreate, user: WriteProfessional, db: DB
 ) -> PlantationFenceOut:
     wkt = geojson_polygon_to_wkt(payload.boundary.model_dump())
     fence = PlantationFence(
@@ -181,7 +181,7 @@ async def get_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Plantatio
 
 @router.patch("/{fence_id}", response_model=PlantationFenceOut)
 async def update_fence(
-    fence_id: uuid.UUID, payload: PlantationFenceUpdate, user: CurrentUser, db: DB
+    fence_id: uuid.UUID, payload: PlantationFenceUpdate, user: WriteProfessional, db: DB
 ) -> PlantationFenceOut:
     fence = await _load_fence(fence_id, user, db)
     if payload.name is not None:
@@ -193,7 +193,7 @@ async def update_fence(
 
 
 @router.delete("/{fence_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+async def delete_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> Response:
     fence = await _load_fence(fence_id, user, db)
     await db.delete(fence)
     await db.commit()
@@ -201,7 +201,7 @@ async def delete_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Respon
 
 
 @router.post("/{fence_id}/scan", response_model=PlantationSatelliteRecordOut)
-async def scan_fence(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> PlantationSatelliteRecordOut:
+async def scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> PlantationSatelliteRecordOut:
     fence = await _load_fence(fence_id, user, db)
     boundary = geography_to_geojson_polygon(fence.boundary)
     try:

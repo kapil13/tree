@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
@@ -172,7 +172,7 @@ async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
 @router.post("/{project_id}/satellite-scan")
 async def trigger_project_satellite_scan(
     project_id: uuid.UUID,
-    user: CurrentUser,
+    user: WriteProfessional,
     db: DB,
 ) -> dict:
     project = await load_project(project_id, user, db)
@@ -219,7 +219,7 @@ async def list_projects(
 
 @router.post("", response_model=PlantingProjectOut, status_code=status.HTTP_201_CREATED)
 async def create_project(
-    payload: PlantingProjectCreate, request: Request, user: CurrentUser, db: DB
+    payload: PlantingProjectCreate, request: Request, user: WriteAccess, db: DB
 ) -> PlantingProjectOut:
     segment = payload.segment
     if payload.program_code and segment == "general":
@@ -293,7 +293,7 @@ async def update_project(
     project_id: uuid.UUID,
     payload: PlantingProjectUpdate,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> PlantingProjectOut:
     project = await load_project(project_id, user, db)
@@ -350,7 +350,7 @@ async def list_work_areas(
 async def create_work_area(
     project_id: uuid.UUID,
     payload: WorkAreaCreate,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WorkAreaOut:
     project = await load_project(project_id, user, db)
@@ -405,7 +405,7 @@ async def update_work_area(
     project_id: uuid.UUID,
     work_area_id: uuid.UUID,
     payload: WorkAreaUpdate,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> WorkAreaOut:
     project = await load_project(project_id, user, db)
@@ -472,7 +472,7 @@ async def update_work_area(
 async def delete_work_area(
     project_id: uuid.UUID,
     work_area_id: uuid.UUID,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> Response:
     project = await load_project(project_id, user, db)
@@ -515,7 +515,7 @@ async def delete_work_area(
 async def compliance_check(
     project_id: uuid.UUID,
     payload: ComplianceCheckRequest,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> ComplianceCheckOut:
     project = await load_project(project_id, user, db)
@@ -596,7 +596,7 @@ async def resolve_compliance_violation(
     project_id: uuid.UUID,
     violation_id: uuid.UUID,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict:
     from app.models.planting_compliance_violation import PlantingComplianceViolation
@@ -883,7 +883,7 @@ async def list_project_members(
 async def add_project_member(
     project_id: uuid.UUID,
     payload: ProjectMemberCreate,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> ProjectMemberOut:
     project = await load_project(project_id, user, db)
@@ -923,7 +923,7 @@ async def add_project_member(
 async def remove_project_member(
     project_id: uuid.UUID,
     member_id: uuid.UUID,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> Response:
     project = await load_project(project_id, user, db)

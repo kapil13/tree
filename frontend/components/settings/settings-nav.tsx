@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
-import { isOrgAdmin } from "@/lib/nav-access";
+import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
@@ -15,7 +15,7 @@ type NavItem = {
   match?: (path: string) => boolean;
 };
 
-function baseItems(showTeam: boolean): NavItem[] {
+function baseItems(showTeam: boolean, showAudit: boolean): NavItem[] {
   const items: NavItem[] = [
     {
       href: "/settings",
@@ -45,19 +45,21 @@ function baseItems(showTeam: boolean): NavItem[] {
       icon: Calculator,
       match: (path) => path.startsWith("/settings/carbon"),
     },
-    {
+  );
+  if (showAudit) {
+    items.push({
       href: "/settings/audit",
       label: "Audit trail",
       icon: ScrollText,
       match: (path) => path.startsWith("/settings/audit"),
-    },
-    {
-      href: "/settings/webhooks",
-      label: "Webhooks",
-      icon: Webhook,
-      match: (path) => path.startsWith("/settings/webhooks"),
-    },
-  );
+    });
+  }
+  items.push({
+    href: "/settings/webhooks",
+    label: "Webhooks",
+    icon: Webhook,
+    match: (path) => path.startsWith("/settings/webhooks"),
+  });
   return items;
 }
 
@@ -83,7 +85,7 @@ export function SettingsNav() {
     });
   }
 
-  const items = [...baseItems(isOrgAdmin(user)), ...adminItems];
+  const items = [...baseItems(isOrgAdmin(user), isOrgAdmin(user) || canGenerateReports(user)), ...adminItems];
 
   return (
     <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">

@@ -123,4 +123,33 @@ export const organizations = {
       }>(`/v1/organizations/me/members/invites/${inviteId}/resend`)
     ).data;
   },
+  async exportMembersCsv() {
+    const res = await api.get<string>("/v1/organizations/me/members/export", {
+      responseType: "text",
+    });
+    return res.data;
+  },
+  async teamActivity(page = 1, pageSize = 50) {
+    return (
+      await api.get<{
+        items: Array<{
+          id: string;
+          action: string;
+          resource_type: string | null;
+          resource_id: string | null;
+          actor_user_id: string | null;
+          created_at: string;
+          diff: Record<string, unknown> | null;
+        }>;
+        total: number;
+      }>("/v1/organizations/me/activity", { params: { page, page_size: pageSize } })
+    ).data;
+  },
+  async transferOwnership(new_owner_user_id: string) {
+    return (
+      await api.post<OrgMember>("/v1/organizations/me/transfer-ownership", {
+        new_owner_user_id,
+      })
+    ).data;
+  },
 };

@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
@@ -33,7 +33,7 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
 
 
 @router.post("/scan", response_model=SatelliteRecordOut)
-async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecordOut:
+async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteRecordOut:
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     sample = await get_satellite_service().sample(pt.y, pt.x)
@@ -67,7 +67,7 @@ async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecord
 
 
 @router.post("/scan/async", status_code=status.HTTP_202_ACCEPTED)
-async def scan_async(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+async def scan_async(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> dict:
     """Queue NDVI satellite scan on the Celery worker when available."""
     from app.services.workers.enqueue import try_enqueue
     from app.workers.tasks import run_satellite_scan

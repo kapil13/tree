@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.api.v1.plantation_fences import _load_fence
 from app.api.v1.satellite import _load_tree
 from app.schemas.satellite_health import SatelliteHealthAnalysisOut
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/satellite-health", tags=["satellite-health"])
 
 
 @router.post("/trees/{tree_id}", response_model=SatelliteHealthAnalysisOut)
-async def analyze_tree(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteHealthAnalysisOut:
+async def analyze_tree(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteHealthAnalysisOut:
     tree = await _load_tree(tree_id, user, db)
     try:
         return await analyze_tree_satellite_health(
@@ -42,7 +42,7 @@ async def get_tree_latest(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Sate
 
 @router.post("/plantation-fences/{fence_id}", response_model=SatelliteHealthAnalysisOut)
 async def analyze_fence(
-    fence_id: uuid.UUID, user: CurrentUser, db: DB
+    fence_id: uuid.UUID, user: WriteProfessional, db: DB
 ) -> SatelliteHealthAnalysisOut:
     fence = await _load_fence(fence_id, user, db)
     try:

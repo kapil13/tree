@@ -43,6 +43,12 @@ export function OrgTeamPanel() {
     enabled: Boolean(user?.organization_id),
   });
 
+  const { data: activity } = useQuery({
+    queryKey: ["org-team-activity"],
+    queryFn: () => organizations.teamActivity(1, 20),
+    enabled: admin,
+  });
+
   const invite = useMutation({
     mutationFn: () =>
       organizations.invite({
@@ -102,6 +108,32 @@ export function OrgTeamPanel() {
     onSuccess: () => {
       setMessage("Invite revoked.");
       qc.invalidateQueries({ queryKey: ["org-members"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  async function downloadCsvExport() {
+    try {
+      const csv = await organizations.exportMembersCsv();
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data?.organization.slug ?? "team"}-export.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage("Team roster exported.");
+    } catch (err) {
+      setMessage(errorMessage(err));
+    }
+  }
+
+  const transferOwnership = useMutation({
+    mutationFn: (memberId: string) => organizations.transferOwnership(memberId),
+    onSuccess: () => {
+      setMessage("Organization ownership transferred.");
+      qc.invalidateQueries({ queryKey: ["org-members"] });
+      qc.invalidateQueries({ queryKey: ["org-team-activity"] });
     },
     onError: (err) => setMessage(errorMessage(err)),
   });
@@ -176,9 +208,14 @@ export function OrgTeamPanel() {
 
       {admin ? (
         <div className="card space-y-4">
-          <div className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4 text-forest-700" />
-            <h3 className="font-medium">Invite team member</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-forest-700" />
+              <h3 className="font-medium">Invite team member</h3>
+            </div>
+            <button type="button" className="btn-secondary text-xs" onClick={() => void downloadCsvExport()}>
+              Export roster CSV
+            </button>
           </div>
           <p className="text-xs text-stone-500">
             SMS and email delivery use MSG91/Gmail when API keys are configured. Until then, copy the invite link
@@ -319,11 +356,32 @@ export function OrgTeamPanel() {
                 admin={admin}
                 currentUserId={user?.id}
                 onUpdate={(payload) => updateMember.mutate({ id: member.id, payload })}
+                onTransferOwner={
+                  admin && member.id !== user?.id
+                    ? () => transferOwnership.mutate(member.id)
+                    : undefined
+                }
               />
             ))}
           </tbody>
         </table>
       </div>
+
+      {admin && activity && activity.items.length > 0 ? (
+        <div className="card space-y-2">
+          <h3 className="font-medium">Recent team activity</h3>
+          <ul className="space-y-2 text-sm">
+            {activity.items.map((row) => (
+              <li key={row.id} className="rounded-lg border border-stone-200 px-3 py-2 dark:border-stone-700">
+                <span className="font-mono text-xs text-forest-800">{row.action}</span>
+                <span className="ml-2 text-xs text-stone-500">
+                  {new Date(row.created_at).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {admin && data.pending_invites.length > 0 ? (
         <div className="card space-y-3">
@@ -381,11 +439,13 @@ function MemberRow({
   admin,
   currentUserId,
   onUpdate,
+  onTransferOwner,
 }: {
   member: OrgMember;
   admin: boolean;
   currentUserId?: string;
   onUpdate: (payload: { org_role?: string; is_active?: boolean; is_org_admin?: boolean }) => void;
+  onTransferOwner?: () => void;
 }) {
   return (
     <tr className="border-t border-stone-100 dark:border-stone-800">
@@ -429,6 +489,11 @@ function MemberRow({
               >
                 {member.is_org_admin ? "Revoke admin" : "Make admin"}
               </button>
+              {onTransferOwner ? (
+                <button type="button" className="btn-ghost text-xs" onClick={onTransferOwner}>
+                  Make owner
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="btn-ghost text-xs text-rose-700"
