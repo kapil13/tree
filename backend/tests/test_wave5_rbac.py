@@ -7,13 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.api.v1.deps import (
-    require_audit_reader,
-    require_write_access,
-    user_can_write,
-    user_has_professional_role,
-)
+from app.api.v1.deps import require_audit_reader, require_write_access, user_has_professional_role
+from app.core.security import user_can_write
 from app.services.organizations.members import export_org_members_csv, transfer_org_ownership
+from app.services.planting_projects.access import can_manage_project
 
 
 def test_viewer_blocked_from_write_access():
@@ -41,6 +38,14 @@ async def test_viewer_cannot_pass_write_access():
     with pytest.raises(Exception) as exc:
         await require_write_access(viewer)
     assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_viewer_cannot_manage_project():
+    viewer = MagicMock(org_role="viewer", role="government")
+    project = MagicMock(owner_user_id=uuid.uuid4(), organization_id=uuid.uuid4())
+    db = AsyncMock()
+    assert await can_manage_project(viewer, project, db) is False
 
 
 @pytest.mark.asyncio

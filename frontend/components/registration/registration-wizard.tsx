@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { PlantingProgram } from "@/lib/api";
 import { countFilledRequired } from "@/lib/registration";
+import { viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 import { FormFieldsGrid } from "./form-fields";
 import { LocationPanel } from "./location-panel";
@@ -35,6 +36,7 @@ type RegistrationWizardProps = {
   locating?: boolean;
   busy?: boolean;
   error?: string | null;
+  readOnly?: boolean;
   onSubmit: () => void;
 };
 
@@ -58,6 +60,7 @@ export function RegistrationWizard({
   locating,
   busy,
   error,
+  readOnly = false,
   onSubmit,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -92,6 +95,7 @@ export function RegistrationWizard({
   }, [currentStep, schema]);
 
   async function addPhotos(files: FileList) {
+    if (readOnly) return;
     setUploading(true);
     try {
       const nextKeys = [...photoKeys];
@@ -128,6 +132,7 @@ export function RegistrationWizard({
   }
 
   function goNext() {
+    if (readOnly) return;
     if (isLast) {
       onSubmit();
       return;
@@ -181,6 +186,12 @@ export function RegistrationWizard({
       </div>
 
       <div className="rounded-[2rem] border border-stone-200/80 bg-white/85 p-6 shadow-xl shadow-stone-900/5 backdrop-blur-xl dark:border-stone-800 dark:bg-stone-900/75 md:p-8">
+        {readOnly && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            {viewerReadOnlyMessage("trees")}
+          </div>
+        )}
+
         <StepHeader step={currentStep} section={sectionForStep} schema={schema} />
 
         <div className="mt-8">
@@ -193,6 +204,7 @@ export function RegistrationWizard({
               fields={sectionForStep.fields}
               values={values}
               onChange={onValuesChange}
+              disabled={readOnly}
             />
           )}
 
@@ -201,8 +213,9 @@ export function RegistrationWizard({
               fields={schema.sections.find((s) => s.id === "location")?.fields ?? []}
               values={values}
               onChange={onValuesChange}
-              onUseLocation={onUseLocation}
+              onUseLocation={readOnly ? undefined : onUseLocation}
               locating={locating}
+              disabled={readOnly}
             />
           )}
 
@@ -214,6 +227,7 @@ export function RegistrationWizard({
               busy={busy || uploading}
               onAdd={addPhotos}
               onRemove={removePhoto}
+              disabled={readOnly}
             />
           )}
 
@@ -252,7 +266,7 @@ export function RegistrationWizard({
             <button
               type="button"
               onClick={goNext}
-              disabled={!canContinue() || busy || uploading}
+              disabled={readOnly || !canContinue() || busy || uploading}
               className="btn-primary min-w-[180px]"
             >
               {isLast ? (

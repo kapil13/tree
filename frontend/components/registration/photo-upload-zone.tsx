@@ -11,6 +11,7 @@ type PhotoUploadZoneProps = {
   busy?: boolean;
   onAdd: (files: FileList) => Promise<void>;
   onRemove: (index: number) => void;
+  disabled?: boolean;
 };
 
 export function PhotoUploadZone({
@@ -20,12 +21,13 @@ export function PhotoUploadZone({
   busy,
   onAdd,
   onRemove,
+  disabled = false,
 }: PhotoUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
   async function handleFiles(files: FileList | null) {
-    if (!files?.length || busy) return;
+    if (!files?.length || busy || disabled) return;
     await onAdd(files);
   }
 
@@ -67,7 +69,7 @@ export function PhotoUploadZone({
             <button
               type="button"
               className="btn-primary"
-              disabled={busy}
+              disabled={busy || disabled}
               onClick={() => inputRef.current?.click()}
             >
               <ImagePlus className="h-4 w-4" />
@@ -76,7 +78,7 @@ export function PhotoUploadZone({
             <button
               type="button"
               className="btn-secondary"
-              disabled={busy}
+              disabled={busy || disabled}
               onClick={() => {
                 if (!inputRef.current) return;
                 inputRef.current.setAttribute("capture", "environment");
@@ -130,7 +132,8 @@ export function PhotoUploadZone({
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white opacity-0 transition group-hover:opacity-100"
+                disabled={disabled}
+                className="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white opacity-0 transition group-hover:opacity-100 disabled:cursor-not-allowed"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

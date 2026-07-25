@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
@@ -38,7 +38,7 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
 
 @router.post("/recalculate/{tree_id}", response_model=CarbonEstimateResponse)
 async def recalculate(
-    tree_id: uuid.UUID, request: Request, user: CurrentUser, db: DB
+    tree_id: uuid.UUID, request: Request, user: WriteAccess, db: DB
 ) -> CarbonEstimateResponse:
     from app.services.carbon.recalc_ops import recalculate_tree_carbon
 
@@ -58,7 +58,7 @@ async def recalculate(
 
 @router.post("/recalculate/{tree_id}/async", status_code=status.HTTP_202_ACCEPTED)
 async def recalculate_async(
-    tree_id: uuid.UUID, user: CurrentUser, db: DB
+    tree_id: uuid.UUID, user: WriteAccess, db: DB
 ) -> dict:
     """Queue carbon recalculation on the Celery worker when available."""
     from app.services.carbon.recalc_ops import recalculate_tree_carbon

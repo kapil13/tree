@@ -32,6 +32,13 @@ export function canWriteInApp(user: User | null | undefined): boolean {
   return !isOrgViewer(user);
 }
 
+export function viewerReadOnlyMessage(context: "trees" | "general" = "general"): string {
+  if (context === "trees") {
+    return "Your viewer role is read-only. Ask your program manager to change your access if you need to register or update trees.";
+  }
+  return "Your viewer role is read-only. Contact your program manager if you need write access.";
+}
+
 export function canGenerateReports(user: User | null | undefined): boolean {
   return canWriteInApp(user) && (userHasProfessionalAccess(user) || user?.role === "field_supervisor");
 }

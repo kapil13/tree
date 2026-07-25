@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.schemas.credit_ledger import CreditLedgerSyncRequest, CreditLedgerTransition
 from app.services.audit import record_audit
@@ -87,7 +87,7 @@ async def sync_project_credit_ledger(
     project_id: uuid.UUID,
     payload: CreditLedgerSyncRequest,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict:
     project = await load_project(project_id, user, db)
@@ -121,7 +121,7 @@ async def transition_project_credit_ledger(
     project_id: uuid.UUID,
     payload: CreditLedgerTransition,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict:
     project = await load_project(project_id, user, db)

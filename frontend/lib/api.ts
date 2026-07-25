@@ -158,6 +158,9 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "credit_ledger_migration_required") {
         return "Credit ledger database migration required. On the server run: alembic upgrade head (through 0016_credit_ledger_timestamps).";
       }
+      if (data.detail === "viewer_read_only") {
+        return "Your viewer role is read-only. Ask your program manager to change your access.";
+      }
       if (err.response.status === 500 && err.config?.url?.includes("/credits/")) {
         return `${data.detail}. Credit ledger may need migration 0015_credit_ledger — run: alembic upgrade head on the server.`;
       }

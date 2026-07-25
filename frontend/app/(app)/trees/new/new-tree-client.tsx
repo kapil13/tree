@@ -15,9 +15,13 @@ import {
   uploads,
   type ComplianceCheck,
 } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import { canWriteInApp } from "@/lib/nav-access";
 
 export function NewTreePageClient() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canWrite = canWriteInApp(user);
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("project");
   const workAreaIdParam = searchParams.get("work_area");
@@ -266,6 +270,7 @@ export function NewTreePageClient() {
         locating={locating}
         busy={busy}
         error={error}
+        readOnly={!canWrite}
         onSubmit={submit}
       />
     </div>

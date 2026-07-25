@@ -1,5 +1,5 @@
 import type { User } from "@/lib/api";
-import { canSeeNavItem, isOrgAdmin, type NavAudience } from "@/lib/nav-access";
+import { canSeeNavItem, isOrgAdmin, type NavAudience, viewerReadOnlyMessage } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 
 type RouteRule = {
@@ -47,7 +47,7 @@ export function routeAccessDeniedMessage(pathname: string): string {
     return "Organization admin access is required to manage your team.";
   }
   if (pathname.startsWith("/trees/new")) {
-    return "Your viewer role is read-only. Ask your program manager to change your access if you need to register trees.";
+    return viewerReadOnlyMessage("trees");
   }
   if (pathname.startsWith("/field-ops")) {
     return "Field operations are limited to supervisors and program leads.";

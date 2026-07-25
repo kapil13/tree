@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.schemas.compliance_checklist import ChecklistSaveRequest
 from app.services.audit import record_audit
 from app.services.compliance.checklists import get_checklist, list_checklists
@@ -81,7 +81,7 @@ async def save_project_checklist(
     checklist_code: str,
     payload: ChecklistSaveRequest,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
 ) -> dict:
     project = await load_project(project_id, user, db)

@@ -22,6 +22,8 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
 import { trees, aiScans, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import { canWriteInApp, viewerReadOnlyMessage } from "@/lib/nav-access";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -47,6 +49,8 @@ function healthBadge(h: string) {
 export function TreeDetailView() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const canWrite = canWriteInApp(user);
   const [survivalStatus, setSurvivalStatus] = useState("live");
   const [complianceNote, setComplianceNote] = useState<string | null>(null);
 
@@ -175,19 +179,21 @@ export function TreeDetailView() {
           <p className="font-mono text-sm text-stone-500">{tree.public_code}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            className="btn-primary"
-            onClick={() => analyze.mutate()}
-            disabled={analyze.isPending || scanUsage?.can_scan === false}
-            title={
-              scanUsage?.can_scan === false
-                ? "Complimentary BYOT AI scans used — request a professional program or wait for paid top-ups"
-                : undefined
-            }
-          >
-            <Sparkles className="h-4 w-4" />
-            {analyze.isPending ? "Analyzing…" : "Run AI analysis"}
-          </button>
+          {canWrite ? (
+            <button
+              className="btn-primary"
+              onClick={() => analyze.mutate()}
+              disabled={analyze.isPending || scanUsage?.can_scan === false}
+              title={
+                scanUsage?.can_scan === false
+                  ? "Complimentary BYOT AI scans used — request a professional program or wait for paid top-ups"
+                  : undefined
+              }
+            >
+              <Sparkles className="h-4 w-4" />
+              {analyze.isPending ? "Analyzing…" : "Run AI analysis"}
+            </button>
+          ) : null}
           <button
             className="btn-secondary"
             onClick={() => downloadPassport.mutate()}
@@ -202,6 +208,12 @@ export function TreeDetailView() {
           )}
         </div>
       </div>
+
+      {!canWrite && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+          {viewerReadOnlyMessage("trees")}
+        </div>
+      )}
 
       <AiScanUsagePanel compact />
       {scanUsage?.tier === "byot_metered" && scanUsage.payment_enabled && !scanUsage.can_scan ? (
@@ -296,6 +308,7 @@ export function TreeDetailView() {
               className="input"
               value={survivalStatus}
               onChange={(e) => setSurvivalStatus(e.target.value)}
+              disabled={!canWrite}
             >
               <option value="live">Live</option>
               <option value="stressed">Stressed</option>
@@ -304,15 +317,17 @@ export function TreeDetailView() {
               <option value="missing">Missing / uprooted</option>
             </select>
           </div>
-          <button
-            type="button"
-            className="btn-secondary mt-4"
-            disabled={regeotag.isPending}
-            onClick={handleRegeotag}
-          >
-            <MapPin className="h-4 w-4" />
-            {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
-          </button>
+          {canWrite ? (
+            <button
+              type="button"
+              className="btn-secondary mt-4"
+              disabled={regeotag.isPending}
+              onClick={handleRegeotag}
+            >
+              <MapPin className="h-4 w-4" />
+              {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
+            </button>
+          ) : null}
           {regeotag.error && (
             <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>
           )}
