@@ -6,7 +6,8 @@ export type NavAudience =
   | "field_worker"
   | "field_supervisor"
   | "org_admin"
-  | "byot";
+  | "byot"
+  | "can_write";
 
 const PROFESSIONAL_ROLES = new Set(["government", "corporate", "ngo", "field_supervisor"]);
 const FIELD_WORKER_ROLES = new Set(["field_worker"]);
@@ -21,13 +22,30 @@ export function isOrgAdmin(user: User | null | undefined): boolean {
   return Boolean(user?.is_org_admin && user.organization_id);
 }
 
+export function isOrgViewer(user: User | null | undefined): boolean {
+  return user?.org_role === "viewer";
+}
+
+export function canWriteInApp(user: User | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  return !isOrgViewer(user);
+}
+
+export function canGenerateReports(user: User | null | undefined): boolean {
+  return canWriteInApp(user) && (userHasProfessionalAccess(user) || user?.role === "field_supervisor");
+}
+
 export function canSeeNavItem(
   user: User | null | undefined,
   audience: NavAudience | NavAudience[],
+  options?: { excludeViewers?: boolean },
 ): boolean {
   if (!user) return false;
   const audiences = Array.isArray(audience) ? audience : [audience];
   if (audiences.includes("all")) return true;
+
+  if (options?.excludeViewers && isOrgViewer(user)) return false;
 
   const professional = userHasProfessionalAccess(user);
   const fieldWorker = FIELD_WORKER_ROLES.has(user.role);
@@ -46,6 +64,8 @@ export function canSeeNavItem(
         return supervisor || professional;
       case "org_admin":
         return orgAdmin || user.role === "admin";
+      case "can_write":
+        return canWriteInApp(user);
       default:
         return true;
     }

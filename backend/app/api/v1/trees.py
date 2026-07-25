@@ -12,7 +12,7 @@ from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
@@ -128,7 +128,7 @@ def _to_out(tree: Tree) -> TreeOut:
 
 @router.post("", response_model=TreeOut, status_code=status.HTTP_201_CREATED)
 async def create_tree(
-    payload: TreeCreate, request: Request, user: CurrentUser, db: DB
+    payload: TreeCreate, request: Request, user: WriteAccess, db: DB
 ) -> TreeOut:
     program = await get_program_by_code(db, payload.program_code)
     if program is None:

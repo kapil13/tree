@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { plantingProjects, trees } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import { canWriteInApp } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 
 const HEALTH_FILTERS = [
@@ -34,6 +36,8 @@ function daysSince(iso: string | null | undefined) {
 }
 
 export function TreeRegistry() {
+  const { user } = useAuth();
+  const canAdd = canWriteInApp(user);
   const [health, setHealth] = useState("all");
   const [search, setSearch] = useState("");
   const [projectId, setProjectId] = useState("");
@@ -91,16 +95,18 @@ export function TreeRegistry() {
             {projectId ? " in selected project" : ""}
           </p>
         </div>
-        <Link
-          href={
-            projectId
-              ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
-              : "/trees/new"
-          }
-          className="btn-primary"
-        >
-          <Plus className="h-4 w-4" /> Add tree
-        </Link>
+        {canAdd ? (
+          <Link
+            href={
+              projectId
+                ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
+                : "/trees/new"
+            }
+            className="btn-primary"
+          >
+            <Plus className="h-4 w-4" /> Add tree
+          </Link>
+        ) : null}
       </div>
 
       <div className="card space-y-4">

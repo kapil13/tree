@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.v1.deps import DB, CurrentUser, OrgAdmin, OrgMember
 from app.models.organization import Organization
@@ -15,6 +17,7 @@ from app.schemas.organization import (
     OrgBulkInviteResult,
     OrgInviteAccept,
     OrgInviteOut,
+    OrgInvitePreviewOut,
     OrgMemberInviteCreate,
     OrgMemberInviteResult,
     OrgMemberOut,
@@ -26,6 +29,7 @@ from app.services.organizations.members import (
     OrgMemberError,
     accept_org_invite,
     bulk_invite_from_rows,
+    get_invite_preview,
     get_user_org,
     invite_org_member,
     list_org_members,
@@ -234,6 +238,15 @@ async def patch_org_member(
     await db.commit()
     await db.refresh(member)
     return _member_out(member)
+
+
+@router.get("/invites/preview", response_model=OrgInvitePreviewOut)
+async def preview_invite(db: DB, token: str = Query(..., min_length=8)) -> OrgInvitePreviewOut:
+    try:
+        preview = await get_invite_preview(db, invite_token=token)
+    except OrgMemberError as exc:
+        raise _member_error(exc) from exc
+    return OrgInvitePreviewOut(**preview)
 
 
 @router.post("/invites/accept", response_model=OrgMemberOut)
