@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
+import { Calculator, CreditCard, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
@@ -28,6 +28,12 @@ function baseItems(showTeam: boolean, showAudit: boolean): NavItem[] {
       label: "Programs",
       icon: Sprout,
       match: (path) => path.startsWith("/settings/programs"),
+    },
+    {
+      href: "/settings/billing",
+      label: "Billing",
+      icon: CreditCard,
+      match: (path) => path.startsWith("/settings/billing"),
     },
   ];
   if (showTeam) {
