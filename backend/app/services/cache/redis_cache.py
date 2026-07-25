@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import suppress
 from typing import Any
 
 from app.core.config import settings
@@ -59,7 +60,5 @@ async def cache_delete(key: str) -> None:
     client = await _client()
     if client is None:
         return
-    try:
+    with suppress(Exception):
         await client.delete(key)
-    except Exception:
-        pass
