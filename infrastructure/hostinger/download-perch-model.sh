@@ -36,8 +36,13 @@ print(f"Labels: {labels_path}")
 PY
 
 echo "Perch v2 ready in $MODEL_DIR"
+# App expects perch_labels.txt — HuggingFace ships labels.txt
+if [[ -f "$MODEL_DIR/labels.txt" && ! -f "$MODEL_DIR/perch_labels.txt" ]]; then
+  ln -sf labels.txt "$MODEL_DIR/perch_labels.txt"
+  echo "Linked perch_labels.txt -> labels.txt"
+fi
 echo "Set in worker .env:"
 echo "  BIOACOUSTIC_ENABLE_PERCH=true"
 echo "  BIOACOUSTIC_PIPELINE=composite"
 echo "  BIOACOUSTIC_PERCH_MODEL_PATH=$MODEL_DIR/$MODEL_FILE"
-echo "  BIOACOUSTIC_PERCH_LABELS_PATH=$MODEL_DIR/$LABELS_FILE"
+echo "  BIOACOUSTIC_PERCH_LABELS_PATH=$MODEL_DIR/perch_labels.txt"

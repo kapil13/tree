@@ -240,6 +240,27 @@ def _run_multitaxa_perch(
     )
 
 
+def _production_pipeline_failure(
+    pipeline: str,
+    reason: str,
+    *,
+    audio_bytes: bytes,
+    duration_seconds: float,
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> BioacousticAnalysisResult:
+    """Never return stub data in production when a real pipeline was requested."""
+    if settings.app_env in {"production", "staging"} and pipeline != "stub":
+        raise RuntimeError(f"bioacoustic_pipeline_failed:{reason}")
+    log.warning("bioacoustic_dev_stub_fallback", pipeline=pipeline, reason=reason)
+    return _stub_identify(
+        audio_bytes,
+        duration_seconds=duration_seconds,
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+
 def identify_species_from_audio(
     audio_bytes: bytes,
     *,
@@ -271,6 +292,14 @@ def identify_species_from_audio(
                 )
             except Exception as exc:
                 log.exception("composite_failed", error=str(exc))
+                return _production_pipeline_failure(
+                    "composite",
+                    str(exc),
+                    audio_bytes=audio_bytes,
+                    duration_seconds=duration_seconds,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
 
         if pipeline == "multitaxa":
             try:
@@ -282,6 +311,14 @@ def identify_species_from_audio(
                 )
             except Exception as exc:
                 log.exception("multitaxa_failed", error=str(exc))
+                return _production_pipeline_failure(
+                    "multitaxa",
+                    str(exc),
+                    audio_bytes=audio_bytes,
+                    duration_seconds=duration_seconds,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
 
         if birdnet_available():
             try:
@@ -323,8 +360,28 @@ def identify_species_from_audio(
                 return result
             except Exception as exc:
                 log.exception("birdnet_failed", error=str(exc))
+                return _production_pipeline_failure(
+                    pipeline,
+                    str(exc),
+                    audio_bytes=audio_bytes,
+                    duration_seconds=duration_seconds,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
         else:
             log.warning("birdnet_unavailable")
+            if pipeline in {"birdnet", "composite"}:
+                return _production_pipeline_failure(
+                    pipeline,
+                    "birdnet_unavailable",
+                    audio_bytes=audio_bytes,
+                    duration_seconds=duration_seconds,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
+
+    if settings.app_env in {"production", "staging"} and pipeline != "stub":
+        raise RuntimeError("bioacoustic_pipeline_failed:no_result")
 
     return _stub_identify(
         audio_bytes,

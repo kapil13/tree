@@ -31,6 +31,25 @@ class SatelliteFusionSummaryOut(BaseModel):
     sites: list[SatelliteFusionSiteOut] = Field(default_factory=list)
 
 
+class PriorityAlertBriefOut(BaseModel):
+    title: str
+    severity: str
+    kind: str | None = None
+    work_area_name: str = "Site"
+    alert_id: str | None = None
+
+
+class ExecutiveBriefOut(BaseModel):
+    generated_at: str
+    cache_hit: bool = False
+    headline: str
+    lines: list[str] = Field(default_factory=list)
+    priority_alert: PriorityAlertBriefOut | None = None
+    metrics: dict = Field(default_factory=dict)
+    llm_enriched: bool = False
+    highest_risk: str = "low"
+
+
 class IntelligenceSummaryOut(FieldOpsSummaryOut):
     generated_at: str
     integrations: dict

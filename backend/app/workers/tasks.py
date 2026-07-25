@@ -207,6 +207,22 @@ def biodiversity_baseline() -> dict:
     return _execute_recorded("biodiversity_baseline", _run)
 
 
+@celery_app.task(name="app.workers.tasks.compliance_deadline_scan")
+def compliance_deadline_scan() -> dict:
+    log.info("worker.compliance_deadline_scan")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.compliance_deadline_alerts import (
+            scan_compliance_deadline_alerts,
+        )
+
+        async with AsyncSessionLocal() as db:
+            return await scan_compliance_deadline_alerts(db)
+
+    return _execute_recorded("compliance_deadline_scan", _run)
+
+
 @celery_app.task(name="app.workers.tasks.daily_satellite_health_digest")
 def daily_satellite_health_digest() -> dict:
     log.info("worker.daily_satellite_health_digest")

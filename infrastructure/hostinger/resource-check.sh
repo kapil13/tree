@@ -36,7 +36,7 @@ docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}\
 echo ""
 echo "==> Compose memory limits (0 = unlimited — deploy.resources is NOT enforced by docker compose)"
 for name in byot-prod-postgres-1 byot-prod-redis-1 byot-prod-backend-1 byot-prod-worker-1 \
-            byot-prod-beat-1 byot-prod-frontend-1 byot-prod-caddy-1 byot-prod-minio-1; do
+            byot-prod-bioacoustic-worker-1 byot-prod-beat-1 byot-prod-frontend-1 byot-prod-caddy-1 byot-prod-minio-1; do
   docker inspect "$name" --format '{{.Name}} memory limit: {{.HostConfig.Memory}} bytes' 2>/dev/null || true
 done
 

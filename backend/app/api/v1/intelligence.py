@@ -6,15 +6,30 @@ from fastapi import APIRouter, Query
 
 from app.api.v1.deps import DB, CurrentUser
 from app.schemas.intelligence import (
+    ExecutiveBriefOut,
     IntegrationsHealthOut,
     IntelligenceSummaryOut,
     SatelliteFusionSummaryOut,
 )
+from app.services.intelligence.brief import build_executive_brief
 from app.services.intelligence.integrations import build_integrations_health
 from app.services.intelligence.satellite_fusion import build_portfolio_satellite_fusion
 from app.services.intelligence.summary import build_intelligence_summary
 
 router = APIRouter(prefix="/intelligence", tags=["intelligence"])
+
+
+@router.get("/brief", response_model=ExecutiveBriefOut)
+async def executive_brief(
+    user: CurrentUser,
+    db: DB,
+    llm: bool = Query(False, description="Optional OpenAI narrative enrichment"),
+    refresh: bool = Query(False, description="Bypass cache and rebuild"),
+) -> ExecutiveBriefOut:
+    """Fast executive briefing — cached portfolio intelligence digest."""
+    return ExecutiveBriefOut.model_validate(
+        await build_executive_brief(db, user, llm=llm, refresh=refresh)
+    )
 
 
 @router.get("/summary", response_model=IntelligenceSummaryOut)

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.api.v1.deps import DB, CurrentUser
 from app.models.alert import Alert
 from app.services.alerts.defaults import (
+    DEFAULT_COMPLIANCE_PREFS,
     DEFAULT_SATELLITE_HEALTH_PREFS,
     DEFAULT_THREAT_WATCH_PREFS,
     default_notification_preferences,
@@ -40,18 +41,26 @@ class ThreatWatchNotificationPrefs(BaseModel):
     sms_on_critical: bool = False
 
 
+class ComplianceNotificationPrefs(BaseModel):
+    enabled: bool = True
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+    sms_on_critical: bool = False
+
+
 class NotificationPreferencesOut(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs
     survival_survey: SurvivalSurveyNotificationPrefs = Field(
         default_factory=SurvivalSurveyNotificationPrefs
     )
     threat_watch: ThreatWatchNotificationPrefs = Field(default_factory=ThreatWatchNotificationPrefs)
+    compliance: ComplianceNotificationPrefs = Field(default_factory=ComplianceNotificationPrefs)
 
 
 class NotificationPreferencesUpdate(BaseModel):
     satellite_health: SatelliteHealthNotificationPrefs | None = None
     survival_survey: SurvivalSurveyNotificationPrefs | None = None
     threat_watch: ThreatWatchNotificationPrefs | None = None
+    compliance: ComplianceNotificationPrefs | None = None
 
 
 @router.get("")
@@ -91,6 +100,7 @@ async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
     prefs = user.notification_preferences or default_notification_preferences()
     ss = prefs.get("survival_survey") or {}
     tw = threat_watch_prefs(user)
+    comp = prefs.get("compliance") or {}
     return NotificationPreferencesOut(
         satellite_health=SatelliteHealthNotificationPrefs(**sh),
         survival_survey=SurvivalSurveyNotificationPrefs(
@@ -99,6 +109,9 @@ async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
             channels=ss.get("channels", ["in_app", "email"]),
         ),
         threat_watch=ThreatWatchNotificationPrefs(**tw),
+        compliance=ComplianceNotificationPrefs(
+            **{**DEFAULT_COMPLIANCE_PREFS, **comp},
+        ),
     )
 
 
@@ -119,6 +132,10 @@ async def update_preferences(
         current = prefs.get("threat_watch", dict(DEFAULT_THREAT_WATCH_PREFS))
         current.update(payload.threat_watch.model_dump())
         prefs["threat_watch"] = current
+    if payload.compliance is not None:
+        current = prefs.get("compliance", dict(DEFAULT_COMPLIANCE_PREFS))
+        current.update(payload.compliance.model_dump())
+        prefs["compliance"] = current
     user.notification_preferences = prefs
     await db.commit()
     await db.refresh(user)

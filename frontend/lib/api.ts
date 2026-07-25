@@ -1305,6 +1305,11 @@ export type NotificationPreferences = {
     channels: string[];
     sms_on_critical: boolean;
   };
+  compliance?: {
+    enabled: boolean;
+    channels: string[];
+    sms_on_critical: boolean;
+  };
 };
 
 export const dashboard = {
@@ -1318,6 +1323,23 @@ export const dashboard = {
       )
     ).data;
   },
+};
+
+export type ExecutiveBrief = {
+  generated_at: string;
+  cache_hit: boolean;
+  headline: string;
+  lines: string[];
+  priority_alert?: {
+    title: string;
+    severity: string;
+    kind?: string;
+    work_area_name: string;
+    alert_id?: string | null;
+  } | null;
+  metrics: Record<string, unknown>;
+  llm_enriched: boolean;
+  highest_risk: string;
 };
 
 export type IntelligenceSummary = {
@@ -1407,6 +1429,14 @@ export type IntelligenceSummary = {
 };
 
 export const intelligence = {
+  async brief(options?: { llm?: boolean; refresh?: boolean }) {
+    return (
+      await api.get<ExecutiveBrief>("/v1/intelligence/brief", {
+        params: { llm: options?.llm ?? false, refresh: options?.refresh ?? false },
+        timeout: 30_000,
+      })
+    ).data;
+  },
   async summary(siteLimit = 15, options?: { fast?: boolean }) {
     return (
       await api.get<IntelligenceSummary>("/v1/intelligence/summary", {
