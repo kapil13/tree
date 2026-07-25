@@ -55,13 +55,21 @@ def _ai_pipeline_status() -> dict[str, Any]:
 
 
 def _tree_satellite_status() -> dict[str, Any]:
-    """Per-tree NDVI path uses StubSatelliteService today."""
+    if has_sentinel_credentials():
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": "Sentinel Hub NDVI for individual trees (10 m chips)",
+            "reachable": True,
+            "error": None,
+            "provider": "sentinel-2",
+        }
     return {
         "status": "estimate",
         "mode": "estimate",
-        "label": "Simulated seasonal NDVI for individual trees",
+        "label": "Simulated seasonal NDVI for individual trees (configure Sentinel Hub for live data)",
         "reachable": True,
-        "error": None,
+        "error": "missing_credentials",
         "provider": "stub",
     }
 

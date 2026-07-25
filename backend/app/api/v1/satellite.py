@@ -14,6 +14,9 @@ from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
+from app.services.monitoring.satellite_sweep import (
+    maybe_alert_tree_ndvi_decline,
+)
 from app.services.satellite import get_satellite_service
 from app.services.satellite.ndvi_image import render_ndvi_png
 
@@ -37,6 +40,14 @@ async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> Satellite
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     sample = await get_satellite_service().sample(pt.y, pt.x)
+    change = sample.change_vs_baseline
+    if sample.ndvi_mean is not None:
+        from app.services.monitoring.satellite_sweep import _tree_baseline_ndvi_change
+
+        computed = await _tree_baseline_ndvi_change(db, tree.id, float(sample.ndvi_mean))
+        if computed != 0.0:
+            change = computed
+
     rec = SatelliteRecord(
         tree_id=tree.id,
         provider=sample.provider,
@@ -48,11 +59,20 @@ async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> Satellite
         ndvi_min=sample.ndvi_min,
         evi_mean=sample.evi_mean,
         presence_confirmed=sample.presence_confirmed,
-        change_vs_baseline=sample.change_vs_baseline,
+        change_vs_baseline=change,
     )
     db.add(rec)
     tree.satellite_verified = bool(sample.presence_confirmed)
     tree.last_satellite_at = datetime.now(UTC)
+    await db.flush()
+
+    await maybe_alert_tree_ndvi_decline(
+        db,
+        tree=tree,
+        user=user,
+        sample=sample,
+        change=float(change or 0.0),
+    )
     await db.commit()
     await db.refresh(rec)
 
