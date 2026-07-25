@@ -1,4 +1,14 @@
-"""Promote a user to platform admin by email."""
+"""Promote a user to platform admin by email.
+
+Run from repo root:
+    ./scripts/promote-admin.sh you@example.com
+
+Or from backend/ (with venv active and DATABASE_URL set):
+    cd backend && python -m app.scripts.promote_admin you@example.com
+
+Inside Docker (production):
+    docker compose ... exec -T backend python -m app.scripts.promote_admin you@example.com
+"""
 
 from __future__ import annotations
 

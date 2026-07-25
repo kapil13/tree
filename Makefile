@@ -36,6 +36,10 @@ migrate-native:
 seed-native:
 	cd backend && . .venv/bin/activate && python -m app.scripts.seed_demo
 
+promote-admin:
+	@test -n "$(EMAIL)" || (echo "Usage: make promote-admin EMAIL=you@example.com" && exit 1)
+	cd backend && . .venv/bin/activate && python -m app.scripts.promote_admin "$(EMAIL)"
+
 test:
 	cd backend && . .venv/bin/activate && pytest -q
 

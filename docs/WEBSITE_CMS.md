@@ -41,9 +41,25 @@ On first API access, the CMS auto-seeds with the current aranyix.tech homepage c
 
 ## Grant platform admin
 
+From the **repository root** (recommended):
+
+```bash
+./scripts/promote-admin.sh you@example.com
+```
+
+From `backend/` with your venv and `DATABASE_URL` configured:
+
 ```bash
 cd backend
 python -m app.scripts.promote_admin you@example.com
+```
+
+On the **VPS** (inside the backend container):
+
+```bash
+cd infrastructure/hostinger
+docker compose -f docker-compose.prod.yml --env-file .env.production \
+  exec -T backend python -m app.scripts.promote_admin you@example.com
 ```
 
 Or via SQL:
