@@ -7,13 +7,21 @@ import '../api/auth_redirect.dart';
 import '../dashboard/dashboard_brief.dart';
 import '../nav_access.dart';
 import '../providers.dart';
+import '../session.dart';
 import '../theme.dart';
+import '../widgets/offline_tree_queue_section.dart';
+import 'field_worker_home_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = sessionController.user;
+    if (isFieldWorkerHome(user)) {
+      return const FieldWorkerHomeScreen();
+    }
+
     final dashAsync = ref.watch(dashboardProvider);
     final alertsAsync = ref.watch(alertsProvider);
     final weatherAsync = ref.watch(weatherProvider);
@@ -57,6 +65,7 @@ class HomeScreen extends ConsumerWidget {
               return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
+                  SliverToBoxAdapter(child: PendingSyncBanner()),
                   SliverToBoxAdapter(
                     child: _DashboardTopBar(
                       projectName: _projectLabel(fences, user),
