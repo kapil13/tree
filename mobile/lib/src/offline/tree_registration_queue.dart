@@ -109,6 +109,12 @@ class TreeRegistrationQueue extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<QueuedTreeRegistration>> listAll() async {
+    await init();
+    final rows = await _db!.query('tree_queue', orderBy: 'created_at DESC');
+    return rows.map(QueuedTreeRegistration.fromMap).toList();
+  }
+
   Future<List<QueuedTreeRegistration>> listPending() async {
     await init();
     final rows = await _db!.query(
@@ -139,6 +145,17 @@ class TreeRegistrationQueue extends ChangeNotifier {
         'error_message': errorMessage,
         if (retryCount != null) 'retry_count': retryCount,
       },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    notifyListeners();
+  }
+
+  Future<void> markPending(String id) async {
+    await init();
+    await _db!.update(
+      'tree_queue',
+      {'status': TreeQueueStatus.pending.index, 'error_message': null},
       where: 'id = ?',
       whereArgs: [id],
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth_session.dart';
 import '../providers.dart';
 import '../session.dart';
 
@@ -29,15 +30,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       return;
     }
     try {
-      await api.me();
-      sessionController.setAuthenticated(true);
-      final queue = ref.read(bioacousticQueueProvider);
-      await queue.init();
-      final sync = ref.read(bioacousticSyncProvider);
-      sync.startListening(() => ref.read(apiClientProvider.future));
-      unawaited(sync.syncAll(() => ref.read(apiClientProvider.future)));
+      final landing = await completeAuthSession(ref);
       if (!mounted) return;
-      context.go('/home');
+      context.go(landing);
     } catch (_) {
       await api.logout();
       ref.invalidate(apiClientProvider);
@@ -55,7 +50,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           children: [
             Text('🌳', style: TextStyle(fontSize: 64)),
             SizedBox(height: 12),
-            Text('BYOT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text('Aranyix', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             SizedBox(height: 24),
             CircularProgressIndicator(),
           ],

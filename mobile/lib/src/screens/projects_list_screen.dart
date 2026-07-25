@@ -6,6 +6,8 @@ import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../providers.dart';
 
+import '../widgets/offline_tree_queue_section.dart';
+
 const _segmentLabels = {
   'nhai_highway': 'NHAI / Highway',
   'industrial_greenbelt': 'Mine / Green belt',
@@ -32,32 +34,45 @@ class ProjectsListScreen extends ConsumerWidget {
         },
         data: (projects) {
           if (projects.isEmpty) {
-            return const Center(child: Text('No planting projects assigned yet.'));
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: const [
+                Text('No planting projects assigned yet.'),
+                SizedBox(height: 16),
+                OfflineTreeQueueSection(),
+              ],
+            );
           }
-          return ListView.separated(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: projects.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) {
-              final p = projects[i] as Map<String, dynamic>;
-              final summary = p['summary'] as Map<String, dynamic>?;
-              final segment = p['segment'] as String? ?? 'general';
-              final openV = summary?['open_violations'] ?? 0;
-              return Card(
-                child: ListTile(
-                  title: Text(p['name'] as String? ?? p['code'] as String),
-                  subtitle: Text(
-                    '${_segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
-                    '${summary?['tree_count'] ?? 0} trees'
-                    '${openV > 0 ? ' · $openV violations' : ''}',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/projects/${p['id']}'),
-                ),
-              );
-            },
+            children: [
+              for (var i = 0; i < projects.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _projectCard(context, projects[i] as Map<String, dynamic>),
+              ],
+              const SizedBox(height: 24),
+              const OfflineTreeQueueSection(),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _projectCard(BuildContext context, Map<String, dynamic> p) {
+    final summary = p['summary'] as Map<String, dynamic>?;
+    final segment = p['segment'] as String? ?? 'general';
+    final openV = summary?['open_violations'] ?? 0;
+    return Card(
+      child: ListTile(
+        title: Text(p['name'] as String? ?? p['code'] as String),
+        subtitle: Text(
+          '${_segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
+          '${summary?['tree_count'] ?? 0} trees'
+          '${openV > 0 ? ' · $openV violations' : ''}',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/projects/${p['id']}'),
       ),
     );
   }

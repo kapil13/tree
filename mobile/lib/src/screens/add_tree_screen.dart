@@ -313,7 +313,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         payload: payload,
         localPhotoPaths: _localPhotoPaths,
       );
-      ref.read(treeRegistrationSyncProvider).syncAll();
+      ref.read(treeRegistrationSyncProvider).syncAll(() => ref.read(apiClientProvider.future));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Offline — queued for sync. ${apiErrorMessage(e)}')),

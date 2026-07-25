@@ -146,6 +146,22 @@ class ApiClient {
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
 
+  Future<Map<String, dynamic>> previewOrgInvite(String token) async {
+    final r = await _dio.get(
+      '/organizations/invites/preview',
+      queryParameters: {'token': token},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> acceptOrgInvite(String inviteToken) async {
+    final r = await _dio.post(
+      '/organizations/invites/accept',
+      data: {'invite_token': inviteToken},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> dashboard() async =>
       Map<String, dynamic>.from((await _dio.get('/dashboard')).data);
 

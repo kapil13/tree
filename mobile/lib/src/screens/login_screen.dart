@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_client.dart';
 import '../api/api_errors.dart';
+import '../auth_session.dart';
+import '../pending_invite.dart';
 import '../providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,6 +21,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _err;
   bool _busy = false;
   bool _loaded = false;
+  bool _inviteLoaded = false;
+  String? _invitePreview;
 
   @override
   void initState() {
@@ -26,10 +30,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _loadApiUrl();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_inviteLoaded) {
+      _inviteLoaded = true;
+      _loadInvitePreview();
+    }
+  }
+
   Future<void> _loadApiUrl() async {
     final url = await ApiClient.loadBaseUrl();
     _apiUrl.text = url;
     if (mounted) setState(() => _loaded = true);
+  }
+
+  Future<void> _loadInvitePreview() async {
+    final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+    if (inviteToken == null || inviteToken.isEmpty) return;
+    await storePendingInviteToken(inviteToken);
+    try {
+      final api = await ApiClient.create();
+      final preview = await api.previewOrgInvite(inviteToken);
+      if (mounted) {
+        setState(() {
+          _invitePreview =
+              'Invited to ${preview['organization_name']} as ${preview['org_role']}';
+        });
+      }
+    } catch (_) {
+      // Preview is optional — accept may still work after login.
+    }
   }
 
   Future<void> _submit() async {
@@ -46,8 +77,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String?,
       );
+      final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+      final landing = await completeAuthSession(ref, inviteToken: inviteToken);
       if (!mounted) return;
-      context.go('/home');
+      context.go(landing);
+    } on InviteAcceptException catch (e) {
+      setState(() => _err = e.message);
     } catch (e) {
       setState(() => _err = apiErrorMessage(e));
     } finally {
@@ -75,8 +110,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 48),
               const Text('🌳', style: TextStyle(fontSize: 48)),
               const SizedBox(height: 8),
-              const Text('BYOT', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const Text('Bring Your Own Tree'),
+              const Text('Aranyix', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const Text('Field & forest intelligence'),
+              if (_invitePreview != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFA7D7B5)),
+                  ),
+                  child: Text(_invitePreview!, style: const TextStyle(fontSize: 14)),
+                ),
+              ],
               const SizedBox(height: 32),
               TextField(
                 controller: _apiUrl,

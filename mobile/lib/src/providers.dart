@@ -30,6 +30,7 @@ final treeRegistrationQueueProvider = ChangeNotifierProvider<TreeRegistrationQue
 final treeRegistrationSyncProvider = ChangeNotifierProvider<TreeRegistrationSyncService>((ref) {
   final queue = ref.watch(treeRegistrationQueueProvider);
   final sync = TreeRegistrationSyncService(queue);
+  ref.onDispose(sync.dispose);
   return sync;
 });
 
