@@ -39,7 +39,23 @@ export type OrgMembersResponse = {
   pending_invites: OrgInvite[];
 };
 
+export type InvitePreview = {
+  organization_name: string;
+  org_role: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  expires_at: string;
+};
+
 export const organizations = {
+  async previewInvite(invite_token: string) {
+    return (
+      await api.get<InvitePreview>("/v1/organizations/invites/preview", {
+        params: { token: invite_token },
+      })
+    ).data;
+  },
   async me() {
     return (await api.get<Organization>("/v1/organizations/me")).data;
   },

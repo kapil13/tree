@@ -183,6 +183,30 @@ async def update_org_member(
     return member
 
 
+async def get_invite_preview(db: AsyncSession, *, invite_token: str) -> dict:
+    res = await db.execute(
+        select(OrganizationInvite)
+        .options(selectinload(OrganizationInvite.organization))
+        .where(OrganizationInvite.invite_token == invite_token)
+    )
+    invite = res.scalar_one_or_none()
+    if invite is None or invite.status != "pending":
+        raise OrgMemberError("invite_not_found")
+    if invite.expires_at < datetime.now(UTC):
+        invite.status = "expired"
+        await db.flush()
+        raise OrgMemberError("invite_expired")
+    org = invite.organization
+    return {
+        "organization_name": org.name,
+        "org_role": invite.org_role,
+        "full_name": invite.full_name,
+        "email": invite.email,
+        "phone": invite.phone,
+        "expires_at": invite.expires_at,
+    }
+
+
 async def accept_org_invite(
     db: AsyncSession,
     *,

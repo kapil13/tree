@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
+import '../nav_access.dart';
 import '../providers.dart';
 
 class TreeListScreen extends ConsumerWidget {
@@ -11,6 +12,8 @@ class TreeListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trees = ref.watch(treesProvider);
+    final user = ref.watch(userProvider).maybeWhen(data: (d) => d, orElse: () => null);
+    final canAdd = canAddTrees(user);
     return Scaffold(
       appBar: AppBar(title: const Text('Trees')),
       body: trees.when(
@@ -43,11 +46,13 @@ class TreeListScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('No trees yet.'),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => context.push('/trees/new'),
-                    child: const Text('Add your first tree'),
-                  ),
+                  if (canAdd) ...[
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () => context.push('/trees/new'),
+                      child: const Text('Add your first tree'),
+                    ),
+                  ],
                 ],
               ),
             );

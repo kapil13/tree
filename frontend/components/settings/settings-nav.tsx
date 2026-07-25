@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calculator, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
+import { isOrgAdmin } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
@@ -82,7 +83,7 @@ export function SettingsNav() {
     });
   }
 
-  const items = [...baseItems(Boolean(user?.organization_id)), ...adminItems];
+  const items = [...baseItems(isOrgAdmin(user)), ...adminItems];
 
   return (
     <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, errorMessage, plantationFences } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import { canGenerateReports } from "@/lib/nav-access";
 
 const KIND_LABELS: Record<string, string> = {
   carbon: "Carbon stock",
@@ -22,6 +24,8 @@ type ReportRow = {
 
 export default function ReportsPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const canGenerate = canGenerateReports(user);
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
@@ -65,8 +69,11 @@ export default function ReportsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Reports</h1>
       <p className="text-sm text-stone-600">
-        Carbon, biodiversity (bioacoustic + NDVI), and combined ESG reports.
+        {canGenerate
+          ? "Carbon, biodiversity (bioacoustic + NDVI), and combined ESG reports."
+          : "Download compliance and portfolio reports prepared by your program team."}
       </p>
+      {canGenerate ? (
       <div className="card flex flex-wrap items-end gap-3">
         <div>
           <label className="label">Kind</label>
@@ -109,6 +116,12 @@ export default function ReportsPage() {
           Refresh
         </button>
       </div>
+      ) : (
+        <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200">
+          Your viewer role can download existing reports but cannot generate new ones. Contact your
+          program manager if you need a fresh export.
+        </div>
+      )}
       {(error || isError) && (
         <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {error || errorMessage(loadError)}
@@ -137,7 +150,7 @@ export default function ReportsPage() {
             {!isLoading && list.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-stone-500">
-                  No reports yet — generate one above.
+                  {canGenerate ? "No reports yet — generate one above." : "No reports available yet."}
                 </td>
               </tr>
             )}

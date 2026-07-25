@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../dashboard/dashboard_brief.dart';
+import '../nav_access.dart';
 import '../providers.dart';
 import '../theme.dart';
 
@@ -93,16 +94,18 @@ class HomeScreen extends ConsumerWidget {
                           onTap: () => context.go('/assistant'),
                           onMic: () => context.go('/assistant'),
                         ),
-                        const SizedBox(height: 16),
-                        Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.assignment_outlined),
-                            title: const Text('Field projects'),
-                            subtitle: const Text('NHAI packages, mine belts, society blocks'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => context.push('/projects'),
+                        if (canSeeFieldProjectsCard(user)) ...[
+                          const SizedBox(height: 16),
+                          Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.assignment_outlined),
+                              title: const Text('Field projects'),
+                              subtitle: const Text('NHAI packages, mine belts, society blocks'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => context.push('/projects'),
+                            ),
                           ),
-                        ),
+                        ],
                       ]),
                     ),
                   ),

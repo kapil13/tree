@@ -90,6 +90,15 @@ class OrgBulkInviteResult(BaseModel):
     errors: int
 
 
+class OrgInvitePreviewOut(BaseModel):
+    organization_name: str
+    org_role: str
+    full_name: str
+    email: str | None
+    phone: str | None
+    expires_at: datetime
+
+
 class OrgInviteAccept(BaseModel):
     invite_token: str
     full_name: str | None = None

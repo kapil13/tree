@@ -32,6 +32,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   audience?: NavAudience | NavAudience[];
+  excludeViewers?: boolean;
   exact?: boolean;
 };
 
@@ -51,10 +52,16 @@ const NAV_GROUPS: NavGroup[] = [
     id: "operate",
     label: "Operate",
     items: [
-      { href: "/field-ops", label: "Field ops", icon: ClipboardList, audience: ["professional", "field_supervisor"] },
+      {
+        href: "/field-ops",
+        label: "Field ops",
+        icon: ClipboardList,
+        audience: ["professional", "field_supervisor"],
+        excludeViewers: true,
+      },
       { href: "/projects", label: "Projects", icon: FolderKanban, audience: ["professional", "field_supervisor", "field_worker"] },
       { href: "/trees", label: "Trees", icon: TreePine, audience: "all", exact: true },
-      { href: "/trees/new", label: "Add tree", icon: Leaf, audience: "all", exact: true },
+      { href: "/trees/new", label: "Add tree", icon: Leaf, audience: "can_write", exact: true },
       { href: "/map", label: "Map", icon: Map, audience: "all" },
     ],
   },
@@ -107,7 +114,9 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => canSeeNavItem(user, item.audience ?? "all")),
+    items: group.items.filter((item) =>
+      canSeeNavItem(user, item.audience ?? "all", { excludeViewers: item.excludeViewers }),
+    ),
   })).filter((group) => group.items.length > 0);
 
   if (adminItems.length) {

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.report import Report
 from app.services.audit import record_audit
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
@@ -22,7 +22,7 @@ async def create_report(
     kind: str,
     format: str,
     request: Request,
-    user: CurrentUser,
+    user: WriteAccess,
     db: DB,
     plantation_fence_id: uuid.UUID | None = Query(None),
 ) -> dict:

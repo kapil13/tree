@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
+import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import {
@@ -25,6 +26,7 @@ import {
   sanitizePhoneDigits,
 } from "@/lib/phone";
 import { auth, errorMessage } from "@/lib/api";
+import { organizations } from "@/lib/organizations-api";
 import { useAuth } from "@/lib/auth-store";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 import { cn } from "@/lib/cn";
@@ -49,6 +51,14 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     queryKey: ["auth-captcha-config"],
     queryFn: () => auth.captchaConfig(),
     staleTime: 60_000,
+  });
+
+  const inviteToken = searchParams.get("invite");
+  const { data: invitePreview } = useQuery({
+    queryKey: ["invite-preview", inviteToken],
+    queryFn: () => organizations.previewInvite(inviteToken!),
+    enabled: Boolean(inviteToken),
+    retry: false,
   });
 
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
@@ -104,6 +114,16 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     const me = await auth.me();
     setUser(me);
     syncSessionCookieFromToken();
+    if (inviteToken) {
+      try {
+        await organizations.acceptInvite(inviteToken);
+        const refreshed = await auth.me();
+        setUser(refreshed);
+      } catch (err) {
+        setError(errorMessage(err));
+        return;
+      }
+    }
     router.replace(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
   }
 
@@ -230,6 +250,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
           </div>
 
           <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_-24px_rgba(5,46,31,0.22)] backdrop-blur-xl sm:p-8">
+            {invitePreview ? <InviteAuthBanner preview={invitePreview} /> : null}
             <div className="mb-6 flex rounded-2xl bg-stone-100 p-1">
               {(["signin", "signup"] as const).map((tab) => (
                 <button

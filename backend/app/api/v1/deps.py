@@ -23,6 +23,16 @@ from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_mo
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+def user_is_org_viewer(user: User) -> bool:
+    return user.org_role == "viewer"
+
+
+def user_can_write(user: User) -> bool:
+    if user.role == "admin":
+        return True
+    return not user_is_org_viewer(user)
+
+
 async def get_current_user(
     creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -90,6 +100,15 @@ async def require_org_member(user: CurrentUser) -> User:
 
 
 OrgMember = Annotated[User, Depends(require_org_member)]
+
+
+async def require_write_access(user: CurrentUser) -> User:
+    if not user_can_write(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="viewer_read_only")
+    return user
+
+
+WriteAccess = Annotated[User, Depends(require_write_access)]
 
 
 def require(perm: Permission):

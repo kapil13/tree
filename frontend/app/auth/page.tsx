@@ -24,7 +24,9 @@ function AlreadySignedInRedirect() {
     const token = getAccessToken();
     if (!token) return;
 
-    const destination = getSafeNextPath(params.get("next")) ?? "/dashboard";
+    const invite = params.get("invite");
+    const next = getSafeNextPath(params.get("next"));
+    const destination = next ?? (invite ? `/dashboard?invite=${encodeURIComponent(invite)}` : "/dashboard");
 
     const go = () => {
       // Edge middleware requires this cookie; localStorage token alone causes /auth ↔ /dashboard loops.

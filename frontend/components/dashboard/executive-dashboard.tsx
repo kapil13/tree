@@ -40,6 +40,7 @@ import {
 } from "recharts";
 import { TreesMap } from "@/components/trees-map";
 import { DataTrustBanner } from "@/components/data-trust-banner";
+import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
@@ -62,6 +63,7 @@ import {
   trees,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { canGenerateReports, canWriteInApp } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 
 function DashboardSkeleton() {
@@ -83,6 +85,8 @@ function DashboardSkeleton() {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
+  const canWrite = canWriteInApp(user);
+  const canReport = canGenerateReports(user);
 
   const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ] = useQueries({
     queries: [
@@ -170,6 +174,7 @@ export function ExecutiveDashboard() {
               </p>
             </div>
             <DataTrustBanner compact />
+            <OrgAdminChecklist />
             {enrolledPrograms.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {enrolledPrograms.map((p) => (
@@ -616,9 +621,11 @@ export function ExecutiveDashboard() {
               <div className="dash-empty">
                 <Leaf className="h-8 w-8 text-stone-400" />
                 <p>Register your first tree to populate species analytics.</p>
-                <Link href="/trees/new" className="btn-primary mt-3">
-                  Add tree
-                </Link>
+                {canWrite ? (
+                  <Link href="/trees/new" className="btn-primary mt-3">
+                    Add tree
+                  </Link>
+                ) : null}
               </div>
             )}
           </div>
@@ -633,11 +640,15 @@ export function ExecutiveDashboard() {
           </div>
           <div className="mt-4 grid gap-2">
             {[
-              { href: "/trees/new", icon: Sprout, label: "Register tree", sub: "Guided wizard" },
+              ...(canWrite
+                ? [{ href: "/trees/new", icon: Sprout, label: "Register tree", sub: "Guided wizard" }]
+                : []),
               { href: "/satellite", icon: Satellite, label: "Satellite scan", sub: "NDVI & health" },
               { href: "/bioacoustic", icon: Bird, label: "Record biodiversity", sub: "Soundscape" },
               { href: "/assistant", icon: Sparkles, label: "Ask AI analyst", sub: "Carbon & tips" },
-              { href: "/reports", icon: FileText, label: "Generate report", sub: "PDF / Excel" },
+              ...(canReport
+                ? [{ href: "/reports", icon: FileText, label: "Generate report", sub: "PDF / Excel" }]
+                : [{ href: "/reports", icon: FileText, label: "View reports", sub: "Download exports" }]),
               { href: "/map", icon: MapPin, label: "Open map", sub: "Spatial view" },
             ].map((action) => (
               <Link key={action.href} href={action.href} className="dash-action-row">
