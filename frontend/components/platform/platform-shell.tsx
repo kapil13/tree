@@ -4,15 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  CreditCard,
   Globe2,
   KeyRound,
   LayoutDashboard,
   ScrollText,
+  Server,
   UserCheck,
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import {
+  canAccessBillingAdmin,
+  canAccessOpsAdmin,
   canAccessWebsiteCms,
   canManagePlatformUsers,
   canManageProgramAccess,
@@ -69,6 +73,18 @@ const NAV: NavItem[] = [
     label: "Roles & modules",
     icon: KeyRound,
     visible: (user) => hasAnyPlatformAccess(user),
+  },
+  {
+    href: "/platform/billing",
+    label: "Billing",
+    icon: CreditCard,
+    visible: (user) => canAccessBillingAdmin(user),
+  },
+  {
+    href: "/platform/ops",
+    label: "Operations",
+    icon: Server,
+    visible: (user) => canAccessOpsAdmin(user),
   },
   {
     href: "/platform/cms",

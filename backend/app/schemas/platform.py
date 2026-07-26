@@ -97,3 +97,32 @@ class OrganizationAdminUpdate(BaseModel):
 class PermissionMatrixOut(BaseModel):
     permissions: list[str]
     roles: dict[str, list[str]]
+
+
+class PaymentOrderAdminOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    user_email: str
+    user_full_name: str
+    sku: str
+    credits_granted: int
+    amount_paise: int
+    currency: str
+    status: str
+    paid_at: datetime | None = None
+    created_at: datetime
+
+
+class PlatformBillingSummaryOut(BaseModel):
+    payments_enabled: bool
+    orders: dict[str, int]
+    revenue_paise: int
+    credits_sold: int
+    wallets: dict[str, int]
+
+
+class PlatformOpsSummaryOut(BaseModel):
+    status: str
+    workers: dict
+    integrations: dict
+    jobs: dict
