@@ -63,7 +63,7 @@ from app.services.auth.user_profile import (
     user_has_professional_program,
 )
 from app.services.planting_programs.enrollment import ensure_default_enrollment
-from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
+from app.services.platform.modules import build_platform_access_map
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -391,7 +391,7 @@ def _user_out(
 
 
 async def _user_out_enriched(db: DB, user: User) -> UserOut:
-    cms_access = await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE)
+    platform_access = await build_platform_access_map(db, role=user.role)
     codes = await user_enrolled_program_codes(db, user.id)
     org_name = None
     if user.organization_id:
@@ -399,10 +399,7 @@ async def _user_out_enriched(db: DB, user: User) -> UserOut:
         org_name = org.name if org else None
     return _user_out(
         user,
-        platform_access={
-            "website_cms": cms_access,
-            "users_admin": has_permission(user.role, Permission.PLATFORM_USERS_MANAGE),
-        },
+        platform_access=platform_access,
         enrolled_program_codes=codes,
         organization_name=org_name,
     )

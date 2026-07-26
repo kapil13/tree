@@ -5,10 +5,22 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request, status
-from sqlalchemy import select
 
-from app.api.v1.deps import DB, CmsManager, PlatformAdmin
-from app.core.security import Role
+from app.api.v1.deps import (
+    DB,
+    AnyPlatformModule,
+    CmsManager,
+    PlatformAdmin,
+    ProgramAccessModuleAdmin,
+    UsersModuleAdmin,
+)
+from app.core.security import (
+    Permission,
+    Role,
+    all_permission_labels,
+    has_permission,
+    permissions_matrix,
+)
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.common import Page
@@ -20,6 +32,10 @@ from app.schemas.platform import (
     ASSIGNABLE_ROLES,
     ModuleRuleOut,
     ModuleRuleUpdate,
+    OrganizationAdminDetailOut,
+    OrganizationAdminOut,
+    OrganizationAdminUpdate,
+    PermissionMatrixOut,
     PlatformOverviewOut,
     UserAdminOut,
     UserRoleUpdate,
@@ -37,10 +53,13 @@ from app.services.planting_programs.access_requests import (
 )
 from app.services.platform.admin import (
     build_platform_overview,
+    get_platform_organization,
     get_platform_user,
+    query_platform_organizations,
     query_platform_users,
 )
 from app.services.platform.modules import (
+    USERS_ADMIN_MODULE,
     WEBSITE_CMS_MODULE,
     list_module_rules,
     module_rule_dict,
@@ -50,9 +69,17 @@ router = APIRouter(prefix="/platform", tags=["platform-admin"])
 
 
 @router.get("/overview", response_model=PlatformOverviewOut)
-async def platform_overview(_admin: PlatformAdmin, db: DB) -> PlatformOverviewOut:
+async def platform_overview(_access: AnyPlatformModule, db: DB) -> PlatformOverviewOut:
     """Counts for platform admin dashboard."""
     return PlatformOverviewOut.model_validate(await build_platform_overview(db))
+
+
+@router.get("/permissions", response_model=PermissionMatrixOut)
+async def platform_permissions(_access: AnyPlatformModule) -> PermissionMatrixOut:
+    return PermissionMatrixOut(
+        permissions=all_permission_labels(),
+        roles=permissions_matrix(),
+    )
 
 
 @router.get("/roles")
@@ -62,7 +89,7 @@ async def platform_roles(_manager: CmsManager) -> list[dict[str, str]]:
 
 @router.get("/users", response_model=Page[UserAdminOut])
 async def platform_list_users(
-    _admin: PlatformAdmin,
+    _admin: UsersModuleAdmin,
     db: DB,
     search: str = "",
     role: str | None = None,
@@ -89,7 +116,7 @@ async def platform_list_users(
 @router.get("/users/{user_id}", response_model=UserAdminOut)
 async def platform_get_user(
     user_id: uuid.UUID,
-    _admin: PlatformAdmin,
+    _admin: UsersModuleAdmin,
     db: DB,
 ) -> UserAdminOut:
     row = await get_platform_user(db, user_id)
@@ -103,7 +130,7 @@ async def platform_update_user(
     user_id: uuid.UUID,
     payload: UserRoleUpdate,
     request: Request,
-    admin: PlatformAdmin,
+    admin: UsersModuleAdmin,
     db: DB,
 ) -> User:
     if payload.role not in ASSIGNABLE_ROLES:
@@ -112,6 +139,10 @@ async def platform_update_user(
     user = await db.get(User, user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+
+    is_full_admin = has_permission(admin.role, Permission.ADMIN_ALL)
+    if not is_full_admin and (payload.role == "admin" or user.role == "admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="cannot_modify_admin_role")
 
     if user.id == admin.id and payload.role != "admin":
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="cannot_demote_self")
@@ -139,7 +170,7 @@ async def platform_update_user(
 
 
 @router.get("/modules", response_model=list[ModuleRuleOut])
-async def platform_list_modules(_manager: CmsManager, db: DB) -> list[dict]:
+async def platform_list_modules(_access: AnyPlatformModule, db: DB) -> list[dict]:
     rules = await list_module_rules(db)
     return [module_rule_dict(r) for r in rules]
 
@@ -149,7 +180,7 @@ async def platform_update_module(
     module_key: str,
     payload: ModuleRuleUpdate,
     request: Request,
-    manager: CmsManager,
+    manager: PlatformAdmin,
     db: DB,
 ) -> dict:
     rules = await list_module_rules(db)
@@ -162,6 +193,8 @@ async def platform_update_module(
     if payload.allowed_roles is not None:
         cleaned = [r for r in payload.allowed_roles if r in ASSIGNABLE_ROLES]
         if module_key == WEBSITE_CMS_MODULE and "admin" not in cleaned:
+            cleaned.append("admin")
+        if module_key == USERS_ADMIN_MODULE and "admin" not in cleaned:
             cleaned.append("admin")
         rule.allowed_roles = cleaned
 
@@ -195,32 +228,73 @@ def _access_request_admin_out(request) -> ProgramAccessRequestAdminOut:
     )
 
 
-@router.get("/organizations")
+@router.get("/organizations", response_model=Page[OrganizationAdminOut])
 async def platform_list_organizations(
-    _admin: PlatformAdmin,
+    _admin: UsersModuleAdmin,
     db: DB,
     search: str = "",
-    limit: int = 50,
-) -> list[dict]:
-    stmt = select(Organization).order_by(Organization.name).limit(min(limit, 100))
-    if search.strip():
-        q = f"%{search.strip()}%"
-        stmt = stmt.where(Organization.name.ilike(q) | Organization.slug.ilike(q))
-    rows = (await db.execute(stmt)).scalars().all()
-    return [
-        {
-            "id": str(o.id),
-            "name": o.name,
-            "slug": o.slug,
-            "type": o.type,
-        }
-        for o in rows
-    ]
+    is_active: bool | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[OrganizationAdminOut]:
+    items, total = await query_platform_organizations(
+        db, search=search, is_active=is_active, page=page, page_size=page_size
+    )
+    return Page(
+        items=[OrganizationAdminOut.model_validate(i) for i in items],
+        total=total,
+        page=max(page, 1),
+        page_size=min(max(page_size, 1), 100),
+    )
+
+
+@router.get("/organizations/{org_id}", response_model=OrganizationAdminDetailOut)
+async def platform_get_organization(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+) -> OrganizationAdminDetailOut:
+    row = await get_platform_organization(db, org_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    return OrganizationAdminDetailOut.model_validate(row)
+
+
+@router.patch("/organizations/{org_id}", response_model=OrganizationAdminDetailOut)
+async def platform_update_organization(
+    org_id: uuid.UUID,
+    payload: OrganizationAdminUpdate,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> OrganizationAdminDetailOut:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    diff: dict = {}
+    if payload.name is not None:
+        diff["name"] = {"from": org.name, "to": payload.name}
+        org.name = payload.name.strip()
+    if payload.is_active is not None:
+        diff["is_active"] = {"from": org.is_active, "to": payload.is_active}
+        org.is_active = payload.is_active
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.organization.update",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff=diff,
+    )
+    await db.commit()
+    row = await get_platform_organization(db, org.id)
+    return OrganizationAdminDetailOut.model_validate(row)
 
 
 @router.get("/program-access-requests", response_model=list[ProgramAccessRequestAdminOut])
 async def platform_list_program_access_requests(
-    _admin: PlatformAdmin,
+    _admin: ProgramAccessModuleAdmin,
     db: DB,
     status: str = "pending",
 ) -> list[ProgramAccessRequestAdminOut]:
@@ -236,7 +310,7 @@ async def platform_review_program_access_request(
     request_id: uuid.UUID,
     payload: ProgramAccessRequestReview,
     request: Request,
-    admin: PlatformAdmin,
+    admin: ProgramAccessModuleAdmin,
     db: DB,
 ) -> ProgramAccessRequestAdminOut:
     try:

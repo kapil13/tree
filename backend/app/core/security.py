@@ -160,6 +160,17 @@ def has_permission(role: Role | str, perm: Permission) -> bool:
     return Permission.ADMIN_ALL in perms or perm in perms
 
 
+def permissions_matrix() -> dict[str, list[str]]:
+    return {
+        role.value: sorted(p.value for p in perms)
+        for role, perms in ROLE_PERMISSIONS.items()
+    }
+
+
+def all_permission_labels() -> list[str]:
+    return sorted(p.value for p in Permission if p != Permission.ADMIN_ALL)
+
+
 def permissions_for_role(role: Role | str) -> list[str]:
     try:
         role_enum = Role(role) if isinstance(role, str) else role

@@ -9,6 +9,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.platform_module import PlatformModuleRule
 
 WEBSITE_CMS_MODULE = "website_cms"
+USERS_ADMIN_MODULE = "users_admin"
+PROGRAM_ACCESS_ADMIN_MODULE = "program_access_admin"
+BILLING_ADMIN_MODULE = "billing_admin"
+OPS_ADMIN_MODULE = "ops_admin"
+
+ALL_PLATFORM_MODULES = (
+    WEBSITE_CMS_MODULE,
+    USERS_ADMIN_MODULE,
+    PROGRAM_ACCESS_ADMIN_MODULE,
+    BILLING_ADMIN_MODULE,
+    OPS_ADMIN_MODULE,
+)
 
 DEFAULT_MODULES: list[dict] = [
     {
@@ -18,15 +30,49 @@ DEFAULT_MODULES: list[dict] = [
         "enabled": True,
         "allowed_roles": ["admin"],
     },
+    {
+        "module_key": USERS_ADMIN_MODULE,
+        "label": "User administration",
+        "description": "Manage platform users, organizations, and audit log (cannot grant admin role).",
+        "enabled": True,
+        "allowed_roles": ["admin"],
+    },
+    {
+        "module_key": PROGRAM_ACCESS_ADMIN_MODULE,
+        "label": "Program access queue",
+        "description": "Approve or reject professional program enrollment requests.",
+        "enabled": True,
+        "allowed_roles": ["admin"],
+    },
+    {
+        "module_key": BILLING_ADMIN_MODULE,
+        "label": "Billing & credits",
+        "description": "View payment orders and AI scan wallet usage (read-only in Phase 2).",
+        "enabled": True,
+        "allowed_roles": ["admin"],
+    },
+    {
+        "module_key": OPS_ADMIN_MODULE,
+        "label": "Operations",
+        "description": "Worker health, integrations status, and job run visibility.",
+        "enabled": True,
+        "allowed_roles": ["admin"],
+    },
 ]
 
 
 async def ensure_platform_modules_seeded(db: AsyncSession) -> None:
-    existing = (await db.execute(select(PlatformModuleRule).limit(1))).scalar_one_or_none()
-    if existing is not None:
-        return
+    existing_keys = set(
+        (await db.execute(select(PlatformModuleRule.module_key))).scalars().all()
+    )
+    added = False
     for row in DEFAULT_MODULES:
+        if row["module_key"] in existing_keys:
+            continue
         db.add(PlatformModuleRule(**row))
+        added = True
+    if not added:
+        return
     try:
         await db.commit()
     except IntegrityError:
@@ -54,6 +100,14 @@ async def user_can_access_module(db: AsyncSession, *, role: str, module_key: str
     if rule is None or not rule.enabled:
         return False
     return role in (rule.allowed_roles or [])
+
+
+async def build_platform_access_map(db: AsyncSession, *, role: str) -> dict[str, bool]:
+    await ensure_platform_modules_seeded(db)
+    return {
+        key: await user_can_access_module(db, role=role, module_key=key)
+        for key in ALL_PLATFORM_MODULES
+    }
 
 
 def module_rule_dict(rule: PlatformModuleRule) -> dict:

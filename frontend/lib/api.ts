@@ -202,6 +202,9 @@ export type User = {
   platform_access?: {
     website_cms: boolean;
     users_admin: boolean;
+    program_access_admin: boolean;
+    billing_admin: boolean;
+    ops_admin: boolean;
   };
 };
 

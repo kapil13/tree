@@ -24,6 +24,7 @@ class Organization(UUIDPKMixin, TimestampMixin, Base):
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, nullable=False, default=dict
     )
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     users = relationship(
         "User", back_populates="organization", foreign_keys="User.organization_id"

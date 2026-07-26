@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.organization import Organization
 from app.models.planting_program import ProgramAccessRequest
+from app.models.planting_project import PlantingProject
 from app.models.user import User
 from app.services.planting_programs.enrollment import list_user_program_codes
 
@@ -124,4 +125,80 @@ async def get_platform_user(db: AsyncSession, user_id: uuid.UUID) -> dict[str, A
         "created_at": user.created_at,
         "last_login_at": user.last_login_at,
         "enrolled_program_codes": programs,
+    }
+
+
+async def query_platform_organizations(
+    db: AsyncSession,
+    *,
+    search: str = "",
+    is_active: bool | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> tuple[list[dict[str, Any]], int]:
+    base = select(Organization).order_by(Organization.name)
+    if search.strip():
+        q = f"%{search.strip()}%"
+        base = base.where(Organization.name.ilike(q) | Organization.slug.ilike(q))
+    if is_active is not None:
+        base = base.where(Organization.is_active.is_(is_active))
+
+    total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
+    page_size = min(max(page_size, 1), 100)
+    page = max(page, 1)
+    orgs = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+
+    items: list[dict[str, Any]] = []
+    for org in orgs:
+        member_count = int(
+            (
+                await db.execute(
+                    select(func.count()).select_from(User).where(User.organization_id == org.id)
+                )
+            ).scalar_one()
+        )
+        items.append(
+            {
+                "id": org.id,
+                "name": org.name,
+                "slug": org.slug,
+                "type": org.type,
+                "is_active": org.is_active,
+                "member_count": member_count,
+                "created_at": org.created_at,
+            }
+        )
+    return items, total
+
+
+async def get_platform_organization(db: AsyncSession, org_id: uuid.UUID) -> dict[str, Any] | None:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        return None
+    member_count = int(
+        (
+            await db.execute(
+                select(func.count()).select_from(User).where(User.organization_id == org.id)
+            )
+        ).scalar_one()
+    )
+    project_count = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(PlantingProject)
+                .where(PlantingProject.organization_id == org.id)
+            )
+        ).scalar_one()
+    )
+    return {
+        "id": org.id,
+        "name": org.name,
+        "slug": org.slug,
+        "type": org.type,
+        "is_active": org.is_active,
+        "member_count": member_count,
+        "project_count": project_count,
+        "owner_user_id": org.owner_user_id,
+        "created_at": org.created_at,
     }

@@ -45,11 +45,12 @@ export function ProgramAccessQueuePanel() {
     queryFn: () => platformAdmin.listProgramAccessRequests(status),
   });
 
-  const { data: orgOptions = [] } = useQuery({
+  const { data: orgPage } = useQuery({
     queryKey: ["platform-organizations", orgSearch],
-    queryFn: () => platformAdmin.listOrganizations(orgSearch),
+    queryFn: () => platformAdmin.listOrganizations({ search: orgSearch, page_size: 20 }),
     enabled: orgSearch.length >= 2,
   });
+  const orgOptions = orgPage?.items ?? [];
 
   const review = useMutation({
     mutationFn: ({

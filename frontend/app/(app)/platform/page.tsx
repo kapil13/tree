@@ -29,7 +29,7 @@ export default function PlatformOverviewPage() {
             icon={Building2}
             label="Organizations"
             value={String(data.organizations.total)}
-            href="/platform/users"
+            href="/platform/organizations"
           />
           <StatCard
             icon={ClipboardList}

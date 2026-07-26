@@ -6,11 +6,7 @@ import { useEffect } from "react";
 import { ShieldAlert } from "lucide-react";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
 import { auth } from "@/lib/api";
-import {
-  canAccessPlatformPath,
-  canAccessWebsiteCms,
-  canManagePlatformUsers,
-} from "@/lib/platform-access";
+import { canAccessPlatformPath } from "@/lib/platform-access";
 
 export function PlatformAdminGuard({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthHydrated();
@@ -34,12 +30,7 @@ export function PlatformAdminGuard({ children }: { children: React.ReactNode }) 
     );
   }
 
-  const allowed =
-    canAccessPlatformPath(user, path) ||
-    (path.startsWith("/platform/cms") && canAccessWebsiteCms(user)) ||
-    (path.startsWith("/platform") && canManagePlatformUsers(user));
-
-  if (!allowed) {
+  if (!canAccessPlatformPath(user, path)) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm dark:border-stone-800 dark:bg-stone-900">
         <ShieldAlert className="mx-auto h-10 w-10 text-amber-600" />
