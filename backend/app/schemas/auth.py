@@ -11,7 +11,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
     full_name: str = Field(min_length=2, max_length=255)
-    role: Literal["user", "farmer", "ngo", "corporate", "government"] = "user"
+    # Public self-serve registration is citizen-only. Professional roles
+    # (ngo/corporate/government) require platform program-access approval.
+    role: Literal["user"] = "user"
     organization_name: str | None = None
     phone: str | None = None
     captcha_token: str | None = None

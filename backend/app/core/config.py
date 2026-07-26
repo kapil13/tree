@@ -79,6 +79,14 @@ class Settings(BaseSettings):
 
     # OTP — set auth_otp_sms_enabled=true when MSG91/SNS is wired
     auth_otp_sms_enabled: bool = False
+    # Dev-only: accept OTP 000000 and return codes in API responses.
+    # Defaults on for development/test; forced off for staging/production unless
+    # explicitly overridden (production_guards rejects True in hardened envs).
+    auth_allow_dev_otp: bool | None = None
+    # Expose Prometheus /metrics (default off in staging/production)
+    expose_metrics: bool | None = None
+    # Expose /docs /redoc /openapi.json (default off in staging/production)
+    expose_api_docs: bool | None = None
     # Email OTP — Gmail API + Google Workspace domain delegation
     auth_otp_email_enabled: bool = False
     gmail_sender: str | None = None
@@ -99,6 +107,25 @@ class Settings(BaseSettings):
     @property
     def captcha_enabled(self) -> bool:
         return bool(self.turnstile_secret_key)
+
+    @property
+    def allow_dev_otp(self) -> bool:
+        """Whether universal OTP 000000 and API OTP hints are permitted."""
+        if self.auth_allow_dev_otp is not None:
+            return self.auth_allow_dev_otp
+        return self.app_env in {"development", "test"}
+
+    @property
+    def metrics_exposed(self) -> bool:
+        if self.expose_metrics is not None:
+            return self.expose_metrics
+        return self.app_env in {"development", "test"} or self.app_debug
+
+    @property
+    def api_docs_exposed(self) -> bool:
+        if self.expose_api_docs is not None:
+            return self.expose_api_docs
+        return self.app_env in {"development", "test"} or self.app_debug
 
     # Notifications
     ses_sender: str = "no-reply@byot.earth"

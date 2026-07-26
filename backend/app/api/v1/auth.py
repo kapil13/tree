@@ -48,6 +48,7 @@ from app.services.auth.google_oauth import exchange_google_code, google_authoriz
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
 from app.services.auth.otp import (
     normalize_phone,
+    otp_dev_hint,
     phone_placeholder_email,
 )
 from app.services.auth.otp_store import check_otp, issue_otp
@@ -94,17 +95,25 @@ async def captcha_config() -> CaptchaConfigOut:
     )
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[rate_limit(10, 60)],
+)
 async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOut:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="email_taken")
 
+    # Hard-lock: public register never grants professional roles.
+    role = "user"
+
     org_id: uuid.UUID | None = None
     if payload.organization_name:
         slug = _slugify(payload.organization_name)
-        org = Organization(name=payload.organization_name, slug=slug, type=payload.role)
+        org = Organization(name=payload.organization_name, slug=slug, type="individual")
         db.add(org)
         await db.flush()
         org_id = org.id
@@ -113,7 +122,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
-        role=payload.role,
+        role=role,
         organization_id=org_id,
         phone=payload.phone,
         is_active=True,
@@ -136,7 +145,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     return _user_out(user)
 
 
-@router.post("/login", response_model=TokenResponse, dependencies=[rate_limit(60, 60)])
+@router.post("/login", response_model=TokenResponse, dependencies=[rate_limit(30, 60)])
 async def login(payload: LoginRequest, request: Request, db: DB) -> TokenResponse:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     res = await db.execute(select(User).where(User.email == payload.email))
@@ -159,7 +168,7 @@ async def login(payload: LoginRequest, request: Request, db: DB) -> TokenRespons
     return _tokens_for(user)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=TokenResponse, dependencies=[rate_limit(60, 60)])
 async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     try:
         data = decode_token(payload.refresh_token)
@@ -183,12 +192,18 @@ def _signup_error(exc: SignupError) -> HTTPException:
         status_code = status.HTTP_410_GONE
     elif exc.code == "invalid_otp":
         status_code = status.HTTP_401_UNAUTHORIZED
-    elif exc.code in {"gmail_send_failed", "gmail_not_configured", "gmail_dependencies_missing"}:
+    elif exc.code in {
+        "gmail_send_failed",
+        "gmail_not_configured",
+        "gmail_dependencies_missing",
+        "sms_not_configured",
+        "sms_send_failed",
+    }:
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return HTTPException(status_code, detail=exc.code)
 
 
-@router.post("/signup/start", response_model=SignupStartOut)
+@router.post("/signup/start", response_model=SignupStartOut, dependencies=[rate_limit(10, 60)])
 async def signup_start(payload: SignupStartRequest, request: Request, db: DB) -> SignupStartOut:
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     try:
@@ -208,7 +223,11 @@ async def signup_start(payload: SignupStartRequest, request: Request, db: DB) ->
     )
 
 
-@router.post("/signup/verify-phone", response_model=SignupStepOut)
+@router.post(
+    "/signup/verify-phone",
+    response_model=SignupStepOut,
+    dependencies=[rate_limit(20, 60)],
+)
 async def signup_verify_phone(payload: SignupVerifyPhoneRequest) -> SignupStepOut:
     try:
         await verify_signup_phone(payload.signup_token, payload.code)
@@ -217,7 +236,11 @@ async def signup_verify_phone(payload: SignupVerifyPhoneRequest) -> SignupStepOu
     return SignupStepOut(status="phone_verified")
 
 
-@router.post("/signup/send-email-otp", response_model=SignupStepOut)
+@router.post(
+    "/signup/send-email-otp",
+    response_model=SignupStepOut,
+    dependencies=[rate_limit(10, 60)],
+)
 async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
     try:
         dev_hint = await send_signup_email_otp(payload.signup_token)
@@ -230,7 +253,11 @@ async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
     )
 
 
-@router.post("/signup/complete", response_model=TokenResponse)
+@router.post(
+    "/signup/complete",
+    response_model=TokenResponse,
+    dependencies=[rate_limit(20, 60)],
+)
 async def signup_complete(payload: SignupCompleteRequest, request: Request, db: DB) -> TokenResponse:
     try:
         user = await complete_signup(db, payload.signup_token, payload.code)
@@ -263,24 +290,47 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
 
     identifier = phone or (payload.email or "").strip().lower()
     purpose = "login_phone" if phone else "login_email"
+
+    if phone and not sms_auth_configured() and not settings.allow_dev_otp:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="sms_not_configured")
+    if (
+        not phone
+        and not settings.auth_otp_email_enabled
+        and not settings.allow_dev_otp
+    ):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_otp_not_configured")
+
     code = await issue_otp(purpose, identifier)
 
-    dev_hint: str | None = None
     if phone:
         if sms_auth_configured():
             try:
                 await send_auth_otp_sms(phone=phone, code=code)
-            except SmsSendError:
-                dev_hint = code
-        else:
-            dev_hint = code
-    elif not settings.auth_otp_email_enabled:
-        dev_hint = code
+            except SmsSendError as exc:
+                if not settings.allow_dev_otp:
+                    raise HTTPException(
+                        status.HTTP_503_SERVICE_UNAVAILABLE, detail="sms_send_failed"
+                    ) from exc
+                return OTPRequestOut(
+                    status="sent",
+                    dev_hint=otp_dev_hint(code),
+                    sms_enabled=False,
+                )
+            return OTPRequestOut(
+                status="sent",
+                dev_hint=None,
+                sms_enabled=True,
+            )
+        return OTPRequestOut(
+            status="sent",
+            dev_hint=otp_dev_hint(code),
+            sms_enabled=False,
+        )
 
     return OTPRequestOut(
         status="sent",
-        dev_hint=dev_hint,
-        sms_enabled=settings.auth_otp_sms_enabled and sms_auth_configured(),
+        dev_hint=otp_dev_hint(code),
+        sms_enabled=False,
     )
 
 
@@ -321,7 +371,7 @@ async def _user_from_otp(db: DB, payload: OTPVerify) -> User:
     return user
 
 
-@router.post("/otp/verify", response_model=TokenResponse)
+@router.post("/otp/verify", response_model=TokenResponse, dependencies=[rate_limit(20, 60)])
 async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenResponse:
     purpose = "login_phone" if payload.phone else "login_email"
     identifier: str
