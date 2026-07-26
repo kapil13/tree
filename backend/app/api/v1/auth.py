@@ -13,11 +13,9 @@ from app.api.v1.deps import DB, CurrentUser
 from app.core.config import settings
 from app.core.rate_limit import rate_limit
 from app.core.security import (
-    Permission,
     create_access_token,
     create_refresh_token,
     decode_token,
-    has_permission,
     hash_password,
     permissions_for_role,
     verify_password,
