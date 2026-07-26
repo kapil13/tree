@@ -2,15 +2,20 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { errorMessage } from "@/lib/api";
+import {
+  backupSessionForImpersonation,
+} from "@/components/platform/impersonation-banner";
+import { errorMessage, auth } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
 
 export default function PlatformUsersPage() {
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, setSession, setUser } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -49,6 +54,23 @@ export default function PlatformUsersPage() {
       setMessage("User updated.");
       qc.invalidateQueries({ queryKey: ["platform-users"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  const impersonate = useMutation({
+    mutationFn: (id: string) => platformAdmin.impersonateUser(id),
+    onSuccess: async (data) => {
+      backupSessionForImpersonation();
+      setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: "Bearer",
+        expires_in: data.expires_in,
+      });
+      const me = await auth.me();
+      setUser(me);
+      router.push("/dashboard");
     },
     onError: (err) => setMessage(errorMessage(err)),
   });
@@ -119,6 +141,7 @@ export default function PlatformUsersPage() {
                   <th className="px-4 py-3 font-medium">Programs</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Last login</th>
+                  {fullAdmin ? <th className="px-4 py-3 font-medium">Support</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -179,6 +202,23 @@ export default function PlatformUsersPage() {
                         ? new Date(row.last_login_at).toLocaleString()
                         : "Never"}
                     </td>
+                    {fullAdmin ? (
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs"
+                          disabled={
+                            impersonate.isPending ||
+                            row.id === user?.id ||
+                            row.role === "admin" ||
+                            !row.is_active
+                          }
+                          onClick={() => impersonate.mutate(row.id)}
+                        >
+                          View as user
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>

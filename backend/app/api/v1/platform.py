@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import PlainTextResponse
+from fastapi.security import HTTPAuthorizationCredentials
 
 from app.api.v1.deps import (
     DB,
@@ -15,11 +19,14 @@ from app.api.v1.deps import (
     PlatformAdmin,
     ProgramAccessModuleAdmin,
     UsersModuleAdmin,
+    bearer_scheme,
 )
 from app.core.security import (
     Permission,
     Role,
+    TokenType,
     all_permission_labels,
+    decode_token,
     has_permission,
     permissions_matrix,
 )
@@ -32,16 +39,21 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    ImpersonationOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
     OrganizationAdminDetailOut,
     OrganizationAdminOut,
     OrganizationAdminUpdate,
+    OrgMemberAdminOut,
+    OrgProjectAdminOut,
     PaymentOrderAdminOut,
     PermissionMatrixOut,
+    PlatformAuditLogOut,
     PlatformBillingSummaryOut,
     PlatformOpsSummaryOut,
     PlatformOverviewOut,
+    PlatformSettingsOut,
     UserAdminOut,
     UserRoleUpdate,
 )
@@ -60,10 +72,19 @@ from app.services.platform.admin import (
     build_platform_overview,
     get_platform_organization,
     get_platform_user,
+    query_org_members_for_admin,
+    query_org_projects_for_admin,
     query_platform_organizations,
     query_platform_users,
 )
+from app.services.platform.audit import export_platform_audit_csv, query_platform_audit_logs
 from app.services.platform.billing import build_billing_summary, query_payment_orders
+from app.services.platform.impersonation import (
+    ImpersonationError,
+    admin_tokens_for,
+    impersonation_token_for,
+    validate_impersonation_target,
+)
 from app.services.platform.modules import (
     USERS_ADMIN_MODULE,
     WEBSITE_CMS_MODULE,
@@ -71,6 +92,7 @@ from app.services.platform.modules import (
     module_rule_dict,
 )
 from app.services.platform.ops import build_ops_summary
+from app.services.platform.settings import build_platform_settings
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
 
@@ -114,6 +136,143 @@ async def platform_billing_orders(
 @router.get("/ops/summary", response_model=PlatformOpsSummaryOut)
 async def platform_ops_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformOpsSummaryOut:
     return PlatformOpsSummaryOut.model_validate(await build_ops_summary(db))
+
+
+@router.get("/settings", response_model=PlatformSettingsOut)
+async def platform_settings(_admin: OpsModuleAdmin) -> PlatformSettingsOut:
+    return PlatformSettingsOut.model_validate(build_platform_settings())
+
+
+@router.get("/audit/logs", response_model=Page[PlatformAuditLogOut])
+async def platform_audit_logs(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    action: str | None = None,
+    action_prefix: str | None = None,
+    resource_type: str | None = None,
+    organization_id: uuid.UUID | None = None,
+    actor_user_id: uuid.UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    search: str | None = None,
+) -> Page[PlatformAuditLogOut]:
+    items, total = await query_platform_audit_logs(
+        db,
+        page=page,
+        page_size=page_size,
+        action=action,
+        action_prefix=action_prefix,
+        resource_type=resource_type,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        date_from=date_from,
+        date_to=date_to,
+        search=search,
+    )
+    return Page(
+        items=[PlatformAuditLogOut.model_validate(i) for i in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/audit/export")
+async def platform_audit_export(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    action_prefix: str | None = None,
+    organization_id: uuid.UUID | None = None,
+    actor_user_id: uuid.UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    search: str | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_audit_csv(
+        db,
+        action_prefix=action_prefix,
+        organization_id=organization_id,
+        actor_user_id=actor_user_id,
+        date_from=date_from,
+        date_to=date_to,
+        search=search,
+    )
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-audit.csv"},
+    )
+
+
+@router.post("/users/{user_id}/impersonate", response_model=ImpersonationOut)
+async def platform_impersonate_user(
+    user_id: uuid.UUID,
+    request: Request,
+    admin: PlatformAdmin,
+    db: DB,
+) -> ImpersonationOut:
+    target = await db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    try:
+        await validate_impersonation_target(db, admin=admin, target=target)
+    except ImpersonationError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+
+    token_data = impersonation_token_for(admin=admin, target=target)
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.impersonate",
+        resource_type="user",
+        resource_id=target.id,
+        request=request,
+        diff={"email": target.email, "impersonated_by": admin.email},
+    )
+    await db.commit()
+    row = await get_platform_user(db, target.id)
+    return ImpersonationOut(
+        **token_data,
+        target_user=UserAdminOut.model_validate(row or target),
+    )
+
+
+@router.post("/impersonation/stop")
+async def platform_stop_impersonation(
+    request: Request,
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    db: DB,
+) -> dict:
+    if creds is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="missing_token")
+    try:
+        payload = decode_token(creds.credentials)
+    except ValueError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_token") from None
+    if payload.get("type") != TokenType.ACCESS.value:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="wrong_token_type")
+    admin_id = payload.get("imp_by")
+    if not admin_id:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="not_impersonating")
+
+    admin = await db.get(User, uuid.UUID(admin_id))
+    if admin is None or not admin.is_active:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="admin_not_found")
+
+    target_id = payload.get("sub")
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.impersonate_stop",
+        resource_type="user",
+        resource_id=uuid.UUID(target_id) if target_id else None,
+        request=request,
+        diff={"admin_email": admin.email},
+    )
+    await db.commit()
+    return admin_tokens_for(admin)
 
 
 @router.get("/roles")
@@ -324,6 +483,44 @@ async def platform_update_organization(
     await db.commit()
     row = await get_platform_organization(db, org.id)
     return OrganizationAdminDetailOut.model_validate(row)
+
+
+@router.get("/organizations/{org_id}/members", response_model=Page[OrgMemberAdminOut])
+async def platform_list_org_members(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[OrgMemberAdminOut]:
+    if await get_platform_organization(db, org_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    items, total = await query_org_members_for_admin(db, org_id, page=page, page_size=page_size)
+    return Page(
+        items=[OrgMemberAdminOut.model_validate(i) for i in items],
+        total=total,
+        page=max(page, 1),
+        page_size=min(max(page_size, 1), 100),
+    )
+
+
+@router.get("/organizations/{org_id}/projects", response_model=Page[OrgProjectAdminOut])
+async def platform_list_org_projects(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[OrgProjectAdminOut]:
+    if await get_platform_organization(db, org_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    items, total = await query_org_projects_for_admin(db, org_id, page=page, page_size=page_size)
+    return Page(
+        items=[OrgProjectAdminOut.model_validate(i) for i in items],
+        total=total,
+        page=max(page, 1),
+        page_size=min(max(page_size, 1), 100),
+    )
 
 
 @router.get("/program-access-requests", response_model=list[ProgramAccessRequestAdminOut])

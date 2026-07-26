@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -100,7 +101,12 @@ export default function PlatformOrganizationsPage() {
                 {(data?.items ?? []).map((row) => (
                   <tr key={row.id} className="border-t border-stone-100 dark:border-stone-800">
                     <td className="px-4 py-3">
-                      <div className="font-medium">{row.name}</div>
+                      <Link
+                        href={`/platform/organizations/${row.id}`}
+                        className="font-medium text-forest-700 hover:underline"
+                      >
+                        {row.name}
+                      </Link>
                       <div className="text-xs text-stone-500">{row.slug}</div>
                     </td>
                     <td className="px-4 py-3 text-stone-600">{row.type}</td>

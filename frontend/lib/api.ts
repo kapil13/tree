@@ -206,6 +206,10 @@ export type User = {
     billing_admin: boolean;
     ops_admin: boolean;
   };
+  impersonation?: {
+    admin_user_id: string;
+    admin_email: string;
+  } | null;
 };
 
 export type PlantingProgram = {

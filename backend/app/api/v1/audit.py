@@ -12,6 +12,7 @@ from app.core.security import Permission, has_permission
 from app.models.audit import AuditLog
 from app.schemas.audit import AuditLogOut
 from app.schemas.common import Page
+from app.services.platform.modules import USERS_ADMIN_MODULE, user_can_access_module
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
@@ -29,8 +30,12 @@ async def list_audit_logs(
 ) -> Page[AuditLogOut]:
     stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
 
-    is_platform_admin = has_permission(user.role, Permission.PLATFORM_USERS_MANAGE)
-    if not is_platform_admin:
+    is_platform_viewer = has_permission(user.role, Permission.ADMIN_ALL)
+    if not is_platform_viewer:
+        is_platform_viewer = await user_can_access_module(
+            db, role=user.role, module_key=USERS_ADMIN_MODULE
+        )
+    if not is_platform_viewer:
         if user.organization_id is None:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
         stmt = stmt.where(AuditLog.organization_id == user.organization_id)

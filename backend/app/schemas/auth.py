@@ -113,6 +113,7 @@ class UserOut(BaseModel):
     organization_name: str | None = None
     enrolled_program_codes: list[str] = Field(default_factory=list)
     has_professional_program: bool = False
+    impersonation: dict[str, str] | None = None
 
 
 class UpdateProfile(BaseModel):
