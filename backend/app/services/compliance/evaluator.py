@@ -18,6 +18,19 @@ from app.services.compliance.checklists import (
     get_checklist,
 )
 from app.services.planting_projects.service import get_active_standard
+from app.services.planting_projects.survival_survey import survey_interval_days
+
+
+def _tree_metadata_native(metadata: dict | None) -> bool:
+    """Match planting compliance native checks (is_native + species_native metadata)."""
+    meta = metadata or {}
+    for key in ("is_native", "species_native"):
+        val = meta.get(key)
+        if val in (True, "true", "yes", "1", "native"):
+            return True
+        if val in (False, "false", "no", "0", "exotic"):
+            return False
+    return False
 
 
 def _answer_value(answer: str | None) -> float | None:
@@ -107,11 +120,7 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     tree_count = len(trees)
     geo_tagged = sum(1 for t in trees if t.last_geotag_at is not None)
     satellite_verified = sum(1 for t in trees if t.satellite_verified)
-    native_count = sum(
-        1
-        for t in trees
-        if (t.metadata_ or {}).get("is_native") in (True, "true", "yes", "1")
-    )
+    native_count = sum(1 for t in trees if _tree_metadata_native(t.metadata_))
 
     open_violations_res = await db.execute(
         select(PlantingComplianceViolation).where(
@@ -139,7 +148,8 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     ledger = ledger_res.scalar_one_or_none()
 
     standard = await get_active_standard(db, project)
-    survey_days = (project.metadata_ or {}).get("survey_interval_days")
+    survey_days = survey_interval_days(project)
+    survey_saved = (project.metadata_ or {}).get("survey_interval_days") in (15, 30)
 
     signals: dict[str, str] = {}
 
@@ -148,7 +158,12 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     signals["no_block_violations"] = "no" if block_open else "yes"
     signals["no_open_violations"] = "no" if open_violations else "yes"
     signals["active_standard_attached"] = "yes" if standard is not None else "no"
-    signals["survival_survey_configured"] = "yes" if survey_days else "partial"
+    if survey_saved:
+        signals["survival_survey_configured"] = "yes"
+    elif survey_days in (15, 30):
+        signals["survival_survey_configured"] = "partial"
+    else:
+        signals["survival_survey_configured"] = "no"
     signals["credit_ledger_synced"] = "yes" if ledger and ledger.last_computed_at else "no"
 
     if tree_count == 0:
