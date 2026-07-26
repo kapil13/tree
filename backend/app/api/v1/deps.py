@@ -54,6 +54,12 @@ async def get_current_user(
     user = res.scalar_one_or_none()
     if user is None or not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
+    if user.organization_id is not None:
+        from app.models.organization import Organization
+
+        org = await db.get(Organization, user.organization_id)
+        if org is not None and not org.is_active:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_suspended")
     return user
 
 

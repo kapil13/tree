@@ -56,3 +56,10 @@ class CmsSectionOut(BaseModel):
     content: dict[str, Any]
     sort_order: int
     enabled: bool
+
+
+class LegalDocumentUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    meta_description: str | None = None
+    body: str | None = Field(default=None, max_length=200_000)
+    published: bool | None = None
