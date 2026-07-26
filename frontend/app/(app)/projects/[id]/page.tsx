@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
+import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-compliance-workflow-widget";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
@@ -137,7 +138,13 @@ export default function ProjectDetailPage() {
       </div>
 
       {tab === "overview" && (
-        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+        <div className="space-y-4">
+          <ProjectComplianceWorkflowWidget
+            projectId={project.id}
+            projectMetadata={project.metadata}
+            onOpenCompliance={() => setTab("compliance")}
+          />
+          <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
           <div className="card space-y-4">
             <h2 className="text-sm font-medium">Work areas</h2>
             <ProjectWorkAreaMap projectId={project.id} workAreas={workAreas} />
@@ -181,6 +188,7 @@ export default function ProjectDetailPage() {
               <p className="text-sm text-stone-500">No standard attached.</p>
             )}
           </aside>
+          </div>
         </div>
       )}
 
