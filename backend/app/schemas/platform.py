@@ -63,9 +63,37 @@ class ModuleRuleUpdate(BaseModel):
 class PlatformAccessOut(BaseModel):
     website_cms: bool
     users_admin: bool
+    program_access_admin: bool
+    billing_admin: bool
+    ops_admin: bool
 
 
 class PlatformOverviewOut(BaseModel):
     users: dict[str, int]
     organizations: dict[str, int]
     program_access: dict[str, int]
+
+
+class OrganizationAdminOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    type: str
+    is_active: bool
+    member_count: int = 0
+    created_at: datetime
+
+
+class OrganizationAdminDetailOut(OrganizationAdminOut):
+    owner_user_id: uuid.UUID | None = None
+    project_count: int = 0
+
+
+class OrganizationAdminUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    is_active: bool | None = None
+
+
+class PermissionMatrixOut(BaseModel):
+    permissions: list[str]
+    roles: dict[str, list[str]]

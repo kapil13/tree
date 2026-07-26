@@ -21,7 +21,15 @@ from app.core.security import (
 from app.models.user import User
 from app.services.auth.user_profile import user_has_professional_program
 from app.services.planting_programs.enrollment import list_user_program_codes
-from app.services.platform.modules import WEBSITE_CMS_MODULE, user_can_access_module
+from app.services.platform.modules import (
+    BILLING_ADMIN_MODULE,
+    OPS_ADMIN_MODULE,
+    PROGRAM_ACCESS_ADMIN_MODULE,
+    USERS_ADMIN_MODULE,
+    WEBSITE_CMS_MODULE,
+    build_platform_access_map,
+    user_can_access_module,
+)
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -54,12 +62,62 @@ DB = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def require_platform_admin(user: CurrentUser) -> User:
-    if not has_permission(user.role, Permission.PLATFORM_USERS_MANAGE):
+    if not has_permission(user.role, Permission.ADMIN_ALL):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="platform_admin_required")
     return user
 
 
 PlatformAdmin = Annotated[User, Depends(require_platform_admin)]
+
+
+async def _require_module(user: User, db: AsyncSession, module_key: str) -> User:
+    if has_permission(user.role, Permission.ADMIN_ALL):
+        return user
+    if await user_can_access_module(db, role=user.role, module_key=module_key):
+        return user
+    raise HTTPException(
+        status.HTTP_403_FORBIDDEN, detail=f"platform_module_denied:{module_key}"
+    )
+
+
+async def require_users_module(user: CurrentUser, db: DB) -> User:
+    return await _require_module(user, db, USERS_ADMIN_MODULE)
+
+
+UsersModuleAdmin = Annotated[User, Depends(require_users_module)]
+
+
+async def require_program_access_module(user: CurrentUser, db: DB) -> User:
+    return await _require_module(user, db, PROGRAM_ACCESS_ADMIN_MODULE)
+
+
+ProgramAccessModuleAdmin = Annotated[User, Depends(require_program_access_module)]
+
+
+async def require_ops_module(user: CurrentUser, db: DB) -> User:
+    return await _require_module(user, db, OPS_ADMIN_MODULE)
+
+
+OpsModuleAdmin = Annotated[User, Depends(require_ops_module)]
+
+
+async def require_billing_module(user: CurrentUser, db: DB) -> User:
+    return await _require_module(user, db, BILLING_ADMIN_MODULE)
+
+
+BillingModuleAdmin = Annotated[User, Depends(require_billing_module)]
+
+
+async def require_any_platform_module(user: CurrentUser, db: DB) -> User:
+    if has_permission(user.role, Permission.ADMIN_ALL):
+        return user
+    access = await build_platform_access_map(db, role=user.role)
+    if any(access.values()):
+        return user
+    raise HTTPException(status.HTTP_403_FORBIDDEN, detail="platform_access_denied")
+
+
+AnyPlatformModule = Annotated[User, Depends(require_any_platform_module)]
 
 
 async def require_cms_manager(user: CurrentUser, db: DB) -> User:
@@ -133,8 +191,10 @@ async def require_write_professional(user: CurrentUser, db: DB) -> User:
 WriteProfessional = Annotated[User, Depends(require_write_professional)]
 
 
-async def require_audit_reader(user: CurrentUser) -> User:
-    if user.role == "admin":
+async def require_audit_reader(user: CurrentUser, db: DB) -> User:
+    if has_permission(user.role, Permission.ADMIN_ALL):
+        return user
+    if await user_can_access_module(db, role=user.role, module_key=USERS_ADMIN_MODULE):
         return user
     if user.organization_id and user.is_org_admin:
         return user

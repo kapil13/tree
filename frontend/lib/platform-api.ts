@@ -58,6 +58,33 @@ export type ProgramAccessRequestAdmin = {
   user_full_name: string;
 };
 
+export type PlatformOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  is_active: boolean;
+  member_count: number;
+  created_at: string;
+};
+
+export type PlatformOrganizationDetail = PlatformOrganization & {
+  owner_user_id: string | null;
+  project_count: number;
+};
+
+export type PlatformOrganizationPage = {
+  items: PlatformOrganization[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type PermissionMatrix = {
+  permissions: string[];
+  roles: Record<string, string[]>;
+};
+
 export const platformAdmin = {
   async overview() {
     return (await api.get<PlatformOverview>("/v1/platform/overview")).data;
@@ -112,11 +139,23 @@ export const platformAdmin = {
       )
     ).data;
   },
-  async listOrganizations(search = "") {
+  async listOrganizations(params?: {
+    search?: string;
+    is_active?: boolean;
+    page?: number;
+    page_size?: number;
+  }) {
+    return (await api.get<PlatformOrganizationPage>("/v1/platform/organizations", { params })).data;
+  },
+  async getOrganization(id: string) {
+    return (await api.get<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`)).data;
+  },
+  async updateOrganization(id: string, payload: { name?: string; is_active?: boolean }) {
     return (
-      await api.get<Array<{ id: string; name: string; slug: string; type: string }>>(
-        `/v1/platform/organizations?search=${encodeURIComponent(search)}`,
-      )
+      await api.patch<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`, payload)
     ).data;
+  },
+  async permissionsMatrix() {
+    return (await api.get<PermissionMatrix>("/v1/platform/permissions")).data;
   },
 };

@@ -2,41 +2,87 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe2, LayoutDashboard, ScrollText, UserCheck, Users } from "lucide-react";
+import {
+  Building2,
+  Globe2,
+  KeyRound,
+  LayoutDashboard,
+  ScrollText,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import {
   canAccessWebsiteCms,
   canManagePlatformUsers,
+  canManageProgramAccess,
+  hasAnyPlatformAccess,
+  isFullPlatformAdmin,
+  type PlatformAccess,
 } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
+
+type PlatformUser = { role?: string; platform_access?: Partial<PlatformAccess> } | null;
 
 type NavItem = {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
-  kind: "users" | "cms";
+  visible: (user: PlatformUser) => boolean;
 };
 
 const NAV: NavItem[] = [
-  { href: "/platform", label: "Overview", icon: LayoutDashboard, exact: true, kind: "users" },
-  { href: "/platform/users", label: "Users", icon: Users, kind: "users" },
-  { href: "/platform/program-access", label: "Program access", icon: UserCheck, kind: "users" },
-  { href: "/platform/audit", label: "Audit log", icon: ScrollText, kind: "users" },
-  { href: "/platform/cms", label: "Website CMS", icon: Globe2, kind: "cms" },
+  {
+    href: "/platform",
+    label: "Overview",
+    icon: LayoutDashboard,
+    exact: true,
+    visible: (user) => hasAnyPlatformAccess(user),
+  },
+  {
+    href: "/platform/users",
+    label: "Users",
+    icon: Users,
+    visible: (user) => canManagePlatformUsers(user),
+  },
+  {
+    href: "/platform/organizations",
+    label: "Organizations",
+    icon: Building2,
+    visible: (user) => canManagePlatformUsers(user),
+  },
+  {
+    href: "/platform/program-access",
+    label: "Program access",
+    icon: UserCheck,
+    visible: (user) => canManageProgramAccess(user),
+  },
+  {
+    href: "/platform/audit",
+    label: "Audit log",
+    icon: ScrollText,
+    visible: (user) => canManagePlatformUsers(user),
+  },
+  {
+    href: "/platform/roles",
+    label: "Roles & modules",
+    icon: KeyRound,
+    visible: (user) => hasAnyPlatformAccess(user),
+  },
+  {
+    href: "/platform/cms",
+    label: "Website CMS",
+    icon: Globe2,
+    visible: (user) => canAccessWebsiteCms(user),
+  },
 ];
 
 export function PlatformShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { user } = useAuth();
-  const usersAdmin = canManagePlatformUsers(user);
-  const cmsAccess = canAccessWebsiteCms(user);
-
-  const items = NAV.filter((item) => {
-    if (item.kind === "users" && usersAdmin) return true;
-    if (item.kind === "cms" && cmsAccess) return true;
-    return false;
-  });
+  const fullAdmin = isFullPlatformAdmin(user);
+  const items = NAV.filter((item) => item.visible(user));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -46,7 +92,9 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
         </div>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Control plane</h1>
         <p className="mt-2 max-w-2xl text-sm text-stone-600 dark:text-stone-300">
-          Users, program onboarding, audit trail, and marketing CMS.
+          {fullAdmin
+            ? "Full platform control — users, organizations, program onboarding, roles, and CMS."
+            : "Delegated platform modules for your role."}
         </p>
       </div>
 
