@@ -136,6 +136,63 @@ export type PlatformOpsSummary = {
   };
 };
 
+export type PlatformAuditLog = {
+  id: string;
+  actor_user_id: string | null;
+  organization_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  diff: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type PlatformAuditPage = {
+  items: PlatformAuditLog[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type OrgMemberAdmin = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  org_role: string | null;
+  is_org_admin: boolean;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+};
+
+export type OrgProjectAdmin = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  segment: string;
+  program_code: string | null;
+  created_at: string;
+};
+
+export type PlatformSettings = {
+  app_env: string;
+  app_version: string;
+  payments_enabled: boolean;
+  captcha_enabled: boolean;
+  sms_auth_configured: boolean;
+  google_oauth_configured: boolean;
+  razorpay_configured: boolean;
+  sentinel_configured: boolean;
+  bhoonidhi_configured: boolean;
+  bioacoustic_pipeline: string;
+  bioacoustic_perch_enabled: boolean;
+  iucn_configured: boolean;
+};
+
 export const platformAdmin = {
   async overview() {
     return (await api.get<PlatformOverview>("/v1/platform/overview")).data;
@@ -218,5 +275,69 @@ export const platformAdmin = {
   },
   async opsSummary() {
     return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
+  },
+  async settings() {
+    return (await api.get<PlatformSettings>("/v1/platform/settings")).data;
+  },
+  async auditLogs(params?: {
+    page?: number;
+    page_size?: number;
+    action_prefix?: string;
+    organization_id?: string;
+    actor_user_id?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+  }) {
+    return (await api.get<PlatformAuditPage>("/v1/platform/audit/logs", { params })).data;
+  },
+  async exportAudit(params?: {
+    action_prefix?: string;
+    organization_id?: string;
+    actor_user_id?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+  }) {
+    const response = await api.get("/v1/platform/audit/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async listOrgMembers(orgId: string, params?: { page?: number; page_size?: number }) {
+    return (
+      await api.get<{ items: OrgMemberAdmin[]; total: number; page: number; page_size: number }>(
+        `/v1/platform/organizations/${orgId}/members`,
+        { params },
+      )
+    ).data;
+  },
+  async listOrgProjects(orgId: string, params?: { page?: number; page_size?: number }) {
+    return (
+      await api.get<{ items: OrgProjectAdmin[]; total: number; page: number; page_size: number }>(
+        `/v1/platform/organizations/${orgId}/projects`,
+        { params },
+      )
+    ).data;
+  },
+  async impersonateUser(userId: string) {
+    return (
+      await api.post<{
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        impersonated_by_id: string;
+        impersonated_by_email: string;
+        target_user: PlatformUser;
+      }>(`/v1/platform/users/${userId}/impersonate`)
+    ).data;
+  },
+  async stopImpersonation() {
+    return (
+      await api.post<{ access_token: string; refresh_token: string; expires_in: number }>(
+        "/v1/platform/impersonation/stop",
+      )
+    ).data;
   },
 };

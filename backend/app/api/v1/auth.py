@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, bearer_scheme
 from app.core.config import settings
 from app.core.rate_limit import rate_limit
 from app.core.security import (
@@ -361,6 +363,7 @@ def _user_out(
     platform_access: dict[str, bool] | None = None,
     enrolled_program_codes: list[str] | None = None,
     organization_name: str | None = None,
+    impersonation: dict[str, str] | None = None,
 ) -> UserOut:
     codes = enrolled_program_codes or []
     return UserOut(
@@ -385,10 +388,16 @@ def _user_out(
         organization_name=organization_name,
         enrolled_program_codes=codes,
         has_professional_program=user_has_professional_program(codes),
+        impersonation=impersonation,
     )
 
 
-async def _user_out_enriched(db: DB, user: User) -> UserOut:
+async def _user_out_enriched(
+    db: DB,
+    user: User,
+    *,
+    impersonation: dict[str, str] | None = None,
+) -> UserOut:
     platform_access = await build_platform_access_map(db, role=user.role)
     codes = await user_enrolled_program_codes(db, user.id)
     org_name = None
@@ -400,12 +409,30 @@ async def _user_out_enriched(db: DB, user: User) -> UserOut:
         platform_access=platform_access,
         enrolled_program_codes=codes,
         organization_name=org_name,
+        impersonation=impersonation,
     )
 
 
 @router.get("/me", response_model=UserOut)
-async def me(user: CurrentUser, db: DB) -> UserOut:
-    return await _user_out_enriched(db, user)
+async def me(
+    user: CurrentUser,
+    db: DB,
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> UserOut:
+    impersonation = None
+    if creds is not None:
+        try:
+            payload = decode_token(creds.credentials)
+            imp_by = payload.get("imp_by")
+            if imp_by:
+                admin = await db.get(User, uuid.UUID(imp_by))
+                impersonation = {
+                    "admin_user_id": str(imp_by),
+                    "admin_email": admin.email if admin else "",
+                }
+        except ValueError:
+            pass
+    return await _user_out_enriched(db, user, impersonation=impersonation)
 
 
 @router.patch("/me", response_model=UserOut)

@@ -126,3 +126,63 @@ class PlatformOpsSummaryOut(BaseModel):
     workers: dict
     integrations: dict
     jobs: dict
+
+
+class OrgMemberAdminOut(BaseModel):
+    id: uuid.UUID
+    email: EmailStr
+    full_name: str
+    role: str
+    org_role: str | None = None
+    is_org_admin: bool = False
+    is_active: bool
+    last_login_at: datetime | None = None
+    created_at: datetime
+
+
+class OrgProjectAdminOut(BaseModel):
+    id: uuid.UUID
+    code: str
+    name: str
+    status: str
+    segment: str
+    program_code: str | None = None
+    created_at: datetime
+
+
+class PlatformAuditLogOut(BaseModel):
+    id: uuid.UUID
+    actor_user_id: uuid.UUID | None
+    organization_id: uuid.UUID | None
+    action: str
+    resource_type: str | None
+    resource_id: uuid.UUID | None
+    ip: str | None
+    user_agent: str | None
+    diff: dict | None = None
+    created_at: datetime
+
+
+class PlatformSettingsOut(BaseModel):
+    app_env: str
+    app_version: str
+    payments_enabled: bool
+    captcha_enabled: bool
+    sms_auth_configured: bool
+    google_oauth_configured: bool
+    razorpay_configured: bool
+    sentinel_configured: bool
+    bhoonidhi_configured: bool
+    bioacoustic_pipeline: str
+    bioacoustic_perch_enabled: bool
+    iucn_configured: bool
+
+
+class ImpersonationOut(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "Bearer"
+    expires_in: int
+    impersonated_by_id: uuid.UUID
+    impersonated_by_email: EmailStr
+    target_user: UserAdminOut

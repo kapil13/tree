@@ -1,22 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import { audit } from "@/lib/api";
+import { platformAdmin } from "@/lib/platform-api";
 
 export default function PlatformAuditPage() {
   const [actionPrefix, setActionPrefix] = useState("platform.");
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["platform-audit", actionPrefix, page],
+    queryKey: ["platform-audit", actionPrefix, search, dateFrom, dateTo, page],
     queryFn: () =>
-      audit.logs({
+      platformAdmin.auditLogs({
         page,
         page_size: 50,
         action_prefix: actionPrefix || undefined,
+        search: search || undefined,
+        date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+        date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       }),
+  });
+
+  const exportCsv = useMutation({
+    mutationFn: () =>
+      platformAdmin.exportAudit({
+        action_prefix: actionPrefix || undefined,
+        search: search || undefined,
+        date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
+        date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
+      }),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "platform-audit.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    },
   });
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
@@ -24,26 +49,77 @@ export default function PlatformAuditPage() {
   return (
     <PlatformShell>
       <div className="space-y-4">
-        <p className="text-sm text-stone-600">
-          Platform-wide audit events. Org-scoped actions from all tenants are visible here.
-        </p>
-        <label className="block text-sm">
-          <span className="mb-1 block text-stone-600">Action filter</span>
-          <select
-            className="input"
-            value={actionPrefix}
-            onChange={(e) => {
-              setActionPrefix(e.target.value);
-              setPage(1);
-            }}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-sm text-stone-600 dark:text-stone-300">
+            Platform-wide audit events with filters and CSV export.
+          </p>
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-2 text-xs"
+            disabled={exportCsv.isPending}
+            onClick={() => exportCsv.mutate()}
           >
-            <option value="">All actions</option>
-            <option value="platform.">Platform actions</option>
-            <option value="cms.">CMS actions</option>
-            <option value="platform.user.">User role changes</option>
-            <option value="platform.program_access.">Program access</option>
-          </select>
-        </label>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Action filter</span>
+            <select
+              className="input w-full"
+              value={actionPrefix}
+              onChange={(e) => {
+                setActionPrefix(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All actions</option>
+              <option value="platform.">Platform actions</option>
+              <option value="cms.">CMS actions</option>
+              <option value="platform.user.">User changes</option>
+              <option value="platform.program_access.">Program access</option>
+              <option value="platform.user.impersonate">Impersonation</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Search</span>
+            <input
+              className="input w-full"
+              placeholder="Action or resource"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">From</span>
+            <input
+              type="date"
+              className="input w-full"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">To</span>
+            <input
+              type="date"
+              className="input w-full"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+        </div>
 
         {isLoading ? (
           <p className="text-sm text-stone-500">Loading audit log…</p>
@@ -58,9 +134,11 @@ export default function PlatformAuditPage() {
                   <div className="text-stone-600">
                     {entry.resource_type}
                     {entry.resource_id ? ` · ${entry.resource_id}` : ""}
+                    {entry.organization_id ? ` · org ${entry.organization_id}` : ""}
                   </div>
                   <div className="mt-1 text-xs text-stone-500">
                     {new Date(entry.created_at).toLocaleString()}
+                    {entry.actor_user_id ? ` · actor ${entry.actor_user_id}` : ""}
                     {entry.ip ? ` · ${entry.ip}` : ""}
                   </div>
                 </div>

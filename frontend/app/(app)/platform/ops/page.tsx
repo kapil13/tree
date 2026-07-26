@@ -12,6 +12,11 @@ export default function PlatformOpsPage() {
     queryFn: () => platformAdmin.opsSummary(),
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ["platform-settings"],
+    queryFn: () => platformAdmin.settings(),
+  });
+
   return (
     <PlatformShell>
       <div className="space-y-6">
@@ -128,6 +133,27 @@ export default function PlatformOpsPage() {
                 </table>
               </div>
             </section>
+
+            {settings ? (
+              <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+                <h2 className="text-lg font-semibold">System configuration</h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  Read-only snapshot of integration and feature flags ({settings.app_env} · v
+                  {settings.app_version}).
+                </p>
+                <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                  {Object.entries(settings).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between gap-4 border-b border-stone-50 py-1 dark:border-stone-800"
+                    >
+                      <dt className="text-stone-500">{key.replace(/_/g, " ")}</dt>
+                      <dd className="font-medium">{String(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
           </>
         )}
       </div>

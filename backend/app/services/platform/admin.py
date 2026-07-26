@@ -202,3 +202,67 @@ async def get_platform_organization(db: AsyncSession, org_id: uuid.UUID) -> dict
         "owner_user_id": org.owner_user_id,
         "created_at": org.created_at,
     }
+
+
+async def query_org_members_for_admin(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> tuple[list[dict[str, Any]], int]:
+    base = (
+        select(User)
+        .where(User.organization_id == org_id)
+        .order_by(User.is_org_admin.desc(), User.full_name.asc())
+    )
+    total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
+    page_size = min(max(page_size, 1), 100)
+    page = max(page, 1)
+    users = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    items = [
+        {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "org_role": user.org_role,
+            "is_org_admin": user.is_org_admin,
+            "is_active": user.is_active,
+            "last_login_at": user.last_login_at,
+            "created_at": user.created_at,
+        }
+        for user in users
+    ]
+    return items, total
+
+
+async def query_org_projects_for_admin(
+    db: AsyncSession,
+    org_id: uuid.UUID,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> tuple[list[dict[str, Any]], int]:
+    base = (
+        select(PlantingProject)
+        .where(PlantingProject.organization_id == org_id)
+        .order_by(PlantingProject.created_at.desc())
+    )
+    total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
+    page_size = min(max(page_size, 1), 100)
+    page = max(page, 1)
+    projects = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).scalars().all()
+    items = [
+        {
+            "id": project.id,
+            "code": project.code,
+            "name": project.name,
+            "status": project.status,
+            "segment": project.segment,
+            "program_code": project.program_code,
+            "created_at": project.created_at,
+        }
+        for project in projects
+    ]
+    return items, total
