@@ -249,7 +249,21 @@ export function SignupWizard({
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
             />
-            <span>I agree to the platform terms and data use policy.</span>
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Terms of Service
+              </a>
+              ,{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Privacy Policy
+              </a>
+              , and{" "}
+              <a href="/data-use" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Data Use Policy
+              </a>
+              .
+            </span>
           </label>
           {captchaWidget}
           <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => void startSignup()}>

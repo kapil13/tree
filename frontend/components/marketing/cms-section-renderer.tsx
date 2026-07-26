@@ -7,6 +7,38 @@ import { cmsIcon } from "@/lib/cms-icons";
 import type { CmsSection } from "@/lib/cms-api";
 import { linkProps } from "@/lib/cms-defaults";
 
+/** Lightweight Markdown-ish renderer for CMS legal/plain bodies (`#`, `##`, paragraphs). */
+function LegalPlainBody({ text }: { text: string }) {
+  const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/);
+  return (
+    <div className="space-y-4 text-stone-700">
+      {blocks.map((block, i) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+        if (trimmed.startsWith("# ")) {
+          return (
+            <h1 key={i} className="text-3xl font-semibold tracking-tight text-forest-900">
+              {trimmed.slice(2)}
+            </h1>
+          );
+        }
+        if (trimmed.startsWith("## ")) {
+          return (
+            <h2 key={i} className="mt-8 text-xl font-semibold text-forest-900">
+              {trimmed.slice(3)}
+            </h2>
+          );
+        }
+        return (
+          <p key={i} className="whitespace-pre-wrap leading-relaxed">
+            {trimmed}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function CtaLink({ cta, className }: { cta?: { label?: string; href?: string }; className?: string }) {
   const link = linkProps(cta as { label: string; href: string } | undefined);
   return (
@@ -252,11 +284,14 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
 
     case "rich_text":
       return (
-        <section id={section.anchor_id || undefined} className="mx-auto max-w-3xl px-6 py-16 prose prose-stone">
+        <section
+          id={section.anchor_id || undefined}
+          className="mx-auto max-w-3xl px-6 py-16 prose prose-stone prose-headings:text-forest-900"
+        >
           {c.html ? (
             <div dangerouslySetInnerHTML={{ __html: String(c.html) }} />
           ) : (
-            <p className="whitespace-pre-wrap text-stone-700">{String(c.body || "")}</p>
+            <LegalPlainBody text={String(c.body || "")} />
           )}
         </section>
       );

@@ -14,10 +14,12 @@ from app.schemas.cms import (
     CmsPageUpdate,
     CmsSectionCreate,
     CmsSectionUpdate,
+    LegalDocumentUpdate,
     SiteConfigUpdate,
 )
 from app.services.audit import record_audit
 from app.services.cms.defaults import SECTION_TYPES
+from app.services.cms.legal import LEGAL_PAGE_SLUGS
 from app.services.cms.service import (
     _page_dict,
     _section_dict,
@@ -25,9 +27,11 @@ from app.services.cms.service import (
     get_page_admin,
     get_public_page,
     get_site_config,
+    list_legal_documents,
     list_pages_admin,
     resolve_page_admin,
     slugify,
+    update_legal_document,
 )
 
 public_router = APIRouter(prefix="/public", tags=["public"])
@@ -98,6 +102,51 @@ async def cms_update_site(
     )
     await db.commit()
     return {config_key: row.data}
+
+
+@admin_router.get("/legal")
+async def cms_list_legal(_manager: CmsManager, db: DB) -> list[dict]:
+    """Terms, Privacy, and Data Use documents for admin editing."""
+    return await list_legal_documents(db)
+
+
+@admin_router.put("/legal/{slug}")
+async def cms_update_legal(
+    slug: str,
+    payload: LegalDocumentUpdate,
+    request: Request,
+    manager: CmsManager,
+    db: DB,
+) -> dict:
+    try:
+        doc = await update_legal_document(
+            db,
+            slug,
+            title=payload.title,
+            meta_description=payload.meta_description,
+            body=payload.body,
+            published=payload.published,
+            actor_user_id=manager.id,
+        )
+    except ValueError as exc:
+        code = str(exc)
+        if code == "unknown_legal_slug":
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail=code) from exc
+        if code == "page_not_found":
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail=code) from exc
+        raise
+
+    await record_audit(
+        db,
+        actor=manager,
+        action="cms.legal.update",
+        resource_type="cms_page",
+        resource_id=uuid.UUID(doc["page_id"]),
+        request=request,
+        diff={"slug": slug, "title": doc["title"]},
+    )
+    await db.commit()
+    return doc
 
 
 @admin_router.get("/pages")
@@ -219,6 +268,11 @@ async def cms_delete_page(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="page_not_found")
     if page.is_home:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="cannot_delete_home_page")
+    if page.slug in LEGAL_PAGE_SLUGS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="cannot_delete_legal_page",
+        )
 
     await record_audit(
         db,

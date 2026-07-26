@@ -13,7 +13,7 @@ export const CMS_HEADER_FALLBACK: CmsPublicSite["site"]["header"] = {
 
 export const CMS_FOOTER_FALLBACK: CmsPublicSite["site"]["footer"] = {
   description:
-    "Environmental monitoring, reporting, and verification for plantations, biodiversity, and carbon programs — from satellite pixels to audit-ready evidence.",
+    "Environmental monitoring, reporting, and verification for plantations and biodiversity — from satellite pixels to audit-ready evidence packs.",
   badge: "Intelligence for a thriving planet",
   columns: [
     {
@@ -23,9 +23,17 @@ export const CMS_FOOTER_FALLBACK: CmsPublicSite["site"]["footer"] = {
         { label: "Register a tree", href: "/auth?mode=signup" },
       ],
     },
+    {
+      title: "Legal",
+      links: [
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Privacy Policy", href: "/privacy" },
+        { label: "Data Use Policy", href: "/data-use" },
+      ],
+    },
   ],
   copyright: "Aranyix. All rights reserved.",
-  legal_note: "Apache-2.0 · Open MRV infrastructure",
+  legal_note: "MRV & audit-prep platform · Not a carbon credit issuer",
 };
 
 export const CMS_HOME_FALLBACK: CmsPublicSite = {

@@ -46,6 +46,7 @@ from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
+from app.services.auth.org_access import assert_user_may_authenticate
 from app.services.auth.otp import (
     normalize_phone,
     otp_dev_hint,
@@ -154,6 +155,7 @@ async def login(payload: LoginRequest, request: Request, db: DB) -> TokenRespons
         payload.password, user.hashed_password
     ):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_credentials")
+    await assert_user_may_authenticate(db, user)
     user.last_login_at = datetime.now(UTC)
     await record_audit(
         db,
@@ -179,8 +181,9 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     sub = data.get("sub")
     res = await db.execute(select(User).where(User.id == uuid.UUID(sub)))
     user = res.scalar_one_or_none()
-    if user is None or not user.is_active:
+    if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
+    await assert_user_may_authenticate(db, user)
     return _tokens_for(user)
 
 
@@ -389,6 +392,7 @@ async def verify_otp(payload: OTPVerify, request: Request, db: DB) -> TokenRespo
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
 
     user = await _user_from_otp(db, payload)
+    await assert_user_may_authenticate(db, user)
     user.is_verified = True
     now = datetime.now(UTC)
     if payload.phone and user.phone_verified_at is None:
@@ -546,6 +550,11 @@ async def google_callback(
             user.google_sub = profile.sub
             if not user.full_name:
                 user.full_name = profile.name
+
+    try:
+        await assert_user_may_authenticate(db, user)
+    except HTTPException:
+        return RedirectResponse(f"{frontend}/auth?mode=signin&error=organization_suspended")
 
     user.is_verified = True
     user.last_login_at = datetime.now(UTC)

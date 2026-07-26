@@ -51,9 +51,34 @@ export const cmsPublic = {
   },
 };
 
+export type LegalDocument = {
+  slug: string;
+  title: string;
+  meta_description: string;
+  published: boolean;
+  public_path: string;
+  updated_at: string | null;
+  body: string;
+  page_id: string;
+};
+
 export const cmsAdmin = {
   async sectionTypes() {
     return (await api.get<string[]>("/v1/platform/cms/section-types")).data;
+  },
+  async listLegal() {
+    return (await api.get<LegalDocument[]>("/v1/platform/cms/legal")).data;
+  },
+  async updateLegal(
+    slug: string,
+    payload: {
+      title?: string;
+      meta_description?: string;
+      body?: string;
+      published?: boolean;
+    },
+  ) {
+    return (await api.put<LegalDocument>(`/v1/platform/cms/legal/${slug}`, payload)).data;
   },
   async siteConfig() {
     return (await api.get<{ header: CmsPublicSite["site"]["header"]; footer: CmsPublicSite["site"]["footer"] }>(

@@ -17,8 +17,8 @@ HEADER_DEFAULT: dict[str, Any] = {
 
 FOOTER_DEFAULT: dict[str, Any] = {
     "description": (
-        "Environmental monitoring, reporting, and verification for plantations, biodiversity, "
-        "and carbon programs — from satellite pixels to audit-ready evidence."
+        "Environmental monitoring, reporting, and verification for plantations and biodiversity — "
+        "from satellite pixels to audit-ready evidence packs."
     ),
     "badge": "Intelligence for a thriving planet",
     "columns": [
@@ -27,7 +27,7 @@ FOOTER_DEFAULT: dict[str, Any] = {
             "links": [
                 {"label": "Dashboard", "href": "/dashboard"},
                 {"label": "Register a tree", "href": "/auth?mode=signup"},
-                {"label": "API documentation", "href": "/docs"},
+                {"label": "How it works", "href": "/#how-it-works"},
             ],
         },
         {
@@ -40,16 +40,17 @@ FOOTER_DEFAULT: dict[str, Any] = {
             ],
         },
         {
-            "title": "Company",
+            "title": "Legal",
             "links": [
-                {"label": "Compliance frameworks", "href": "#compliance"},
-                {"label": "How it works", "href": "#how-it-works"},
+                {"label": "Terms of Service", "href": "/terms"},
+                {"label": "Privacy Policy", "href": "/privacy"},
+                {"label": "Data Use Policy", "href": "/data-use"},
                 {"label": "Sign in", "href": "/auth?mode=signin"},
             ],
         },
     ],
     "copyright": "Aranyix. All rights reserved.",
-    "legal_note": "Apache-2.0 · Open MRV infrastructure",
+    "legal_note": "MRV & audit-prep platform · Not a carbon credit issuer",
 }
 
 HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
@@ -74,7 +75,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"value": "10M+", "label": "Trees at planetary scale"},
                 {"value": "100+", "label": "Species in AI catalog"},
                 {"value": "24/7", "label": "Satellite & alert monitoring"},
-                {"value": "IPCC", "label": "AR6-aligned carbon engine"},
+                {"value": "IPCC", "label": "AR6-aligned estimates"},
             ],
             "float_cards": [
                 {
@@ -112,7 +113,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {
                     "icon": "Bird",
                     "title": "Biodiversity assessment",
-                    "description": "Bioacoustic listening, species richness scoring, and habitat signals to quantify ecosystem health beyond carbon.",
+                    "description": "Bioacoustic listening, species richness scoring, and habitat signals to quantify ecosystem health alongside planting evidence.",
                     "accent": "from-lime-500/20 to-lime-900/5",
                 },
                 {
@@ -136,7 +137,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {
                     "icon": "FileCheck2",
                     "title": "Audit-ready reporting",
-                    "description": "Carbon projections, Verra VM0047 pathways, Gold Standard outputs, and exportable PDF / Excel evidence packs.",
+                    "description": "Framework-mapped evidence packs and exportable PDF / Excel reports for audit preparation — not credit issuance.",
                     "accent": "from-violet-500/12 to-violet-900/5",
                 },
             ],
@@ -152,17 +153,18 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "title": "Built for the standards your auditors already ask about",
             "copy": (
                 "Aranyix maps field evidence, satellite signals, and AI analytics to the frameworks "
-                "behind carbon markets, government planting schemes, and environmental litigation."
+                "auditors and program officers already ask about — as MRV and audit-preparation tools, "
+                "not as a carbon credit registry or legal certification body."
             ),
             "items": [
-                {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based carbon", "description": "Tiered emission factors, biomass models, and growth curves aligned with IPCC AR6 guidance."},
-                {"icon": "Sprout", "code": "REDD+", "title": "Forest carbon MRV", "description": "Baseline, leakage, and permanence evidence structures for REDD+ and jurisdictional programs."},
-                {"icon": "ShieldCheck", "code": "Paris Agreement", "title": "NDC & Article 6", "description": "Traceable planting records that support national commitments and cooperative approaches."},
+                {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates aligned with IPCC AR6 guidance for inventory support."},
+                {"icon": "Sprout", "code": "REDD+", "title": "Forest carbon MRV prep", "description": "Evidence structures for baseline, leakage, and permanence questionnaires — not FREL computation."},
+                {"icon": "ShieldCheck", "code": "Paris Agreement", "title": "NDC traceability", "description": "Geo-tagged planting ledgers that support transparent reporting conversations."},
                 {"icon": "MapPin", "code": "NHAI / Govt", "title": "Highway & public schemes", "description": "Geo-tagged planting proof for NHAI, forest department, and municipal greening audits."},
-                {"icon": "Radar", "code": "NGT / Courts", "title": "Compensatory afforestation", "description": "Timestamped evidence chains for CAMPA, FCA compliance, and judicial monitoring orders."},
-                {"icon": "FileCheck2", "code": "Verra VCS", "title": "Verified carbon units", "description": "VM0047-ready project data, permanence buffers, and monitoring report foundations."},
-                {"icon": "Sparkles", "code": "Gold Standard", "title": "Premium credits", "description": "Co-benefit documentation for biodiversity, community, and SDG-linked outcomes."},
-                {"icon": "Leaf", "code": "BYOT", "title": "Citizen stewardship", "description": "Bring Your Own Tree — lightweight public registration that scales into verified portfolios."},
+                {"icon": "Radar", "code": "NGT / Courts", "title": "Compensatory afforestation", "description": "Timestamped evidence packs for CAMPA / FCA monitoring — not a substitute for court filings."},
+                {"icon": "FileCheck2", "code": "Verra VM0047", "title": "ARR evidence prep", "description": "Stratification, buffer math, and checklists for VM0047-style audit preparation."},
+                {"icon": "Sparkles", "code": "Gold Standard", "title": "Safeguard checklists", "description": "Guided co-benefit and safeguard questionnaires for LUF readiness — not issuance."},
+                {"icon": "Leaf", "code": "BYOT", "title": "Citizen stewardship", "description": "Bring Your Own Tree — lightweight public registration with complimentary AI health scans."},
             ],
         },
     },
@@ -197,7 +199,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"step": "01", "title": "Register & enroll", "description": "Choose your program — BYOT, government, ESG, or NGO — and onboard your organization in one flow."},
                 {"step": "02", "title": "Capture evidence", "description": "Add trees with GPS, photos, and species. Mobile apps and web wizards guide every required field."},
                 {"step": "03", "title": "Monitor continuously", "description": "Satellite NDVI, AI health scoring, and bioacoustic biodiversity layers watch your sites 24/7."},
-                {"step": "04", "title": "Report with confidence", "description": "Export compliance-ready dashboards, alerts, and carbon reports mapped to your frameworks."},
+                {"step": "04", "title": "Report with confidence", "description": "Export dashboards, alerts, and framework-mapped evidence packs for auditor review."},
             ],
         },
     },
@@ -208,13 +210,13 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "sort_order": 50,
         "content": {
             "eyebrow": "Inside the platform",
-            "title": "A command center for plantations, carbon, and biodiversity",
+            "title": "A command center for plantations and biodiversity",
             "copy": "Executive dashboards surface tree health, satellite anomalies, species richness, and alert queues — with exports tailored to your enrolled programs.",
             "bullets": [
                 "Interactive Google Maps plantation view with health overlays",
-                "Executive dashboards for carbon, biodiversity, and alerts",
+                "Executive dashboards for health, biodiversity, and alerts",
                 "Multi-program enrollment on a single account",
-                "REST API for integrations, GIS exports, and enterprise SSO",
+                "REST API for integrations and GIS exports",
             ],
             "metrics": [
                 ["12,480", "Trees registered"],
@@ -224,7 +226,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "rows": [
                 ["Satellite canopy stress", "2 sites flagged"],
                 ["Bioacoustic richness", "Stable this week"],
-                ["Carbon projection", "1,240 tCO₂e est."],
+                ["CO₂e estimate", "1,240 tCO₂e (modelled)"],
             ],
         },
     },
@@ -235,8 +237,8 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "sort_order": 60,
         "content": {
             "eyebrow": "Ready to begin?",
-            "title": "Turn every tree into verified environmental intelligence",
-            "copy": "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, and compliance-ready carbon evidence — from citizen BYOT to government-grade MRV.",
+            "title": "Turn every tree into audit-ready environmental evidence",
+            "copy": "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, and MRV evidence packs — from citizen BYOT to government-grade field programs.",
             "primary_cta": {"label": "Get started free", "href": "/auth?mode=signup"},
             "secondary_cta": {"label": "Sign in to workspace", "href": "/auth?mode=signin"},
         },
@@ -247,8 +249,8 @@ HOME_PAGE_DEFAULT = {
     "slug": "home",
     "title": "Aranyix — Intelligence for a Thriving Planet",
     "meta_description": (
-        "Environmental monitoring, reporting, and verification for plantations, biodiversity, "
-        "and carbon programs."
+        "Environmental monitoring, reporting, and verification for plantations and biodiversity — "
+        "audit-prep MRV, not carbon credit issuance."
     ),
     "published": True,
     "is_home": True,
