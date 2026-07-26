@@ -8,7 +8,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, AuditReader, WriteAccess
+from app.api.v1.deps import DB, AuditReader, OrgAdmin
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.schemas.webhook import (
     WebhookCreate,
@@ -69,7 +69,7 @@ async def list_webhooks(user: AuditReader, db: DB) -> list[WebhookOut]:
 async def create_webhook(
     payload: WebhookCreate,
     request: Request,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
 ) -> WebhookCreatedOut:
     org_id = _require_org(user)
@@ -112,7 +112,7 @@ async def update_webhook(
     webhook_id: uuid.UUID,
     payload: WebhookUpdate,
     request: Request,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
 ) -> WebhookOut:
     org_id = _require_org(user)
@@ -153,7 +153,7 @@ async def update_webhook(
 async def delete_webhook(
     webhook_id: uuid.UUID,
     request: Request,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
 ) -> dict[str, str]:
     org_id = _require_org(user)
@@ -179,7 +179,7 @@ async def delete_webhook(
 async def rotate_webhook_secret(
     webhook_id: uuid.UUID,
     request: Request,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
 ) -> WebhookCreatedOut:
     org_id = _require_org(user)
@@ -206,7 +206,7 @@ async def rotate_webhook_secret(
 @router.post("/{webhook_id}/test", response_model=WebhookDeliveryOut)
 async def test_webhook(
     webhook_id: uuid.UUID,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
 ) -> WebhookDeliveryOut:
     org_id = _require_org(user)

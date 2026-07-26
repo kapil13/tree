@@ -3,6 +3,7 @@
  * Reads `byot_access_token` from localStorage and sends it as Bearer.
  */
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messages";
 import { useAuth } from "@/lib/auth-store";
 
 /** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
@@ -158,9 +159,10 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "credit_ledger_migration_required") {
         return "Credit ledger database migration required. On the server run: alembic upgrade head.";
       }
-      if (data.detail === "payments_not_configured") {
-        return "In-app payments are not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET on the server.";
-      }
+      const paymentMsg = paymentErrorMessage(data.detail);
+      if (paymentMsg) return paymentMsg;
+      const authMsg = authErrorMessage(data.detail);
+      if (authMsg) return authMsg;
       if (data.detail === "viewer_read_only") {
         return "Your viewer role is read-only. Ask your program manager to change your access.";
       }
@@ -466,6 +468,9 @@ export const auth = {
     return (
       await api.post<Tokens>("/v1/auth/refresh", { refresh_token: refreshToken })
     ).data;
+  },
+  async logout(refreshToken: string) {
+    return (await api.post<{ status: string }>("/v1/auth/logout", { refresh_token: refreshToken })).data;
   },
   async requestOtp(payload: { email?: string; phone?: string; captcha_token?: string }) {
     return (

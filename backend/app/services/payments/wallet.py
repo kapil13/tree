@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_scan_wallet import UserAiScanWallet
@@ -21,7 +22,24 @@ async def ensure_wallet(db: AsyncSession, user_id: uuid.UUID) -> UserAiScanWalle
 async def credit_scans(db: AsyncSession, user_id: uuid.UUID, credits: int) -> UserAiScanWallet:
     if credits <= 0:
         raise ValueError("invalid_credits")
-    wallet = await ensure_wallet(db, user_id)
+
+    res = await db.execute(
+        select(UserAiScanWallet)
+        .where(UserAiScanWallet.user_id == user_id)
+        .with_for_update()
+    )
+    wallet = res.scalar_one_or_none()
+    if wallet is None:
+        wallet = UserAiScanWallet(user_id=user_id, purchased_scan_balance=0)
+        db.add(wallet)
+        await db.flush()
+        res = await db.execute(
+            select(UserAiScanWallet)
+            .where(UserAiScanWallet.user_id == user_id)
+            .with_for_update()
+        )
+        wallet = res.scalar_one()
+
     wallet.purchased_scan_balance += credits
     await db.flush()
     return wallet

@@ -60,6 +60,7 @@ from app.services.auth.signup import (
     start_signup,
     verify_signup_phone,
 )
+from app.services.auth.token_denylist import is_jti_revoked, revoke_jti
 from app.services.auth.user_profile import (
     user_enrolled_program_codes,
     user_has_professional_program,
@@ -178,13 +179,32 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_refresh") from None
     if data.get("type") != "refresh":
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="wrong_token_type")
+    jti = data.get("jti")
+    if not jti or await is_jti_revoked(str(jti)):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_refresh")
     sub = data.get("sub")
     res = await db.execute(select(User).where(User.id == uuid.UUID(sub)))
     user = res.scalar_one_or_none()
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
     await assert_user_may_authenticate(db, user)
+    # Rotate: revoke the presented refresh token before issuing a new pair.
+    exp = data.get("exp")
+    await revoke_jti(str(jti), expires_at=int(exp) if exp is not None else None)
     return _tokens_for(user)
+
+
+@router.post("/logout", dependencies=[rate_limit(60, 60)])
+async def logout(payload: RefreshRequest) -> dict[str, str]:
+    """Revoke the presented refresh token (idempotent)."""
+    try:
+        data = decode_token(payload.refresh_token)
+    except ValueError:
+        return {"status": "ok"}
+    if data.get("type") == "refresh" and data.get("jti"):
+        exp = data.get("exp")
+        await revoke_jti(str(data["jti"]), expires_at=int(exp) if exp is not None else None)
+    return {"status": "ok"}
 
 
 def _signup_error(exc: SignupError) -> HTTPException:

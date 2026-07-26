@@ -34,10 +34,20 @@ export const useAuth = create<State>()(
       },
       setUser: (u) => set({ user: u }),
       logout: () => {
+        const refresh = get().refresh;
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(PERSIST_KEY);
           clearSessionCookie();
+          // Best-effort server revoke (keepalive survives navigation).
+          if (refresh) {
+            void fetch("/api/v1/auth/logout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refresh_token: refresh }),
+              keepalive: true,
+            }).catch(() => undefined);
+          }
         }
         set({ user: null, access: null, refresh: null });
       },

@@ -106,7 +106,7 @@ class Settings(BaseSettings):
 
     @property
     def captcha_enabled(self) -> bool:
-        return bool(self.turnstile_secret_key)
+        return bool(self.turnstile_secret_key and self.turnstile_site_key)
 
     @property
     def allow_dev_otp(self) -> bool:

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { OrgAdminGuard } from "@/components/org-admin-guard";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { errorMessage, webhooks, type WebhookEventType } from "@/lib/api";
 
@@ -67,6 +68,7 @@ export default function WebhooksSettingsPage() {
   }
 
   return (
+    <OrgAdminGuard>
     <div className="space-y-8">
       <SettingsSection
         title="Webhooks"
@@ -203,5 +205,6 @@ export default function WebhooksSettingsPage() {
         </div>
       </SettingsSection>
     </div>
+    </OrgAdminGuard>
   );
 }

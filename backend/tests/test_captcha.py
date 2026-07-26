@@ -10,11 +10,13 @@ from app.services.auth.captcha import verify_captcha_token
 
 def test_captcha_skipped_when_disabled(monkeypatch):
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", None)
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", None)
     asyncio.run(verify_captcha_token(None))
 
 
 def test_captcha_required_when_enabled(monkeypatch):
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
     with pytest.raises(HTTPException) as exc:
         asyncio.run(verify_captcha_token(None))
     assert exc.value.detail == "captcha_required"
@@ -22,6 +24,7 @@ def test_captcha_required_when_enabled(monkeypatch):
 
 def test_captcha_success(monkeypatch):
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
 
     class FakeResponse:
         def raise_for_status(self):
@@ -47,6 +50,7 @@ def test_captcha_success(monkeypatch):
 
 def test_captcha_failure(monkeypatch):
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
 
     class FakeResponse:
         def raise_for_status(self):
