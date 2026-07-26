@@ -66,6 +66,12 @@ export function canAccessPlatformPath(user: PlatformUser, pathname: string) {
   if (pathname.startsWith("/platform/roles")) {
     return hasAnyPlatformAccess(user);
   }
+  if (pathname.startsWith("/platform/billing")) {
+    return canAccessBillingAdmin(user);
+  }
+  if (pathname.startsWith("/platform/ops")) {
+    return canAccessOpsAdmin(user);
+  }
   if (pathname.startsWith("/platform")) {
     return hasAnyPlatformAccess(user);
   }

@@ -47,7 +47,7 @@ DEFAULT_MODULES: list[dict] = [
     {
         "module_key": BILLING_ADMIN_MODULE,
         "label": "Billing & credits",
-        "description": "View payment orders and AI scan wallet usage (read-only in Phase 2).",
+        "description": "View payment orders and AI scan wallet usage.",
         "enabled": True,
         "allowed_roles": ["admin"],
     },

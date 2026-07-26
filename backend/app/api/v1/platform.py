@@ -9,7 +9,9 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.api.v1.deps import (
     DB,
     AnyPlatformModule,
+    BillingModuleAdmin,
     CmsManager,
+    OpsModuleAdmin,
     PlatformAdmin,
     ProgramAccessModuleAdmin,
     UsersModuleAdmin,
@@ -35,7 +37,10 @@ from app.schemas.platform import (
     OrganizationAdminDetailOut,
     OrganizationAdminOut,
     OrganizationAdminUpdate,
+    PaymentOrderAdminOut,
     PermissionMatrixOut,
+    PlatformBillingSummaryOut,
+    PlatformOpsSummaryOut,
     PlatformOverviewOut,
     UserAdminOut,
     UserRoleUpdate,
@@ -58,12 +63,14 @@ from app.services.platform.admin import (
     query_platform_organizations,
     query_platform_users,
 )
+from app.services.platform.billing import build_billing_summary, query_payment_orders
 from app.services.platform.modules import (
     USERS_ADMIN_MODULE,
     WEBSITE_CMS_MODULE,
     list_module_rules,
     module_rule_dict,
 )
+from app.services.platform.ops import build_ops_summary
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
 
@@ -80,6 +87,33 @@ async def platform_permissions(_access: AnyPlatformModule) -> PermissionMatrixOu
         permissions=all_permission_labels(),
         roles=permissions_matrix(),
     )
+
+
+@router.get("/billing/summary", response_model=PlatformBillingSummaryOut)
+async def platform_billing_summary(_admin: BillingModuleAdmin, db: DB) -> PlatformBillingSummaryOut:
+    return PlatformBillingSummaryOut.model_validate(await build_billing_summary(db))
+
+
+@router.get("/billing/orders", response_model=Page[PaymentOrderAdminOut])
+async def platform_billing_orders(
+    _admin: BillingModuleAdmin,
+    db: DB,
+    status: str | None = None,
+    page: int = 1,
+    page_size: int = 50,
+) -> Page[PaymentOrderAdminOut]:
+    items, total = await query_payment_orders(db, status=status, page=page, page_size=page_size)
+    return Page(
+        items=[PaymentOrderAdminOut.model_validate(i) for i in items],
+        total=total,
+        page=max(page, 1),
+        page_size=min(max(page_size, 1), 100),
+    )
+
+
+@router.get("/ops/summary", response_model=PlatformOpsSummaryOut)
+async def platform_ops_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformOpsSummaryOut:
+    return PlatformOpsSummaryOut.model_validate(await build_ops_summary(db))
 
 
 @router.get("/roles")

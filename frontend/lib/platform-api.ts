@@ -85,6 +85,57 @@ export type PermissionMatrix = {
   roles: Record<string, string[]>;
 };
 
+export type PlatformBillingSummary = {
+  payments_enabled: boolean;
+  orders: { total: number; paid: number; failed: number; pending: number };
+  revenue_paise: number;
+  credits_sold: number;
+  wallets: { users_with_balance: number; total_purchased_balance: number };
+};
+
+export type PlatformPaymentOrder = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_full_name: string;
+  sku: string;
+  credits_granted: number;
+  amount_paise: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+};
+
+export type PlatformPaymentOrderPage = {
+  items: PlatformPaymentOrder[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type PlatformOpsSummary = {
+  status: string;
+  workers: {
+    status: string;
+    celery: { reachable: boolean; workers: string[]; error?: string | null };
+    bioacoustic?: Record<string, unknown>;
+    failed_job_count: number;
+  };
+  integrations: { status: string; integrations: Record<string, { status: string; label?: string }> };
+  jobs: {
+    total_recorded: number;
+    recent_count: number;
+    recent_by_status: Record<string, number>;
+    recent: Array<{
+      job_name: string;
+      status: string;
+      finished_at: string | null;
+      error?: string | null;
+    }>;
+  };
+};
+
 export const platformAdmin = {
   async overview() {
     return (await api.get<PlatformOverview>("/v1/platform/overview")).data;
@@ -157,5 +208,15 @@ export const platformAdmin = {
   },
   async permissionsMatrix() {
     return (await api.get<PermissionMatrix>("/v1/platform/permissions")).data;
+  },
+  async billingSummary() {
+    return (await api.get<PlatformBillingSummary>("/v1/platform/billing/summary")).data;
+  },
+  async listPaymentOrders(params?: { status?: string; page?: number; page_size?: number }) {
+    return (await api.get<PlatformPaymentOrderPage>("/v1/platform/billing/orders", { params }))
+      .data;
+  },
+  async opsSummary() {
+    return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
   },
 };
