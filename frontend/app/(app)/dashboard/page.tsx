@@ -26,5 +26,6 @@ export default function DashboardPage() {
     return <ExecutiveDashboard />;
   }
 
+  // Citizen BYOT (role user/farmer) and other non-professional accounts
   return <CitizenDashboard />;
 }
