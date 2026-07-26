@@ -35,9 +35,19 @@ const STATUS_LABEL: Record<ChecklistEligibilityStatus, string> = {
   not_eligible: "Not eligible",
 };
 
-export function ProjectComplianceChecklistPanel({ projectId }: { projectId: string }) {
+export function ProjectComplianceChecklistPanel({
+  projectId,
+  initialChecklistCode,
+  onSaved,
+}: {
+  projectId: string;
+  initialChecklistCode?: ChecklistCode;
+  onSaved?: () => void;
+}) {
   const qc = useQueryClient();
-  const [checklistCode, setChecklistCode] = useState<ChecklistCode>("verra_vm0047");
+  const [checklistCode, setChecklistCode] = useState<ChecklistCode>(
+    initialChecklistCode ?? "verra_vm0047",
+  );
   const [draft, setDraft] = useState<Record<string, { answer?: ChecklistAnswer; notes?: string }>>(
     {},
   );
@@ -59,6 +69,12 @@ export function ProjectComplianceChecklistPanel({ projectId }: { projectId: stri
   });
 
   useEffect(() => {
+    if (initialChecklistCode) {
+      setChecklistCode(initialChecklistCode);
+    }
+  }, [initialChecklistCode]);
+
+  useEffect(() => {
     if (!state) return;
     const next: Record<string, { answer?: ChecklistAnswer; notes?: string }> = {};
     for (const item of state.items) {
@@ -77,6 +93,7 @@ export function ProjectComplianceChecklistPanel({ projectId }: { projectId: stri
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project-checklist", projectId, checklistCode] });
       qc.invalidateQueries({ queryKey: ["project-checklist-summaries", projectId] });
+      onSaved?.();
     },
   });
 

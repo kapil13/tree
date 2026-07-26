@@ -1871,6 +1871,35 @@ export type ProjectChecklistState = {
   updated_at: string | null;
 };
 
+export type ComplianceWorkflowStepStatus = "done" | "partial" | "pending" | "skipped";
+
+export type ComplianceWorkflowStep = {
+  id: string;
+  title: string;
+  description: string;
+  status: ComplianceWorkflowStepStatus;
+  action_label: string;
+  action_tab?: string;
+  action_href?: string;
+  action_anchor?: string;
+  metric?: string | null;
+  optional?: boolean;
+  quick_fix?: { survey_interval_days: number } | null;
+  recommended_checklist?: ChecklistCode;
+};
+
+export type ComplianceWorkflow = {
+  project_id: string;
+  segment: string;
+  compliance_mode: string;
+  recommended_checklist: ChecklistCode;
+  recommended_checklist_label: string;
+  steps: ComplianceWorkflowStep[];
+  progress: { done: number; partial: number; total: number; pct: number };
+  auto_signals: Record<string, string>;
+  checklist_summaries: ChecklistSummary[];
+};
+
 export const compliance = {
   async checklists() {
     return (
@@ -1890,6 +1919,11 @@ export const compliance = {
   async projectSummaries(projectId: string) {
     return (await api.get<ChecklistSummary[]>(`/v1/compliance/projects/${projectId}/checklists`))
       .data;
+  },
+  async projectWorkflow(projectId: string) {
+    return (
+      await api.get<ComplianceWorkflow>(`/v1/compliance/projects/${projectId}/workflow`)
+    ).data;
   },
   async projectChecklist(projectId: string, code: ChecklistCode) {
     return (

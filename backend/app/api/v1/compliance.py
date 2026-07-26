@@ -16,6 +16,7 @@ from app.services.compliance.evaluator import (
     list_project_checklist_summaries,
     save_project_checklist_responses,
 )
+from app.services.compliance.workflow import build_compliance_workflow
 from app.services.planting_projects.access import can_manage_project, load_project
 
 router = APIRouter(prefix="/compliance", tags=["compliance"])
@@ -45,6 +46,22 @@ async def get_project_checklists(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     try:
         return await list_project_checklist_summaries(db, project)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_checklist_db_error(exc)
+        raise
+
+
+@router.get("/projects/{project_id}/workflow")
+async def get_project_compliance_workflow(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    """Step-by-step compliance readiness workflow with live auto-check status."""
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        return await build_compliance_workflow(db, project)
     except (ProgrammingError, IntegrityError) as exc:
         await db.rollback()
         _raise_checklist_db_error(exc)

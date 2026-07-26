@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, ClipboardCheck, Download, FileText, Link2 } from "lucide-react";
+import { CheckCircle, Download, FileText, Link2 } from "lucide-react";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
+import { ProjectComplianceWorkflowPanel } from "@/components/projects/project-compliance-workflow-panel";
 import {
+  type ChecklistCode,
   type FrameworkProfileCode,
   errorMessage,
   plantingProjects,
@@ -28,14 +29,23 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
+
 export function ProjectComplianceTab({
   projectId,
   projectCode,
+  projectMetadata,
+  onNavigateTab,
 }: {
   projectId: string;
   projectCode?: string;
+  projectMetadata?: Record<string, unknown>;
+  onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
+  const checklistRef = useRef<HTMLDivElement>(null);
+  const violationsRef = useRef<HTMLDivElement>(null);
+  const [checklistCode, setChecklistCode] = useState<ChecklistCode | undefined>();
   const [frameworkProfile, setFrameworkProfile] = useState<FrameworkProfileCode>("verra_vm0047");
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -56,6 +66,7 @@ export function ProjectComplianceTab({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project-violations", projectId] });
       qc.invalidateQueries({ queryKey: ["planting-project", projectId] });
+      qc.invalidateQueries({ queryKey: ["compliance-workflow", projectId] });
     },
   });
 
@@ -100,6 +111,11 @@ export function ProjectComplianceTab({
     onError: (err) => setVerifyError(errorMessage(err)),
   });
 
+  function scrollToAnchor(anchor: string) {
+    const target = anchor === "violations" ? violationsRef.current : checklistRef.current;
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const busy = exportMrv.isPending || exportBundle.isPending || exportFramework.isPending;
   const selectedFramework = frameworks.find((f) => f.code === frameworkProfile);
 
@@ -107,12 +123,22 @@ export function ProjectComplianceTab({
 
   return (
     <div className="space-y-4">
-      <div className="card space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
-          <ClipboardCheck className="h-4 w-4 text-forest-700" />
-          Eligibility checklist
-        </div>
-        <ProjectComplianceChecklistPanel projectId={projectId} />
+      <ProjectComplianceWorkflowPanel
+        projectId={projectId}
+        projectMetadata={projectMetadata}
+        onNavigateTab={onNavigateTab}
+        onScrollToAnchor={scrollToAnchor}
+        onSelectChecklist={(code) => setChecklistCode(code as ChecklistCode)}
+      />
+
+      <div ref={checklistRef} className="card scroll-mt-24 space-y-4" id="compliance-checklist">
+        <ProjectComplianceChecklistPanel
+          projectId={projectId}
+          initialChecklistCode={checklistCode}
+          onSaved={() => {
+            qc.invalidateQueries({ queryKey: ["compliance-workflow", projectId] });
+          }}
+        />
       </div>
 
       <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
@@ -230,64 +256,66 @@ export function ProjectComplianceTab({
         </div>
       </div>
 
-      {!violations.length ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-          No open compliance violations for this project.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-stone-200">
-          <table className="min-w-full text-sm">
-            <thead className="bg-stone-50 text-left text-stone-600">
-              <tr>
-                <th className="px-4 py-2.5 font-medium">Severity</th>
-                <th className="px-4 py-2.5 font-medium">Type</th>
-                <th className="px-4 py-2.5 font-medium">Message</th>
-                <th className="px-4 py-2.5 font-medium">Tree</th>
-                <th className="px-4 py-2.5 font-medium">Date</th>
-                <th className="px-4 py-2.5 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {violations.map((v) => (
-                <tr key={v.id} className="border-t border-stone-100">
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_CLASS[v.severity] ?? SEVERITY_CLASS.warn}`}
-                    >
-                      {v.severity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-xs">{v.violation_type}</td>
-                  <td className="px-4 py-2.5">{v.message}</td>
-                  <td className="px-4 py-2.5">
-                    {v.tree_id ? (
-                      <Link href={`/trees/${v.tree_id}`} className="text-forest-700 hover:underline">
-                        View tree
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-stone-500">
-                    {new Date(v.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs"
-                      disabled={resolve.isPending}
-                      onClick={() => resolve.mutate(v.id)}
-                    >
-                      <CheckCircle className="h-3 w-3" />
-                      Resolve
-                    </button>
-                  </td>
+      <div ref={violationsRef} className="scroll-mt-24">
+        {!violations.length ? (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+            No open compliance violations for this project.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-stone-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-stone-50 text-left text-stone-600">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium">Severity</th>
+                  <th className="px-4 py-2.5 font-medium">Type</th>
+                  <th className="px-4 py-2.5 font-medium">Message</th>
+                  <th className="px-4 py-2.5 font-medium">Tree</th>
+                  <th className="px-4 py-2.5 font-medium">Date</th>
+                  <th className="px-4 py-2.5 font-medium" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {violations.map((v) => (
+                  <tr key={v.id} className="border-t border-stone-100">
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-medium capitalize ${SEVERITY_CLASS[v.severity] ?? SEVERITY_CLASS.warn}`}
+                      >
+                        {v.severity}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs">{v.violation_type}</td>
+                    <td className="px-4 py-2.5">{v.message}</td>
+                    <td className="px-4 py-2.5">
+                      {v.tree_id ? (
+                        <a href={`/trees/${v.tree_id}`} className="text-forest-700 hover:underline">
+                          View tree
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-stone-500">
+                      {new Date(v.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs"
+                        disabled={resolve.isPending}
+                        onClick={() => resolve.mutate(v.id)}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        Resolve
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

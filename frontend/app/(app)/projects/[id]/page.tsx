@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
@@ -19,9 +19,17 @@ const TABS = ["overview", "compliance", "credits", "trees", "team", "settings"] 
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const projectId = params.id as string;
   const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const requested = searchParams.get("tab");
+    if (requested && TABS.includes(requested as (typeof TABS)[number])) {
+      setTab(requested as (typeof TABS)[number]);
+    }
+  }, [searchParams]);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["planting-project", projectId],
@@ -177,7 +185,12 @@ export default function ProjectDetailPage() {
       )}
 
       {tab === "compliance" && (
-        <ProjectComplianceTab projectId={project.id} projectCode={project.code} />
+        <ProjectComplianceTab
+          projectId={project.id}
+          projectCode={project.code}
+          projectMetadata={project.metadata}
+          onNavigateTab={setTab}
+        />
       )}
 
       {tab === "credits" && (
