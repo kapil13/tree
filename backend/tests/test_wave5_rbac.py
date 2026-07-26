@@ -26,9 +26,14 @@ def test_professional_role_detection():
 
 
 @pytest.mark.asyncio
-async def test_org_admin_can_read_audit_without_government_role():
+async def test_org_admin_can_read_audit_without_government_role(monkeypatch):
     admin = MagicMock(role="user", is_org_admin=True, organization_id=uuid.uuid4())
-    result = await require_audit_reader(admin)
+    db = AsyncMock()
+    monkeypatch.setattr(
+        "app.api.v1.deps.user_can_access_module",
+        AsyncMock(return_value=False),
+    )
+    result = await require_audit_reader(admin, db)
     assert result is admin
 
 
