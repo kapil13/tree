@@ -113,7 +113,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     org_id: uuid.UUID | None = None
     if payload.organization_name:
         slug = _slugify(payload.organization_name)
-        org = Organization(name=payload.organization_name, slug=slug, type="ngo")
+        org = Organization(name=payload.organization_name, slug=slug, type="individual")
         db.add(org)
         await db.flush()
         org_id = org.id
