@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
+from fastapi import HTTPException
 
+from app.services.auth.org_access import assert_user_may_authenticate
 from app.services.cms.legal import LEGAL_PAGE_SLUGS, LEGAL_PAGES_DEFAULT
 from app.services.cms.service import _legal_body_from_page, update_legal_document
 
@@ -79,9 +81,6 @@ async def test_update_legal_document_writes_body(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_assert_user_may_authenticate_blocks_suspended_org():
-    from app.services.auth.org_access import assert_user_may_authenticate
-    from fastapi import HTTPException
-
     user = SimpleNamespace(is_active=True, organization_id=uuid.uuid4())
     org = SimpleNamespace(is_active=False)
     db = AsyncMock()
@@ -94,8 +93,6 @@ async def test_assert_user_may_authenticate_blocks_suspended_org():
 
 @pytest.mark.asyncio
 async def test_assert_user_may_authenticate_allows_active_org():
-    from app.services.auth.org_access import assert_user_may_authenticate
-
     user = SimpleNamespace(is_active=True, organization_id=uuid.uuid4())
     org = SimpleNamespace(is_active=True)
     db = AsyncMock()
