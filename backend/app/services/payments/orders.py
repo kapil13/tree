@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.payment import PaymentEvent, PaymentOrder
@@ -81,15 +82,25 @@ async def mark_order_paid(
     order: PaymentOrder,
     razorpay_payment_id: str,
 ) -> PaymentOrder:
-    if order.status == "paid":
-        return order
+    """Atomically transition order to paid and credit wallet once.
 
-    order.status = "paid"
-    order.razorpay_payment_id = razorpay_payment_id
-    order.paid_at = datetime.now(UTC)
-    await credit_scans(db, order.user_id, order.credits_granted)
+    Uses SELECT … FOR UPDATE so concurrent /verify + webhook cannot double-credit.
+    """
+    res = await db.execute(
+        select(PaymentOrder).where(PaymentOrder.id == order.id).with_for_update()
+    )
+    locked = res.scalar_one_or_none()
+    if locked is None:
+        raise PaymentError("order_not_found")
+    if locked.status == "paid":
+        return locked
+
+    locked.status = "paid"
+    locked.razorpay_payment_id = razorpay_payment_id
+    locked.paid_at = datetime.now(UTC)
+    await credit_scans(db, locked.user_id, locked.credits_granted)
     await db.flush()
-    return order
+    return locked
 
 
 async def mark_order_failed(
@@ -161,7 +172,12 @@ async def record_webhook_event(
 
     event = PaymentEvent(event_id=event_id, event_type=event_type, payload=payload)
     db.add(event)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        # Concurrent duplicate delivery of the same Razorpay event_id.
+        await db.rollback()
+        return None
     return event
 
 

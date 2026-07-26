@@ -79,9 +79,21 @@ def verify_payment_signature(
     return hmac.compare_digest(expected, signature)
 
 
+def webhook_secret() -> str | None:
+    """Dedicated webhook secret; key-secret fallback is dev/test only."""
+    dedicated = (settings.razorpay_webhook_secret or "").strip()
+    if dedicated:
+        return dedicated
+    from app.core.production_guards import is_hardened_env
+
+    if is_hardened_env():
+        return None
+    return (settings.razorpay_key_secret or "").strip() or None
+
+
 def verify_webhook_signature(body: bytes, signature: str) -> bool:
-    secret = settings.razorpay_webhook_secret or settings.razorpay_key_secret
-    if not secret:
+    secret = webhook_secret()
+    if not secret or not signature:
         return False
     expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)

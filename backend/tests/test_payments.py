@@ -12,6 +12,7 @@ import pytest
 from app.services.payments.catalog import get_scan_pack, list_scan_packs
 from app.services.payments.orders import (
     mark_order_failed,
+    mark_order_paid,
     process_webhook_payload,
     razorpay_event_id,
 )
@@ -101,3 +102,24 @@ async def test_mark_order_failed_is_idempotent() -> None:
     result = await mark_order_failed(db, order=order, razorpay_payment_id="pay_2")
     assert result is order
     assert order.status == "paid"
+
+
+@pytest.mark.asyncio
+async def test_mark_order_paid_skips_credit_when_already_paid(monkeypatch) -> None:
+    order = MagicMock(
+        id=uuid.uuid4(),
+        status="paid",
+        user_id=uuid.uuid4(),
+        credits_granted=5,
+        razorpay_payment_id="pay_1",
+    )
+    result = MagicMock()
+    result.scalar_one_or_none = MagicMock(return_value=order)
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=result)
+    db.flush = AsyncMock()
+    credit = AsyncMock()
+    monkeypatch.setattr("app.services.payments.orders.credit_scans", credit)
+    out = await mark_order_paid(db, order=order, razorpay_payment_id="pay_2")
+    assert out is order
+    credit.assert_not_awaited()

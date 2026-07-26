@@ -8,6 +8,7 @@ from app.core.security import (
     Permission,
     Role,
     create_access_token,
+    create_refresh_token,
     decode_token,
     has_permission,
     hash_password,
@@ -27,6 +28,15 @@ def test_jwt_roundtrip():
     assert data["sub"] == "00000000-0000-0000-0000-000000000001"
     assert data["role"] == "farmer"
     assert data["type"] == "access"
+    assert data["jti"]
+
+
+def test_refresh_token_includes_jti():
+    token = create_refresh_token("00000000-0000-0000-0000-000000000001")
+    data = decode_token(token)
+    assert data["type"] == "refresh"
+    assert data["jti"]
+    assert data["sub"] == "00000000-0000-0000-0000-000000000001"
 
 
 def test_jwt_invalid():

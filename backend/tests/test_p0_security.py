@@ -52,11 +52,22 @@ def test_register_request_allows_user_only():
     assert payload.role == "user"
 
 
+def _set_prod_base(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("JWT_SECRET", "a" * 32)
+    monkeypatch.setenv("APP_DEBUG", "false")
+    monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
+    monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
+    monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
+
+
 def test_production_boot_rejects_weak_jwt(monkeypatch):
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("JWT_SECRET", "change-me")
     monkeypatch.setenv("APP_DEBUG", "false")
     monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
+    monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
+    monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
     s = Settings(_env_file=None)
     monkeypatch.setattr("app.core.production_guards.settings", s)
     with pytest.raises(RuntimeError, match="JWT_SECRET"):
@@ -64,10 +75,8 @@ def test_production_boot_rejects_weak_jwt(monkeypatch):
 
 
 def test_production_boot_rejects_debug(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "production")
-    monkeypatch.setenv("JWT_SECRET", "a" * 32)
+    _set_prod_base(monkeypatch)
     monkeypatch.setenv("APP_DEBUG", "true")
-    monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
     s = Settings(_env_file=None)
     monkeypatch.setattr("app.core.production_guards.settings", s)
     with pytest.raises(RuntimeError, match="APP_DEBUG"):
@@ -75,9 +84,7 @@ def test_production_boot_rejects_debug(monkeypatch):
 
 
 def test_production_boot_rejects_explicit_dev_otp(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "production")
-    monkeypatch.setenv("JWT_SECRET", "a" * 32)
-    monkeypatch.setenv("APP_DEBUG", "false")
+    _set_prod_base(monkeypatch)
     monkeypatch.setenv("AUTH_ALLOW_DEV_OTP", "true")
     s = Settings(_env_file=None)
     monkeypatch.setattr("app.core.production_guards.settings", s)
@@ -86,22 +93,18 @@ def test_production_boot_rejects_explicit_dev_otp(monkeypatch):
 
 
 def test_production_defaults_hide_docs_and_metrics(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "production")
-    monkeypatch.setenv("JWT_SECRET", "a" * 32)
-    monkeypatch.setenv("APP_DEBUG", "false")
+    _set_prod_base(monkeypatch)
     monkeypatch.delenv("EXPOSE_API_DOCS", raising=False)
     monkeypatch.delenv("EXPOSE_METRICS", raising=False)
-    monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
     s = Settings(_env_file=None)
     assert s.api_docs_exposed is False
     assert s.metrics_exposed is False
 
 
 def test_production_boot_ok_with_strong_secret(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "production")
-    monkeypatch.setenv("JWT_SECRET", "a" * 32)
-    monkeypatch.setenv("APP_DEBUG", "false")
-    monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
+    _set_prod_base(monkeypatch)
+    monkeypatch.delenv("RAZORPAY_KEY_ID", raising=False)
+    monkeypatch.delenv("RAZORPAY_KEY_SECRET", raising=False)
     s = Settings(_env_file=None)
     monkeypatch.setattr("app.core.production_guards.settings", s)
     validate_runtime_settings()

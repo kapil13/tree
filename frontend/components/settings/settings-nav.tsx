@@ -15,7 +15,7 @@ type NavItem = {
   match?: (path: string) => boolean;
 };
 
-function baseItems(showTeam: boolean, showAudit: boolean): NavItem[] {
+function baseItems(showTeam: boolean, showAudit: boolean, showWebhooks: boolean): NavItem[] {
   const items: NavItem[] = [
     {
       href: "/settings",
@@ -60,12 +60,14 @@ function baseItems(showTeam: boolean, showAudit: boolean): NavItem[] {
       match: (path) => path.startsWith("/settings/audit"),
     });
   }
-  items.push({
-    href: "/settings/webhooks",
-    label: "Webhooks",
-    icon: Webhook,
-    match: (path) => path.startsWith("/settings/webhooks"),
-  });
+  if (showWebhooks) {
+    items.push({
+      href: "/settings/webhooks",
+      label: "Webhooks",
+      icon: Webhook,
+      match: (path) => path.startsWith("/settings/webhooks"),
+    });
+  }
   return items;
 }
 
@@ -91,7 +93,11 @@ export function SettingsNav() {
     });
   }
 
-  const items = [...baseItems(isOrgAdmin(user), isOrgAdmin(user) || canGenerateReports(user)), ...adminItems];
+  const orgAdmin = isOrgAdmin(user);
+  const items = [
+    ...baseItems(orgAdmin, orgAdmin || canGenerateReports(user), orgAdmin),
+    ...adminItems,
+  ];
 
   return (
     <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">

@@ -45,3 +45,21 @@ def validate_runtime_settings() -> None:
             "AUTH_ALLOW_DEV_OTP cannot be true in production/staging. "
             "Remove it or set AUTH_ALLOW_DEV_OTP=false."
         )
+
+    site_key = (settings.turnstile_site_key or "").strip()
+    secret_key = (settings.turnstile_secret_key or "").strip()
+    if not site_key or not secret_key:
+        raise RuntimeError(
+            "Cloudflare Turnstile CAPTCHA is required in production/staging. "
+            "Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY."
+        )
+
+    razorpay_configured = bool(
+        (settings.razorpay_key_id or "").strip()
+        and (settings.razorpay_key_secret or "").strip()
+    )
+    if razorpay_configured and not (settings.razorpay_webhook_secret or "").strip():
+        raise RuntimeError(
+            "RAZORPAY_WEBHOOK_SECRET is required when Razorpay payments are "
+            "configured in production/staging. Do not reuse RAZORPAY_KEY_SECRET."
+        )
