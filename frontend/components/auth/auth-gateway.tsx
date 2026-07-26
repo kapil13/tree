@@ -99,6 +99,15 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     if (msg === "captcha_verification_unavailable") {
       return "Security check is temporarily unavailable. Please try again later.";
     }
+    if (msg === "sms_not_configured" || msg === "sms_send_failed") {
+      return "Phone OTP is temporarily unavailable. Sign in with email and password, or try again later.";
+    }
+    if (msg === "email_otp_not_configured") {
+      return "Email OTP is temporarily unavailable. Sign in with email and password.";
+    }
+    if (msg === "rate_limited" || msg === "rate_limit_unavailable") {
+      return "Too many attempts. Please wait a moment and try again.";
+    }
     return msg;
   }
 
@@ -166,10 +175,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
         captcha_token: captchaToken || undefined,
       });
       setOtpSent(true);
-      if (res.dev_hint) setDevHint(res.dev_hint);
-      if (!res.sms_enabled) {
-        setDevHint(res.dev_hint ?? "000000");
-      }
+      // Only show OTP when the API explicitly returns a dev hint (local/dev).
+      setDevHint(res.dev_hint ?? null);
     } catch (err) {
       const msg = errorMessage(err);
       setError(

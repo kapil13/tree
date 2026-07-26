@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from app.core.config import settings
+
 DEV_OTP_CODE = "000000"
 
 
@@ -30,4 +32,14 @@ def phone_placeholder_email(phone: str) -> str:
 
 
 def verify_dev_otp(code: str) -> bool:
+    """Accept universal 000000 only when explicitly allowed (dev/test)."""
+    if not settings.allow_dev_otp:
+        return False
     return code.strip() == DEV_OTP_CODE
+
+
+def otp_dev_hint(code: str) -> str | None:
+    """Return OTP for API responses only in allowed dev environments."""
+    if settings.allow_dev_otp:
+        return code
+    return None

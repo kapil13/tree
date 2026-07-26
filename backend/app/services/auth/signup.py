@@ -17,7 +17,7 @@ from app.services.auth.gmail_sender import (
     send_signup_otp_email,
 )
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
-from app.services.auth.otp import normalize_phone
+from app.services.auth.otp import normalize_phone, otp_dev_hint
 from app.services.auth.otp_store import (
     check_otp,
     delete_signup_session,
@@ -67,16 +67,19 @@ async def start_signup(
             "email_verified": False,
         },
     )
+    if not sms_auth_configured() and not settings.allow_dev_otp:
+        raise SignupError("sms_not_configured")
+
     dev_code = await issue_otp("signup_phone", token)
     if sms_auth_configured():
         try:
             await send_auth_otp_sms(phone=normalized_phone, code=dev_code)
-            dev_hint = None
-        except SmsSendError:
-            dev_hint = dev_code
-    else:
-        dev_hint = dev_code if not settings.auth_otp_sms_enabled else None
-    return token, dev_hint
+            return token, None
+        except SmsSendError as exc:
+            if not settings.allow_dev_otp:
+                raise SignupError("sms_send_failed") from exc
+            return token, otp_dev_hint(dev_code)
+    return token, otp_dev_hint(dev_code)
 
 
 async def verify_signup_phone(signup_token: str, code: str) -> None:
@@ -94,6 +97,9 @@ async def send_signup_email_otp(signup_token: str) -> str | None:
         raise SignupError("signup_session_expired")
     if not session.get("phone_verified"):
         raise SignupError("phone_not_verified")
+    if not gmail_otp_configured() and not settings.allow_dev_otp:
+        raise SignupError("gmail_not_configured")
+
     code = await issue_otp("signup_email", signup_token)
     if gmail_otp_configured():
         try:
@@ -101,7 +107,7 @@ async def send_signup_email_otp(signup_token: str) -> str | None:
         except GmailSendError as exc:
             raise SignupError(exc.code) from exc
         return None
-    return code
+    return otp_dev_hint(code)
 
 
 async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) -> User:

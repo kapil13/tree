@@ -68,8 +68,13 @@ export function SignupWizard({
       signup_session_expired: "Your signup session expired. Please start again.",
       email_send_failed: "Could not send the verification email. Please try again shortly.",
       gmail_not_configured: "Email verification is not configured yet. Contact support.",
+      sms_not_configured:
+        "Phone verification is temporarily unavailable while SMS delivery is being set up. Please try again later.",
+      sms_send_failed: "Could not send the SMS code. Please try again shortly.",
       captcha_required: "Please complete the security check.",
       captcha_failed: "Security check failed. Please try again.",
+      rate_limited: "Too many attempts. Please wait a moment and try again.",
+      rate_limit_unavailable: "Sign-up is temporarily unavailable. Please try again later.",
     };
     return map[msg] ?? msg;
   }

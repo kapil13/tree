@@ -30,7 +30,12 @@ def _purge_memory() -> None:
 
 
 def _otp_code() -> str:
-    if settings.auth_otp_sms_enabled or settings.auth_otp_email_enabled:
+    # Prefer random codes whenever a delivery channel is enabled or in hardened envs.
+    if (
+        settings.auth_otp_sms_enabled
+        or settings.auth_otp_email_enabled
+        or not settings.allow_dev_otp
+    ):
         return f"{secrets.randbelow(1_000_000):06d}"
     return DEV_OTP_CODE
 

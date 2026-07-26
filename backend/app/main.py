@@ -16,6 +16,7 @@ from app.api.v1 import api_router
 from app.api.v1.deps import DB
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
+from app.core.production_guards import validate_runtime_settings
 from app.schemas.common import (
     ErrorBody,
     ErrorResponse,
@@ -30,10 +31,22 @@ log = get_logger("byot.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("startup", env=settings.app_env, version=__version__)
+    validate_runtime_settings()
+    log.info(
+        "startup",
+        env=settings.app_env,
+        version=__version__,
+        api_docs=settings.api_docs_exposed,
+        metrics=settings.metrics_exposed,
+        allow_dev_otp=settings.allow_dev_otp,
+    )
     yield
     log.info("shutdown")
 
+
+_docs = "/docs" if settings.api_docs_exposed else None
+_redoc = "/redoc" if settings.api_docs_exposed else None
+_openapi = "/openapi.json" if settings.api_docs_exposed else None
 
 app = FastAPI(
     title="BYOT API",
@@ -43,9 +56,9 @@ app = FastAPI(
         "estimate carbon sequestration, and generate verifiable reports."
     ),
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=_docs,
+    redoc_url=_redoc,
+    openapi_url=_openapi,
 )
 
 
@@ -57,7 +70,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+if settings.metrics_exposed:
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+else:
+    Instrumentator().instrument(app)
 
 
 # ---------------------------------------------------------------------------
@@ -130,13 +146,15 @@ async def integrations_health():
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {
+    payload = {
         "name": "BYOT API",
         "version": __version__,
-        "docs": "/docs",
-        "openapi": "/openapi.json",
         "health": "/health",
     }
+    if settings.api_docs_exposed:
+        payload["docs"] = "/docs"
+        payload["openapi"] = "/openapi.json"
+    return payload
 
 
 app.include_router(api_router)
