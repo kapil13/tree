@@ -33,6 +33,7 @@ import { getProgramTheme } from "@/components/registration/program-theme";
 import { aiScans, dashboard, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
+import { scopedKey } from "@/lib/query-keys";
 
 function healthBadgeClass(health: string) {
   if (health === "healthy") return "bg-emerald-100 text-emerald-800";
@@ -66,9 +67,9 @@ export function CitizenDashboard() {
 
   const [dashQ, treesQ, scanQ] = useQueries({
     queries: [
-      { queryKey: ["dashboard"], queryFn: dashboard.get },
-      { queryKey: ["trees-byot-home"], queryFn: () => trees.list({ page_size: 8 }) },
-      { queryKey: ["ai-scan-usage"], queryFn: () => aiScans.usage() },
+      { queryKey: scopedKey(user, "dashboard"), queryFn: dashboard.get },
+      { queryKey: scopedKey(user, "trees-byot-home"), queryFn: () => trees.list({ page_size: 8 }) },
+      { queryKey: scopedKey(user, "ai-scan-usage"), queryFn: () => aiScans.usage() },
     ],
   });
 

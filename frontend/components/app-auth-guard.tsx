@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { auth, isApiError } from "@/lib/api";
+import { clearAppQueryCache } from "@/app/providers";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
@@ -49,6 +50,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (isApiError(err) && err.response?.status === 401) {
           logout();
+          clearAppQueryCache();
         }
         setStatus("unauthenticated");
         router.replace("/auth?mode=signin");

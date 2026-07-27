@@ -65,6 +65,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports, canWriteInApp } from "@/lib/nav-access";
+import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
 
 function DashboardSkeleton() {
@@ -91,17 +92,17 @@ export function ExecutiveDashboard() {
 
   const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ] = useQueries({
     queries: [
-      { queryKey: ["dashboard"], queryFn: dashboard.get },
-      { queryKey: ["alerts"], queryFn: () => alerts.list() },
-      { queryKey: ["trees-dashboard"], queryFn: () => trees.list({ page_size: 10 }) },
-      { queryKey: ["plantation-fences"], queryFn: () => plantationFences.list({ page_size: 20 }) },
-      { queryKey: ["bio-summary"], queryFn: () => bioacoustic.summary() },
-      { queryKey: ["program-memberships"], queryFn: () => plantingPrograms.memberships() },
+      { queryKey: scopedKey(user, "dashboard"), queryFn: dashboard.get },
+      { queryKey: scopedKey(user, "alerts"), queryFn: () => alerts.list() },
+      { queryKey: scopedKey(user, "trees-dashboard"), queryFn: () => trees.list({ page_size: 10 }) },
+      { queryKey: scopedKey(user, "plantation-fences"), queryFn: () => plantationFences.list({ page_size: 20 }) },
+      { queryKey: scopedKey(user, "bio-summary"), queryFn: () => bioacoustic.summary() },
+      { queryKey: scopedKey(user, "program-memberships"), queryFn: () => plantingPrograms.memberships() },
     ],
   });
 
   const { data: reports } = useQuery({
-    queryKey: ["reports-dashboard"],
+    queryKey: scopedKey(user, "reports-dashboard"),
     queryFn: async () => (await api.get("/v1/reports")).data as Array<{
       id: string;
       kind: string;
@@ -111,14 +112,14 @@ export function ExecutiveDashboard() {
   });
 
   const { data: brief } = useQuery({
-    queryKey: ["executive-brief"],
+    queryKey: scopedKey(user, "executive-brief"),
     queryFn: () => intelligence.brief(),
     staleTime: 60_000,
   });
 
   const primaryFenceId = fencesQ.data?.items[0]?.id;
   const { data: ecosystem } = useQuery({
-    queryKey: ["ecosystem-health", primaryFenceId],
+    queryKey: scopedKey(user, "ecosystem-health", primaryFenceId),
     queryFn: () => plantationFences.ecosystemHealth(primaryFenceId!),
     enabled: !!primaryFenceId,
   });

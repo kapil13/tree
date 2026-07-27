@@ -27,6 +27,7 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.carbon import CarbonInputs, estimate_carbon
 from app.services.carbon.species_catalog import SPECIES_CATALOG
+from app.services.data_scope import apply_owner_org_scope, apply_tree_scope
 
 log = get_logger("assistant")
 
@@ -161,36 +162,22 @@ class PortfolioContext:
         }
 
 
-def _tree_scope(stmt, user: User):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (Tree.owner_user_id == user.id) | (Tree.organization_id == user.organization_id)
-        )
-    return stmt.where(Tree.owner_user_id == user.id)
-
-
 def _bio_scope(stmt, user: User):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (BioacousticRecording.owner_user_id == user.id)
-            | (BioacousticRecording.organization_id == user.organization_id)
-        )
-    return stmt.where(BioacousticRecording.owner_user_id == user.id)
+    return apply_owner_org_scope(
+        stmt,
+        user,
+        owner_col=BioacousticRecording.owner_user_id,
+        org_col=BioacousticRecording.organization_id,
+    )
 
 
 def _fence_scope(stmt, user: User):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (PlantationFence.owner_user_id == user.id)
-            | (PlantationFence.organization_id == user.organization_id)
-        )
-    return stmt.where(PlantationFence.owner_user_id == user.id)
+    return apply_owner_org_scope(
+        stmt,
+        user,
+        owner_col=PlantationFence.owner_user_id,
+        org_col=PlantationFence.organization_id,
+    )
 
 
 def detect_intent(prompt: str) -> str:
@@ -294,7 +281,7 @@ async def build_portfolio_context(
             ).label("sat_verified"),
         )
     )
-    row = (await db.execute(_tree_scope(agg, user))).one()
+    row = (await db.execute(await apply_tree_scope(agg, user, db))).one()
     total_trees = int(row.total_trees)
     total_carbon = float(row.total_carbon_kg or 0)
     total_co2e = total_carbon * (44.0 / 12.0)
@@ -314,19 +301,24 @@ async def build_portfolio_context(
 
     health_rows = (
         await db.execute(
-            _tree_scope(select(Tree.current_health, func.count(Tree.id)).group_by(Tree.current_health), user)
+            await apply_tree_scope(
+                select(Tree.current_health, func.count(Tree.id)).group_by(Tree.current_health),
+                user,
+                db,
+            )
         )
     ).all()
     ctx.health_breakdown = {h or "unknown": int(c) for h, c in health_rows}
 
     species_rows = (
         await db.execute(
-            _tree_scope(
+            await apply_tree_scope(
                 select(Tree.species_text, func.count(Tree.id))
                 .group_by(Tree.species_text)
                 .order_by(func.count(Tree.id).desc())
                 .limit(5),
                 user,
+                db,
             )
         )
     ).all()
@@ -371,7 +363,7 @@ async def build_portfolio_context(
 
     if tree_id:
         tree = (
-            await db.execute(_tree_scope(select(Tree).where(Tree.id == tree_id), user))
+            await db.execute(await apply_tree_scope(select(Tree).where(Tree.id == tree_id), user, db))
         ).scalar_one_or_none()
         if tree:
             ctx.focus_tree = {

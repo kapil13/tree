@@ -30,6 +30,7 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.audit import record_audit
+from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -301,14 +302,7 @@ async def list_trees(
     ),
 ) -> Page[TreeListItem]:
     stmt = select(Tree).options(selectinload(Tree.planting_program))
-    if user.role != "admin":
-        if user.organization_id:
-            stmt = stmt.where(
-                (Tree.owner_user_id == user.id)
-                | (Tree.organization_id == user.organization_id)
-            )
-        else:
-            stmt = stmt.where(Tree.owner_user_id == user.id)
+    stmt = await apply_tree_scope(stmt, user, db)
     if health:
         stmt = stmt.where(Tree.current_health == health)
     if species_id:
@@ -364,9 +358,7 @@ async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(404, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
-        not user.organization_id or tree.organization_id != user.organization_id
-    ):
+    if not await can_access_tree(db, user, tree):
         raise HTTPException(403, detail="forbidden")
     return tree
 
@@ -656,6 +648,7 @@ async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
 @router.get("/tiles/{z}/{x}/{y}.mvt", include_in_schema=False)
 async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Response:
     # PostGIS MVT generation. Scoped to the user's accessible trees.
+    org_portfolio = user_sees_org_portfolio(user) and user.organization_id is not None
     sql = """
     WITH bounds AS (
       SELECT ST_TileEnvelope(:z, :x, :y) AS geom
@@ -666,7 +659,11 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
         t.id, t.public_code, t.current_health, t.current_carbon_kg, t.satellite_verified
       FROM trees t, bounds
       WHERE ST_Intersects(ST_Transform(t.location::geometry, 3857), bounds.geom)
-        AND (t.owner_user_id = :uid OR t.organization_id = :oid OR :is_admin)
+        AND (
+          :is_admin
+          OR t.owner_user_id = :uid
+          OR (:org_portfolio AND t.organization_id = :oid)
+        )
     )
     SELECT ST_AsMVT(mvtgeom.*, 'trees', 4096, 'geom') FROM mvtgeom;
     """
@@ -681,6 +678,7 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
             "uid": user.id,
             "oid": user.organization_id or uuid.UUID(int=0),
             "is_admin": user.role == "admin",
+            "org_portfolio": org_portfolio,
         },
     )
     tile = res.scalar_one()

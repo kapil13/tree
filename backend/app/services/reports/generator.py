@@ -14,6 +14,7 @@ from app.models.report import Report
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
+from app.services.data_scope import apply_tree_scope
 from app.services.reports import (
     render_bioacoustic_report_pdf,
     render_bioacoustic_report_xlsx,
@@ -25,11 +26,7 @@ from app.services.storage import get_storage
 
 
 async def _tree_rows(user: User, db: AsyncSession) -> tuple[list[dict], dict]:
-    trees_q = select(Tree)
-    if user.organization_id and user.role != "admin":
-        trees_q = trees_q.where(
-            (Tree.owner_user_id == user.id) | (Tree.organization_id == user.organization_id)
-        )
+    trees_q = await apply_tree_scope(select(Tree), user, db)
     trees = (await db.execute(trees_q.limit(1000))).scalars().all()
     rows = []
     for t in trees:

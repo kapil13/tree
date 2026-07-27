@@ -6,15 +6,16 @@ import { ArrowRight, ClipboardList, Leaf, TreePine } from "lucide-react";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { scopedKey } from "@/lib/query-keys";
 
 export function FieldWorkerDashboard() {
   const { user } = useAuth();
   const { data: projects, isLoading: projectsLoading } = useQuery({
-    queryKey: ["projects-field-home"],
+    queryKey: scopedKey(user, "projects-field-home"),
     queryFn: () => plantingProjects.list({ page: 1 }),
   });
   const { data: treePage, isLoading: treesLoading } = useQuery({
-    queryKey: ["trees-field-home"],
+    queryKey: scopedKey(user, "trees-field-home"),
     queryFn: () => trees.list({ page_size: 5 }),
   });
 

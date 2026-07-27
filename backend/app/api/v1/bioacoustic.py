@@ -18,6 +18,7 @@ from app.schemas.bioacoustic import (
 )
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
+from app.services.data_scope import apply_owner_org_scope
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
@@ -26,14 +27,12 @@ _THREATENED = {"Critically Endangered", "Endangered", "Vulnerable"}
 
 
 def _scope(stmt, user):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (BioacousticRecording.owner_user_id == user.id)
-            | (BioacousticRecording.organization_id == user.organization_id)
-        )
-    return stmt.where(BioacousticRecording.owner_user_id == user.id)
+    return apply_owner_org_scope(
+        stmt,
+        user,
+        owner_col=BioacousticRecording.owner_user_id,
+        org_col=BioacousticRecording.organization_id,
+    )
 
 
 @router.post("/recordings", response_model=BioacousticRecordingOut, status_code=status.HTTP_201_CREATED)

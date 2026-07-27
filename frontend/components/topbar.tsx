@@ -7,8 +7,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { NavLinks } from "@/components/sidebar";
+import { clearAppQueryCache } from "@/app/providers";
 import { alerts } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { scopedKey } from "@/lib/query-keys";
 import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
 export function Topbar() {
@@ -17,7 +19,7 @@ export function Topbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: unreadAlerts = [] } = useQuery({
-    queryKey: ["alerts-unread"],
+    queryKey: scopedKey(user, "alerts-unread"),
     queryFn: () => alerts.list(true),
     refetchInterval: 60_000,
     enabled: Boolean(user),
@@ -70,6 +72,7 @@ export function Topbar() {
             aria-label="Sign out"
             onClick={() => {
               logout();
+              clearAppQueryCache();
               router.push("/auth?mode=signin");
             }}
           >

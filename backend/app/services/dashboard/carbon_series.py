@@ -12,16 +12,7 @@ from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.models.user import User
 from app.schemas.dashboard import SeriesPoint
-
-
-def _scope_trees(stmt, user: User):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (Tree.owner_user_id == user.id) | (Tree.organization_id == user.organization_id)
-        )
-    return stmt.where(Tree.owner_user_id == user.id)
+from app.services.data_scope import apply_tree_scope
 
 
 def _month_end(year: int, month: int) -> datetime:
@@ -48,7 +39,7 @@ async def build_carbon_growth_series(db: AsyncSession, user: User, *, months: in
             y -= 1
     month_keys.reverse()
 
-    tree_ids_stmt = _scope_trees(select(Tree.id), user)
+    tree_ids_stmt = await apply_tree_scope(select(Tree.id), user, db)
     tree_ids = [row[0] for row in (await db.execute(tree_ids_stmt)).all()]
     if not tree_ids:
         return [SeriesPoint(label=f"{month_abbr[m]} {yr}", value=0.0) for yr, m in month_keys]
