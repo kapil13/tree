@@ -7,7 +7,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.organization import Organization
 from app.models.planting_program import PlantingProgram, UserPlantingProgram
+from app.models.user import User
 from app.services.planting_programs.catalog import default_program_code
 
 
@@ -29,6 +31,40 @@ async def ensure_default_enrollment(db: AsyncSession, user_id: uuid.UUID) -> Non
     )
     if existing.scalar_one_or_none() is None:
         db.add(UserPlantingProgram(user_id=user_id, program_id=program.id, is_active=True))
+
+
+async def sync_user_program_enrollment(db: AsyncSession, user: User) -> bool:
+    """Align program memberships with org metadata and platform role."""
+    from app.services.organizations.onboarding import (
+        ORG_TYPE_TO_PROGRAM,
+        org_program_codes,
+        program_code_for_platform_role,
+    )
+
+    expected: set[str] = set()
+
+    role_program = program_code_for_platform_role(user.role)
+    if role_program:
+        expected.add(role_program)
+
+    if user.organization_id:
+        org = await db.get(Organization, user.organization_id)
+        if org is not None:
+            expected.update(await org_program_codes(org))
+            org_program = ORG_TYPE_TO_PROGRAM.get(org.type or "")
+            if org_program:
+                expected.add(org_program)
+
+    if not expected:
+        return False
+
+    enrolled = await list_user_program_codes(db, user.id)
+    missing = [code for code in expected if code not in enrolled]
+    if not missing:
+        return False
+
+    await set_user_programs(db, user.id, [*enrolled, *missing])
+    return True
 
 
 async def list_user_program_codes(db: AsyncSession, user_id: uuid.UUID) -> list[str]:
@@ -60,6 +96,9 @@ async def list_available_programs(db: AsyncSession, user_id: uuid.UUID) -> list[
 
 
 async def list_enrolled_programs(db: AsyncSession, user_id: uuid.UUID) -> list[PlantingProgram]:
+    user = await db.get(User, user_id)
+    if user is not None:
+        await sync_user_program_enrollment(db, user)
     await ensure_default_enrollment(db, user_id)
     res = await db.execute(
         select(PlantingProgram)

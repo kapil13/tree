@@ -58,7 +58,7 @@ export default function SettingsProgramsPage() {
   return (
     <SettingsSection
       title="Your programs"
-      description="BYOT Public is active on every account. Government, NHAI, ESG, and NGO programs require admin approval — submit a request below."
+      description="BYOT Public is active on every account. Additional programs appear here once your organization is approved or assigned."
     >
       {feedback ? (
         <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200">
@@ -99,8 +99,8 @@ export default function SettingsProgramsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-stone-900 dark:text-stone-50">{program.name}</p>
-                      {program.is_default ? (
-                        <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-stone-600 dark:bg-stone-700 dark:text-stone-300">
+                      {program.is_default || checked ? (
+                        <span className="rounded bg-forest-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-forest-800 dark:bg-forest-950/40 dark:text-forest-200">
                           Active
                         </span>
                       ) : access?.status === "pending" ? (

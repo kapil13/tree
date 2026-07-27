@@ -93,6 +93,19 @@ async def _ensure_demo_manager(db, org: Organization) -> User:
         user.is_verified = True
 
     org.owner_user_id = user.id
+
+    gov = await get_program_by_code(db, "government_nhai")
+    if gov is not None:
+        await set_user_programs(db, user.id, [default_program_code(), gov.code])
+
+    meta = dict(org.metadata_ or {})
+    codes = list(meta.get("program_codes") or [])
+    if gov is not None and gov.code not in codes:
+        codes.append(gov.code)
+    meta["program_codes"] = codes
+    org.metadata_ = meta
+    org.type = "government"
+
     return user
 
 
@@ -124,6 +137,10 @@ async def _ensure_demo_viewer(db, org: Organization) -> User:
         user.is_org_admin = False
         user.is_active = True
         user.is_verified = True
+
+    gov = await get_program_by_code(db, "government_nhai")
+    if gov is not None:
+        await set_user_programs(db, user.id, [default_program_code(), gov.code])
 
     return user
 
