@@ -117,74 +117,73 @@ export function CitizenDashboard() {
   return (
     <div className="dash-shell mx-auto max-w-6xl space-y-6">
       <section className="dash-hero">
-        <div className="dash-hero-grid">
-          <div>
-            <div className="dash-live-pill">
-              <span className="dash-live-dot" />
-              BYOT Public
-            </div>
-            <h1 className="dash-hero-title mt-4">
-              {treeCount > 0 ? "Your green impact" : "Start your grove"}
-            </h1>
-            <p className="dash-hero-copy">
-              {treeCount > 0 ? (
-                <>
-                  Hi {firstName} — you&apos;ve tagged{" "}
-                  <strong className="text-white">{treeCount}</strong> tree
-                  {treeCount === 1 ? "" : "s"}
-                  {kpi && kpi.total_co2e_kg > 0
-                    ? ` storing about ${fmtCompact(kpi.total_co2e_kg)} kg CO₂e.`
-                    : "."}{" "}
-                  Keep adding GPS-tagged trees and use complimentary AI scans to track health.
-                </>
-              ) : (
-                <>
-                  Welcome, {firstName}. Bring Your Own Tree lets you register trees you plant or
-                  care for — with map pins, photos, and up to 5 free AI health scans.
-                </>
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
-                <Leaf className="h-4 w-4" />
-                {treeCount > 0 ? "Add another tree" : "Tag your first tree"}
-              </Link>
-              <Link
-                href="/map"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
-              >
-                <Map className="h-4 w-4" />
-                Open map
-              </Link>
-            </div>
+        <div className="dash-hero-header">
+          <div className="dash-live-pill">
+            <span className="dash-live-dot" />
+            BYOT Public
           </div>
-          <div className="dash-hero-stats">
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{treeCount}</p>
-              <p className="dash-hero-stat-label">Trees tagged</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">
-                {kpi ? fmtCompact(kpi.total_co2e_kg) : "0"}
-                <span className="ml-1 text-sm font-medium text-emerald-100/60">kg CO₂e</span>
-              </p>
-              <p className="dash-hero-stat-label">Estimated storage</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{kpi ? fmtPct(kpi.pct_healthy) : "—"}</p>
-              <p className="dash-hero-stat-label">Healthy trees</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">
-                {scansLeft !== null ? scansLeft : "∞"}
-              </p>
-              <p className="dash-hero-stat-label">AI scans available</p>
-            </div>
+          <h1 className="dash-hero-title mt-4">
+            {treeCount > 0 ? "Your green impact" : "Start your grove"}
+          </h1>
+          <p className="dash-hero-copy">
+            {treeCount > 0 ? (
+              <>
+                Hi {firstName} — you&apos;ve tagged{" "}
+                <strong className="text-white">{treeCount}</strong> tree
+                {treeCount === 1 ? "" : "s"}
+                {kpi && kpi.total_co2e_kg > 0
+                  ? ` storing about ${fmtCompact(kpi.total_co2e_kg)} kg CO₂e.`
+                  : "."}{" "}
+                Keep adding GPS-tagged trees and use complimentary AI scans to track health.
+              </>
+            ) : (
+              <>
+                Welcome, {firstName}. Register trees you plant or care for — with map pins, photos,
+                and up to 5 free AI health scans.
+              </>
+            )}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
+              <Leaf className="h-4 w-4" />
+              {treeCount > 0 ? "Add another tree" : "Tag your first tree"}
+            </Link>
+            <Link
+              href="/map"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
+            >
+              <Map className="h-4 w-4" />
+              Open map
+            </Link>
+          </div>
+        </div>
+
+        <div className="dash-hero-kpi-row">
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">{treeCount}</p>
+            <p className="dash-hero-stat-label">Trees tagged</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">
+              {kpi ? fmtCompact(kpi.total_co2e_kg) : "0"}
+              <span className="ml-1 text-sm font-medium text-emerald-100/60">kg CO₂e</span>
+            </p>
+            <p className="dash-hero-stat-label">Estimated storage</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">{kpi ? fmtPct(kpi.pct_healthy) : "—"}</p>
+            <p className="dash-hero-stat-label">Healthy trees</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">
+              {scansLeft !== null ? scansLeft : "∞"}
+            </p>
+            <p className="dash-hero-stat-label">AI scans available</p>
           </div>
         </div>
       </section>
 
-      <DataTrustBanner compact />
+      <DataTrustBanner variant="strip" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
