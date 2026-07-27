@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class PlantingProgramOut(BaseModel):
@@ -44,6 +44,7 @@ class ProgramAccessRequestOut(BaseModel):
     program_name: str
     status: str
     message: str | None = None
+    org_profile: dict[str, Any] | None = None
     admin_note: str | None = None
     created_at: datetime
     reviewed_at: datetime | None = None
@@ -59,6 +60,7 @@ class ProgramAccessRequestAdminOut(ProgramAccessRequestOut):
     user_id: uuid.UUID
     user_email: str
     user_full_name: str
+    user_phone: str | None = None
 
 
 class ProgramAccessRequestReview(BaseModel):
@@ -69,3 +71,19 @@ class ProgramAccessRequestReview(BaseModel):
     organization_id: uuid.UUID | None = None
     platform_role: Literal["government", "corporate", "ngo"] | None = None
     make_org_admin: bool = True
+
+
+class OrgProfileSubmit(BaseModel):
+    organization_name: str = Field(min_length=2, max_length=255)
+    organization_type: Literal["government", "corporate", "ngo"]
+    designation: str = Field(min_length=2, max_length=120)
+    city: str = Field(min_length=2, max_length=120)
+    state: str = Field(min_length=2, max_length=120)
+    country: str = Field(default="IN", min_length=2, max_length=64)
+    work_email: EmailStr | None = None
+    contact_phone: str | None = Field(default=None, max_length=32)
+    website: str | None = Field(default=None, max_length=255)
+    registered_address: str | None = Field(default=None, max_length=500)
+    registration_id: str | None = Field(default=None, max_length=64)
+    department: str | None = Field(default=None, max_length=255)
+    use_case_summary: str = Field(min_length=10, max_length=2000)

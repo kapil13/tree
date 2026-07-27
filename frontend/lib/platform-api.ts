@@ -50,12 +50,14 @@ export type ProgramAccessRequestAdmin = {
   program_name: string;
   status: string;
   message: string | null;
+  org_profile?: Record<string, unknown> | null;
   admin_note: string | null;
   created_at: string;
   reviewed_at: string | null;
   user_id: string;
   user_email: string;
   user_full_name: string;
+  user_phone?: string | null;
 };
 
 export type PlatformOrganization = {

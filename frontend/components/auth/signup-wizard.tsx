@@ -10,12 +10,14 @@ import {
   phoneForApi,
   sanitizePhoneDigits,
 } from "@/lib/phone";
+import { SIGNUP_PROGRAM_OPTIONS, programThemeForSignup } from "@/lib/program-catalog";
 import { useAuth } from "@/lib/auth-store";
+import { cn } from "@/lib/cn";
 import type { InvitePreview } from "@/lib/organizations-api";
 
 const OTP_LENGTH = 6;
 
-type SignupStep = "details" | "verify-phone" | "verify-email";
+type SignupStep = "category" | "details" | "verify-phone" | "verify-email";
 
 type CaptchaConfig = { enabled: boolean; site_key?: string | null };
 
@@ -36,10 +38,12 @@ export function SignupWizard({
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
-  const [step, setStep] = useState<SignupStep>("details");
+  const [step, setStep] = useState<SignupStep>(invitePreview ? "details" : "category");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devHint, setDevHint] = useState<string | null>(null);
+
+  const [signupCategory, setSignupCategory] = useState("byot");
 
   const [fullName, setFullName] = useState(invitePreview?.full_name ?? "");
   const [email, setEmail] = useState(invitePreview?.email ?? "");
@@ -115,6 +119,7 @@ export function SignupWizard({
         phone: phoneForApi(phone),
         password,
         captcha_token: captchaToken || undefined,
+        signup_category: signupCategory,
       });
       setSignupToken(res.signup_token);
       if (res.dev_hint) setDevHint(res.dev_hint);
@@ -167,18 +172,26 @@ export function SignupWizard({
     }
   }
 
+  const isProfessional = signupCategory !== "byot";
+
   const title =
-    step === "details"
+    step === "category"
+      ? "How will you use Aranyix?"
+      : step === "details"
       ? "Create your account"
       : step === "verify-phone"
         ? "Verify your phone"
         : "Verify your email";
 
   const subtitle =
-    step === "details"
+    step === "category"
+      ? "Choose your path. Professional programs require admin approval after you submit organization details."
+      : step === "details"
       ? invitePreview
         ? `Join ${invitePreview.organization_name} as ${invitePreview.org_role.replace("_", " ")}. Verify your phone and email to continue.`
-        : "Start with BYOT — tag trees for free, including 5 complimentary AI scans. Professional programs can be requested later."
+        : isProfessional
+          ? "Create your account — you'll complete organization details next, then wait for admin approval."
+          : "Start with BYOT — tag trees for free, including 5 complimentary AI scans."
       : step === "verify-phone"
         ? "Enter the 6-digit code sent to your mobile."
         : "Enter the 6-digit code sent to your email address.";
@@ -200,8 +213,56 @@ export function SignupWizard({
         <p className="text-sm text-stone-600">{subtitle}</p>
       </div>
 
+      {step === "category" && (
+        <div className="space-y-3">
+          {SIGNUP_PROGRAM_OPTIONS.map((option) => {
+            const theme = programThemeForSignup(option.code);
+            const Icon = theme.icon;
+            const selected = signupCategory === option.code;
+            return (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => setSignupCategory(option.code)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition",
+                  selected
+                    ? `border-forest-600 bg-forest-50/80 ring-2 ${theme.ring}`
+                    : "border-stone-200 hover:border-stone-300",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white",
+                    theme.gradient,
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-stone-900">{option.name}</p>
+                  <p className="mt-0.5 text-sm text-stone-600">{option.description}</p>
+                  {option.code !== "byot" ? (
+                    <p className="mt-1 text-xs text-amber-800">Requires admin approval</p>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
+          <button type="button" className="btn-primary w-full" onClick={() => setStep("details")}>
+            Continue
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {step === "details" && (
         <div className="space-y-4">
+          {!invitePreview ? (
+            <button type="button" className="btn-ghost text-sm" onClick={() => setStep("category")}>
+              ← Change category
+            </button>
+          ) : null}
           <div>
             <label className="label">Full name</label>
             <input className="field-input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
@@ -310,7 +371,7 @@ export function SignupWizard({
           />
           {devHint ? <p className="text-xs text-amber-800">Dev code: {devHint}</p> : null}
           <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => void completeSignup()}>
-            {busy ? "Creating account…" : "Finish — start with BYOT"}
+            {busy ? "Creating account…" : isProfessional ? "Continue to organization details" : "Finish — start with BYOT"}
           </button>
         </div>
       )}

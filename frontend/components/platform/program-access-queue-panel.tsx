@@ -85,20 +85,33 @@ export function ProgramAccessQueuePanel() {
     onError: (err) => setMessage(errorMessage(err)),
   });
 
-  function getApproveForm(requestId: string, programCode: string, userName: string): ApproveForm {
+  function getApproveForm(
+    requestId: string,
+    programCode: string,
+    userName: string,
+    orgProfile?: Record<string, unknown> | null,
+  ): ApproveForm {
+    const profileName = typeof orgProfile?.organization_name === "string" ? orgProfile.organization_name : "";
     return (
       approveFormById[requestId] ?? {
         ...DEFAULT_APPROVE,
-        organization_name: `${userName} — ${programCode.replace(/_/g, " ")}`,
+        organization_name:
+          profileName || `${userName} — ${programCode.replace(/_/g, " ")}`,
         platform_role: roleForProgram(programCode),
       }
     );
   }
 
-  function setApproveField(requestId: string, programCode: string, userName: string, patch: Partial<ApproveForm>) {
+  function setApproveField(
+    requestId: string,
+    programCode: string,
+    userName: string,
+    orgProfile: Record<string, unknown> | null | undefined,
+    patch: Partial<ApproveForm>,
+  ) {
     setApproveFormById((prev) => ({
       ...prev,
-      [requestId]: { ...getApproveForm(requestId, programCode, userName), ...patch },
+      [requestId]: { ...getApproveForm(requestId, programCode, userName, orgProfile), ...patch },
     }));
   }
 
@@ -134,7 +147,13 @@ export function ProgramAccessQueuePanel() {
           {requests.map((request) => {
             const theme = getProgramTheme(request.program_code);
             const Icon = theme.icon;
-            const approve = getApproveForm(request.id, request.program_code, request.user_full_name);
+            const approve = getApproveForm(
+              request.id,
+              request.program_code,
+              request.user_full_name,
+              request.org_profile,
+            );
+            const profile = request.org_profile;
             return (
               <div
                 key={request.id}
@@ -157,13 +176,47 @@ export function ProgramAccessQueuePanel() {
                         </p>
                         <p className="text-sm text-stone-600 dark:text-stone-300">
                           {request.user_full_name} · {request.user_email}
+                          {request.user_phone ? ` · ${request.user_phone}` : ""}
                         </p>
                         <p className="mt-1 text-xs text-stone-500">
                           Submitted {new Date(request.created_at).toLocaleString()}
                         </p>
                       </div>
                     </div>
-                    {request.message ? (
+                    {profile ? (
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-950">
+                        <p className="mb-2 font-medium text-stone-800 dark:text-stone-100">
+                          Organization profile
+                        </p>
+                        <dl className="grid gap-1 sm:grid-cols-2">
+                          {[
+                            ["Organization", profile.organization_name],
+                            ["Type", profile.organization_type],
+                            ["Designation", profile.designation],
+                            ["City", profile.city],
+                            ["State", profile.state],
+                            ["Work email", profile.work_email],
+                            ["Phone", profile.contact_phone],
+                            ["Department", profile.department],
+                            ["Registration ID", profile.registration_id],
+                            ["Website", profile.website],
+                          ]
+                            .filter(([, v]) => v)
+                            .map(([label, value]) => (
+                              <div key={String(label)}>
+                                <dt className="text-xs text-stone-500">{String(label)}</dt>
+                                <dd className="text-stone-800 dark:text-stone-200">{String(value)}</dd>
+                              </div>
+                            ))}
+                        </dl>
+                        {profile.use_case_summary ? (
+                          <p className="mt-2 text-stone-700 dark:text-stone-300">
+                            {String(profile.use_case_summary)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {request.message && !profile?.use_case_summary ? (
                       <p className="rounded-lg bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:bg-stone-950 dark:text-stone-200">
                         {request.message}
                       </p>
@@ -184,7 +237,7 @@ export function ProgramAccessQueuePanel() {
                             type="checkbox"
                             checked={approve.use_existing_org}
                             onChange={(e) =>
-                              setApproveField(request.id, request.program_code, request.user_full_name, {
+                              setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                 use_existing_org: e.target.checked,
                               })
                             }
@@ -203,7 +256,7 @@ export function ProgramAccessQueuePanel() {
                               className="input text-sm"
                               value={approve.organization_id}
                               onChange={(e) =>
-                                setApproveField(request.id, request.program_code, request.user_full_name, {
+                                setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                   organization_id: e.target.value,
                                 })
                               }
@@ -223,7 +276,7 @@ export function ProgramAccessQueuePanel() {
                               placeholder="Organization name"
                               value={approve.organization_name}
                               onChange={(e) =>
-                                setApproveField(request.id, request.program_code, request.user_full_name, {
+                                setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                   organization_name: e.target.value,
                                 })
                               }
@@ -233,7 +286,7 @@ export function ProgramAccessQueuePanel() {
                               placeholder="Slug (optional)"
                               value={approve.organization_slug}
                               onChange={(e) =>
-                                setApproveField(request.id, request.program_code, request.user_full_name, {
+                                setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                   organization_slug: e.target.value,
                                 })
                               }
@@ -246,7 +299,7 @@ export function ProgramAccessQueuePanel() {
                             className="input mt-1 text-sm"
                             value={approve.platform_role}
                             onChange={(e) =>
-                              setApproveField(request.id, request.program_code, request.user_full_name, {
+                              setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                 platform_role: e.target.value as ApproveForm["platform_role"],
                               })
                             }
@@ -261,7 +314,7 @@ export function ProgramAccessQueuePanel() {
                             type="checkbox"
                             checked={approve.make_org_admin}
                             onChange={(e) =>
-                              setApproveField(request.id, request.program_code, request.user_full_name, {
+                              setApproveField(request.id, request.program_code, request.user_full_name, request.org_profile, {
                                 make_org_admin: e.target.checked,
                               })
                             }

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.planting_programs.catalog import default_program_code
 from app.services.planting_programs.enrollment import list_user_program_codes
 
-PROFESSIONAL_PROGRAM_CODES = frozenset({"government_nhai", "corporate_esg", "ngo_watershed"})
+PROFESSIONAL_PROGRAM_CODES = frozenset({"government_nhai", "corporate_esg", "ngo_community"})
 
 
 async def user_enrolled_program_codes(db: AsyncSession, user_id) -> list[str]:

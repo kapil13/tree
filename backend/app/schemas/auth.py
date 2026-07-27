@@ -25,6 +25,10 @@ class SignupStartRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     phone: str = Field(min_length=10, max_length=32)
     captcha_token: str | None = None
+    signup_category: str = Field(
+        default="byot",
+        description="byot | government_nhai | corporate_esg | ngo_community",
+    )
 
 
 class SignupStartOut(BaseModel):
@@ -115,6 +119,9 @@ class UserOut(BaseModel):
     organization_name: str | None = None
     enrolled_program_codes: list[str] = Field(default_factory=list)
     has_professional_program: bool = False
+    onboarding_status: str = "active_byot"
+    pending_program_code: str | None = None
+    pending_access_request_id: uuid.UUID | None = None
     impersonation: dict[str, str] | None = None
 
 
