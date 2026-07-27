@@ -28,6 +28,9 @@ DEMO_VIEWER_EMAIL = "viewer@byot.earth"
 DEMO_MANAGER_EMAIL = "manager@byot.earth"
 DEMO_PASSWORD = "byotdemo1234!"
 
+CITIZEN_TREE_TARGET = 12
+ORG_TREE_TARGET = 18
+
 
 async def _ensure_demo_user(db) -> User:
     """Create or reset the demo citizen account (personal BYOT grove, no org)."""
@@ -174,55 +177,105 @@ def _tree_payload(
     )
 
 
-async def _seed_personal_trees(db, citizen: User, *, count: int = 12) -> None:
-    from sqlalchemy import func
+async def _next_public_code(db, prefix: str) -> str:
+    """Return the next unused demo code for a prefix like BYOT-DEMO or NHAI-DEMO."""
+    existing = (
+        await db.execute(select(Tree.public_code).where(Tree.public_code.like(f"{prefix}-%")))
+    ).scalars().all()
+    used = set(existing)
+    for i in range(10_000):
+        code = f"{prefix}-{i:04d}"
+        if code not in used:
+            return code
+    raise RuntimeError(f"no_available_codes_for_{prefix}")
 
-    personal_count = (
-        await db.execute(
-            select(func.count()).select_from(Tree).where(Tree.owner_user_id == citizen.id)
-        )
-    ).scalar_one()
-    if personal_count >= 5:
-        await db.execute(
-            update(Tree)
-            .where(Tree.owner_user_id == citizen.id)
-            .values(organization_id=None)
-        )
-        return
+
+async def _rebalance_demo_portfolios(
+    db,
+    *,
+    citizen: User,
+    manager: User,
+    org: Organization,
+) -> dict[str, int]:
+    """Always split citizen personal trees from org NHAI portfolio (idempotent)."""
+    stats = {
+        "citizen_personal": 0,
+        "org_portfolio": 0,
+        "citizen_detached_from_org": 0,
+        "citizen_created": 0,
+        "org_created": 0,
+    }
+
+    detached = await db.execute(
+        update(Tree)
+        .where(Tree.owner_user_id == citizen.id)
+        .where(Tree.organization_id.is_not(None))
+        .values(organization_id=None)
+    )
+    stats["citizen_detached_from_org"] = detached.rowcount or 0
+
+    citizen_trees = list(
+        (
+            await db.execute(
+                select(Tree)
+                .where(Tree.owner_user_id == citizen.id)
+                .order_by(Tree.created_at.asc())
+            )
+        ).scalars().all()
+    )
 
     rng = random.Random(42)
-    for i in range(count):
-        db.add(
-            _tree_payload(
-                rng=rng,
-                public_code=f"BYOT-DEMO-{i:04d}",
-                owner_user_id=citizen.id,
-                organization_id=None,
+    for index, tree in enumerate(citizen_trees):
+        tree.organization_id = None
+        if not tree.public_code.startswith("BYOT-DEMO-"):
+            tree.public_code = f"BYOT-DEMO-{index:04d}"
+
+    while len(citizen_trees) < CITIZEN_TREE_TARGET:
+        code = await _next_public_code(db, "BYOT-DEMO")
+        tree = _tree_payload(
+            rng=rng,
+            public_code=code,
+            owner_user_id=citizen.id,
+            organization_id=None,
+        )
+        db.add(tree)
+        citizen_trees.append(tree)
+        stats["citizen_created"] += 1
+
+    stats["citizen_personal"] = len(citizen_trees)
+
+    org_trees = list(
+        (
+            await db.execute(
+                select(Tree)
+                .where(Tree.organization_id == org.id)
+                .order_by(Tree.created_at.asc())
             )
+        ).scalars().all()
+    )
+
+    for index, tree in enumerate(org_trees):
+        if tree.owner_user_id != manager.id:
+            tree.owner_user_id = manager.id
+        if not tree.public_code.startswith("NHAI-DEMO-"):
+            tree.public_code = f"NHAI-DEMO-{index:04d}"
+
+    org_rng = random.Random(99)
+    while len(org_trees) < ORG_TREE_TARGET:
+        code = await _next_public_code(db, "NHAI-DEMO")
+        tree = _tree_payload(
+            rng=org_rng,
+            public_code=code,
+            owner_user_id=manager.id,
+            organization_id=org.id,
         )
+        db.add(tree)
+        org_trees.append(tree)
+        stats["org_created"] += 1
 
-
-async def _seed_org_portfolio(db, manager: User, org: Organization, *, count: int = 18) -> None:
-    from sqlalchemy import func
-
-    org_count = (
-        await db.execute(
-            select(func.count()).select_from(Tree).where(Tree.organization_id == org.id)
-        )
-    ).scalar_one()
-    if org_count >= 5:
-        return
-
-    rng = random.Random(99)
-    for i in range(count):
-        db.add(
-            _tree_payload(
-                rng=rng,
-                public_code=f"NHAI-DEMO-{i:04d}",
-                owner_user_id=manager.id,
-                organization_id=org.id,
-            )
-        )
+    stats["org_portfolio"] = len(org_trees)
+    await db.flush()
+    return stats
 
 
 async def seed() -> None:
@@ -263,15 +316,16 @@ async def seed() -> None:
         manager = await _ensure_demo_manager(db, org)
         await _ensure_demo_viewer(db, org)
 
-        await _seed_personal_trees(db, citizen)
-        await _seed_org_portfolio(db, manager, org)
+        stats = await _rebalance_demo_portfolios(db, citizen=citizen, manager=manager, org=org)
 
         await db.commit()
         print(
-            f"Seeded demo data. Password for all: {DEMO_PASSWORD}\n"
-            f"  Citizen (BYOT personal grove): {DEMO_EMAIL}\n"
-            f"  Org admin (NHAI portfolio):    {DEMO_MANAGER_EMAIL}\n"
-            f"  Viewer (read-only org):        {DEMO_VIEWER_EMAIL}"
+            f"Demo data ready. Password for all: {DEMO_PASSWORD}\n"
+            f"  Citizen (personal BYOT): {DEMO_EMAIL} -> {stats['citizen_personal']} trees\n"
+            f"  Org admin (NHAI portfolio): {DEMO_MANAGER_EMAIL} -> {stats['org_portfolio']} trees\n"
+            f"  Viewer (read-only org): {DEMO_VIEWER_EMAIL}\n"
+            f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "
+            f"created {stats['citizen_created']} citizen + {stats['org_created']} org trees"
         )
 
 
