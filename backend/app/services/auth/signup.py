@@ -26,7 +26,16 @@ from app.services.auth.otp_store import (
     save_signup_session,
     update_signup_session,
 )
+from app.services.planting_programs.access_requests import AccessRequestError
 from app.services.planting_programs.enrollment import ensure_default_enrollment
+from app.services.planting_programs.onboarding import (
+    create_draft_access_request,
+    resolve_signup_program_code,
+)
+from app.services.planting_programs.signup_categories import (
+    SIGNUP_CATEGORY_BYOT,
+    normalize_signup_category,
+)
 
 
 class SignupError(Exception):
@@ -42,10 +51,16 @@ async def start_signup(
     email: str,
     phone: str,
     password: str,
+    signup_category: str | None = None,
 ) -> tuple[str, str | None]:
     """Create a pending signup session and send phone OTP. Returns (signup_token, dev_otp)."""
     normalized_phone = normalize_phone(phone)
     email_lower = email.strip().lower()
+    category = normalize_signup_category(signup_category)
+    try:
+        resolve_signup_program_code(category)
+    except AccessRequestError as exc:
+        raise SignupError(exc.code) from exc
 
     existing_email = await db.execute(select(User.id).where(User.email == email_lower))
     if existing_email.scalar_one_or_none():
@@ -65,6 +80,7 @@ async def start_signup(
             "password_hash": hash_password(password),
             "phone_verified": False,
             "email_verified": False,
+            "signup_category": category,
         },
     )
     if not sms_auth_configured() and not settings.allow_dev_otp:
@@ -134,5 +150,14 @@ async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) 
     db.add(user)
     await db.flush()
     await ensure_default_enrollment(db, user.id)
+
+    program_code = resolve_signup_program_code(session.get("signup_category", SIGNUP_CATEGORY_BYOT))
+    if program_code:
+        try:
+            await create_draft_access_request(db, user_id=user.id, program_code=program_code)
+        except AccessRequestError as exc:
+            if exc.code != "request_already_pending":
+                raise SignupError(exc.code) from exc
+
     await delete_signup_session(signup_token)
     return user

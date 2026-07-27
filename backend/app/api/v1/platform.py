@@ -412,12 +412,14 @@ def _access_request_admin_out(request) -> ProgramAccessRequestAdminOut:
         program_name=request.program.name,
         status=request.status,
         message=request.message,
+        org_profile=request.org_profile,
         admin_note=request.admin_note,
         created_at=request.created_at,
         reviewed_at=request.reviewed_at,
         user_id=request.user_id,
         user_email=request.user.email,
         user_full_name=request.user.full_name,
+        user_phone=request.user.phone,
     )
 
 

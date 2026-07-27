@@ -29,6 +29,7 @@ import { auth, errorMessage } from "@/lib/api";
 import { organizations } from "@/lib/organizations-api";
 import { inviteErrorMessage, inviteLandingPath, storePendingInviteToken } from "@/lib/invite-landing";
 import { useAuth } from "@/lib/auth-store";
+import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 import { cn } from "@/lib/cn";
 
@@ -306,7 +307,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                         return;
                       }
                     }
-                    router.push("/trees/new");
+                    const refreshed = await auth.me();
+                    setUser(refreshed);
+                    router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
                   }}
                   onSwitchToSignIn={() => setMode("signin")}
                 />

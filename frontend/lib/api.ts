@@ -200,6 +200,9 @@ export type User = {
   org_role?: string | null;
   enrolled_program_codes?: string[];
   has_professional_program?: boolean;
+  onboarding_status?: string;
+  pending_program_code?: string | null;
+  pending_access_request_id?: string | null;
   permissions?: string[];
   platform_access?: {
     website_cms: boolean;
@@ -231,11 +234,36 @@ export type ProgramAccessRequest = {
   id: string;
   program_code: string;
   program_name: string;
-  status: "pending" | "approved" | "rejected" | "withdrawn";
+  status: "draft" | "pending" | "approved" | "rejected" | "withdrawn";
   message: string | null;
+  org_profile?: Record<string, unknown> | null;
   admin_note: string | null;
   created_at: string;
   reviewed_at: string | null;
+};
+
+export type OnboardingState = {
+  status: string;
+  program_code: string | null;
+  program_name: string | null;
+  access_request_id: string | null;
+  admin_note: string | null;
+};
+
+export type OrgProfilePayload = {
+  organization_name: string;
+  organization_type: "government" | "corporate" | "ngo";
+  designation: string;
+  city: string;
+  state: string;
+  country?: string;
+  work_email?: string;
+  contact_phone?: string;
+  website?: string;
+  registered_address?: string;
+  registration_id?: string;
+  department?: string;
+  use_case_summary: string;
 };
 
 export type AiScanMeterStatus = {
@@ -436,6 +464,7 @@ export const auth = {
     phone: string;
     password: string;
     captcha_token?: string;
+    signup_category?: string;
   }) {
     return (
       await api.post<{ signup_token: string; dev_hint?: string | null; sms_enabled?: boolean }>(
@@ -463,6 +492,12 @@ export const auth = {
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
+  },
+  async onboardingState() {
+    return (await api.get<OnboardingState>("/v1/auth/onboarding")).data;
+  },
+  async submitOnboardingOrgProfile(payload: OrgProfilePayload) {
+    return (await api.post<OnboardingState>("/v1/auth/onboarding/org-profile", payload)).data;
   },
   async refresh(refreshToken: string) {
     return (

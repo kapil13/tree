@@ -17,11 +17,13 @@ ORG_ROLES = frozenset({"manager", "supervisor", "worker", "viewer"})
 PROGRAM_PLATFORM_ROLES = {
     "government_nhai": "government",
     "corporate_esg": "corporate",
+    "ngo_community": "ngo",
     "ngo_watershed": "ngo",
 }
 PROGRAM_ORG_TYPES = {
     "government_nhai": "government",
     "corporate_esg": "corporate",
+    "ngo_community": "ngo",
     "ngo_watershed": "ngo",
 }
 
@@ -86,7 +88,9 @@ async def onboard_user_on_program_approval(
         if org is None:
             raise OrgOnboardingError("organization_not_found")
     else:
-        name = (organization_name or f"{user.full_name} — {request.program.name}").strip()
+        profile = request.org_profile or {}
+        profile_name = (profile.get("organization_name") or "").strip()
+        name = (organization_name or profile_name or f"{user.full_name} — {request.program.name}").strip()
         slug = organization_slug or await _unique_slug(db, name)
         if organization_slug:
             taken = await db.execute(select(Organization.id).where(Organization.slug == slug))

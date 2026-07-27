@@ -56,6 +56,7 @@ def _access_request_out(request) -> ProgramAccessRequestOut:
         program_name=request.program.name,
         status=request.status,
         message=request.message,
+        org_profile=request.org_profile,
         admin_note=request.admin_note,
         created_at=request.created_at,
         reviewed_at=request.reviewed_at,

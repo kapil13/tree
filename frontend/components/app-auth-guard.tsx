@@ -1,16 +1,18 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { auth, isApiError } from "@/lib/api";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
+import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 export function AppAuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const hydrated = useAuthHydrated();
   const { setUser, logout, getAccessToken } = useAuth();
   const [status, setStatus] = useState<AuthStatus>("loading");
@@ -34,6 +36,14 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setUser(profile);
         setStatus("authenticated");
+        const onboardingPath = onboardingRedirectPath(profile);
+        if (
+          onboardingPath &&
+          !pathname?.startsWith("/onboarding") &&
+          !pathname?.startsWith("/auth")
+        ) {
+          router.replace(onboardingPath);
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -47,7 +57,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, router, setUser, logout, getAccessToken]);
+  }, [hydrated, router, pathname, setUser, logout, getAccessToken]);
 
   if (!hydrated || status !== "authenticated") {
     return (

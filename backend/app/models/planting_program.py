@@ -67,6 +67,7 @@ class ProgramAccessRequest(UUIDPKMixin, TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    org_profile: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     admin_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True

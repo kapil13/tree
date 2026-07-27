@@ -42,6 +42,7 @@ from app.schemas.auth import (
     UpdateProfile,
     UserOut,
 )
+from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
@@ -65,7 +66,14 @@ from app.services.auth.user_profile import (
     user_enrolled_program_codes,
     user_has_professional_program,
 )
+from app.services.planting_programs.access_requests import AccessRequestError
 from app.services.planting_programs.enrollment import ensure_default_enrollment
+from app.services.planting_programs.onboarding import (
+    OnboardingStateOut,
+    OrgProfileIn,
+    get_user_onboarding_state,
+    submit_org_profile,
+)
 from app.services.platform.modules import build_platform_access_map
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -213,6 +221,8 @@ def _signup_error(exc: SignupError) -> HTTPException:
         status_code = status.HTTP_409_CONFLICT
     elif exc.code == "signup_session_expired":
         status_code = status.HTTP_410_GONE
+    elif exc.code == "invalid_signup_category":
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     elif exc.code == "invalid_otp":
         status_code = status.HTTP_401_UNAUTHORIZED
     elif exc.code in {
@@ -236,6 +246,7 @@ async def signup_start(payload: SignupStartRequest, request: Request, db: DB) ->
             email=str(payload.email),
             phone=payload.phone,
             password=payload.password,
+            signup_category=payload.signup_category,
         )
     except SignupError as exc:
         raise _signup_error(exc) from exc
@@ -286,6 +297,7 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
         user = await complete_signup(db, payload.signup_token, payload.code)
     except SignupError as exc:
         raise _signup_error(exc) from exc
+    onboarding = await get_user_onboarding_state(db, user.id)
     await record_audit(
         db,
         actor=user,
@@ -293,7 +305,12 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
         resource_type="user",
         resource_id=user.id,
         request=request,
-        diff={"email": user.email, "method": "signup_otp", "program": "byot"},
+        diff={
+            "email": user.email,
+            "method": "signup_otp",
+            "signup_category": onboarding.program_code or "byot",
+            "onboarding_status": onboarding.status,
+        },
     )
     await db.commit()
     return _tokens_for(user)
@@ -438,6 +455,9 @@ def _user_out(
     enrolled_program_codes: list[str] | None = None,
     organization_name: str | None = None,
     impersonation: dict[str, str] | None = None,
+    onboarding_status: str = "active_byot",
+    pending_program_code: str | None = None,
+    pending_access_request_id: uuid.UUID | None = None,
 ) -> UserOut:
     codes = enrolled_program_codes or []
     return UserOut(
@@ -462,6 +482,9 @@ def _user_out(
         organization_name=organization_name,
         enrolled_program_codes=codes,
         has_professional_program=user_has_professional_program(codes),
+        onboarding_status=onboarding_status,
+        pending_program_code=pending_program_code,
+        pending_access_request_id=pending_access_request_id,
         impersonation=impersonation,
     )
 
@@ -478,13 +501,43 @@ async def _user_out_enriched(
     if user.organization_id:
         org = await db.get(Organization, user.organization_id)
         org_name = org.name if org else None
+    onboarding = await get_user_onboarding_state(db, user.id)
     return _user_out(
         user,
         platform_access=platform_access,
         enrolled_program_codes=codes,
         organization_name=org_name,
         impersonation=impersonation,
+        onboarding_status=onboarding.status,
+        pending_program_code=onboarding.program_code,
+        pending_access_request_id=onboarding.access_request_id,
     )
+
+
+@router.get("/onboarding", response_model=OnboardingStateOut)
+async def onboarding_state(user: CurrentUser, db: DB) -> OnboardingStateOut:
+    return await get_user_onboarding_state(db, user.id)
+
+
+@router.post("/onboarding/org-profile", response_model=OnboardingStateOut)
+async def submit_onboarding_org_profile(
+    payload: OrgProfileSubmit, user: CurrentUser, db: DB
+) -> OnboardingStateOut:
+    try:
+        await submit_org_profile(
+            db,
+            user_id=user.id,
+            profile=OrgProfileIn.model_validate(payload.model_dump()),
+        )
+        await db.commit()
+    except AccessRequestError as exc:
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if exc.code == "onboarding_not_started"
+            else status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
+        raise HTTPException(status_code, detail=exc.code) from exc
+    return await get_user_onboarding_state(db, user.id)
 
 
 @router.get("/me", response_model=UserOut)

@@ -17,7 +17,7 @@ from app.services.planting_programs.enrollment import (
     user_can_use_program,
 )
 
-REQUEST_STATUSES = frozenset({"pending", "approved", "rejected", "withdrawn"})
+REQUEST_STATUSES = frozenset({"draft", "pending", "approved", "rejected", "withdrawn"})
 
 
 class AccessRequestError(Exception):
@@ -91,7 +91,11 @@ async def create_access_request(
     user_id: uuid.UUID,
     program_code: str,
     message: str | None = None,
+    org_profile: dict | None = None,
+    status: str = "pending",
 ) -> ProgramAccessRequest:
+    if status not in REQUEST_STATUSES:
+        raise AccessRequestError("invalid_status")
     program = await get_program_by_code(db, program_code)
     if program is None:
         raise AccessRequestError("program_not_found")
@@ -107,10 +111,13 @@ async def create_access_request(
     if existing is not None:
         if existing.status == "pending":
             raise AccessRequestError("request_already_pending")
+        if existing.status == "draft":
+            raise AccessRequestError("request_already_pending")
         if existing.status == "approved":
             raise AccessRequestError("already_enrolled")
-        existing.status = "pending"
+        existing.status = status
         existing.message = (message or "").strip() or None
+        existing.org_profile = org_profile
         existing.admin_note = None
         existing.reviewed_by = None
         existing.reviewed_at = None
@@ -122,8 +129,9 @@ async def create_access_request(
     request = ProgramAccessRequest(
         user_id=user_id,
         program_id=program.id,
-        status="pending",
+        status=status,
         message=(message or "").strip() or None,
+        org_profile=org_profile,
     )
     db.add(request)
     await db.flush()
