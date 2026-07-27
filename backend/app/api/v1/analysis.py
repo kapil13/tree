@@ -25,6 +25,7 @@ from app.services.ai import get_ai_service
 from app.services.ai.metering import assert_ai_scan_allowed, consume_paid_scan_credit
 from app.services.ai.types import GrowthContext
 from app.services.carbon import CarbonInputs, estimate_carbon
+from app.api.v1.trees import _get_owned_tree
 from app.services.storage import get_storage
 
 router = APIRouter(tags=["analysis"])
@@ -213,6 +214,7 @@ async def enqueue_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) 
 
 @router.get("/trees/{tree_id}/analyses", response_model=list[AnalysisOut])
 async def list_analyses(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> list[AnalysisOut]:
+    await _get_owned_tree(tree_id, user, db)
     res = await db.execute(
         select(TreeAnalysis).where(TreeAnalysis.tree_id == tree_id).order_by(
             TreeAnalysis.created_at.desc()

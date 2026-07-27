@@ -11,6 +11,7 @@ from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
+from app.api.v1.trees import _get_owned_tree
 from app.services.audit import record_audit
 from app.services.carbon import CarbonInputs, estimate_carbon
 
@@ -90,6 +91,7 @@ async def recalculate_async(
 
 @router.get("-report/{tree_id}", name="carbon_report")
 async def carbon_report(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+    await _get_owned_tree(tree_id, user, db)
     res = await db.execute(
         select(CarbonCalculation)
         .where(CarbonCalculation.tree_id == tree_id)

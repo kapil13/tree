@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
+from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.locust import locust_early_warning
@@ -21,14 +22,12 @@ RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
 
 
 def _fence_scope(stmt, user: User):
-    if user.role == "admin":
-        return stmt
-    if user.organization_id:
-        return stmt.where(
-            (PlantationFence.owner_user_id == user.id)
-            | (PlantationFence.organization_id == user.organization_id)
-        )
-    return stmt.where(PlantationFence.owner_user_id == user.id)
+    return apply_owner_org_scope(
+        stmt,
+        user,
+        owner_col=PlantationFence.owner_user_id,
+        org_col=PlantationFence.organization_id,
+    )
 
 
 def _early_warnings_from_intel(

@@ -10,7 +10,7 @@ import asyncio
 import random
 from datetime import date, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
@@ -29,8 +29,8 @@ DEMO_MANAGER_EMAIL = "manager@byot.earth"
 DEMO_PASSWORD = "byotdemo1234!"
 
 
-async def _ensure_demo_user(db, org: Organization) -> User:
-    """Create or reset the demo citizen account (BYOT-only menus)."""
+async def _ensure_demo_user(db) -> User:
+    """Create or reset the demo citizen account (personal BYOT grove, no org)."""
     user = (await db.execute(select(User).where(User.email == DEMO_EMAIL))).scalar_one_or_none()
     if user is None:
         user = User(
@@ -38,7 +38,7 @@ async def _ensure_demo_user(db, org: Organization) -> User:
             full_name="Demo Citizen",
             hashed_password=hash_password(DEMO_PASSWORD),
             role="user",
-            organization_id=org.id,
+            organization_id=None,
             is_active=True,
             is_verified=True,
         )
@@ -48,7 +48,7 @@ async def _ensure_demo_user(db, org: Organization) -> User:
         user.full_name = "Demo Citizen"
         user.hashed_password = hash_password(DEMO_PASSWORD)
         user.role = "user"
-        user.organization_id = org.id
+        user.organization_id = None
         user.is_org_admin = False
         user.org_role = None
         user.is_active = True
@@ -145,9 +145,88 @@ async def _ensure_demo_viewer(db, org: Organization) -> User:
     return user
 
 
+def _tree_payload(
+    *,
+    rng: random.Random,
+    public_code: str,
+    owner_user_id,
+    organization_id,
+) -> Tree:
+    sp = rng.choice(SPECIES_CATALOG)
+    lat = 12.9716 + rng.uniform(-0.05, 0.05)
+    lon = 77.5946 + rng.uniform(-0.05, 0.05)
+    return Tree(
+        public_code=public_code,
+        owner_user_id=owner_user_id,
+        organization_id=organization_id,
+        species_text=sp.common_name,
+        planted_at=date.today() - timedelta(days=rng.randint(180, 1800)),
+        location=f"POINT({lon} {lat})",
+        altitude_m=rng.uniform(800, 950),
+        accuracy_m=rng.uniform(2, 8),
+        current_health=rng.choices(["healthy", "moderate", "unhealthy"], weights=[7, 2, 1])[0],
+        current_dbh_cm=rng.uniform(5, 30),
+        current_height_m=rng.uniform(2, 12),
+        current_canopy_m=rng.uniform(1, 6),
+        current_carbon_kg=rng.uniform(20, 150),
+        satellite_verified=rng.random() < 0.7,
+        status="active",
+    )
+
+
+async def _seed_personal_trees(db, citizen: User, *, count: int = 12) -> None:
+    from sqlalchemy import func
+
+    personal_count = (
+        await db.execute(
+            select(func.count()).select_from(Tree).where(Tree.owner_user_id == citizen.id)
+        )
+    ).scalar_one()
+    if personal_count >= 5:
+        await db.execute(
+            update(Tree)
+            .where(Tree.owner_user_id == citizen.id)
+            .values(organization_id=None)
+        )
+        return
+
+    rng = random.Random(42)
+    for i in range(count):
+        db.add(
+            _tree_payload(
+                rng=rng,
+                public_code=f"BYOT-DEMO-{i:04d}",
+                owner_user_id=citizen.id,
+                organization_id=None,
+            )
+        )
+
+
+async def _seed_org_portfolio(db, manager: User, org: Organization, *, count: int = 18) -> None:
+    from sqlalchemy import func
+
+    org_count = (
+        await db.execute(
+            select(func.count()).select_from(Tree).where(Tree.organization_id == org.id)
+        )
+    ).scalar_one()
+    if org_count >= 5:
+        return
+
+    rng = random.Random(99)
+    for i in range(count):
+        db.add(
+            _tree_payload(
+                rng=rng,
+                public_code=f"NHAI-DEMO-{i:04d}",
+                owner_user_id=manager.id,
+                organization_id=org.id,
+            )
+        )
+
+
 async def seed() -> None:
     async with AsyncSessionLocal() as db:
-        # Species catalog
         existing = {
             r.scientific_name
             for r in (await db.execute(select(Species))).scalars().all()
@@ -172,63 +251,27 @@ async def seed() -> None:
             )
         await db.flush()
 
-        # Organization
         org = (
             await db.execute(select(Organization).where(Organization.slug == "demo-farm"))
         ).scalar_one_or_none()
         if org is None:
-            org = Organization(name="Demo Farm", slug="demo-farm", type="farm")
+            org = Organization(name="Demo Farm", slug="demo-farm", type="government")
             db.add(org)
             await db.flush()
 
-        user = await _ensure_demo_user(db, org)
-        await _ensure_demo_manager(db, org)
+        citizen = await _ensure_demo_user(db)
+        manager = await _ensure_demo_manager(db, org)
         await _ensure_demo_viewer(db, org)
 
-        # 25 demo trees around Bangalore
-        existing_count = (
-            await db.execute(select(Tree).where(Tree.owner_user_id == user.id))
-        ).scalars().all()
-        if len(existing_count) >= 5:
-            print(
-                f"Demo accounts reset ({DEMO_EMAIL} citizen, {DEMO_MANAGER_EMAIL} org admin, "
-                f"{DEMO_VIEWER_EMAIL} read-only viewer). Trees already exist, skipping tree seed."
-            )
-            await db.commit()
-            return
+        await _seed_personal_trees(db, citizen)
+        await _seed_org_portfolio(db, manager, org)
 
-        rng = random.Random(42)
-        for i in range(25):
-            sp = rng.choice(SPECIES_CATALOG)
-            lat = 12.9716 + rng.uniform(-0.05, 0.05)
-            lon = 77.5946 + rng.uniform(-0.05, 0.05)
-            wkt = f"POINT({lon} {lat})"
-            t = Tree(
-                public_code=f"BYOT-DEMO-{i:04d}",
-                owner_user_id=user.id,
-                organization_id=org.id,
-                species_text=sp.common_name,
-                planted_at=date.today() - timedelta(days=rng.randint(180, 1800)),
-                location=wkt,
-                altitude_m=rng.uniform(800, 950),
-                accuracy_m=rng.uniform(2, 8),
-                current_health=rng.choices(
-                    ["healthy", "moderate", "unhealthy"], weights=[7, 2, 1]
-                )[0],
-                current_dbh_cm=rng.uniform(5, 30),
-                current_height_m=rng.uniform(2, 12),
-                current_canopy_m=rng.uniform(1, 6),
-                current_carbon_kg=rng.uniform(20, 150),
-                satellite_verified=rng.random() < 0.7,
-                status="active",
-            )
-            db.add(t)
         await db.commit()
         print(
             f"Seeded demo data. Password for all: {DEMO_PASSWORD}\n"
-            f"  Citizen (BYOT): {DEMO_EMAIL}\n"
-            f"  Org admin:      {DEMO_MANAGER_EMAIL}\n"
-            f"  Viewer (read-only): {DEMO_VIEWER_EMAIL}"
+            f"  Citizen (BYOT personal grove): {DEMO_EMAIL}\n"
+            f"  Org admin (NHAI portfolio):    {DEMO_MANAGER_EMAIL}\n"
+            f"  Viewer (read-only org):        {DEMO_VIEWER_EMAIL}"
         )
 
 
