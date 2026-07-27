@@ -291,7 +291,7 @@ html, body {
 
 /* Executive dashboard */
 .dash-shell {
-  @apply pb-4;
+  @apply mx-auto max-w-[90rem] pb-4;
 }
 
 .dash-hero {
@@ -310,7 +310,11 @@ html, body {
 }
 
 .dash-hero-grid {
-  @apply relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end;
+  @apply relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start;
+}
+
+.dash-hero-header {
+  @apply relative space-y-3;
 }
 
 .dash-hero-title {
@@ -319,7 +323,27 @@ html, body {
 }
 
 .dash-hero-copy {
-  @apply mt-3 max-w-2xl text-sm leading-relaxed text-emerald-100/75;
+  @apply max-w-2xl text-sm leading-relaxed text-emerald-100/75;
+}
+
+.dash-hero-kpi-row {
+  @apply relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4;
+}
+
+.dash-hero-insight {
+  @apply relative mt-5 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm;
+}
+
+.dash-hero-insight-title {
+  @apply flex items-center gap-2 text-sm font-medium text-white;
+}
+
+.dash-hero-insight-lines {
+  @apply mt-2 space-y-1 text-sm text-emerald-50/80;
+}
+
+.dash-hero-priority {
+  @apply mt-3 inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-100;
 }
 
 .dash-live-pill {
@@ -345,31 +369,43 @@ html, body {
 }
 
 .dash-hero-stat {
-  @apply rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm;
+  @apply rounded-2xl border border-white/15 bg-white/[0.08] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm transition hover:border-white/25 hover:bg-white/[0.11];
 }
 
 .dash-hero-stat-value {
-  @apply text-2xl font-bold text-white;
+  @apply text-2xl font-bold tracking-tight text-white sm:text-3xl;
 }
 
 .dash-hero-stat-label {
-  @apply mt-1 text-xs text-emerald-100/65;
+  @apply mt-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-emerald-100/70;
+}
+
+.dash-trust-strip {
+  @apply flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-stone-200/80 bg-white px-4 py-2.5 text-xs text-stone-600 shadow-sm;
+}
+
+.dash-trust-pill {
+  @apply inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-700;
+}
+
+.dash-trust-pill--live {
+  @apply bg-forest-50 text-forest-800;
+}
+
+.dash-trust-pill--estimate {
+  @apply bg-amber-50 text-amber-900;
 }
 
 .dash-panel {
-  @apply rounded-[1.5rem] border border-stone-200/80 bg-white p-5 shadow-sm;
-}
-
-.dash-panel-head {
-  @apply flex items-start justify-between gap-3;
+  @apply rounded-[1.5rem] border border-stone-200/80 bg-white p-5 shadow-sm dark:border-stone-800 dark:bg-stone-900;
 }
 
 .dash-panel-title {
-  @apply text-base font-semibold text-stone-900;
+  @apply text-base font-semibold text-stone-900 dark:text-stone-50;
 }
 
 .dash-panel-sub {
-  @apply mt-0.5 text-xs text-stone-500;
+  @apply mt-0.5 text-xs text-stone-500 dark:text-stone-400;
 }
 
 .dash-link {
@@ -377,7 +413,7 @@ html, body {
 }
 
 .dash-metric {
-  @apply rounded-[1.25rem] border border-stone-200/80 bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md;
+  @apply rounded-[1.25rem] border border-stone-200/80 bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-stone-800 dark:bg-stone-900;
 }
 
 .dash-metric-icon {
@@ -389,7 +425,7 @@ html, body {
 }
 
 .dash-metric-value {
-  @apply mt-1 text-2xl font-bold text-stone-900;
+  @apply mt-1 text-2xl font-bold text-stone-900 dark:text-stone-50;
 }
 
 .dash-metric-sub {

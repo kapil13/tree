@@ -165,76 +165,78 @@ export function ExecutiveDashboard() {
   return (
     <div className="dash-shell space-y-6">
       <section className="dash-hero">
-        <div className="dash-hero-grid">
-          <div className="space-y-4">
-            <div className="dash-live-pill">
-              <span className="dash-live-dot" />
-              Portfolio overview
-            </div>
-            <div>
-              <h1 className="dash-hero-title">
-                {greeting}, {user?.full_name?.split(" ")[0] || "steward"}
-              </h1>
-              <p className="dash-hero-copy">
-                Carbon, canopy health, biodiversity, satellite signals, and compliance evidence for
-                your organization&apos;s packages.
-              </p>
-            </div>
-            {brief && (
-              <div className="rounded-xl border border-forest-200/60 bg-white/70 p-4 text-sm shadow-sm backdrop-blur">
-                <div className="mb-1 flex items-center gap-2 font-medium text-forest-900">
-                  <Sparkles className="h-4 w-4 text-forest-700" />
-                  {brief.headline}
-                </div>
-                <ul className="space-y-1 text-stone-700">
-                  {brief.lines.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-                {brief.priority_alert && (
-                  <p className="mt-2 text-xs text-amber-800">
-                    Priority: {brief.priority_alert.title} — {brief.priority_alert.work_area_name}
-                  </p>
-                )}
-              </div>
-            )}
-            <DataTrustBanner compact />
-            <OrgAdminChecklist />
-            {enrolledPrograms.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {enrolledPrograms.map((p) => (
-                  <span key={p.code} className="dash-program-chip">
-                    {p.name}
-                  </span>
-                ))}
-              </div>
-            )}
+        <div className="dash-hero-header">
+          <div className="dash-live-pill">
+            <span className="dash-live-dot" />
+            Portfolio overview
           </div>
+          <h1 className="dash-hero-title mt-4">
+            {greeting}, {user?.full_name?.split(" ")[0] || "steward"}
+          </h1>
+          <p className="dash-hero-copy">
+            Carbon, canopy health, biodiversity, and compliance evidence across your portfolio.
+          </p>
+        </div>
 
-          <div className="dash-hero-stats">
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtCompact(k.total_trees)}</p>
-              <p className="dash-hero-stat-label">Trees in portfolio</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
-              <p className="dash-hero-stat-label">CO₂e stored</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{unreadAlerts.length}</p>
-              <p className="dash-hero-stat-label">Unread alerts</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">
-                {ecosystem ? ecosystem.ecosystem_health_score : Math.round(k.pct_healthy)}
-              </p>
-              <p className="dash-hero-stat-label">
-                {ecosystem ? "Ecosystem score" : "Health index"}
-              </p>
-            </div>
+        <div className="dash-hero-kpi-row">
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">{fmtCompact(k.total_trees)}</p>
+            <p className="dash-hero-stat-label">Trees in portfolio</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
+            <p className="dash-hero-stat-label">CO₂e stored</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">{unreadAlerts.length}</p>
+            <p className="dash-hero-stat-label">Unread alerts</p>
+          </div>
+          <div className="dash-hero-stat">
+            <p className="dash-hero-stat-value">
+              {ecosystem ? ecosystem.ecosystem_health_score : Math.round(k.pct_healthy)}
+            </p>
+            <p className="dash-hero-stat-label">
+              {ecosystem ? "Ecosystem score" : "Health index"}
+            </p>
           </div>
         </div>
+
+        {brief && (
+          <div className="dash-hero-insight">
+            <div className="dash-hero-insight-title">
+              <Sparkles className="h-4 w-4 text-lime-300" />
+              {brief.headline}
+            </div>
+            {brief.lines.length > 0 && (
+              <ul className="dash-hero-insight-lines">
+                {brief.lines.slice(0, 2).map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
+            {brief.priority_alert && (
+              <Link href="/alerts" className="dash-hero-priority">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {brief.priority_alert.title}
+                <span className="opacity-70">· {brief.priority_alert.work_area_name}</span>
+              </Link>
+            )}
+          </div>
+        )}
+
+        {enrolledPrograms.length > 0 && (
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            {enrolledPrograms.map((p) => (
+              <span key={p.code} className="dash-program-chip">
+                {p.name}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
+
+      <DataTrustBanner variant="strip" />
+      <OrgAdminChecklist compact />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <MetricCard

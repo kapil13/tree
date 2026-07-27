@@ -18,7 +18,13 @@ function modeLabel(raw: unknown, fallback: string): { mode: string; label: strin
   };
 }
 
-export function DataTrustBanner({ compact = false }: { compact?: boolean }) {
+export function DataTrustBanner({
+  compact = false,
+  variant = "card",
+}: {
+  compact?: boolean;
+  variant?: "card" | "strip";
+}) {
   const { data } = useQuery({
     queryKey: ["integrations-health"],
     queryFn: () => intelligence.integrations(),
@@ -31,6 +37,21 @@ export function DataTrustBanner({ compact = false }: { compact?: boolean }) {
   const sentinel = modeLabel(integrations.sentinel_hub, "Sentinel Hub");
 
   const anyEstimate = ai.mode === "estimate" || sat.mode === "estimate";
+
+  if (variant === "strip") {
+    return (
+      <div className="dash-trust-strip">
+        <span className="font-medium text-stone-700">Data sources</span>
+        <TrustPill mode={ai.mode} label={`AI · ${ai.label}`} />
+        <TrustPill mode={sat.mode} label={`NDVI · ${sat.label}`} />
+        {sentinel.mode === "live" || sentinel.mode === "configured" ? (
+          <TrustPill mode="live" label="Sentinel · configured" />
+        ) : (
+          <TrustPill mode="estimate" label="Sentinel · not configured" />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -48,22 +69,27 @@ export function DataTrustBanner({ compact = false }: { compact?: boolean }) {
           {compact ? (
             <p className="text-xs opacity-90">
               AI: {ai.label} · Tree NDVI: {sat.label}
-              {sentinel.mode === "live" || sentinel.mode === "configured" ? " · Site Sentinel: live when configured" : ""}
+              {sentinel.mode === "live" || sentinel.mode === "configured"
+                ? " · Site Sentinel: live when configured"
+                : ""}
             </p>
           ) : (
             <ul className="space-y-0.5 text-xs opacity-90">
               <li>
-                <TrustPill mode={ai.mode} /> {ai.label}
+                <TrustPill mode={ai.mode} label={ai.label} />
               </li>
               <li>
-                <TrustPill mode={sat.mode} /> {sat.label}
+                <TrustPill mode={sat.mode} label={sat.label} />
               </li>
               <li>
-                <TrustPill mode={sentinel.mode === "configured" ? "live" : sentinel.mode} /> Site
-                monitoring (Sentinel Hub):{" "}
-                {sentinel.mode === "configured" || sentinel.mode === "live"
-                  ? "credentials configured"
-                  : "not configured — simulated where needed"}
+                <TrustPill
+                  mode={sentinel.mode === "configured" ? "live" : sentinel.mode}
+                  label={
+                    sentinel.mode === "configured" || sentinel.mode === "live"
+                      ? "Site monitoring (Sentinel Hub): credentials configured"
+                      : "Site monitoring (Sentinel Hub): not configured — simulated where needed"
+                  }
+                />
               </li>
             </ul>
           )}
@@ -73,16 +99,19 @@ export function DataTrustBanner({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function TrustPill({ mode }: { mode: string }) {
+function TrustPill({ mode, label }: { mode: string; label: string }) {
   const live = mode === "live" || mode === "configured" || mode === "ok";
   return (
     <span
       className={cn(
-        "mr-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-        live ? "bg-forest-200/80 text-forest-900 dark:bg-forest-800 dark:text-forest-100" : "bg-amber-200/80 text-amber-950 dark:bg-amber-900 dark:text-amber-100",
+        "dash-trust-pill",
+        live ? "dash-trust-pill--live" : "dash-trust-pill--estimate",
       )}
     >
-      {live ? "Live" : "Estimate"}
+      <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+        {live ? "Live" : "Estimate"}
+      </span>
+      {label}
     </span>
   );
 }
