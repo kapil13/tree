@@ -26,6 +26,20 @@ PROGRAM_ORG_TYPES = {
     "ngo_community": "ngo",
     "ngo_watershed": "ngo",
 }
+PLATFORM_ROLE_TO_PROGRAM = {
+    "government": "government_nhai",
+    "corporate": "corporate_esg",
+    "ngo": "ngo_community",
+}
+ORG_TYPE_TO_PROGRAM = {
+    "government": "government_nhai",
+    "corporate": "corporate_esg",
+    "ngo": "ngo_community",
+}
+
+
+def program_code_for_platform_role(role: str) -> str | None:
+    return PLATFORM_ROLE_TO_PROGRAM.get(role)
 
 
 class OrgOnboardingError(Exception):
