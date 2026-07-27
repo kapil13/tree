@@ -30,6 +30,7 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.audit import record_audit
+from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -43,7 +44,6 @@ from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.service import get_active_standard
-from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/trees", tags=["trees"])

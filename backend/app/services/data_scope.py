@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -25,9 +25,7 @@ def user_sees_org_portfolio(user: User) -> bool:
         return True
     if user.is_org_admin:
         return True
-    if user.org_role in ("manager", "supervisor"):
-        return True
-    return False
+    return user.org_role in ("manager", "supervisor")
 
 
 def user_is_field_worker(user: User) -> bool:

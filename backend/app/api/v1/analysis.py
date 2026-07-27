@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.trees import _get_owned_tree
 from app.core.rate_limit import rate_limit
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
@@ -25,7 +26,6 @@ from app.services.ai import get_ai_service
 from app.services.ai.metering import assert_ai_scan_allowed, consume_paid_scan_credit
 from app.services.ai.types import GrowthContext
 from app.services.carbon import CarbonInputs, estimate_carbon
-from app.api.v1.trees import _get_owned_tree
 from app.services.storage import get_storage
 
 router = APIRouter(tags=["analysis"])
