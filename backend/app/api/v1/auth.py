@@ -72,6 +72,7 @@ from app.services.planting_programs.onboarding import (
     OnboardingStateOut,
     OrgProfileIn,
     get_user_onboarding_state,
+    repair_stale_onboarding_requests,
     submit_org_profile,
 )
 from app.services.platform.modules import build_platform_access_map
@@ -559,6 +560,9 @@ async def me(
                 }
         except ValueError:
             pass
+    repaired = await repair_stale_onboarding_requests(db, user.id)
+    if repaired:
+        await db.commit()
     return await _user_out_enriched(db, user, impersonation=impersonation)
 
 
