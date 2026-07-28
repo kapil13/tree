@@ -140,7 +140,11 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
         return;
       }
     }
-    router.replace(getSafeNextPath(searchParams.get("next")) ?? "/dashboard");
+    router.replace(
+      onboardingRedirectPath(me) ??
+        getSafeNextPath(searchParams.get("next")) ??
+        "/dashboard",
+    );
   }
 
   async function handleGoogle() {
