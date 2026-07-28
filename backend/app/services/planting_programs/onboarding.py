@@ -6,10 +6,12 @@ import uuid
 from typing import Any, Literal
 
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.planting_program import ProgramAccessRequest
+from app.models.tree import Tree
+from app.models.user import User
 from app.services.auth.user_profile import PROFESSIONAL_PROGRAM_CODES, user_has_professional_program
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
@@ -105,6 +107,38 @@ async def _latest_professional_request(
     return None
 
 
+async def _should_skip_professional_onboarding(
+    db: AsyncSession, user_id: uuid.UUID, request: ProgramAccessRequest
+) -> bool:
+    """BYOT citizens with orphan draft requests should not be forced into org onboarding."""
+    if request.status != "draft":
+        return False
+
+    user = await db.get(User, user_id)
+    if user is None or user.organization_id is not None:
+        return False
+    if user.role not in {"user", "farmer"}:
+        return False
+
+    codes = await list_user_program_codes(db, user_id)
+    if user_has_professional_program(codes):
+        return False
+
+    tree_count = (
+        await db.execute(
+            select(func.count()).select_from(Tree).where(Tree.owner_user_id == user_id)
+        )
+    ).scalar_one()
+    if tree_count > 0:
+        return True
+
+    if user.created_at and request.created_at:
+        age_seconds = (request.created_at - user.created_at).total_seconds()
+        if age_seconds > 3600:
+            return True
+    return False
+
+
 async def get_user_onboarding_state(db: AsyncSession, user_id: uuid.UUID) -> OnboardingStateOut:
     codes = await list_user_program_codes(db, user_id)
     if user_has_professional_program(codes):
@@ -112,6 +146,9 @@ async def get_user_onboarding_state(db: AsyncSession, user_id: uuid.UUID) -> Onb
 
     request = await _latest_professional_request(db, user_id)
     if request is None:
+        return OnboardingStateOut(status="active_byot")
+
+    if await _should_skip_professional_onboarding(db, user_id, request):
         return OnboardingStateOut(status="active_byot")
 
     program = request.program

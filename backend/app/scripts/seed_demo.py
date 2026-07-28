@@ -15,7 +15,7 @@ from sqlalchemy import delete, select, update
 from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models.organization import Organization
-from app.models.planting_program import UserPlantingProgram
+from app.models.planting_program import ProgramAccessRequest, UserPlantingProgram
 from app.models.species import Species
 from app.models.tree import Tree
 from app.models.user import User
@@ -62,6 +62,8 @@ async def _ensure_demo_user(db) -> User:
         await db.execute(delete(UserPlantingProgram).where(UserPlantingProgram.user_id == user.id))
         await db.flush()
         await set_user_programs(db, user.id, [byot.code])
+
+    await db.execute(delete(ProgramAccessRequest).where(ProgramAccessRequest.user_id == user.id))
 
     return user
 
