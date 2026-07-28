@@ -247,6 +247,11 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     resetCaptcha();
   }
 
+  function openForgotPassword() {
+    setShowForgotPassword(true);
+    setError(null);
+  }
+
   const captchaWidget =
     captchaEnabled && captchaConfig?.site_key ? (
       <TurnstileCaptcha
@@ -380,6 +385,16 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   />
                 </div>
 
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-emerald-800 hover:text-emerald-900"
+                    onClick={openForgotPassword}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 {method === "phone" ? (
                   <div className="space-y-4">
                     <div>
@@ -482,16 +497,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        className="mt-2 text-sm font-medium text-emerald-800 hover:text-emerald-900"
-                        onClick={() => {
-                          setShowForgotPassword(true);
-                          setError(null);
-                        }}
-                      >
-                        Forgot password?
-                      </button>
                     </div>
 
                     {captchaWidget}
