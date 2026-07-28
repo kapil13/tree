@@ -30,6 +30,9 @@ from app.schemas.auth import (
     OTPRequest,
     OTPRequestOut,
     OTPVerify,
+    PasswordResetConfirm,
+    PasswordResetOut,
+    PasswordResetRequest,
     RefreshRequest,
     RegisterRequest,
     SignupCompleteRequest,
@@ -54,6 +57,11 @@ from app.services.auth.otp import (
     phone_placeholder_email,
 )
 from app.services.auth.otp_store import check_otp, issue_otp
+from app.services.auth.password_reset import (
+    PasswordResetError,
+    confirm_password_reset,
+    request_password_reset,
+)
 from app.services.auth.signup import (
     SignupError,
     complete_signup,
@@ -177,6 +185,69 @@ async def login(payload: LoginRequest, request: Request, db: DB) -> TokenRespons
         diff={"method": "password"},
     )
     await db.commit()
+    return _tokens_for(user)
+
+
+def _password_reset_error(exc: PasswordResetError) -> HTTPException:
+    if exc.code == "invalid_otp":
+        return HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
+    if exc.code == "email_otp_not_configured":
+        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_otp_not_configured")
+    if exc.code in {"gmail_not_configured", "gmail_send_failed", "gmail_dependencies_missing"}:
+        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.code)
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code)
+
+
+@router.post(
+    "/password-reset/request",
+    response_model=PasswordResetOut,
+    dependencies=[rate_limit(10, 60)],
+)
+async def password_reset_request(
+    payload: PasswordResetRequest, request: Request, db: DB
+) -> PasswordResetOut:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    try:
+        dev_hint = await request_password_reset(db, payload.email)
+    except PasswordResetError as exc:
+        raise _password_reset_error(exc) from exc
+    return PasswordResetOut(
+        status="sent",
+        dev_hint=dev_hint,
+        email_enabled=settings.auth_otp_email_enabled and bool(settings.gmail_sender),
+    )
+
+
+@router.post(
+    "/password-reset/confirm",
+    response_model=TokenResponse,
+    dependencies=[rate_limit(20, 60)],
+)
+async def password_reset_confirm(
+    payload: PasswordResetConfirm, request: Request, db: DB
+) -> TokenResponse:
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    try:
+        user = await confirm_password_reset(
+            db,
+            email=payload.email,
+            code=payload.code,
+            password=payload.password,
+        )
+        await assert_user_may_authenticate(db, user)
+        user.last_login_at = datetime.now(UTC)
+        await record_audit(
+            db,
+            actor=user,
+            action="auth.password_reset",
+            resource_type="user",
+            resource_id=user.id,
+            request=request,
+            diff={"method": "email_otp"},
+        )
+        await db.commit()
+    except PasswordResetError as exc:
+        raise _password_reset_error(exc) from exc
     return _tokens_for(user)
 
 

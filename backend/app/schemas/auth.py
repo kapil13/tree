@@ -63,6 +63,24 @@ class LoginRequest(BaseModel):
     captcha_token: str | None = None
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    captcha_token: str | None = None
+
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=4, max_length=8)
+    password: str = Field(min_length=12, max_length=128)
+    captcha_token: str | None = None
+
+
+class PasswordResetOut(BaseModel):
+    status: str
+    dev_hint: str | None = None
+    email_enabled: bool = False
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 

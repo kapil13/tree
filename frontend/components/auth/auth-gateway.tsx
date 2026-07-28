@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
@@ -67,6 +68,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [method, setMethod] = useState<AuthMethod>("phone");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -277,6 +279,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   type="button"
                   onClick={() => {
                     setMode(tab);
+                    setShowForgotPassword(false);
                     resetPhoneFlow();
                     setError(null);
                   }}
@@ -316,6 +319,20 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
                   }}
                   onSwitchToSignIn={() => setMode("signin")}
+                />
+              </div>
+            ) : showForgotPassword ? (
+              <div className="mt-6">
+                <ForgotPasswordForm
+                  captchaConfig={captchaConfig}
+                  initialEmail={email}
+                  onBack={() => {
+                    setShowForgotPassword(false);
+                    setError(null);
+                  }}
+                  onComplete={finishLogin}
+                  onError={setError}
+                  setSession={setSession}
                 />
               </div>
             ) : (
@@ -465,6 +482,16 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        className="mt-2 text-sm font-medium text-emerald-800 hover:text-emerald-900"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setError(null);
+                        }}
+                      >
+                        Forgot password?
+                      </button>
                     </div>
 
                     {captchaWidget}
