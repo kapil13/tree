@@ -25,7 +25,7 @@ def google_authorize_url() -> str:
         "client_id": settings.google_client_id,
         "response_type": "code",
         "scope": "openid email profile",
-        "redirect_uri": settings.google_redirect_uri,
+        "redirect_uri": settings.google_oauth_redirect_uri,
         "access_type": "online",
         "prompt": "select_account",
     }
@@ -40,7 +40,7 @@ async def exchange_google_code(code: str) -> GoogleProfile:
         "code": code,
         "client_id": settings.google_client_id,
         "client_secret": settings.google_client_secret,
-        "redirect_uri": settings.google_redirect_uri,
+        "redirect_uri": settings.google_oauth_redirect_uri,
         "grant_type": "authorization_code",
     }
     async with httpx.AsyncClient(timeout=30.0) as client:

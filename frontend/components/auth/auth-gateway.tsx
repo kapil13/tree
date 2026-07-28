@@ -67,7 +67,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [method, setMethod] = useState<AuthMethod>("phone");
+  const [method, setMethod] = useState<AuthMethod>(initialMode === "signin" ? "email" : "phone");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -107,6 +107,15 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     }
     if (msg === "email_otp_not_configured") {
       return "Email OTP is temporarily unavailable. Sign in with email and password.";
+    }
+    if (msg === "invalid_credentials") {
+      return "Incorrect email or password.";
+    }
+    if (msg === "inactive_user") {
+      return "This account is inactive. Contact support.";
+    }
+    if (msg === "organization_suspended") {
+      return "Your organization is suspended. Contact your administrator.";
     }
     if (msg === "rate_limited" || msg === "rate_limit_unavailable") {
       return "Too many attempts. Please wait a moment and try again.";

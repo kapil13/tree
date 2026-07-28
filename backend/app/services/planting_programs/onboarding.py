@@ -103,6 +103,8 @@ async def _latest_professional_request(
     )
     for row in res.scalars().all():
         if row.program and row.program.code in PROFESSIONAL_PROGRAM_CODES:
+            if row.status in {"withdrawn", "approved"}:
+                continue
             return row
     return None
 

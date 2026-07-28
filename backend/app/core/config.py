@@ -109,6 +109,18 @@ class Settings(BaseSettings):
         return bool(self.turnstile_secret_key and self.turnstile_site_key)
 
     @property
+    def google_oauth_redirect_uri(self) -> str:
+        """OAuth callback via the app origin so Google only needs the site domain authorized."""
+        configured = self.google_redirect_uri
+        frontend = self.app_frontend_url.rstrip("/")
+        if not frontend or not configured:
+            return configured
+        api_host = configured.split("://", 1)[-1].split("/")[0]
+        if api_host.startswith("api."):
+            return f"{frontend}/api/v1/auth/google/callback"
+        return configured
+
+    @property
     def allow_dev_otp(self) -> bool:
         """Whether universal OTP 000000 and API OTP hints are permitted."""
         if self.auth_allow_dev_otp is not None:

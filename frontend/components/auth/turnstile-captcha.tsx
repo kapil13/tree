@@ -73,14 +73,24 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(functi
   const widgetIdRef = useRef<string | null>(null);
   const [token, setToken] = useState("");
   const [loadError, setLoadError] = useState(false);
+  const [verifyError, setVerifyError] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
 
   const updateToken = useCallback(
     (value: string) => {
       setToken(value);
       onTokenChange(value);
+      if (value) setVerifyError(false);
     },
     [onTokenChange],
   );
+
+  const remountWidget = useCallback(() => {
+    setLoadError(false);
+    setVerifyError(false);
+    updateToken("");
+    setRenderKey((key) => key + 1);
+  }, [updateToken]);
 
   useImperativeHandle(ref, () => ({
     reset: () => {
@@ -106,7 +116,10 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(functi
           theme: "auto",
           callback: (t) => updateToken(t),
           "expired-callback": () => updateToken(""),
-          "error-callback": () => updateToken(""),
+          "error-callback": () => {
+            updateToken("");
+            setVerifyError(true);
+          },
         });
       })
       .catch(() => {
@@ -120,13 +133,20 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(functi
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, updateToken]);
+  }, [siteKey, updateToken, renderKey]);
 
-  if (loadError) {
+  if (loadError || verifyError) {
     return (
-      <p className="text-xs text-amber-800">
-        Security check could not load. Check your connection or disable ad blockers.
-      </p>
+      <div className="space-y-2 text-center">
+        <p className="text-xs text-amber-800">
+          {loadError
+            ? "Security check could not load. Disable ad blockers or try another network."
+            : "Security check failed. Confirm aranyix.tech is allowed in your Turnstile widget settings, then retry."}
+        </p>
+        <button type="button" className="text-sm font-medium text-emerald-800 underline" onClick={remountWidget}>
+          Retry security check
+        </button>
+      </div>
     );
   }
 
