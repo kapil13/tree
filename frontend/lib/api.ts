@@ -490,6 +490,22 @@ export const auth = {
   async login(email: string, password: string, captcha_token?: string) {
     return (await api.post<Tokens>("/v1/auth/login", { email, password, captcha_token })).data;
   },
+  async requestPasswordReset(email: string, captcha_token?: string) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null; email_enabled?: boolean }>(
+        "/v1/auth/password-reset/request",
+        { email, captcha_token },
+      )
+    ).data;
+  },
+  async confirmPasswordReset(payload: {
+    email: string;
+    code: string;
+    password: string;
+    captcha_token?: string;
+  }) {
+    return (await api.post<Tokens>("/v1/auth/password-reset/confirm", payload)).data;
+  },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
   },

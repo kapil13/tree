@@ -106,6 +106,23 @@ async def send_signup_otp_email(*, to: str, code: str) -> None:
     log.info("gmail.otp_sent", to=_redact_email(to))
 
 
+async def send_password_reset_otp_email(*, to: str, code: str) -> None:
+    if not gmail_otp_configured():
+        raise GmailSendError("gmail_not_configured")
+    body = (
+        f"Your Aranyix password reset code is {code}.\n\n"
+        "This code expires in 10 minutes. If you did not request a password reset, "
+        "you can ignore this email."
+    )
+    await asyncio.to_thread(
+        _send_email_sync,
+        to=to,
+        subject="Reset your Aranyix password",
+        body=body,
+    )
+    log.info("gmail.password_reset_sent", to=_redact_email(to))
+
+
 async def send_org_invite_email(
     *,
     to: str,
