@@ -30,6 +30,7 @@ from app.services.bioacoustic.correlation import (
     aggregate_fence_bioacoustic,
     correlate_fence_ecosystem,
 )
+from app.services.data_scope import apply_owner_org_scope, user_sees_org_portfolio
 from app.services.geo import (
     geography_to_geojson_polygon,
     geojson_polygon_to_wkt,
@@ -58,7 +59,9 @@ def _can_access_fence(user, fence: PlantationFence) -> bool:
         return True
     if fence.owner_user_id == user.id:
         return True
-    return bool(user.organization_id and fence.organization_id == user.organization_id)
+    if user_sees_org_portfolio(user) and user.organization_id:
+        return fence.organization_id == user.organization_id
+    return False
 
 
 async def _load_fence(fence_id: uuid.UUID, user, db) -> PlantationFence:
@@ -104,14 +107,12 @@ async def list_fences(
     user: CurrentUser, db: DB, page: int = 1, page_size: int = 50
 ) -> Page[PlantationFenceListItem]:
     stmt = select(PlantationFence)
-    if user.role != "admin":
-        if user.organization_id:
-            stmt = stmt.where(
-                (PlantationFence.owner_user_id == user.id)
-                | (PlantationFence.organization_id == user.organization_id)
-            )
-        else:
-            stmt = stmt.where(PlantationFence.owner_user_id == user.id)
+    stmt = apply_owner_org_scope(
+        stmt,
+        user,
+        owner_col=PlantationFence.owner_user_id,
+        org_col=PlantationFence.organization_id,
+    )
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = (await db.execute(count_stmt)).scalar_one()
