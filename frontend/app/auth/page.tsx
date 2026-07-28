@@ -71,8 +71,10 @@ function AuthPageInner() {
       setOauthError("Google sign-in was cancelled.");
     } else if (err === "google_exchange_failed") {
       setOauthError(
-        "Google sign-in failed. Check GOOGLE_REDIRECT_URI matches Google Cloud Console exactly.",
+        "Google sign-in failed. Add https://aranyix.tech/api/v1/auth/google/callback to Google Cloud Console authorized redirect URIs.",
       );
+    } else if (err === "organization_suspended") {
+      setOauthError("Your organization is suspended. Contact your administrator.");
     }
   }, [params]);
 

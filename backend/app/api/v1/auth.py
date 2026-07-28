@@ -655,7 +655,7 @@ async def google_login() -> dict[str, str]:
     try:
         return {
             "authorize_url": google_authorize_url(),
-            "redirect_uri": settings.google_redirect_uri,
+            "redirect_uri": settings.google_oauth_redirect_uri,
         }
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)) from exc
