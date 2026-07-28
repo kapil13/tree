@@ -14,6 +14,5 @@ def test_seed_always_rebalances_portfolios():
 
 
 def test_rebalance_targets_distinct_portfolios():
-    assert seed_demo.CITIZEN_TREE_TARGET > 0
-    assert seed_demo.ORG_TREE_TARGET > 0
-    assert seed_demo.CITIZEN_TREE_TARGET != seed_demo.ORG_TREE_TARGET or True
+    assert seed_demo.CITIZEN_TREE_TARGET == 12
+    assert seed_demo.ORG_TREE_TARGET == 18
