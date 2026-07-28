@@ -7,7 +7,7 @@ export default function PlatformProgramAccessPage() {
   return (
     <PlatformShell>
       <p className="text-sm text-stone-600 dark:text-stone-300">
-        Review citizen requests for Government & NHAI, Corporate ESG, and NGO programs. Approving
+        Review citizen requests for Government & Public Sector, Corporate ESG, and NGO programs. Approving
         enrolls the user immediately.
       </p>
       <ProgramAccessQueuePanel />

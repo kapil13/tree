@@ -34,7 +34,7 @@ FOOTER_DEFAULT: dict[str, Any] = {
             "title": "Programs",
             "links": [
                 {"label": "BYOT citizen tagging", "href": "/auth?mode=signup"},
-                {"label": "Government & NHAI", "href": "/auth?mode=signup"},
+                {"label": "Government & Public Sector", "href": "/auth?mode=signup"},
                 {"label": "Corporate ESG", "href": "/auth?mode=signup"},
                 {"label": "NGO & community", "href": "/auth?mode=signup"},
             ],
@@ -179,7 +179,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "copy": "Enroll in BYOT, government, corporate ESG, or NGO programs from a single workspace. Each pathway applies the right validation rules without fragmenting your data.",
             "items": [
                 {"icon": "Leaf", "title": "BYOT Public", "description": "Citizens and schools tag trees in minutes with mobile-first registration and QR passports.", "badge": "Most popular"},
-                {"icon": "Building2", "title": "Government & NHAI", "description": "Audit-grade planting for highways, urban forestry, and departmental compensatory schemes.", "badge": "Govt ready"},
+                {"icon": "Building2", "title": "Government & Public Sector", "description": "Audit-grade planting for highways, urban forestry, and departmental compensatory schemes.", "badge": "Govt ready"},
                 {"icon": "ShieldCheck", "title": "Industry & Corporate ESG", "description": "Plantation baselines, supplier traceability, and board-ready sustainability evidence.", "badge": "ESG"},
                 {"icon": "Users", "title": "NGO & Community", "description": "Watershed restoration, farmer groups, and community nurseries with shared dashboards.", "badge": "Community"},
             ],

@@ -8,6 +8,11 @@ import { Settings2 } from "lucide-react";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { buildInitialValues, splitPayload } from "@/lib/registration";
 import {
+  GOVERNMENT_PROGRAM_CODE,
+  applyGovernmentCategoryToValues,
+  type GovernmentPlantationCategory,
+} from "@/lib/government-plantation-categories";
+import {
   errorMessage,
   plantingPrograms,
   plantingProjects,
@@ -70,15 +75,24 @@ export function NewTreePageClient() {
 
   useEffect(() => {
     if (!activeProgram) return;
-    setValues((current) => ({
-      ...buildInitialValues(activeProgram.form_schema),
-      ...current,
-    }));
+    const category = project?.metadata?.plantation_category as
+      | GovernmentPlantationCategory
+      | undefined;
+    setValues((current) => {
+      let base = {
+        ...buildInitialValues(activeProgram.form_schema),
+        ...current,
+      };
+      if (activeProgram.code === GOVERNMENT_PROGRAM_CODE && category) {
+        base = applyGovernmentCategoryToValues(base, category);
+      }
+      return base;
+    });
     setPhotoKeys([]);
     setPhotoPreviews([]);
     setError(null);
     setCompliancePreview(null);
-  }, [activeProgram?.code]);
+  }, [activeProgram?.code, project?.metadata?.plantation_category]);
 
   function geo() {
     if (!navigator.geolocation || !activeProgram) return;

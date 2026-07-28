@@ -129,7 +129,7 @@ _BYOT_PROGRAM: ProgramDefinition = {
 
 _GOVERNMENT_PROGRAM: ProgramDefinition = {
     "code": "government_nhai",
-    "name": "Government & NHAI",
+    "name": "Government & Public Sector",
     "description": "Audit-ready planting for highways, forest dept, and municipal schemes.",
     "audience": "Government agencies and contractors",
     "min_photos": 3,
