@@ -304,7 +304,7 @@ export function ProgramAccessQueuePanel() {
                               })
                             }
                           >
-                            <option value="government">Government / NHAI</option>
+                            <option value="government">Government / Public sector</option>
                             <option value="corporate">Corporate / ESG</option>
                             <option value="ngo">NGO</option>
                           </select>

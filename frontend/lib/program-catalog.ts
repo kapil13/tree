@@ -17,7 +17,7 @@ export const SIGNUP_PROGRAM_OPTIONS: SignupProgramOption[] = [
   },
   {
     code: "government_nhai",
-    name: "Government & NHAI",
+    name: "Government & Public Sector",
     description: "Audit-ready planting for highways, forest dept, and municipal schemes.",
     is_default: false,
   },

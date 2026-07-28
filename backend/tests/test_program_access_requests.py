@@ -18,7 +18,7 @@ def _program(*, code: str = "government_nhai", is_default: bool = False) -> Magi
     program = MagicMock()
     program.id = uuid.uuid4()
     program.code = code
-    program.name = "Government & NHAI"
+    program.name = "Government & Public Sector"
     program.is_default = is_default
     program.is_public = True
     return program

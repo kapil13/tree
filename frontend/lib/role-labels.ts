@@ -3,7 +3,7 @@ const ROLE_LABELS: Record<string, string> = {
   farmer: "Farmer",
   ngo: "NGO",
   corporate: "Corporate / ESG",
-  government: "Government / NHAI",
+  government: "Government / Public sector",
   field_worker: "Field worker",
   field_supervisor: "Field supervisor",
   admin: "Platform admin",

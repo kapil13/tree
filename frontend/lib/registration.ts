@@ -30,6 +30,10 @@ export function splitPayload(
     }
   }
 
+  if (values.plantation_category) {
+    metadata.plantation_category = values.plantation_category;
+  }
+
   return {
     program_code: program.code,
     species_text: (core.species_text as string) || undefined,

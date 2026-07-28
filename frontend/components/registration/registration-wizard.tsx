@@ -12,6 +12,14 @@ import type { PlantingProgram } from "@/lib/api";
 import { countFilledRequired } from "@/lib/registration";
 import { viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
+import { PlantationCategorySelector } from "@/components/government/plantation-category-selector";
+import {
+  GOVERNMENT_PROGRAM_CODE,
+  applyGovernmentCategoryToValues,
+  inferGovernmentCategory,
+  shouldShowHighwaySection,
+  type GovernmentPlantationCategory,
+} from "@/lib/government-plantation-categories";
 import { FormFieldsGrid } from "./form-fields";
 import { LocationPanel } from "./location-panel";
 import { PhotoUploadZone } from "./photo-upload-zone";
@@ -40,8 +48,21 @@ type RegistrationWizardProps = {
   onSubmit: () => void;
 };
 
-function contentSections(schema: ProgramFormSchema) {
-  return schema.sections.filter((section) => section.id !== "location");
+function contentSections(
+  schema: ProgramFormSchema,
+  options?: { programCode?: string; govCategory?: GovernmentPlantationCategory | null },
+) {
+  return schema.sections.filter((section) => {
+    if (section.id === "location") return false;
+    if (
+      options?.programCode === GOVERNMENT_PROGRAM_CODE &&
+      section.id === "highway" &&
+      !shouldShowHighwaySection(options.govCategory)
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function RegistrationWizard({
@@ -65,6 +86,9 @@ export function RegistrationWizard({
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [govCategory, setGovCategory] = useState<GovernmentPlantationCategory | null>(() =>
+    programCode === GOVERNMENT_PROGRAM_CODE ? inferGovernmentCategory(values) : null,
+  );
   const theme = getProgramTheme(programCode);
   const ThemeIcon = theme.icon;
 
@@ -72,10 +96,22 @@ export function RegistrationWizard({
     setStepIndex(0);
   }, [programCode, schema.code]);
 
+  useEffect(() => {
+    if (programCode !== GOVERNMENT_PROGRAM_CODE) {
+      setGovCategory(null);
+      return;
+    }
+    const inferred = inferGovernmentCategory(values);
+    if (inferred) setGovCategory(inferred);
+  }, [programCode, values.legal_basis, values.land_category]);
+
   const steps: WizardStep[] = useMemo(() => {
     const base: WizardStep[] = [];
     if (programs.length > 1) base.push({ id: "program", label: "Program" });
-    for (const section of contentSections(schema)) {
+    if (programCode === GOVERNMENT_PROGRAM_CODE) {
+      base.push({ id: "gov_category", label: "Scheme type" });
+    }
+    for (const section of contentSections(schema, { programCode, govCategory })) {
       base.push({ id: section.id, label: section.title });
     }
     const location = schema.sections.find((s) => s.id === "location");
@@ -83,7 +119,7 @@ export function RegistrationWizard({
     base.push({ id: "photos", label: "Evidence" });
     base.push({ id: "review", label: "Review" });
     return base;
-  }, [programs.length, schema]);
+  }, [programs.length, schema, programCode, govCategory]);
 
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;
@@ -91,8 +127,12 @@ export function RegistrationWizard({
 
   const sectionForStep = useMemo(() => {
     if (!currentStep) return null;
-    return contentSections(schema).find((section) => section.id === currentStep.id) ?? null;
-  }, [currentStep, schema]);
+    return (
+      contentSections(schema, { programCode, govCategory }).find(
+        (section) => section.id === currentStep.id,
+      ) ?? null
+    );
+  }, [currentStep, schema, programCode, govCategory]);
 
   async function addPhotos(files: FileList) {
     if (readOnly) return;
@@ -122,6 +162,7 @@ export function RegistrationWizard({
     if (currentStep.id === "photos") return photoKeys.length >= schema.min_photos;
     if (currentStep.id === "review") return true;
     if (currentStep.id === "program") return Boolean(programCode);
+    if (currentStep.id === "gov_category") return Boolean(govCategory);
     if (currentStep.id === "location") {
       return Boolean(values.latitude && values.longitude);
     }
@@ -197,6 +238,17 @@ export function RegistrationWizard({
         <div className="mt-8">
           {currentStep?.id === "program" && (
             <ProgramSelector programs={programs} value={programCode} onChange={onProgramChange} />
+          )}
+
+          {currentStep?.id === "gov_category" && (
+            <PlantationCategorySelector
+              value={govCategory}
+              disabled={readOnly}
+              onChange={(category) => {
+                setGovCategory(category);
+                onValuesChange(applyGovernmentCategoryToValues(values, category));
+              }}
+            />
           )}
 
           {sectionForStep && currentStep?.id !== "location" && (
@@ -302,7 +354,9 @@ function StepHeader({
   const title =
     step.id === "program"
       ? "Choose your registration path"
-      : step.id === "photos"
+      : step.id === "gov_category"
+        ? "What type of government planting is this?"
+        : step.id === "photos"
         ? "Attach field evidence"
         : step.id === "review"
           ? "Review before submission"
@@ -313,7 +367,9 @@ function StepHeader({
   const description =
     step.id === "program"
       ? "Pick the form that matches your planting context. You can enable more programs anytime in Settings."
-      : step.id === "photos"
+      : step.id === "gov_category"
+        ? "Choose the scheme that best matches your work. Legal basis and land category will be pre-filled — you can adjust them in the next step if needed."
+        : step.id === "photos"
         ? `Upload at least ${schema.min_photos} clear images for verification and AI health analysis.`
         : step.id === "review"
           ? "Confirm the details below. A QR passport and satellite baseline scan will be generated automatically."
