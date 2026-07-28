@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.planting_program import ProgramAccessRequest
-from app.models.tree import Tree
 from app.models.user import User
-from app.services.auth.user_profile import PROFESSIONAL_PROGRAM_CODES, user_has_professional_program
+from app.services.auth.user_profile import (
+    PROFESSIONAL_PROGRAM_CODES,
+    user_has_professional_program,
+    user_is_byot_only,
+)
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
     create_access_request,
@@ -107,11 +111,26 @@ async def _latest_professional_request(
     return None
 
 
+def _is_incomplete_professional_request(request: ProgramAccessRequest) -> bool:
+    return request.status == "draft" or (
+        request.status == "pending" and not request.org_profile
+    )
+
+
+def _is_fresh_professional_signup(user: User, request: ProgramAccessRequest) -> bool:
+    """True when the access request was created during a new professional signup."""
+    if not user.created_at or not request.created_at:
+        return False
+    signup_window_seconds = (request.created_at - user.created_at).total_seconds()
+    account_age_seconds = (datetime.now(UTC) - user.created_at).total_seconds()
+    return signup_window_seconds <= 600 and account_age_seconds <= 3600
+
+
 async def _should_skip_professional_onboarding(
     db: AsyncSession, user_id: uuid.UUID, request: ProgramAccessRequest
 ) -> bool:
-    """BYOT citizens with orphan draft requests should not be forced into org onboarding."""
-    if request.status != "draft":
+    """BYOT citizens with stale professional requests should not be forced into org onboarding."""
+    if not _is_incomplete_professional_request(request):
         return False
 
     user = await db.get(User, user_id)
@@ -121,22 +140,10 @@ async def _should_skip_professional_onboarding(
         return False
 
     codes = await list_user_program_codes(db, user_id)
-    if user_has_professional_program(codes):
+    if user_has_professional_program(codes) or not user_is_byot_only(codes):
         return False
 
-    tree_count = (
-        await db.execute(
-            select(func.count()).select_from(Tree).where(Tree.owner_user_id == user_id)
-        )
-    ).scalar_one()
-    if tree_count > 0:
-        return True
-
-    if user.created_at and request.created_at:
-        age_seconds = (request.created_at - user.created_at).total_seconds()
-        if age_seconds > 3600:
-            return True
-    return False
+    return not _is_fresh_professional_signup(user, request)
 
 
 async def get_user_onboarding_state(db: AsyncSession, user_id: uuid.UUID) -> OnboardingStateOut:

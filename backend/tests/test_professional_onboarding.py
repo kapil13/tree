@@ -36,6 +36,7 @@ def test_resolve_signup_program_code_invalid():
 
 @pytest.mark.asyncio
 async def test_get_user_onboarding_state_profile_required(monkeypatch):
+    now = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
     program = MagicMock(code="government_nhai", name="Government")
     request = MagicMock(
         status="draft",
@@ -43,9 +44,15 @@ async def test_get_user_onboarding_state_profile_required(monkeypatch):
         program=program,
         id=uuid.uuid4(),
         admin_note=None,
+        created_at=now,
     )
+    user = MagicMock(organization_id=None, role="user", created_at=now)
     db = MagicMock()
-    db.get = AsyncMock(return_value=MagicMock(organization_id=None, role="government"))
+    db.get = AsyncMock(return_value=user)
+    monkeypatch.setattr(
+        "app.services.planting_programs.onboarding.datetime",
+        MagicMock(now=MagicMock(return_value=now)),
+    )
     monkeypatch.setattr(
         "app.services.planting_programs.onboarding.list_user_program_codes",
         AsyncMock(return_value=["byot"]),
@@ -64,6 +71,7 @@ async def test_get_user_onboarding_state_skips_orphan_draft_for_byot_citizen(mon
     """BYOT citizens with stale draft access requests should not be forced into org onboarding."""
     user_id = uuid.uuid4()
     created_at = datetime(2026, 1, 1, tzinfo=UTC)
+    now = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
     program = MagicMock(code="government_nhai", name="Government")
     request = MagicMock(
         status="draft",
@@ -81,10 +89,10 @@ async def test_get_user_onboarding_state_skips_orphan_draft_for_byot_citizen(mon
 
     db = MagicMock()
     db.get = AsyncMock(return_value=user)
-    tree_count = MagicMock()
-    tree_count.scalar_one.return_value = 3
-    db.execute = AsyncMock(return_value=tree_count)
-
+    monkeypatch.setattr(
+        "app.services.planting_programs.onboarding.datetime",
+        MagicMock(now=MagicMock(return_value=now)),
+    )
     monkeypatch.setattr(
         "app.services.planting_programs.onboarding.list_user_program_codes",
         AsyncMock(return_value=["byot"]),
@@ -97,6 +105,46 @@ async def test_get_user_onboarding_state_skips_orphan_draft_for_byot_citizen(mon
     state = await get_user_onboarding_state(db, user_id)
     assert state.status == "active_byot"
     assert state.program_code is None
+
+
+@pytest.mark.asyncio
+async def test_get_user_onboarding_state_skips_pending_request_without_org_profile(monkeypatch):
+    """Program access requests created from settings should not hijack BYOT login."""
+    user_id = uuid.uuid4()
+    created_at = datetime(2025, 6, 1, tzinfo=UTC)
+    now = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
+    program = MagicMock(code="government_nhai", name="Government")
+    request = MagicMock(
+        status="pending",
+        org_profile=None,
+        program=program,
+        id=uuid.uuid4(),
+        admin_note=None,
+        created_at=now - timedelta(days=1),
+    )
+    user = MagicMock(
+        organization_id=None,
+        role="user",
+        created_at=created_at,
+    )
+
+    db = MagicMock()
+    db.get = AsyncMock(return_value=user)
+    monkeypatch.setattr(
+        "app.services.planting_programs.onboarding.datetime",
+        MagicMock(now=MagicMock(return_value=now)),
+    )
+    monkeypatch.setattr(
+        "app.services.planting_programs.onboarding.list_user_program_codes",
+        AsyncMock(return_value=["byot"]),
+    )
+    monkeypatch.setattr(
+        "app.services.planting_programs.onboarding._latest_professional_request",
+        AsyncMock(return_value=request),
+    )
+
+    state = await get_user_onboarding_state(db, user_id)
+    assert state.status == "active_byot"
 
 
 @pytest.mark.asyncio
