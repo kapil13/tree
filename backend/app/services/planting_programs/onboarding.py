@@ -12,11 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.planting_program import ProgramAccessRequest
 from app.models.user import User
-from app.services.auth.user_profile import (
-    PROFESSIONAL_PROGRAM_CODES,
-    user_has_professional_program,
-    user_is_byot_only,
-)
+from app.services.auth.user_profile import PROFESSIONAL_PROGRAM_CODES, user_has_professional_program
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
     create_access_request,
@@ -140,10 +136,44 @@ async def _should_skip_professional_onboarding(
         return False
 
     codes = await list_user_program_codes(db, user_id)
-    if user_has_professional_program(codes) or not user_is_byot_only(codes):
+    if user_has_professional_program(codes):
         return False
 
     return not _is_fresh_professional_signup(user, request)
+
+
+async def repair_stale_onboarding_requests(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Withdraw incomplete professional requests that should not block BYOT login."""
+    from sqlalchemy.orm import selectinload
+
+    user = await db.get(User, user_id)
+    if user is None:
+        return 0
+    if user.organization_id is not None or user.role not in {"user", "farmer"}:
+        return 0
+
+    codes = await list_user_program_codes(db, user_id)
+    if user_has_professional_program(codes):
+        return 0
+
+    res = await db.execute(
+        select(ProgramAccessRequest)
+        .options(selectinload(ProgramAccessRequest.program))
+        .where(ProgramAccessRequest.user_id == user_id)
+    )
+    withdrawn = 0
+    for request in res.scalars().all():
+        if not request.program or request.program.code not in PROFESSIONAL_PROGRAM_CODES:
+            continue
+        if not _is_incomplete_professional_request(request):
+            continue
+        if _is_fresh_professional_signup(user, request):
+            continue
+        request.status = "withdrawn"
+        withdrawn += 1
+    if withdrawn:
+        await db.flush()
+    return withdrawn
 
 
 async def get_user_onboarding_state(db: AsyncSession, user_id: uuid.UUID) -> OnboardingStateOut:
