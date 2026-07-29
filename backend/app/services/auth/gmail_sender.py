@@ -38,6 +38,14 @@ def gmail_invite_configured() -> bool:
     )
 
 
+def gmail_program_access_configured() -> bool:
+    return bool(
+        settings.auth_program_access_email_enabled
+        and settings.gmail_sender
+        and settings.google_service_account_json
+    )
+
+
 def _load_service_account_info() -> dict:
     raw = (settings.google_service_account_json or "").strip()
     if not raw:
@@ -147,6 +155,71 @@ async def send_org_invite_email(
         body=body,
     )
     log.info("gmail.invite_sent", to=_redact_email(to), org=org_name)
+
+
+async def send_program_access_admin_email(
+    *,
+    to: str,
+    applicant_name: str,
+    applicant_email: str,
+    program_name: str,
+    organization_name: str | None,
+    queue_url: str,
+) -> None:
+    if not gmail_program_access_configured():
+        raise GmailSendError("gmail_not_configured")
+    org_line = f"Organization: {organization_name}\n" if organization_name else ""
+    body = (
+        "A new professional program access request is waiting for review on Aranyix.\n\n"
+        f"Applicant: {applicant_name} ({applicant_email})\n"
+        f"Program: {program_name}\n"
+        f"{org_line}\n"
+        f"Review the queue:\n{queue_url}\n"
+    )
+    await asyncio.to_thread(
+        _send_email_sync,
+        to=to,
+        subject=f"New program access request — {program_name}",
+        body=body,
+    )
+    log.info("gmail.program_access_admin_sent", to=_redact_email(to), program=program_name)
+
+
+async def send_program_access_decision_email(
+    *,
+    to: str,
+    applicant_name: str,
+    program_name: str,
+    action: str,
+    admin_note: str | None,
+    dashboard_url: str,
+    pending_url: str,
+) -> None:
+    if not gmail_program_access_configured():
+        raise GmailSendError("gmail_not_configured")
+    if action == "approve":
+        subject = f"Your {program_name} access was approved"
+        body = (
+            f"Hello {applicant_name},\n\n"
+            f"Your request for the {program_name} program on Aranyix has been approved.\n\n"
+            f"Sign in to get started:\n{dashboard_url}\n"
+        )
+    else:
+        subject = f"Update on your {program_name} access request"
+        body = (
+            f"Hello {applicant_name},\n\n"
+            f"Your request for the {program_name} program was not approved at this time.\n"
+        )
+        if admin_note:
+            body += f"\nNote from reviewer:\n{admin_note}\n"
+        body += f"\nView status:\n{pending_url}\n"
+    await asyncio.to_thread(
+        _send_email_sync,
+        to=to,
+        subject=subject,
+        body=body,
+    )
+    log.info("gmail.program_access_decision_sent", to=_redact_email(to), action=action)
 
 
 def _redact_email(email: str) -> str:

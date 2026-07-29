@@ -10,6 +10,7 @@ import { NavLinks } from "@/components/sidebar";
 import { clearAppQueryCache } from "@/app/providers";
 import { alerts } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { scopedKey } from "@/lib/query-keys";
 import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
@@ -25,6 +26,16 @@ export function Topbar() {
     enabled: Boolean(user),
   });
   const unreadCount = unreadAlerts.filter((a) => !a.is_read).length;
+
+  const onboardingHref = onboardingRedirectPath(user);
+  const onboardingChipLabel =
+    user?.onboarding_status === "profile_required"
+      ? "Complete profile"
+      : user?.onboarding_status === "pending_approval"
+        ? "Pending approval"
+        : user?.onboarding_status === "rejected"
+          ? "Request update"
+          : null;
 
   const roleLine = user?.org_role
     ? `${formatOrgRole(user.org_role)} · ${formatPlatformRole(user.role)}`
@@ -51,6 +62,14 @@ export function Topbar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {onboardingHref && onboardingChipLabel ? (
+            <Link
+              href={onboardingHref}
+              className="hidden rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-950 hover:bg-amber-100 sm:inline-flex dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+            >
+              {onboardingChipLabel}
+            </Link>
+          ) : null}
           <Link
             href="/alerts"
             className="btn-ghost relative"

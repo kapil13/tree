@@ -74,6 +74,7 @@ from app.services.auth.user_profile import (
     user_enrolled_program_codes,
     user_has_professional_program,
 )
+from app.services.planting_programs.access_notifications import notify_admins_new_access_request
 from app.services.planting_programs.access_requests import AccessRequestError
 from app.services.planting_programs.enrollment import ensure_default_enrollment
 from app.services.planting_programs.onboarding import (
@@ -596,12 +597,13 @@ async def submit_onboarding_org_profile(
     payload: OrgProfileSubmit, user: CurrentUser, db: DB
 ) -> OnboardingStateOut:
     try:
-        await submit_org_profile(
+        request = await submit_org_profile(
             db,
             user_id=user.id,
             profile=OrgProfileIn.model_validate(payload.model_dump()),
         )
         await db.commit()
+        await notify_admins_new_access_request(db, request=request)
     except AccessRequestError as exc:
         status_code = (
             status.HTTP_404_NOT_FOUND
