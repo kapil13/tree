@@ -1921,7 +1921,13 @@ export type ProjectChecklistState = {
   completion_pct: number;
   score_pct: number;
   eligibility_status: ChecklistEligibilityStatus;
-  gaps: Array<{ item_id: string; question: string; answer: ChecklistAnswer; category: string }>;
+  gaps: Array<{
+    item_id: string;
+    question: string;
+    answer: ChecklistAnswer;
+    category: string;
+    auto_key?: string | null;
+  }>;
   answered_required: number;
   required_count: number;
   updated_at: string | null;

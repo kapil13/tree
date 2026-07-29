@@ -135,6 +135,8 @@ export function ProjectComplianceTab({
         <ProjectComplianceChecklistPanel
           projectId={projectId}
           initialChecklistCode={checklistCode}
+          onNavigateTab={onNavigateTab}
+          onScrollToAnchor={scrollToAnchor}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["compliance-workflow", projectId] });
           }}

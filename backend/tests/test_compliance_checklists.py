@@ -54,6 +54,16 @@ def test_score_checklist_uses_auto_signals():
     assert metrics["eligibility_status"] in ("in_progress", "eligible", "gaps_identified")
 
 
+def test_score_checklist_gaps_include_auto_key():
+    checklist = get_checklist("esg_general")
+    assert checklist is not None
+    auto = {"geo_tagged_majority": "no", "has_trees": "yes"}
+    metrics = score_checklist(checklist, {}, auto)
+    geo_gaps = [g for g in metrics["gaps"] if g.get("auto_key") == "geo_tagged_majority"]
+    assert geo_gaps
+    assert geo_gaps[0]["auto_key"] == "geo_tagged_majority"
+
+
 @pytest.mark.asyncio
 async def test_save_project_checklist_responses_persists(monkeypatch):
     checklist = get_checklist("esg_general")
