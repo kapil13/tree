@@ -94,6 +94,8 @@ class Settings(BaseSettings):
     # Org invite notifications (independent toggles — enable when keys are ready)
     auth_org_invite_sms_enabled: bool = False
     auth_org_invite_email_enabled: bool = False
+    # Program access onboarding (professional signup approval queue)
+    auth_program_access_email_enabled: bool = False
     # MSG91 (India) — https://msg91.com
     msg91_auth_key: str | None = None
     msg91_sender_id: str | None = None

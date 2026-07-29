@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.services.ai.service import ai_service_status
 from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
 
@@ -42,16 +43,8 @@ async def _ping_gbif(timeout: float = 3.0) -> dict[str, Any]:
 
 
 def _ai_pipeline_status() -> dict[str, Any]:
-    """Honest mode for tree AI — currently always stub until OpenAI/Gemini adapters are wired."""
-    # Keep in sync with app.services.ai.service.get_ai_service()
-    return {
-        "status": "estimate",
-        "mode": "estimate",
-        "label": "Deterministic estimate model (live AI adapters not enabled)",
-        "reachable": True,
-        "error": None,
-        "provider": "stub",
-    }
+    """Honest mode for tree AI — reflects configured OpenAI/Gemini keys."""
+    return ai_service_status()
 
 
 def _tree_satellite_status() -> dict[str, Any]:

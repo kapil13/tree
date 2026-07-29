@@ -26,6 +26,8 @@ from app.services.ai.types import (
     SpeciesPrediction,
     SpeciesResult,
 )
+from app.core.config import settings
+from app.services.ai.llm_vision import analyze_tree_vision
 from app.services.carbon.species_catalog import SPECIES_CATALOG, by_name
 
 
@@ -252,7 +254,118 @@ def _build_recommendations(
                 "general", "Tree looks healthy. Continue routine monthly inspection.", "info"
             )
         )
-    return recs
+        return recs
+
+
+# ---------------------------------------------------------------------------
+# LLM-enhanced composite (vision when API keys are configured)
+# ---------------------------------------------------------------------------
+
+
+class LLMEnhancedAIService:
+    """Uses OpenAI/Gemini vision for species & health; growth stays allometric."""
+
+    def __init__(self, *, stub: StubAIService | None = None) -> None:
+        self._stub = stub or StubAIService()
+
+    @property
+    def name(self) -> str:
+        if settings.openai_api_key:
+            return "openai/gpt-4o-mini-vision"
+        if settings.gemini_api_key:
+            return "gemini/gemini-1.5-flash-vision"
+        return self._stub.name
+
+    async def detect_species(
+        self, images: list[bytes], hint: str | None = None
+    ) -> SpeciesResult:
+        llm = await analyze_tree_vision(images, species_hint=hint)
+        if llm is not None:
+            return llm[0]
+        return await self._stub.detect_species(images, hint)
+
+    async def classify_health(self, images: list[bytes]) -> HealthResult:
+        llm = await analyze_tree_vision(images)
+        if llm is not None:
+            return llm[1]
+        return await self._stub.classify_health(images)
+
+    async def estimate_growth(self, ctx: GrowthContext) -> GrowthResult:
+        return await self._stub.estimate_growth(ctx)
+
+    async def full_analysis(
+        self,
+        images: list[bytes],
+        species_hint: str | None,
+        ctx: GrowthContext,
+    ) -> AnalysisResult:
+        llm = await analyze_tree_vision(images, species_hint=species_hint)
+        if llm is not None:
+            species, health, llm_recs, pipeline = llm
+            ctx2 = GrowthContext(
+                species_scientific=species.top.scientific_name,
+                age_years=ctx.age_years,
+                climate_zone=ctx.climate_zone,
+                lat=ctx.lat,
+                lon=ctx.lon,
+                photo_count=ctx.photo_count or len(images),
+            )
+            growth = await self._stub.estimate_growth(ctx2)
+            recs = llm_recs or _build_recommendations(health, growth)
+            overall = round(
+                0.4 * species.top.confidence
+                + 0.35 * health.confidence
+                + 0.25 * growth.confidence,
+                3,
+            )
+            return AnalysisResult(
+                species=species,
+                health=health,
+                growth=growth,
+                recommendations=recs,
+                overall_confidence=overall,
+                pipeline=pipeline,
+                versions={
+                    "species": pipeline,
+                    "health": pipeline,
+                    "growth": self._stub.name,
+                },
+            )
+
+        return await self._stub.full_analysis(images, species_hint, ctx)
+
+    async def assistant(self, prompt: str, ctx: dict) -> dict:
+        return await self._stub.assistant(prompt, ctx)
+
+
+def ai_service_status() -> dict[str, str | bool | None]:
+    """Integration health metadata — keep in sync with intelligence.integrations."""
+    if settings.openai_api_key:
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": "OpenAI vision (gpt-4o-mini) for species & health analysis",
+            "reachable": True,
+            "error": None,
+            "provider": "openai",
+        }
+    if settings.gemini_api_key:
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": "Google Gemini vision for species & health analysis",
+            "reachable": True,
+            "error": None,
+            "provider": "gemini",
+        }
+    return {
+        "status": "estimate",
+        "mode": "estimate",
+        "label": "Deterministic estimate model (configure OPENAI_API_KEY or GEMINI_API_KEY for live AI)",
+        "reachable": True,
+        "error": None,
+        "provider": "stub",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -263,12 +376,18 @@ def _build_recommendations(
 _service: AIService | None = None
 
 
+def reset_ai_service() -> None:
+    """Clear cached service (tests and credential hot-reload)."""
+    global _service
+    _service = None
+
+
 def get_ai_service() -> AIService:
     global _service
     if _service is not None:
         return _service
-    # Future: branch on settings.openai_api_key / settings.gemini_api_key
-    # to instantiate the real composite service. Stub is the default so the
-    # platform works out-of-the-box.
-    _service = StubAIService()
+    if settings.openai_api_key or settings.gemini_api_key:
+        _service = LLMEnhancedAIService()
+    else:
+        _service = StubAIService()
     return _service

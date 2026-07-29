@@ -16,6 +16,7 @@ from app.schemas.planting_program import (
     UserProgramsOut,
     UserProgramsUpdate,
 )
+from app.services.planting_programs.access_notifications import notify_admins_new_access_request
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
     create_access_request,
@@ -121,6 +122,8 @@ async def submit_access_request(
             message=payload.message,
         )
         await db.commit()
+        if request.status == "pending":
+            await notify_admins_new_access_request(db, request=request)
     except AccessRequestError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
     return _access_request_out(request)

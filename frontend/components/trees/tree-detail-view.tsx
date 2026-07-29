@@ -15,13 +15,14 @@ import {
 } from "recharts";
 import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
+import { DataTrustBadge, isSatelliteProviderLive, isTrustModeLive } from "@/components/data-trust-badge";
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { BuyAiScanPacks } from "@/components/payments/buy-ai-scan-packs";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
-import { trees, aiScans, errorMessage } from "@/lib/api";
+import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp, viewerReadOnlyMessage } from "@/lib/nav-access";
 
@@ -77,6 +78,25 @@ export function TreeDetailView() {
     queryKey: ["ai-scan-usage"],
     queryFn: () => aiScans.usage(),
   });
+
+  const { data: integrationsHealth } = useQuery({
+    queryKey: ["integrations-health"],
+    queryFn: () => intelligence.integrations(),
+    staleTime: 60_000,
+  });
+
+  const aiIntegration = integrationsHealth?.integrations?.ai_analysis as
+    | { mode?: string; label?: string }
+    | undefined;
+  const satIntegration = integrationsHealth?.integrations?.tree_satellite_ndvi as
+    | { mode?: string; label?: string }
+    | undefined;
+  const aiTrustMode = aiIntegration?.mode ?? "estimate";
+  const satProvider = sat?.latest?.provider;
+  const satTrustMode =
+    satProvider && isSatelliteProviderLive(satProvider)
+      ? "live"
+      : (satIntegration?.mode ?? "estimate");
 
   const analyze = useMutation({
     mutationFn: () => trees.analyze(id),
@@ -377,12 +397,13 @@ export function TreeDetailView() {
       <div className="card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-medium text-stone-700">AI analysis</h2>
-          <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
-            Estimate
-          </span>
+          <DataTrustBadge mode={aiTrustMode} />
         </div>
         <p className="mb-3 text-xs text-stone-500">
-          Results currently use the built-in estimate model until live AI providers are enabled.
+          {aiIntegration?.label ??
+            (isTrustModeLive(aiTrustMode)
+              ? "Species and health use your configured live AI provider."
+              : "Results use the built-in estimate model until live AI providers are enabled.")}
         </p>
         {!analyses?.length ? (
           <p className="text-sm text-stone-500">No analysis yet. Run AI analysis to populate metrics.</p>
@@ -426,13 +447,13 @@ export function TreeDetailView() {
             <Satellite className="mr-1 inline h-4 w-4" />
             Satellite monitoring
           </h2>
-          <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
-            Estimate
-          </span>
+          <DataTrustBadge mode={satTrustMode} />
         </div>
         <p className="text-xs text-stone-500">
-          Individual-tree NDVI is simulated until per-tree live scenes are enabled. Plantation fence
-          scans can use live Sentinel Hub when configured.
+          {satIntegration?.label ??
+            (isTrustModeLive(satTrustMode)
+              ? "Individual-tree NDVI from live Sentinel Hub scenes."
+              : "Individual-tree NDVI is simulated until per-tree live scenes are enabled. Plantation fence scans can use live Sentinel Hub when configured.")}
         </p>
 
         {sat?.points?.length ? (

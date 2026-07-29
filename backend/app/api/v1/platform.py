@@ -62,6 +62,7 @@ from app.services.organizations.onboarding import (
     OrgOnboardingError,
     onboard_user_on_program_approval,
 )
+from app.services.planting_programs.access_notifications import notify_user_access_request_decision
 from app.services.planting_programs.access_requests import (
     AccessRequestError,
     get_access_request,
@@ -590,6 +591,9 @@ async def platform_review_program_access_request(
             },
         )
         await db.commit()
+        row = await get_access_request(db, request_id)
+        if row is not None:
+            await notify_user_access_request_decision(request=row, action=payload.action)
     except AccessRequestError as exc:
         status_code = (
             status.HTTP_404_NOT_FOUND
