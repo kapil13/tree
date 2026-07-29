@@ -176,7 +176,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": _step_status(signals.get("satellite_coverage"), optional=True),
             "action_label": "Open satellite view",
             "action_tab": "overview",
-            "action_href": f"/portfolio-health?tab=monitoring",
+            "action_href": "/portfolio-health?tab=monitoring",
             "metric": f"{satellite_verified_count}/{tree_count} verified ({sat_pct}%)" if tree_count else None,
             "optional": True,
         },
