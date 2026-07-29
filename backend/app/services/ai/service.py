@@ -16,6 +16,8 @@ import hashlib
 import random
 from typing import Protocol
 
+from app.core.config import settings
+from app.services.ai.llm_vision import analyze_tree_vision
 from app.services.ai.types import (
     AnalysisResult,
     DiseaseFinding,
@@ -26,8 +28,6 @@ from app.services.ai.types import (
     SpeciesPrediction,
     SpeciesResult,
 )
-from app.core.config import settings
-from app.services.ai.llm_vision import analyze_tree_vision
 from app.services.carbon.species_catalog import SPECIES_CATALOG, by_name
 
 
