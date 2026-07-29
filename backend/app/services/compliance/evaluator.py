@@ -83,6 +83,7 @@ def score_checklist(
                                 "question": item.question,
                                 "answer": answer,
                                 "category": item.category,
+                                "auto_key": item.auto_key,
                             }
                         )
 

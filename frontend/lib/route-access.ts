@@ -12,6 +12,7 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: "/trees/new", audience: "can_write" },
   { prefix: "/field-ops", audience: ["professional", "field_supervisor"], excludeViewers: true },
   { prefix: "/projects", audience: ["professional", "field_supervisor", "field_worker"] },
+  { prefix: "/portfolio-health", audience: ["professional", "field_supervisor"] },
   { prefix: "/monitoring", audience: ["professional", "field_supervisor"] },
   { prefix: "/intelligence", audience: ["professional", "field_supervisor"] },
   { prefix: "/satellite", audience: ["professional", "field_supervisor"] },

@@ -10,7 +10,10 @@ import {
   compliance,
   errorMessage,
 } from "@/lib/api";
+import { ComplianceGapList } from "@/components/compliance/compliance-gap-list";
 import { cn } from "@/lib/cn";
+
+type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
 
 const ANSWERS: { value: ChecklistAnswer; label: string }[] = [
   { value: "yes", label: "Yes" },
@@ -39,10 +42,14 @@ export function ProjectComplianceChecklistPanel({
   projectId,
   initialChecklistCode,
   onSaved,
+  onNavigateTab,
+  onScrollToAnchor,
 }: {
   projectId: string;
   initialChecklistCode?: ChecklistCode;
   onSaved?: () => void;
+  onNavigateTab?: (tab: ProjectTab) => void;
+  onScrollToAnchor?: (anchor: string) => void;
 }) {
   const qc = useQueryClient();
   const [checklistCode, setChecklistCode] = useState<ChecklistCode>(
@@ -242,16 +249,12 @@ export function ProjectComplianceChecklistPanel({
       </div>
 
       {state.gaps.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4">
-          <p className="text-sm font-medium text-amber-900">Gaps to address</p>
-          <ul className="mt-2 space-y-1 text-xs text-amber-800">
-            {state.gaps.map((gap) => (
-              <li key={gap.item_id}>
-                <span className="font-medium capitalize">{gap.answer}</span> — {gap.question}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ComplianceGapList
+          gaps={state.gaps}
+          projectId={projectId}
+          onNavigateTab={onNavigateTab}
+          onScrollToAnchor={onScrollToAnchor}
+        />
       )}
 
       <div className="flex flex-wrap items-center gap-3">

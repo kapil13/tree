@@ -671,6 +671,7 @@ export function ExecutiveDashboard() {
               ...(canWrite
                 ? [{ href: "/trees/new", icon: Sprout, label: "Register tree", sub: "Guided wizard" }]
                 : []),
+              { href: "/portfolio-health", icon: Radar, label: "Portfolio health", sub: "Threats & monitoring" },
               { href: "/satellite", icon: Satellite, label: "Satellite scan", sub: "NDVI & health" },
               { href: "/bioacoustic", icon: Bird, label: "Record biodiversity", sub: "Soundscape" },
               { href: "/assistant", icon: Sparkles, label: "Ask AI analyst", sub: "Carbon & tips" },

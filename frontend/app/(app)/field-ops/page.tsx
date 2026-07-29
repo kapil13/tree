@@ -90,7 +90,12 @@ export default function FieldOpsPage() {
                 </td>
                 <td className="px-4 py-2">
                   {p.open_violations > 0 ? (
-                    <span className="text-amber-700">{p.open_violations}</span>
+                    <Link
+                      href={`/projects/${p.id}?tab=compliance`}
+                      className="text-amber-700 hover:underline"
+                    >
+                      {p.open_violations}
+                    </Link>
                   ) : (
                     "0"
                   )}
@@ -113,6 +118,12 @@ export default function FieldOpsPage() {
                     {v.project_name}
                   </Link>
                   <span className="ml-2 text-xs uppercase text-stone-500">{v.severity}</span>
+                  <Link
+                    href={`/projects/${v.project_id}?tab=compliance`}
+                    className="ml-2 text-xs text-forest-700 hover:underline"
+                  >
+                    Fix in compliance
+                  </Link>
                 </div>
                 <p className="text-stone-600">{v.message}</p>
               </li>

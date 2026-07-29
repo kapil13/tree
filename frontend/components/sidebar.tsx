@@ -19,7 +19,6 @@ import {
   TreePine,
   Users,
   Activity,
-  Brain,
   UserCheck,
   type LucideIcon,
 } from "lucide-react";
@@ -71,8 +70,13 @@ const NAV_GROUPS: NavGroup[] = [
     id: "monitor",
     label: "Monitor",
     items: [
-      { href: "/monitoring", label: "Monitoring", icon: Activity, audience: ["professional", "field_supervisor"] },
-      { href: "/intelligence", label: "Intelligence", icon: Brain, audience: ["professional", "field_supervisor"] },
+      {
+        href: "/portfolio-health",
+        label: "Portfolio health",
+        icon: Activity,
+        audience: ["professional", "field_supervisor"],
+        exact: true,
+      },
       { href: "/satellite", label: "Satellite", icon: Satellite, audience: ["professional", "field_supervisor"] },
       { href: "/bioacoustic", label: "Biodiversity", icon: Mic, audience: "professional" },
       { href: "/alerts", label: "Alerts", icon: Bell, audience: "all" },
@@ -93,6 +97,7 @@ function isActive(path: string | null, item: NavItem): boolean {
   if (!path) return false;
   if (item.exact) return path === item.href;
   if (item.href === "/dashboard") return path === "/dashboard";
+  if (item.href === "/portfolio-health") return path === "/portfolio-health";
   if (item.href === "/trees") return path === "/trees" || (path.startsWith("/trees/") && !path.startsWith("/trees/new"));
   return path === item.href || path.startsWith(`${item.href}/`);
 }

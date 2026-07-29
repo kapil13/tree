@@ -109,10 +109,17 @@ export default function ProjectDetailPage() {
           <p className="kpi-label">Work areas</p>
           <p className="text-2xl font-semibold">{project.summary?.work_area_count ?? 0}</p>
         </div>
-        <div className="card">
+        <button
+          type="button"
+          className="card w-full text-left transition hover:border-amber-200"
+          onClick={() => setTab("compliance")}
+        >
           <p className="kpi-label">Open violations</p>
           <p className="text-2xl font-semibold">{project.summary?.open_violations ?? 0}</p>
-        </div>
+          {(project.summary?.open_violations ?? 0) > 0 && (
+            <p className="mt-1 text-xs text-forest-700">View & fix →</p>
+          )}
+        </button>
         <div className="card">
           <p className="kpi-label">Geotag due</p>
           <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
