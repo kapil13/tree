@@ -196,7 +196,7 @@ export function CitizenDashboard() {
         />
         <MetricCard
           icon={TrendingUp}
-          label="Carbon stock"
+          label="Carbon stock (est.)"
           value={kpi ? `${fmtCompact(kpi.total_carbon_kg)} kg` : "0"}
           sub={kpi ? `~${fmtCompact(kpi.annual_sequestration_kg)} kg/yr growth` : undefined}
           accent="lime"

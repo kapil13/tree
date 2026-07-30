@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, ExternalLink, Link2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { errorMessage, verification } from "@/lib/api";
+import { showToast } from "@/components/toast";
 
 function impactUrlFromToken(token: string): string {
   if (typeof window !== "undefined") {
@@ -42,6 +43,7 @@ export function ProjectImpactSharePanel({ projectId }: { projectId: string }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      showToast("Impact link copied");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setError("Could not copy link");
