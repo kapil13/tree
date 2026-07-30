@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Leaf } from "lucide-react";
+import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { carbon, errorMessage } from "@/lib/api";
 
@@ -112,6 +113,10 @@ export function CarbonCalculatorForm() {
 
       {result ? (
         <div className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-2 text-sm font-medium text-stone-700">
+            Results
+            <CarbonEstimateLabel />
+          </div>
           <Metric label="Biomass" value={`${result.total_biomass_kg.toFixed(1)} kg`} />
           <Metric label="Stored carbon" value={`${result.carbon_kg.toFixed(1)} kg`} />
           <Metric label="CO₂ equivalent" value={`${(result.co2e_kg / 1000).toFixed(3)} t`} />

@@ -16,6 +16,8 @@ import {
 import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { DataTrustBadge, isSatelliteProviderLive, isTrustModeLive } from "@/components/data-trust-badge";
+import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { showToast } from "@/components/toast";
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { BuyAiScanPacks } from "@/components/payments/buy-ai-scan-packs";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
@@ -104,6 +106,7 @@ export function TreeDetailView() {
       qc.invalidateQueries({ queryKey: ["tree", id] });
       qc.invalidateQueries({ queryKey: ["tree-analyses", id] });
       qc.invalidateQueries({ queryKey: ["ai-scan-usage"] });
+      showToast("AI analysis complete");
     },
   });
 
@@ -126,6 +129,7 @@ export function TreeDetailView() {
       } else if (data.compliance) {
         setComplianceNote("Re-geotagged — all compliance checks passed.");
       }
+      showToast("Survival survey GPS updated");
       qc.invalidateQueries({ queryKey: ["tree", id] });
     },
     onError: (err) => {
@@ -298,8 +302,24 @@ export function TreeDetailView() {
                   : "—"
               }
             />
-            <Field label="Carbon" value={`${Number(tree.current_carbon_kg).toFixed(2)} kg`} />
-            <Field label="CO₂e" value={`${co2e.toFixed(2)} kg`} />
+            <Field
+              label="Carbon"
+              value={
+                <span className="inline-flex items-center gap-1.5">
+                  {`${Number(tree.current_carbon_kg).toFixed(2)} kg`}
+                  <CarbonEstimateLabel compact />
+                </span>
+              }
+            />
+            <Field
+              label="CO₂e"
+              value={
+                <span className="inline-flex items-center gap-1.5">
+                  {`${co2e.toFixed(2)} kg`}
+                  <CarbonEstimateLabel compact />
+                </span>
+              }
+            />
             <Field label="DBH" value={tree.current_dbh_cm ? `${tree.current_dbh_cm} cm` : "—"} />
             <Field label="Height" value={tree.current_height_m ? `${tree.current_height_m} m` : "—"} />
             <Field label="Canopy" value={tree.current_canopy_m ? `${tree.current_canopy_m} m` : "—"} />
@@ -313,7 +333,7 @@ export function TreeDetailView() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div id="survival" className="grid scroll-mt-20 gap-4 lg:grid-cols-2">
         <div className="card">
           <h2 className="mb-3 text-sm font-medium text-stone-700">Location</h2>
           <dl>
@@ -394,7 +414,7 @@ export function TreeDetailView() {
         </div>
       )}
 
-      <div className="card">
+      <div id="ai-analysis" className="card scroll-mt-20">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-medium text-stone-700">AI analysis</h2>
           <DataTrustBadge mode={aiTrustMode} />

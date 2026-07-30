@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, RefreshCw } from "lucide-react";
+import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
 import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
@@ -149,12 +150,28 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Gross credits" value={`${grossCredits.toFixed(4)} tCO₂e`} />
+        <Stat
+          label="Gross credits"
+          value={
+            <span className="inline-flex items-center gap-1.5">
+              {`${grossCredits.toFixed(4)} tCO₂e`}
+              {ledger.status !== "issued" ? <CarbonEstimateLabel compact /> : null}
+            </span>
+          }
+        />
         <Stat
           label={`Buffer (${(bufferPct * 100).toFixed(0)}%)`}
           value={`${bufferWithheld.toFixed(4)} tCO₂e`}
         />
-        <Stat label="Net (issuable est.)" value={`${netCredits.toFixed(4)} tCO₂e`} />
+        <Stat
+          label="Net (issuable est.)"
+          value={
+            <span className="inline-flex items-center gap-1.5">
+              {`${netCredits.toFixed(4)} tCO₂e`}
+              {ledger.status !== "issued" ? <CarbonEstimateLabel compact /> : null}
+            </span>
+          }
+        />
         <Stat
           label="Registry issued"
           value={issuedCredits != null ? `${issuedCredits.toFixed(4)} tCO₂e` : "—"}
@@ -257,11 +274,11 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-3">
       <p className="text-xs text-stone-500">{label}</p>
-      <p className="mt-1 font-mono text-sm font-semibold text-stone-900">{value}</p>
+      <div className="mt-1 font-mono text-sm font-semibold text-stone-900">{value}</div>
     </div>
   );
 }

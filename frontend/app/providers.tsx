@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { ToastHost } from "@/components/toast";
 import { SessionCookieSync } from "@/components/session-cookie-sync";
 
 let appQueryClient: QueryClient | null = null;
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={client}>
       <SessionCookieSync />
       {children}
+      <ToastHost />
     </QueryClientProvider>
   );
 }

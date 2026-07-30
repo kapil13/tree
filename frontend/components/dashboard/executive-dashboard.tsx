@@ -186,7 +186,7 @@ export function ExecutiveDashboard() {
           </div>
           <div className="dash-hero-stat">
             <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
-            <p className="dash-hero-stat-label">CO₂e stored</p>
+            <p className="dash-hero-stat-label">CO₂e stored (est.)</p>
           </div>
           <div className="dash-hero-stat">
             <p className="dash-hero-stat-value">{unreadAlerts.length}</p>
@@ -256,7 +256,7 @@ export function ExecutiveDashboard() {
         />
         <MetricCard
           icon={CloudRain}
-          label="CO₂e sequestered"
+          label="CO₂e sequestered (est.)"
           value={fmtNum(k.total_co2e_kg / 1000, " t")}
           sub={`+${fmtNum(k.annual_sequestration_kg / 1000, " t/yr")} projected`}
           trend={{ label: "Growing", positive: true }}
@@ -264,7 +264,7 @@ export function ExecutiveDashboard() {
         />
         <MetricCard
           icon={Wallet}
-          label="Credit potential"
+          label="Credit potential (est.)"
           value={fmtNum(k.lifetime_credits_tco2e, " tCO₂e")}
           sub={`~$${fmtNum(k.estimated_revenue_usd)} est. revenue`}
           accent="violet"

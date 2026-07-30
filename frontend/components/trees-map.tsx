@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   APIProvider,
-  InfoWindow,
   Map,
   Marker,
   useMap,
 } from "@vis.gl/react-google-maps";
+import { FileText, MapPin, Sparkles, X } from "lucide-react";
 import { trees, errorMessage, type Tree } from "@/lib/api";
+import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { showToast } from "@/components/toast";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
@@ -244,46 +246,89 @@ export function TreesMap({
               <Marker
                 key={cluster.id}
                 position={{ lat: cluster.lat, lng: cluster.lng }}
-                title={`${cluster.count} trees`}
+                title={`${cluster.count} trees — zoom in`}
                 icon={clusterIcon(cluster.count)}
                 onClick={() => {
-                  // Pick healthiest-looking sample for info, or first
                   setSelected(cluster.trees[0]);
+                  showToast(`${cluster.count} trees here — zoom in for each pin`);
                 }}
               />
             ),
           )}
-
-          {selected && (
-            <InfoWindow
-              position={{
-                lat: selected.latitude,
-                lng: selected.longitude,
-              }}
-              onCloseClick={() => setSelected(null)}
-            >
-              <div className="min-w-[160px] space-y-1 text-sm text-stone-800">
-                <div className="font-semibold">
-                  {selected.species_text || "Unknown species"}
-                </div>
-                <div className="text-stone-500">{selected.public_code}</div>
-                <div>
-                  Carbon: {Number(selected.current_carbon_kg).toFixed(1)} kg
-                </div>
-                <div>
-                  Satellite: {selected.satellite_verified ? "Verified" : "Pending"}
-                </div>
-                <Link
-                  href={`/trees/${selected.id}`}
-                  className="inline-block text-forest-700 underline"
-                >
-                  View tree →
-                </Link>
-              </div>
-            </InfoWindow>
-          )}
         </Map>
       </APIProvider>
+
+      {selected && (
+        <TreeActionSheet tree={selected} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
+
+function TreeActionSheet({ tree, onClose }: { tree: Tree; onClose: () => void }) {
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:left-auto sm:right-3 sm:top-14 sm:bottom-auto sm:w-80 sm:p-0">
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-stone-900">
+              {tree.species_text || "Unknown species"}
+            </p>
+            <p className="text-xs text-stone-500">{tree.public_code}</p>
+          </div>
+          <button
+            type="button"
+            className="btn-ghost shrink-0 rounded-full p-1"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-600">
+          <span className="rounded-full bg-stone-100 px-2 py-1 capitalize">
+            {tree.current_health || "unknown"}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-1">
+            {Number(tree.current_carbon_kg).toFixed(1)} kg C
+            <CarbonEstimateLabel compact />
+          </span>
+          <span className="rounded-full bg-stone-100 px-2 py-1">
+            {tree.satellite_verified ? "Satellite verified" : "Satellite pending"}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link
+            href={`/trees/${tree.id}`}
+            className="btn-primary col-span-2 inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            Open tree
+          </Link>
+          <Link
+            href={`/trees/${tree.id}#ai-analysis`}
+            className="btn-secondary inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            AI analysis
+          </Link>
+          <Link
+            href={`/trees/${tree.id}`}
+            className="btn-secondary inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Details / passport
+          </Link>
+          <Link
+            href={`/trees/${tree.id}#survival`}
+            className="btn-secondary col-span-2 inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            Survival / re-geotag
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
