@@ -10,6 +10,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_BUILD_SHA=$NEXT_PUBLIC_BUILD_SHA
+# Cap Node heap during `next build` on 16 GB VPS (other containers share RAM).
+ENV NODE_OPTIONS=--max-old-space-size=2048
 COPY package.json ./
 COPY package-lock.json* ./
 RUN if [ -f package-lock.json ]; then \
