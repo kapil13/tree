@@ -52,8 +52,9 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${BUILD_FLAGS[@]
 echo "==> Building and starting BYOT stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
-echo "==> Pruning dangling Docker images (frees disk from old deploys)..."
-docker image prune -f
+echo "==> Pruning unused Docker images and build cache (frees disk from old deploys)..."
+docker image prune -a -f
+docker builder prune -af
 
 echo "==> Waiting for API health..."
 TRIES=0
