@@ -16,7 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col">
           <ImpersonationBanner />
           <Topbar />
-          <main className="flex-1 bg-stone-50 p-6 dark:bg-stone-950">
+          <main className="flex-1 bg-stone-50 p-4 dark:bg-stone-950 md:p-6">
             <Suspense fallback={null}>
               <InviteAcceptHandler />
             </Suspense>

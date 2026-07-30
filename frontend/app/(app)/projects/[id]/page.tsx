@@ -8,6 +8,7 @@ import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-compliance-workflow-widget";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
+import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
@@ -146,6 +147,7 @@ export default function ProjectDetailPage() {
 
       {tab === "overview" && (
         <div className="space-y-4">
+          <ProjectImpactSharePanel projectId={project.id} />
           <ProjectComplianceWorkflowWidget
             projectId={project.id}
             projectMetadata={project.metadata}

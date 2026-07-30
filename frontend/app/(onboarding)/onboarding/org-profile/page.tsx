@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { AppAuthGuard } from "@/components/app-auth-guard";
 import { OrgProfileWizard } from "@/components/onboarding/org-profile-wizard";
 import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
@@ -20,11 +19,9 @@ export default function OnboardingOrgProfilePage() {
 
   if (isLoading || !user) {
     return (
-      <AppAuthGuard>
-        <div className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
-        </div>
-      </AppAuthGuard>
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
+      </div>
     );
   }
 
@@ -47,22 +44,18 @@ export default function OnboardingOrgProfilePage() {
     onboarding.program_code;
 
   return (
-    <AppAuthGuard>
-      <div className="min-h-screen bg-[#f4faf6] px-4 py-10">
-        <div className="mx-auto max-w-2xl rounded-[2rem] border border-white/80 bg-white/95 p-6 shadow-lg sm:p-8">
-          <OrgProfileWizard
-            programCode={onboarding.program_code}
-            programName={programName}
-            userEmail={user.email}
-            userPhone={undefined}
-            onSubmitted={async () => {
-              const me = await auth.me();
-              setUser(me);
-              router.push("/onboarding/pending");
-            }}
-          />
-        </div>
-      </div>
-    </AppAuthGuard>
+    <div className="rounded-[2rem] border border-white/80 bg-white/95 p-6 shadow-lg sm:p-8">
+      <OrgProfileWizard
+        programCode={onboarding.program_code}
+        programName={programName}
+        userEmail={user.email}
+        userPhone={undefined}
+        onSubmitted={async () => {
+          const me = await auth.me();
+          setUser(me);
+          router.push("/onboarding/pending");
+        }}
+      />
+    </div>
   );
 }

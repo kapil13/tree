@@ -12,12 +12,14 @@ const PROTECTED_PREFIXES = [
   "/satellite",
   "/field-ops",
   "/monitoring",
+  "/portfolio-health",
   "/bioacoustic",
   "/alerts",
   "/assistant",
   "/reports",
   "/map",
   "/tools",
+  "/onboarding",
 ] as const;
 
 function isProtectedPath(pathname: string): boolean {
@@ -55,11 +57,13 @@ export const config = {
     "/satellite/:path*",
     "/field-ops/:path*",
     "/monitoring/:path*",
+    "/portfolio-health/:path*",
     "/bioacoustic/:path*",
     "/alerts/:path*",
     "/assistant/:path*",
     "/reports/:path*",
     "/map/:path*",
     "/tools/:path*",
+    "/onboarding/:path*",
   ],
 };
