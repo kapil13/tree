@@ -64,7 +64,8 @@ export default function FieldOpsPage() {
         <div className="border-b border-stone-200 px-4 py-3">
           <h2 className="font-medium">Project health</h2>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-sm">
           <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
             <tr>
               <th className="px-4 py-2">Project</th>
@@ -105,6 +106,7 @@ export default function FieldOpsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </section>
 
       {data.recent_violations.length > 0 && (
