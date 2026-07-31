@@ -15,6 +15,7 @@ from app.api.v1 import (
     compliance,
     credits,
     dashboard,
+    devices,
     health,
     intelligence,
     organizations,
@@ -56,6 +57,7 @@ api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)
 api_router.include_router(credits.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(devices.router)
 api_router.include_router(intelligence.router)
 api_router.include_router(alerts.router)
 api_router.include_router(uploads.router)

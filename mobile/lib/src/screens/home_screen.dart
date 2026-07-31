@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
@@ -12,14 +13,38 @@ import '../theme.dart';
 import '../widgets/dashboard/dashboard_charts.dart';
 import '../widgets/dashboard/dashboard_map_preview.dart';
 import '../widgets/dashboard/dashboard_quick_actions.dart';
+import '../services/coach_marks.dart';
+import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
 import 'field_worker_home_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCoachMark());
+  }
+
+  Future<void> _maybeCoachMark() async {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    await CoachMarks.showIfNeeded(
+      context: context,
+      key: 'home_dashboard',
+      title: l10n.coachMarkHomeTitle,
+      body: l10n.coachMarkHomeBody,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = sessionController.user;
     if (isFieldWorkerHome(user)) {
       return const FieldWorkerHomeScreen();
@@ -70,7 +95,8 @@ class HomeScreen extends ConsumerWidget {
               return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(child: PendingSyncBanner()),
+                  const SliverToBoxAdapter(child: OfflineConnectivityBanner()),
+                  const SliverToBoxAdapter(child: PendingSyncBanner()),
                   SliverToBoxAdapter(
                     child: _DashboardTopBar(
                       greeting: firstName != null ? 'Hello, $firstName' : null,

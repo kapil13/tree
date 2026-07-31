@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../app_bootstrap.dart';
 import '../nav_access.dart';
 import '../providers.dart';
+import '../services/app_settings.dart';
+import '../services/security_services.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -18,11 +22,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _programMessage;
   List<dynamic> _available = [];
   final Set<String> _selected = {};
+  bool _biometricAvailable = false;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _loadPrograms();
+    _loadSecurity();
+  }
+
+  Future<void> _loadSecurity() async {
+    final canBio = await PushRegistrationService.instance.canUseBiometrics();
+    final version = await appVersionLabel();
+    if (!mounted) return;
+    setState(() {
+      _biometricAvailable = canBio;
+      _appVersion = version;
+    });
   }
 
   Future<void> _loadPrograms() async {
@@ -78,8 +95,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(userProvider);
+    final l10n = AppLocalizations.of(context)!;
+    final settings = AppSettings.instance;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l10n.profile)),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -155,6 +174,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(_programMessage!, style: Theme.of(context).textTheme.bodySmall),
+              ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(l10n.language, style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            RadioListTile<Locale?>(
+              title: Text(l10n.languageEnglish),
+              value: const Locale('en'),
+              groupValue: settings.locale ?? const Locale('en'),
+              onChanged: (value) => settings.setLocale(value),
+            ),
+            RadioListTile<Locale?>(
+              title: Text(l10n.languageHindi),
+              value: const Locale('hi'),
+              groupValue: settings.locale ?? const Locale('en'),
+              onChanged: (value) => settings.setLocale(value),
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(l10n.security, style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
+            SwitchListTile(
+              title: Text(l10n.pushNotifications),
+              subtitle: Text(l10n.pushNotificationsHint),
+              value: settings.pushEnabled,
+              onChanged: (v) async {
+                await settings.setPushEnabled(v);
+                if (v && context.mounted) {
+                  await PushRegistrationService.instance
+                      .registerIfEnabled(() => ref.read(apiClientProvider.future));
+                }
+              },
+            ),
+            if (_biometricAvailable)
+              SwitchListTile(
+                title: Text(l10n.biometricUnlock),
+                value: settings.biometricUnlock,
+                onChanged: (v) => settings.setBiometricUnlock(v),
+              ),
+            SwitchListTile(
+              title: Text(l10n.screenshotGuard),
+              value: settings.screenshotGuard,
+              onChanged: (v) async {
+                await settings.setScreenshotGuard(v);
+                await ScreenshotGuard.apply(v);
+              },
+            ),
+            SwitchListTile(
+              title: Text(l10n.certificatePinning),
+              value: settings.certificatePinning,
+              onChanged: settings.setCertificatePinning,
+            ),
+            SwitchListTile(
+              title: Text(l10n.analyticsEnabled),
+              subtitle: Text(l10n.analyticsHint),
+              value: settings.analyticsEnabled,
+              onChanged: settings.setAnalyticsEnabled,
+            ),
+            if (_appVersion.isNotEmpty)
+              ListTile(
+                dense: true,
+                title: const Text('App version'),
+                subtitle: Text(_appVersion),
               ),
             const Divider(),
             if (canSeeCarbon(user))

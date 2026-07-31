@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.6
 
   # State & routing
@@ -46,6 +49,10 @@ dependencies:
   cached_network_image: ^3.3.1
   qr_flutter: ^4.1.0
   flutter_secure_storage: ^10.3.1
+  share_plus: ^10.0.0
+  app_links: ^6.3.2
+  local_auth: ^2.3.0
+  package_info_plus: ^8.0.2
 
 dev_dependencies:
   flutter_test:
@@ -57,5 +64,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/brand/aranyix-logo.png

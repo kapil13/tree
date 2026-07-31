@@ -364,6 +364,22 @@ async def list_trees(
     return Page[TreeListItem](items=items, page=page, page_size=page_size, total=total or 0)
 
 
+@router.get("/by-code/{public_code}", response_model=TreeOut)
+async def get_tree_by_public_code(public_code: str, user: CurrentUser, db: DB) -> TreeOut:
+    """Resolve a tree passport QR / deep link code to the authenticated tree record."""
+    res = await db.execute(
+        select(Tree)
+        .where(Tree.public_code == public_code)
+        .options(selectinload(Tree.images), selectinload(Tree.planting_program))
+    )
+    tree = res.scalar_one_or_none()
+    if tree is None:
+        raise HTTPException(404, detail="tree_not_found")
+    if not await can_access_tree(db, user, tree):
+        raise HTTPException(403, detail="forbidden")
+    return _to_out(tree)
+
+
 async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
     res = await db.execute(
         select(Tree)

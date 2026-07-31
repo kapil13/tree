@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
 import '../nav_access.dart';
 import '../providers.dart';
+import '../services/analytics_service.dart';
 import '../session.dart';
 
 class TreeDetailScreen extends ConsumerStatefulWidget {
@@ -98,6 +101,13 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
 
   String _str(dynamic v) => v?.toString() ?? '—';
 
+  Future<void> _shareTree(String url) async {
+    final l10n = AppLocalizations.of(context);
+    final message = l10n?.shareTreeMessage(url) ?? 'View this tree on Aranyix: $url';
+    await Share.share(message);
+    await AnalyticsService.instance.track('tree_qr_shared');
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = tree;
@@ -181,8 +191,17 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             final url = snap.hasData
                                 ? snap.data!.publicTreeUrl(code)
                                 : 'https://aranyix.tech/p/$code';
-                            return Center(
-                              child: QrImageView(data: url, size: 180),
+                            final l10n = AppLocalizations.of(context);
+                            return Column(
+                              children: [
+                                QrImageView(data: url, size: 180),
+                                const SizedBox(height: 12),
+                                OutlinedButton.icon(
+                                  onPressed: () => _shareTree(url),
+                                  icon: const Icon(Icons.share_outlined),
+                                  label: Text(l10n?.shareTreeQr ?? 'Share tree QR'),
+                                ),
+                              ],
                             );
                           },
                         ),
