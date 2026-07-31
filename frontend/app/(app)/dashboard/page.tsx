@@ -1,10 +1,29 @@
 "use client";
 
-import { CitizenDashboard } from "@/components/dashboard/citizen-dashboard";
-import { ExecutiveDashboard } from "@/components/dashboard/executive-dashboard";
-import { FieldWorkerDashboard } from "@/components/dashboard/field-worker-dashboard";
+import dynamic from "next/dynamic";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
 import { userHasProfessionalAccess } from "@/lib/nav-access";
+
+const CitizenDashboard = dynamic(
+  () => import("@/components/dashboard/citizen-dashboard").then((m) => ({ default: m.CitizenDashboard })),
+  { loading: () => <p className="text-sm text-stone-500">Loading dashboard…</p> },
+);
+
+const ExecutiveDashboard = dynamic(
+  () =>
+    import("@/components/dashboard/executive-dashboard").then((m) => ({
+      default: m.ExecutiveDashboard,
+    })),
+  { loading: () => <p className="text-sm text-stone-500">Loading dashboard…</p> },
+);
+
+const FieldWorkerDashboard = dynamic(
+  () =>
+    import("@/components/dashboard/field-worker-dashboard").then((m) => ({
+      default: m.FieldWorkerDashboard,
+    })),
+  { loading: () => <p className="text-sm text-stone-500">Loading dashboard…</p> },
+);
 
 export default function DashboardPage() {
   const hydrated = useAuthHydrated();
@@ -26,6 +45,5 @@ export default function DashboardPage() {
     return <ExecutiveDashboard />;
   }
 
-  // Citizen BYOT (role user/farmer) and other non-professional accounts
   return <CitizenDashboard />;
 }

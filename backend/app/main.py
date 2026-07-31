@@ -4,16 +4,17 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.v1 import api_router
-from app.api.v1.deps import DB
+from app.api.v1.deps import DB, bearer_scheme, get_current_user
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 from app.core.production_guards import validate_runtime_settings
@@ -137,8 +138,13 @@ async def worker_health(db: DB) -> WorkerHealthResponse:
 
 
 @app.get("/health/integrations", tags=["meta"])
-async def integrations_health():
-    """External data provider reachability (Open-Meteo, GBIF, Sentinel, etc.)."""
+async def integrations_health(
+    db: DB,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+):
+    """External data provider reachability. Requires auth in production/staging."""
+    if settings.app_env in ("production", "staging"):
+        await get_current_user(creds, db)
     from app.services.intelligence.integrations import check_all_integrations
 
     return await check_all_integrations()

@@ -7,12 +7,50 @@ import 'package:latlong2/latlong.dart';
 import '../api/api_errors.dart';
 import '../providers.dart';
 
-class MapScreen extends ConsumerWidget {
+/// Trees visible in the current map viewport (bbox-loaded, max 100 per request).
+final mapTreesProvider = FutureProvider.autoDispose.family<List<dynamic>, String>((ref, bboxKey) async {
+  final api = await ref.watch(apiClientProvider.future);
+  if (bboxKey.isEmpty) {
+    return api.listTrees(pageSize: 100);
+  }
+  return api.listTrees(bbox: bboxKey, pageSize: 100);
+});
+
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final treesAsync = ref.watch(treesProvider);
+  ConsumerState<MapScreen> createState() => _MapScreenState();
+}
+
+class _MapScreenState extends ConsumerState<MapScreen> {
+  final MapController _mapController = MapController();
+  String _bboxKey = '';
+
+  String _bboxFromBounds(LatLngBounds bounds) {
+    final sw = bounds.southWest;
+    final ne = bounds.northEast;
+    return '${sw.longitude},${sw.latitude},${ne.longitude},${ne.latitude}';
+  }
+
+  void _onMapReady() {
+    final bounds = _mapController.camera.visibleBounds;
+    setState(() => _bboxKey = _bboxFromBounds(bounds));
+  }
+
+  void _onMapMoved(MapEvent event) {
+    if (event is! MapEventMoveEnd) return;
+    final bounds = _mapController.camera.visibleBounds;
+    final next = _bboxFromBounds(bounds);
+    if (next != _bboxKey) {
+      setState(() => _bboxKey = next);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final treesAsync = ref.watch(mapTreesProvider(_bboxKey));
+
     return Scaffold(
       appBar: AppBar(title: const Text('Map')),
       body: treesAsync.when(
@@ -26,7 +64,7 @@ class MapScreen extends ConsumerWidget {
                 Text(apiErrorMessage(e), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
                 FilledButton(
-                  onPressed: () => ref.invalidate(treesProvider),
+                  onPressed: () => ref.invalidate(mapTreesProvider(_bboxKey)),
                   child: const Text('Retry'),
                 ),
               ],
@@ -60,13 +98,16 @@ class MapScreen extends ConsumerWidget {
                   points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length,
                   points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length,
                 )
-              : const LatLng(17.385, 78.4867); // Hyderabad default
+              : const LatLng(17.385, 78.4867);
           return Stack(
             children: [
               FlutterMap(
+                mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: points.length == 1 ? 14 : 11,
+                  onMapReady: _onMapReady,
+                  onMapEvent: _onMapMoved,
                 ),
                 children: [
                   TileLayer(
@@ -84,7 +125,7 @@ class MapScreen extends ConsumerWidget {
                     child: Card(
                       child: Padding(
                         padding: EdgeInsets.all(12),
-                        child: Text('No trees with GPS yet. Add a tree to see it on the map.'),
+                        child: Text('No trees in this map area. Pan/zoom or add a tree.'),
                       ),
                     ),
                   ),

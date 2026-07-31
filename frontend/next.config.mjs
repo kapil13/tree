@@ -6,6 +6,7 @@ const backendUrl =
 
 const nextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.cloudfront.net" },

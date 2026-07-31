@@ -147,7 +147,7 @@ export function TreesMap({
     queryKey: ["trees-map", bboxKey],
     queryFn: () =>
       trees.list({
-        page_size: 500,
+        page_size: 150,
         bbox: bbox
           ? `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`
           : undefined,

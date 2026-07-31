@@ -33,7 +33,7 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.audit import record_audit
-from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
+from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -307,7 +307,7 @@ async def list_trees(
     user: CurrentUser,
     db: DB,
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=500),
+    page_size: int = Query(50, ge=1, le=150),
     health: str | None = None,
     species_id: uuid.UUID | None = None,
     project_id: uuid.UUID | None = None,
@@ -669,8 +669,8 @@ async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
 
 @router.get("/tiles/{z}/{x}/{y}.mvt", include_in_schema=False)
 async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Response:
-    # PostGIS MVT generation. Scoped to the user's accessible trees.
-    org_portfolio = user_sees_org_portfolio(user) and user.organization_id is not None
+    """PostGIS MVT generation scoped like list_trees (incl. field-worker projects)."""
+    scope = await mvt_tree_scope_binds(user, db)
     sql = """
     WITH bounds AS (
       SELECT ST_TileEnvelope(:z, :x, :y) AS geom
@@ -683,8 +683,24 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
       WHERE ST_Intersects(ST_Transform(t.location::geometry, 3857), bounds.geom)
         AND (
           :is_admin
-          OR t.owner_user_id = :uid
-          OR (:org_portfolio AND t.organization_id = :oid)
+          OR (
+            :is_field_worker
+            AND (
+              t.owner_user_id = :uid
+              OR (
+                cardinality(CAST(:project_ids AS uuid[])) > 0
+                AND t.project_id = ANY(CAST(:project_ids AS uuid[]))
+              )
+            )
+          )
+          OR (
+            NOT :is_field_worker
+            AND NOT :is_admin
+            AND (
+              t.owner_user_id = :uid
+              OR (:org_portfolio AND t.organization_id = :oid)
+            )
+          )
         )
     )
     SELECT ST_AsMVT(mvtgeom.*, 'trees', 4096, 'geom') FROM mvtgeom;
@@ -697,10 +713,7 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
             "z": z,
             "x": x,
             "y": y,
-            "uid": user.id,
-            "oid": user.organization_id or uuid.UUID(int=0),
-            "is_admin": user.role == "admin",
-            "org_portfolio": org_portfolio,
+            **scope,
         },
     )
     tile = res.scalar_one()

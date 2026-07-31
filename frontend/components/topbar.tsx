@@ -19,13 +19,13 @@ export function Topbar() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const { data: unreadAlerts = [] } = useQuery({
+  const { data: unreadPage } = useQuery({
     queryKey: scopedKey(user, "alerts-unread"),
-    queryFn: () => alerts.list(true),
+    queryFn: () => alerts.list({ unreadOnly: true }),
     refetchInterval: 60_000,
     enabled: Boolean(user),
   });
-  const unreadCount = unreadAlerts.filter((a) => !a.is_read).length;
+  const unreadCount = (unreadPage?.items ?? []).filter((a) => !a.is_read).length;
 
   const onboardingHref = onboardingRedirectPath(user);
   const onboardingChipLabel =
