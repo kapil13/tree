@@ -43,6 +43,8 @@ dependencies:
   # Misc UI
   cached_network_image: ^3.3.1
   qr_flutter: ^4.1.0
+  webview_flutter: ^4.14.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -54,3 +56,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/brand/aranyix-logo.png
