@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
-import 'projects_list_screen.dart';
 
 const _segmentLabels = {
   'general': 'General',
