@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import secrets
 import time
-from contextlib import suppress
 
 from app.core.rate_limit import _client
 

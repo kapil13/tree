@@ -32,7 +32,6 @@ from app.schemas.tree import (
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
 from app.services.passport import generate_passport_pdf, generate_qr_png
-from app.services.storage.key_ownership import assert_owned_upload_key
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
     user_can_use_program,
@@ -46,6 +45,7 @@ from app.services.planting_projects.compliance import evaluate_tree_placement, p
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
+from app.services.storage.key_ownership import assert_owned_upload_key
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 

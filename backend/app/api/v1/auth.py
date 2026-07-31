@@ -49,8 +49,8 @@ from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
-from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
+from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
 from app.services.auth.org_access import assert_user_may_authenticate
 from app.services.auth.otp import (
     normalize_phone,
