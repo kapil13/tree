@@ -9,6 +9,9 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/dashboard/dashboard_charts.dart';
+import '../widgets/dashboard/dashboard_map_preview.dart';
+import '../widgets/dashboard/dashboard_quick_actions.dart';
 import '../widgets/offline_tree_queue_section.dart';
 import 'field_worker_home_screen.dart';
 
@@ -38,6 +41,7 @@ class HomeScreen extends ConsumerWidget {
             ref.invalidate(alertsProvider);
             ref.invalidate(weatherProvider);
             ref.invalidate(plantationFencesProvider);
+            ref.invalidate(treesProvider);
           },
           child: dashAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -52,6 +56,7 @@ class HomeScreen extends ConsumerWidget {
               final weather = weatherAsync.maybeWhen(data: (d) => d, orElse: () => null);
               final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
               final user = userAsync.maybeWhen(data: (d) => d, orElse: () => null);
+              final firstName = _firstName(user);
 
               final health = computeForestHealth(dashboard);
               final briefLines = buildAiBriefLines(
@@ -68,6 +73,7 @@ class HomeScreen extends ConsumerWidget {
                   SliverToBoxAdapter(child: PendingSyncBanner()),
                   SliverToBoxAdapter(
                     child: _DashboardTopBar(
+                      greeting: firstName != null ? 'Hello, $firstName' : null,
                       projectName: _projectLabel(fences, user),
                       onNotifications: () => context.push('/notifications'),
                       onProfile: () => context.go('/profile'),
@@ -78,6 +84,15 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
+                        if (firstName != null) ...[
+                          Text(
+                            'Welcome back',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AranyixColors.onSurfaceMuted,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                         _ForestHealthHero(
                           score: health.score,
                           label: health.label,
@@ -97,6 +112,12 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ],
                         const SizedBox(height: 20),
+                        DashboardQuickActions(user: user),
+                        const SizedBox(height: 24),
+                        DashboardMapPreview(),
+                        const SizedBox(height: 24),
+                        DashboardChartsSection(dashboard: dashboard),
+                        const SizedBox(height: 24),
                         _QuickSnapshotRow(metrics: metrics),
                         const SizedBox(height: 24),
                         _AskAranyixCard(
@@ -153,6 +174,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  String? _firstName(Map<String, dynamic>? user) {
+    final name = user?['full_name'] as String?;
+    if (name == null || name.isEmpty) return null;
+    return name.split(' ').first;
+  }
+
   String _projectLabel(List<dynamic> fences, Map<String, dynamic>? user) {
     if (fences.isNotEmpty) {
       final first = fences.first as Map<String, dynamic>;
@@ -196,12 +223,14 @@ class HomeScreen extends ConsumerWidget {
 
 class _DashboardTopBar extends StatelessWidget {
   const _DashboardTopBar({
+    this.greeting,
     required this.projectName,
     required this.onNotifications,
     required this.onProfile,
     required this.onProjectTap,
   });
 
+  final String? greeting;
   final String projectName;
   final VoidCallback onNotifications;
   final VoidCallback onProfile;
@@ -211,66 +240,85 @@ class _DashboardTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AranyixColors.heroGradientStart, AranyixColors.heroGradientEnd],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AranyixColors.heroGradientStart, AranyixColors.heroGradientEnd],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'A',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
+              const SizedBox(width: 10),
+              const Text(
+                'Aranyix',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  color: AranyixColors.forestDark,
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: onProjectTap,
+                icon: const Icon(Icons.expand_more, size: 18),
+                label: Text(
+                  projectName,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AranyixColors.onSurfaceMuted,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
+              IconButton(
+                onPressed: onNotifications,
+                icon: const Icon(Icons.notifications_outlined),
+                color: AranyixColors.forestDark,
+              ),
+              IconButton(
+                onPressed: onProfile,
+                icon: const CircleAvatar(
+                  radius: 14,
+                  backgroundColor: AranyixColors.forestLight,
+                  child: Icon(Icons.person, size: 16, color: AranyixColors.forest),
+                ),
+              ),
+            ],
+          ),
+          if (greeting != null) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 46),
+              child: Text(
+                greeting!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AranyixColors.onSurfaceMuted,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            'Aranyix',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
-              color: AranyixColors.forestDark,
-            ),
-          ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: onProjectTap,
-            icon: const Icon(Icons.expand_more, size: 18),
-            label: Text(
-              projectName,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: AranyixColors.onSurfaceMuted,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-          ),
-          IconButton(
-            onPressed: onNotifications,
-            icon: const Icon(Icons.notifications_outlined),
-            color: AranyixColors.forestDark,
-          ),
-          IconButton(
-            onPressed: onProfile,
-            icon: const CircleAvatar(
-              radius: 14,
-              backgroundColor: AranyixColors.forestLight,
-              child: Icon(Icons.person, size: 16, color: AranyixColors.forest),
-            ),
-          ),
+          ],
         ],
       ),
     );

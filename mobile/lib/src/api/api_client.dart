@@ -202,6 +202,59 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> captchaConfig() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/captcha-config')).data);
+
+  Future<Map<String, dynamic>> signupStart({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    required String signupCategory,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/signup/start', data: {
+      'full_name': fullName,
+      'email': email,
+      'phone': phone,
+      'password': password,
+      'signup_category': signupCategory,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> signupVerifyPhone({
+    required String signupToken,
+    required String code,
+  }) async {
+    await _dio.post('/auth/signup/verify-phone', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+  }
+
+  Future<Map<String, dynamic>> signupSendEmailOtp(String signupToken) async {
+    final r = await _dio.post('/auth/signup/send-email-otp', data: {
+      'signup_token': signupToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> signupComplete({
+    required String signupToken,
+    required String code,
+  }) async {
+    final r = await _dio.post('/auth/signup/complete', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> onboardingState() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/onboarding')).data);
+
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
 

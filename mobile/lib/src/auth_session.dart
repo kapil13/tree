@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'api/api_client.dart';
 import 'api/api_errors.dart';
+import 'auth/onboarding_routing.dart';
 import 'invite_landing.dart';
 import 'pending_invite.dart';
 import 'providers.dart';
@@ -11,6 +11,7 @@ import 'session.dart';
 Future<String> completeAuthSession(
   WidgetRef ref, {
   String? inviteToken,
+  bool afterSignup = false,
 }) async {
   final api = await ref.read(apiClientProvider.future);
   var user = await api.me();
@@ -29,6 +30,13 @@ Future<String> completeAuthSession(
     } catch (e) {
       throw InviteAcceptException(inviteErrorMessage(apiErrorMessage(e)));
     }
+  }
+
+  final onboarding = onboardingRedirectPath(user);
+  if (onboarding != null) return onboarding;
+
+  if (afterSignup) {
+    return postSignupLandingRoute(user);
   }
 
   return '/home';

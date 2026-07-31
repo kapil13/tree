@@ -7,6 +7,6 @@ void main() {
   testWidgets('BYOT app loads splash route', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: ByotApp()));
     await tester.pump();
-    expect(find.text('BYOT'), findsWidgets);
+    expect(find.text('Aranyix'), findsWidgets);
   });
 }

@@ -8,7 +8,7 @@ void main() {
     final worker = {
       'role': 'field_worker',
       'org_role': 'worker',
-      'has_professional_program': true,
+      'has_professional_program': false,
     };
     expect(isFieldWorkerHome(worker), isTrue);
     expect(canSeeProjects(worker), isTrue);

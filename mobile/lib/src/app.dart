@@ -6,7 +6,10 @@ import 'route_access.dart';
 import 'session.dart';
 import 'theme.dart';
 import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
+import 'screens/onboarding_screens.dart';
 import 'screens/home_screen.dart';
 import 'screens/tree_list_screen.dart';
 import 'screens/add_tree_screen.dart';
@@ -23,6 +26,15 @@ import 'widgets/app_shell.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+bool _isPublicRoute(String loc) {
+  return loc == '/' ||
+      loc == '/welcome' ||
+      loc == '/login' ||
+      loc == '/signup' ||
+      loc == '/auth' ||
+      loc.startsWith('/onboarding/');
+}
+
 final _routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -30,22 +42,21 @@ final _routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: sessionController,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final public = loc == '/' || loc == '/login' || loc == '/auth';
 
-      if (!sessionController.authenticated && !public) {
+      if (!sessionController.authenticated && !_isPublicRoute(loc)) {
         final invite = state.uri.queryParameters['invite'];
         if (invite != null) return '/login?invite=$invite';
-        return '/login';
+        return '/welcome';
       }
 
-      if (sessionController.authenticated && loc == '/login') {
+      if (sessionController.authenticated && (loc == '/login' || loc == '/signup' || loc == '/welcome')) {
         return '/home';
       }
 
       if (loc == '/auth') {
         final invite = state.uri.queryParameters['invite'];
         if (invite != null) return '/login?invite=$invite';
-        return '/login';
+        return '/welcome';
       }
 
       final user = sessionController.user;
@@ -57,15 +68,19 @@ final _routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(
         path: '/auth',
         redirect: (_, state) {
           final invite = state.uri.queryParameters['invite'];
           if (invite != null) return '/login?invite=$invite';
-          return '/login';
+          return '/welcome';
         },
       ),
+      GoRoute(path: '/onboarding/pending', builder: (_, __) => const OnboardingPendingScreen()),
+      GoRoute(path: '/onboarding/org-profile', builder: (_, __) => const OnboardingOrgProfileScreen()),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (_, __, child) => AppShell(child: child),
