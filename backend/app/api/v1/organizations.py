@@ -105,7 +105,12 @@ def _member_error(exc: OrgMemberError) -> HTTPException:
     status_code = status.HTTP_400_BAD_REQUEST
     if code in {"member_not_found", "invite_not_found"}:
         status_code = status.HTTP_404_NOT_FOUND
-    elif code in {"user_in_other_org", "cannot_remove_own_admin", "invite_contact_mismatch"}:
+    elif code in {
+        "user_in_other_org",
+        "already_member",
+        "cannot_remove_own_admin",
+        "invite_contact_mismatch",
+    }:
         status_code = status.HTTP_409_CONFLICT
     elif code in {"invite_expired", "invite_revoked", "invite_already_revoked"}:
         status_code = status.HTTP_410_GONE

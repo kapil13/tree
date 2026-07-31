@@ -16,9 +16,10 @@ class GoogleProfile:
     email: str
     name: str
     picture: str | None = None
+    email_verified: bool = False
 
 
-def google_authorize_url() -> str:
+def google_authorize_url(state: str) -> str:
     if not settings.google_client_id:
         raise RuntimeError("google_oauth_not_configured")
     params = {
@@ -28,6 +29,7 @@ def google_authorize_url() -> str:
         "redirect_uri": settings.google_oauth_redirect_uri,
         "access_type": "online",
         "prompt": "select_account",
+        "state": state,
     }
     return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
 
@@ -63,9 +65,12 @@ async def exchange_google_code(code: str) -> GoogleProfile:
     if not email or not sub:
         raise RuntimeError("google_profile_incomplete")
 
+    email_verified = data.get("email_verified") is True
+
     return GoogleProfile(
         sub=sub,
         email=email,
         name=name,
         picture=data.get("picture"),
+        email_verified=email_verified,
     )

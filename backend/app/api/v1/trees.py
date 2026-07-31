@@ -45,6 +45,7 @@ from app.services.planting_projects.compliance import evaluate_tree_placement, p
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
+from app.services.storage.key_ownership import assert_owned_upload_key
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
@@ -136,6 +137,15 @@ async def create_tree(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unknown_program")
     if not await user_can_use_program(db, user.id, program):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="program_not_enrolled")
+
+    for key in payload.photo_keys:
+        try:
+            assert_owned_upload_key(user.id, key, folders=("images",))
+        except ValueError as exc:
+            code = str(exc)
+            if code == "s3_key_forbidden":
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
 
     work_area_id = payload.work_area_id or payload.plantation_id
     work_area: PlantationFence | None = None
@@ -555,6 +565,13 @@ async def add_image(
     is_primary: bool = False,
 ) -> TreeImageOut:
     tree = await _get_owned_tree(tree_id, user, db)
+    try:
+        assert_owned_upload_key(user.id, s3_key, folders=("images",))
+    except ValueError as exc:
+        code = str(exc)
+        if code == "s3_key_forbidden":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
     img = TreeImage(
         tree_id=tree.id, s3_key=s3_key, is_primary=is_primary, uploaded_by=user.id
     )

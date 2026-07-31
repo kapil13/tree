@@ -55,7 +55,7 @@ async def register_recording(
         code = str(exc)
         if code == "fence_not_found":
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail=code) from exc
-        if code == "forbidden":
+        if code in {"forbidden", "s3_key_forbidden"}:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
 
