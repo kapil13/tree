@@ -1,4 +1,5 @@
 import type { User } from "@/lib/api";
+import rbacPolicy from "@/lib/rbac-policy.json";
 
 export type NavAudience =
   | "all"
@@ -9,8 +10,8 @@ export type NavAudience =
   | "byot"
   | "can_write";
 
-const PROFESSIONAL_ROLES = new Set(["government", "corporate", "ngo", "field_supervisor"]);
-const FIELD_WORKER_ROLES = new Set(["field_worker"]);
+const PROFESSIONAL_ROLES = new Set<string>(rbacPolicy.professional_roles);
+const FIELD_WORKER_ROLES = new Set<string>(rbacPolicy.field_worker_roles);
 
 export function userHasProfessionalAccess(user: User | null | undefined): boolean {
   if (!user) return false;

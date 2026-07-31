@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.rbac_policy import professional_roles
 from app.core.security import (
     Permission,
     TokenType,
@@ -167,7 +168,7 @@ async def require_write_access(user: CurrentUser) -> User:
 
 WriteAccess = Annotated[User, Depends(require_write_access)]
 
-PROFESSIONAL_ROLES = frozenset({"government", "corporate", "ngo", "field_supervisor"})
+PROFESSIONAL_ROLES = professional_roles()
 
 
 def user_has_professional_role(user: User) -> bool:
@@ -214,6 +215,19 @@ AuditReader = Annotated[User, Depends(require_audit_reader)]
 
 def require(perm: Permission):
     async def dep(user: CurrentUser) -> User:
+        if not has_permission(user.role, perm):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+        return user
+
+    return Depends(dep)
+
+
+def require_write_perm(perm: Permission):
+    """Write access plus a specific Permission (org viewers blocked)."""
+
+    async def dep(user: CurrentUser) -> User:
+        if not user_can_write(user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="viewer_read_only")
         if not has_permission(user.role, perm):
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
         return user

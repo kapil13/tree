@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "platform_admin_role": "admin",
+  "professional_roles": ["government", "corporate", "ngo", "field_supervisor"],
+  "field_worker_roles": ["field_worker"],
+  "org_viewer_role": "viewer",
+  "org_supervisor_role": "supervisor",
+  "org_worker_role": "worker"
+}

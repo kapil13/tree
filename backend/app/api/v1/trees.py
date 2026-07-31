@@ -6,17 +6,20 @@ import secrets
 import string
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
+from app.core.security import Permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.tree_image import TreeImage
+from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.tree import (
     RegeotagComplianceOut,
@@ -48,6 +51,8 @@ from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+
+TreeDeleteAccess = Annotated[User, require_write_perm(Permission.TREE_DELETE)]
 
 _ALPHABET = string.ascii_uppercase + string.digits
 
@@ -538,7 +543,7 @@ async def update_tree(
 
 @router.delete("/{tree_id}", status_code=204)
 async def delete_tree(
-    tree_id: uuid.UUID, request: Request, user: WriteAccess, db: DB
+    tree_id: uuid.UUID, request: Request, user: TreeDeleteAccess, db: DB
 ) -> Response:
     tree = await _get_owned_tree(tree_id, user, db)
     tree.status = "removed"

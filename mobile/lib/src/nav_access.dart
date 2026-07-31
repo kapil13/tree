@@ -1,10 +1,9 @@
 /// Role-based navigation helpers mirroring frontend/lib/nav-access.ts
 library;
 
-typedef UserMap = Map<String, dynamic>;
+import 'rbac_policy.dart' show fieldWorkerRoles, professionalRoles;
 
-const professionalRoles = {'government', 'corporate', 'ngo', 'field_supervisor'};
-const fieldWorkerRoles = {'field_worker'};
+typedef UserMap = Map<String, dynamic>;
 
 bool userHasProfessionalAccess(UserMap? user) {
   if (user == null) return false;
