@@ -11,7 +11,7 @@ export default function SatellitePage() {
   const [selectedFenceId, setSelectedFenceId] = useState("");
   const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
-    queryFn: () => trees.list({ page_size: 200 }),
+    queryFn: () => trees.list({ page_size: 100 }),
   });
   const { data: fencePage } = useQuery({
     queryKey: ["plantation-fences"],

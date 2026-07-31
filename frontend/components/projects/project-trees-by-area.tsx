@@ -27,7 +27,7 @@ export function ProjectTreesByArea({
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["project-trees-all", projectId],
-    queryFn: () => plantingProjects.projectTrees(projectId, { page_size: 200 }),
+    queryFn: () => plantingProjects.projectTrees(projectId, { page_size: 100 }),
   });
 
   const trees = data?.items ?? [];

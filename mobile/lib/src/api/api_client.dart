@@ -224,8 +224,16 @@ class ApiClient {
   Future<Map<String, dynamic>> dashboard() async =>
       Map<String, dynamic>.from((await _dio.get('/dashboard')).data);
 
-  Future<List<dynamic>> listTrees({int pageSize = 200}) async {
-    final r = await _dio.get('/trees', queryParameters: {'page': 1, 'page_size': pageSize});
+  Future<List<dynamic>> listTrees({
+    int page = 1,
+    int pageSize = 100,
+    String? bbox,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (bbox != null && bbox.isNotEmpty) {
+      params['bbox'] = bbox;
+    }
+    final r = await _dio.get('/trees', queryParameters: params);
     return List<dynamic>.from(r.data['items'] ?? []);
   }
 
@@ -364,7 +372,11 @@ class ApiClient {
       '/alerts',
       queryParameters: unreadOnly ? {'unread_only': true} : null,
     );
-    return List<dynamic>.from(r.data);
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
   }
 
   Future<void> markAlertRead(String alertId) async {
@@ -378,7 +390,11 @@ class ApiClient {
 
   Future<List<dynamic>> listBioacousticRecordings() async {
     final r = await _dio.get('/bioacoustic/recordings');
-    return List<dynamic>.from(r.data);
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
   }
 
   Future<List<dynamic>> listPlantationFences() async {

@@ -135,7 +135,7 @@ export function PlantationFenceMap({
 
   const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
-    queryFn: () => trees.list({ page_size: 200 }),
+    queryFn: () => trees.list({ page_size: 100 }),
   });
 
   const fences = fencePage?.items ?? [];
