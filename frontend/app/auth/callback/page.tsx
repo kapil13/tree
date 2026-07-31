@@ -37,7 +37,7 @@ export default function GoogleCallbackPage() {
         });
         const profile = await auth.me();
         setUser(profile);
-        syncSessionCookieFromToken();
+        await syncSessionCookieFromToken();
 
         const pendingInvite = consumePendingInviteToken();
         if (pendingInvite) {

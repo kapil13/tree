@@ -1,136 +1,98 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// Cloudflare Turnstile widget (same provider as web auth).
+/// Cloudflare Turnstile via embedded WebView (production signup/login).
 class TurnstileCaptcha extends StatefulWidget {
   const TurnstileCaptcha({
     super.key,
     required this.siteKey,
-    required this.onTokenChange,
-    this.height = 72,
+    required this.onToken,
+    this.onError,
   });
 
   final String siteKey;
-  final ValueChanged<String> onTokenChange;
-  final double height;
+  final ValueChanged<String> onToken;
+  final VoidCallback? onError;
 
   @override
-  State<TurnstileCaptcha> createState() => TurnstileCaptchaState();
+  State<TurnstileCaptcha> createState() => _TurnstileCaptchaState();
 }
 
-class TurnstileCaptchaState extends State<TurnstileCaptcha> {
+class _TurnstileCaptchaState extends State<TurnstileCaptcha> {
   late final WebViewController _controller;
-  bool _loadError = false;
-  int _renderKey = 0;
-
-  void reset() {
-    widget.onTokenChange('');
-    setState(() {
-      _loadError = false;
-      _renderKey++;
-    });
-    _loadHtml();
-  }
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
       ..addJavaScriptChannel(
-        'TurnstileBridge',
-        onMessageReceived: (message) {
-          try {
-            final data = jsonDecode(message.message) as Map<String, dynamic>;
-            final type = data['type'] as String? ?? '';
-            if (type == 'token') {
-              widget.onTokenChange(data['token'] as String? ?? '');
-            } else if (type == 'expired' || type == 'error') {
-              widget.onTokenChange('');
-              if (type == 'error' && mounted) {
-                setState(() => _loadError = true);
-              }
-            }
-          } catch (_) {
-            widget.onTokenChange('');
+        'AranyixTurnstile',
+        onMessageReceived: (msg) {
+          final token = msg.message.trim();
+          if (token.isNotEmpty && token != 'error') {
+            widget.onToken(token);
+          } else {
+            widget.onError?.call();
           }
         },
-      );
-    _loadHtml();
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _loaded = true);
+          },
+        ),
+      )
+      ..loadHtmlString(_html(widget.siteKey));
   }
 
-  @override
-  void didUpdateWidget(covariant TurnstileCaptcha oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.siteKey != widget.siteKey) {
-      reset();
-    }
+  void reset() {
+    _controller.reload();
+    setState(() => _loaded = false);
   }
 
-  void _loadHtml() {
-    final html = '''
+  static String _html(String siteKey) => '''
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <style>
-    html, body { margin: 0; padding: 0; background: transparent; }
-    #c { display: flex; justify-content: center; align-items: center; min-height: 65px; }
+    body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 80px; background: #f8faf8; font-family: system-ui, sans-serif; }
+    #wrap { width: 100%; display: flex; justify-content: center; }
   </style>
 </head>
 <body>
-  <div id="c"></div>
+  <div id="wrap"><div id="captcha"></div></div>
   <script>
-    function post(payload) {
-      TurnstileBridge.postMessage(JSON.stringify(payload));
-    }
-    function mount() {
-      if (!window.turnstile) {
-        setTimeout(mount, 50);
-        return;
-      }
-      turnstile.render('#c', {
-        sitekey: ${jsonEncode(widget.siteKey)},
+    function renderCaptcha() {
+      if (!window.turnstile) { setTimeout(renderCaptcha, 120); return; }
+      turnstile.render('#captcha', {
+        sitekey: '$siteKey',
         theme: 'light',
-        callback: function(token) { post({ type: 'token', token: token }); },
-        'expired-callback': function() { post({ type: 'expired' }); },
-        'error-callback': function() { post({ type: 'error' }); }
+        callback: function(token) { AranyixTurnstile.postMessage(token); },
+        'error-callback': function() { AranyixTurnstile.postMessage('error'); }
       });
     }
-    window.addEventListener('load', mount);
+    renderCaptcha();
   </script>
 </body>
 </html>
 ''';
-    _controller.loadHtmlString(html, baseUrl: 'https://aranyix.tech');
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (_loadError) {
-      return Column(
-        children: [
-          const Text(
-            'Security check could not load. Disable ad blockers or try another network.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Color(0xFF9A3412)),
-          ),
-          TextButton(
-            onPressed: reset,
-            child: const Text('Retry security check'),
-          ),
-        ],
-      );
-    }
     return SizedBox(
-      key: ValueKey(_renderKey),
-      height: widget.height,
-      child: WebViewWidget(controller: _controller),
+      height: 88,
+      child: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          if (!_loaded)
+            const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+        ],
+      ),
     );
   }
 }

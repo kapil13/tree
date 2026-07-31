@@ -92,6 +92,7 @@ api.interceptors.response.use(
     }
     const newToken = await refreshInFlight;
     if (!newToken) {
+      void useAuth.getState().logout();
       return Promise.reject(error);
     }
     config.headers.Authorization = `Bearer ${newToken}`;
@@ -1324,10 +1325,16 @@ export const weather = {
 };
 
 export const alerts = {
-  async list(unreadOnly = false) {
-    return (
-      await api.get("/v1/alerts", { params: unreadOnly ? { unread_only: true } : {} })
-    ).data as AlertItem[];
+  async list(options?: { unreadOnly?: boolean; limit?: number; cursor?: string }) {
+    const params: Record<string, string | number | boolean> = {};
+    if (options?.unreadOnly) params.unread_only = true;
+    if (options?.limit) params.limit = options.limit;
+    if (options?.cursor) params.cursor = options.cursor;
+    const { data } = await api.get<{ items: AlertItem[]; next_cursor: string | null }>(
+      "/v1/alerts",
+      { params },
+    );
+    return data;
   },
   async markRead(alertId: string) {
     return (await api.post(`/v1/alerts/${alertId}/read`)).data;
@@ -1708,7 +1715,10 @@ export const bioacoustic = {
     return (await api.post<BioacousticRecording>("/v1/bioacoustic/recordings", payload)).data;
   },
   async list() {
-    return (await api.get<BioacousticRecording[]>("/v1/bioacoustic/recordings")).data;
+    const { data } = await api.get<{ items: BioacousticRecording[]; next_cursor: string | null }>(
+      "/v1/bioacoustic/recordings",
+    );
+    return data.items;
   },
   async get(id: string) {
     return (await api.get<BioacousticRecording>(`/v1/bioacoustic/recordings/${id}`)).data;

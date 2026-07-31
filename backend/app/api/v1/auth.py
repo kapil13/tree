@@ -48,8 +48,14 @@ from app.schemas.auth import (
 from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
+from app.services.auth.gmail_sender import (
+    GmailSendError,
+    gmail_otp_configured,
+    send_auth_otp_email,
+)
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
+from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
 from app.services.auth.org_access import assert_user_may_authenticate
 from app.services.auth.otp import (
     normalize_phone,
@@ -440,6 +446,20 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
             sms_enabled=False,
         )
 
+    if gmail_otp_configured():
+        try:
+            await send_auth_otp_email(to=identifier, code=code)
+            return OTPRequestOut(
+                status="sent",
+                dev_hint=None,
+                sms_enabled=False,
+            )
+        except GmailSendError as exc:
+            if not settings.allow_dev_otp:
+                raise HTTPException(
+                    status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_send_failed"
+                ) from exc
+
     return OTPRequestOut(
         status="sent",
         dev_hint=otp_dev_hint(code),
@@ -655,8 +675,9 @@ async def google_login() -> dict[str, str]:
     if not settings.google_client_id:
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, detail="google_oauth_not_configured")
     try:
+        state = await issue_oauth_state()
         return {
-            "authorize_url": google_authorize_url(),
+            "authorize_url": google_authorize_url(state),
             "redirect_uri": settings.google_oauth_redirect_uri,
         }
     except RuntimeError as exc:
@@ -668,15 +689,21 @@ async def google_callback(
     db: DB,
     code: str | None = None,
     error: str | None = None,
+    state: str | None = None,
 ) -> RedirectResponse:
     frontend = settings.app_frontend_url
     if error or not code:
         return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_denied")
+    if not await consume_oauth_state(state or ""):
+        return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_state_invalid")
 
     try:
         profile = await exchange_google_code(code)
     except Exception:
         return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_exchange_failed")
+
+    if not profile.email_verified:
+        return RedirectResponse(f"{frontend}/auth?mode=signin&error=google_email_unverified")
 
     res = await db.execute(select(User).where(User.google_sub == profile.sub))
     user = res.scalar_one_or_none()
@@ -697,7 +724,13 @@ async def google_callback(
             await db.flush()
             await ensure_default_enrollment(db, user.id)
         else:
+            if user.email_verified_at is None and not user.is_verified:
+                return RedirectResponse(
+                    f"{frontend}/auth?mode=signin&error=google_link_requires_verified"
+                )
             user.google_sub = profile.sub
+            if user.email_verified_at is None:
+                user.email_verified_at = datetime.now(UTC)
             if not user.full_name:
                 user.full_name = profile.name
 

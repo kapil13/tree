@@ -42,11 +42,20 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --requirepass
+      - ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env.production}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -102,13 +111,15 @@ services:
     restart: unless-stopped
     env_file:
       - .env.production
+    volumes:
+      - ${GMAIL_SA_JSON_HOST:-/opt/aranyix/secrets/gmail-service-account.json}:/run/secrets/gmail-sa.json:ro
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
       DB_POOL_SIZE: "8"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-byot-media}
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
@@ -116,6 +127,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
       FRONTEND_URL: ${FRONTEND_URL:-}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      GOOGLE_SERVICE_ACCOUNT_JSON: /run/secrets/gmail-sa.json
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -153,6 +165,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
+      - ${GMAIL_SA_JSON_HOST:-/opt/aranyix/secrets/gmail-service-account.json}:/run/secrets/gmail-sa.json:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
@@ -160,12 +173,13 @@ services:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-byot-media}
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_SERVICE_ACCOUNT_JSON: /run/secrets/gmail-sa.json
     depends_on:
       backend:
         condition: service_healthy
@@ -201,6 +215,7 @@ services:
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
       - ${PERCH_MODEL_HOST_DIR:-/opt/aranyix/models}:/opt/aranyix/models:ro
+      - ${GMAIL_SA_JSON_HOST:-/opt/aranyix/secrets/gmail-service-account.json}:/run/secrets/gmail-sa.json:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
@@ -208,12 +223,13 @@ services:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-byot-media}
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_SERVICE_ACCOUNT_JSON: /run/secrets/gmail-sa.json
     depends_on:
       worker:
         condition: service_started
@@ -250,7 +266,7 @@ services:
       - .env.production
     environment:
       APP_ENV: production
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       worker:
@@ -272,6 +288,10 @@ services:
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
         NEXT_PUBLIC_BUILD_SHA: ${GIT_SHA:-unknown}
+    environment:
+      # Signed HttpOnly session flag for edge middleware (falls back to NEXTAUTH_SECRET if set)
+      SESSION_COOKIE_SECRET: ${SESSION_COOKIE_SECRET:-${JWT_SECRET}}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
     restart: unless-stopped
     depends_on:
       backend:

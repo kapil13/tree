@@ -3,7 +3,8 @@
 #
 # Usage:
 #   ./scripts/build-android-apk.sh
-#   BYOT_API=http://192.168.1.42:8000 ./scripts/build-android-apk.sh
+#   BYOT_API=https://api.aranyix.tech ./scripts/build-android-apk.sh
+#   BYOT_API=http://192.168.1.42:8000 BYOT_ALLOW_CUSTOM_API=true ./scripts/build-android-apk.sh
 #
 # Output: mobile/build/app/outputs/flutter-apk/app-release.apk
 #
@@ -13,7 +14,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MOBILE="$ROOT/mobile"
-BYOT_API="${BYOT_API:-http://10.0.2.2:8000}"
+BYOT_API="${BYOT_API:-https://api.aranyix.tech}"
+BYOT_ALLOW_CUSTOM_API="${BYOT_ALLOW_CUSTOM_API:-false}"
 
 if ! command -v flutter >/dev/null 2>&1; then
   echo "ERROR: Flutter not found. Install from https://docs.flutter.dev/get-started/install"
@@ -23,7 +25,7 @@ fi
 
 echo "==> Flutter $(flutter --version | head -1)"
 echo "==> API base URL baked into APK: $BYOT_API"
-echo "    (Physical phone on same Wi-Fi: use your Mac LAN IP, e.g. http://192.168.1.x:8000)"
+echo "==> BYOT_ALLOW_CUSTOM_API=$BYOT_ALLOW_CUSTOM_API"
 
 cd "$MOBILE"
 
@@ -33,14 +35,11 @@ if [[ ! -d android ]]; then
   flutter create . --platforms=android,ios --org earth.byot
 fi
 
-# Allow HTTP API for local dev (Android 9+ blocks cleartext by default)
+# Cleartext HTTP is only needed for local http:// API targets.
+# Release manifests keep usesCleartextTraffic=false; debug overlay enables it.
+# Do not force cleartext onto the main (release) manifest.
 MANIFEST="android/app/src/main/AndroidManifest.xml"
 if [[ -f "$MANIFEST" ]]; then
-  if ! grep -q 'usesCleartextTraffic' "$MANIFEST"; then
-    echo "==> Enabling cleartext HTTP for local API..."
-    sed -i.bak 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
-    rm -f "${MANIFEST}.bak"
-  fi
   if ! grep -q 'ACCESS_FINE_LOCATION' "$MANIFEST"; then
     echo "==> Adding location + camera permissions..."
     sed -i.bak 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android">|<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.CAMERA"/>|' "$MANIFEST"
@@ -48,11 +47,17 @@ if [[ -f "$MANIFEST" ]]; then
   fi
 fi
 
+if [[ "$BYOT_API" == http://* ]]; then
+  echo "==> Note: BYOT_API uses http — release cleartext remains disabled."
+  echo "    Use a debug build, or https, for local HTTP APIs."
+fi
+
 flutter pub get
 
 echo "==> Building release APK..."
 flutter build apk --release \
-  --dart-define="BYOT_API=$BYOT_API"
+  --dart-define="BYOT_API=$BYOT_API" \
+  --dart-define="BYOT_ALLOW_CUSTOM_API=$BYOT_ALLOW_CUSTOM_API"
 
 APK="$MOBILE/build/app/outputs/flutter-apk/app-release.apk"
 if [[ -f "$APK" ]]; then

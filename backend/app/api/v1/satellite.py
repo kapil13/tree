@@ -11,9 +11,11 @@ from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.core.security import Permission, has_permission
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
+from app.services.data_scope import can_access_tree
 from app.services.monitoring.satellite_sweep import (
     maybe_alert_tree_ndvi_decline,
 )
@@ -28,15 +30,15 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
-        not user.organization_id or tree.organization_id != user.organization_id
-    ):
+    if not await can_access_tree(db, user, tree):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return tree
 
 
 @router.post("/scan", response_model=SatelliteRecordOut)
 async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteRecordOut:
+    if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     sample = await get_satellite_service().sample(pt.y, pt.x)

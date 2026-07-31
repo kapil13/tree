@@ -5,18 +5,38 @@
 # and Let's Encrypt HTTP-01 failures on www.aranyix.tech. Add www later
 # via DNS redirect or after HTTPS is working on the apex domain.
 
+(common_security) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+		-Server
+	}
+}
+
 {$APP_DOMAIN} {
+	import common_security
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://challenges.cloudflare.com https://maps.googleapis.com https://*.googleapis.com wss:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+	}
 	encode gzip zstd
 	reverse_proxy frontend:3000
 }
 
 {$API_DOMAIN} {
+	import common_security
+	header {
+		X-Frame-Options "DENY"
+	}
 	encode gzip zstd
 	reverse_proxy backend:8000
 }
 
 # Optional: uncomment after setting MEDIA_DOMAIN in .env.production and DNS A record
 # {$MEDIA_DOMAIN} {
+# 	import common_security
 # 	encode gzip
 # 	reverse_proxy minio:9000
 # }

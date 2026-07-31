@@ -93,7 +93,7 @@ export function ExecutiveDashboard() {
   const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ] = useQueries({
     queries: [
       { queryKey: scopedKey(user, "dashboard"), queryFn: dashboard.get },
-      { queryKey: scopedKey(user, "alerts"), queryFn: () => alerts.list() },
+      { queryKey: scopedKey(user, "alerts"), queryFn: async () => (await alerts.list()).items },
       { queryKey: scopedKey(user, "trees-dashboard"), queryFn: () => trees.list({ page_size: 10 }) },
       { queryKey: scopedKey(user, "plantation-fences"), queryFn: () => plantationFences.list({ page_size: 20 }) },
       { queryKey: scopedKey(user, "bio-summary"), queryFn: () => bioacoustic.summary() },

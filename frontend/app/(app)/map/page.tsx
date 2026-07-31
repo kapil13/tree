@@ -1,6 +1,18 @@
 "use client";
 
-import { TreesMap } from "@/components/trees-map";
+import dynamic from "next/dynamic";
+
+const TreesMap = dynamic(
+  () => import("@/components/trees-map").then((m) => ({ default: m.TreesMap })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-500">
+        Loading map…
+      </div>
+    ),
+  },
+);
 
 export default function MapPage() {
   return (

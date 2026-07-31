@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.bioacoustic_recording import BioacousticRecording
@@ -16,9 +16,11 @@ from app.schemas.bioacoustic import (
     BioacousticSummary,
     RegionalFaunaOut,
 )
+from app.schemas.cursor_page import CursorPage
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
 from app.services.data_scope import apply_owner_org_scope
+from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
@@ -55,7 +57,7 @@ async def register_recording(
         code = str(exc)
         if code == "fence_not_found":
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail=code) from exc
-        if code == "forbidden":
+        if code in {"forbidden", "s3_key_forbidden"}:
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
 
@@ -117,15 +119,37 @@ async def upload_recording(
         ) from exc
 
 
-@router.get("/recordings", response_model=list[BioacousticRecordingOut])
-async def list_recordings(user: CurrentUser, db: DB, limit: int = 50) -> list[BioacousticRecordingOut]:
-    stmt = (
-        _scope(select(BioacousticRecording), user)
-        .order_by(BioacousticRecording.recorded_at.desc())
-        .limit(min(limit, 100))
-    )
+@router.get("/recordings", response_model=CursorPage[BioacousticRecordingOut])
+async def list_recordings(
+    user: CurrentUser,
+    db: DB,
+    limit: int = Query(50, ge=1, le=100),
+    cursor: str | None = None,
+) -> CursorPage[BioacousticRecordingOut]:
+    stmt = _scope(select(BioacousticRecording), user)
+    if cursor:
+        try:
+            cursor_at, cursor_id = decode_cursor(cursor)
+        except CursorError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_cursor") from exc
+        stmt = stmt.where(
+            or_(
+                BioacousticRecording.recorded_at < cursor_at,
+                (BioacousticRecording.recorded_at == cursor_at)
+                & (BioacousticRecording.id < cursor_id),
+            )
+        )
+    stmt = stmt.order_by(
+        BioacousticRecording.recorded_at.desc(),
+        BioacousticRecording.id.desc(),
+    ).limit(limit + 1)
     rows = (await db.execute(stmt)).scalars().all()
-    return [BioacousticRecordingOut.from_model(r) for r in rows]
+    items = [BioacousticRecordingOut.from_model(r) for r in rows[:limit]]
+    next_cursor = None
+    if len(rows) > limit:
+        last = rows[limit - 1]
+        next_cursor = encode_cursor(created_at=last.recorded_at, row_id=last.id)
+    return CursorPage(items=items, next_cursor=next_cursor)
 
 
 @router.get("/recordings/{recording_id}", response_model=BioacousticRecordingOut)

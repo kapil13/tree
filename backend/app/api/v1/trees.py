@@ -6,17 +6,20 @@ import secrets
 import string
 import uuid
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
+from app.core.security import Permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.tree_image import TreeImage
+from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.tree import (
     RegeotagComplianceOut,
@@ -30,7 +33,7 @@ from app.schemas.tree import (
     TreeUpdate,
 )
 from app.services.audit import record_audit
-from app.services.data_scope import apply_tree_scope, can_access_tree, user_sees_org_portfolio
+from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -45,8 +48,11 @@ from app.services.planting_projects.compliance import evaluate_tree_placement, p
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
+from app.services.storage.key_ownership import assert_owned_upload_key
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+
+TreeDeleteAccess = Annotated[User, require_write_perm(Permission.TREE_DELETE)]
 
 _ALPHABET = string.ascii_uppercase + string.digits
 
@@ -136,6 +142,15 @@ async def create_tree(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unknown_program")
     if not await user_can_use_program(db, user.id, program):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="program_not_enrolled")
+
+    for key in payload.photo_keys:
+        try:
+            assert_owned_upload_key(user.id, key, folders=("images",))
+        except ValueError as exc:
+            code = str(exc)
+            if code == "s3_key_forbidden":
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
 
     work_area_id = payload.work_area_id or payload.plantation_id
     work_area: PlantationFence | None = None
@@ -292,7 +307,7 @@ async def list_trees(
     user: CurrentUser,
     db: DB,
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=500),
+    page_size: int = Query(50, ge=1, le=150),
     health: str | None = None,
     species_id: uuid.UUID | None = None,
     project_id: uuid.UUID | None = None,
@@ -528,7 +543,7 @@ async def update_tree(
 
 @router.delete("/{tree_id}", status_code=204)
 async def delete_tree(
-    tree_id: uuid.UUID, request: Request, user: WriteAccess, db: DB
+    tree_id: uuid.UUID, request: Request, user: TreeDeleteAccess, db: DB
 ) -> Response:
     tree = await _get_owned_tree(tree_id, user, db)
     tree.status = "removed"
@@ -555,6 +570,13 @@ async def add_image(
     is_primary: bool = False,
 ) -> TreeImageOut:
     tree = await _get_owned_tree(tree_id, user, db)
+    try:
+        assert_owned_upload_key(user.id, s3_key, folders=("images",))
+    except ValueError as exc:
+        code = str(exc)
+        if code == "s3_key_forbidden":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
     img = TreeImage(
         tree_id=tree.id, s3_key=s3_key, is_primary=is_primary, uploaded_by=user.id
     )
@@ -647,8 +669,8 @@ async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
 
 @router.get("/tiles/{z}/{x}/{y}.mvt", include_in_schema=False)
 async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Response:
-    # PostGIS MVT generation. Scoped to the user's accessible trees.
-    org_portfolio = user_sees_org_portfolio(user) and user.organization_id is not None
+    """PostGIS MVT generation scoped like list_trees (incl. field-worker projects)."""
+    scope = await mvt_tree_scope_binds(user, db)
     sql = """
     WITH bounds AS (
       SELECT ST_TileEnvelope(:z, :x, :y) AS geom
@@ -661,8 +683,24 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
       WHERE ST_Intersects(ST_Transform(t.location::geometry, 3857), bounds.geom)
         AND (
           :is_admin
-          OR t.owner_user_id = :uid
-          OR (:org_portfolio AND t.organization_id = :oid)
+          OR (
+            :is_field_worker
+            AND (
+              t.owner_user_id = :uid
+              OR (
+                cardinality(CAST(:project_ids AS uuid[])) > 0
+                AND t.project_id = ANY(CAST(:project_ids AS uuid[]))
+              )
+            )
+          )
+          OR (
+            NOT :is_field_worker
+            AND NOT :is_admin
+            AND (
+              t.owner_user_id = :uid
+              OR (:org_portfolio AND t.organization_id = :oid)
+            )
+          )
         )
     )
     SELECT ST_AsMVT(mvtgeom.*, 'trees', 4096, 'geom') FROM mvtgeom;
@@ -675,10 +713,7 @@ async def vector_tile(z: int, x: int, y: int, user: CurrentUser, db: DB) -> Resp
             "z": z,
             "x": x,
             "y": y,
-            "uid": user.id,
-            "oid": user.organization_id or uuid.UUID(int=0),
-            "is_admin": user.role == "admin",
-            "org_portfolio": org_portfolio,
+            **scope,
         },
     )
     tile = res.scalar_one()

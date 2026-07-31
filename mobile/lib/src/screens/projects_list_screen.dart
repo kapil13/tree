@@ -8,7 +8,7 @@ import '../providers.dart';
 
 import '../widgets/offline_tree_queue_section.dart';
 
-const _segmentLabels = {
+const segmentLabels = {
   'nhai_highway': 'NHAI / Highway',
   'industrial_greenbelt': 'Mine / Green belt',
   'township_landscape': 'Township / Society',
@@ -67,7 +67,7 @@ class ProjectsListScreen extends ConsumerWidget {
       child: ListTile(
         title: Text(p['name'] as String? ?? p['code'] as String),
         subtitle: Text(
-          '${_segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
+          '${segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
           '${summary?['tree_count'] ?? 0} trees'
           '${openV > 0 ? ' · $openV violations' : ''}',
         ),

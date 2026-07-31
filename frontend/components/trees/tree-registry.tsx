@@ -67,7 +67,7 @@ export function TreeRegistry() {
     queryKey: ["trees", health, projectId, workAreaId],
     queryFn: () =>
       trees.list({
-        page_size: 200,
+        page_size: 100,
         ...(health !== "all" ? { health } : {}),
         ...(projectId ? { project_id: projectId } : {}),
         ...(workAreaId ? { work_area_id: workAreaId } : {}),

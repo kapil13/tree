@@ -28,6 +28,7 @@ from app.services.bioacoustic.preprocess import preprocess_audio
 from app.services.bioacoustic.regional_fauna import annotate_regional_match, build_regional_fauna
 from app.services.bioacoustic.spectrogram import upload_spectrogram
 from app.services.storage import get_storage
+from app.services.storage.key_ownership import assert_owned_upload_key
 
 
 def _point_wkt(lon: float, lat: float) -> str:
@@ -288,6 +289,8 @@ async def create_recording(
     recorded_at: datetime | None = None,
     metadata: dict | None = None,
 ) -> BioacousticRecordingOut:
+    assert_owned_upload_key(user.id, s3_key, folders=("bioacoustic",))
+
     if plantation_fence_id is not None:
         fence_res = await db.execute(
             select(PlantationFence).where(PlantationFence.id == plantation_fence_id)

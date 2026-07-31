@@ -5,12 +5,13 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.alert import Alert
+from app.schemas.cursor_page import CursorPage
 from app.services.alerts.defaults import (
     DEFAULT_COMPLIANCE_PREFS,
     DEFAULT_SATELLITE_HEALTH_PREFS,
@@ -18,8 +19,21 @@ from app.services.alerts.defaults import (
     default_notification_preferences,
 )
 from app.services.alerts.service import satellite_health_prefs, threat_watch_prefs
+from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
+
+
+class AlertItemOut(BaseModel):
+    id: str
+    kind: str
+    severity: str
+    title: str
+    message: str
+    is_read: bool
+    created_at: str
+    tree_id: str | None = None
+    payload: dict[str, Any] | None = None
 
 
 class SatelliteHealthNotificationPrefs(BaseModel):
@@ -63,35 +77,57 @@ class NotificationPreferencesUpdate(BaseModel):
     compliance: ComplianceNotificationPrefs | None = None
 
 
-@router.get("")
+def _alert_to_item(a: Alert) -> AlertItemOut:
+    return AlertItemOut(
+        id=str(a.id),
+        kind=a.kind,
+        severity=a.severity,
+        title=a.title,
+        message=a.message,
+        is_read=a.is_read,
+        created_at=a.created_at.isoformat(),
+        tree_id=str(a.tree_id) if a.tree_id else None,
+        payload=a.payload,
+    )
+
+
+@router.get("", response_model=CursorPage[AlertItemOut])
 async def list_alerts(
     user: CurrentUser,
     db: DB,
     unread_only: bool = False,
     project_id: uuid.UUID | None = None,
-) -> list[dict]:
-    stmt = select(Alert).where(Alert.user_id == user.id).order_by(Alert.created_at.desc())
+    limit: int = Query(50, ge=1, le=100),
+    cursor: str | None = None,
+) -> CursorPage[AlertItemOut]:
+    stmt = select(Alert).where(Alert.user_id == user.id)
     if unread_only:
         stmt = stmt.where(Alert.is_read.is_(False))
-    rows = (await db.execute(stmt.limit(200))).scalars().all()
-    items = [
-        {
-            "id": str(a.id),
-            "kind": a.kind,
-            "severity": a.severity,
-            "title": a.title,
-            "message": a.message,
-            "is_read": a.is_read,
-            "created_at": a.created_at.isoformat(),
-            "tree_id": str(a.tree_id) if a.tree_id else None,
-            "payload": a.payload,
-        }
-        for a in rows
-    ]
+    if cursor:
+        try:
+            cursor_at, cursor_id = decode_cursor(cursor)
+        except CursorError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_cursor") from exc
+        stmt = stmt.where(
+            or_(
+                Alert.created_at < cursor_at,
+                (Alert.created_at == cursor_at) & (Alert.id < cursor_id),
+            )
+        )
+    stmt = stmt.order_by(Alert.created_at.desc(), Alert.id.desc()).limit(limit + 1)
+    rows = (await db.execute(stmt)).scalars().all()
+
+    items = [_alert_to_item(a) for a in rows[:limit]]
     if project_id:
         pid = str(project_id)
-        items = [a for a in items if (a.get("payload") or {}).get("project_id") == pid]
-    return items[:100]
+        items = [a for a in items if (a.payload or {}).get("project_id") == pid]
+
+    next_cursor: str | None = None
+    if len(rows) > limit:
+        last = rows[limit - 1]
+        next_cursor = encode_cursor(created_at=last.created_at, row_id=last.id)
+
+    return CursorPage(items=items, next_cursor=next_cursor)
 
 
 @router.get("/preferences", response_model=NotificationPreferencesOut)

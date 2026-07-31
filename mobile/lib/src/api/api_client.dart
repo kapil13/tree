@@ -1,50 +1,86 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_base_url.dart';
 import 'api_errors.dart';
 import '../session.dart';
 
-/// API base URL without trailing slash, e.g. https://api.aranyix.tech
-const String kByotApiBase = String.fromEnvironment(
-  'BYOT_API',
-  defaultValue: 'https://api.aranyix.tech',
-);
+export 'api_base_url.dart' show kByotApiBase, allowCustomApiBase;
 
 class ApiClient {
-  ApiClient._(this._dio, this._prefs);
+  ApiClient._(this._dio, this._prefs, this._secure);
 
   final Dio _dio;
   final SharedPreferences _prefs;
-  bool _refreshing = false;
+  final FlutterSecureStorage _secure;
+  Future<bool>? _refreshFuture;
 
   static const _tokenKey = 'byot_access_token';
   static const _refreshKey = 'byot_refresh_token';
   static const _baseUrlKey = 'byot_base_url';
 
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    // ignore: deprecated_member_use — task requires encryptedSharedPreferences
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
   static Future<String> loadBaseUrl() async {
+    if (!allowCustomApiBase) {
+      return kByotApiBase;
+    }
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_baseUrlKey) ?? kByotApiBase;
   }
 
   static Future<void> saveBaseUrl(String url) async {
-    final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final normalized = normalizeApiBaseUrl(url);
+    assertAllowedApiBaseUrl(normalized);
+    if (!allowCustomApiBase) {
+      // Release builds without BYOT_ALLOW_CUSTOM_API keep the production default.
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_baseUrlKey, normalized);
   }
 
+  static Future<void> _migrateTokensIfNeeded(
+    SharedPreferences prefs,
+    FlutterSecureStorage secure,
+  ) async {
+    final secureAccess = await secure.read(key: _tokenKey);
+    if (secureAccess != null && secureAccess.isNotEmpty) {
+      return;
+    }
+    final legacyAccess = prefs.getString(_tokenKey);
+    if (legacyAccess == null || legacyAccess.isEmpty) {
+      return;
+    }
+    await secure.write(key: _tokenKey, value: legacyAccess);
+    final legacyRefresh = prefs.getString(_refreshKey);
+    if (legacyRefresh != null && legacyRefresh.isNotEmpty) {
+      await secure.write(key: _refreshKey, value: legacyRefresh);
+    }
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshKey);
+  }
+
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
-    final base = prefs.getString(_baseUrlKey) ?? kByotApiBase;
+    const secure = _secureStorage;
+    await _migrateTokensIfNeeded(prefs, secure);
+
+    final base = await loadBaseUrl();
     final dio = Dio(BaseOptions(
       baseUrl: '$base/api/v1',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 45),
       headers: {'Content-Type': 'application/json'},
     ));
-    final client = ApiClient._(dio, prefs);
-    final token = prefs.getString(_tokenKey);
+    final client = ApiClient._(dio, prefs, secure);
+    final token = await secure.read(key: _tokenKey);
     if (token != null) {
       dio.options.headers['Authorization'] = 'Bearer $token';
     }
@@ -57,7 +93,8 @@ class ApiClient {
             try {
               final opts = error.requestOptions;
               opts.extra['retried'] = true;
-              opts.headers['Authorization'] = 'Bearer ${client._prefs.getString(_tokenKey)}';
+              final access = await client._secure.read(key: _tokenKey);
+              opts.headers['Authorization'] = 'Bearer $access';
               final response = await dio.fetch(opts);
               return handler.resolve(response);
             } catch (_) {
@@ -80,11 +117,15 @@ class ApiClient {
     return client;
   }
 
-  Future<bool> _refreshAccessToken() async {
-    if (_refreshing) return false;
-    final refresh = _prefs.getString(_refreshKey);
+  Future<bool> _refreshAccessToken() {
+    return _refreshFuture ??= _refreshAccessTokenImpl().whenComplete(() {
+      _refreshFuture = null;
+    });
+  }
+
+  Future<bool> _refreshAccessTokenImpl() async {
+    final refresh = await _secure.read(key: _refreshKey);
     if (refresh == null) return false;
-    _refreshing = true;
     try {
       final r = await _dio.post(
         '/auth/refresh',
@@ -99,13 +140,14 @@ class ApiClient {
       return true;
     } catch (_) {
       return false;
-    } finally {
-      _refreshing = false;
     }
   }
 
   Future<void> _clearSession() async {
     _dio.options.headers.remove('Authorization');
+    await _secure.delete(key: _tokenKey);
+    await _secure.delete(key: _refreshKey);
+    // Clear any leftover legacy prefs tokens.
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_refreshKey);
     sessionController.signOut();
@@ -113,20 +155,37 @@ class ApiClient {
 
   Future<void> setTokens({required String accessToken, String? refreshToken}) async {
     _dio.options.headers['Authorization'] = 'Bearer $accessToken';
-    await _prefs.setString(_tokenKey, accessToken);
+    await _secure.write(key: _tokenKey, value: accessToken);
     if (refreshToken != null) {
-      await _prefs.setString(_refreshKey, refreshToken);
+      await _secure.write(key: _refreshKey, value: refreshToken);
     }
+    await _prefs.remove(_tokenKey);
+    await _prefs.remove(_refreshKey);
     sessionController.setAuthenticated(true);
   }
 
   Future<void> setToken(String token) => setTokens(accessToken: token);
 
   Future<void> logout() async {
+    final refresh = await _secure.read(key: _refreshKey);
+    if (refresh != null) {
+      try {
+        await _dio.post(
+          '/auth/logout',
+          data: {'refresh_token': refresh},
+          options: Options(extra: {'retried': true}),
+        );
+      } catch (_) {
+        // Best-effort revoke — still clear local session.
+      }
+    }
     await _clearSession();
   }
 
-  Future<bool> hasStoredToken() async => _prefs.getString(_tokenKey) != null;
+  Future<bool> hasStoredToken() async {
+    final token = await _secure.read(key: _tokenKey);
+    return token != null && token.isNotEmpty;
+  }
 
   String get baseUrl => _dio.options.baseUrl.replaceAll('/api/v1', '');
 
@@ -138,11 +197,6 @@ class ApiClient {
     return '$baseUrl/p/$publicCode';
   }
 
-  Future<Map<String, dynamic>> captchaConfig() async {
-    final r = await _dio.get('/auth/captcha-config');
-    return Map<String, dynamic>.from(r.data);
-  }
-
   Future<Map<String, dynamic>> login(
     String email,
     String password, {
@@ -151,46 +205,46 @@ class ApiClient {
     final r = await _dio.post('/auth/login', data: {
       'email': email,
       'password': password,
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
 
   Future<Map<String, dynamic>> requestOtp({
-    String? phone,
     String? email,
+    String? phone,
     String? captchaToken,
   }) async {
     final r = await _dio.post('/auth/otp/request', data: {
-      if (phone != null) 'phone': phone,
       if (email != null) 'email': email,
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      if (phone != null) 'phone': phone,
+      'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
 
   Future<Map<String, dynamic>> verifyOtp({
-    required String code,
-    String? phone,
     String? email,
+    String? phone,
+    required String code,
     String? fullName,
   }) async {
     final r = await _dio.post('/auth/otp/verify', data: {
-      'code': code,
-      if (phone != null) 'phone': phone,
       if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'code': code,
       if (fullName != null) 'full_name': fullName,
     });
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> requestPasswordReset(
-    String email, {
+  Future<Map<String, dynamic>> requestPasswordReset({
+    required String email,
     String? captchaToken,
   }) async {
     final r = await _dio.post('/auth/password-reset/request', data: {
       'email': email,
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -205,7 +259,7 @@ class ApiClient {
       'email': email,
       'code': code,
       'password': password,
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -214,6 +268,64 @@ class ApiClient {
     final r = await _dio.get('/auth/google/login');
     return Map<String, dynamic>.from(r.data);
   }
+
+  Future<Map<String, dynamic>> submitOrgProfile(Map<String, dynamic> payload) async {
+    final r = await _dio.post('/auth/onboarding/org-profile', data: payload);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> captchaConfig() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/captcha-config')).data);
+
+  Future<Map<String, dynamic>> signupStart({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    required String signupCategory,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/signup/start', data: {
+      'full_name': fullName,
+      'email': email,
+      'phone': phone,
+      'password': password,
+      'signup_category': signupCategory,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> signupVerifyPhone({
+    required String signupToken,
+    required String code,
+  }) async {
+    await _dio.post('/auth/signup/verify-phone', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+  }
+
+  Future<Map<String, dynamic>> signupSendEmailOtp(String signupToken) async {
+    final r = await _dio.post('/auth/signup/send-email-otp', data: {
+      'signup_token': signupToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> signupComplete({
+    required String signupToken,
+    required String code,
+  }) async {
+    final r = await _dio.post('/auth/signup/complete', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> onboardingState() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/onboarding')).data);
 
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
@@ -237,8 +349,16 @@ class ApiClient {
   Future<Map<String, dynamic>> dashboard() async =>
       Map<String, dynamic>.from((await _dio.get('/dashboard')).data);
 
-  Future<List<dynamic>> listTrees({int pageSize = 200}) async {
-    final r = await _dio.get('/trees', queryParameters: {'page': 1, 'page_size': pageSize});
+  Future<List<dynamic>> listTrees({
+    int page = 1,
+    int pageSize = 100,
+    String? bbox,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (bbox != null && bbox.isNotEmpty) {
+      params['bbox'] = bbox;
+    }
+    final r = await _dio.get('/trees', queryParameters: params);
     return List<dynamic>.from(r.data['items'] ?? []);
   }
 
@@ -366,7 +486,6 @@ class ApiClient {
     return List<dynamic>.from(r.data);
   }
 
-  /// Backend create_report takes query params `kind` + `format` (not a JSON body).
   Future<Map<String, dynamic>> createReport({
     required String reportType,
     required String format,
@@ -482,7 +601,11 @@ class ApiClient {
       '/alerts',
       queryParameters: unreadOnly ? {'unread_only': true} : null,
     );
-    return List<dynamic>.from(r.data);
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
   }
 
   Future<void> markAlertRead(String alertId) async {
@@ -496,7 +619,11 @@ class ApiClient {
 
   Future<List<dynamic>> listBioacousticRecordings() async {
     final r = await _dio.get('/bioacoustic/recordings');
-    return List<dynamic>.from(r.data);
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
   }
 
   Future<List<dynamic>> listPlantationFences() async {

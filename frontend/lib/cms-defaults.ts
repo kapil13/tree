@@ -1,4 +1,5 @@
 import type { CmsLink, CmsPublicSite, CmsSection } from "@/lib/cms-api";
+import { sanitizeCmsHref } from "@/lib/cms-sanitize";
 
 export const CMS_HEADER_FALLBACK: CmsPublicSite["site"]["header"] = {
   nav: [
@@ -54,7 +55,11 @@ export const CMS_HOME_FALLBACK: CmsPublicSite = {
 export type CmsCta = { label: string; href: string };
 
 export function linkProps(link?: CmsLink) {
-  return link ?? { label: "Learn more", href: "/" };
+  const base = link ?? { label: "Learn more", href: "/" };
+  return {
+    label: base.label,
+    href: sanitizeCmsHref(base.href ?? "/"),
+  };
 }
 
 export function sectionByAnchor(sections: CmsSection[], anchor: string) {

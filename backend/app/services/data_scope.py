@@ -90,3 +90,24 @@ async def field_worker_project_ids(user: User, db: AsyncSession) -> set[uuid.UUI
 
     ids = await list_accessible_project_ids(user, db)
     return ids or set()
+
+
+async def mvt_tree_scope_binds(user: User, db: AsyncSession) -> dict:
+    """Bind parameters for MVT tile SQL (mirrors apply_tree_scope)."""
+    binds: dict = {
+        "is_admin": user.role == "admin",
+        "uid": user.id,
+        "oid": user.organization_id,
+        "org_portfolio": False,
+        "is_field_worker": False,
+        "project_ids": [],
+    }
+    if user.role == "admin":
+        return binds
+    if user_is_field_worker(user):
+        binds["is_field_worker"] = True
+        binds["project_ids"] = [str(x) for x in await field_worker_project_ids(user, db)]
+        return binds
+    if user_sees_org_portfolio(user) and user.organization_id:
+        binds["org_portfolio"] = True
+    return binds

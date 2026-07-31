@@ -12,6 +12,8 @@ export default function AlertsPage() {
     queryFn: () => alerts.list(),
   });
 
+  const alertItems = data?.items ?? [];
+
   const { data: prefs } = useQuery({
     queryKey: ["alert-preferences"],
     queryFn: () => alerts.getPreferences(),
@@ -213,10 +215,10 @@ export default function AlertsPage() {
 
       <div className="card divide-y divide-stone-100">
         {isLoading && <div className="text-stone-500">Loading…</div>}
-        {data?.length === 0 && (
+        {alertItems.length === 0 && (
           <div className="text-sm text-stone-500">No alerts. Your trees are happy.</div>
         )}
-        {data?.map((a) => (
+        {alertItems.map((a) => (
           <div key={a.id} className="flex items-start justify-between gap-3 py-3">
             <div>
               <div className="font-medium">{a.title}</div>

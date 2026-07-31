@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { Leaf } from "lucide-react";
 import type { CmsPublicSite } from "@/lib/cms-api";
-import { CMS_FOOTER_FALLBACK } from "@/lib/cms-defaults";
+import { CMS_FOOTER_FALLBACK, linkProps } from "@/lib/cms-defaults";
 
 export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: CmsPublicSite["site"]["footer"] }) {
   const year = new Date().getFullYear();
@@ -24,13 +24,16 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
             <div key={col.title}>
               <h3 className="text-sm font-semibold text-white">{col.title}</h3>
               <ul className="mt-4 space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={`${col.title}-${link.label}`}>
-                    <Link href={link.href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {col.links.map((item) => {
+                  const link = linkProps(item);
+                  return (
+                    <li key={`${col.title}-${link.label}`}>
+                      <Link href={link.href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

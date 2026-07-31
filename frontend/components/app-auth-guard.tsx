@@ -28,7 +28,7 @@ export function AppAuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    syncSessionCookieFromToken();
+    void syncSessionCookieFromToken();
 
     let cancelled = false;
     auth

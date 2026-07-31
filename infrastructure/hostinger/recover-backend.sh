@@ -34,7 +34,7 @@ echo "==> Required env vars present?"
 set -a
 source "$ENV_FILE"
 set +a
-for var in POSTGRES_PASSWORD JWT_SECRET MINIO_ROOT_PASSWORD APP_DOMAIN API_DOMAIN CORS_ORIGINS; do
+for var in POSTGRES_PASSWORD JWT_SECRET MINIO_ROOT_PASSWORD APP_DOMAIN API_DOMAIN CORS_ORIGINS REDIS_PASSWORD; do
   if [[ -z "${!var:-}" ]] || [[ "${!var}" == CHANGE_ME* ]]; then
     echo "  MISSING: $var"
   else

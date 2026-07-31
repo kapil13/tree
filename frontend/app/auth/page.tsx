@@ -28,14 +28,14 @@ function AlreadySignedInRedirect() {
     const next = getSafeNextPath(params.get("next"));
     const destination = next ?? (invite ? `/dashboard?invite=${encodeURIComponent(invite)}` : "/dashboard");
 
-    const go = () => {
+    const go = async () => {
       // Edge middleware requires this cookie; localStorage token alone causes /auth ↔ /dashboard loops.
-      syncSessionCookieFromToken();
+      await syncSessionCookieFromToken();
       router.replace(destination);
     };
 
     if (user) {
-      go();
+      void go();
       return;
     }
 
@@ -45,7 +45,7 @@ function AlreadySignedInRedirect() {
       .then((profile) => {
         if (cancelled) return;
         setUser(profile);
-        go();
+        void go();
       })
       .catch(() => {
         if (cancelled) return;
@@ -72,6 +72,14 @@ function AuthPageInner() {
     } else if (err === "google_exchange_failed") {
       setOauthError(
         "Google sign-in failed. Add https://aranyix.tech/api/v1/auth/google/callback to Google Cloud Console authorized redirect URIs.",
+      );
+    } else if (err === "google_state_invalid") {
+      setOauthError("Google sign-in expired or was invalid. Please try again.");
+    } else if (err === "google_email_unverified") {
+      setOauthError("Your Google account email is not verified. Verify it with Google, then try again.");
+    } else if (err === "google_link_requires_verified") {
+      setOauthError(
+        "An account with this email already exists but is not verified. Sign in with email/password or complete verification, then link Google.",
       );
     } else if (err === "organization_suspended") {
       setOauthError("Your organization is suspended. Contact your administrator.");

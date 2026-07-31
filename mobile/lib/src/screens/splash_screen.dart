@@ -39,7 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!await api.hasStoredToken()) {
       sessionController.signOut();
       if (!mounted) return;
-      context.go('/login');
+      context.go('/welcome');
       return;
     }
     try {
@@ -50,7 +50,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       await api.logout();
       ref.invalidate(apiClientProvider);
       if (!mounted) return;
-      context.go('/login');
+      context.go('/welcome');
     }
   }
 
