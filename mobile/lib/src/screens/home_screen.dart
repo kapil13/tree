@@ -69,7 +69,7 @@ class HomeScreen extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: _DashboardTopBar(
                       projectName: _projectLabel(fences, user),
-                      onNotifications: () => context.push('/notifications'),
+                      onNotifications: () => context.go('/notifications'),
                       onProfile: () => context.go('/profile'),
                       onProjectTap: () => _showProjectPicker(context, fences),
                     ),
@@ -84,6 +84,33 @@ class HomeScreen extends ConsumerWidget {
                           trendDelta: health.trendDelta,
                           onViewDetails: () => context.push('/trees'),
                         ),
+                        if (canSeeMonitoring(user) || canSeeFieldOps(user) || canSeeReports(user)) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (canSeeMonitoring(user))
+                                ActionChip(
+                                  avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
+                                  label: const Text('Monitoring'),
+                                  onPressed: () => context.go('/monitoring'),
+                                ),
+                              if (canSeeFieldOps(user))
+                                ActionChip(
+                                  avatar: const Icon(Icons.construction_outlined, size: 18),
+                                  label: const Text('Field ops'),
+                                  onPressed: () => context.push('/field-ops'),
+                                ),
+                              if (canSeeReports(user))
+                                ActionChip(
+                                  avatar: const Icon(Icons.description_outlined, size: 18),
+                                  label: const Text('Reports'),
+                                  onPressed: () => context.push('/reports'),
+                                ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 20),
                         _AiBriefCard(
                           lines: briefLines,

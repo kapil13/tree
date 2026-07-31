@@ -53,7 +53,16 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                             color: AranyixColors.onSurfaceMuted,
                           ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: 'Profile',
+                        onPressed: () => context.go('/profile'),
+                        icon: const Icon(Icons.person_outline, color: AranyixColors.forestDark),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
@@ -75,6 +84,29 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                             onTap: () => context.go('/projects'),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.map_outlined, size: 18),
+                          label: const Text('Map'),
+                          onPressed: () => context.go('/map'),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.notifications_outlined, size: 18),
+                          label: const Text('Alerts'),
+                          onPressed: () => context.go('/notifications'),
+                        ),
+                        if (canSeeFieldOps(user))
+                          ActionChip(
+                            avatar: const Icon(Icons.construction_outlined, size: 18),
+                            label: const Text('Field ops'),
+                            onPressed: () => context.push('/field-ops'),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 24),

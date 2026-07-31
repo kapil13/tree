@@ -64,6 +64,21 @@ final alertsProvider = FutureProvider.autoDispose((ref) async {
   return api.listAlerts();
 });
 
+final fieldOpsSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.fieldOpsSummary();
+});
+
+final monitoringSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  try {
+    return await api.monitoringSummary();
+  } catch (_) {
+    // Fallback so monitoring screen still renders core KPIs.
+    return api.fieldOpsSummary();
+  }
+});
+
 final userProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.me();

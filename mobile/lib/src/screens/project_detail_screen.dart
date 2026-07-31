@@ -6,6 +6,15 @@ import '../api/api_errors.dart';
 import '../providers.dart';
 import 'projects_list_screen.dart';
 
+const _segmentLabels = {
+  'general': 'General',
+  'highway': 'Highway',
+  'railway': 'Railway',
+  'urban': 'Urban',
+  'coastal': 'Coastal',
+  'forest': 'Forest',
+};
+
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
 
@@ -59,7 +68,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                 error: (e, _) => Text(apiErrorMessage(e)),
                 data: (areas) {
                   if (areas.isEmpty) {
-                    return const Text('No work areas defined on web yet.');
+                    return const Text('No work areas yet. Draw a plot or corridor on the Map tab.');
                   }
                   return Column(
                     children: areas.map((wa) {

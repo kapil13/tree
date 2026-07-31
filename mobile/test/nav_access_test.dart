@@ -8,13 +8,20 @@ void main() {
     final worker = {
       'role': 'field_worker',
       'org_role': 'worker',
-      'has_professional_program': true,
+      'has_professional_program': false,
     };
     expect(isFieldWorkerHome(worker), isTrue);
     expect(canSeeProjects(worker), isTrue);
     expect(canSeeBioacoustic(worker), isFalse);
+    expect(canSeeFieldOps(worker), isTrue);
+    expect(canSeeMap(worker), isTrue);
     expect(canAccessPath(worker, '/projects'), isTrue);
     expect(canAccessPath(worker, '/bioacoustic'), isFalse);
+    expect(canAccessPath(worker, '/field-ops'), isTrue);
+    expect(
+      navDestinationsFor(worker).map((d) => d.path).toList(),
+      ['/home', '/trees', '/map', '/notifications'],
+    );
   });
 
   test('viewer cannot add trees', () {
@@ -24,7 +31,21 @@ void main() {
       'has_professional_program': true,
     };
     expect(canAddTrees(viewer), isFalse);
+    expect(canSeeFieldOps(viewer), isFalse);
     expect(canAccessPath(viewer, '/trees/new'), isFalse);
+    expect(canAccessPath(viewer, '/trees/abc/survival'), isFalse);
+  });
+
+  test('exec shell includes monitoring', () {
+    final exec = {
+      'role': 'corporate',
+      'has_professional_program': true,
+    };
+    expect(canSeeMonitoring(exec), isTrue);
+    expect(
+      navDestinationsFor(exec).map((d) => d.path).toList(),
+      ['/home', '/monitoring', '/projects', '/notifications'],
+    );
   });
 
   test('invite landing routes by org role', () {

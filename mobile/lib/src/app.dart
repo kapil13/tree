@@ -18,6 +18,12 @@ import 'screens/bioacoustic_screen.dart';
 import 'screens/projects_list_screen.dart';
 import 'screens/project_detail_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/field_ops_screen.dart';
+import 'screens/monitoring_screen.dart';
+import 'screens/carbon_screen.dart';
+import 'screens/reports_screen.dart';
+import 'screens/credits_screen.dart';
+import 'screens/survival_survey_screen.dart';
 import 'widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -70,10 +76,14 @@ final _routerProvider = Provider<GoRouter>((ref) {
         navigatorKey: _shellNavigatorKey,
         builder: (_, __, child) => AppShell(child: child),
         routes: [
+          // All tab destinations for every role so context.go() works.
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
           GoRoute(path: '/projects', builder: (_, __) => const ProjectsListScreen()),
           GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+          GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
+          GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
+          GoRoute(path: '/monitoring', builder: (_, __) => const MonitoringScreen()),
         ],
       ),
       GoRoute(
@@ -88,13 +98,19 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
       ),
       GoRoute(
+        path: '/trees/:id/survival',
+        builder: (_, s) => SurvivalSurveyScreen(treeId: s.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/trees/:id',
         builder: (_, s) => TreeDetailScreen(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
+      GoRoute(path: '/field-ops', builder: (_, __) => const FieldOpsScreen()),
+      GoRoute(path: '/carbon', builder: (_, __) => const CarbonScreen()),
+      GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
+      GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/bioacoustic', builder: (_, __) => const BioacousticScreen()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     ],
   );
 });

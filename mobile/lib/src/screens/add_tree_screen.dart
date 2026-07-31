@@ -336,9 +336,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loadingPrograms) {
-      return const Scaffold(
-        appBar: AppBar(title: Text('Register tree')),
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        appBar: AppBar(title: const Text('Register tree')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
