@@ -78,9 +78,10 @@ Profile
 | Multi-step signup + OTP | Yes | Yes |
 | Turnstile CAPTCHA | Yes | Yes (WebView) |
 | Google OAuth | Yes | Planned |
-| Phone OTP login | Yes | Planned |
-| Forgot password | Yes | Planned |
-| Full org-profile wizard | Yes | Web handoff + sign in |
+| Phone OTP login | Yes | Yes (graceful when SMS not live) |
+| Forgot password | Yes | Yes |
+| Google OAuth | Yes | Yes (in-app WebView + deep link) |
+| Full org-profile wizard | Yes | Yes (in-app) |
 | Executive dashboard | Yes | Yes (map + charts) |
 
 ---

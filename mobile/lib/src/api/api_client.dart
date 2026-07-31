@@ -197,8 +197,80 @@ class ApiClient {
     return '$baseUrl/p/$publicCode';
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final r = await _dio.post('/auth/login', data: {'email': email, 'password': password});
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/login', data: {
+      'email': email,
+      'password': password,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> requestOtp({
+    String? email,
+    String? phone,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/otp/request', data: {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> verifyOtp({
+    String? email,
+    String? phone,
+    required String code,
+    String? fullName,
+  }) async {
+    final r = await _dio.post('/auth/otp/verify', data: {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'code': code,
+      if (fullName != null) 'full_name': fullName,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> requestPasswordReset({
+    required String email,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/password-reset/request', data: {
+      'email': email,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String password,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/auth/password-reset/confirm', data: {
+      'email': email,
+      'code': code,
+      'password': password,
+      'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> googleAuthorize() async {
+    final r = await _dio.get('/auth/google/login');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> submitOrgProfile(Map<String, dynamic> payload) async {
+    final r = await _dio.post('/auth/onboarding/org-profile', data: payload);
     return Map<String, dynamic>.from(r.data);
   }
 
