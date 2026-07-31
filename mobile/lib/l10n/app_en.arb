@@ -1,0 +1,53 @@
+{
+  "@@locale": "en",
+  "appTitle": "Aranyix",
+  "welcomeTitle": "Grow forests with proof",
+  "signIn": "Sign in",
+  "signUp": "Sign up",
+  "home": "Home",
+  "trees": "Trees",
+  "map": "Map",
+  "notifications": "Notifications",
+  "profile": "Profile",
+  "monitoring": "Monitoring",
+  "projects": "Projects",
+  "fieldOps": "Field ops",
+  "shareTreeQr": "Share tree QR",
+  "shareTreeMessage": "View this tree on Aranyix: {url}",
+  "@shareTreeMessage": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "language": "Language",
+  "languageEnglish": "English",
+  "languageHindi": "Hindi",
+  "security": "Security",
+  "biometricUnlock": "Unlock with biometrics",
+  "screenshotGuard": "Block screenshots",
+  "certificatePinning": "Certificate pinning",
+  "offlineSyncPending": "{count, plural, =1{1 item waiting to sync} other{{count} items waiting to sync}}",
+  "@offlineSyncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineSyncing": "Syncing offline data…",
+  "offlineMode": "You are offline — changes will sync when connected.",
+  "coachMarkHomeTitle": "Your forest dashboard",
+  "coachMarkHomeBody": "Health score, alerts, and quick actions live here.",
+  "coachMarkTreesTitle": "Register & track trees",
+  "coachMarkTreesBody": "Add trees in the field — they sync when you are back online.",
+  "coachMarkMapTitle": "Map your plantation",
+  "coachMarkMapBody": "See sites, corridors, and NDVI context on the map.",
+  "coachMarkDone": "Got it",
+  "pushNotifications": "Push notifications",
+  "pushNotificationsHint": "Alerts for satellite health, compliance, and survival surveys.",
+  "deepLinkTreeNotFound": "Tree not found or you do not have access.",
+  "analyticsEnabled": "Usage analytics",
+  "analyticsHint": "Helps improve the app (no personal tree photos)."
+}

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import 'route_access.dart';
 import 'session.dart';
 import 'theme.dart';
+import 'app_bootstrap.dart';
+import 'providers.dart';
+import 'services/app_settings.dart';
 import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
@@ -42,6 +46,7 @@ bool _isPublicRoute(String loc) {
       loc == '/forgot-password' ||
       loc == '/auth' ||
       loc.startsWith('/auth/') ||
+      loc.startsWith('/p/') ||
       loc == '/onboarding/pending';
 }
 
@@ -99,6 +104,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
           return '/welcome';
         },
       ),
+      GoRoute(
+        path: '/p/:code',
+        builder: (_, state) => TreeDetailDeepLinkScreen(code: state.pathParameters['code']!),
+      ),
       GoRoute(path: '/onboarding/pending', builder: (_, __) => const OnboardingPendingScreen()),
       GoRoute(path: '/onboarding/org-profile', builder: (_, __) => const OrgProfileWizardScreen()),
       ShellRoute(
@@ -149,12 +158,63 @@ class ByotApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(_routerProvider);
-    return MaterialApp.router(
-      title: 'Aranyix',
-      debugShowCheckedModeBanner: false,
-      theme: byotLightTheme,
-      darkTheme: byotDarkTheme,
-      routerConfig: router,
+    return ListenableBuilder(
+      listenable: AppSettings.instance,
+      builder: (context, _) {
+        return AppBootstrap(
+          router: router,
+          child: MaterialApp.router(
+            title: 'Aranyix',
+            debugShowCheckedModeBanner: false,
+            theme: byotLightTheme,
+            darkTheme: byotDarkTheme,
+            locale: AppSettings.instance.locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        );
+      },
     );
+  }
+}
+
+/// Resolves /p/{public_code} deep links after authentication.
+class TreeDetailDeepLinkScreen extends ConsumerStatefulWidget {
+  const TreeDetailDeepLinkScreen({super.key, required this.code});
+  final String code;
+
+  @override
+  ConsumerState<TreeDetailDeepLinkScreen> createState() => _TreeDetailDeepLinkScreenState();
+}
+
+class _TreeDetailDeepLinkScreenState extends ConsumerState<TreeDetailDeepLinkScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resolve());
+  }
+
+  Future<void> _resolve() async {
+    if (!sessionController.authenticated) {
+      if (mounted) context.go('/login?next=/p/${widget.code}');
+      return;
+    }
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final tree = await api.getTreeByPublicCode(widget.code);
+      if (!mounted) return;
+      context.go('/trees/${tree['id']}');
+    } catch (_) {
+      if (!mounted) return;
+      final msg = AppLocalizations.of(context)?.deepLinkTreeNotFound ?? 'Tree not found.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      context.go('/home');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

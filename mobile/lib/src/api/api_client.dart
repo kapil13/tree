@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_base_url.dart';
 import 'api_errors.dart';
+import '../services/certificate_pinning.dart';
 import '../session.dart';
 
 export 'api_base_url.dart' show kByotApiBase, allowCustomApiBase;
@@ -79,6 +80,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 45),
       headers: {'Content-Type': 'application/json'},
     ));
+    CertificatePinning.configureDio(dio);
     final client = ApiClient._(dio, prefs, secure);
     final token = await secure.read(key: _tokenKey);
     if (token != null) {
@@ -722,5 +724,37 @@ class ApiClient {
       },
     );
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getTreeByPublicCode(String publicCode) async {
+    final r = await _dio.get('/trees/by-code/${Uri.encodeComponent(publicCode)}');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> registerDevice({
+    required String pushToken,
+    required String platform,
+    String? deviceLabel,
+    String? appVersion,
+  }) async {
+    await _dio.post('/devices/register', data: {
+      'push_token': pushToken,
+      'platform': platform,
+      if (deviceLabel != null) 'device_label': deviceLabel,
+      if (appVersion != null) 'app_version': appVersion,
+    });
+  }
+
+  Future<void> unregisterDevice({required String pushToken}) async {
+    await _dio.delete(
+      '/devices/register',
+      queryParameters: {'push_token': pushToken},
+    );
+  }
+
+  Future<void> postAnalyticsEvents(List<Map<String, dynamic>> events) async {
+    await _dio.post('/devices/analytics/events', data: {
+      'events': events,
+    });
   }
 }

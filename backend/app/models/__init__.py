@@ -27,6 +27,7 @@ from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
 from app.models.user import User
+from app.models.user_device import UserDevice
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 
@@ -66,6 +67,7 @@ __all__ = [
     "TreeAnalysis",
     "TreeImage",
     "User",
+    "UserDevice",
     "ProjectMember",
     "MonitoringJobRun",
     "WorkAreaBiodiversitySnapshot",
