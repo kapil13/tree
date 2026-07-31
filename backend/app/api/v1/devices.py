@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -57,7 +57,7 @@ async def register_device(payload: DeviceRegisterIn, user: CurrentUser, db: DB) 
 
 
 @router.delete("/register", status_code=status.HTTP_204_NO_CONTENT)
-async def unregister_device(push_token: str, user: CurrentUser, db: DB) -> None:
+async def unregister_device(push_token: str, user: CurrentUser, db: DB) -> Response:
     res = await db.execute(
         select(UserDevice).where(
             UserDevice.user_id == user.id,
@@ -68,6 +68,7 @@ async def unregister_device(push_token: str, user: CurrentUser, db: DB) -> None:
     if device is not None:
         await db.delete(device)
         await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class AnalyticsEventIn(BaseModel):
