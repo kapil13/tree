@@ -135,7 +135,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
-    syncSessionCookieFromToken();
+    await syncSessionCookieFromToken();
     if (inviteToken) {
       try {
         const member = await organizations.acceptInvite(inviteToken);

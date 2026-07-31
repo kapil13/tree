@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import type { CmsPublicSite } from "@/lib/cms-api";
-import { CMS_HEADER_FALLBACK } from "@/lib/cms-defaults";
+import { CMS_HEADER_FALLBACK, linkProps } from "@/lib/cms-defaults";
 
 export function MarketingHeader({ header = CMS_HEADER_FALLBACK }: { header?: CmsPublicSite["site"]["header"] }) {
+  const signIn = linkProps(header.sign_in);
+  const getStarted = linkProps(header.get_started);
+
   return (
     <header className="marketing-header">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
@@ -12,19 +15,22 @@ export function MarketingHeader({ header = CMS_HEADER_FALLBACK }: { header?: Cms
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-          {header.nav.map((item) => (
-            <a key={item.href} href={item.href} className="marketing-nav-link">
-              {item.label}
-            </a>
-          ))}
+          {header.nav.map((item) => {
+            const link = linkProps(item);
+            return (
+              <a key={`${link.href}-${link.label}`} href={link.href} className="marketing-nav-link">
+                {link.label}
+              </a>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href={header.sign_in.href} className="btn-ghost hidden sm:inline-flex">
-            {header.sign_in.label}
+          <Link href={signIn.href} className="btn-ghost hidden sm:inline-flex">
+            {signIn.label}
           </Link>
-          <Link href={header.get_started.href} className="btn-primary">
-            {header.get_started.label}
+          <Link href={getStarted.href} className="btn-primary">
+            {getStarted.label}
           </Link>
         </div>
       </div>

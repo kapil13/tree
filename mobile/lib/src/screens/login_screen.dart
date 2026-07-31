@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,8 +16,12 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController(text: 'demo@byot.earth');
-  final _pwd = TextEditingController(text: 'byotdemo1234!');
+  final _email = TextEditingController(
+    text: kDebugMode ? 'demo@byot.earth' : '',
+  );
+  final _pwd = TextEditingController(
+    text: kDebugMode ? 'byotdemo1234!' : '',
+  );
   final _apiUrl = TextEditingController();
   String? _err;
   bool _busy = false;
@@ -40,8 +45,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _loadApiUrl() async {
-    final url = await ApiClient.loadBaseUrl();
-    _apiUrl.text = url;
+    if (allowCustomApiBase) {
+      final url = await ApiClient.loadBaseUrl();
+      _apiUrl.text = url;
+    }
     if (mounted) setState(() => _loaded = true);
   }
 
@@ -69,8 +76,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _err = null;
     });
     try {
-      await ApiClient.saveBaseUrl(_apiUrl.text);
-      ref.invalidate(apiClientProvider);
+      if (allowCustomApiBase) {
+        try {
+          await ApiClient.saveBaseUrl(_apiUrl.text);
+        } on FormatException catch (e) {
+          setState(() => _err = e.message);
+          return;
+        }
+        ref.invalidate(apiClientProvider);
+      }
       final api = await ref.read(apiClientProvider.future);
       final tokens = await api.login(_email.text.trim(), _pwd.text);
       await api.setTokens(
@@ -125,18 +139,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ],
               const SizedBox(height: 32),
-              TextField(
-                controller: _apiUrl,
-                enabled: _loaded && !_busy,
-                keyboardType: TextInputType.url,
-                autocorrect: false,
-                decoration: const InputDecoration(
-                  labelText: 'API server',
-                  hintText: 'https://api.aranyix.tech',
-                  helperText: 'Production: https://api.aranyix.tech — local dev: http://YOUR_MAC_IP:8000',
+              if (allowCustomApiBase) ...[
+                TextField(
+                  controller: _apiUrl,
+                  enabled: _loaded && !_busy,
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                  decoration: const InputDecoration(
+                    labelText: 'API server',
+                    hintText: 'https://api.aranyix.tech',
+                    helperText:
+                        'Production: https://api.aranyix.tech — local dev: http://YOUR_MAC_IP:8000',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
               const SizedBox(height: 12),
               TextField(

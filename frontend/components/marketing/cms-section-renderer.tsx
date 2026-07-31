@@ -6,6 +6,7 @@ import { HeroEmblem } from "@/components/marketing/hero-emblem";
 import { cmsIcon } from "@/lib/cms-icons";
 import type { CmsSection } from "@/lib/cms-api";
 import { linkProps } from "@/lib/cms-defaults";
+import { sanitizeCmsHtml } from "@/lib/cms-sanitize";
 
 /** Lightweight Markdown-ish renderer for CMS legal/plain bodies (`#`, `##`, paragraphs). */
 function LegalPlainBody({ text }: { text: string }) {
@@ -289,7 +290,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           className="mx-auto max-w-3xl px-6 py-16 prose prose-stone prose-headings:text-forest-900"
         >
           {c.html ? (
-            <div dangerouslySetInnerHTML={{ __html: String(c.html) }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(String(c.html)) }} />
           ) : (
             <LegalPlainBody text={String(c.body || "")} />
           )}

@@ -272,6 +272,10 @@ services:
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
         NEXT_PUBLIC_BUILD_SHA: ${GIT_SHA:-unknown}
+    environment:
+      # Signed HttpOnly session flag for edge middleware (falls back to NEXTAUTH_SECRET if set)
+      SESSION_COOKIE_SECRET: ${SESSION_COOKIE_SECRET:-${JWT_SECRET}}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
     restart: unless-stopped
     depends_on:
       backend:

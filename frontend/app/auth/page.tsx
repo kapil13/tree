@@ -28,14 +28,14 @@ function AlreadySignedInRedirect() {
     const next = getSafeNextPath(params.get("next"));
     const destination = next ?? (invite ? `/dashboard?invite=${encodeURIComponent(invite)}` : "/dashboard");
 
-    const go = () => {
+    const go = async () => {
       // Edge middleware requires this cookie; localStorage token alone causes /auth ↔ /dashboard loops.
-      syncSessionCookieFromToken();
+      await syncSessionCookieFromToken();
       router.replace(destination);
     };
 
     if (user) {
-      go();
+      void go();
       return;
     }
 
@@ -45,7 +45,7 @@ function AlreadySignedInRedirect() {
       .then((profile) => {
         if (cancelled) return;
         setUser(profile);
-        go();
+        void go();
       })
       .catch(() => {
         if (cancelled) return;
