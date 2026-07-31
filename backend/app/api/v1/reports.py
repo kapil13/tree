@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
+from app.api.v1.deps import DB, CurrentUser, require_write_perm
 from app.core.security import Permission
 from app.models.report import Report
 from app.models.user import User

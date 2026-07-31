@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
-from app.core.security import Permission
+from app.api.v1.deps import DB, CurrentUser, require_write_perm
 from app.api.v1.trees import _get_owned_tree
 from app.core.rate_limit import rate_limit
+from app.core.security import Permission
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
