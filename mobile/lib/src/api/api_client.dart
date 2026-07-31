@@ -398,6 +398,110 @@ class ApiClient {
   Future<Map<String, dynamic>> fieldOpsSummary() async =>
       Map<String, dynamic>.from((await _dio.get('/planting-projects/field-ops-summary')).data);
 
+  Future<Map<String, dynamic>> monitoringSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/monitoring-summary')).data);
+
+  Future<Map<String, dynamic>> createWorkArea(
+    String projectId, {
+    required String name,
+    required String geometryType,
+    Map<String, dynamic>? boundary,
+    Map<String, dynamic>? centerline,
+    double? bufferM,
+  }) async {
+    final r = await _dio.post('/planting-projects/$projectId/work-areas', data: {
+      'name': name,
+      'geometry_type': geometryType,
+      if (boundary != null) 'boundary': boundary,
+      if (centerline != null) 'centerline': centerline,
+      if (bufferM != null) 'buffer_m': bufferM,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listComplianceViolations(String projectId, {bool unresolvedOnly = true}) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/compliance-violations',
+      queryParameters: {'unresolved_only': unresolvedOnly},
+    );
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> resolveViolation(String projectId, String violationId) async {
+    final r = await _dio.post(
+      '/planting-projects/$projectId/compliance-violations/$violationId/resolve',
+    );
+    return Map<String, dynamic>.from(r.data is Map ? r.data : {'status': 'ok'});
+  }
+
+  Future<Map<String, dynamic>> survivalDue(String projectId) async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/$projectId/survival-due')).data);
+
+  Future<Map<String, dynamic>> regeotagTree(
+    String treeId, {
+    required double lat,
+    required double lon,
+    double? accuracy,
+    String? remarks,
+    String? survivalStatus,
+  }) async {
+    final r = await _dio.post('/trees/$treeId/regeotag', data: {
+      'latitude': lat,
+      'longitude': lon,
+      if (accuracy != null) 'accuracy_m': accuracy,
+      if (remarks != null) 'remarks': remarks,
+      if (survivalStatus != null) 'survival_status': survivalStatus,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getAlertPreferences() async =>
+      Map<String, dynamic>.from((await _dio.get('/alerts/preferences')).data);
+
+  Future<Map<String, dynamic>> updateAlertPreferences(Map<String, dynamic> body) async {
+    final r = await _dio.patch('/alerts/preferences', data: body);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> carbonEstimate({
+    required String species,
+    double? dbhCm,
+    double? heightM,
+    double? ageYears,
+  }) async {
+    final r = await _dio.post('/carbon/estimate', data: {
+      'species': species,
+      if (dbhCm != null) 'dbh_cm': dbhCm,
+      if (heightM != null) 'height_m': heightM,
+      if (ageYears != null) 'age_years': ageYears,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> creditsSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/credits/summary')).data);
+
+  Future<List<dynamic>> listReports() async {
+    final r = await _dio.get('/reports');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> createReport({
+    required String reportType,
+    required String format,
+    String? plantationFenceId,
+  }) async {
+    final r = await _dio.post(
+      '/reports',
+      queryParameters: {
+        'kind': reportType,
+        'format': format,
+        if (plantationFenceId != null) 'plantation_fence_id': plantationFenceId,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<List<dynamic>> listPlantingProjects({String? segment, int pageSize = 100}) async {
     final r = await _dio.get('/planting-projects', queryParameters: {
       'page': 1,

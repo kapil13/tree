@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_errors.dart';
+import '../nav_access.dart';
 import '../providers.dart';
+import '../session.dart';
 
 class TreeDetailScreen extends ConsumerStatefulWidget {
   const TreeDetailScreen({super.key, required this.id});
@@ -186,6 +189,14 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    if (canWriteInApp(sessionController.user)) ...[
+                      OutlinedButton.icon(
+                        onPressed: () => context.push('/trees/${widget.id}/survival'),
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('Survival / re-geotag'),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     FilledButton.icon(
                       onPressed: analyzing ? null : _analyze,
                       icon: const Icon(Icons.auto_awesome),

@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - cursor/android-apk-build-f2ba
+      - cursor/mobile-full-app-apk-f2ba
       - cursor/hostinger-kvm4-deploy-f2ba
       - cursor/bioacoustic-engine-f2ba
       - cursor/bioacoustic-offline-sync-f2ba
@@ -41,7 +42,7 @@ jobs:
         with:
           channel: stable
           # Must match the Flutter version that generated mobile/android/ (AGP 9.x)
-          flutter-version: "3.44.5"
+          flutter-version: "3.44.8"
           cache: true
 
       - name: Accept Android SDK licenses

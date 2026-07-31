@@ -16,6 +16,12 @@ class TreeListScreen extends ConsumerWidget {
     final canAdd = canAddTrees(user);
     return Scaffold(
       appBar: AppBar(title: const Text('Trees')),
+      floatingActionButton: canAdd
+          ? FloatingActionButton(
+              onPressed: () => context.push('/trees/new'),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: trees.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) {
