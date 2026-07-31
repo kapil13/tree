@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../auth/auth_messages.dart';
+
 /// Thrown when the session is no longer valid and the user must sign in again.
 class SessionExpiredException implements Exception {
   const SessionExpiredException();
@@ -44,12 +46,12 @@ String apiErrorMessage(Object err) {
       final detail = data['detail'];
       if (detail is String) {
         if (err.response?.statusCode == 401 && detail == 'invalid_credentials') {
-          return 'Invalid email or password.';
+          return humanizeAuthError('invalid_credentials');
         }
         if (err.response?.statusCode == 401 && detail == 'invalid_refresh') {
           return 'Session expired. Please sign in again.';
         }
-        return detail;
+        return humanizeAuthError(detail);
       }
       if (detail is List) {
         return detail

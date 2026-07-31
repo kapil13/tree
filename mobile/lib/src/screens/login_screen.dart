@@ -169,6 +169,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onPressed: _busy || !_loaded ? null : _submit,
                 child: Text(_busy ? 'Signing in…' : 'Sign in'),
               ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _busy ? null : () => context.push('/signup'),
+                child: const Text('Create an account'),
+              ),
+              TextButton(
+                onPressed: _busy ? null : () => context.go('/welcome'),
+                child: const Text('Back to welcome'),
+              ),
             ],
           ),
         ),

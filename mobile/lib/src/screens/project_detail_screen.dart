@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
-import 'projects_list_screen.dart';
+import 'projects_list_screen.dart' show segmentLabels;
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -36,7 +36,7 @@ class ProjectDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(project['name'] as String, style: Theme.of(context).textTheme.headlineSmall),
-              Text('${project['code']} · ${_segmentLabels[segment] ?? segment}'),
+              Text('${project['code']} · ${segmentLabels[segment] ?? segment}'),
               const SizedBox(height: 8),
               Text(project['description'] as String? ?? ''),
               const SizedBox(height: 16),
