@@ -5,16 +5,20 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
+from app.core.security import Permission
 from app.api.v1.trees import _get_owned_tree
 from app.core.rate_limit import rate_limit
 from app.models.carbon import CarbonCalculation
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
+from app.models.user import User
 from app.schemas.analysis import (
     AnalysisJob,
     AnalysisOut,
@@ -30,6 +34,8 @@ from app.services.data_scope import can_access_tree
 from app.services.storage import get_storage
 
 router = APIRouter(tags=["analysis"])
+
+AnalysisTriggerAccess = Annotated[User, require_write_perm(Permission.ANALYSIS_TRIGGER)]
 
 
 def _fetch_image_bytes(s3_keys: list[str]) -> list[bytes]:
@@ -165,7 +171,7 @@ async def _run_tree_analysis(
 
 
 @router.post("/tree-analysis", response_model=AnalysisOut, dependencies=[rate_limit(30, 60)])
-async def run_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) -> AnalysisOut:
+async def run_analysis(payload: AnalysisRequest, user: AnalysisTriggerAccess, db: DB) -> AnalysisOut:
     rec = await _run_tree_analysis(payload, user, db)
     return AnalysisOut.model_validate(rec)
 
@@ -176,7 +182,7 @@ async def run_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) -> A
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[rate_limit(30, 60)],
 )
-async def enqueue_analysis(payload: AnalysisRequest, user: WriteAccess, db: DB) -> AnalysisJob:
+async def enqueue_analysis(payload: AnalysisRequest, user: AnalysisTriggerAccess, db: DB) -> AnalysisJob:
     """Queue tree analysis on Celery when available; otherwise run synchronously."""
     from app.services.workers.enqueue import try_enqueue
     from app.workers.tasks import run_ai_analysis

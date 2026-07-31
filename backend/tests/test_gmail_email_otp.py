@@ -11,6 +11,7 @@ from app.services.auth.gmail_sender import (
     GmailSendError,
     _load_service_account_info,
     gmail_otp_configured,
+    send_auth_otp_email,
     send_signup_otp_email,
 )
 
@@ -42,6 +43,19 @@ def test_load_service_account_info_rejects_missing_config():
         with pytest.raises(GmailSendError) as exc:
             _load_service_account_info()
         assert exc.value.code == "gmail_not_configured"
+
+
+@pytest.mark.asyncio
+async def test_send_auth_otp_email_delegates_to_sync_sender():
+    with (
+        patch("app.services.auth.gmail_sender.gmail_otp_configured", return_value=True),
+        patch("app.services.auth.gmail_sender._send_email_sync") as mock_send,
+    ):
+        await send_auth_otp_email(to="user@example.com", code="999888")
+        mock_send.assert_called_once()
+        assert mock_send.call_args.kwargs["to"] == "user@example.com"
+        assert "999888" in mock_send.call_args.kwargs["body"]
+        assert "sign-in" in mock_send.call_args.kwargs["subject"].lower()
 
 
 @pytest.mark.asyncio

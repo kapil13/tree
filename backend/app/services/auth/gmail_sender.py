@@ -102,6 +102,19 @@ def _otp_email_body(code: str) -> str:
     )
 
 
+async def send_auth_otp_email(*, to: str, code: str) -> None:
+    """Login / sign-in email OTP (same template as signup OTP)."""
+    if not gmail_otp_configured():
+        raise GmailSendError("gmail_not_configured")
+    await asyncio.to_thread(
+        _send_email_sync,
+        to=to,
+        subject="Your Aranyix sign-in code",
+        body=_otp_email_body(code),
+    )
+    log.info("gmail.auth_otp_sent", to=_redact_email(to))
+
+
 async def send_signup_otp_email(*, to: str, code: str) -> None:
     if not gmail_otp_configured():
         raise GmailSendError("gmail_not_configured")

@@ -48,6 +48,11 @@ from app.schemas.auth import (
 from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
+from app.services.auth.gmail_sender import (
+    GmailSendError,
+    gmail_otp_configured,
+    send_auth_otp_email,
+)
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
 from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
@@ -440,6 +445,20 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
             dev_hint=otp_dev_hint(code),
             sms_enabled=False,
         )
+
+    if gmail_otp_configured():
+        try:
+            await send_auth_otp_email(to=identifier, code=code)
+            return OTPRequestOut(
+                status="sent",
+                dev_hint=None,
+                sms_enabled=False,
+            )
+        except GmailSendError as exc:
+            if not settings.allow_dev_otp:
+                raise HTTPException(
+                    status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_send_failed"
+                ) from exc
 
     return OTPRequestOut(
         status="sent",

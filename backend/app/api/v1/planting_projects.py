@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
+from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
@@ -178,6 +179,8 @@ async def trigger_project_satellite_scan(
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     if not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return await run_project_satellite_scan(db, project_id)

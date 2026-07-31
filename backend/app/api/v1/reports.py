@@ -5,16 +5,22 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
+from app.core.security import Permission
 from app.models.report import Report
+from app.models.user import User
 from app.services.audit import record_audit
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+ReportGenerateAccess = Annotated[User, require_write_perm(Permission.REPORT_GENERATE)]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -22,7 +28,7 @@ async def create_report(
     kind: str,
     format: str,
     request: Request,
-    user: WriteAccess,
+    user: ReportGenerateAccess,
     db: DB,
     plantation_fence_id: uuid.UUID | None = Query(None),
 ) -> dict:
