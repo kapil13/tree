@@ -73,6 +73,14 @@ function AuthPageInner() {
       setOauthError(
         "Google sign-in failed. Add https://aranyix.tech/api/v1/auth/google/callback to Google Cloud Console authorized redirect URIs.",
       );
+    } else if (err === "google_state_invalid") {
+      setOauthError("Google sign-in expired or was invalid. Please try again.");
+    } else if (err === "google_email_unverified") {
+      setOauthError("Your Google account email is not verified. Verify it with Google, then try again.");
+    } else if (err === "google_link_requires_verified") {
+      setOauthError(
+        "An account with this email already exists but is not verified. Sign in with email/password or complete verification, then link Google.",
+      );
     } else if (err === "organization_suspended") {
       setOauthError("Your organization is suspended. Contact your administrator.");
     }

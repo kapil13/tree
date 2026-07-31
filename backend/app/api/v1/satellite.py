@@ -14,6 +14,7 @@ from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
+from app.services.data_scope import can_access_tree
 from app.services.monitoring.satellite_sweep import (
     maybe_alert_tree_ndvi_decline,
 )
@@ -28,9 +29,7 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
-        not user.organization_id or tree.organization_id != user.organization_id
-    ):
+    if not await can_access_tree(db, user, tree):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return tree
 

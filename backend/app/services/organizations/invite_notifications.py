@@ -65,8 +65,8 @@ async def notify_org_invite(
         else:
             log.info(
                 "invite.sms_pending_keys",
+                invite_id=str(invite.id),
                 phone=invite.phone[-4:] if invite.phone else None,
-                link=link,
             )
 
     if invite.email:
@@ -83,6 +83,11 @@ async def notify_org_invite(
             except GmailSendError as exc:
                 log.warning("invite.email_failed", code=exc.code, invite_id=str(invite.id))
         else:
-            log.info("invite.email_pending_keys", email=invite.email, link=link)
+            domain = invite.email.rsplit("@", 1)[-1] if "@" in invite.email else None
+            log.info(
+                "invite.email_pending_keys",
+                invite_id=str(invite.id),
+                email_domain=domain,
+            )
 
     return {"sms_sent": sms_sent, "email_sent": email_sent, "invite_link": link}

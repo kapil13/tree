@@ -13,6 +13,7 @@ from app.models.public_verification import PublicVerificationLink
 from app.models.tree import Tree
 from app.schemas.public_verification import VerificationLinkCreate, VerificationLinkOut
 from app.services.audit import record_audit
+from app.services.data_scope import can_access_tree
 from app.services.planting_projects.access import can_manage_project, load_project
 from app.services.public_verification.builder import (
     create_verification_link,
@@ -109,7 +110,7 @@ async def create_verification_link_endpoint(
         tree = await db.get(Tree, payload.resource_id)
         if tree is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-        if user.role != "admin" and tree.organization_id != user.organization_id:
+        if not await can_access_tree(db, user, tree):
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
         org_id = tree.organization_id
     else:
@@ -154,8 +155,18 @@ async def revoke_verification_link(
     link = await db.get(PublicVerificationLink, link_id)
     if link is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="link_not_found")
-    if user.role != "admin" and link.organization_id != user.organization_id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if user.role != "admin":
+        if link.organization_id is not None:
+            if user.organization_id is None or link.organization_id != user.organization_id:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+        else:
+            allowed = link.created_by_user_id == user.id
+            if not allowed and link.resource_type == "tree":
+                tree = await db.get(Tree, link.resource_id)
+                if tree is not None and await can_access_tree(db, user, tree):
+                    allowed = True
+            if not allowed:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
     link.revoked_at = datetime.now(UTC)
     await record_audit(

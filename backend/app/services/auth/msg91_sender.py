@@ -39,7 +39,7 @@ def _normalize_mobile(phone: str) -> str:
 async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
     """Send login/signup OTP. Returns True when dispatched, False in dev/stub mode."""
     if not sms_auth_configured():
-        log.info("msg91.otp_stub", phone=_redact_phone(phone), code=code)
+        log.info("msg91.otp_stub", phone=_redact_phone(phone))
         return False
 
     mobile = _normalize_mobile(phone)

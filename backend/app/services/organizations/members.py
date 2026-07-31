@@ -122,31 +122,19 @@ async def invite_org_member(
         res = await db.execute(select(User).where(User.email == email_lower))
         existing = res.scalar_one_or_none()
         if existing:
-            if existing.organization_id and existing.organization_id != org.id:
+            if existing.organization_id == org.id:
+                raise OrgMemberError("already_member")
+            if existing.organization_id is not None:
                 raise OrgMemberError("user_in_other_org")
-            await _apply_org_membership(
-                db,
-                org=org,
-                target=existing,
-                org_role=org_role,
-                platform_role=platform_role,
-            )
-            return existing, None, None
 
     if normalized_phone:
         res = await db.execute(select(User).where(User.phone == normalized_phone))
         existing = res.scalar_one_or_none()
         if existing:
-            if existing.organization_id and existing.organization_id != org.id:
+            if existing.organization_id == org.id:
+                raise OrgMemberError("already_member")
+            if existing.organization_id is not None:
                 raise OrgMemberError("user_in_other_org")
-            await _apply_org_membership(
-                db,
-                org=org,
-                target=existing,
-                org_role=org_role,
-                platform_role=platform_role,
-            )
-            return existing, None, None
 
     token = secrets.token_urlsafe(32)
     invite = OrganizationInvite(
@@ -311,7 +299,7 @@ async def bulk_invite_from_rows(
         org_role = (row.get("org_role") or row.get("role") or "worker").strip().lower()
         full_name = row.get("full_name") or row.get("name") or "Team member"
         try:
-            user, invite, _delivery = await invite_org_member(
+            _user, invite, _delivery = await invite_org_member(
                 db,
                 org=org,
                 inviter=inviter,
@@ -320,9 +308,7 @@ async def bulk_invite_from_rows(
                 phone=phone,
                 org_role=org_role,
             )
-            if user:
-                created += 1
-            elif invite:
+            if invite:
                 invited += 1
         except OrgMemberError as exc:
             errors += 1
