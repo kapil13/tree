@@ -36,6 +36,11 @@ class OnboardingPendingScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () => context.go('/home'),
+            child: const Text('Explore BYOT features'),
+          ),
+          const SizedBox(height: 10),
           OutlinedButton(
             onPressed: () async {
               final uri = Uri.parse('https://aranyix.tech');
@@ -44,49 +49,6 @@ class OnboardingPendingScreen extends StatelessWidget {
               }
             },
             child: const Text('Visit aranyix.tech'),
-          ),
-          const SizedBox(height: 10),
-          FilledButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Back to sign in'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Lightweight org-profile gate — full wizard lives on web for now.
-class OnboardingOrgProfileScreen extends StatelessWidget {
-  const OnboardingOrgProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AuthScaffold(
-      title: 'Complete your profile',
-      subtitle:
-          'Professional accounts need organization details for compliance. You can finish this step on the web in about 3 minutes.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Required: organization name, designation, location, and use case summary.',
-            style: TextStyle(height: 1.5),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () async {
-              final uri = Uri.parse('https://aranyix.tech/onboarding/org-profile');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: const Text('Complete on web'),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('I have finished — sign in'),
           ),
         ],
       ),

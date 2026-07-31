@@ -10,7 +10,7 @@ String humanizeAuthError(String code) {
     'email_send_failed': 'Could not send the verification email. Please try again shortly.',
     'gmail_not_configured': 'Email verification is not configured yet. Contact support.',
     'sms_not_configured':
-        'Phone verification is temporarily unavailable. Please try again later.',
+        'SMS is not live yet. Use email sign-in, or try again after SMS is enabled on the server.',
     'sms_send_failed': 'Could not send the SMS code. Please try again shortly.',
     'captcha_required': 'Please complete the security check.',
     'captcha_failed': 'Security check failed. Please try again.',
@@ -18,6 +18,10 @@ String humanizeAuthError(String code) {
     'rate_limit_unavailable': 'Sign-up is temporarily unavailable. Please try again later.',
     'invalid_credentials': 'Invalid email or password.',
     'user_not_found': 'No account found for this email. Create an account to continue.',
+    'email_otp_not_configured':
+        'Email OTP is not configured yet. Use password sign-in or contact support.',
+    'google_oauth_not_configured': 'Google sign-in is not configured on this server.',
+    'registration_required': 'No account for this phone. Create an account first.',
   };
   return map[code] ?? code.replaceAll('_', ' ');
 }

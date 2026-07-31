@@ -5,17 +5,26 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_client.dart';
 import '../api/api_errors.dart';
+import '../auth/google_oauth.dart';
 import '../auth_session.dart';
 import '../pending_invite.dart';
 import '../providers.dart';
+import '../theme.dart';
+import '../widgets/turnstile_captcha.dart';
+import 'auth_flow_screens.dart';
 
+enum _LoginMode { email, phone }
+
+/// Unified sign-in — email/password, phone OTP, Google, forgot password.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  _LoginMode _mode = _LoginMode.email;
   final _email = TextEditingController(
     text: kDebugMode ? 'demo@byot.earth' : '',
   );
@@ -29,10 +38,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _inviteLoaded = false;
   String? _invitePreview;
 
+  bool _captchaEnabled = false;
+  String? _captchaSiteKey;
+  String? _captchaToken;
+
   @override
   void initState() {
     super.initState();
     _loadApiUrl();
+    _loadCaptcha();
   }
 
   @override
@@ -42,6 +56,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _inviteLoaded = true;
       _loadInvitePreview();
     }
+  }
+
+  Future<void> _loadCaptcha() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final cfg = await api.captchaConfig();
+      if (!mounted) return;
+      setState(() {
+        _captchaEnabled = cfg['enabled'] == true;
+        _captchaSiteKey = cfg['site_key'] as String?;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadApiUrl() async {
@@ -65,12 +91,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               'Invited to ${preview['organization_name']} as ${preview['org_role']}';
         });
       }
-    } catch (_) {
-      // Preview is optional — accept may still work after login.
-    }
+    } catch (_) {}
   }
 
-  Future<void> _submit() async {
+  Future<void> _submitEmail() async {
+    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _err = 'Please complete the security check.');
+      return;
+    }
     setState(() {
       _busy = true;
       _err = null;
@@ -86,17 +114,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.invalidate(apiClientProvider);
       }
       final api = await ref.read(apiClientProvider.future);
-      final tokens = await api.login(_email.text.trim(), _pwd.text);
+      final tokens = await api.login(
+        _email.text.trim(),
+        _pwd.text,
+        captchaToken: _captchaToken,
+      );
       await api.setTokens(
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String?,
       );
+      if (!mounted) return;
       final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
       final landing = await completeAuthSession(ref, inviteToken: inviteToken);
       if (!mounted) return;
       context.go(landing);
     } on InviteAcceptException catch (e) {
       setState(() => _err = e.message);
+    } catch (e) {
+      setState(() => _err = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _busy = true;
+      _err = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final auth = await api.googleAuthorize();
+      final url = auth['authorize_url'] as String;
+      if (!mounted) return;
+      final tokens = await GoogleOAuthWebView.open(context, url);
+      if (tokens == null) return;
+      await api.setTokens(
+        accessToken: tokens['access_token']!,
+        refreshToken: tokens['refresh_token'],
+      );
+      if (!mounted) return;
+      final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+      final landing = await completeAuthSession(ref, inviteToken: inviteToken);
+      if (!mounted) return;
+      context.go(landing);
     } catch (e) {
       setState(() => _err = apiErrorMessage(e));
     } finally {
@@ -121,55 +182,105 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
               const Text('🌳', style: TextStyle(fontSize: 48)),
               const SizedBox(height: 8),
-              const Text('Aranyix', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const Text('Field & forest intelligence'),
+              const Text('Welcome back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const Text('Sign in to your Aranyix account'),
               if (_invitePreview != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: AranyixColors.forestLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFA7D7B5)),
+                    border: Border.all(color: AranyixColors.forestMuted),
                   ),
                   child: Text(_invitePreview!, style: const TextStyle(fontSize: 14)),
                 ),
               ],
-              const SizedBox(height: 32),
-              if (allowCustomApiBase) ...[
-                TextField(
-                  controller: _apiUrl,
-                  enabled: _loaded && !_busy,
-                  keyboardType: TextInputType.url,
-                  autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'API server',
-                    hintText: 'https://api.aranyix.tech',
-                    helperText:
-                        'Production: https://api.aranyix.tech — local dev: http://YOUR_MAC_IP:8000',
+              const SizedBox(height: 24),
+              SegmentedButton<_LoginMode>(
+                segments: const [
+                  ButtonSegment(value: _LoginMode.email, label: Text('Email')),
+                  ButtonSegment(value: _LoginMode.phone, label: Text('Phone OTP')),
+                ],
+                selected: {_mode},
+                onSelectionChanged: _busy
+                    ? null
+                    : (s) => setState(() => _mode = s.first),
+              ),
+              const SizedBox(height: 20),
+              if (_mode == _LoginMode.email) ...[
+                if (allowCustomApiBase) ...[
+                  TextField(
+                    controller: _apiUrl,
+                    enabled: _loaded && !_busy,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'API server',
+                      hintText: 'https://api.aranyix.tech',
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(labelText: 'Email'),
                 ),
                 const SizedBox(height: 12),
-              ],
-              TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _pwd,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
-              ),
+                TextField(
+                  controller: _pwd,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Password'),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _busy ? null : () => context.push('/forgot-password'),
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                if (_captchaEnabled && _captchaSiteKey != null) ...[
+                  TurnstileCaptcha(
+                    siteKey: _captchaSiteKey!,
+                    onToken: (t) => setState(() => _captchaToken = t),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_err != null)
+                  Text(_err!, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: _busy || !_loaded ? null : _submitEmail,
+                  child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                ),
+              ] else
+                PhoneOtpLoginPanel(
+                  onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
+                ),
               const SizedBox(height: 16),
-              if (_err != null)
-                Text(_err!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _busy || !_loaded ? null : _submit,
-                child: Text(_busy ? 'Signing in…' : 'Sign in'),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'or',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _googleSignIn,
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Continue with Google'),
+              ),
+              const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: _busy ? null : () => context.push('/signup'),
                 child: const Text('Create an account'),
