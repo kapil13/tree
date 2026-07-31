@@ -92,6 +92,7 @@ api.interceptors.response.use(
     }
     const newToken = await refreshInFlight;
     if (!newToken) {
+      void useAuth.getState().logout();
       return Promise.reject(error);
     }
     config.headers.Authorization = `Bearer ${newToken}`;

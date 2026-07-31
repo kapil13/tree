@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE } from "@/lib/session-cookie";
+import {
+  SESSION_COOKIE_NAME,
+  verifySessionCookieValue,
+} from "@/lib/session-cookie-server";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
@@ -28,13 +31,15 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
-  if (!request.cookies.get(SESSION_COOKIE)?.value) {
+  const raw = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const valid = await verifySessionCookieValue(raw);
+  if (!valid) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/auth";
     loginUrl.search = "";

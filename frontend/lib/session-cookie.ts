@@ -1,18 +1,25 @@
 export const SESSION_COOKIE = "byot_session";
 
-/** Presence flag for edge middleware; the JWT stays in localStorage. */
-export function setSessionCookie(maxAgeSeconds = 60 * 60 * 24 * 7): void {
-  if (typeof document === "undefined") return;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${SESSION_COOKIE}=1; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+/** Presence flag for edge middleware; the JWT stays in localStorage. HttpOnly via API. */
+export async function setSessionCookie(maxAgeSeconds = 60 * 60 * 24 * 7): Promise<void> {
+  if (typeof window === "undefined") return;
+  await fetch("/api/auth/session-cookie", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ maxAgeSeconds }),
+  }).catch(() => undefined);
 }
 
-export function clearSessionCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+export async function clearSessionCookie(): Promise<void> {
+  if (typeof window === "undefined") return;
+  await fetch("/api/auth/session-cookie", {
+    method: "DELETE",
+    credentials: "include",
+  }).catch(() => undefined);
 }
 
-export function syncSessionCookieFromToken(): void {
+export async function syncSessionCookieFromToken(): Promise<void> {
   if (typeof window === "undefined") return;
   const token =
     localStorage.getItem("byot_access_token") ||
@@ -27,8 +34,8 @@ export function syncSessionCookieFromToken(): void {
       }
     })();
   if (token) {
-    setSessionCookie();
+    await setSessionCookie();
   } else {
-    clearSessionCookie();
+    await clearSessionCookie();
   }
 }

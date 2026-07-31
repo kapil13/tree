@@ -28,7 +28,8 @@ export const useAuth = create<State>()(
       setSession: (tokens) => {
         if (typeof window !== "undefined") {
           localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
-          setSessionCookie(tokens.expires_in ?? 60 * 60 * 24 * 7);
+          // Presence cookie outlives access JWT; refresh keeps the API session alive.
+          void setSessionCookie(60 * 60 * 24 * 7);
         }
         set({ access: tokens.access_token, refresh: tokens.refresh_token });
       },
@@ -38,7 +39,7 @@ export const useAuth = create<State>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(PERSIST_KEY);
-          clearSessionCookie();
+          void clearSessionCookie();
           // Best-effort server revoke (keepalive survives navigation).
           if (refresh) {
             void fetch("/api/v1/auth/logout", {
@@ -73,7 +74,7 @@ export const useAuth = create<State>()(
         if (tok && !state?.access) {
           useAuth.setState({ access: tok });
         }
-        syncSessionCookieFromToken();
+        void syncSessionCookieFromToken();
       },
     },
   ),
