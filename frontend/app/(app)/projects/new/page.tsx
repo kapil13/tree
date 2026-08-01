@@ -167,7 +167,7 @@ export default function NewProjectPage() {
     selectedScheme?.label ?? selectedFlex?.label ?? "Select a central scheme";
 
   return (
-    <div className="registration-shell mx-auto max-w-5xl space-y-8 pb-8">
+    <div className="registration-shell w-full space-y-8 pb-8">
       <header className="space-y-5">
         <Link
           href="/projects"

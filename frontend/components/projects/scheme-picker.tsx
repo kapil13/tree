@@ -285,7 +285,7 @@ export function SchemePickerStep({
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
         <div className="space-y-8">
           {schemesLoading ? (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -309,7 +309,7 @@ export function SchemePickerStep({
                   </h2>
                   <span className="text-xs text-stone-400">{items.length}</span>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {items.map((scheme) => (
                     <SchemeCard
                       key={scheme.code}
@@ -351,7 +351,7 @@ export function SchemePickerStep({
           </section>
         </div>
 
-        <aside className="hidden lg:block lg:sticky lg:top-6">
+        <aside className="hidden xl:block xl:sticky xl:top-6">
           {selectedScheme ? (
             <SelectionPreview scheme={selectedScheme} />
           ) : (
@@ -366,7 +366,7 @@ export function SchemePickerStep({
         </aside>
       </div>
 
-      <div className="sticky bottom-0 -mx-1 border-t border-stone-200/80 bg-[rgb(var(--background))]/95 px-1 py-4 backdrop-blur-sm dark:border-stone-800">
+      <div className="sticky bottom-0 -mx-4 border-t border-stone-200/80 bg-stone-50/95 px-4 py-4 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/95 md:-mx-6 md:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 text-sm text-stone-600">
             {selectedScheme ? (
