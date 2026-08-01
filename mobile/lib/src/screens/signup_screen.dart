@@ -14,9 +14,9 @@ import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
 import '../widgets/turnstile_captcha.dart';
 
-enum _SignupStep { category, details, verifyPhone, verifyEmail }
+enum _SignupStep { account, verifyPhone, verifyEmail }
 
-/// In-app registration — mirrors web signup wizard (category → details → OTPs).
+/// Lightweight registration — account details → phone OTP → email OTP.
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
@@ -25,7 +25,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 }
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
-  _SignupStep _step = _SignupStep.category;
+  _SignupStep _step = _SignupStep.account;
   bool _busy = false;
   String? _error;
   String? _devHint;
@@ -36,6 +36,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _phone = TextEditingController();
   final _password = TextEditingController();
   bool _acceptedTerms = false;
+  bool _obscurePassword = true;
 
   String _signupToken = '';
   String _phoneOtp = '';
@@ -68,19 +69,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   double get _progress {
     return switch (_step) {
-      _SignupStep.category => 0.25,
-      _SignupStep.details => 0.5,
-      _SignupStep.verifyPhone => 0.75,
+      _SignupStep.account => 0.34,
+      _SignupStep.verifyPhone => 0.67,
       _SignupStep.verifyEmail => 1.0,
     };
   }
 
   String get _stepLabel {
     return switch (_step) {
-      _SignupStep.category => 'Step 1 of 4',
-      _SignupStep.details => 'Step 2 of 4',
-      _SignupStep.verifyPhone => 'Step 3 of 4',
-      _SignupStep.verifyEmail => 'Step 4 of 4',
+      _SignupStep.account => 'Step 1 of 3',
+      _SignupStep.verifyPhone => 'Step 2 of 3',
+      _SignupStep.verifyEmail => 'Step 3 of 3',
     };
   }
 
@@ -102,7 +101,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
     if (!_acceptedTerms) {
-      setState(() => _error = 'Please accept the terms to create an account.');
+      setState(() => _error = 'Please accept the terms to continue.');
       return;
     }
     if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
@@ -205,127 +204,141 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     return AuthLightScope(
       child: AuthScaffold(
-      title: switch (_step) {
-        _SignupStep.category => 'Join Aranyix',
-        _SignupStep.details => 'Your details',
-        _SignupStep.verifyPhone => 'Verify phone',
-        _SignupStep.verifyEmail => 'Verify email',
-      },
-      subtitle: switch (_step) {
-        _SignupStep.category => 'Choose how you will use the platform.',
-        _SignupStep.details => 'We will send OTP codes to verify your phone and email.',
-        _SignupStep.verifyPhone => 'Enter the 6-digit code sent to ${formatPhoneDisplay(_phone.text)}.',
-        _SignupStep.verifyEmail => 'Enter the code sent to ${_email.text.trim()}.',
-      },
-      stepLabel: _stepLabel,
-      stepProgress: _progress,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: _busy
-            ? null
-            : () {
-                if (_step == _SignupStep.category) {
-                  context.pop();
-                } else {
-                  setState(() {
-                    _error = null;
-                    _step = switch (_step) {
-                      _SignupStep.details => _SignupStep.category,
-                      _SignupStep.verifyPhone => _SignupStep.details,
-                      _SignupStep.verifyEmail => _SignupStep.verifyPhone,
-                      _ => _SignupStep.category,
-                    };
-                  });
-                }
-              },
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_step == _SignupStep.category) _buildCategoryStep(),
-          if (_step == _SignupStep.details) _buildDetailsStep(),
-          if (_step == _SignupStep.verifyPhone) _buildPhoneOtpStep(),
-          if (_step == _SignupStep.verifyEmail) _buildEmailOtpStep(),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            AuthErrorBanner(message: _error!),
-          ],
-          if (_devHint != null) ...[
+        title: switch (_step) {
+          _SignupStep.account => 'Create account',
+          _SignupStep.verifyPhone => 'Verify phone',
+          _SignupStep.verifyEmail => 'Verify email',
+        },
+        subtitle: switch (_step) {
+          _SignupStep.account => 'A few details — then quick OTP checks.',
+          _SignupStep.verifyPhone =>
+            'Code sent to ${formatPhoneDisplay(_phone.text)}',
+          _SignupStep.verifyEmail => 'Code sent to ${_email.text.trim()}',
+        },
+        stepLabel: _stepLabel,
+        stepProgress: _progress,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _busy
+              ? null
+              : () {
+                  if (_step == _SignupStep.account) {
+                    context.pop();
+                  } else {
+                    setState(() {
+                      _error = null;
+                      _step = switch (_step) {
+                        _SignupStep.verifyPhone => _SignupStep.account,
+                        _SignupStep.verifyEmail => _SignupStep.verifyPhone,
+                        _ => _SignupStep.account,
+                      };
+                    });
+                  }
+                },
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_step == _SignupStep.account) _buildAccountStep(),
+            if (_step == _SignupStep.verifyPhone) _buildOtpStep(isPhone: true),
+            if (_step == _SignupStep.verifyEmail) _buildOtpStep(isPhone: false),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              AuthErrorBanner(message: _error!),
+            ],
+            if (_devHint != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Dev hint: $_devHint',
+                style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (_step == _SignupStep.account)
+              FilledButton(
+                onPressed: _busy ? null : _startSignup,
+                child: Text(_busy ? 'Creating…' : 'Continue'),
+              )
+            else if (_step == _SignupStep.verifyPhone)
+              FilledButton(
+                onPressed: _busy ? null : _verifyPhone,
+                child: Text(_busy ? 'Verifying…' : 'Verify phone'),
+              )
+            else
+              FilledButton(
+                onPressed: _busy ? null : _completeSignup,
+                child: Text(_busy ? 'Finishing…' : 'Finish'),
+              ),
             const SizedBox(height: 8),
-            Text(
-              'Dev hint: $_devHint',
-              style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
+            TextButton(
+              onPressed: _busy ? null : () => context.go('/login'),
+              child: const Text('Already have an account? Sign in'),
             ),
           ],
-          const SizedBox(height: 20),
-          if (_step == _SignupStep.category)
-            FilledButton(
-              onPressed: _busy ? null : () => setState(() => _step = _SignupStep.details),
-              child: const Text('Continue'),
-            )
-          else if (_step == _SignupStep.details)
-            FilledButton(
-              onPressed: _busy ? null : _startSignup,
-              child: Text(_busy ? 'Creating account…' : 'Send verification codes'),
-            )
-          else if (_step == _SignupStep.verifyPhone)
-            FilledButton(
-              onPressed: _busy ? null : _verifyPhone,
-              child: Text(_busy ? 'Verifying…' : 'Verify phone'),
-            )
-          else
-            FilledButton(
-              onPressed: _busy ? null : _completeSignup,
-              child: Text(_busy ? 'Finishing…' : 'Complete registration'),
-            ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _busy ? null : () => context.go('/login'),
-            child: const Text('Already have an account? Sign in'),
-          ),
-        ],
+        ),
       ),
-    ),
     );
   }
 
-  Widget _buildCategoryStep() {
+  Widget _buildAccountStep() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final cat in signupCategories) ...[
-          _CategoryCard(
-            category: cat,
-            selected: _category == cat.code,
-            onTap: () => setState(() => _category = cat.code),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDetailsStep() {
-    return Column(
-      children: [
+        Text(
+          'I am joining as',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AranyixColors.onSurfaceMuted,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.35,
+          children: [
+            for (final cat in signupCategories)
+              _CategoryChip(
+                category: cat,
+                selected: _category == cat.code,
+                onTap: () => setState(() => _category = cat.code),
+              ),
+          ],
+        ),
+        const SizedBox(height: 18),
         TextField(
           controller: _name,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Full name'),
+          textInputAction: TextInputAction.next,
+          decoration: const InputDecoration(
+            labelText: 'Full name',
+            prefixIcon: Icon(Icons.person_outline, size: 20),
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         TextField(
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
-          decoration: const InputDecoration(labelText: 'Work or personal email'),
+          textInputAction: TextInputAction.next,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            prefixIcon: Icon(Icons.mail_outline, size: 20),
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
           decoration: const InputDecoration(
-            labelText: 'Mobile (+91)',
-            hintText: '10-digit number',
+            labelText: 'Mobile',
+            prefixText: '+91  ',
+            hintText: '98765 43210',
+            prefixIcon: Icon(Icons.phone_iphone, size: 20),
           ),
           onChanged: (v) {
             final d = sanitizePhoneDigits(v);
@@ -337,28 +350,55 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             }
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         TextField(
           controller: _password,
-          obscureText: true,
-          decoration: const InputDecoration(
+          obscureText: _obscurePassword,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
             labelText: 'Password',
-            helperText: 'At least 12 characters',
+            helperText: 'Min. 12 characters',
+            helperMaxLines: 1,
+            prefixIcon: const Icon(Icons.lock_outline, size: 20),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 20,
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        CheckboxListTile(
-          value: _acceptedTerms,
-          onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text(
-            'I agree to Aranyix terms and privacy policy',
-            style: TextStyle(fontSize: 14),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'I agree to the Terms & Privacy Policy',
+                    style: TextStyle(fontSize: 13.5, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         if (_captchaEnabled && _captchaSiteKey != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           TurnstileCaptcha(
             key: _captchaKey,
             siteKey: _captchaSiteKey!,
@@ -374,33 +414,54 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
-  Widget _buildPhoneOtpStep() {
+  Widget _buildOtpStep({required bool isPhone}) {
     return Column(
       children: [
-        OtpInput(
-          length: 6,
-          enabled: !_busy,
-          onChanged: (v) => setState(() => _phoneOtp = v),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AranyixColors.forestLight,
+            borderRadius: BorderRadius.circular(AranyixRadii.card),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                isPhone ? Icons.sms_outlined : Icons.mark_email_read_outlined,
+                color: AranyixColors.forest,
+                size: 36,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isPhone ? 'Enter the 6-digit SMS code' : 'Enter the 6-digit email code',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AranyixColors.forestDark,
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildEmailOtpStep() {
-    return Column(
-      children: [
+        const SizedBox(height: 20),
         OtpInput(
           length: 6,
           enabled: !_busy,
-          onChanged: (v) => setState(() => _emailOtp = v),
+          onChanged: (v) => setState(() {
+            if (isPhone) {
+              _phoneOtp = v;
+            } else {
+              _emailOtp = v;
+            }
+          }),
         ),
       ],
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
     required this.category,
     required this.selected,
     required this.onTap,
@@ -412,68 +473,58 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = selected ? AranyixColors.forestDark : const Color(0xFF0F172A);
-    final subtitleColor =
-        selected ? const Color(0xFF14532D).withValues(alpha: 0.75) : AranyixColors.onSurfaceMuted;
-
     return Material(
       color: selected ? AranyixColors.forestLight : Colors.white,
-      borderRadius: BorderRadius.circular(AranyixRadii.card),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(16),
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AranyixRadii.card),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected ? AranyixColors.forest : AranyixColors.border,
-              width: selected ? 2 : 1,
+              width: selected ? 1.5 : 1,
             ),
-            boxShadow: selected ? null : AranyixShadows.card,
           ),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : AranyixColors.surfaceTint,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
+              Icon(
+                category.icon,
+                size: 18,
+                color: selected ? AranyixColors.forest : AranyixColors.onSurfaceMuted,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       category.title,
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, color: titleColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      category.subtitle,
-                      style: TextStyle(fontSize: 13, height: 1.35, color: subtitleColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      category.audience,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: subtitleColor.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: selected ? AranyixColors.forestDark : AranyixColors.onSurface,
+                      ),
+                    ),
+                    Text(
+                      category.hint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: selected
+                            ? AranyixColors.forest.withValues(alpha: 0.85)
+                            : AranyixColors.onSurfaceMuted,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Icon(
-                selected ? Icons.check_circle : Icons.circle_outlined,
-                color: selected ? AranyixColors.forest : AranyixColors.borderStrong,
               ),
             ],
           ),

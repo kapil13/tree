@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_client.dart';
 import '../api/api_errors.dart';
 import '../auth/google_oauth.dart';
+import '../auth/login_remember.dart';
 import '../auth_session.dart';
 import '../pending_invite.dart';
 import '../providers.dart';
@@ -27,12 +28,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   _LoginMode _mode = _LoginMode.email;
-  final _email = TextEditingController(
-    text: kDebugMode ? 'demo@byot.earth' : '',
-  );
-  final _pwd = TextEditingController(
-    text: kDebugMode ? 'byotdemo1234!' : '',
-  );
+  final _email = TextEditingController();
+  final _pwd = TextEditingController();
   final _apiUrl = TextEditingController();
   final _captchaKey = GlobalKey<TurnstileCaptchaState>();
 
@@ -41,6 +38,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loaded = false;
   bool _inviteLoaded = false;
   String? _invitePreview;
+  bool _rememberMe = true;
+  bool _obscurePassword = true;
 
   bool _captchaEnabled = false;
   String? _captchaSiteKey;
@@ -49,8 +48,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _loadApiUrl();
-    _loadCaptcha();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptcha()]);
   }
 
   @override
@@ -60,6 +62,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _inviteLoaded = true;
       _loadInvitePreview();
     }
+  }
+
+  Future<void> _loadRemembered() async {
+    final saved = await LoginRemember.load();
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = saved.remember;
+      if (kDebugMode && saved.email.isEmpty) {
+        _email.text = 'demo@byot.earth';
+        _pwd.text = 'byotdemo1234!';
+      } else {
+        _email.text = saved.email;
+        _pwd.text = saved.password;
+      }
+    });
   }
 
   Future<void> _loadCaptcha() async {
@@ -98,6 +115,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (_) {}
   }
 
+  Future<void> _persistRememberChoice() async {
+    await LoginRemember.save(
+      remember: _rememberMe,
+      email: _email.text,
+      password: _pwd.text,
+    );
+  }
+
   Future<void> _submitEmail() async {
     if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
       setState(() => _err = 'Please complete the security check below.');
@@ -127,6 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String?,
       );
+      await _persistRememberChoice();
       if (!mounted) return;
       final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
       final landing = await completeAuthSession(ref, inviteToken: inviteToken);
@@ -221,9 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               values: const [_LoginMode.email, _LoginMode.phone],
               labels: const ['Email', 'Phone OTP'],
               selected: _mode,
-              onChanged: _busy
-                  ? (_) {}
-                  : (mode) => setState(() => _mode = mode),
+              onChanged: _busy ? (_) {} : (mode) => setState(() => _mode = mode),
             ),
             const SizedBox(height: 20),
             if (_mode == _LoginMode.email) ...[
@@ -243,20 +267,77 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Email'),
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.mail_outline, size: 20),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _pwd,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _busy ? null : () => context.push('/forgot-password'),
-                  child: const Text('Forgot password?'),
+                obscureText: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (!_busy && _loaded) _submitEmail();
+                },
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                  ),
                 ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _busy
+                          ? null
+                          : () => setState(() => _rememberMe = !_rememberMe),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: _rememberMe,
+                                onChanged: _busy
+                                    ? null
+                                    : (v) => setState(() => _rememberMe = v ?? false),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Remember me',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AranyixColors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : () => context.push('/forgot-password'),
+                    child: const Text('Forgot password?'),
+                  ),
+                ],
               ),
               if (_captchaEnabled && _captchaSiteKey != null) ...[
                 const SizedBox(height: 4),
