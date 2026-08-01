@@ -674,6 +674,41 @@ export type ProjectSegment =
 
 export type ComplianceMode = "open" | "guided" | "strict";
 
+export type CentralScheme = {
+  code: string;
+  label: string;
+  description: string;
+  ministry: string;
+  group: "central" | "convergence" | "corporate";
+  program_codes: string[];
+  default_segment: ProjectSegment;
+  default_compliance_mode: ComplianceMode;
+  default_template_code: string | null;
+  checklist_codes: string[];
+  framework_profiles: string[];
+  convergence_allowed: string[];
+  legacy_plantation_category: string | null;
+  kpi_targets: {
+    survival_pct_min?: number | null;
+    geo_tagged_pct_min?: number | null;
+    min_trees?: number | null;
+  };
+  metadata_sections: Record<string, unknown>[];
+};
+
+export const centralSchemes = {
+  async list(programCode?: string) {
+    return (
+      await api.get<{ items: CentralScheme[] }>("/v1/schemes", {
+        params: programCode ? { program_code: programCode } : undefined,
+      })
+    ).data.items;
+  },
+  async get(code: string) {
+    return (await api.get<CentralScheme>(`/v1/schemes/${code}`)).data;
+  },
+};
+
 export type StandardTemplate = {
   code: string;
   name: string;
@@ -711,6 +746,7 @@ export type PlantingProject = {
   compliance_mode: ComplianceMode;
   status: "planning" | "active" | "completed" | "archived";
   program_code: string | null;
+  scheme_code: string | null;
   standard_template_code: string | null;
   target_tree_count: number | null;
   organization_id: string | null;
@@ -770,7 +806,7 @@ export const plantingProjects = {
       })
     ).data;
   },
-  async list(params?: { page?: number; segment?: string; status?: string }) {
+  async list(params?: { page?: number; segment?: string; scheme_code?: string; status?: string }) {
     return (
       await api.get<{ items: PlantingProject[]; total: number }>("/v1/planting-projects", {
         params,
@@ -787,6 +823,7 @@ export const plantingProjects = {
     segment: ProjectSegment;
     compliance_mode?: ComplianceMode;
     program_code?: string;
+    scheme_code?: string;
     standard_template_code?: string;
     target_tree_count?: number;
     metadata?: Record<string, unknown>;

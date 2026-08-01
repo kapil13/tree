@@ -5,12 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { errorMessage, plantingProjects, type ComplianceMode, type ProjectSegment } from "@/lib/api";
 import {
-  PROJECT_SCHEME_OPTIONS,
-  projectSchemeByCode,
-  type ProjectSchemeType,
-} from "@/lib/government-plantation-categories";
+  centralSchemes,
+  errorMessage,
+  plantingProjects,
+  type CentralScheme,
+  type ComplianceMode,
+  type ProjectSegment,
+} from "@/lib/api";
+import {
+  FLEX_PROJECT_OPTIONS,
+  SCHEME_GROUP_LABEL,
+  type CentralSchemeGroup,
+  type FlexProjectCode,
+} from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
 const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
@@ -41,10 +49,14 @@ const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
   },
 ];
 
+type Selection =
+  | { kind: "scheme"; scheme: CentralScheme }
+  | { kind: "flex"; code: FlexProjectCode };
+
 export default function NewProjectPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
-  const [schemeType, setSchemeType] = useState<ProjectSchemeType | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -58,7 +70,16 @@ export default function NewProjectPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedScheme = useMemo(() => projectSchemeByCode(schemeType), [schemeType]);
+  const { data: schemes = [], isLoading: schemesLoading } = useQuery({
+    queryKey: ["central-schemes"],
+    queryFn: () => centralSchemes.list(),
+  });
+
+  const selectedScheme = selection?.kind === "scheme" ? selection.scheme : null;
+  const selectedFlex =
+    selection?.kind === "flex"
+      ? FLEX_PROJECT_OPTIONS.find((item) => item.code === selection.code)
+      : null;
 
   const { data: templates = [] } = useQuery({
     queryKey: ["project-templates", segment],
@@ -76,13 +97,34 @@ export default function NewProjectPage() {
     }
   }, [templates]);
 
-  function applyScheme(type: ProjectSchemeType) {
-    const scheme = projectSchemeByCode(type);
-    if (!scheme) return;
-    setSchemeType(type);
-    setSegment(scheme.segment);
-    setProgramCode(scheme.programCode);
-    setComplianceMode(scheme.complianceMode);
+  const schemesByGroup = useMemo(() => {
+    const groups: Record<CentralSchemeGroup, CentralScheme[]> = {
+      central: [],
+      convergence: [],
+      corporate: [],
+    };
+    for (const scheme of schemes) {
+      groups[scheme.group].push(scheme);
+    }
+    return groups;
+  }, [schemes]);
+
+  function applyScheme(scheme: CentralScheme) {
+    setSelection({ kind: "scheme", scheme });
+    setSegment(scheme.default_segment);
+    setProgramCode(scheme.program_codes[0] ?? "government_nhai");
+    setComplianceMode(scheme.default_compliance_mode);
+    setTemplateCode(scheme.default_template_code ?? "");
+    setShowAdvanced(false);
+  }
+
+  function applyFlex(code: FlexProjectCode) {
+    const flex = FLEX_PROJECT_OPTIONS.find((item) => item.code === code);
+    if (!flex) return;
+    setSelection({ kind: "flex", code });
+    setSegment(flex.segment);
+    setProgramCode(flex.programCode);
+    setComplianceMode(flex.complianceMode);
     setTemplateCode("");
     setShowAdvanced(false);
   }
@@ -99,12 +141,13 @@ export default function NewProjectPage() {
         segment,
         compliance_mode: complianceMode,
         program_code: programCode || undefined,
+        scheme_code: selectedScheme?.code,
         standard_template_code: selectedTemplate?.code,
         target_tree_count: targetTrees ? Number(targetTrees) : undefined,
         metadata: {
           survey_interval_days: surveyIntervalDays,
-          ...(selectedScheme?.plantationCategory
-            ? { plantation_category: selectedScheme.plantationCategory }
+          ...(selectedScheme?.legacy_plantation_category
+            ? { plantation_category: selectedScheme.legacy_plantation_category }
             : {}),
         },
       });
@@ -116,8 +159,8 @@ export default function NewProjectPage() {
     }
   }
 
-  const governmentSchemes = PROJECT_SCHEME_OPTIONS.filter((item) => item.group === "government");
-  const otherSchemes = PROJECT_SCHEME_OPTIONS.filter((item) => item.group === "other");
+  const selectionLabel =
+    selectedScheme?.label ?? selectedFlex?.label ?? "Select a central scheme";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -128,52 +171,65 @@ export default function NewProjectPage() {
         <h1 className="mt-2 text-2xl font-semibold">New planting project</h1>
         <p className="mt-1 text-sm text-stone-600">
           {step === 1
-            ? "Start by choosing the plantation scheme that matches your work."
+            ? "Choose the central government scheme or programme this project runs under."
             : "Add project details, then draw work areas on the map."}
         </p>
       </div>
 
       {step === 1 ? (
         <div className="card space-y-6">
-          <div>
-            <p className="kpi-label">Government &amp; public sector</p>
-            <div className="mt-3 grid gap-2">
-              {governmentSchemes.map((scheme) => (
-                <button
-                  key={scheme.code}
-                  type="button"
-                  className={cn(
-                    "rounded-lg border p-3 text-left text-sm transition",
-                    schemeType === scheme.code
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-stone-200 hover:border-stone-300",
-                  )}
-                  onClick={() => applyScheme(scheme.code)}
-                >
-                  <div className="font-medium">{scheme.label}</div>
-                  <div className="text-xs text-stone-500">{scheme.hint}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+          {schemesLoading ? (
+            <p className="text-sm text-stone-500">Loading central schemes…</p>
+          ) : (
+            (["central", "convergence", "corporate"] as CentralSchemeGroup[]).map((group) =>
+              schemesByGroup[group].length > 0 ? (
+                <div key={group}>
+                  <p className="kpi-label">{SCHEME_GROUP_LABEL[group]}</p>
+                  <div className="mt-3 grid gap-2">
+                    {schemesByGroup[group].map((scheme) => (
+                      <button
+                        key={scheme.code}
+                        type="button"
+                        className={cn(
+                          "rounded-lg border p-3 text-left text-sm transition",
+                          selectedScheme?.code === scheme.code
+                            ? "border-forest-500 bg-forest-50"
+                            : "border-stone-200 hover:border-stone-300",
+                        )}
+                        onClick={() => applyScheme(scheme)}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{scheme.label}</span>
+                          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
+                            {scheme.ministry}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs text-stone-500">{scheme.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null,
+            )
+          )}
 
           <div>
-            <p className="kpi-label">Industry, NGO &amp; flexible schemes</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              {otherSchemes.map((scheme) => (
+            <p className="kpi-label">Corporate CSR (no central scheme tag)</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {FLEX_PROJECT_OPTIONS.map((flex) => (
                 <button
-                  key={scheme.code}
+                  key={flex.code}
                   type="button"
                   className={cn(
                     "rounded-lg border p-3 text-left text-sm transition",
-                    schemeType === scheme.code
+                    selection?.kind === "flex" && selection.code === flex.code
                       ? "border-forest-500 bg-forest-50"
                       : "border-stone-200 hover:border-stone-300",
                   )}
-                  onClick={() => applyScheme(scheme.code)}
+                  onClick={() => applyFlex(flex.code)}
                 >
-                  <div className="font-medium">{scheme.label}</div>
-                  <div className="text-xs text-stone-500">{scheme.hint}</div>
+                  <div className="font-medium">{flex.label}</div>
+                  <div className="text-xs text-stone-500">{flex.hint}</div>
                 </button>
               ))}
             </div>
@@ -183,7 +239,7 @@ export default function NewProjectPage() {
             <button
               type="button"
               className="btn-primary"
-              disabled={!schemeType}
+              disabled={!selection}
               onClick={() => setStep(2)}
             >
               Continue to project details
@@ -192,18 +248,19 @@ export default function NewProjectPage() {
         </div>
       ) : (
         <form onSubmit={submit} className="card space-y-5">
-          {selectedScheme && (
-            <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-950">
-              <span className="font-medium">Scheme type:</span> {selectedScheme.label}
-              <button
-                type="button"
-                className="ml-3 text-blue-800 underline"
-                onClick={() => setStep(1)}
-              >
-                Change
-              </button>
-            </div>
-          )}
+          <div className="rounded-lg border border-forest-100 bg-forest-50/70 px-4 py-3 text-sm text-forest-950">
+            <span className="font-medium">Scheme:</span> {selectionLabel}
+            {selectedScheme && (
+              <span className="ml-2 text-forest-800">({selectedScheme.ministry})</span>
+            )}
+            <button
+              type="button"
+              className="ml-3 text-forest-800 underline"
+              onClick={() => setStep(1)}
+            >
+              Change
+            </button>
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -212,9 +269,9 @@ export default function NewProjectPage() {
                 className="input mt-1"
                 required
                 placeholder={
-                  selectedScheme?.plantationCategory === "highway"
+                  selectedScheme?.code === "nhai_highway"
                     ? "NH44-PKG3"
-                    : selectedScheme?.plantationCategory === "municipal"
+                    : selectedScheme?.code === "nagar_van"
                       ? "ULB-PARKS-2026"
                       : "SCHEME-CODE"
                 }
@@ -227,13 +284,7 @@ export default function NewProjectPage() {
               <input
                 className="input mt-1"
                 required
-                placeholder={
-                  selectedScheme?.plantationCategory === "highway"
-                    ? "NH-44 Package 3 plantation"
-                    : selectedScheme?.plantationCategory === "municipal"
-                      ? "Municipal avenue greening"
-                      : "Planting project name"
-                }
+                placeholder="Planting project name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -319,16 +370,6 @@ export default function NewProjectPage() {
                         onClick={() => {
                           setSegment(s.code);
                           setTemplateCode("");
-                          if (s.code === "nhai_highway") {
-                            setProgramCode("government_nhai");
-                            setComplianceMode("strict");
-                          } else if (s.code === "industrial_greenbelt") {
-                            setProgramCode("corporate_esg");
-                            setComplianceMode("strict");
-                          } else if (s.code === "ngo_watershed") {
-                            setProgramCode("ngo_community");
-                            setComplianceMode("guided");
-                          }
                         }}
                       >
                         <div className="font-medium">{s.label}</div>

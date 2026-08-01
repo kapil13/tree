@@ -14,7 +14,8 @@ import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
-import { plantingProjects } from "@/lib/api";
+import { centralSchemes, plantingProjects } from "@/lib/api";
+import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
 const TABS = ["overview", "compliance", "credits", "trees", "team", "settings"] as const;
@@ -37,6 +38,13 @@ export default function ProjectDetailPage() {
     queryKey: ["planting-project", projectId],
     queryFn: () => plantingProjects.get(projectId),
   });
+
+  const { data: schemes = [] } = useQuery({
+    queryKey: ["central-schemes"],
+    queryFn: () => centralSchemes.list(),
+  });
+
+  const scheme = schemeByCode(schemes, project?.scheme_code);
 
   const { data: workAreas = [] } = useQuery({
     queryKey: ["project-work-areas", projectId],
@@ -80,9 +88,15 @@ export default function ProjectDetailPage() {
           </Link>
           <h1 className="mt-2 text-2xl font-semibold">{project.name}</h1>
           <p className="text-sm text-stone-500">
-            {project.code} · {project.segment.replace(/_/g, " ")} · {project.compliance_mode}{" "}
-            mode · survival survey every {surveyDays} days
+            {project.code} · {project.segment.replace(/_/g, " ")} · {project.compliance_mode} mode ·
+            survival survey every {surveyDays} days
           </p>
+          {scheme && (
+            <p className="mt-2 inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
+              {scheme.label}
+              <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
+            </p>
+          )}
         </div>
         <Link
           href={`/trees/new?project=${project.id}${workAreas[0] ? `&work_area=${workAreas[0].id}` : ""}`}

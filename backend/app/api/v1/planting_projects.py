@@ -51,11 +51,7 @@ from app.services.planting_projects.access import (
     project_list_filter,
 )
 from app.services.planting_projects.compliance import evaluate_tree_placement
-from app.services.planting_projects.constants import (
-    PROGRAM_DEFAULT_COMPLIANCE,
-    PROGRAM_DEFAULT_SEGMENT,
-    SEGMENT_LABELS,
-)
+from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.planting_projects.service import (
     create_standard_from_template,
@@ -67,6 +63,7 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
@@ -88,6 +85,7 @@ def _project_out(
         compliance_mode=project.compliance_mode,
         status=project.status,
         program_code=project.program_code,
+        scheme_code=project.scheme_code,
         standard_template_code=project.standard_template_code,
         target_tree_count=project.target_tree_count,
         organization_id=project.organization_id,
@@ -193,12 +191,15 @@ async def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     segment: str | None = None,
+    scheme_code: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
 ) -> Page[PlantingProjectOut]:
     stmt = select(PlantingProject)
     stmt = project_list_filter(user, stmt)
     if segment:
         stmt = stmt.where(PlantingProject.segment == segment)
+    if scheme_code:
+        stmt = stmt.where(PlantingProject.scheme_code == scheme_code)
     if status_filter:
         stmt = stmt.where(PlantingProject.status == status_filter)
 
@@ -224,15 +225,18 @@ async def list_projects(
 async def create_project(
     payload: PlantingProjectCreate, request: Request, user: WriteAccess, db: DB
 ) -> PlantingProjectOut:
-    segment = payload.segment
-    if payload.program_code and segment == "general":
-        segment = PROGRAM_DEFAULT_SEGMENT.get(payload.program_code, segment)
+    scheme = validate_scheme_selection(
+        scheme_code=payload.scheme_code,
+        program_code=payload.program_code,
+    )
+    segment, compliance_mode, template_code = apply_scheme_defaults(
+        scheme=scheme,
+        segment=payload.segment,
+        compliance_mode=payload.compliance_mode,
+        program_code=payload.program_code,
+        standard_template_code=payload.standard_template_code,
+    )
 
-    compliance_mode = payload.compliance_mode
-    if payload.program_code and compliance_mode == "guided":
-        compliance_mode = PROGRAM_DEFAULT_COMPLIANCE.get(payload.program_code, compliance_mode)
-
-    template_code = payload.standard_template_code
     if not template_code:
         from app.services.planting_projects.templates import template_for_segment
 
@@ -247,6 +251,10 @@ async def create_project(
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="project_code_exists")
 
+    metadata = dict(payload.metadata)
+    if scheme and scheme.get("legacy_plantation_category"):
+        metadata.setdefault("plantation_category", scheme["legacy_plantation_category"])
+
     project = PlantingProject(
         code=payload.code,
         name=payload.name,
@@ -254,11 +262,12 @@ async def create_project(
         segment=segment,
         compliance_mode=compliance_mode,
         program_code=payload.program_code,
+        scheme_code=payload.scheme_code,
         standard_template_code=template_code,
         target_tree_count=payload.target_tree_count,
         organization_id=user.organization_id,
         owner_user_id=user.id,
-        metadata_=payload.metadata,
+        metadata_=metadata,
         status="planning",
     )
     db.add(project)
@@ -271,7 +280,12 @@ async def create_project(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff={"code": project.code, "name": project.name, "segment": segment},
+        diff={
+            "code": project.code,
+            "name": project.name,
+            "segment": segment,
+            "scheme_code": payload.scheme_code,
+        },
     )
     await db.commit()
     await db.refresh(project)
