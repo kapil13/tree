@@ -186,3 +186,30 @@ class ImpersonationOut(BaseModel):
     impersonated_by_id: uuid.UUID
     impersonated_by_email: EmailStr
     target_user: UserAdminOut
+
+
+class PlatformSchemeRowOut(BaseModel):
+    scheme_code: str
+    scheme_label: str
+    ministry: str | None = None
+    project_count: int
+    tree_count: int
+    kpi_targets: dict[str, float | int] = Field(default_factory=dict)
+
+
+class PlatformSchemeSummaryOut(BaseModel):
+    scheme_count: int
+    tagged_project_count: int
+    untagged_project_count: int
+    by_scheme: list[PlatformSchemeRowOut]
+
+
+class CampaApoImportResultOut(BaseModel):
+    imported: int
+    unmatched: list[str] = Field(default_factory=list)
+    parse_errors: list[str] = Field(default_factory=list)
+    applied: list[dict] = Field(default_factory=list)
+
+
+class CampaApoImportRequest(BaseModel):
+    csv_text: str = Field(..., min_length=10)

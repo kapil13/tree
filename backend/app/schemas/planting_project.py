@@ -168,3 +168,19 @@ class ComplianceCheckOut(BaseModel):
     mode: str
     chainage_km: float | None = None
     issues: list[ComplianceIssueOut]
+
+
+class SchemeMetadataUpdate(BaseModel):
+    scheme_refs: dict[str, Any] = Field(default_factory=dict)
+    funding_sources: list[dict[str, Any]] | None = None
+    convergence: list[dict[str, Any]] | None = None
+
+
+class SchemeKpiOut(BaseModel):
+    scheme_code: str | None
+    scheme_label: str | None = None
+    ministry: str | None = None
+    targets: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    checks: dict[str, bool] = Field(default_factory=dict)
+    status: str

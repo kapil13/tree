@@ -843,6 +843,31 @@ export const plantingProjects = {
   ) {
     return (await api.patch<PlantingProject>(`/v1/planting-projects/${id}`, payload)).data;
   },
+  async updateSchemeMetadata(
+    id: string,
+    payload: {
+      scheme_refs: Record<string, unknown>;
+      funding_sources?: Record<string, unknown>[];
+      convergence?: Record<string, unknown>[];
+    },
+  ) {
+    return (
+      await api.patch<PlantingProject>(`/v1/planting-projects/${id}/scheme-metadata`, payload)
+    ).data;
+  },
+  async schemeKpis(id: string) {
+    return (
+      await api.get<{
+        scheme_code: string | null;
+        scheme_label?: string;
+        ministry?: string;
+        targets: Record<string, number>;
+        metrics: Record<string, number>;
+        checks: Record<string, boolean>;
+        status: string;
+      }>(`/v1/planting-projects/${id}/scheme-kpis`)
+    ).data;
+  },
   async workAreas(projectId: string) {
     return (
       await api.get<WorkArea[]>(`/v1/planting-projects/${projectId}/work-areas`)

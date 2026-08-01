@@ -205,11 +205,14 @@ def _profile_sections(
 
     if profile.code == "ngt_campa":
         survival = summary.get("survival_counts") or {}
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
         return [
             {
                 "title": "Compensatory afforestation register",
                 "rows": [
                     ["Project", f"{project['name']} ({project['code']})"],
+                    ["PCA / CA number", str(scheme_refs.get("pca_number") or "—")],
+                    ["Forest diversion ref", str(scheme_refs.get("forest_diversion_id") or "—")],
                     ["Trees planted (registered)", str(summary["tree_count"])],
                     ["Work areas", str(summary["work_area_count"])],
                     ["Open violations", str(summary["open_violations"])],
@@ -226,6 +229,69 @@ def _profile_sections(
                 "title": "Survival status",
                 "rows": [[k, str(v)] for k, v in sorted(survival.items())] or [["—", "No surveys"]],
             },
+        ]
+
+    if profile.code == "gim":
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
+        return [
+            {
+                "title": "Green India Mission indicators",
+                "rows": [
+                    ["Sub-mission", str(scheme_refs.get("gim_sub_mission") or "—")],
+                    ["State annual plan ref", str(scheme_refs.get("state_annual_plan_ref") or "—")],
+                    ["APO financial year", str(scheme_refs.get("apo_financial_year") or "—")],
+                    ["Trees registered", str(summary["tree_count"])],
+                    ["Native species %", str(summary.get("native_species_pct") or "—")],
+                ],
+            },
+            {"title": "Carbon summary", "rows": common_carbon},
+        ]
+
+    if profile.code == "mishti":
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
+        return [
+            {
+                "title": "MISHTI coastal restoration",
+                "rows": [
+                    ["MISHTI project ID", str(scheme_refs.get("mishti_project_id") or "—")],
+                    ["Coastal state", str(scheme_refs.get("coastal_state") or "—")],
+                    ["CRZ category", str(scheme_refs.get("crz_category") or "—")],
+                    ["Restoration area (ha)", str(scheme_refs.get("restoration_area_ha") or "—")],
+                    ["Trees registered", str(summary["tree_count"])],
+                ],
+            },
+            {"title": "Survival & monitoring", "rows": common_carbon},
+        ]
+
+    if profile.code == "nagar_van":
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
+        return [
+            {
+                "title": "Nagar Van urban forest",
+                "rows": [
+                    ["Nagar Van project ID", str(scheme_refs.get("nagar_van_project_id") or "—")],
+                    ["ULB / municipal body", str(scheme_refs.get("ulb_name") or "—")],
+                    ["Urban forest name", str(scheme_refs.get("urban_forest_name") or "—")],
+                    ["Scheme target trees", str(scheme_refs.get("target_trees") or "—")],
+                    ["Trees registered", str(summary["tree_count"])],
+                ],
+            },
+            {"title": "Compliance", "rows": [["Open violations", str(summary["open_violations"])]]},
+        ]
+
+    if profile.code == "green_credit_india":
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
+        return [
+            {
+                "title": "Green Credit Programme",
+                "rows": [
+                    ["Land bank ID", str(scheme_refs.get("green_credit_land_bank_id") or "—")],
+                    ["Activity type", str(scheme_refs.get("gcp_activity_type") or "—")],
+                    ["Verifier reference", str(scheme_refs.get("verifier_reference") or "—")],
+                    ["Trees registered", str(summary["tree_count"])],
+                ],
+            },
+            {"title": "Carbon estimate", "rows": common_carbon},
         ]
 
     # esg_general

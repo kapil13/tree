@@ -17,6 +17,7 @@ from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 from app.services.reports.exporter import render_compliance_mrv_pdf
+from app.services.schemes.kpis import compute_scheme_kpis
 from app.services.storage import get_storage
 
 MAX_PHOTOS = 50
@@ -31,6 +32,7 @@ Contents:
 - mrv-context.json    Structured project, tree, and compliance data
 - mrv-compliance.pdf  Human-readable MRV compliance report
 - carbon-summary.json Aggregated carbon metrics from registered trees
+- scheme-summary.json Central govt scheme refs, convergence, and KPI status
 - photos/manifest.json Photo metadata (S3 keys, tree linkage)
 - photos/*            Up to 50 primary tree photos when storage is available
 
@@ -62,6 +64,11 @@ async def build_project_evidence_bundle(
 ) -> tuple[bytes, dict[str, Any]]:
     """Build a zip evidence bundle and return (zip_bytes, summary_for_audit)."""
     ctx = await build_project_mrv_context(db, project)
+    scheme_summary = await compute_scheme_kpis(db, project)
+    meta = project.metadata_ or {}
+    scheme_summary["scheme_refs"] = meta.get("scheme_refs") or {}
+    scheme_summary["funding_sources"] = meta.get("funding_sources") or []
+    scheme_summary["convergence"] = meta.get("convergence") or []
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -106,6 +113,12 @@ async def build_project_evidence_bundle(
             zf,
             "carbon-summary.json",
             json.dumps(carbon_summary, indent=2).encode("utf-8"),
+            manifest_files,
+        )
+        _add_file(
+            zf,
+            "scheme-summary.json",
+            json.dumps(scheme_summary, indent=2, default=str).encode("utf-8"),
             manifest_files,
         )
         pdf = render_compliance_mrv_pdf(ctx)

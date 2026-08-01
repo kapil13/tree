@@ -58,6 +58,12 @@ export default function ProjectDetailPage() {
     enabled: !!projectId,
   });
 
+  const { data: schemeKpis } = useQuery({
+    queryKey: ["project-scheme-kpis", projectId],
+    queryFn: () => plantingProjects.schemeKpis(projectId),
+    enabled: !!projectId && !!project?.scheme_code,
+  });
+
   const pestAreaId = useMemo(
     () => selectedAreaId ?? workAreas[0]?.id ?? null,
     [selectedAreaId, workAreas],
@@ -139,6 +145,40 @@ export default function ProjectDetailPage() {
           <p className="kpi-label">Geotag due</p>
           <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
         </div>
+        {schemeKpis && schemeKpis.scheme_code && (
+          <div className="card sm:col-span-2 lg:col-span-4">
+            <p className="kpi-label">Scheme KPI — {schemeKpis.scheme_label}</p>
+            <div className="mt-2 flex flex-wrap gap-4 text-sm">
+              <span>
+                Survival: <strong>{schemeKpis.metrics.survival_pct ?? 0}%</strong>
+                {schemeKpis.targets.survival_pct_min != null && (
+                  <span className="text-stone-500"> / target {schemeKpis.targets.survival_pct_min}%</span>
+                )}
+              </span>
+              <span>
+                Geo-tagged: <strong>{schemeKpis.metrics.geo_tagged_pct ?? 0}%</strong>
+                {schemeKpis.targets.geo_tagged_pct_min != null && (
+                  <span className="text-stone-500">
+                    {" "}
+                    / target {schemeKpis.targets.geo_tagged_pct_min}%
+                  </span>
+                )}
+              </span>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+                  schemeKpis.status === "on_track" && "bg-emerald-50 text-emerald-800",
+                  schemeKpis.status === "at_risk" && "bg-amber-50 text-amber-900",
+                  schemeKpis.status === "off_track" && "bg-rose-50 text-rose-800",
+                  schemeKpis.status === "not_applicable" && "bg-stone-100 text-stone-600",
+                  schemeKpis.status === "not_configured" && "bg-stone-100 text-stone-600",
+                )}
+              >
+                {schemeKpis.status.replace(/_/g, " ")}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 border-b border-stone-200">

@@ -24,6 +24,7 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
     total_survival_due = 0
     total_trees = 0
     by_segment: dict[str, int] = {}
+    by_scheme: dict[str, int] = {}
     project_rows: list[dict[str, Any]] = []
     violation_feed: list[dict[str, Any]] = []
 
@@ -37,12 +38,15 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
         total_survival_due += due
         total_trees += trees
         by_segment[project.segment] = by_segment.get(project.segment, 0) + 1
+        if project.scheme_code:
+            by_scheme[project.scheme_code] = by_scheme.get(project.scheme_code, 0) + 1
         project_rows.append(
             {
                 "id": str(project.id),
                 "code": project.code,
                 "name": project.name,
                 "segment": project.segment,
+                "scheme_code": project.scheme_code,
                 "compliance_mode": project.compliance_mode,
                 "status": project.status,
                 "open_violations": open_v,
@@ -100,6 +104,7 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
         "open_violations": total_open_violations,
         "survival_due": total_survival_due,
         "by_segment": by_segment,
+        "by_scheme": by_scheme,
         "projects": project_rows,
         "recent_violations": violation_feed,
     }

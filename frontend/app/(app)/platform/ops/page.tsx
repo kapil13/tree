@@ -1,15 +1,30 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Activity, CheckCircle2, Server, XCircle } from "lucide-react";
+import { useState } from "react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { platformAdmin } from "@/lib/platform-api";
 import { cn } from "@/lib/cn";
 
 export default function PlatformOpsPage() {
+  const [apoCsv, setApoCsv] = useState("");
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["platform-ops-summary"],
     queryFn: () => platformAdmin.opsSummary(),
+  });
+
+  const { data: schemeSummary, refetch: refetchSchemes } = useQuery({
+    queryKey: ["platform-scheme-summary"],
+    queryFn: () => platformAdmin.schemeSummary(),
+  });
+
+  const apoImport = useMutation({
+    mutationFn: () => platformAdmin.importCampaApo(apoCsv),
+    onSuccess: () => {
+      refetchSchemes();
+      setApoCsv("");
+    },
   });
 
   const { data: settings } = useQuery({
@@ -96,6 +111,71 @@ export default function PlatformOpsPage() {
                     </div>
                   ))}
                 </dl>
+              </section>
+            ) : null}
+
+            {schemeSummary ? (
+              <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+                <h2 className="text-lg font-semibold">Central scheme rollup</h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  {schemeSummary.tagged_project_count} tagged projects ·{" "}
+                  {schemeSummary.untagged_project_count} without scheme
+                </p>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="text-left text-stone-500">
+                      <tr>
+                        <th className="px-2 py-2 font-medium">Scheme</th>
+                        <th className="px-2 py-2 font-medium">Ministry</th>
+                        <th className="px-2 py-2 font-medium">Projects</th>
+                        <th className="px-2 py-2 font-medium">Trees</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {schemeSummary.by_scheme.map((row) => (
+                        <tr
+                          key={row.scheme_code}
+                          className="border-t border-stone-100 dark:border-stone-800"
+                        >
+                          <td className="px-2 py-2">{row.scheme_label}</td>
+                          <td className="px-2 py-2 text-stone-600">{row.ministry ?? "—"}</td>
+                          <td className="px-2 py-2">{row.project_count}</td>
+                          <td className="px-2 py-2">{row.tree_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
+                  <h3 className="text-sm font-medium">CAMPA APO CSV import</h3>
+                  <p className="mt-1 text-xs text-stone-500">
+                    Paste CSV with columns: pca_number, state_name, apo_financial_year, project_code,
+                    project_name
+                  </p>
+                  <textarea
+                    className="input mt-2 min-h-[100px] font-mono text-xs"
+                    value={apoCsv}
+                    onChange={(e) => setApoCsv(e.target.value)}
+                    placeholder="pca_number,state_name,apo_financial_year,project_code,project_name"
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary mt-2 text-xs"
+                    disabled={apoImport.isPending || apoCsv.trim().length < 10}
+                    onClick={() => apoImport.mutate()}
+                  >
+                    {apoImport.isPending ? "Importing…" : "Import APO rows"}
+                  </button>
+                  {apoImport.data ? (
+                    <p className="mt-2 text-xs text-stone-600">
+                      Imported {apoImport.data.imported} project
+                      {apoImport.data.imported === 1 ? "" : "s"}
+                      {apoImport.data.unmatched.length > 0 &&
+                        ` · ${apoImport.data.unmatched.length} unmatched codes`}
+                    </p>
+                  ) : null}
+                </div>
               </section>
             ) : null}
 

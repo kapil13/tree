@@ -28,6 +28,8 @@ from app.schemas.planting_project import (
     PlantingProjectUpdate,
     PlantingStandardOut,
     ProjectSummaryOut,
+    SchemeKpiOut,
+    SchemeMetadataUpdate,
     StandardTemplateOut,
     WorkAreaCreate,
     WorkAreaOut,
@@ -64,6 +66,9 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry_update,
 )
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
+from app.services.schemes.compliance import seed_project_scheme_checklists
+from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.validation import merge_scheme_metadata, validate_scheme_metadata
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
@@ -251,7 +256,11 @@ async def create_project(
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="project_code_exists")
 
-    metadata = dict(payload.metadata)
+    metadata = validate_scheme_metadata(
+        payload.scheme_code,
+        dict(payload.metadata),
+        strict=False,
+    )
     if scheme and scheme.get("legacy_plantation_category"):
         metadata.setdefault("plantation_category", scheme["legacy_plantation_category"])
 
@@ -273,6 +282,7 @@ async def create_project(
     db.add(project)
     await db.flush()
     await create_standard_from_template(db, project=project, template_code=template_code)
+    await seed_project_scheme_checklists(db, project)
     await record_audit(
         db,
         actor=user,
@@ -340,6 +350,60 @@ async def update_project(
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
     return _project_out(project, summary=summary, standard=standard)
+
+
+@router.patch("/{project_id}/scheme-metadata", response_model=PlantingProjectOut)
+async def update_scheme_metadata(
+    project_id: uuid.UUID,
+    payload: SchemeMetadataUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> PlantingProjectOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not project.scheme_code:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="scheme_not_set")
+
+    merged = merge_scheme_metadata(
+        project.metadata_ or {},
+        payload.scheme_refs,
+        funding_sources=payload.funding_sources,
+        convergence=payload.convergence,
+    )
+    project.metadata_ = validate_scheme_metadata(
+        project.scheme_code,
+        merged,
+        strict=True,
+    )
+
+    await record_audit(
+        db,
+        actor=user,
+        action="project.scheme_metadata.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"scheme_code": project.scheme_code},
+    )
+    await db.commit()
+    await db.refresh(project)
+    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
+    standard = await get_active_standard(db, project)
+    return _project_out(project, summary=summary, standard=standard)
+
+
+@router.get("/{project_id}/scheme-kpis", response_model=SchemeKpiOut)
+async def get_scheme_kpis(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> SchemeKpiOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return SchemeKpiOut.model_validate(await compute_scheme_kpis(db, project))
 
 
 @router.get("/{project_id}/work-areas", response_model=list[WorkAreaOut])

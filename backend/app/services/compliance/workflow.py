@@ -11,6 +11,7 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.compliance.evaluator import build_auto_signals, list_project_checklist_summaries
+from app.services.schemes.compliance import checklists_for_project
 from app.services.planting_projects.survival_survey import survey_interval_days
 
 WorkflowStepStatus = Literal["done", "partial", "pending", "skipped"]
@@ -29,6 +30,11 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "gold_standard_luf": "Gold Standard LUF",
     "esg_general": "ESG disclosure",
     "redd_plus": "REDD+",
+    "gim_general": "Green India Mission",
+    "mishti_coastal": "MISHTI",
+    "mgnrega_convergence": "MGNREGA",
+    "nagar_van_urban": "Nagar Van",
+    "green_credit_india": "Green Credit",
 }
 
 
@@ -86,7 +92,12 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
     metrics = await _project_metrics(db, project)
     signals = await build_auto_signals(db, project)
     checklist_summaries = await list_project_checklist_summaries(db, project)
-    recommended_code = SEGMENT_RECOMMENDED_CHECKLIST.get(project.segment, "esg_general")
+    scheme_checklists = checklists_for_project(project)
+    recommended_code = (
+        scheme_checklists[0]
+        if scheme_checklists
+        else SEGMENT_RECOMMENDED_CHECKLIST.get(project.segment, "esg_general")
+    )
     recommended = next(
         (c for c in checklist_summaries if c["code"] == recommended_code),
         checklist_summaries[0] if checklist_summaries else None,

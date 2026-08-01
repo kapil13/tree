@@ -138,6 +138,27 @@ export type PlatformOpsSummary = {
   };
 };
 
+export type PlatformSchemeSummary = {
+  scheme_count: number;
+  tagged_project_count: number;
+  untagged_project_count: number;
+  by_scheme: Array<{
+    scheme_code: string;
+    scheme_label: string;
+    ministry: string | null;
+    project_count: number;
+    tree_count: number;
+    kpi_targets: Record<string, number>;
+  }>;
+};
+
+export type CampaApoImportResult = {
+  imported: number;
+  unmatched: string[];
+  parse_errors: string[];
+  applied: Array<{ project_id: string; project_code: string; pca_number?: string }>;
+};
+
 export type PlatformAuditLog = {
   id: string;
   actor_user_id: string | null;
@@ -277,6 +298,18 @@ export const platformAdmin = {
   },
   async opsSummary() {
     return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
+  },
+  async schemeSummary() {
+    return (
+      await api.get<PlatformSchemeSummary>("/v1/platform/schemes/summary")
+    ).data;
+  },
+  async importCampaApo(csvText: string) {
+    return (
+      await api.post<CampaApoImportResult>("/v1/platform/schemes/apo-import", {
+        csv_text: csvText,
+      })
+    ).data;
   },
   async settings() {
     return (await api.get<PlatformSettings>("/v1/platform/settings")).data;

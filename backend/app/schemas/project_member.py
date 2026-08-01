@@ -35,6 +35,7 @@ class FieldOpsSummaryOut(BaseModel):
     open_violations: int
     survival_due: int
     by_segment: dict[str, int]
+    by_scheme: dict[str, int] = Field(default_factory=dict)
     projects: list[dict]
     recent_violations: list[dict]
 

@@ -44,8 +44,8 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "default_segment": "general",
         "default_compliance_mode": "strict",
         "default_template_code": None,
-        "checklist_codes": ["ngt_campa"],
-        "framework_profiles": ["ngt_campa"],
+        "checklist_codes": ["gim_general"],
+        "framework_profiles": ["gim"],
         "convergence_allowed": ["mgnrega_convergence"],
         "legacy_plantation_category": "other_government",
         "kpi_targets": {"survival_pct_min": 70.0, "geo_tagged_pct_min": 90.0},
@@ -65,8 +65,8 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "default_segment": "ngo_watershed",
         "default_compliance_mode": "strict",
         "default_template_code": None,
-        "checklist_codes": ["ngt_campa"],
-        "framework_profiles": ["ngt_campa"],
+        "checklist_codes": ["mishti_coastal"],
+        "framework_profiles": ["mishti"],
         "convergence_allowed": ["mgnrega_convergence"],
         "legacy_plantation_category": None,
         "kpi_targets": {"survival_pct_min": 65.0, "geo_tagged_pct_min": 90.0},
@@ -83,8 +83,8 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "default_segment": "township_landscape",
         "default_compliance_mode": "strict",
         "default_template_code": None,
-        "checklist_codes": ["esg_general"],
-        "framework_profiles": ["esg_general"],
+        "checklist_codes": ["nagar_van_urban"],
+        "framework_profiles": ["nagar_van"],
         "convergence_allowed": [],
         "legacy_plantation_category": "municipal",
         "kpi_targets": {"survival_pct_min": 75.0, "geo_tagged_pct_min": 95.0, "min_trees": 10000},
@@ -125,7 +125,7 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "default_segment": "ngo_watershed",
         "default_compliance_mode": "guided",
         "default_template_code": None,
-        "checklist_codes": ["esg_general"],
+        "checklist_codes": ["mgnrega_convergence"],
         "framework_profiles": ["esg_general"],
         "convergence_allowed": [],
         "legacy_plantation_category": None,
@@ -167,8 +167,8 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "default_segment": "industrial_greenbelt",
         "default_compliance_mode": "strict",
         "default_template_code": None,
-        "checklist_codes": ["esg_general"],
-        "framework_profiles": ["esg_general"],
+        "checklist_codes": ["green_credit_india"],
+        "framework_profiles": ["green_credit_india"],
         "convergence_allowed": [],
         "legacy_plantation_category": None,
         "kpi_targets": {"survival_pct_min": 75.0, "geo_tagged_pct_min": 95.0},
@@ -178,6 +178,16 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
 }
 
 PROGRAMS_REQUIRING_SCHEME = frozenset({"government_nhai", "ngo_community"})
+
+
+def _hydrate_registry() -> None:
+    from app.services.schemes.metadata_fields import metadata_sections_for_scheme
+
+    for code, scheme in SCHEME_REGISTRY.items():
+        scheme["metadata_sections"] = metadata_sections_for_scheme(code)
+
+
+_hydrate_registry()
 
 
 def scheme_codes() -> list[str]:
