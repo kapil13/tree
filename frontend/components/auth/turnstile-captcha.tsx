@@ -63,10 +63,11 @@ type Props = {
   siteKey: string;
   onTokenChange: (token: string) => void;
   className?: string;
+  theme?: "light" | "dark" | "auto";
 };
 
 export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(function TurnstileCaptcha(
-  { siteKey, onTokenChange, className },
+  { siteKey, onTokenChange, className, theme = "auto" },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -113,7 +114,7 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(functi
         }
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          theme: "auto",
+          theme,
           callback: (t) => updateToken(t),
           "expired-callback": () => updateToken(""),
           "error-callback": () => {
@@ -133,7 +134,7 @@ export const TurnstileCaptcha = forwardRef<TurnstileCaptchaHandle, Props>(functi
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, updateToken, renderKey]);
+  }, [siteKey, theme, updateToken, renderKey]);
 
   if (loadError || verifyError) {
     return (
