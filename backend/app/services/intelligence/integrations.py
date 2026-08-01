@@ -62,7 +62,7 @@ def _assistant_chat_status() -> dict[str, Any]:
         return {
             "status": "configured",
             "mode": "live",
-            "label": "Gemini chat (gemini-1.5-flash) for AI assistant",
+            "label": "Gemini chat (gemini-2.5-flash+) for AI assistant",
             "reachable": True,
             "error": None,
             "provider": "gemini",
