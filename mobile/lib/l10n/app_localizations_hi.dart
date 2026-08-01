@@ -15,10 +15,38 @@ class AppLocalizationsHi extends AppLocalizations {
   String get welcomeTitle => 'प्रमाण के साथ वन उगाएँ';
 
   @override
+  String get welcomeSubtitle =>
+      'वृक्षारोपण इंटेलिजेंस — फील्ड से ऑडिट-तैयार साक्ष्य तक।';
+
+  @override
   String get signIn => 'साइन इन';
 
   @override
   String get signUp => 'साइन अप';
+
+  @override
+  String get createFreeAccount => 'मुफ़्त खाता बनाएँ';
+
+  @override
+  String get alreadyHaveAccount => 'मेरे पास पहले से खाता है';
+
+  @override
+  String get welcomeBack => 'वापसी पर स्वागत है';
+
+  @override
+  String get signInSubtitle => 'अपने अरणयिक्स खाते में साइन इन करें';
+
+  @override
+  String get createAccount => 'खाता बनाएँ';
+
+  @override
+  String get forgotPassword => 'पासवर्ड भूल गए?';
+
+  @override
+  String get rememberMe => 'मुझे याद रखें';
+
+  @override
+  String get continueWithGoogle => 'Google से जारी रखें';
 
   @override
   String get home => 'होम';
@@ -28,6 +56,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get map => 'मानचित्र';
+
+  @override
+  String get alerts => 'अलर्ट';
 
   @override
   String get notifications => 'सूचनाएँ';
@@ -43,6 +74,82 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get fieldOps => 'फील्ड कार्य';
+
+  @override
+  String get yourJourney => 'आपकी यात्रा';
+
+  @override
+  String get journeyCapture => 'कैप्चर';
+
+  @override
+  String get journeyMonitor => 'निगरानी';
+
+  @override
+  String get journeyReport => 'रिपोर्ट';
+
+  @override
+  String get journeyCaptureLine => 'GPS · फ़ोटो · ऑफ़लाइन';
+
+  @override
+  String get journeyMonitorLine => 'NDVI · AI अलर्ट';
+
+  @override
+  String get journeyReportLine => 'कार्बन · ऑडिट पैक';
+
+  @override
+  String get registrationPrograms => 'पंजीकरण कार्यक्रम';
+
+  @override
+  String get programsHint =>
+      'BYOT पब्लिक हमेशा सक्रिय रहता है। सरकारी, कॉर्पोरेट या NGO कार्यक्रमों के लिए अनुमोदन का अनुरोध करें।';
+
+  @override
+  String get programActive => 'सक्रिय';
+
+  @override
+  String get programPending => 'समीक्षाधीन';
+
+  @override
+  String get programRejected => 'अस्वीकृत';
+
+  @override
+  String get programLocked => 'अनुमोदन आवश्यक';
+
+  @override
+  String get requestAccess => 'पहुँच अनुरोध';
+
+  @override
+  String get withdrawRequest => 'वापस लें';
+
+  @override
+  String get requestSubmitted =>
+      'पहुँच अनुरोध भेज दिया गया। व्यवस्थापक जल्द समीक्षा करेंगे।';
+
+  @override
+  String get requestWithdrawn => 'अनुरोध वापस ले लिया गया।';
+
+  @override
+  String get carbonCredits => 'कार्बन क्रेडिट';
+
+  @override
+  String get carbonNeedsAnalysis =>
+      'कार्बन क्रेडिट अनुमान के लिए पेड़ पर AI विश्लेषण चलाएँ।';
+
+  @override
+  String get carbonZeroHint =>
+      '0.00 tCO₂e — क्रेडिट जमा करने के लिए पेड़ों का विश्लेषण करें';
+
+  @override
+  String get rescanNdvi => 'NDVI पुनः स्कैन';
+
+  @override
+  String get rescanningNdvi => 'उपग्रह स्कैन हो रहा है…';
+
+  @override
+  String get runSatelliteHealth => 'स्वास्थ्य जाँच';
+
+  @override
+  String get runAiAnalysis => 'AI विश्लेषण चलाएँ';
 
   @override
   String get shareTreeQr => 'पेड़ QR साझा करें';

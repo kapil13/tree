@@ -110,6 +110,12 @@ abstract class AppLocalizations {
   /// **'Grow forests with proof'**
   String get welcomeTitle;
 
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plantation intelligence — field to audit-ready evidence.'**
+  String get welcomeSubtitle;
+
   /// No description provided for @signIn.
   ///
   /// In en, this message translates to:
@@ -121,6 +127,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign up'**
   String get signUp;
+
+  /// No description provided for @createFreeAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create free account'**
+  String get createFreeAccount;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'I already have an account'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get welcomeBack;
+
+  /// No description provided for @signInSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your Aranyix account'**
+  String get signInSubtitle;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get createAccount;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me'**
+  String get rememberMe;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
 
   /// No description provided for @home.
   ///
@@ -139,6 +193,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Map'**
   String get map;
+
+  /// No description provided for @alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get alerts;
 
   /// No description provided for @notifications.
   ///
@@ -169,6 +229,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Field ops'**
   String get fieldOps;
+
+  /// No description provided for @yourJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Your journey'**
+  String get yourJourney;
+
+  /// No description provided for @journeyCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture'**
+  String get journeyCapture;
+
+  /// No description provided for @journeyMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor'**
+  String get journeyMonitor;
+
+  /// No description provided for @journeyReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get journeyReport;
+
+  /// No description provided for @journeyCaptureLine.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS · photos · offline'**
+  String get journeyCaptureLine;
+
+  /// No description provided for @journeyMonitorLine.
+  ///
+  /// In en, this message translates to:
+  /// **'NDVI · AI alerts'**
+  String get journeyMonitorLine;
+
+  /// No description provided for @journeyReportLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon · audit pack'**
+  String get journeyReportLine;
+
+  /// No description provided for @registrationPrograms.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration programs'**
+  String get registrationPrograms;
+
+  /// No description provided for @programsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'BYOT Public is always active. Request approval for government, corporate, or NGO programs.'**
+  String get programsHint;
+
+  /// No description provided for @programActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get programActive;
+
+  /// No description provided for @programPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get programPending;
+
+  /// No description provided for @programRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not approved'**
+  String get programRejected;
+
+  /// No description provided for @programLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval required'**
+  String get programLocked;
+
+  /// No description provided for @requestAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Request access'**
+  String get requestAccess;
+
+  /// No description provided for @withdrawRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw'**
+  String get withdrawRequest;
+
+  /// No description provided for @requestSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Access request submitted. An admin will review it shortly.'**
+  String get requestSubmitted;
+
+  /// No description provided for @requestWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Request withdrawn.'**
+  String get requestWithdrawn;
+
+  /// No description provided for @carbonCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon Credits'**
+  String get carbonCredits;
+
+  /// No description provided for @carbonNeedsAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Run AI analysis on a tree to estimate carbon credits.'**
+  String get carbonNeedsAnalysis;
+
+  /// No description provided for @carbonZeroHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0.00 tCO₂e — analyze trees to accumulate credits'**
+  String get carbonZeroHint;
+
+  /// No description provided for @rescanNdvi.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan NDVI'**
+  String get rescanNdvi;
+
+  /// No description provided for @rescanningNdvi.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning satellite…'**
+  String get rescanningNdvi;
+
+  /// No description provided for @runSatelliteHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Run health check'**
+  String get runSatelliteHealth;
+
+  /// No description provided for @runAiAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Run AI analysis'**
+  String get runAiAnalysis;
 
   /// No description provided for @shareTreeQr.
   ///

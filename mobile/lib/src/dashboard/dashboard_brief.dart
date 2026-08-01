@@ -171,8 +171,10 @@ List<QuickMetric> buildQuickMetrics({
     QuickMetric(
       emoji: '💰',
       label: 'Carbon Credits',
-      value: credits >= 1 ? credits.toStringAsFixed(1) : credits.toStringAsFixed(2),
-      trend: credits > 0 ? '↑' : '—',
+      value: credits > 0
+          ? (credits >= 1 ? credits.toStringAsFixed(1) : credits.toStringAsFixed(2))
+          : (trees > 0 ? 'Analyze' : '0.00'),
+      trend: credits > 0 ? '↑' : (trees > 0 ? '!' : '—'),
     ),
     QuickMetric(
       emoji: '🌧',

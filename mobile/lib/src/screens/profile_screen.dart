@@ -19,10 +19,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _loadingPrograms = false;
-  bool _savingPrograms = false;
+  bool _programBusy = false;
   String? _programMessage;
   List<dynamic> _available = [];
-  final Set<String> _selected = {};
+  List<dynamic> _accessRequests = [];
   bool _biometricAvailable = false;
   String _appVersion = '';
 
@@ -43,22 +43,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  Map<String, dynamic>? _requestFor(String code) {
+    for (final raw in _accessRequests) {
+      final req = Map<String, dynamic>.from(raw as Map);
+      if (req['program_code'] == code) return req;
+    }
+    return null;
+  }
+
   Future<void> _loadPrograms() async {
     setState(() => _loadingPrograms = true);
     try {
       final api = await ref.read(apiClientProvider.future);
       final data = await api.plantingProgramMemberships();
       final available = List<dynamic>.from(data['available'] ?? []);
-      final enrolled = available
-          .where((program) => program['enrolled'] == true)
-          .map((program) => program['code'] as String)
-          .toSet();
+      final requests = List<dynamic>.from(data['access_requests'] ?? []);
       if (!mounted) return;
       setState(() {
         _available = available;
-        _selected
-          ..clear()
-          ..addAll(enrolled);
+        _accessRequests = requests;
         _loadingPrograms = false;
       });
     } catch (e) {
@@ -70,24 +73,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _savePrograms() async {
+  Future<void> _requestAccess(String programCode) async {
     setState(() {
-      _savingPrograms = true;
+      _programBusy = true;
       _programMessage = null;
     });
     try {
       final api = await ref.read(apiClientProvider.future);
-      await api.updatePlantingProgramMemberships(_selected.toList());
+      await api.submitProgramAccessRequest(programCode: programCode);
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _savingPrograms = false;
-        _programMessage = 'Registration programs updated.';
+        _programBusy = false;
+        _programMessage = l10n.requestSubmitted;
       });
       await _loadPrograms();
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _savingPrograms = false;
+        _programBusy = false;
+        _programMessage = apiErrorMessage(e);
+      });
+    }
+  }
+
+  Future<void> _withdrawAccess(String requestId) async {
+    setState(() {
+      _programBusy = true;
+      _programMessage = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.withdrawProgramAccessRequest(requestId);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _programBusy = false;
+        _programMessage = l10n.requestWithdrawn;
+      });
+      await _loadPrograms();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _programBusy = false;
         _programMessage = apiErrorMessage(e);
       });
     }
@@ -185,15 +213,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
               child: Text(
-                'Registration programs',
-                style: TextStyle(
+                l10n.registrationPrograms,
+                style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                   color: AranyixColors.forestDark,
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+              child: Text(
+                l10n.programsHint,
+                style: const TextStyle(fontSize: 12.5, color: AranyixColors.onSurfaceMuted, height: 1.35),
               ),
             ),
             if (_loadingPrograms)
@@ -202,39 +237,102 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else
-              ..._available.map((program) {
-                final code = program['code'] as String;
+              ..._available.map((raw) {
+                final program = Map<String, dynamic>.from(raw as Map);
+                final code = program['code'] as String? ?? '';
                 final isDefault = program['is_default'] == true;
-                return CheckboxListTile(
-                  value: _selected.contains(code),
-                  onChanged: isDefault || _savingPrograms
-                      ? null
-                      : (checked) {
-                          setState(() {
-                            if (checked == true) {
-                              _selected.add(code);
-                            } else {
-                              _selected.remove(code);
-                            }
-                          });
-                        },
-                  title: Text(program['name'] as String? ?? code),
-                  subtitle: Text(program['description'] as String? ?? ''),
-                  secondary: isDefault ? const Icon(Icons.lock_outline) : null,
+                final enrolled = program['enrolled'] == true || isDefault;
+                final access = _requestFor(code);
+                final status = access?['status'] as String?;
+                final requestId = access?['id']?.toString();
+
+                String badge;
+                Color badgeBg;
+                Color badgeFg;
+                if (enrolled) {
+                  badge = l10n.programActive;
+                  badgeBg = AranyixColors.forestLight;
+                  badgeFg = AranyixColors.forestDark;
+                } else if (status == 'pending') {
+                  badge = l10n.programPending;
+                  badgeBg = const Color(0xFFFFF4E8);
+                  badgeFg = const Color(0xFF9A3412);
+                } else if (status == 'rejected') {
+                  badge = l10n.programRejected;
+                  badgeBg = AranyixColors.dangerContainer;
+                  badgeFg = AranyixColors.danger;
+                } else {
+                  badge = l10n.programLocked;
+                  badgeBg = const Color(0xFFE7EEE9);
+                  badgeFg = AranyixColors.onSurfaceMuted;
+                }
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                program['name'] as String? ?? code,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: badgeBg,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                badge,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: badgeFg,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if ((program['description'] as String?)?.isNotEmpty == true) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            program['description'] as String,
+                            style: const TextStyle(fontSize: 12.5, color: AranyixColors.onSurfaceMuted),
+                          ),
+                        ],
+                        if (!enrolled && !isDefault) ...[
+                          const SizedBox(height: 10),
+                          if (status == 'pending' && requestId != null)
+                            OutlinedButton(
+                              onPressed: _programBusy ? null : () => _withdrawAccess(requestId),
+                              child: Text(l10n.withdrawRequest),
+                            )
+                          else if (status != 'pending')
+                            FilledButton(
+                              onPressed: _programBusy ? null : () => _requestAccess(code),
+                              child: Text(l10n.requestAccess),
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
                 );
               }),
-            if (_available.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: _savingPrograms ? null : _savePrograms,
-                  child: Text(_savingPrograms ? 'Saving…' : 'Save program preferences'),
-                ),
-              ),
             if (_programMessage != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(_programMessage!, style: Theme.of(context).textTheme.bodySmall),
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                child: Text(
+                  _programMessage!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AranyixColors.forestDark,
+                      ),
+                ),
               ),
             const Divider(),
             Padding(
