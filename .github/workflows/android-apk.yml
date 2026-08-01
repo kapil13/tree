@@ -9,12 +9,17 @@ on:
         default: "https://api.aranyix.tech"
   push:
     branches:
+      - main
+      - cursor/android-apk-workflow-main-f2ba
+      - cursor/android-apk-v110-beta-f2ba
       - cursor/android-apk-build-f2ba
       - cursor/mobile-full-app-apk-f2ba
-      - cursor/hostinger-kvm4-deploy-f2ba
-      - cursor/bioacoustic-engine-f2ba
-      - cursor/bioacoustic-offline-sync-f2ba
-      - cursor/bioacoustic-birdnet-phase1-f2ba
+    tags:
+      - "android-v*"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-apk.yml"
 
 jobs:
   build-apk:
@@ -27,7 +32,7 @@ jobs:
       - name: Verify Android project present
         run: |
           if [ ! -f mobile/android/app/build.gradle.kts ]; then
-            echo "::error::mobile/android/ not found. Run this workflow on branch cursor/android-apk-build-f2ba"
+            echo "::error::mobile/android/ not found"
             exit 1
           fi
 
@@ -56,26 +61,31 @@ jobs:
           BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
         run: |
           flutter pub get
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
           flutter build apk --release --dart-define="BYOT_API=${BYOT_API}"
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "build/app/outputs/flutter-apk/aranyix-android-${VERSION}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: byot-android-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          name: aranyix-android-apk
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-release.apk
+            mobile/build/app/outputs/flutter-apk/aranyix-android-*.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
 
       - name: Job summary
         env:
           BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
         run: |
           {
-            echo "### BYOT Android APK built successfully"
+            echo "### Aranyix Android APK built successfully"
             echo ""
-            echo "1. Open this workflow run → **Artifacts** → download \`byot-android-apk\`"
-            echo "2. Unzip and install \`app-release.apk\` on your Android phone"
+            echo "1. Open this workflow run → **Artifacts** → download \`aranyix-android-apk\`"
+            echo "2. Install \`aranyix-android-*.apk\` (or \`app-release.apk\`) on your Android phone"
             echo "3. API URL baked in: \`${BYOT_API}\`"
             echo "4. Production API: https://api.aranyix.tech/health"
-            echo "5. Login: demo@byot.earth / byotdemo1234!"
+            echo "5. Demo login: demo@byot.earth / byotdemo1234!"
           } >> "$GITHUB_STEP_SUMMARY"
