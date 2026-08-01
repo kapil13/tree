@@ -53,6 +53,19 @@ def test_answer_greeting_includes_portfolio_snapshot():
     assert "25 trees" in out["answer"]
     assert "intent" not in out.get("calculations", {})
     assert "mode" not in out.get("calculations", {})
+    assert out.get("mode") == "rules"
+    assert out.get("provider") == "rules"
+
+
+def test_answer_with_rules_surfaces_llm_error():
+    portfolio = PortfolioContext(total_trees=0)
+    out = answer_with_rules(
+        "portfolio summary",
+        portfolio,
+        llm_error="OpenAI: HTTP 401",
+    )
+    assert out["mode"] == "rules"
+    assert out["llm_error"] == "OpenAI: HTTP 401"
 
 
 def test_answer_portfolio_uses_live_counts():

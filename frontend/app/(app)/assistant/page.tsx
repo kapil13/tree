@@ -1,16 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Send, Lightbulb } from "lucide-react";
-import { assistant, errorMessage } from "@/lib/api";
+import { Sparkles, Send, Lightbulb, AlertTriangle } from "lucide-react";
+import { assistant, errorMessage, type AssistantAnswer } from "@/lib/api";
 
 type Msg = {
   role: "user" | "assistant";
   text: string;
-  data?: {
-    calculations?: Record<string, unknown>;
-    citations?: string[];
-  };
+  data?: AssistantAnswer;
 };
 
 const SUGGESTIONS = [
@@ -22,7 +19,7 @@ const SUGGESTIONS = [
   "Any unread alerts I should know about?",
 ];
 
-const HIDDEN_CALC_KEYS = new Set(["intent", "mode", "portfolio"]);
+const HIDDEN_CALC_KEYS = new Set(["intent", "mode", "portfolio", "provider", "llm_error"]);
 
 function visibleCalculations(calculations?: Record<string, unknown>) {
   if (!calculations) return null;
@@ -45,20 +42,40 @@ function renderAnswerText(text: string) {
   });
 }
 
+function providerLabel(data?: AssistantAnswer) {
+  if (!data) return null;
+  if (data.mode === "llm" && data.provider === "openai") return "Answered by OpenAI";
+  if (data.mode === "llm" && data.provider === "gemini") return "Answered by Gemini";
+  return "Portfolio analyst (rules)";
+}
+
 export default function AssistantPage() {
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
+  const [lastMode, setLastMode] = useState<AssistantAnswer["mode"] | null>(null);
+  const [lastLlmError, setLastLlmError] = useState<string | null>(null);
 
   async function ask(e?: React.FormEvent, text?: string) {
     e?.preventDefault();
     const question = (text ?? prompt).trim();
-    if (!question) return;
+    if (!question) {
+      setHistory((h) => [
+        ...h,
+        {
+          role: "assistant",
+          text: "Type a question or tap a suggestion above, then press Ask.",
+        },
+      ]);
+      return;
+    }
     const userMsg: Msg = { role: "user", text: question };
     setHistory((h) => [...h, userMsg]);
     setBusy(true);
     try {
       const ans = await assistant.query(question);
+      setLastMode(ans.mode ?? "rules");
+      setLastLlmError(ans.llm_error ?? null);
       setHistory((h) => [
         ...h,
         { role: "assistant", text: ans.answer, data: ans },
@@ -81,13 +98,28 @@ export default function AssistantPage() {
         alerts, and species recommendations. Answers use your registered data.
       </p>
 
+      {lastMode === "rules" && lastLlmError ? (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium">Live LLM unavailable — using portfolio rules engine</p>
+            <p className="mt-0.5 text-xs text-amber-900/80">{lastLlmError}</p>
+            <p className="mt-1 text-xs text-amber-900/70">
+              Confirm <code className="rounded bg-amber-100 px-1">OPENAI_API_KEY</code> /{" "}
+              <code className="rounded bg-amber-100 px-1">GEMINI_API_KEY</code> on the API
+              host, then restart the backend container.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {SUGGESTIONS.map((s) => (
           <button
             key={s}
             type="button"
-            className="rounded-full border border-forest-200 bg-forest-50 px-3 py-1.5 text-xs font-medium text-forest-800 transition hover:bg-forest-100"
-            onClick={() => ask(undefined, s)}
+            className="rounded-full border border-forest-200 bg-forest-50 px-3 py-1.5 text-xs font-medium text-forest-800 transition hover:bg-forest-100 disabled:opacity-50"
+            onClick={() => void ask(undefined, s)}
             disabled={busy}
           >
             {s}
@@ -105,6 +137,7 @@ export default function AssistantPage() {
         {history.map((m, i) => {
           const metrics = m.role === "assistant" ? visibleCalculations(m.data?.calculations) : null;
           const citations = m.data?.citations?.filter((c) => c.toLowerCase() !== "aranyix assistant");
+          const source = m.role === "assistant" ? providerLabel(m.data) : null;
 
           return (
             <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
@@ -127,18 +160,27 @@ export default function AssistantPage() {
                     </pre>
                   </details>
                 )}
-                {citations && citations.length > 0 && (
+                {(source || (citations && citations.length > 0)) && (
                   <div className="mt-2 text-[10px] uppercase tracking-wide opacity-70">
-                    Sources: {citations.join(" · ")}
+                    {[source, citations && citations.length > 0 ? `Sources: ${citations.join(" · ")}` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </div>
                 )}
               </div>
             </div>
           );
         })}
+        {busy && (
+          <div className="text-left">
+            <div className="inline-block rounded-2xl bg-stone-100 px-4 py-2 text-sm text-stone-500 dark:bg-stone-800">
+              Thinking…
+            </div>
+          </div>
+        )}
       </div>
 
-      <form onSubmit={ask} className="flex gap-2">
+      <form onSubmit={(e) => void ask(e)} className="flex gap-2">
         <input
           className="input flex-1"
           value={prompt}
@@ -146,7 +188,11 @@ export default function AssistantPage() {
           placeholder="Ask about your trees, carbon, health, satellite, biodiversity…"
           disabled={busy}
         />
-        <button className="btn-primary" disabled={busy || !prompt.trim()}>
+        <button
+          type="submit"
+          className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={busy}
+        >
           <Send className="h-4 w-4" /> {busy ? "Thinking…" : "Ask"}
         </button>
       </form>

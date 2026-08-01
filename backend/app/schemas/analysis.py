@@ -51,3 +51,8 @@ class AssistantAnswer(BaseModel):
     answer: str
     calculations: dict[str, Any] = {}
     citations: list[str] = []
+    # llm = live model answer; rules = deterministic portfolio engine fallback
+    mode: Literal["llm", "rules"] = "rules"
+    provider: Literal["openai", "gemini", "rules"] | None = "rules"
+    # Set when an LLM was configured but the live call failed (rules used instead)
+    llm_error: str | None = None
