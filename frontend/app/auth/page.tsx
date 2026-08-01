@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthGateway } from "@/components/auth/auth-gateway";
+import { MarketingShell } from "@/components/marketing/marketing-shell";
 import { auth } from "@/lib/api";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
@@ -87,15 +88,15 @@ function AuthPageInner() {
   }, [params]);
 
   return (
-    <>
+    <MarketingShell authMode={mode} mainClassName="flex-1">
       <AlreadySignedInRedirect />
       {oauthError && (
-        <div className="fixed inset-x-0 top-4 z-50 mx-auto max-w-lg rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-lg">
+        <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
           {oauthError}
         </div>
       )}
       <AuthGateway initialMode={mode} />
-    </>
+    </MarketingShell>
   );
 }
 
@@ -103,7 +104,7 @@ export default function AuthPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f4faf6] text-sm text-stone-600">
+        <div className="marketing-page flex min-h-screen items-center justify-center text-sm text-stone-600">
           Loading secure sign-in…
         </div>
       }

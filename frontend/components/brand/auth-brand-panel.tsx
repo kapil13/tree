@@ -1,4 +1,3 @@
-import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import {
   Bell,
   Bird,
@@ -19,12 +18,15 @@ const CAPABILITIES = [
 
 export function AuthBrandPanel() {
   return (
-    <div className="relative hidden h-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#041f17] p-8 text-white lg:flex lg:flex-col lg:justify-between">
+    <div className="relative hidden min-h-[28rem] overflow-hidden rounded-[2rem] border border-white/10 bg-[#041f17] p-8 text-white lg:flex lg:flex-col lg:justify-between">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(74,222,128,0.22),transparent_38%),radial-gradient(circle_at_85%_0%,rgba(14,165,233,0.12),transparent_32%),linear-gradient(180deg,rgba(5,46,31,0.2),rgba(4,31,23,0.95))]" />
       <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:28px_28px]" />
 
       <div className="relative space-y-8">
-        <AranyixLogo className="h-16 w-auto max-w-[280px]" />
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-lime-200/90">
+          <Leaf className="h-3.5 w-3.5" />
+          Aranyix platform
+        </div>
         <div className="space-y-4">
           <h1 className="max-w-md text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
             Data, intelligence, and nature — unified for planetary stewardship.

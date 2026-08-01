@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -15,7 +14,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
-import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
@@ -80,6 +78,19 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  function switchMode(next: AuthMode) {
+    setMode(next);
+    setShowForgotPassword(false);
+    setError(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mode", next);
+    router.replace(`/auth?${params.toString()}`, { scroll: false });
+  }
 
   function requireCaptcha(): boolean {
     if (!captchaEnabled) return true;
@@ -223,7 +234,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     } catch (err) {
       const msg = errorMessage(err);
       if (msg === "registration_required") {
-        setMode("signup");
+        switchMode("signup");
         setError("No account found for this number. Create an account below.");
       } else {
         setError(msg);
@@ -272,18 +283,10 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     ) : null;
 
   return (
-    <div className="min-h-screen bg-[#f4faf6]">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-6 p-4 lg:grid-cols-[1.05fr_0.95fr] lg:p-6">
-        <AuthBrandPanel />
+    <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch lg:gap-10 lg:py-14">
+      <AuthBrandPanel />
 
-        <div className="flex flex-col justify-center">
-          <div className="mb-6 flex items-center justify-between lg:hidden">
-            <AranyixLogo className="h-12 w-auto" />
-            <Link href="/" className="text-sm font-medium text-emerald-800">
-              Home
-            </Link>
-          </div>
-
+      <div className="flex flex-col justify-center">
           <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_-24px_rgba(5,46,31,0.22)] backdrop-blur-xl sm:p-8">
             {invitePreview ? <InviteAuthBanner preview={invitePreview} /> : null}
             <div className="mb-6 flex rounded-2xl bg-stone-100 p-1">
@@ -292,10 +295,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   key={tab}
                   type="button"
                   onClick={() => {
-                    setMode(tab);
-                    setShowForgotPassword(false);
+                    switchMode(tab);
                     resetPhoneFlow();
-                    setError(null);
                   }}
                   className={cn(
                     "flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
@@ -332,7 +333,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     setUser(refreshed);
                     router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
                   }}
-                  onSwitchToSignIn={() => setMode("signin")}
+                  onSwitchToSignIn={() => switchMode("signin")}
                 />
               </div>
             ) : showForgotPassword ? (
@@ -544,7 +545,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
             <Lock className="mr-1 inline h-3.5 w-3.5" />
             DATA · INTELLIGENCE · NATURE · FUTURE
           </p>
-        </div>
       </div>
     </div>
   );
