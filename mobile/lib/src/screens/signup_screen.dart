@@ -9,6 +9,7 @@ import '../auth/signup_catalog.dart';
 import '../auth_session.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
 import '../widgets/turnstile_captcha.dart';
@@ -43,6 +44,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _captchaEnabled = false;
   String? _captchaSiteKey;
   String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
 
   @override
   void initState() {
@@ -129,7 +131,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _step = _SignupStep.verifyPhone;
       });
     } catch (e) {
-      setState(() => _error = apiErrorMessage(e));
+      setState(() {
+        _error = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -197,7 +203,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthScaffold(
+    return AuthLightScope(
+      child: AuthScaffold(
       title: switch (_step) {
         _SignupStep.category => 'Join Aranyix',
         _SignupStep.details => 'Your details',
@@ -241,7 +248,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           if (_step == _SignupStep.verifyEmail) _buildEmailOtpStep(),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Colors.red)),
+            AuthErrorBanner(message: _error!),
           ],
           if (_devHint != null) ...[
             const SizedBox(height: 8),
@@ -278,6 +285,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -350,11 +358,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ),
         if (_captchaEnabled && _captchaSiteKey != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TurnstileCaptcha(
+            key: _captchaKey,
             siteKey: _captchaSiteKey!,
-            onToken: (t) => setState(() => _captchaToken = t),
+            onToken: (t) => setState(() {
+              _captchaToken = t;
+              _error = null;
+            }),
             onError: () => setState(() => _captchaToken = null),
+            onExpired: () => setState(() => _captchaToken = null),
           ),
         ],
       ],
@@ -399,8 +412,12 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = selected ? AranyixColors.forestDark : const Color(0xFF0F172A);
+    final subtitleColor =
+        selected ? const Color(0xFF14532D).withValues(alpha: 0.75) : AranyixColors.onSurfaceMuted;
+
     return Material(
-      color: selected ? AranyixColors.forestLight : AranyixColors.surfaceContainer,
+      color: selected ? AranyixColors.forestLight : Colors.white,
       borderRadius: BorderRadius.circular(AranyixRadii.card),
       child: InkWell(
         onTap: onTap,
@@ -422,13 +439,19 @@ class _CategoryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(category.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text(category.subtitle, style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      category.title,
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: titleColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      category.subtitle,
+                      style: TextStyle(fontSize: 13, height: 1.35, color: subtitleColor),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       category.audience,
-                      style: const TextStyle(fontSize: 11, color: AranyixColors.onSurfaceMuted),
+                      style: TextStyle(fontSize: 11, color: subtitleColor.withValues(alpha: 0.85)),
                     ),
                   ],
                 ),

@@ -10,6 +10,8 @@ import '../auth_session.dart';
 import '../pending_invite.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/auth_light_scope.dart';
+import '../widgets/auth_scaffold.dart';
 import '../widgets/turnstile_captcha.dart';
 import 'auth_flow_screens.dart';
 
@@ -32,6 +34,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     text: kDebugMode ? 'byotdemo1234!' : '',
   );
   final _apiUrl = TextEditingController();
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
   String? _err;
   bool _busy = false;
   bool _loaded = false;
@@ -96,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submitEmail() async {
     if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _err = 'Please complete the security check.');
+      setState(() => _err = 'Please complete the security check below.');
       return;
     }
     setState(() {
@@ -131,7 +135,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on InviteAcceptException catch (e) {
       setState(() => _err = e.message);
     } catch (e) {
-      setState(() => _err = apiErrorMessage(e));
+      setState(() {
+        _err = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -175,32 +183,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              const Text('🌳', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 8),
-              const Text('Welcome back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const Text('Sign in to your Aranyix account'),
-              if (_invitePreview != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AranyixColors.forestLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AranyixColors.forestMuted),
-                  ),
-                  child: Text(_invitePreview!, style: const TextStyle(fontSize: 14)),
+    return AuthLightScope(
+      child: AuthScaffold(
+        title: 'Welcome back',
+        subtitle: 'Sign in to your Aranyix account',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _busy ? null : () => context.go('/welcome'),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_invitePreview != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AranyixColors.forestLight,
+                  borderRadius: BorderRadius.circular(AranyixRadii.chip),
+                  border: Border.all(color: AranyixColors.forestMuted.withValues(alpha: 0.5)),
                 ),
-              ],
-              const SizedBox(height: 24),
-              SegmentedButton<_LoginMode>(
+                child: Row(
+                  children: [
+                    const Icon(Icons.mail_outline, color: AranyixColors.forest, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _invitePreview!,
+                        style: const TextStyle(fontSize: 14, color: AranyixColors.forestDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F3EA),
+                borderRadius: BorderRadius.circular(AranyixRadii.button),
+              ),
+              child: SegmentedButton<_LoginMode>(
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) return Colors.white;
+                    return Colors.transparent;
+                  }),
+                ),
                 segments: const [
                   ButtonSegment(value: _LoginMode.email, label: Text('Email')),
                   ButtonSegment(value: _LoginMode.phone, label: Text('Phone OTP')),
@@ -210,87 +240,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ? null
                     : (s) => setState(() => _mode = s.first),
               ),
-              const SizedBox(height: 20),
-              if (_mode == _LoginMode.email) ...[
-                if (allowCustomApiBase) ...[
-                  TextField(
-                    controller: _apiUrl,
-                    enabled: _loaded && !_busy,
-                    keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'API server',
-                      hintText: 'https://api.aranyix.tech',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+            ),
+            const SizedBox(height: 20),
+            if (_mode == _LoginMode.email) ...[
+              if (allowCustomApiBase) ...[
                 TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  controller: _apiUrl,
+                  enabled: _loaded && !_busy,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'API server',
+                    hintText: 'https://api.aranyix.tech',
+                  ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _pwd,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _busy ? null : () => context.push('/forgot-password'),
-                    child: const Text('Forgot password?'),
-                  ),
-                ),
-                if (_captchaEnabled && _captchaSiteKey != null) ...[
-                  TurnstileCaptcha(
-                    siteKey: _captchaSiteKey!,
-                    onToken: (t) => setState(() => _captchaToken = t),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (_err != null)
-                  Text(_err!, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: _busy || !_loaded ? null : _submitEmail,
-                  child: Text(_busy ? 'Signing in…' : 'Sign in'),
-                ),
-              ] else
-                PhoneOtpLoginPanel(
-                  onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'or',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
+              ],
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(labelText: 'Email'),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _googleSignIn,
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text('Continue with Google'),
+              TextField(
+                controller: _pwd,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password'),
               ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: _busy ? null : () => context.push('/signup'),
-                child: const Text('Create an account'),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _busy ? null : () => context.push('/forgot-password'),
+                  child: const Text('Forgot password?'),
+                ),
               ),
-              TextButton(
-                onPressed: _busy ? null : () => context.go('/welcome'),
-                child: const Text('Back to welcome'),
+              if (_captchaEnabled && _captchaSiteKey != null) ...[
+                const SizedBox(height: 4),
+                TurnstileCaptcha(
+                  key: _captchaKey,
+                  siteKey: _captchaSiteKey!,
+                  onToken: (t) => setState(() {
+                    _captchaToken = t;
+                    _err = null;
+                  }),
+                  onError: () => setState(() => _captchaToken = null),
+                  onExpired: () => setState(() => _captchaToken = null),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_err != null) ...[
+                AuthErrorBanner(message: _err!),
+                const SizedBox(height: 12),
+              ],
+              FilledButton(
+                onPressed: _busy || !_loaded ? null : _submitEmail,
+                child: Text(_busy ? 'Signing in…' : 'Sign in'),
               ),
-            ],
-          ),
+            ] else
+              PhoneOtpLoginPanel(
+                onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
+              ),
+            const SizedBox(height: 20),
+            const AuthOrDivider(),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _googleSignIn,
+              icon: const Icon(Icons.g_mobiledata, size: 28),
+              label: const Text('Continue with Google'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: _busy ? null : () => context.push('/signup'),
+              child: const Text('Create an account'),
+            ),
+          ],
         ),
       ),
     );

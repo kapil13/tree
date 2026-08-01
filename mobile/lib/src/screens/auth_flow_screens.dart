@@ -8,6 +8,7 @@ import '../auth/phone_utils.dart';
 import '../auth_session.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
 import '../widgets/turnstile_captcha.dart';
@@ -193,7 +194,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthScaffold(
+    return AuthLightScope(
+      child: AuthScaffold(
       title: _step2 ? 'Set new password' : 'Forgot password',
       subtitle: _step2
           ? 'Enter the code sent to ${_email.text.trim()} and choose a new password.'
@@ -232,7 +234,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ],
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Colors.red)),
+            AuthErrorBanner(message: _error!),
           ],
           if (_devHint != null) ...[
             const SizedBox(height: 8),
@@ -249,6 +251,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -404,7 +407,7 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
         ],
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!, style: const TextStyle(color: Colors.red)),
+          AuthErrorBanner(message: _error!),
         ],
         if (_devHint != null) ...[
           const SizedBox(height: 8),
