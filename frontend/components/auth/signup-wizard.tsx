@@ -257,20 +257,24 @@ export function SignupWizard({
       )}
 
       {step === "details" && (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {!invitePreview ? (
-            <button type="button" className="btn-ghost text-sm" onClick={() => setStep("category")}>
+            <button type="button" className="btn-ghost -ml-2 px-2 py-1 text-sm" onClick={() => setStep("category")}>
               ← Change category
             </button>
           ) : null}
           <div>
-            <label className="label">Full name</label>
-            <input className="field-input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <label className="label mb-1">Full name</label>
+            <input
+              className="field-input !rounded-xl !py-2.5"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
           </div>
           <div>
-            <label className="label">Email address</label>
+            <label className="label mb-1">Email address</label>
             <input
-              className="field-input"
+              className="field-input !rounded-xl !py-2.5"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -278,13 +282,13 @@ export function SignupWizard({
             />
           </div>
           <div>
-            <label className="label">Mobile number</label>
+            <label className="label mb-1">Mobile number</label>
             <div className="flex gap-2">
-              <div className="phone-prefix" aria-hidden>
+              <div className="phone-prefix !rounded-xl" aria-hidden>
                 +91
               </div>
               <input
-                className="field-input-flex"
+                className="field-input-flex !rounded-xl !py-2.5"
                 type="tel"
                 inputMode="numeric"
                 value={formatPhoneDisplay(phone)}
@@ -294,9 +298,9 @@ export function SignupWizard({
             </div>
           </div>
           <div>
-            <label className="label">Password</label>
+            <label className="label mb-1">Password</label>
             <input
-              className="field-input"
+              className="field-input !rounded-xl !py-2.5"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
