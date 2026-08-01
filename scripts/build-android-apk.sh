@@ -60,12 +60,17 @@ flutter build apk --release \
   --dart-define="BYOT_ALLOW_CUSTOM_API=$BYOT_ALLOW_CUSTOM_API"
 
 APK="$MOBILE/build/app/outputs/flutter-apk/app-release.apk"
+VERSION=$(grep '^version:' "$MOBILE/pubspec.yaml" | awk '{print $2}' | cut -d+ -f1)
+NAMED_APK="$MOBILE/build/app/outputs/flutter-apk/aranyix-android-${VERSION}.apk"
 if [[ -f "$APK" ]]; then
   cp "$APK" "$ROOT/byot-release.apk"
+  cp "$APK" "$ROOT/aranyix-android-${VERSION}.apk"
+  cp "$APK" "$NAMED_APK"
   echo ""
-  echo "SUCCESS"
+  echo "SUCCESS — Aranyix Android v${VERSION}"
   echo "  APK: $APK"
-  echo "  Copy: $ROOT/byot-release.apk"
+  echo "  Copy: $ROOT/aranyix-android-${VERSION}.apk"
+  echo "  API:  $BYOT_API"
   ls -lh "$APK"
 else
   echo "ERROR: APK not found at $APK"
