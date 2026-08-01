@@ -13,7 +13,8 @@ from app.services.schemes.registry import get_scheme
 
 
 async def compute_scheme_kpis(db: AsyncSession, project: PlantingProject) -> dict[str, Any]:
-    scheme = get_scheme(project.scheme_code) if project.scheme_code else None
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = get_scheme(scheme_code) if scheme_code else None
     if scheme is None:
         return {"scheme_code": None, "targets": {}, "metrics": {}, "status": "not_applicable"}
 

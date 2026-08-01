@@ -22,7 +22,8 @@ def checklists_for_scheme(scheme_code: str | None) -> list[str]:
 
 
 def checklists_for_project(project: PlantingProject) -> list[str]:
-    codes = checklists_for_scheme(project.scheme_code)
+    scheme_code = getattr(project, "scheme_code", None)
+    codes = checklists_for_scheme(scheme_code)
     if codes:
         return codes
     from app.services.compliance.workflow import SEGMENT_RECOMMENDED_CHECKLIST
@@ -78,7 +79,8 @@ async def notify_scheme_compliance_gaps(
         return
     from app.services.webhooks.dispatcher import enqueue_webhook_event
 
-    scheme = get_scheme(project.scheme_code) if project.scheme_code else None
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = get_scheme(scheme_code) if scheme_code else None
     await enqueue_webhook_event(
         db,
         organization_id=project.organization_id,
@@ -86,7 +88,7 @@ async def notify_scheme_compliance_gaps(
         payload={
             "project_id": str(project.id),
             "project_code": project.code,
-            "scheme_code": project.scheme_code,
+            "scheme_code": scheme_code,
             "scheme_label": scheme["label"] if scheme else None,
             "checklist_code": checklist_code,
             "eligibility_status": eligibility_status,

@@ -39,6 +39,8 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    CampaApoImportRequest,
+    CampaApoImportResultOut,
     ImpersonationOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
@@ -53,10 +55,8 @@ from app.schemas.platform import (
     PlatformBillingSummaryOut,
     PlatformOpsSummaryOut,
     PlatformOverviewOut,
-    PlatformSettingsOut,
     PlatformSchemeSummaryOut,
-    CampaApoImportResultOut,
-    CampaApoImportRequest,
+    PlatformSettingsOut,
     UserAdminOut,
     UserRoleUpdate,
 )
@@ -96,12 +96,12 @@ from app.services.platform.modules import (
     module_rule_dict,
 )
 from app.services.platform.ops import build_ops_summary
+from app.services.platform.settings import build_platform_settings
 from app.services.schemes.imports.campa_apo_csv import (
     apply_apo_rows_to_projects,
     parse_campa_apo_csv,
 )
 from app.services.schemes.summary import build_platform_scheme_summary
-from app.services.platform.settings import build_platform_settings
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
 

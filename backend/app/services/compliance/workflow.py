@@ -11,8 +11,8 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.compliance.evaluator import build_auto_signals, list_project_checklist_summaries
-from app.services.schemes.compliance import checklists_for_project
 from app.services.planting_projects.survival_survey import survey_interval_days
+from app.services.schemes.compliance import checklists_for_project
 
 WorkflowStepStatus = Literal["done", "partial", "pending", "skipped"]
 

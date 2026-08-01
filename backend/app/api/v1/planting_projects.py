@@ -65,9 +65,9 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
-from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 from app.services.schemes.validation import merge_scheme_metadata, validate_scheme_metadata
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
