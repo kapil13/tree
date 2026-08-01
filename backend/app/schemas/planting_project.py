@@ -65,6 +65,7 @@ class PlantingProjectCreate(BaseModel):
     segment: str = Field(default="general", max_length=64)
     compliance_mode: Literal["open", "guided", "strict"] = "guided"
     program_code: str | None = Field(default=None, max_length=64)
+    scheme_code: str | None = Field(default=None, max_length=64)
     standard_template_code: str | None = Field(default=None, max_length=64)
     target_tree_count: int | None = Field(default=None, ge=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -90,6 +91,7 @@ class PlantingProjectOut(BaseModel):
     compliance_mode: str
     status: str
     program_code: str | None
+    scheme_code: str | None
     standard_template_code: str | None
     target_tree_count: int | None
     organization_id: uuid.UUID | None

@@ -23,6 +23,7 @@ class PlantingProject(UUIDPKMixin, TimestampMixin, Base):
     compliance_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="guided")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="planning")
     program_code: Mapped[str | None] = mapped_column(String(64))
+    scheme_code: Mapped[str | None] = mapped_column(String(64))
     standard_template_code: Mapped[str | None] = mapped_column(String(64))
     target_tree_count: Mapped[int | None] = mapped_column(Integer)
     organization_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -57,4 +58,5 @@ class PlantingProject(UUIDPKMixin, TimestampMixin, Base):
         Index("planting_projects_org_code_idx", "organization_id", "code", unique=True),
         Index("planting_projects_owner_idx", "owner_user_id"),
         Index("planting_projects_segment_idx", "segment"),
+        Index("planting_projects_scheme_code_idx", "scheme_code"),
     )
