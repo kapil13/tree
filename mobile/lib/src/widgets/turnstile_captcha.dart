@@ -1,96 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-/// Cloudflare Turnstile via embedded WebView (production signup/login).
+import '../api/api_base_url.dart';
+import '../theme.dart';
+
+/// Cloudflare Turnstile for mobile — loads from aranyix.tech (registered domain)
+/// and returns token via `aranyix://captcha?token=…` navigation intercept.
 class TurnstileCaptcha extends StatefulWidget {
   const TurnstileCaptcha({
     super.key,
     required this.siteKey,
     required this.onToken,
     this.onError,
+    this.onExpired,
   });
 
   final String siteKey;
   final ValueChanged<String> onToken;
   final VoidCallback? onError;
+  final VoidCallback? onExpired;
 
   @override
-  State<TurnstileCaptcha> createState() => _TurnstileCaptchaState();
+  State<TurnstileCaptcha> createState() => TurnstileCaptchaState();
 }
 
-class _TurnstileCaptchaState extends State<TurnstileCaptcha> {
-  late final WebViewController _controller;
-  bool _loaded = false;
+class TurnstileCaptchaState extends State<TurnstileCaptcha> {
+  WebViewController? _controller;
+  bool _loading = true;
+  bool _failed = false;
+  String? _errorMessage;
+  int _loadAttempt = 0;
+
+  static String captchaPageUrl(String siteKey, {String theme = 'light'}) {
+    final apiUri = Uri.parse(kByotApiBase);
+    final String webHost;
+    if (apiUri.host.startsWith('api.')) {
+      webHost = apiUri.host.substring(4);
+    } else if (_isLocalhost(apiUri.host)) {
+      // Turnstile only works on registered production domains.
+      webHost = 'aranyix.tech';
+    } else {
+      webHost = apiUri.host;
+    }
+    return 'https://$webHost/auth/mobile-captcha'
+        '?sitekey=${Uri.encodeComponent(siteKey)}&theme=${Uri.encodeComponent(theme)}';
+  }
+
+  static bool _isLocalhost(String host) =>
+      host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2';
 
   @override
   void initState() {
     super.initState();
+    _initController();
+  }
+
+  void _initController() {
+    final url = captchaPageUrl(widget.siteKey);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..addJavaScriptChannel(
-        'AranyixTurnstile',
-        onMessageReceived: (msg) {
-          final token = msg.message.trim();
-          if (token.isNotEmpty && token != 'error') {
-            widget.onToken(token);
-          } else {
-            widget.onError?.call();
-          }
-        },
-      )
+      ..setBackgroundColor(AranyixColors.surface)
       ..setNavigationDelegate(
         NavigationDelegate(
+          onPageStarted: (_) {
+            if (mounted) {
+              setState(() {
+                _loading = true;
+                _failed = false;
+              });
+            }
+          },
           onPageFinished: (_) {
-            if (mounted) setState(() => _loaded = true);
+            if (mounted) setState(() => _loading = false);
+          },
+          onWebResourceError: (err) {
+            if (mounted) {
+              setState(() {
+                _loading = false;
+                _failed = true;
+                _errorMessage = err.description.isNotEmpty
+                    ? err.description
+                    : 'Could not reach the security check. Try another network.';
+              });
+              widget.onError?.call();
+            }
+          },
+          onNavigationRequest: (request) {
+            final uri = Uri.tryParse(request.url);
+            if (uri != null && uri.scheme == 'aranyix' && uri.host == 'captcha') {
+              final token = uri.queryParameters['token'];
+              if (token != null && token.isNotEmpty) {
+                widget.onToken(token);
+                if (mounted) {
+                  setState(() {
+                    _failed = false;
+                    _errorMessage = null;
+                  });
+                }
+              } else {
+                widget.onExpired?.call();
+                widget.onError?.call();
+              }
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
           },
         ),
       )
-      ..loadHtmlString(_html(widget.siteKey));
+      ..loadRequest(Uri.parse(url));
   }
 
   void reset() {
-    _controller.reload();
-    setState(() => _loaded = false);
+    setState(() {
+      _loadAttempt++;
+      _loading = true;
+      _failed = false;
+      _errorMessage = null;
+    });
+    _initController();
   }
-
-  static String _html(String siteKey) => '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 80px; background: #f8faf8; font-family: system-ui, sans-serif; }
-    #wrap { width: 100%; display: flex; justify-content: center; }
-  </style>
-</head>
-<body>
-  <div id="wrap"><div id="captcha"></div></div>
-  <script>
-    function renderCaptcha() {
-      if (!window.turnstile) { setTimeout(renderCaptcha, 120); return; }
-      turnstile.render('#captcha', {
-        sitekey: '$siteKey',
-        theme: 'light',
-        callback: function(token) { AranyixTurnstile.postMessage(token); },
-        'error-callback': function() { AranyixTurnstile.postMessage('error'); }
-      });
-    }
-    renderCaptcha();
-  </script>
-</body>
-</html>
-''';
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 88,
-      child: Stack(
+    final controller = _controller;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AranyixRadii.chip),
+        border: Border.all(color: AranyixColors.forest.withValues(alpha: 0.12)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          WebViewWidget(controller: _controller),
-          if (!_loaded)
-            const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+            child: Row(
+              children: [
+                Icon(Icons.verified_user_outlined, size: 16, color: AranyixColors.forest.withValues(alpha: 0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  'Security check',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AranyixColors.forestDark.withValues(alpha: 0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 88,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (controller != null) WebViewWidget(controller: controller),
+                if (_loading)
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AranyixColors.forest),
+                  ),
+              ],
+            ),
+          ),
+          if (_failed) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _errorMessage ?? 'Security check unavailable.',
+                    style: const TextStyle(fontSize: 12, color: AranyixColors.warningOnContainer),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: reset,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AranyixColors.forest,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Retry security check'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

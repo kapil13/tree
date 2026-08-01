@@ -47,3 +47,5 @@ coverage.xml
 
 # Local dev process files
 .dev/
+aranyix-android-*.apk
+byot-release.apk
