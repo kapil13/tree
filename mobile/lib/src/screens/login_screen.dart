@@ -217,29 +217,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 20),
             ],
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F3EA),
-                borderRadius: BorderRadius.circular(AranyixRadii.button),
-              ),
-              child: SegmentedButton<_LoginMode>(
-                style: ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) return Colors.white;
-                    return Colors.transparent;
-                  }),
-                ),
-                segments: const [
-                  ButtonSegment(value: _LoginMode.email, label: Text('Email')),
-                  ButtonSegment(value: _LoginMode.phone, label: Text('Phone OTP')),
-                ],
-                selected: {_mode},
-                onSelectionChanged: _busy
-                    ? null
-                    : (s) => setState(() => _mode = s.first),
-              ),
+            AuthModeTabs<_LoginMode>(
+              values: const [_LoginMode.email, _LoginMode.phone],
+              labels: const ['Email', 'Phone OTP'],
+              selected: _mode,
+              onChanged: _busy
+                  ? (_) {}
+                  : (mode) => setState(() => _mode = mode),
             ),
             const SizedBox(height: 20),
             if (_mode == _LoginMode.email) ...[

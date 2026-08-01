@@ -6,6 +6,7 @@ import '../auth_session.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/brand_mark.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -17,12 +18,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fade;
   late final Animation<double> _opacity;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _fade = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fade = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
     _opacity = CurvedAnimation(parent: _fade, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.94, end: 1).animate(
+      CurvedAnimation(parent: _fade, curve: Curves.easeOutCubic),
+    );
     _fade.forward();
     Future.microtask(_route);
   }
@@ -34,7 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _route() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future.delayed(const Duration(milliseconds: 950));
     final api = await ref.read(apiClientProvider.future);
     if (!await api.hasStoredToken()) {
       sessionController.signOut();
@@ -57,37 +62,44 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AranyixColors.surface,
       body: SafeArea(
         child: FadeTransition(
           opacity: _opacity,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'assets/brand/aranyix-logo.png',
-                  width: 260,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Text(
+          child: ScaleTransition(
+            scale: _scale,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AranyixBrandMark(size: 88, radius: 24, showGlow: true),
+                  const SizedBox(height: 20),
+                  Text(
                     'Aranyix',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: AranyixColors.forestDark,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AranyixColors.forestDark,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Plantation intelligence',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AranyixColors.onSurfaceMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 36),
+                  const SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AranyixColors.forest,
                     ),
                   ),
-                ),
-                const SizedBox(height: 36),
-                const SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: AranyixColors.forest,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
