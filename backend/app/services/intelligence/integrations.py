@@ -47,6 +47,36 @@ def _ai_pipeline_status() -> dict[str, Any]:
     return ai_service_status()
 
 
+def _assistant_chat_status() -> dict[str, Any]:
+    """Chat assistant uses OpenAI first, then Gemini; otherwise rules engine."""
+    if settings.openai_api_key:
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": "OpenAI chat (gpt-4o-mini) with Gemini fallback for AI assistant",
+            "reachable": True,
+            "error": None,
+            "provider": "openai",
+        }
+    if settings.gemini_api_key:
+        return {
+            "status": "configured",
+            "mode": "live",
+            "label": "Gemini chat (gemini-1.5-flash) for AI assistant",
+            "reachable": True,
+            "error": None,
+            "provider": "gemini",
+        }
+    return {
+        "status": "not_configured",
+        "mode": "rules",
+        "label": "No LLM key — AI assistant uses portfolio rules engine only",
+        "reachable": False,
+        "error": "missing_credentials",
+        "provider": "rules",
+    }
+
+
 def _tree_satellite_status() -> dict[str, Any]:
     if has_sentinel_credentials():
         return {

@@ -1576,14 +1576,18 @@ export const carbon = {
   },
 };
 
+export type AssistantAnswer = {
+  answer: string;
+  calculations: Record<string, unknown>;
+  citations: string[];
+  mode?: "llm" | "rules";
+  provider?: "openai" | "gemini" | "rules" | null;
+  llm_error?: string | null;
+};
+
 export const assistant = {
   async query(prompt: string) {
-    return (
-      await api.post<{ answer: string; calculations: Record<string, number>; citations: string[] }>(
-        "/v1/assistant/query",
-        { prompt }
-      )
-    ).data;
+    return (await api.post<AssistantAnswer>("/v1/assistant/query", { prompt })).data;
   },
 };
 
