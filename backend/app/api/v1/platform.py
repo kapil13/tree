@@ -39,6 +39,8 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    CampaApoImportRequest,
+    CampaApoImportResultOut,
     ImpersonationOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
@@ -53,6 +55,7 @@ from app.schemas.platform import (
     PlatformBillingSummaryOut,
     PlatformOpsSummaryOut,
     PlatformOverviewOut,
+    PlatformSchemeSummaryOut,
     PlatformSettingsOut,
     UserAdminOut,
     UserRoleUpdate,
@@ -94,6 +97,11 @@ from app.services.platform.modules import (
 )
 from app.services.platform.ops import build_ops_summary
 from app.services.platform.settings import build_platform_settings
+from app.services.schemes.imports.campa_apo_csv import (
+    apply_apo_rows_to_projects,
+    parse_campa_apo_csv,
+)
+from app.services.schemes.summary import build_platform_scheme_summary
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
 
@@ -606,3 +614,54 @@ async def platform_review_program_access_request(
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="request_not_found")
     return _access_request_admin_out(row)
+
+
+@router.get("/schemes/summary", response_model=PlatformSchemeSummaryOut)
+async def platform_scheme_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformSchemeSummaryOut:
+    """Roll up planting projects and trees by central govt scheme."""
+    return PlatformSchemeSummaryOut.model_validate(await build_platform_scheme_summary(db))
+
+
+@router.post("/schemes/apo-import", response_model=CampaApoImportResultOut)
+async def platform_campa_apo_import(
+    payload: CampaApoImportRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> CampaApoImportResultOut:
+    """Import State CAMPA APO rows and link PCA references to planting projects by code."""
+    from sqlalchemy import select
+
+    from app.models.planting_project import PlantingProject
+
+    rows, parse_errors = parse_campa_apo_csv(payload.csv_text)
+    if parse_errors and not rows:
+        return CampaApoImportResultOut(imported=0, parse_errors=parse_errors)
+
+    project_codes = [row["project_code"] for row in rows]
+    projects = list(
+        (
+            await db.execute(
+                select(PlantingProject).where(PlantingProject.code.in_(project_codes))
+            )
+        ).scalars().all()
+    )
+    applied, unmatched = apply_apo_rows_to_projects(projects, rows)
+
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.scheme.apo_import",
+        resource_type="planting_project",
+        resource_id=None,
+        request=request,
+        diff={"imported": len(applied), "unmatched": unmatched},
+    )
+    await db.commit()
+
+    return CampaApoImportResultOut(
+        imported=len(applied),
+        unmatched=unmatched,
+        parse_errors=parse_errors,
+        applied=applied,
+    )

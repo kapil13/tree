@@ -324,6 +324,15 @@ async def save_project_checklist_responses(
     stored.score_pct = metrics["score_pct"]
     stored.eligibility_status = metrics["eligibility_status"]
 
+    from app.services.schemes.compliance import notify_scheme_compliance_gaps
+
+    await notify_scheme_compliance_gaps(
+        db,
+        project,
+        checklist_code,
+        metrics["eligibility_status"],
+    )
+
     await db.flush()
     return await build_project_checklist_state(db, project, checklist_code)
 

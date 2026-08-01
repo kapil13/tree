@@ -27,25 +27,23 @@ Aranyix separates **access programs** (who can use the platform) from **central 
 ## API
 
 - `GET /api/v1/schemes` — list schemes (`?program_code=government_nhai`)
-- `GET /api/v1/schemes/{code}` — scheme detail
-- `POST /api/v1/planting-projects` — accepts `scheme_code`
+- `GET /api/v1/schemes/{code}` — scheme detail (includes `metadata_sections`)
+- `POST /api/v1/planting-projects` — accepts `scheme_code`; validates `scheme_refs` when provided
+- `PATCH /api/v1/planting-projects/{id}/scheme-metadata` — update govt reference IDs
+- `GET /api/v1/planting-projects/{id}/scheme-kpis` — survival / geo-tag KPIs vs scheme targets
 - `GET /api/v1/planting-projects?scheme_code=campa_ca` — filter projects
+- `GET /api/v1/platform/schemes/summary` — platform admin rollup by scheme
+- `POST /api/v1/platform/schemes/apo-import` — CAMPA APO CSV import (platform admin)
 
-## Validation rules
+## Phases 3–7 (implemented)
 
-- `government_nhai` and `ngo_community` projects **require** `scheme_code`
-- `corporate_esg` and `byot` — `scheme_code` optional
-- Scheme must be active and allowed for the selected program
+- **Phase 3:** Scheme metadata forms + `PATCH scheme-metadata` validation
+- **Phase 4:** Auto-attach scheme checklists on project create; workflow prefers `scheme_code`
+- **Phase 5:** `scheme` block in MRV export; `scheme-summary.json` in evidence bundle; framework profiles (`gim`, `mishti`, `nagar_van`, `green_credit_india`)
+- **Phase 6:** `by_scheme` in field-ops summary; platform scheme rollup; project KPI cards
+- **Phase 7:** CAMPA APO CSV import; webhook `compliance.scheme.gaps_identified`
 
-## Next phases (not in this PR)
-
-- **Phase 3:** scheme metadata forms (`pca_number`, MGNREGA work ID, etc.)
-- **Phase 4:** auto-attach compliance checklists from `checklist_codes`
-- **Phase 5:** scheme block in evidence bundle + framework reports
-- **Phase 6:** platform admin rollup by scheme
-- **Phase 7:** CAMPA APO CSV import
-
-## Field dictionary (planned)
+## Field dictionary
 
 | Key | Schemes | Meaning |
 | --- | --- | --- |

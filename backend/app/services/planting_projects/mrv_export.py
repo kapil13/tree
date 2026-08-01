@@ -13,6 +13,8 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.planting_projects.service import get_active_standard
+from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.registry import get_scheme
 
 
 def _segment_report(
@@ -146,6 +148,12 @@ async def build_project_mrv_context(
     total_trees = len(trees)
     native_pct = round((native_count / total_trees) * 100, 1) if total_trees else None
 
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = get_scheme(scheme_code) if scheme_code else None
+    meta = getattr(project, "metadata_", None) or {}
+    scheme_refs = meta.get("scheme_refs") if isinstance(meta.get("scheme_refs"), dict) else {}
+    scheme_kpis = await compute_scheme_kpis(db, project)
+
     return {
         "project": {
             "code": project.code,
@@ -154,8 +162,19 @@ async def build_project_mrv_context(
             "compliance_mode": project.compliance_mode,
             "status": project.status,
             "target_tree_count": project.target_tree_count,
+            "scheme_code": scheme_code,
             "standard_name": standard.name if standard else None,
             "standard_template": standard.template_code if standard else None,
+        },
+        "scheme": {
+            "code": scheme["code"] if scheme else None,
+            "label": scheme["label"] if scheme else None,
+            "ministry": scheme["ministry"] if scheme else None,
+            "refs": scheme_refs,
+            "funding_sources": meta.get("funding_sources") or [],
+            "convergence": meta.get("convergence") or [],
+            "kpi_targets": dict(scheme.get("kpi_targets") or {}) if scheme else {},
+            "kpis": scheme_kpis,
         },
         "rules_summary": {
             "spacing_m": rules.get("spacing_m"),

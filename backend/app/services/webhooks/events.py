@@ -11,6 +11,7 @@ WEBHOOK_EVENT_TYPES: tuple[str, ...] = (
     "project.framework_report.exported",
     "project.credit_ledger.updated",
     "compliance.checklist.updated",
+    "compliance.scheme.gaps_identified",
     "payment.completed",
     "payment.failed",
     "webhook.test",
