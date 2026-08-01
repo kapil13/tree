@@ -1,49 +1,44 @@
-/// Signup program categories — aligned with web program catalog.
+import 'package:flutter/material.dart';
 
+/// Signup program categories — short labels for mobile UX.
 class SignupCategory {
   const SignupCategory({
     required this.code,
     required this.title,
-    required this.subtitle,
-    required this.emoji,
-    required this.audience,
+    required this.hint,
+    required this.icon,
   });
 
   final String code;
   final String title;
-  final String subtitle;
-  final String emoji;
-  final String audience;
+  final String hint;
+  final IconData icon;
 }
 
 const signupCategories = [
   SignupCategory(
     code: 'byot',
-    title: 'Citizen & landowner',
-    subtitle: 'Register trees, track carbon, and monitor your plantation.',
-    emoji: '🌳',
-    audience: 'Individuals, farmers, societies',
+    title: 'Citizen',
+    hint: 'Trees & land',
+    icon: Icons.park_outlined,
   ),
   SignupCategory(
     code: 'government_nhai',
-    title: 'Government & NHAI',
-    subtitle: 'Compliance-ready packages for highways and public greening.',
-    emoji: '🏛️',
-    audience: 'NHAI, forest departments, ULBs',
+    title: 'Government',
+    hint: 'NHAI & public',
+    icon: Icons.account_balance_outlined,
   ),
   SignupCategory(
     code: 'corporate_esg',
-    title: 'Corporate ESG',
-    subtitle: 'Portfolio dashboards, credits, and audit evidence.',
-    emoji: '🏢',
-    audience: 'CSR, sustainability, ESG teams',
+    title: 'Corporate',
+    hint: 'ESG & CSR',
+    icon: Icons.apartment_outlined,
   ),
   SignupCategory(
     code: 'ngo_community',
-    title: 'NGO & community',
-    subtitle: 'Coordinate volunteers, field workers, and community blocks.',
-    emoji: '🤝',
-    audience: 'NGOs, SHGs, community forests',
+    title: 'NGO',
+    hint: 'Community',
+    icon: Icons.groups_outlined,
   ),
 ];
 
