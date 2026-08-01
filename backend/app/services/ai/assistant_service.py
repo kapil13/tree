@@ -33,11 +33,12 @@ log = get_logger("assistant")
 
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = "gpt-4o-mini"
-GEMINI_CHAT_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-1.5-flash:generateContent"
+# Prefer current Flash models; 1.5-flash / 2.0-flash are retired on AI Studio.
+GEMINI_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
 )
-GEMINI_MODEL = "gemini-1.5-flash"
 
 SYSTEM_PROMPT = (
     "You are Aranyix, an expert environmental MRV assistant for tree plantations, "
@@ -916,43 +917,57 @@ async def answer_with_gemini(
         return None, None
 
     user_content = _user_prompt_payload(prompt, portfolio, intelligence)
+    last_err: str | None = None
 
-    try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            resp = await client.post(
-                GEMINI_CHAT_URL,
-                params={"key": api_key},
-                json={
-                    "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-                    "contents": [{"role": "user", "parts": [{"text": user_content}]}],
-                    "generationConfig": {
-                        "temperature": 0.45,
-                        "maxOutputTokens": 500,
-                    },
-                },
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        for model in GEMINI_MODELS:
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model}:generateContent"
             )
-            resp.raise_for_status()
-            body = resp.json()
-            text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
-            if text:
-                return (
-                    _sanitize_response(
-                        {
-                            "answer": text[:2500],
-                            "calculations": {},
-                            "citations": ["Aranyix live portfolio", "Gemini analysis"],
-                            "mode": "llm",
-                            "provider": "gemini",
-                            "llm_error": None,
-                        }
-                    ),
-                    None,
+            try:
+                resp = await client.post(
+                    url,
+                    params={"key": api_key},
+                    json={
+                        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                        "contents": [{"role": "user", "parts": [{"text": user_content}]}],
+                        "generationConfig": {
+                            "temperature": 0.45,
+                            "maxOutputTokens": 500,
+                        },
+                    },
                 )
-            return None, "Gemini returned an empty response"
-    except Exception as exc:
-        err = _short_llm_error(exc)
-        log.warning("assistant.gemini_failed", error=err)
-        return None, f"Gemini: {err}"
+                resp.raise_for_status()
+                body = resp.json()
+                text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if text:
+                    return (
+                        _sanitize_response(
+                            {
+                                "answer": text[:2500],
+                                "calculations": {},
+                                "citations": [
+                                    "Aranyix live portfolio",
+                                    f"Gemini ({model})",
+                                ],
+                                "mode": "llm",
+                                "provider": "gemini",
+                                "llm_error": None,
+                            }
+                        ),
+                        None,
+                    )
+                last_err = f"Gemini/{model}: empty response"
+            except Exception as exc:
+                last_err = f"Gemini/{model}: {_short_llm_error(exc)}"
+                log.warning("assistant.gemini_failed", model=model, error=last_err)
+                # Try next model on 404/NOT_FOUND; stop early on auth/quota.
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                if status in {401, 403, 429}:
+                    break
+
+    return None, last_err or "Gemini returned an empty response"
 
 
 async def run_assistant(

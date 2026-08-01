@@ -23,7 +23,11 @@ log = get_logger("ai.llm_vision")
 
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = "gpt-4o-mini"
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+)
 
 HEALTH_CLASSES = frozenset({"healthy", "moderate", "unhealthy", "disease_risk"})
 REC_TYPES = frozenset({"water", "nutrient", "pest", "general"})
@@ -196,10 +200,12 @@ async def _call_openai(images: list[bytes], *, species_hint: str | None) -> dict
     return _parse_json_payload(text)
 
 
-async def _call_gemini(images: list[bytes], *, species_hint: str | None) -> dict[str, Any] | None:
+async def _call_gemini(
+    images: list[bytes], *, species_hint: str | None
+) -> tuple[dict[str, Any] | None, str | None]:
     api_key = settings.gemini_api_key
     if not api_key:
-        return None
+        return None, None
 
     parts: list[dict[str, Any]] = [
         {
@@ -210,23 +216,40 @@ async def _call_gemini(images: list[bytes], *, species_hint: str | None) -> dict
         }
     ]
     for blob in images:
-        parts.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.standard_b64encode(blob).decode("ascii")}})
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": base64.standard_b64encode(blob).decode("ascii"),
+                }
+            }
+        )
 
-    try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            resp = await client.post(
-                GEMINI_URL,
-                params={"key": api_key},
-                json={"contents": [{"parts": parts}]},
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        for model in GEMINI_MODELS:
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model}:generateContent"
             )
-            resp.raise_for_status()
-            body = resp.json()
-            text = body["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception as exc:
-        log.warning("llm_vision.gemini_failed", error=str(exc))
-        return None
+            try:
+                resp = await client.post(
+                    url,
+                    params={"key": api_key},
+                    json={"contents": [{"parts": parts}]},
+                )
+                resp.raise_for_status()
+                body = resp.json()
+                text = body["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = _parse_json_payload(text)
+                if parsed is not None:
+                    return parsed, model
+            except Exception as exc:
+                log.warning("llm_vision.gemini_failed", model=model, error=str(exc))
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                if status in {401, 403, 429}:
+                    break
 
-    return _parse_json_payload(text)
+    return None, None
 
 
 async def analyze_tree_vision(
@@ -245,8 +268,9 @@ async def analyze_tree_vision(
         data = await _call_openai(usable, species_hint=species_hint)
         pipeline = f"openai/{OPENAI_MODEL}"
     if data is None and settings.gemini_api_key:
-        data = await _call_gemini(usable, species_hint=species_hint)
-        pipeline = "gemini/gemini-1.5-flash"
+        data, gemini_model = await _call_gemini(usable, species_hint=species_hint)
+        if gemini_model:
+            pipeline = f"gemini/{gemini_model}"
     if data is None:
         return None
 
