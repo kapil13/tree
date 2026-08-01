@@ -6,6 +6,7 @@ import pytest
 
 from app.services.ai.assistant_service import (
     PortfolioContext,
+    _looks_truncated_or_thin,
     answer_with_rules,
     detect_intent,
     parse_carbon_params,
@@ -66,6 +67,36 @@ def test_answer_with_rules_surfaces_llm_error():
     )
     assert out["mode"] == "rules"
     assert out["llm_error"] == "OpenAI: HTTP 401"
+
+
+def test_looks_truncated_or_thin_detects_cut_health_answer():
+    assert _looks_truncated_or_thin(
+        "Based on your portfolio data, the tree health status is as follows: * **Healthy Trees"
+    )
+    assert not _looks_truncated_or_thin(
+        "You have **20 healthy**, **3 moderate**, **2 unhealthy** trees (80% healthy)."
+    )
+
+
+def test_answer_weather_uses_site_forecasts():
+    portfolio = PortfolioContext(
+        total_trees=10,
+        intelligence={
+            "site_weather": [
+                {
+                    "work_area_name": "North Block",
+                    "forecast_summary": "Next: Partly cloudy, 24–31°C, 2 mm rain.",
+                    "rain_mm_next_48h": 2,
+                }
+            ],
+            "weather_alerts": [],
+            "weather_alert_count": 0,
+        },
+    )
+    out = answer_with_rules("current weather", portfolio)
+    assert "North Block" in out["answer"]
+    assert "24–31°C" in out["answer"]
+    assert "alert" in out["answer"].lower() or "No severe" in out["answer"]
 
 
 def test_answer_portfolio_uses_live_counts():
