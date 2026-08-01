@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ProjectWizardSteps,
+  SchemePickerStep,
+} from "@/components/projects/scheme-picker";
 import {
   centralSchemes,
   errorMessage,
@@ -15,7 +19,6 @@ import {
 } from "@/lib/api";
 import {
   FLEX_PROJECT_OPTIONS,
-  SCHEME_GROUP_LABEL,
   type CentralSchemeGroup,
   type FlexProjectCode,
 } from "@/lib/schemes";
@@ -57,6 +60,7 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [schemeSearch, setSchemeSearch] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -163,110 +167,73 @@ export default function NewProjectPage() {
     selectedScheme?.label ?? selectedFlex?.label ?? "Select a central scheme";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <Link href="/projects" className="text-sm text-forest-700 hover:underline">
-          ← All projects
+    <div className="registration-shell mx-auto max-w-5xl space-y-8 pb-8">
+      <header className="space-y-5">
+        <Link
+          href="/projects"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-forest-700 hover:text-forest-900"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All projects
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">New planting project</h1>
-        <p className="mt-1 text-sm text-stone-600">
-          {step === 1
-            ? "Choose the central government scheme or programme this project runs under."
-            : "Add project details, then draw work areas on the map."}
-        </p>
-      </div>
+
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl dark:text-stone-50">
+            New planting project
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-stone-600">
+            {step === 1
+              ? "Link your site to a central government scheme so compliance checklists, govt reference IDs, and audit exports are configured automatically."
+              : "Name your project and set targets. Next you will draw work areas on the map."}
+          </p>
+        </div>
+
+        <ProjectWizardSteps step={step} />
+      </header>
 
       {step === 1 ? (
-        <div className="card space-y-6">
-          {schemesLoading ? (
-            <p className="text-sm text-stone-500">Loading central schemes…</p>
-          ) : (
-            (["central", "convergence", "corporate"] as CentralSchemeGroup[]).map((group) =>
-              schemesByGroup[group].length > 0 ? (
-                <div key={group}>
-                  <p className="kpi-label">{SCHEME_GROUP_LABEL[group]}</p>
-                  <div className="mt-3 grid gap-2">
-                    {schemesByGroup[group].map((scheme) => (
-                      <button
-                        key={scheme.code}
-                        type="button"
-                        className={cn(
-                          "rounded-lg border p-3 text-left text-sm transition",
-                          selectedScheme?.code === scheme.code
-                            ? "border-forest-500 bg-forest-50"
-                            : "border-stone-200 hover:border-stone-300",
-                        )}
-                        onClick={() => applyScheme(scheme)}
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{scheme.label}</span>
-                          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-600">
-                            {scheme.ministry}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-xs text-stone-500">{scheme.description}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null,
-            )
-          )}
-
-          <div>
-            <p className="kpi-label">Corporate CSR (no central scheme tag)</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {FLEX_PROJECT_OPTIONS.map((flex) => (
-                <button
-                  key={flex.code}
-                  type="button"
-                  className={cn(
-                    "rounded-lg border p-3 text-left text-sm transition",
-                    selection?.kind === "flex" && selection.code === flex.code
-                      ? "border-forest-500 bg-forest-50"
-                      : "border-stone-200 hover:border-stone-300",
-                  )}
-                  onClick={() => applyFlex(flex.code)}
-                >
-                  <div className="font-medium">{flex.label}</div>
-                  <div className="text-xs text-stone-500">{flex.hint}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end border-t border-stone-200 pt-4">
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={!selection}
-              onClick={() => setStep(2)}
-            >
-              Continue to project details
-            </button>
-          </div>
-        </div>
+        <SchemePickerStep
+          schemes={schemes}
+          schemesByGroup={schemesByGroup}
+          schemesLoading={schemesLoading}
+          selectedScheme={selectedScheme}
+          search={schemeSearch}
+          onSearchChange={setSchemeSearch}
+          onSelectScheme={applyScheme}
+          flexOptions={FLEX_PROJECT_OPTIONS}
+          selectedFlexCode={selection?.kind === "flex" ? selection.code : null}
+          onSelectFlex={(c) => applyFlex(c as FlexProjectCode)}
+          onContinue={() => setStep(2)}
+        />
       ) : (
-        <form onSubmit={submit} className="card space-y-5">
-          <div className="rounded-lg border border-forest-100 bg-forest-50/70 px-4 py-3 text-sm text-forest-950">
-            <span className="font-medium">Scheme:</span> {selectionLabel}
-            {selectedScheme && (
-              <span className="ml-2 text-forest-800">({selectedScheme.ministry})</span>
-            )}
+        <form
+          onSubmit={submit}
+          className="space-y-6 rounded-2xl border border-stone-200/90 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900 sm:p-8"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-forest-100 bg-gradient-to-r from-forest-50/80 to-white px-4 py-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-forest-700">
+                Linked scheme
+              </p>
+              <p className="mt-1 font-medium text-stone-900">{selectionLabel}</p>
+              {selectedScheme && (
+                <p className="text-xs text-stone-500">{selectedScheme.ministry}</p>
+              )}
+            </div>
             <button
               type="button"
-              className="ml-3 text-forest-800 underline"
+              className="text-sm font-medium text-forest-700 underline-offset-2 hover:underline"
               onClick={() => setStep(1)}
             >
-              Change
+              Change scheme
             </button>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             <div>
-              <label className="kpi-label">Project code</label>
+              <label className="label">Project code</label>
               <input
-                className="input mt-1"
+                className="field-input mt-1"
                 required
                 placeholder={
                   selectedScheme?.code === "nhai_highway"
@@ -278,13 +245,14 @@ export default function NewProjectPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
+              <p className="mt-1 text-xs text-stone-400">Unique ID for reports and APO import matching</p>
             </div>
             <div>
-              <label className="kpi-label">Project name</label>
+              <label className="label">Project name</label>
               <input
-                className="input mt-1"
+                className="field-input mt-1"
                 required
-                placeholder="Planting project name"
+                placeholder="e.g. NH-44 Package 3 greening"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -292,9 +260,10 @@ export default function NewProjectPage() {
           </div>
 
           <div>
-            <label className="kpi-label">Description</label>
+            <label className="label">Description (optional)</label>
             <textarea
-              className="input mt-1 min-h-[80px]"
+              className="field-input mt-1 min-h-[88px]"
+              placeholder="District, package, or block details for your team"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -302,7 +271,7 @@ export default function NewProjectPage() {
 
           {templates.length > 0 && (
             <div>
-              <label className="kpi-label">Planting standard template</label>
+              <label className="label">Planting standard template</label>
               <select
                 className="input mt-1"
                 value={selectedTemplate?.code ?? ""}
@@ -320,19 +289,20 @@ export default function NewProjectPage() {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <label className="kpi-label">Target trees (optional)</label>
+              <label className="label">Target trees (optional)</label>
               <input
-                className="input mt-1"
+                className="field-input mt-1"
                 type="number"
                 min={1}
+                placeholder="10000"
                 value={targetTrees}
                 onChange={(e) => setTargetTrees(e.target.value)}
               />
             </div>
             <div>
-              <label className="kpi-label">Survival survey interval</label>
+              <label className="label">Survival survey interval</label>
               <select
                 className="input mt-1"
                 value={surveyIntervalDays}
@@ -344,29 +314,30 @@ export default function NewProjectPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-stone-200">
+          <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700">
             <button
               type="button"
-              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-stone-700"
+              className="flex w-full items-center justify-between bg-stone-50/80 px-4 py-3 text-left text-sm font-medium text-stone-700 dark:bg-stone-800/50"
               onClick={() => setShowAdvanced((open) => !open)}
             >
               Advanced: segment, program &amp; compliance
               {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
             {showAdvanced && (
-              <div className="space-y-4 border-t border-stone-200 px-4 py-4">
+              <div className="space-y-4 border-t border-stone-200 px-4 py-4 dark:border-stone-700">
                 <div>
-                  <label className="kpi-label">Segment</label>
+                  <label className="label">Segment</label>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {SEGMENTS.map((s) => (
                       <button
                         key={s.code}
                         type="button"
-                        className={`rounded-lg border p-3 text-left text-sm ${
+                        className={cn(
+                          "rounded-xl border p-3 text-left text-sm transition",
                           segment === s.code
-                            ? "border-forest-500 bg-forest-50"
-                            : "border-stone-200 hover:border-stone-300"
-                        }`}
+                            ? "border-forest-500 bg-forest-50 ring-2 ring-forest-500/15"
+                            : "border-stone-200 hover:border-stone-300",
+                        )}
                         onClick={() => {
                           setSegment(s.code);
                           setTemplateCode("");
@@ -379,9 +350,9 @@ export default function NewProjectPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="kpi-label">Compliance mode</label>
+                    <label className="label">Compliance mode</label>
                     <select
                       className="input mt-1"
                       value={complianceMode}
@@ -393,7 +364,7 @@ export default function NewProjectPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="kpi-label">Program</label>
+                    <label className="label">Program</label>
                     <select
                       className="input mt-1"
                       value={programCode}
@@ -410,11 +381,13 @@ export default function NewProjectPage() {
             )}
           </div>
 
-          {error && <p className="text-sm text-rose-700">{error}</p>}
+          {error && (
+            <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p>
+          )}
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <div className="flex flex-col-reverse gap-3 border-t border-stone-100 pt-5 sm:flex-row sm:justify-between dark:border-stone-800">
             <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
-              Back
+              Back to schemes
             </button>
             <button type="submit" className="btn-primary" disabled={busy}>
               {busy ? "Creating…" : "Create project & draw areas"}
