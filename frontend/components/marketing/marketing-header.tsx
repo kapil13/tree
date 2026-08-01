@@ -10,10 +10,13 @@ import { cn } from "@/lib/cn";
 export function MarketingHeader({
   header = CMS_HEADER_FALLBACK,
   authMode,
+  compact = false,
 }: {
   header?: CmsPublicSite["site"]["header"];
   /** When set (auth surfaces), highlight the active CTA and fix hash nav links. */
   authMode?: "signin" | "signup";
+  /** Tighter chrome for single-viewport surfaces like auth */
+  compact?: boolean;
 }) {
   const pathname = usePathname();
   const onAuth =
@@ -24,20 +27,38 @@ export function MarketingHeader({
   const activeMode = authMode ?? "signin";
 
   return (
-    <header className="marketing-header">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
+    <header className="marketing-header shrink-0">
+      <div
+        className={cn(
+          "mx-auto flex max-w-7xl items-center justify-between gap-4 px-6",
+          compact ? "py-2.5" : "py-4",
+        )}
+      >
         <Link href="/" className="shrink-0" aria-label="Aranyix home">
-          <AranyixLogo className="h-11 w-auto max-w-[220px] sm:h-12 sm:max-w-[260px]" />
+          <AranyixLogo
+            className={cn(
+              "w-auto",
+              compact
+                ? "h-9 max-w-[180px] sm:h-10 sm:max-w-[200px]"
+                : "h-11 max-w-[220px] sm:h-12 sm:max-w-[260px]",
+            )}
+          />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav
+          className={cn("hidden items-center gap-1 md:flex", compact && "gap-0")}
+          aria-label="Primary"
+        >
           {header.nav.map((item) => {
             const link = linkProps(item);
-            // Hash links on marketing home are relative; from /auth send users home first.
             const href =
               onAuth && link.href.startsWith("#") ? `/${link.href}` : link.href;
             return (
-              <a key={`${link.href}-${link.label}`} href={href} className="marketing-nav-link">
+              <a
+                key={`${link.href}-${link.label}`}
+                href={href}
+                className={cn("marketing-nav-link", compact && "px-3 py-1.5")}
+              >
                 {link.label}
               </a>
             );
@@ -51,6 +72,7 @@ export function MarketingHeader({
                 href="/auth?mode=signin"
                 className={cn(
                   "btn-ghost hidden sm:inline-flex",
+                  compact && "px-3 py-1.5 text-sm",
                   activeMode === "signin" && "bg-forest-50 text-forest-800",
                 )}
                 aria-current={activeMode === "signin" ? "page" : undefined}
@@ -61,7 +83,8 @@ export function MarketingHeader({
                 href="/auth?mode=signup"
                 className={cn(
                   "btn-primary",
-                  activeMode === "signup" && "ring-2 ring-forest-500/30 ring-offset-2",
+                  compact && "px-3.5 py-1.5 text-sm",
+                  activeMode === "signup" && "ring-2 ring-forest-500/30 ring-offset-1",
                 )}
                 aria-current={activeMode === "signup" ? "page" : undefined}
               >
