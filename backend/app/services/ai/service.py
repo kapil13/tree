@@ -273,7 +273,7 @@ class LLMEnhancedAIService:
         if settings.openai_api_key:
             return "openai/gpt-4o-mini-vision"
         if settings.gemini_api_key:
-            return "gemini/gemini-1.5-flash-vision"
+            return "gemini/gemini-2.5-flash-vision"
         return self._stub.name
 
     async def detect_species(
