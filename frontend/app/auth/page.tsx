@@ -88,10 +88,10 @@ function AuthPageInner() {
   }, [params]);
 
   return (
-    <MarketingShell authMode={mode} mainClassName="flex-1">
+    <MarketingShell authMode={mode} footerVariant="compact" mainClassName="min-h-0">
       <AlreadySignedInRedirect />
       {oauthError && (
-        <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">
+        <div className="mx-auto mt-2 max-w-lg shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {oauthError}
         </div>
       )}

@@ -2,19 +2,20 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { AuthCompactFooter } from "@/components/marketing/auth-compact-footer";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { cmsPublic } from "@/lib/cms-api";
 import { CMS_HOME_FALLBACK } from "@/lib/cms-defaults";
+import { cn } from "@/lib/cn";
 
 type MarketingShellProps = {
   children: ReactNode;
-  /** Extra classes on the outer marketing-page wrapper */
   className?: string;
-  /** Extra classes on the main content region */
   mainClassName?: string;
-  /** Highlight Sign in / Get started when rendering auth surfaces */
   authMode?: "signin" | "signup";
+  /** full = marketing footer; compact = slim legal bar (auth) */
+  footerVariant?: "full" | "compact";
 };
 
 /**
@@ -26,6 +27,7 @@ export function MarketingShell({
   className = "",
   mainClassName = "",
   authMode,
+  footerVariant = "full",
 }: MarketingShellProps) {
   const { data } = useQuery({
     queryKey: ["cms-public-site"],
@@ -34,12 +36,25 @@ export function MarketingShell({
   });
 
   const site = data?.site ?? CMS_HOME_FALLBACK.site;
+  const isAuth = footerVariant === "compact" || authMode != null;
 
   return (
-    <div className={`marketing-page ${className}`.trim()}>
-      <MarketingHeader header={site.header} authMode={authMode} />
-      <main className={mainClassName}>{children}</main>
-      <MarketingFooter footer={site.footer} />
+    <div
+      className={cn(
+        "marketing-page",
+        isAuth && "flex h-dvh max-h-dvh flex-col overflow-hidden",
+        className,
+      )}
+    >
+      <MarketingHeader header={site.header} authMode={authMode} compact={isAuth} />
+      <main className={cn(isAuth && "flex min-h-0 flex-1 flex-col", mainClassName)}>
+        {children}
+      </main>
+      {footerVariant === "compact" || authMode != null ? (
+        <AuthCompactFooter footer={site.footer} />
+      ) : (
+        <MarketingFooter footer={site.footer} />
+      )}
     </div>
   );
 }
