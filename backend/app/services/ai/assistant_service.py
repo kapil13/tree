@@ -843,9 +843,11 @@ def _looks_truncated_or_thin(text: str) -> bool:
         return True
     # Started a health/weather list but never finished a number line
     lower = t.lower()
-    if "as follows" in lower and "healthy" in lower and not any(ch.isdigit() for ch in t):
-        return True
-    return False
+    return (
+        "as follows" in lower
+        and "healthy" in lower
+        and not any(ch.isdigit() for ch in t)
+    )
 
 
 def _short_llm_error(exc: Exception) -> str:
