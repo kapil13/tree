@@ -302,20 +302,26 @@ class _DashboardTopBar extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
                   gradient: const LinearGradient(
                     colors: [AranyixColors.heroGradientStart, AranyixColors.heroGradientEnd],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(10),
                 ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'A',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/brand/aranyix-app-icon.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Text(
+                      'A',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -323,9 +329,9 @@ class _DashboardTopBar extends StatelessWidget {
               const Text(
                 'Aranyix',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.4,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                   color: AranyixColors.forestDark,
                 ),
               ),

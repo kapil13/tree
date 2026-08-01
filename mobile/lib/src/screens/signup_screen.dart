@@ -422,18 +422,29 @@ class _CategoryCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AranyixRadii.card),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AranyixRadii.card),
             border: Border.all(
-              color: selected ? AranyixColors.forest : Colors.black.withValues(alpha: 0.06),
+              color: selected ? AranyixColors.forest : AranyixColors.border,
               width: selected ? 2 : 1,
             ),
+            boxShadow: selected ? null : AranyixShadows.card,
           ),
           child: Row(
             children: [
-              Text(category.emoji, style: const TextStyle(fontSize: 28)),
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : AranyixColors.surfaceTint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(category.emoji, style: const TextStyle(fontSize: 24)),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -441,7 +452,7 @@ class _CategoryCard extends StatelessWidget {
                   children: [
                     Text(
                       category.title,
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: titleColor),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, color: titleColor),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -451,13 +462,19 @@ class _CategoryCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       category.audience,
-                      style: TextStyle(fontSize: 11, color: subtitleColor.withValues(alpha: 0.85)),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: subtitleColor.withValues(alpha: 0.9),
+                      ),
                     ),
                   ],
                 ),
               ),
-              if (selected)
-                const Icon(Icons.check_circle, color: AranyixColors.forest),
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                color: selected ? AranyixColors.forest : AranyixColors.borderStrong,
+              ),
             ],
           ),
         ),
