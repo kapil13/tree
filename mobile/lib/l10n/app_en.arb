@@ -60,8 +60,53 @@
   "languageHindi": "Hindi",
   "security": "Security",
   "biometricUnlock": "Unlock with biometrics",
+  "biometricUnlockHint": "Require fingerprint or face unlock when opening the app.",
+  "biometricUnlockReason": "Confirm to enable biometric unlock",
+  "biometricUnlockFailed": "Biometric check failed. Toggle left off.",
   "screenshotGuard": "Block screenshots",
+  "screenshotGuardHint": "Prevents screenshots and screen recording on Android.",
+  "screenshotGuardFailed": "Could not block screenshots on this device.",
+  "screenshotGuardUnsupported": "Screenshot blocking is available on Android only.",
   "certificatePinning": "Certificate pinning",
+  "certificatePinningHint": "Reject forged HTTPS certificates (recommended).",
+  "helloName": "Hello, {name}",
+  "@helloName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "forestHealth": "Forest Health",
+  "viewDetails": "View Details",
+  "todaysAiBrief": "Today's AI Brief",
+  "reviewActions": "Review Actions",
+  "trendSinceYesterday": "Trend: {arrow} {delta} since yesterday",
+  "@trendSinceYesterday": {
+    "placeholders": {
+      "arrow": {
+        "type": "String"
+      },
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "healthExcellent": "Excellent",
+  "healthGood": "Good",
+  "healthFair": "Fair",
+  "healthNeedsCare": "Needs care",
+  "programByotName": "BYOT Public",
+  "programByotDesc": "Quick citizen tagging for Bring Your Own Tree.",
+  "programGovName": "Government & NHAI",
+  "programGovDesc": "Audit-ready planting for highways, forest dept, and municipal schemes.",
+  "programCorporateName": "Industry & Corporate ESG",
+  "programCorporateDesc": "ESG and sustainability planting with audit baselines.",
+  "programNgoName": "NGO & Community",
+  "programNgoDesc": "Community, farmer, and watershed restoration planting.",
+  "bioacousticNav": "Bioacoustic",
+  "signOut": "Sign out",
+  "appVersion": "App version",
   "offlineSyncPending": "{count, plural, =1{1 item waiting to sync} other{{count} items waiting to sync}}",
   "@offlineSyncPending": {
     "placeholders": {

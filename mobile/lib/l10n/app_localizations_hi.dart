@@ -9,7 +9,7 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
-  String get appTitle => 'अरणयिक्स';
+  String get appTitle => 'अरण्यिक्स';
 
   @override
   String get welcomeTitle => 'प्रमाण के साथ वन उगाएँ';
@@ -175,10 +175,105 @@ class AppLocalizationsHi extends AppLocalizations {
   String get biometricUnlock => 'बायोमेट्रिक से अनलॉक';
 
   @override
+  String get biometricUnlockHint =>
+      'ऐप खोलते समय फ़िंगरप्रिंट या चेहरे से अनलॉक आवश्यक।';
+
+  @override
+  String get biometricUnlockReason =>
+      'बायोमेट्रिक अनलॉक चालू करने की पुष्टि करें';
+
+  @override
+  String get biometricUnlockFailed => 'बायोमेट्रिक जाँच विफल। टॉगल बंद रहा।';
+
+  @override
   String get screenshotGuard => 'स्क्रीनशॉट रोकें';
 
   @override
+  String get screenshotGuardHint =>
+      'Android पर स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग रोकता है।';
+
+  @override
+  String get screenshotGuardFailed =>
+      'इस डिवाइस पर स्क्रीनशॉट नहीं रोके जा सके।';
+
+  @override
+  String get screenshotGuardUnsupported =>
+      'स्क्रीनशॉट रोकना केवल Android पर उपलब्ध है।';
+
+  @override
   String get certificatePinning => 'प्रमाणपत्र पिनिंग';
+
+  @override
+  String get certificatePinningHint =>
+      'जाली HTTPS प्रमाणपत्र अस्वीकार करें (अनुशंसित)।';
+
+  @override
+  String helloName(String name) {
+    return 'नमस्ते, $name';
+  }
+
+  @override
+  String get forestHealth => 'वन स्वास्थ्य';
+
+  @override
+  String get viewDetails => 'विवरण देखें';
+
+  @override
+  String get todaysAiBrief => 'आज का AI संक्षेप';
+
+  @override
+  String get reviewActions => 'कार्य समीक्षा';
+
+  @override
+  String trendSinceYesterday(String arrow, String delta) {
+    return 'रुझान: $arrow $delta कल से';
+  }
+
+  @override
+  String get healthExcellent => 'उत्कृष्ट';
+
+  @override
+  String get healthGood => 'अच्छा';
+
+  @override
+  String get healthFair => 'सामान्य';
+
+  @override
+  String get healthNeedsCare => 'देखभाल आवश्यक';
+
+  @override
+  String get programByotName => 'BYOT पब्लिक';
+
+  @override
+  String get programByotDesc => 'अपने पेड़ जोड़ने के लिए त्वरित नागरिक टैगिंग।';
+
+  @override
+  String get programGovName => 'सरकार और NHAI';
+
+  @override
+  String get programGovDesc =>
+      'राजमार्ग, वन विभाग और नगर योजनाओं के लिए ऑडिट-तैयार रोपण।';
+
+  @override
+  String get programCorporateName => 'उद्योग और कॉर्पोरेट ESG';
+
+  @override
+  String get programCorporateDesc => 'ऑडिट बेसलाइन के साथ ESG और स्थिरता रोपण।';
+
+  @override
+  String get programNgoName => 'NGO और समुदाय';
+
+  @override
+  String get programNgoDesc => 'समुदाय, किसान और वॉटरशेड पुनर्स्थापन रोपण।';
+
+  @override
+  String get bioacousticNav => 'बायोएकॉस्टिक';
+
+  @override
+  String get signOut => 'साइन आउट';
+
+  @override
+  String get appVersion => 'ऐप संस्करण';
 
   @override
   String offlineSyncPending(int count) {

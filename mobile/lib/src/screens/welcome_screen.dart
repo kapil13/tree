@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/brand_mark.dart';
 
-/// Marketing entry — brand first, light journey strip, clear CTAs.
+/// Post-splash entry — brand-first hero, quiet journey line, clear CTAs.
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -18,14 +18,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   late final AnimationController _motion;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  late final Animation<double> _heroScale;
 
   @override
   void initState() {
     super.initState();
-    _motion = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _motion = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _fade = CurvedAnimation(parent: _motion, curve: Curves.easeOut);
-    _slide = Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero)
+    _slide = Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
         .animate(CurvedAnimation(parent: _motion, curve: Curves.easeOutCubic));
+    _heroScale = Tween<double>(begin: 0.98, end: 1).animate(
+      CurvedAnimation(parent: _motion, curve: Curves.easeOutCubic),
+    );
     _motion.forward();
   }
 
@@ -42,117 +46,112 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     return AuthLightScope(
       child: Scaffold(
         backgroundColor: AranyixColors.surface,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _fade,
-            child: SlideTransition(
-              position: _slide,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AranyixColors.heroGradientStart,
-                                  AranyixColors.heroGradientEnd,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(AranyixRadii.card),
-                              boxShadow: AranyixShadows.soft,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const AranyixBrandMark(size: 48, radius: 14),
-                                const SizedBox(height: 18),
-                                Text(
-                                  l10n?.appTitle ?? 'Aranyix',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.8,
-                                    height: 1,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  l10n?.welcomeSubtitle ??
-                                      'Plantation intelligence — field to audit-ready evidence.',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                    fontSize: 15,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            l10n?.yourJourney ?? 'Your journey',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AranyixColors.forestDark,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
+        body: FadeTransition(
+          opacity: _fade,
+          child: SlideTransition(
+            position: _slide,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ScaleTransition(
+                    scale: _heroScale,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AranyixColors.heroGradientStart,
+                            AranyixColors.heroGradientEnd,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(28, 36, 28, 32),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _JourneyStep(
-                                  number: 1,
-                                  title: l10n?.journeyCapture ?? 'Capture',
-                                  line: l10n?.journeyCaptureLine ?? 'GPS · photos · offline',
-                                  icon: Icons.pin_drop_rounded,
+                              const AranyixBrandMark(size: 56, radius: 16, showGlow: true),
+                              const Spacer(),
+                              Text(
+                                l10n?.appTitle ?? 'Aranyix',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 44,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1.2,
+                                  height: 1,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _JourneyStep(
-                                  number: 2,
-                                  title: l10n?.journeyMonitor ?? 'Monitor',
-                                  line: l10n?.journeyMonitorLine ?? 'NDVI · AI alerts',
-                                  icon: Icons.satellite_alt_rounded,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _JourneyStep(
-                                  number: 3,
-                                  title: l10n?.journeyReport ?? 'Report',
-                                  line: l10n?.journeyReportLine ?? 'Carbon · audit pack',
-                                  icon: Icons.insights_rounded,
+                              const SizedBox(height: 12),
+                              Text(
+                                l10n?.welcomeSubtitle ??
+                                    'Plantation intelligence — field to audit-ready evidence.',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.92),
+                                  fontSize: 16.5,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    FilledButton(
-                      onPressed: () => context.push('/signup'),
-                      child: Text(l10n?.createFreeAccount ?? 'Create free account'),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton(
-                      onPressed: () => context.push('/login'),
-                      child: Text(l10n?.alreadyHaveAccount ?? 'I already have an account'),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l10n?.yourJourney ?? 'Your journey',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: AranyixColors.onSurfaceMuted,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                        ),
+                        const SizedBox(height: 10),
+                        _JourneyLine(
+                          steps: [
+                            (
+                              l10n?.journeyCapture ?? 'Capture',
+                              l10n?.journeyCaptureLine ?? 'GPS · photos · offline',
+                            ),
+                            (
+                              l10n?.journeyMonitor ?? 'Monitor',
+                              l10n?.journeyMonitorLine ?? 'NDVI · AI alerts',
+                            ),
+                            (
+                              l10n?.journeyReport ?? 'Report',
+                              l10n?.journeyReportLine ?? 'Carbon · audit pack',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+                        FilledButton(
+                          onPressed: () => context.push('/signup'),
+                          child: Text(l10n?.createFreeAccount ?? 'Create free account'),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton(
+                          onPressed: () => context.push('/login'),
+                          child: Text(l10n?.alreadyHaveAccount ?? 'I already have an account'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -161,60 +160,57 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   }
 }
 
-class _JourneyStep extends StatelessWidget {
-  const _JourneyStep({
-    required this.number,
-    required this.title,
-    required this.line,
-    required this.icon,
-  });
+class _JourneyLine extends StatelessWidget {
+  const _JourneyLine({required this.steps});
 
-  final int number;
-  final String title;
-  final String line;
-  final IconData icon;
+  final List<(String, String)> steps;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AranyixColors.border),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AranyixColors.forestLight,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 18, color: AranyixColors.forest),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$number. $title',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 12.5,
-              color: AranyixColors.onSurface,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            line,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10.5, color: AranyixColors.onSurfaceMuted, height: 1.25),
+    return Column(
+      children: [
+        for (var i = 0; i < steps.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(
+                width: 22,
+                child: Text(
+                  '${i + 1}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: AranyixColors.forest,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.35,
+                      color: AranyixColors.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: steps[i].$1,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      TextSpan(
+                        text: '  ·  ${steps[i].$2}',
+                        style: const TextStyle(color: AranyixColors.onSurfaceMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
-      ),
+      ],
     );
   }
 }

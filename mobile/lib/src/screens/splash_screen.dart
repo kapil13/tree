@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth_session.dart';
 import '../providers.dart';
+import '../services/app_settings.dart';
+import '../services/security_services.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../widgets/brand_mark.dart';
@@ -40,6 +42,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _route() async {
     await Future.delayed(const Duration(milliseconds: 950));
+    await AppSettings.instance.load();
+    await ScreenshotGuard.apply(AppSettings.instance.screenshotGuard);
+
     final api = await ref.read(apiClientProvider.future);
     if (!await api.hasStoredToken()) {
       sessionController.signOut();
@@ -47,6 +52,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       context.go('/welcome');
       return;
     }
+
+    if (AppSettings.instance.biometricUnlock) {
+      final ok = await PushRegistrationService.instance.authenticateBiometric(
+        reason: 'Unlock Aranyix',
+      );
+      if (!ok) {
+        await api.logout();
+        ref.invalidate(apiClientProvider);
+        if (!mounted) return;
+        context.go('/login');
+        return;
+      }
+    }
+
     try {
       final landing = await completeAuthSession(ref);
       if (!mounted) return;

@@ -416,17 +416,185 @@ abstract class AppLocalizations {
   /// **'Unlock with biometrics'**
   String get biometricUnlock;
 
+  /// No description provided for @biometricUnlockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Require fingerprint or face unlock when opening the app.'**
+  String get biometricUnlockHint;
+
+  /// No description provided for @biometricUnlockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to enable biometric unlock'**
+  String get biometricUnlockReason;
+
+  /// No description provided for @biometricUnlockFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric check failed. Toggle left off.'**
+  String get biometricUnlockFailed;
+
   /// No description provided for @screenshotGuard.
   ///
   /// In en, this message translates to:
   /// **'Block screenshots'**
   String get screenshotGuard;
 
+  /// No description provided for @screenshotGuardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Prevents screenshots and screen recording on Android.'**
+  String get screenshotGuardHint;
+
+  /// No description provided for @screenshotGuardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not block screenshots on this device.'**
+  String get screenshotGuardFailed;
+
+  /// No description provided for @screenshotGuardUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot blocking is available on Android only.'**
+  String get screenshotGuardUnsupported;
+
   /// No description provided for @certificatePinning.
   ///
   /// In en, this message translates to:
   /// **'Certificate pinning'**
   String get certificatePinning;
+
+  /// No description provided for @certificatePinningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject forged HTTPS certificates (recommended).'**
+  String get certificatePinningHint;
+
+  /// No description provided for @helloName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, {name}'**
+  String helloName(String name);
+
+  /// No description provided for @forestHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Forest Health'**
+  String get forestHealth;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
+
+  /// No description provided for @todaysAiBrief.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s AI Brief'**
+  String get todaysAiBrief;
+
+  /// No description provided for @reviewActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Actions'**
+  String get reviewActions;
+
+  /// No description provided for @trendSinceYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend: {arrow} {delta} since yesterday'**
+  String trendSinceYesterday(String arrow, String delta);
+
+  /// No description provided for @healthExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get healthExcellent;
+
+  /// No description provided for @healthGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get healthGood;
+
+  /// No description provided for @healthFair.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair'**
+  String get healthFair;
+
+  /// No description provided for @healthNeedsCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs care'**
+  String get healthNeedsCare;
+
+  /// No description provided for @programByotName.
+  ///
+  /// In en, this message translates to:
+  /// **'BYOT Public'**
+  String get programByotName;
+
+  /// No description provided for @programByotDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick citizen tagging for Bring Your Own Tree.'**
+  String get programByotDesc;
+
+  /// No description provided for @programGovName.
+  ///
+  /// In en, this message translates to:
+  /// **'Government & NHAI'**
+  String get programGovName;
+
+  /// No description provided for @programGovDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit-ready planting for highways, forest dept, and municipal schemes.'**
+  String get programGovDesc;
+
+  /// No description provided for @programCorporateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Industry & Corporate ESG'**
+  String get programCorporateName;
+
+  /// No description provided for @programCorporateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'ESG and sustainability planting with audit baselines.'**
+  String get programCorporateDesc;
+
+  /// No description provided for @programNgoName.
+  ///
+  /// In en, this message translates to:
+  /// **'NGO & Community'**
+  String get programNgoName;
+
+  /// No description provided for @programNgoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Community, farmer, and watershed restoration planting.'**
+  String get programNgoDesc;
+
+  /// No description provided for @bioacousticNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Bioacoustic'**
+  String get bioacousticNav;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersion;
 
   /// No description provided for @offlineSyncPending.
   ///

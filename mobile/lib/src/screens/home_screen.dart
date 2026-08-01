@@ -98,58 +98,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SliverToBoxAdapter(child: OfflineConnectivityBanner()),
                   const SliverToBoxAdapter(child: PendingSyncBanner()),
                   SliverToBoxAdapter(
-                    child: _DashboardTopBar(
-                      greeting: firstName != null ? 'Hello, $firstName' : null,
-                      projectName: _projectLabel(fences, user),
-                      onNotifications: () => context.go('/notifications'),
-                      onProfile: () => context.go('/profile'),
-                      onProjectTap: () => _showProjectPicker(context, fences),
+                    child: Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        return _DashboardTopBar(
+                          greeting: firstName != null && l10n != null
+                              ? l10n.helloName(firstName)
+                              : (firstName != null ? 'Hello, $firstName' : null),
+                          projectName: _projectLabel(fences, user),
+                          onNotifications: () => context.go('/notifications'),
+                          onProfile: () => context.go('/profile'),
+                          onProjectTap: () => _showProjectPicker(context, fences),
+                        );
+                      },
                     ),
                   ),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        if (firstName != null) ...[
-                          Text(
-                            'Welcome back',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AranyixColors.onSurfaceMuted,
+                        Builder(
+                          builder: (context) {
+                            final l10n = AppLocalizations.of(context);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (firstName != null) ...[
+                                  Text(
+                                    l10n?.welcomeBack ?? 'Welcome back',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: AranyixColors.onSurfaceMuted,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                ],
+                                _ForestHealthHero(
+                                  score: health.score,
+                                  label: _localizedHealthLabel(l10n, health.label),
+                                  trendDelta: health.trendDelta,
+                                  onViewDetails: () => context.push('/trees'),
                                 ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        _ForestHealthHero(
-                          score: health.score,
-                          label: health.label,
-                          trendDelta: health.trendDelta,
-                          onViewDetails: () => context.push('/trees'),
+                              ],
+                            );
+                          },
                         ),
                         if (canSeeMonitoring(user) || canSeeFieldOps(user) || canSeeReports(user)) ...[
                           const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (canSeeMonitoring(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
-                                  label: const Text('Monitoring'),
-                                  onPressed: () => context.go('/monitoring'),
-                                ),
-                              if (canSeeFieldOps(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.construction_outlined, size: 18),
-                                  label: const Text('Field ops'),
-                                  onPressed: () => context.push('/field-ops'),
-                                ),
-                              if (canSeeReports(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.description_outlined, size: 18),
-                                  label: const Text('Reports'),
-                                  onPressed: () => context.push('/reports'),
-                                ),
-                            ],
+                          Builder(
+                            builder: (context) {
+                              final l10n = AppLocalizations.of(context);
+                              return Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (canSeeMonitoring(user))
+                                    ActionChip(
+                                      avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
+                                      label: Text(l10n?.monitoring ?? 'Monitoring'),
+                                      onPressed: () => context.go('/monitoring'),
+                                    ),
+                                  if (canSeeFieldOps(user))
+                                    ActionChip(
+                                      avatar: const Icon(Icons.construction_outlined, size: 18),
+                                      label: Text(l10n?.fieldOps ?? 'Field ops'),
+                                      onPressed: () => context.push('/field-ops'),
+                                    ),
+                                  if (canSeeReports(user))
+                                    ActionChip(
+                                      avatar: const Icon(Icons.description_outlined, size: 18),
+                                      label: const Text('Reports'),
+                                      onPressed: () => context.push('/reports'),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                         const SizedBox(height: 20),
@@ -399,7 +421,11 @@ class _ForestHealthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trendText = trendDelta >= 0 ? '↑ +$trendDelta since yesterday' : '↓ $trendDelta since yesterday';
+    final l10n = AppLocalizations.of(context);
+    final arrow = trendDelta >= 0 ? '↑' : '↓';
+    final delta = trendDelta >= 0 ? '+$trendDelta' : '$trendDelta';
+    final trendText = l10n?.trendSinceYesterday(arrow, delta) ??
+        'Trend: $arrow $delta since yesterday';
 
     return Container(
       width: double.infinity,
@@ -423,7 +449,7 @@ class _ForestHealthHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Forest Health',
+            l10n?.forestHealth ?? 'Forest Health',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.85),
               fontSize: 14,
@@ -467,7 +493,7 @@ class _ForestHealthHero extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Trend: $trendText',
+            trendText,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -482,7 +508,7 @@ class _ForestHealthHero extends StatelessWidget {
                 backgroundColor: Colors.white,
                 foregroundColor: AranyixColors.forestDark,
               ),
-              child: const Text('View Details'),
+              child: Text(l10n?.viewDetails ?? 'View Details'),
             ),
           ),
         ],
@@ -516,7 +542,10 @@ class _AiBriefCard extends StatelessWidget {
                   child: const Icon(Icons.auto_awesome, color: AranyixColors.forest, size: 20),
                 ),
                 const SizedBox(width: 12),
-                Text("Today's AI Brief", style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  AppLocalizations.of(context)?.todaysAiBrief ?? "Today's AI Brief",
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -530,7 +559,10 @@ class _AiBriefCard extends StatelessWidget {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(onPressed: onReview, child: const Text('Review Actions')),
+              child: OutlinedButton(
+                onPressed: onReview,
+                child: Text(AppLocalizations.of(context)?.reviewActions ?? 'Review Actions'),
+              ),
             ),
           ],
         ),
@@ -732,4 +764,15 @@ class _AskAranyixCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _localizedHealthLabel(AppLocalizations? l10n, String label) {
+  if (l10n == null) return label;
+  return switch (label) {
+    'Excellent' => l10n.healthExcellent,
+    'Good' => l10n.healthGood,
+    'Fair' => l10n.healthFair,
+    'Needs care' => l10n.healthNeedsCare,
+    _ => label,
+  };
 }

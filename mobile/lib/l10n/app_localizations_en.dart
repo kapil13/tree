@@ -175,10 +175,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biometricUnlock => 'Unlock with biometrics';
 
   @override
+  String get biometricUnlockHint =>
+      'Require fingerprint or face unlock when opening the app.';
+
+  @override
+  String get biometricUnlockReason => 'Confirm to enable biometric unlock';
+
+  @override
+  String get biometricUnlockFailed =>
+      'Biometric check failed. Toggle left off.';
+
+  @override
   String get screenshotGuard => 'Block screenshots';
 
   @override
+  String get screenshotGuardHint =>
+      'Prevents screenshots and screen recording on Android.';
+
+  @override
+  String get screenshotGuardFailed =>
+      'Could not block screenshots on this device.';
+
+  @override
+  String get screenshotGuardUnsupported =>
+      'Screenshot blocking is available on Android only.';
+
+  @override
   String get certificatePinning => 'Certificate pinning';
+
+  @override
+  String get certificatePinningHint =>
+      'Reject forged HTTPS certificates (recommended).';
+
+  @override
+  String helloName(String name) {
+    return 'Hello, $name';
+  }
+
+  @override
+  String get forestHealth => 'Forest Health';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String get todaysAiBrief => 'Today\'s AI Brief';
+
+  @override
+  String get reviewActions => 'Review Actions';
+
+  @override
+  String trendSinceYesterday(String arrow, String delta) {
+    return 'Trend: $arrow $delta since yesterday';
+  }
+
+  @override
+  String get healthExcellent => 'Excellent';
+
+  @override
+  String get healthGood => 'Good';
+
+  @override
+  String get healthFair => 'Fair';
+
+  @override
+  String get healthNeedsCare => 'Needs care';
+
+  @override
+  String get programByotName => 'BYOT Public';
+
+  @override
+  String get programByotDesc =>
+      'Quick citizen tagging for Bring Your Own Tree.';
+
+  @override
+  String get programGovName => 'Government & NHAI';
+
+  @override
+  String get programGovDesc =>
+      'Audit-ready planting for highways, forest dept, and municipal schemes.';
+
+  @override
+  String get programCorporateName => 'Industry & Corporate ESG';
+
+  @override
+  String get programCorporateDesc =>
+      'ESG and sustainability planting with audit baselines.';
+
+  @override
+  String get programNgoName => 'NGO & Community';
+
+  @override
+  String get programNgoDesc =>
+      'Community, farmer, and watershed restoration planting.';
+
+  @override
+  String get bioacousticNav => 'Bioacoustic';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get appVersion => 'App version';
 
   @override
   String offlineSyncPending(int count) {

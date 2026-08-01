@@ -245,6 +245,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 final access = _requestFor(code);
                 final status = access?['status'] as String?;
                 final requestId = access?['id']?.toString();
+                final copy = _localizedProgram(l10n, code, program);
 
                 String badge;
                 Color badgeBg;
@@ -267,60 +268,88 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   badgeFg = AranyixColors.onSurfaceMuted;
                 }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AranyixColors.border.withValues(alpha: 0.85)),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                program['name'] as String? ?? code,
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                            Text(
+                              copy.$1,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
+                                color: AranyixColors.onSurface,
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: badgeBg,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                badge,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: badgeFg,
+                            if (copy.$2.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                copy.$2,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.35,
+                                  color: AranyixColors.onSurfaceMuted,
                                 ),
                               ),
-                            ),
+                            ],
+                            if (!enrolled && !isDefault) ...[
+                              const SizedBox(height: 6),
+                              if (status == 'pending' && requestId != null)
+                                TextButton(
+                                  onPressed: _programBusy ? null : () => _withdrawAccess(requestId),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AranyixColors.onSurfaceMuted,
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(l10n.withdrawRequest),
+                                )
+                              else if (status != 'pending')
+                                TextButton(
+                                  onPressed: _programBusy ? null : () => _requestAccess(code),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AranyixColors.forestDark,
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    '${l10n.requestAccess} →',
+                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                            ],
                           ],
                         ),
-                        if ((program['description'] as String?)?.isNotEmpty == true) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            program['description'] as String,
-                            style: const TextStyle(fontSize: 12.5, color: AranyixColors.onSurfaceMuted),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: badgeFg,
                           ),
-                        ],
-                        if (!enrolled && !isDefault) ...[
-                          const SizedBox(height: 10),
-                          if (status == 'pending' && requestId != null)
-                            OutlinedButton(
-                              onPressed: _programBusy ? null : () => _withdrawAccess(requestId),
-                              child: Text(l10n.withdrawRequest),
-                            )
-                          else if (status != 'pending')
-                            FilledButton(
-                              onPressed: _programBusy ? null : () => _requestAccess(code),
-                              child: Text(l10n.requestAccess),
-                            ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }),
@@ -343,13 +372,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               title: Text(l10n.languageEnglish),
               value: const Locale('en'),
               groupValue: settings.locale ?? const Locale('en'),
-              onChanged: (value) => settings.setLocale(value),
+              onChanged: (value) async {
+                await settings.setLocale(value);
+                if (mounted) setState(() {});
+              },
             ),
             RadioListTile<Locale?>(
               title: Text(l10n.languageHindi),
               value: const Locale('hi'),
               groupValue: settings.locale ?? const Locale('en'),
-              onChanged: (value) => settings.setLocale(value),
+              onChanged: (value) async {
+                await settings.setLocale(value);
+                if (mounted) setState(() {});
+              },
             ),
             const Divider(),
             Padding(
@@ -371,39 +406,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             if (_biometricAvailable)
               SwitchListTile(
                 title: Text(l10n.biometricUnlock),
+                subtitle: Text(l10n.biometricUnlockHint),
                 value: settings.biometricUnlock,
-                onChanged: (v) => settings.setBiometricUnlock(v),
+                onChanged: (v) async {
+                  if (v) {
+                    final ok = await PushRegistrationService.instance.authenticateBiometric(
+                      reason: l10n.biometricUnlockReason,
+                      requireEnabled: false,
+                    );
+                    if (!ok) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.biometricUnlockFailed)),
+                      );
+                      return;
+                    }
+                  }
+                  await settings.setBiometricUnlock(v);
+                  if (mounted) setState(() {});
+                },
               ),
             SwitchListTile(
               title: Text(l10n.screenshotGuard),
+              subtitle: Text(l10n.screenshotGuardHint),
               value: settings.screenshotGuard,
               onChanged: (v) async {
+                final ok = await ScreenshotGuard.apply(v);
+                if (!ok) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        v ? l10n.screenshotGuardFailed : l10n.screenshotGuardUnsupported,
+                      ),
+                    ),
+                  );
+                  return;
+                }
                 await settings.setScreenshotGuard(v);
-                await ScreenshotGuard.apply(v);
+                if (mounted) setState(() {});
               },
             ),
             SwitchListTile(
               title: Text(l10n.certificatePinning),
+              subtitle: Text(l10n.certificatePinningHint),
               value: settings.certificatePinning,
-              onChanged: settings.setCertificatePinning,
+              onChanged: (v) async {
+                await settings.setCertificatePinning(v);
+                if (mounted) setState(() {});
+              },
             ),
             SwitchListTile(
               title: Text(l10n.analyticsEnabled),
               subtitle: Text(l10n.analyticsHint),
               value: settings.analyticsEnabled,
-              onChanged: settings.setAnalyticsEnabled,
+              onChanged: (v) async {
+                await settings.setAnalyticsEnabled(v);
+                if (mounted) setState(() {});
+              },
             ),
             if (_appVersion.isNotEmpty)
               ListTile(
                 dense: true,
-                title: const Text('App version'),
+                title: Text(l10n.appVersion),
                 subtitle: Text(_appVersion),
               ),
             const Divider(),
             if (canSeeCarbon(user))
               ListTile(
                 leading: const Icon(Icons.eco_outlined),
-                title: const Text('Carbon calculator'),
+                title: Text(l10n.carbonCredits),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/carbon'),
               ),
@@ -424,21 +496,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             if (canSeeFieldOps(user))
               ListTile(
                 leading: const Icon(Icons.construction_outlined),
-                title: const Text('Field ops'),
+                title: Text(l10n.fieldOps),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/field-ops'),
               ),
             if (canSeeMonitoring(user))
               ListTile(
                 leading: const Icon(Icons.monitor_heart_outlined),
-                title: const Text('Monitoring'),
+                title: Text(l10n.monitoring),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.go('/monitoring'),
               ),
             if (canSeeBioacoustic(user))
               ListTile(
                 leading: const Icon(Icons.graphic_eq),
-                title: const Text('Bioacoustic'),
+                title: Text(l10n.bioacousticNav),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.push('/bioacoustic'),
               ),
@@ -452,7 +524,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Sign out'),
+              title: Text(l10n.signOut),
               onTap: () async {
                 final api = await ref.read(apiClientProvider.future);
                 await api.logout();
@@ -464,4 +536,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
+}
+
+(String, String) _localizedProgram(
+  AppLocalizations l10n,
+  String code,
+  Map<String, dynamic> program,
+) {
+  final fallbackName = program['name'] as String? ?? code;
+  final fallbackDesc = program['description'] as String? ?? '';
+  return switch (code) {
+    'byot' || 'byot_public' => (l10n.programByotName, l10n.programByotDesc),
+    'government_nhai' => (l10n.programGovName, l10n.programGovDesc),
+    'corporate_esg' => (l10n.programCorporateName, l10n.programCorporateDesc),
+    'ngo_community' => (l10n.programNgoName, l10n.programNgoDesc),
+    _ => (fallbackName, fallbackDesc),
+  };
 }
