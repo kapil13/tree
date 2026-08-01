@@ -42,10 +42,20 @@ GEMINI_MODELS = (
 
 SYSTEM_PROMPT = (
     "You are Aranyix, an expert environmental MRV assistant for tree plantations, "
-    "carbon credits, satellite NDVI, biodiversity, and compliance (IPCC, Verra, NHAI). "
-    "Answer using ONLY the portfolio JSON provided. Be specific with numbers. "
-    "If data is missing, say what the user should do in the app. "
-    "Keep answers under 200 words. Use markdown sparingly (bold for key metrics)."
+    "carbon credits, satellite NDVI, biodiversity, weather, and compliance "
+    "(IPCC, Verra, NHAI).\n"
+    "Use ONLY the portfolio JSON and intelligence JSON provided.\n"
+    "Rules:\n"
+    "- Always finish a complete answer. Never stop mid-sentence or mid-bullet.\n"
+    "- Be specific with numbers from the JSON (counts, %, tCO₂e, °C, mm rain).\n"
+    "- For weather: use site_weather / forecast_summary / rain_mm_next_48h. "
+    "Do not answer with alerts alone unless the user asked about alerts.\n"
+    "- For health: list healthy / moderate / unhealthy counts and % from "
+    "health_breakdown and pct_healthy.\n"
+    "- If a field is missing, say what to do in the app (Satellite, Intelligence, "
+    "Add tree).\n"
+    "- Plain markdown only: short paragraphs or bullets. Bold key metrics. "
+    "No nested bold-bullet glitches. Aim for 80–160 words."
 )
 
 INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -639,27 +649,43 @@ def _answer_alerts(portfolio: PortfolioContext) -> dict[str, Any]:
 
 def _answer_weather(portfolio: PortfolioContext) -> dict[str, Any]:
     intel = portfolio.intelligence or {}
+    sites = intel.get("site_weather") or []
     alerts = intel.get("weather_alerts", [])
-    if not alerts:
-        return {
-            "answer": (
-                "No active weather warnings for your work areas in the next 48 hours. "
-                "Open the **Intelligence** page for live Open-Meteo forecasts per site."
-            ),
-            "calculations": {"weather_alert_count": 0},
-            "citations": ["Open-Meteo", "Aranyix weather intelligence"],
-        }
-    lines = [f"**{len(alerts)} weather alert(s)** across your portfolio:"]
-    for item in alerts[:5]:
-        alert = item.get("alert", {})
+    lines: list[str] = []
+
+    if sites:
+        lines.append(f"**Weather for {len(sites)} plantation site(s):**")
+        for site in sites[:5]:
+            name = site.get("work_area_name") or "Site"
+            forecast = site.get("forecast_summary") or "Forecast unavailable."
+            rain = site.get("rain_mm_next_48h")
+            rain_bit = f" Rain next 48h: {float(rain):.0f} mm." if rain is not None else ""
+            lines.append(f"- **{name}**: {forecast}{rain_bit}")
+    else:
         lines.append(
-            f"- **{item.get('work_area_name', 'Site')}**: "
-            f"[{alert.get('severity', 'info').upper()}] {alert.get('title', 'Alert')} — "
-            f"{alert.get('message', '')}"
+            "No plantation sites with forecasts yet. Draw a fence on the **Satellite** "
+            "page or open **Intelligence** so Open-Meteo can load site weather."
         )
+
+    if alerts:
+        lines.append("")
+        lines.append(f"**{len(alerts)} active weather alert(s):**")
+        for item in alerts[:3]:
+            alert = item.get("alert", {})
+            lines.append(
+                f"- **{item.get('work_area_name', 'Site')}**: "
+                f"[{alert.get('severity', 'info').upper()}] {alert.get('title', 'Alert')}"
+            )
+    elif sites:
+        lines.append("")
+        lines.append("No severe weather alerts right now.")
+
     return {
         "answer": "\n".join(lines),
-        "calculations": {"weather_alert_count": intel.get("weather_alert_count", len(alerts))},
+        "calculations": {
+            "weather_alert_count": intel.get("weather_alert_count", len(alerts)),
+            "sites_with_forecast": len(sites),
+        },
         "citations": ["Open-Meteo", "Aranyix intelligence hub"],
     }
 
@@ -806,6 +832,24 @@ def _user_prompt_payload(
     return user_content
 
 
+def _looks_truncated_or_thin(text: str) -> bool:
+    """Detect incomplete LLM answers (cut mid-markdown / mid-sentence)."""
+    t = (text or "").rstrip()
+    if len(t) < 48:
+        return True
+    if t.count("**") % 2 == 1:
+        return True
+    if t.endswith(("**", "*", ":", "-", "—", ",", "(")):
+        return True
+    # Started a health/weather list but never finished a number line
+    lower = t.lower()
+    return (
+        "as follows" in lower
+        and "healthy" in lower
+        and not any(ch.isdigit() for ch in t)
+    )
+
+
 def _short_llm_error(exc: Exception) -> str:
     """Compact, non-secret error for operators / UI diagnostics."""
     text = str(exc).strip() or exc.__class__.__name__
@@ -875,7 +919,7 @@ async def answer_with_openai(
                 json={
                     "model": OPENAI_MODEL,
                     "temperature": 0.45,
-                    "max_tokens": 500,
+                    "max_tokens": 1200,
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_content},
@@ -884,11 +928,11 @@ async def answer_with_openai(
             )
             resp.raise_for_status()
             text = resp.json()["choices"][0]["message"]["content"].strip()
-            if text:
+            if text and not _looks_truncated_or_thin(text):
                 return (
                     _sanitize_response(
                         {
-                            "answer": text[:2500],
+                            "answer": text[:3500],
                             "calculations": {},
                             "citations": ["Aranyix live portfolio", "OpenAI analysis"],
                             "mode": "llm",
@@ -898,6 +942,8 @@ async def answer_with_openai(
                     ),
                     None,
                 )
+            if text:
+                return None, "OpenAI returned a truncated or incomplete answer"
             return None, "OpenAI returned an empty response"
     except Exception as exc:
         err = _short_llm_error(exc)
@@ -933,19 +979,19 @@ async def answer_with_gemini(
                         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
                         "contents": [{"role": "user", "parts": [{"text": user_content}]}],
                         "generationConfig": {
-                            "temperature": 0.45,
-                            "maxOutputTokens": 500,
+                            "temperature": 0.35,
+                            "maxOutputTokens": 1200,
                         },
                     },
                 )
                 resp.raise_for_status()
                 body = resp.json()
                 text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if text:
+                if text and not _looks_truncated_or_thin(text):
                     return (
                         _sanitize_response(
                             {
-                                "answer": text[:2500],
+                                "answer": text[:3500],
                                 "calculations": {},
                                 "citations": [
                                     "Aranyix live portfolio",
@@ -958,6 +1004,10 @@ async def answer_with_gemini(
                         ),
                         None,
                     )
+                if text:
+                    last_err = f"Gemini/{model}: truncated or incomplete answer"
+                    log.warning("assistant.gemini_thin_answer", model=model, preview=text[:120])
+                    continue
                 last_err = f"Gemini/{model}: empty response"
             except Exception as exc:
                 last_err = f"Gemini/{model}: {_short_llm_error(exc)}"

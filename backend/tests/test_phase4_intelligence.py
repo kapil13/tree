@@ -24,6 +24,17 @@ def test_intelligence_context_for_assistant_truncates():
         "highest_risk": "high",
         "weather_alert_count": 3,
         "pest_high_count": 2,
+        "threat_sites": [
+            {
+                "work_area_name": f"Site {i}",
+                "forecast_summary": f"Sunny {i}",
+                "rain_mm_next_48h": i,
+                "composite_risk": "low",
+                "healthy_pct": 80,
+                "tree_count": 10,
+            }
+            for i in range(10)
+        ],
         "pest_hotspots": [{"work_area_name": f"Site {i}"} for i in range(10)],
         "weather_alerts": [{"work_area_name": f"WA {i}"} for i in range(10)],
         "early_warnings": [{"title": f"W{i}"} for i in range(10)],
@@ -34,6 +45,8 @@ def test_intelligence_context_for_assistant_truncates():
     assert ctx["highest_risk"] == "high"
     assert len(ctx["pest_hotspots"]) <= 5
     assert len(ctx["weather_alerts"]) <= 5
+    assert len(ctx["site_weather"]) <= 6
+    assert ctx["site_weather"][0]["forecast_summary"] == "Sunny 0"
     assert ctx["integrations_status"] == "ok"
 
 

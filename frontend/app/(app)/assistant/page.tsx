@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Sparkles, Send, Lightbulb, AlertTriangle } from "lucide-react";
 import { assistant, errorMessage, type AssistantAnswer } from "@/lib/api";
 
@@ -14,7 +14,7 @@ const SUGGESTIONS = [
   "Give me a portfolio summary",
   "What is the health status of my trees?",
   "How much CO₂ are my trees storing?",
-  "How many species were detected in bioacoustic recordings?",
+  "What is the current weather at my sites?",
   "What satellite verification coverage do I have?",
   "Any unread alerts I should know about?",
 ];
@@ -28,10 +28,11 @@ function visibleCalculations(calculations?: Record<string, unknown>) {
   return Object.fromEntries(entries);
 }
 
-function renderAnswerText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+function renderInlineMarkdown(text: string): ReactNode[] {
+  // Bold first, then keep remaining text as-is (avoids broken ** * ** artifacts)
+  const parts = text.split(/(\*\*[^*\n]+?\*\*)/g);
   return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
       return (
         <strong key={i} className="font-semibold">
           {part.slice(2, -2)}
@@ -40,6 +41,44 @@ function renderAnswerText(text: string) {
     }
     return <span key={i}>{part}</span>;
   });
+}
+
+function renderAnswerText(text: string) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const blocks: ReactNode[] = [];
+  let listItems: string[] = [];
+
+  const flushList = (key: string) => {
+    if (listItems.length === 0) return;
+    blocks.push(
+      <ul key={key} className="my-1.5 list-disc space-y-1 pl-5">
+        {listItems.map((item, i) => (
+          <li key={i}>{renderInlineMarkdown(item)}</li>
+        ))}
+      </ul>,
+    );
+    listItems = [];
+  };
+
+  lines.forEach((line, idx) => {
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    if (bullet) {
+      listItems.push(bullet[1]);
+      return;
+    }
+    flushList(`list-${idx}`);
+    if (line.trim() === "") {
+      blocks.push(<div key={`br-${idx}`} className="h-2" />);
+      return;
+    }
+    blocks.push(
+      <p key={`p-${idx}`} className="m-0">
+        {renderInlineMarkdown(line)}
+      </p>,
+    );
+  });
+  flushList("list-end");
+  return <div className="space-y-0.5">{blocks}</div>;
 }
 
 function providerLabel(data?: AssistantAnswer) {
@@ -95,7 +134,7 @@ export default function AssistantPage() {
       </h1>
       <p className="text-sm text-stone-600">
         Ask about your live portfolio — carbon, health, satellite NDVI, biodiversity,
-        alerts, and species recommendations. Answers use your registered data.
+        weather, alerts, and species recommendations. Answers use your registered data.
       </p>
 
       {lastMode === "rules" && lastLlmError ? (
@@ -104,11 +143,6 @@ export default function AssistantPage() {
           <div>
             <p className="font-medium">Live LLM unavailable — using portfolio rules engine</p>
             <p className="mt-0.5 text-xs text-amber-900/80">{lastLlmError}</p>
-            <p className="mt-1 text-xs text-amber-900/70">
-              Confirm <code className="rounded bg-amber-100 px-1">OPENAI_API_KEY</code> /{" "}
-              <code className="rounded bg-amber-100 px-1">GEMINI_API_KEY</code> on the API
-              host, then restart the backend container.
-            </p>
           </div>
         </div>
       ) : null}
@@ -143,7 +177,7 @@ export default function AssistantPage() {
             <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
               <div
                 className={
-                  "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap text-left " +
+                  "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm text-left " +
                   (m.role === "user"
                     ? "bg-forest-600 text-white"
                     : "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100")
@@ -185,7 +219,7 @@ export default function AssistantPage() {
           className="input flex-1"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask about your trees, carbon, health, satellite, biodiversity…"
+          placeholder="Ask about your trees, carbon, health, weather, satellite…"
           disabled={busy}
         />
         <button
