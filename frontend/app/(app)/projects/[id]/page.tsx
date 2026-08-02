@@ -20,6 +20,15 @@ import { cn } from "@/lib/cn";
 
 const TABS = ["overview", "compliance", "credits", "trees", "team", "settings"] as const;
 
+const TAB_LABELS: Record<(typeof TABS)[number], string> = {
+  overview: "Overview",
+  compliance: "Compliance",
+  credits: "Credits",
+  trees: "Trees",
+  team: "Team",
+  settings: "Scheme & settings",
+};
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -200,7 +209,7 @@ export default function ProjectDetailPage() {
             )}
             onClick={() => setTab(t)}
           >
-            {t}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
