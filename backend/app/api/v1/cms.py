@@ -9,7 +9,9 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CmsManager
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
+from app.models.compliance_checklist_override import ComplianceChecklistOverride
 from app.models.planting_rule_template import PlantingRuleTemplateOverride
+from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
 from app.schemas.cms import (
     CmsPageCreate,
     CmsPageUpdate,
@@ -18,7 +20,13 @@ from app.schemas.cms import (
     LegalDocumentUpdate,
     SiteConfigUpdate,
 )
-from app.schemas.rule_template import RuleTemplateAdminOut, RuleTemplateOverrideUpdate
+from app.schemas.rule_template import (
+    ChecklistOverrideUpdate,
+    RuleTemplateAdminOut,
+    RuleTemplateImportBundle,
+    RuleTemplateOverrideUpdate,
+    RuleTemplatePreviewRequest,
+)
 from app.services.audit import record_audit
 from app.services.cms.defaults import SECTION_TYPES
 from app.services.cms.legal import LEGAL_PAGE_SLUGS
@@ -35,15 +43,27 @@ from app.services.cms.service import (
     slugify,
     update_legal_document,
 )
+from app.services.compliance.checklist_engine import (
+    get_effective_checklist,
+    list_effective_checklists,
+    validate_checklist_override,
+)
+from app.services.compliance.checklists import get_checklist
+from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.rule_engine import (
+    build_scheme_template_map,
+    export_templates_bundle,
     get_effective_template,
     get_template_override_row,
     is_admin_editable_template,
     list_editable_template_codes,
+    list_template_versions,
     merge_rules,
+    record_template_version,
     rule_template_admin_dict,
     sanitize_override_rules,
     validate_rule_override,
+    version_to_dict,
 )
 from app.services.planting_projects.templates import get_template
 
@@ -402,6 +422,76 @@ async def cms_list_rule_templates(_manager: CmsManager, db: DB) -> list[dict]:
     return items
 
 
+@admin_router.get("/rule-templates/export")
+async def cms_export_rule_templates(_manager: CmsManager, db: DB) -> dict:
+    rows = {
+        code: await get_template_override_row(db, code) for code in list_editable_template_codes()
+    }
+    return export_templates_bundle(rows)
+
+
+@admin_router.post("/rule-templates/import")
+async def cms_import_rule_templates(
+    payload: RuleTemplateImportBundle,
+    request: Request,
+    manager: CmsManager,
+    db: DB,
+) -> dict:
+    imported = 0
+    for entry in payload.templates:
+        code = entry.get("template_code")
+        if not code or not is_admin_editable_template(code):
+            continue
+        base = get_template(code)
+        if base is None:
+            continue
+        override_payload = entry.get("override") or {}
+        rules = sanitize_override_rules(base["rules"], override_payload.get("rules") or {})
+        errors = validate_rule_override(rules)
+        if errors:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"validation_errors": errors, "template_code": code},
+            )
+        row = await get_template_override_row(db, code)
+        if row is None:
+            row = PlantingRuleTemplateOverride(template_code=code, rules={}, enabled=True)
+            db.add(row)
+        row.rules = rules
+        row.enabled = bool(override_payload.get("enabled", True))
+        row.compliance_mode = override_payload.get("compliance_mode")
+        row.publish_note = override_payload.get("publish_note")
+        row.updated_by_user_id = manager.id
+        await record_template_version(
+            db,
+            template_code=code,
+            rules=rules,
+            compliance_mode=row.compliance_mode,
+            enabled=row.enabled,
+            effective_from=None,
+            publish_note=row.publish_note or "Imported via CMS bundle",
+            actor_user_id=manager.id,
+        )
+        imported += 1
+
+    await record_audit(
+        db,
+        actor=manager,
+        action="cms.rule_template.import",
+        resource_type="planting_rule_template_override",
+        resource_id=None,
+        request=request,
+        diff={"imported_count": imported},
+    )
+    await db.commit()
+    return {"imported": imported}
+
+
+@admin_router.get("/rule-schemes-map")
+async def cms_rule_schemes_map(_manager: CmsManager) -> list[dict]:
+    return build_scheme_template_map()
+
+
 @admin_router.get("/rule-templates/{template_code}", response_model=RuleTemplateAdminOut)
 async def cms_get_rule_template(
     template_code: str, _manager: CmsManager, db: DB
@@ -451,12 +541,26 @@ async def cms_update_rule_template(
         db.add(row)
     row.rules = cleaned_rules
     row.enabled = payload.enabled
+    row.compliance_mode = payload.compliance_mode
+    row.effective_from = payload.effective_from
+    row.publish_note = payload.publish_note
     row.updated_by_user_id = manager.id
     await db.flush()
 
-    effective_rules = (
-        merge_rules(base["rules"], cleaned_rules) if payload.enabled else dict(base["rules"])
+    await record_template_version(
+        db,
+        template_code=template_code,
+        rules=cleaned_rules,
+        compliance_mode=payload.compliance_mode,
+        enabled=payload.enabled,
+        effective_from=payload.effective_from,
+        publish_note=payload.publish_note,
+        actor_user_id=manager.id,
     )
+
+    effective_tpl = await get_effective_template(db, template_code)
+    effective_rules = dict(effective_tpl["rules"]) if effective_tpl else dict(base["rules"])
+    eff_mode = effective_tpl["compliance_mode"] if effective_tpl else base["compliance_mode"]
 
     await record_audit(
         db,
@@ -475,7 +579,213 @@ async def cms_update_rule_template(
         base=base,
         override=row,
         effective_rules=effective_rules,
+        effective_compliance_mode=eff_mode,
     )
+
+
+@admin_router.get("/rule-templates/{template_code}/versions")
+async def cms_list_rule_template_versions(
+    template_code: str, _manager: CmsManager, db: DB
+) -> list[dict]:
+    if not is_admin_editable_template(template_code):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_editable")
+    versions = await list_template_versions(db, template_code)
+    return [version_to_dict(v) for v in versions]
+
+
+@admin_router.post("/rule-templates/{template_code}/versions/{version_id}/rollback")
+async def cms_rollback_rule_template(
+    template_code: str,
+    version_id: uuid.UUID,
+    request: Request,
+    manager: CmsManager,
+    db: DB,
+) -> dict:
+    if not is_admin_editable_template(template_code):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_editable")
+    base = get_template(template_code)
+    if base is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found")
+
+    version = await db.get(PlantingRuleTemplateVersion, version_id)
+    if version is None or version.template_code != template_code:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="version_not_found")
+
+    row = await get_template_override_row(db, template_code)
+    if row is None:
+        row = PlantingRuleTemplateOverride(template_code=template_code, rules={}, enabled=True)
+        db.add(row)
+    row.rules = version.rules
+    row.enabled = version.enabled
+    row.compliance_mode = version.compliance_mode
+    row.effective_from = None
+    row.publish_note = f"Rollback to v{version.version_number}"
+    row.updated_by_user_id = manager.id
+    await db.flush()
+
+    await record_template_version(
+        db,
+        template_code=template_code,
+        rules=version.rules,
+        compliance_mode=version.compliance_mode,
+        enabled=version.enabled,
+        effective_from=None,
+        publish_note=row.publish_note,
+        actor_user_id=manager.id,
+        is_rollback=True,
+    )
+
+    effective_tpl = await get_effective_template(db, template_code)
+    effective_rules = dict(effective_tpl["rules"]) if effective_tpl else dict(base["rules"])
+
+    await record_audit(
+        db,
+        actor=manager,
+        action="cms.rule_template.rollback",
+        resource_type="planting_rule_template_override",
+        resource_id=row.id,
+        request=request,
+        diff={"template_code": template_code, "version_id": str(version_id)},
+    )
+    await db.commit()
+    await db.refresh(row)
+
+    return rule_template_admin_dict(
+        code=template_code,
+        base=base,
+        override=row,
+        effective_rules=effective_rules,
+        effective_compliance_mode=effective_tpl["compliance_mode"] if effective_tpl else None,
+    )
+
+
+@admin_router.post("/rule-templates/{template_code}/preview")
+async def cms_preview_rule_template(
+    template_code: str,
+    payload: RuleTemplatePreviewRequest,
+    _manager: CmsManager,
+    db: DB,
+) -> dict:
+    if not is_admin_editable_template(template_code):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_editable")
+    base = get_template(template_code)
+    if base is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found")
+
+    rules = merge_rules(base["rules"], sanitize_override_rules(base["rules"], payload.rules))
+    result = await evaluate_tree_placement(
+        db,
+        project=None,
+        work_area=None,
+        rules=rules,
+        compliance_mode=payload.compliance_mode,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        accuracy_m=payload.accuracy_m,
+        species_text=payload.species_text,
+        photo_count=payload.photo_count,
+        metadata=payload.metadata,
+    )
+    return {
+        "template_code": template_code,
+        "compliance_mode": payload.compliance_mode,
+        "rules_preview": rules,
+        "result": result.to_dict(),
+    }
+
+
+@admin_router.get("/checklist-overrides")
+async def cms_list_checklist_overrides(_manager: CmsManager, db: DB) -> list[dict]:
+    items = await list_effective_checklists(db)
+    return [
+        {
+            "checklist_code": item["code"],
+            "title": item["title"],
+            "short_label": item["short_label"],
+            "framework_reference": item["framework_reference"],
+            "has_custom_items": item.get("has_custom_items", False),
+            "item_count": item.get("item_count", 0),
+            "override": item.get("override", {}),
+        }
+        for item in items
+    ]
+
+
+@admin_router.get("/checklist-overrides/{checklist_code}")
+async def cms_get_checklist_override(
+    checklist_code: str, _manager: CmsManager, db: DB
+) -> dict:
+    effective = await get_effective_checklist(db, checklist_code)
+    if effective is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="checklist_not_found")
+    base = get_checklist(checklist_code)
+    code_items = [
+        {
+            "id": item.id,
+            "category": item.category,
+            "question": item.question,
+            "guidance": item.guidance,
+            "required": item.required,
+        }
+        for item in (base.items if base else [])
+    ]
+    return {
+        "checklist_code": checklist_code,
+        "title": effective["title"],
+        "short_label": effective["short_label"],
+        "framework_reference": effective["framework_reference"],
+        "description": effective["description"],
+        "disclaimer": effective["disclaimer"],
+        "has_custom_items": effective.get("has_custom_items", False),
+        "code_items": code_items,
+        "effective_items": effective.get("items", []),
+        "override": effective.get("override", {}),
+    }
+
+
+@admin_router.put("/checklist-overrides/{checklist_code}")
+async def cms_update_checklist_override(
+    checklist_code: str,
+    payload: ChecklistOverrideUpdate,
+    request: Request,
+    manager: CmsManager,
+    db: DB,
+) -> dict:
+    if get_checklist(checklist_code) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="checklist_not_found")
+
+    errors = validate_checklist_override(payload.item_overrides)
+    if errors:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"validation_errors": errors})
+
+    row = (
+        await db.execute(
+            select(ComplianceChecklistOverride).where(
+                ComplianceChecklistOverride.checklist_code == checklist_code
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = ComplianceChecklistOverride(checklist_code=checklist_code, item_overrides={})
+        db.add(row)
+    row.item_overrides = payload.item_overrides
+    row.enabled = payload.enabled
+    row.updated_by_user_id = manager.id
+
+    await record_audit(
+        db,
+        actor=manager,
+        action="cms.checklist_override.update",
+        resource_type="compliance_checklist_override",
+        resource_id=row.id,
+        request=request,
+        diff={"checklist_code": checklist_code},
+    )
+    await db.commit()
+
+    effective = await get_effective_checklist(db, checklist_code)
+    assert effective is not None
+    return await cms_get_checklist_override(checklist_code, manager, db)
 
 
 @admin_router.delete("/sections/{section_id}")

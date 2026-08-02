@@ -89,6 +89,37 @@ async def test_save_project_checklist_responses_persists(monkeypatch):
         "app.services.compliance.evaluator.build_auto_signals",
         fake_build_auto_signals,
     )
+    async def fake_effective_checklist(db, code):
+        base = get_checklist(code)
+        assert base is not None
+        return {
+            "code": base.code,
+            "title": base.title,
+            "short_label": base.short_label,
+            "framework_reference": base.framework_reference,
+            "description": base.description,
+            "disclaimer": base.disclaimer,
+            "items": [
+                {
+                    "id": item.id,
+                    "category": item.category,
+                    "question": item.question,
+                    "guidance": item.guidance,
+                    "required": item.required,
+                    "auto_key": item.auto_key,
+                }
+                for item in base.items
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.services.compliance.evaluator.get_effective_checklist",
+        fake_effective_checklist,
+    )
+    monkeypatch.setattr(
+        "app.services.schemes.compliance.notify_scheme_compliance_gaps",
+        AsyncMock(),
+    )
     monkeypatch.setattr(
         "app.services.compliance.evaluator.build_project_checklist_state",
         AsyncMock(return_value={"eligibility_status": "eligible"}),

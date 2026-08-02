@@ -83,7 +83,7 @@ async def build_project_mrv_context(
     db: AsyncSession, project: PlantingProject
 ) -> dict[str, Any]:
     standard = await get_active_standard(db, project)
-    rules = await get_effective_rules(db, standard)
+    rules = await get_effective_rules(db, standard, project_id=project.id if project else None)
 
     work_areas_res = await db.execute(
         select(PlantationFence)

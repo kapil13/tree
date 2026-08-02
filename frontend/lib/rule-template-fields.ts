@@ -10,7 +10,13 @@ export type RuleFieldSection =
   | "targets"
   | "cooperative";
 
-export type RuleFieldType = "number" | "boolean" | "species_list" | "layout_select";
+export type RuleFieldType =
+  | "number"
+  | "boolean"
+  | "species_list"
+  | "layout_select"
+  | "string_list"
+  | "geometry_select";
 
 export type RuleFieldDef = {
   path: string;
@@ -230,6 +236,45 @@ export const RULE_FIELD_CATALOG: RuleFieldDef[] = [
   },
   { path: "cooperative_led", label: "Cooperative-led site", section: "cooperative", type: "boolean" },
   { path: "arid_land_optimized", label: "Arid land optimized", section: "cooperative", type: "boolean" },
+  {
+    path: "block_types",
+    label: "Allowed block types",
+    section: "targets",
+    type: "string_list",
+    hint: "Tap to toggle work-area block categories.",
+  },
+  {
+    path: "plantation_methods",
+    label: "Plantation methods",
+    section: "targets",
+    type: "string_list",
+  },
+  {
+    path: "layout_patterns_allowed",
+    label: "Allowed layout patterns",
+    section: "layout",
+    type: "string_list",
+  },
+  {
+    path: "work_area_geometry",
+    label: "Work area geometry",
+    section: "layout",
+    type: "geometry_select",
+  },
+  {
+    path: "native_species_examples",
+    label: "Native species examples (hints)",
+    section: "species",
+    type: "species_list",
+    hint: "Shown as guidance — not enforced at registration.",
+  },
+  {
+    path: "site_area_acres_reference",
+    label: "Reference site area",
+    section: "targets",
+    type: "number",
+    unit: "acres",
+  },
 ];
 
 export const LAYOUT_PATTERN_OPTIONS = [
