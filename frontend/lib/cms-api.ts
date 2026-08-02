@@ -66,9 +66,12 @@ export type RuleTemplateAdmin = {
   template_code: string;
   name: string;
   segment: string;
+  segment_label: string;
   description: string;
   compliance_mode: string;
+  recommended_program_codes: string[];
   editable: boolean;
+  has_custom_rules: boolean;
   code_defaults: Record<string, unknown>;
   override: {
     enabled: boolean;

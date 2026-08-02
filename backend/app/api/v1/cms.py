@@ -36,11 +36,13 @@ from app.services.cms.service import (
     update_legal_document,
 )
 from app.services.planting_projects.rule_engine import (
-    ADMIN_EDITABLE_TEMPLATE_CODES,
     get_effective_template,
     get_template_override_row,
+    is_admin_editable_template,
+    list_editable_template_codes,
     merge_rules,
     rule_template_admin_dict,
+    sanitize_override_rules,
     validate_rule_override,
 )
 from app.services.planting_projects.templates import get_template
@@ -382,7 +384,7 @@ async def cms_update_section(
 async def cms_list_rule_templates(_manager: CmsManager, db: DB) -> list[dict]:
     """List CMS-editable planting rule templates with code defaults and effective rules."""
     items: list[dict] = []
-    for code in sorted(ADMIN_EDITABLE_TEMPLATE_CODES):
+    for code in list_editable_template_codes():
         base = get_template(code)
         if base is None:
             continue
@@ -404,7 +406,7 @@ async def cms_list_rule_templates(_manager: CmsManager, db: DB) -> list[dict]:
 async def cms_get_rule_template(
     template_code: str, _manager: CmsManager, db: DB
 ) -> dict:
-    if template_code not in ADMIN_EDITABLE_TEMPLATE_CODES:
+    if not is_admin_editable_template(template_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_editable")
     base = get_template(template_code)
     if base is None:
@@ -428,7 +430,7 @@ async def cms_update_rule_template(
     manager: CmsManager,
     db: DB,
 ) -> dict:
-    if template_code not in ADMIN_EDITABLE_TEMPLATE_CODES:
+    if not is_admin_editable_template(template_code):
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_editable")
     base = get_template(template_code)
     if base is None:
@@ -441,16 +443,20 @@ async def cms_update_rule_template(
             detail={"validation_errors": errors},
         )
 
+    cleaned_rules = sanitize_override_rules(base["rules"], payload.rules)
+
     row = await get_template_override_row(db, template_code)
     if row is None:
         row = PlantingRuleTemplateOverride(template_code=template_code, rules={}, enabled=True)
         db.add(row)
-    row.rules = payload.rules
+    row.rules = cleaned_rules
     row.enabled = payload.enabled
     row.updated_by_user_id = manager.id
     await db.flush()
 
-    effective_rules = merge_rules(base["rules"], payload.rules) if payload.enabled else dict(base["rules"])
+    effective_rules = (
+        merge_rules(base["rules"], cleaned_rules) if payload.enabled else dict(base["rules"])
+    )
 
     await record_audit(
         db,
