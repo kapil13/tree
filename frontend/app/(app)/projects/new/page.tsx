@@ -114,6 +114,7 @@ export default function NewProjectPage() {
   const schemesByGroup = useMemo(() => {
     const groups: Record<CentralSchemeGroup, CentralScheme[]> = {
       central: [],
+      cooperative: [],
       convergence: [],
       corporate: [],
     };
