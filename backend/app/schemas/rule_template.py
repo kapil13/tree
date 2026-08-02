@@ -16,9 +16,12 @@ class RuleTemplateAdminOut(BaseModel):
     template_code: str
     name: str
     segment: str
+    segment_label: str = ""
     description: str
     compliance_mode: str
+    recommended_program_codes: list[str] = Field(default_factory=list)
     editable: bool
+    has_custom_rules: bool = False
     code_defaults: dict[str, Any]
     override: dict[str, Any]
     effective_rules: dict[str, Any]
