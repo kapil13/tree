@@ -19,15 +19,6 @@ from app.schemas.cms import (
     SiteConfigUpdate,
 )
 from app.schemas.rule_template import RuleTemplateAdminOut, RuleTemplateOverrideUpdate
-from app.services.planting_projects.rule_engine import (
-    ADMIN_EDITABLE_TEMPLATE_CODES,
-    get_effective_template,
-    get_template_override_row,
-    merge_rules,
-    rule_template_admin_dict,
-    validate_rule_override,
-)
-from app.services.planting_projects.templates import get_template
 from app.services.audit import record_audit
 from app.services.cms.defaults import SECTION_TYPES
 from app.services.cms.legal import LEGAL_PAGE_SLUGS
@@ -44,6 +35,15 @@ from app.services.cms.service import (
     slugify,
     update_legal_document,
 )
+from app.services.planting_projects.rule_engine import (
+    ADMIN_EDITABLE_TEMPLATE_CODES,
+    get_effective_template,
+    get_template_override_row,
+    merge_rules,
+    rule_template_admin_dict,
+    validate_rule_override,
+)
+from app.services.planting_projects.templates import get_template
 
 public_router = APIRouter(prefix="/public", tags=["public"])
 admin_router = APIRouter(prefix="/platform/cms", tags=["platform-cms"])

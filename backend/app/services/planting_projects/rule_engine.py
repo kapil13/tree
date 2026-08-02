@@ -43,7 +43,7 @@ def validate_rule_override(rules: dict[str, Any]) -> list[str]:
             errors.append("spacing_m must be an object with min and warn_below.")
         else:
             min_val = spacing.get("min")
-            if min_val is not None and (not isinstance(min_val, (int, float)) or min_val <= 0):
+            if min_val is not None and (not isinstance(min_val, int | float) or min_val <= 0):
                 errors.append("spacing_m.min must be a positive number.")
 
     pit = rules.get("pit_size_cm")
@@ -53,12 +53,12 @@ def validate_rule_override(rules: dict[str, Any]) -> list[str]:
         else:
             for dim in ("length", "width", "depth"):
                 val = pit.get(dim)
-                if val is not None and (not isinstance(val, (int, float)) or val <= 0):
+                if val is not None and (not isinstance(val, int | float) or val <= 0):
                     errors.append(f"pit_size_cm.{dim} must be a positive number.")
 
     native_pct = rules.get("species_native_pct_min")
     if native_pct is not None and (
-        not isinstance(native_pct, (int, float)) or native_pct < 0 or native_pct > 100
+        not isinstance(native_pct, int | float) or native_pct < 0 or native_pct > 100
     ):
         errors.append("species_native_pct_min must be between 0 and 100.")
 
@@ -69,7 +69,7 @@ def validate_rule_override(rules: dict[str, Any]) -> list[str]:
         errors.append("min_photos must be a non-negative integer.")
 
     max_gps = rules.get("max_gps_accuracy_m")
-    if max_gps is not None and (not isinstance(max_gps, (int, float)) or max_gps <= 0):
+    if max_gps is not None and (not isinstance(max_gps, int | float) or max_gps <= 0):
         errors.append("max_gps_accuracy_m must be a positive number.")
 
     density = rules.get("planting_density_per_ha")

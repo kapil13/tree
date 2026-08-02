@@ -55,12 +55,12 @@ from app.services.planting_projects.access import (
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
+from app.services.planting_projects.rule_engine import get_effective_rules, get_effective_template
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
     project_summary,
 )
-from app.services.planting_projects.rule_engine import get_effective_rules, get_effective_template
 from app.services.planting_projects.templates import get_template, list_templates
 from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
