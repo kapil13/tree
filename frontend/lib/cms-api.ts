@@ -62,6 +62,22 @@ export type LegalDocument = {
   page_id: string;
 };
 
+export type RuleTemplateAdmin = {
+  template_code: string;
+  name: string;
+  segment: string;
+  description: string;
+  compliance_mode: string;
+  editable: boolean;
+  code_defaults: Record<string, unknown>;
+  override: {
+    enabled: boolean;
+    rules: Record<string, unknown>;
+    updated_at: string | null;
+  };
+  effective_rules: Record<string, unknown>;
+};
+
 export const cmsAdmin = {
   async sectionTypes() {
     return (await api.get<string[]>("/v1/platform/cms/section-types")).data;
@@ -116,5 +132,18 @@ export const cmsAdmin = {
   },
   async deleteSection(id: string) {
     return (await api.delete(`/v1/platform/cms/sections/${id}`)).data;
+  },
+  async listRuleTemplates() {
+    return (await api.get<RuleTemplateAdmin[]>("/v1/platform/cms/rule-templates")).data;
+  },
+  async getRuleTemplate(code: string) {
+    return (await api.get<RuleTemplateAdmin>(`/v1/platform/cms/rule-templates/${code}`)).data;
+  },
+  async updateRuleTemplate(
+    code: string,
+    payload: { enabled: boolean; rules: Record<string, unknown> },
+  ) {
+    return (await api.put<RuleTemplateAdmin>(`/v1/platform/cms/rule-templates/${code}`, payload))
+      .data;
   },
 };

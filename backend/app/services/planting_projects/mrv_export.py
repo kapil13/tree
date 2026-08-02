@@ -12,6 +12,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
+from app.services.planting_projects.rule_engine import get_effective_rules
 from app.services.planting_projects.service import get_active_standard
 from app.services.schemes.kpis import compute_scheme_kpis
 from app.services.schemes.registry import get_scheme
@@ -82,7 +83,7 @@ async def build_project_mrv_context(
     db: AsyncSession, project: PlantingProject
 ) -> dict[str, Any]:
     standard = await get_active_standard(db, project)
-    rules = standard.rules if standard else {}
+    rules = await get_effective_rules(db, standard)
 
     work_areas_res = await db.execute(
         select(PlantationFence)
