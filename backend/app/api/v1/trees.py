@@ -46,6 +46,7 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
+from app.services.planting_projects.rule_engine import get_effective_rules
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
@@ -197,7 +198,7 @@ async def create_tree(
     rules: dict = {}
     if project:
         standard = await get_active_standard(db, project)
-        rules = standard.rules if standard else {}
+        rules = await get_effective_rules(db, standard)
 
     compliance = await evaluate_tree_placement(
         db,
@@ -441,7 +442,7 @@ async def regeotag_tree(
     compliance_out = None
     if project:
         standard = await get_active_standard(db, project)
-        rules = standard.rules if standard else {}
+        rules = await get_effective_rules(db, standard)
         compliance_mode = project.compliance_mode
         photo_count = len(tree.images) if tree.images else 0
 

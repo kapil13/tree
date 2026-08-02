@@ -12,6 +12,7 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.planting_standard import PlantingStandard
 from app.models.tree import Tree
+from app.services.planting_projects.rule_engine import get_effective_template
 from app.services.planting_projects.templates import get_template, template_for_segment
 
 
@@ -21,7 +22,9 @@ async def create_standard_from_template(
     project: PlantingProject,
     template_code: str,
 ) -> PlantingStandard:
-    tpl = get_template(template_code) or template_for_segment(project.segment)
+    tpl = await get_effective_template(db, template_code)
+    if tpl is None:
+        tpl = get_template(template_code) or template_for_segment(project.segment)
     standard = PlantingStandard(
         project_id=project.id,
         template_code=tpl["code"],

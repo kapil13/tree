@@ -55,6 +55,7 @@ from app.services.planting_projects.access import (
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
+from app.services.planting_projects.rule_engine import get_effective_rules, get_effective_template
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
@@ -80,7 +81,13 @@ def _project_out(
     *,
     summary: ProjectSummaryOut | None = None,
     standard: PlantingStandard | None = None,
+    effective_rules: dict | None = None,
 ) -> PlantingProjectOut:
+    standard_out = None
+    if standard is not None:
+        standard_out = PlantingStandardOut.model_validate(standard)
+        if effective_rules is not None:
+            standard_out = standard_out.model_copy(update={"rules": effective_rules})
     return PlantingProjectOut(
         id=project.id,
         code=project.code,
@@ -99,7 +106,7 @@ def _project_out(
         created_at=project.created_at,
         updated_at=project.updated_at,
         summary=summary,
-        active_standard=PlantingStandardOut.model_validate(standard) if standard else None,
+        active_standard=standard_out,
     )
 
 
@@ -151,13 +158,20 @@ async def list_segments() -> dict:
 
 
 @router.get("/templates", response_model=list[StandardTemplateOut])
-async def list_standard_templates(segment: str | None = None) -> list[StandardTemplateOut]:
-    return [StandardTemplateOut.model_validate(t) for t in list_templates(segment=segment)]
+async def list_standard_templates(segment: str | None = None, *, db: DB) -> list[StandardTemplateOut]:
+    items = list_templates(segment=segment)
+    out: list[StandardTemplateOut] = []
+    for tpl in items:
+        effective = await get_effective_template(db, tpl["code"])
+        out.append(StandardTemplateOut.model_validate(effective or tpl))
+    return out
 
 
 @router.get("/templates/{code}", response_model=StandardTemplateOut)
-async def get_standard_template(code: str) -> StandardTemplateOut:
-    tpl = get_template(code)
+async def get_standard_template(code: str, db: DB) -> StandardTemplateOut:
+    tpl = await get_effective_template(db, code)
+    if tpl is None:
+        tpl = get_template(code)
     if tpl is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found")
     return StandardTemplateOut.model_validate(tpl)
@@ -312,7 +326,8 @@ async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> Plant
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    effective_rules = await get_effective_rules(db, standard)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
 
 
 @router.patch("/{project_id}", response_model=PlantingProjectOut)
@@ -614,7 +629,7 @@ async def compliance_check(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
 
     standard = await get_active_standard(db, project)
-    rules = standard.rules if standard else {}
+    rules = await get_effective_rules(db, standard)
     result = await evaluate_tree_placement(
         db,
         project=project,

@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { FileText, Globe2, Scale, Shield } from "lucide-react";
+import { FileText, Gauge, Globe2, Scale, Shield } from "lucide-react";
 import { CmsLegalPanel } from "@/components/platform/cms-legal-panel";
 import { CmsPagesListPanel } from "@/components/platform/cms-pages-list-panel";
+import { CmsRuleEnginePanel } from "@/components/platform/cms-rule-engine-panel";
 import { CmsSiteSettingsPanel } from "@/components/platform/cms-site-settings-panel";
 import { CmsUsersRolesPanel } from "@/components/platform/cms-users-roles-panel";
 import { PlatformShell } from "@/components/platform/platform-shell";
 
 export default function PlatformCmsPage() {
-  const [tab, setTab] = useState<"site" | "pages" | "legal" | "access">("site");
+  const [tab, setTab] = useState<"site" | "pages" | "legal" | "access" | "rules">("site");
 
   return (
     <PlatformShell>
@@ -51,6 +52,14 @@ export default function PlatformCmsPage() {
         </button>
         <button
           type="button"
+          className={tab === "rules" ? "btn-primary" : "btn-ghost"}
+          onClick={() => setTab("rules")}
+        >
+          <Gauge className="h-4 w-4" />
+          Rule engine
+        </button>
+        <button
+          type="button"
           className={tab === "access" ? "btn-primary" : "btn-ghost"}
           onClick={() => setTab("access")}
         >
@@ -65,6 +74,8 @@ export default function PlatformCmsPage() {
         <CmsPagesListPanel />
       ) : tab === "legal" ? (
         <CmsLegalPanel />
+      ) : tab === "rules" ? (
+        <CmsRuleEnginePanel />
       ) : (
         <CmsUsersRolesPanel />
       )}

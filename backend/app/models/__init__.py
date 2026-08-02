@@ -15,6 +15,7 @@ from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_program import PlantingProgram, ProgramAccessRequest, UserPlantingProgram
 from app.models.planting_project import PlantingProject
+from app.models.planting_rule_template import PlantingRuleTemplateOverride
 from app.models.planting_standard import PlantingStandard
 from app.models.platform_module import PlatformModuleRule
 from app.models.project_member import ProjectMember
@@ -56,6 +57,7 @@ __all__ = [
     "ProgramAccessRequest",
     "UserPlantingProgram",
     "PlantingProject",
+    "PlantingRuleTemplateOverride",
     "PlantingStandard",
     "PlantationFence",
     "PlantationSatelliteRecord",
