@@ -12,6 +12,7 @@ from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
+from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_standard import PlantingStandard
 from app.models.project_member import ProjectMember
 from app.models.tree import Tree
@@ -41,6 +42,7 @@ from app.schemas.project_member import (
     ProjectMemberCreate,
     ProjectMemberOut,
 )
+from app.schemas.rule_template import ProjectRuleOverrideUpdate
 from app.schemas.tree import TreeListItem
 from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
@@ -55,7 +57,16 @@ from app.services.planting_projects.access import (
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
-from app.services.planting_projects.rule_engine import get_effective_rules, get_effective_template
+from app.services.planting_projects.rule_engine import (
+    get_effective_rules,
+    get_effective_template,
+    get_project_override_row,
+    merge_rules,
+    project_rule_override_dict,
+    resolve_template_rules,
+    sanitize_override_rules,
+    validate_rule_override,
+)
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
@@ -148,6 +159,17 @@ async def _work_area_out(db: DB, fence: PlantationFence) -> WorkAreaOut:
     )
 
 
+async def _project_out_async(
+    db: DB,
+    project: PlantingProject,
+    *,
+    summary: ProjectSummaryOut | None = None,
+    standard: PlantingStandard | None = None,
+) -> PlantingProjectOut:
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
 @router.get("/segments")
 async def list_segments() -> dict:
     return {
@@ -235,7 +257,7 @@ async def list_projects(
     for project in rows:
         summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
         standard = await get_active_standard(db, project)
-        items.append(_project_out(project, summary=summary, standard=standard))
+        items.append(await _project_out_async(db, project, summary=summary, standard=standard))
 
     return Page(items=items, page=page, page_size=page_size, total=total or 0)
 
@@ -316,7 +338,7 @@ async def create_project(
 
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
 @router.get("/{project_id}", response_model=PlantingProjectOut)
@@ -326,8 +348,88 @@ async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> Plant
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    effective_rules = await get_effective_rules(db, standard)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
     return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
+@router.get("/{project_id}/rule-override")
+async def get_project_rule_override(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    standard = await get_active_standard(db, project)
+    template_code = standard.template_code if standard else project.standard_template_code
+    base_rules = await resolve_template_rules(db, template_code=template_code, project_id=None)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    row = await get_project_override_row(db, project.id)
+    return project_rule_override_dict(
+        project_id=project.id,
+        template_code=template_code,
+        base_rules=base_rules,
+        effective_rules=effective_rules,
+        row=row,
+        project_compliance_mode=project.compliance_mode,
+    )
+
+
+@router.put("/{project_id}/rule-override")
+async def update_project_rule_override(
+    project_id: uuid.UUID,
+    payload: ProjectRuleOverrideUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    standard = await get_active_standard(db, project)
+    template_code = standard.template_code if standard else project.standard_template_code
+    base = get_template(template_code) if template_code else None
+    base_rules = base["rules"] if base else (standard.rules if standard else {})
+
+    errors = validate_rule_override(payload.rules)
+    if errors:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"validation_errors": errors})
+
+    cleaned = sanitize_override_rules(base_rules, payload.rules)
+    row = await get_project_override_row(db, project.id)
+    if row is None:
+        row = PlantingProjectRuleOverride(project_id=project.id, rules={})
+        db.add(row)
+    row.rules = cleaned
+    row.enabled = payload.enabled
+    row.compliance_mode = payload.compliance_mode
+    row.publish_note = payload.publish_note
+    row.updated_by_user_id = user.id
+
+    await record_audit(
+        db,
+        actor=user,
+        action="project.rule_override.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+    await db.refresh(row)
+
+    base_effective = await resolve_template_rules(db, template_code=template_code, project_id=None)
+    effective_rules = merge_rules(base_effective, cleaned) if row.enabled else base_effective
+    return project_rule_override_dict(
+        project_id=project.id,
+        template_code=template_code,
+        base_rules=base_effective,
+        effective_rules=effective_rules,
+        row=row,
+        project_compliance_mode=project.compliance_mode,
+    )
 
 
 @router.patch("/{project_id}", response_model=PlantingProjectOut)
@@ -364,7 +466,7 @@ async def update_project(
     await db.refresh(project)
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
 @router.patch("/{project_id}/scheme-metadata", response_model=PlantingProjectOut)
@@ -406,7 +508,7 @@ async def update_scheme_metadata(
     await db.refresh(project)
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
 @router.get("/{project_id}/scheme-kpis", response_model=SchemeKpiOut)
@@ -629,7 +731,7 @@ async def compliance_check(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
 
     standard = await get_active_standard(db, project)
-    rules = await get_effective_rules(db, standard)
+    rules = await get_effective_rules(db, standard, project_id=project.id)
     result = await evaluate_tree_placement(
         db,
         project=project,

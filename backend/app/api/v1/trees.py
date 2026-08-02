@@ -46,7 +46,7 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
-from app.services.planting_projects.rule_engine import get_effective_rules
+from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
@@ -198,7 +198,13 @@ async def create_tree(
     rules: dict = {}
     if project:
         standard = await get_active_standard(db, project)
-        rules = await get_effective_rules(db, standard)
+        rules = await get_effective_rules(db, standard, project_id=project.id)
+        compliance_mode = await resolve_compliance_mode(
+            db,
+            template_code=standard.template_code if standard else project.standard_template_code,
+            project_compliance_mode=project.compliance_mode,
+            project_id=project.id,
+        )
 
     compliance = await evaluate_tree_placement(
         db,
@@ -442,8 +448,13 @@ async def regeotag_tree(
     compliance_out = None
     if project:
         standard = await get_active_standard(db, project)
-        rules = await get_effective_rules(db, standard)
-        compliance_mode = project.compliance_mode
+        rules = await get_effective_rules(db, standard, project_id=project.id)
+        compliance_mode = await resolve_compliance_mode(
+            db,
+            template_code=standard.template_code if standard else project.standard_template_code,
+            project_compliance_mode=project.compliance_mode,
+            project_id=project.id,
+        )
         photo_count = len(tree.images) if tree.images else 0
 
         compliance = await evaluate_tree_placement(

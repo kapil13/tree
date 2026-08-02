@@ -5,6 +5,7 @@ from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
 from app.models.compliance_checklist import ProjectChecklistResponse
+from app.models.compliance_checklist_override import ComplianceChecklistOverride
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
@@ -15,7 +16,9 @@ from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_program import PlantingProgram, ProgramAccessRequest, UserPlantingProgram
 from app.models.planting_project import PlantingProject
+from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_rule_template import PlantingRuleTemplateOverride
+from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
 from app.models.planting_standard import PlantingStandard
 from app.models.platform_module import PlatformModuleRule
 from app.models.project_member import ProjectMember
@@ -40,6 +43,7 @@ __all__ = [
     "PaymentEvent",
     "AuditLog",
     "CarbonCalculation",
+    "ComplianceChecklistOverride",
     "CmsPage",
     "CmsSection",
     "CmsSiteConfig",
@@ -57,7 +61,9 @@ __all__ = [
     "ProgramAccessRequest",
     "UserPlantingProgram",
     "PlantingProject",
+    "PlantingProjectRuleOverride",
     "PlantingRuleTemplateOverride",
+    "PlantingRuleTemplateVersion",
     "PlantingStandard",
     "PlantationFence",
     "PlantationSatelliteRecord",

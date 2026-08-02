@@ -857,6 +857,35 @@ export const plantingProjects = {
       await api.patch<PlantingProject>(`/v1/planting-projects/${id}/scheme-metadata`, payload)
     ).data;
   },
+  async getRuleOverride(id: string) {
+    return (await api.get<{
+      project_id: string;
+      template_code: string | null;
+      project_compliance_mode: string;
+      effective_compliance_mode: string;
+      has_project_override: boolean;
+      base_rules: Record<string, unknown>;
+      effective_rules: Record<string, unknown>;
+      override: {
+        enabled: boolean;
+        rules: Record<string, unknown>;
+        compliance_mode?: string | null;
+        publish_note?: string | null;
+        updated_at: string | null;
+      };
+    }>(`/v1/planting-projects/${id}/rule-override`)).data;
+  },
+  async updateRuleOverride(
+    id: string,
+    payload: {
+      enabled: boolean;
+      rules: Record<string, unknown>;
+      compliance_mode?: string | null;
+      publish_note?: string | null;
+    },
+  ) {
+    return (await api.put(`/v1/planting-projects/${id}/rule-override`, payload)).data;
+  },
   async schemeKpis(id: string) {
     return (
       await api.get<{
