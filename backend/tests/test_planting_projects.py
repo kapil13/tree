@@ -16,6 +16,7 @@ def test_all_segment_templates_exist():
         "nhai_highway",
         "industrial_greenbelt",
         "township_landscape",
+        "nagar_van_urban",
         "ngo_watershed",
         "general",
     }
@@ -57,6 +58,26 @@ def test_open_template_is_permissive():
     tpl = STANDARD_TEMPLATES["open_byot_v1"]
     assert tpl["rules"]["spacing_m"] is None
     assert tpl["compliance_mode"] == "open"
+
+
+def test_nagar_van_urban_forest_template():
+    tpl = get_template("nagar_van_urban_forest_v1")
+    assert tpl is not None
+    assert tpl["segment"] == "nagar_van_urban"
+    assert tpl["compliance_mode"] == "strict"
+    assert tpl["rules"]["layout_pattern"] == "cluster"
+    assert tpl["rules"]["min_trees_project"] == 10000
+    assert tpl["rules"]["species_native_pct_min"] == 80
+    assert tpl["rules"]["work_area_geometry"] == "polygon"
+
+
+def test_nagar_van_scheme_uses_urban_forest_template():
+    from app.services.schemes.registry import get_scheme
+
+    scheme = get_scheme("nagar_van")
+    assert scheme is not None
+    assert scheme["default_segment"] == "nagar_van_urban"
+    assert scheme["default_template_code"] == "nagar_van_urban_forest_v1"
 
 
 def test_risk_from_signals_critical():

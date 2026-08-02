@@ -57,6 +57,35 @@ def _industrial_rules() -> dict[str, Any]:
     }
 
 
+def _nagar_van_urban_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 2.5, "warn_below": 2.0},
+        "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+        "max_gps_accuracy_m": 10.0,
+        "min_photos": 2,
+        "guard_type_required": True,
+        "layout_pattern": "cluster",
+        "allowed_species": None,
+        "species_native_pct_min": 80,
+        "planting_density_per_ha": {"min": 800, "max": 5000},
+        "require_pit_photo": False,
+        "chainage_enabled": False,
+        "min_trees_project": 10000,
+        "work_area_geometry": "polygon",
+        "block_types": ["ward_park", "degraded_land", "miyawaki_patch", "avenue_buffer"],
+        "native_species_examples": [
+            "Neem",
+            "Peepal",
+            "Banyan",
+            "Jamun",
+            "Arjun",
+            "Gulmohar",
+            "Kachnar",
+            "Amaltas",
+        ],
+    }
+
+
 def _township_rules() -> dict[str, Any]:
     return {
         "spacing_m": {"min": 5.0, "warn_below": 4.5},
@@ -146,6 +175,18 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "guided",
         "recommended_program_codes": ["corporate_esg", "government_nhai"],
         "rules": _township_rules(),
+    },
+    "nagar_van_urban_forest_v1": {
+        "code": "nagar_van_urban_forest_v1",
+        "name": "Nagar Van Urban Forest",
+        "segment": "nagar_van_urban",
+        "description": (
+            "MoEFCC Nagar Van Yojana city-forest blocks with ward polygons, dense cluster "
+            "planting, native species emphasis, and 10,000+ tree targets per site."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai"],
+        "rules": _nagar_van_urban_rules(),
     },
     "ngo_watershed_v1": {
         "code": "ngo_watershed_v1",

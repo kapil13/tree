@@ -46,6 +46,19 @@ def _segment_report(
             "block_count": len(blocks),
             "tree_count": len(trees),
         }
+    if segment == "nagar_van_urban":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "urban_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "scheme_tree_target": 10000,
+        }
     return {"type": "general", "tree_count": len(trees)}
 
 
@@ -186,6 +199,9 @@ async def build_project_mrv_context(
             "min_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("min"),
             "layout_pattern": rules.get("layout_pattern"),
             "chainage_enabled": rules.get("chainage_enabled"),
+            "min_trees_project": rules.get("min_trees_project"),
+            "work_area_geometry": rules.get("work_area_geometry"),
+            "block_types": rules.get("block_types"),
         },
         "segment_report": _segment_report(project.segment, work_area_rows, tree_rows, native_pct),
         "summary": {
