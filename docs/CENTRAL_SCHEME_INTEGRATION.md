@@ -18,7 +18,7 @@ Aranyix separates **access programs** (who can use the platform) from **central 
 | `campa_ca` | MoEFCC | government_nhai, ngo_community |
 | `gim_restoration` | MoEFCC | government_nhai, ngo_community |
 | `mishti_mangrove` | MoEFCC | government_nhai, ngo_community |
-| `nagar_van` | MoEFCC | government_nhai |
+| `nagar_van` | MoEFCC | government_nhai | `nagar_van_urban` / `nagar_van_urban_forest_v1` |
 | `nhai_highway` | MoRTH / NHAI | government_nhai |
 | `mgnrega_convergence` | Rural Development | government_nhai, ngo_community |
 | `jal_shakti_riparian` | Jal Shakti | government_nhai, ngo_community |
@@ -53,4 +53,22 @@ Aranyix separates **access programs** (who can use the platform) from **central 
 | `mgnrega_work_estimate_id` | mgnrega_convergence | MGNREGA work estimate reference |
 | `mishti_project_id` | mishti_mangrove | MISHTI coastal project identifier |
 | `nagar_van_project_id` | nagar_van | Nagar Van Yojana project ID |
+
+## Nagar Van planting template (`nagar_van_urban_forest_v1`)
+
+When a planting project is created under the `nagar_van` central scheme, Aranyix applies:
+
+| Setting | Value |
+| --- | --- |
+| Segment | `nagar_van_urban` |
+| Template | `nagar_van_urban_forest_v1` |
+| Layout | Cluster (dense urban forest blocks) |
+| Spacing | 2.5 m minimum |
+| Density | 800–5,000 trees/ha |
+| Native species | 80% minimum |
+| Site target | 10,000+ trees per project |
+| Work areas | Polygon blocks (ward park, degraded land, Miyawaki patch, avenue buffer) |
+| Compliance | Strict |
+
+MRV exports include an `urban_forest_block` segment report with block count, area, density, and tree progress vs the 10,000-tree scheme target.
 | `green_credit_land_bank_id` | green_credit_india | MoEFCC GCP land bank registration |

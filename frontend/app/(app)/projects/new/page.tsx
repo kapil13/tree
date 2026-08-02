@@ -41,6 +41,11 @@ const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
     hint: "Avenue and landscape blocks",
   },
   {
+    code: "nagar_van_urban",
+    label: "Nagar Van / Urban forest",
+    hint: "ULB city-forest blocks, 10,000+ tree targets",
+  },
+  {
     code: "ngo_watershed",
     label: "NGO / Watershed",
     hint: "Community plots, guided compliance",

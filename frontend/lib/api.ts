@@ -669,6 +669,7 @@ export type ProjectSegment =
   | "nhai_highway"
   | "industrial_greenbelt"
   | "township_landscape"
+  | "nagar_van_urban"
   | "ngo_watershed"
   | "general";
 

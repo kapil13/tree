@@ -21,6 +21,7 @@ SEGMENT_RECOMMENDED_CHECKLIST: dict[str, str] = {
     "industrial_greenbelt": "verra_vm0047",
     "ngo_watershed": "gold_standard_luf",
     "township_landscape": "esg_general",
+    "nagar_van_urban": "nagar_van_urban",
     "general": "esg_general",
 }
 

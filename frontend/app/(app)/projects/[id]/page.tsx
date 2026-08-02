@@ -164,6 +164,12 @@ export default function ProjectDetailPage() {
                   </span>
                 )}
               </span>
+              {schemeKpis.targets.min_trees != null && (
+                <span>
+                  Trees: <strong>{schemeKpis.metrics.tree_count ?? 0}</strong>
+                  <span className="text-stone-500"> / target {schemeKpis.targets.min_trees.toLocaleString()}</span>
+                </span>
+              )}
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs font-medium capitalize",

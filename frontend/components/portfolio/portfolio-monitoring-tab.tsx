@@ -17,6 +17,7 @@ const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
   industrial_greenbelt: "Mine / Green belt",
   township_landscape: "Township / Society",
+  nagar_van_urban: "Nagar Van / Urban forest",
   ngo_watershed: "NGO / Watershed",
   general: "General",
 };

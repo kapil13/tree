@@ -36,6 +36,14 @@ def test_nhai_scheme_defaults():
     assert scheme["legacy_plantation_category"] == "highway"
 
 
+def test_nagar_van_scheme_defaults():
+    scheme = get_scheme("nagar_van")
+    assert scheme is not None
+    assert scheme["default_segment"] == "nagar_van_urban"
+    assert scheme["default_template_code"] == "nagar_van_urban_forest_v1"
+    assert scheme["legacy_plantation_category"] == "municipal"
+
+
 def test_apply_scheme_defaults_from_scheme():
     scheme = get_scheme("campa_ca")
     assert scheme is not None
