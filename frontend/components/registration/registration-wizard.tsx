@@ -32,6 +32,8 @@ type RegistrationWizardProps = {
   programs: PlantingProgram[];
   programCode: string;
   onProgramChange: (code: string) => void;
+  lockProgram?: boolean;
+  skipGovCategory?: boolean;
   schema: ProgramFormSchema;
   values: ProgramFormValues;
   onValuesChange: (values: ProgramFormValues) => void;
@@ -69,6 +71,8 @@ export function RegistrationWizard({
   programs,
   programCode,
   onProgramChange,
+  lockProgram = false,
+  skipGovCategory = false,
   schema,
   values,
   onValuesChange,
@@ -107,8 +111,8 @@ export function RegistrationWizard({
 
   const steps: WizardStep[] = useMemo(() => {
     const base: WizardStep[] = [];
-    if (programs.length > 1) base.push({ id: "program", label: "Program" });
-    if (programCode === GOVERNMENT_PROGRAM_CODE) {
+    if (programs.length > 1 && !lockProgram) base.push({ id: "program", label: "Program" });
+    if (programCode === GOVERNMENT_PROGRAM_CODE && !skipGovCategory) {
       base.push({ id: "gov_category", label: "Scheme type" });
     }
     for (const section of contentSections(schema, { programCode, govCategory })) {
@@ -119,7 +123,7 @@ export function RegistrationWizard({
     base.push({ id: "photos", label: "Evidence" });
     base.push({ id: "review", label: "Review" });
     return base;
-  }, [programs.length, schema, programCode, govCategory]);
+  }, [programs.length, schema, programCode, govCategory, lockProgram, skipGovCategory]);
 
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;

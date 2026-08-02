@@ -282,6 +282,19 @@ _GOVERNMENT_PROGRAM: ProgramDefinition = {
                         {"value": "replaced", "label": "Replacement planting"},
                     ],
                 },
+                {
+                    "key": "species_native",
+                    "label": "Native species",
+                    "type": "boolean",
+                    "required": True,
+                    "help_text": "Mark yes for locally appropriate native stock (required for scheme native % KPIs).",
+                },
+                {
+                    "key": "invasive_risk",
+                    "label": "Known invasive risk",
+                    "type": "boolean",
+                    "required": False,
+                },
             ],
         },
         {
@@ -543,6 +556,13 @@ _NGO_PROGRAM: ProgramDefinition = {
                     "type": "date",
                     "required": True,
                     "core": True,
+                },
+                {
+                    "key": "species_native",
+                    "label": "Native species",
+                    "type": "boolean",
+                    "required": True,
+                    "help_text": "Locally appropriate native species (e.g. Khejri, Neem for Sahakar Van).",
                 },
                 {
                     "key": "livelihood_purpose",
