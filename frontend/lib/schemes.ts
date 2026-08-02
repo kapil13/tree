@@ -1,6 +1,6 @@
 import type { ComplianceMode, ProjectSegment } from "@/lib/api";
 
-export type CentralSchemeGroup = "central" | "convergence" | "corporate";
+export type CentralSchemeGroup = "central" | "convergence" | "corporate" | "cooperative";
 
 export type CentralScheme = {
   code: string;
@@ -28,6 +28,7 @@ export const SCHEME_GROUP_LABEL: Record<CentralSchemeGroup, string> = {
   central: "Central government schemes",
   convergence: "Convergence programmes",
   corporate: "Corporate & green credit",
+  cooperative: "Cooperative programmes",
 };
 
 export function schemeByCode(

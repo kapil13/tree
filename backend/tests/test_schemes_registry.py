@@ -9,11 +9,12 @@ from app.services.schemes.registry import get_scheme, list_schemes, scheme_codes
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 
 
-def test_registry_has_eight_core_schemes():
+def test_registry_has_nine_plus_schemes():
     codes = scheme_codes()
-    assert len(codes) >= 8
+    assert len(codes) >= 9
     assert "campa_ca" in codes
     assert "nhai_highway" in codes
+    assert "sahakar_van" in codes
     assert "green_credit_india" in codes
 
 

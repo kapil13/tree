@@ -18,7 +18,7 @@ class CentralSchemeOut(BaseModel):
     label: str
     description: str
     ministry: str
-    group: Literal["central", "convergence", "corporate"]
+    group: Literal["central", "convergence", "corporate", "cooperative"]
     program_codes: list[str]
     default_segment: str
     default_compliance_mode: Literal["open", "guided", "strict"]

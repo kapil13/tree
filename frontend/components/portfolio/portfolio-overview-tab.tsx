@@ -19,6 +19,7 @@ const SEGMENT_LABEL: Record<string, string> = {
   industrial_greenbelt: "Mine / Green belt",
   township_landscape: "Township / Society",
   nagar_van_urban: "Nagar Van / Urban forest",
+  sahakar_van_coop: "Sahakar Van / Cooperative forest",
   ngo_watershed: "NGO / Watershed",
   general: "General",
 };

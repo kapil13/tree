@@ -6,6 +6,7 @@ import {
   Building2,
   Check,
   Droplets,
+  Handshake,
   Leaf,
   Route,
   Search,
@@ -28,6 +29,7 @@ const SCHEME_ICONS: Record<string, LucideIcon> = {
   mgnrega_convergence: Users,
   jal_shakti_riparian: Droplets,
   green_credit_india: BadgeCheck,
+  sahakar_van: Handshake,
 };
 
 const SCHEME_ACCENT: Record<string, string> = {
@@ -39,6 +41,7 @@ const SCHEME_ACCENT: Record<string, string> = {
   mgnrega_convergence: "from-amber-500/15 to-orange-600/5 text-amber-900 ring-amber-500/30",
   jal_shakti_riparian: "from-cyan-500/15 to-blue-500/5 text-cyan-800 ring-cyan-500/30",
   green_credit_india: "from-forest-500/15 to-emerald-600/5 text-forest-800 ring-forest-500/30",
+  sahakar_van: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
 };
 
 const MINISTRY_TONE: Record<string, string> = {
@@ -46,6 +49,7 @@ const MINISTRY_TONE: Record<string, string> = {
   "MoRTH / NHAI": "bg-sky-50 text-sky-800 ring-sky-100",
   "Jal Shakti": "bg-cyan-50 text-cyan-800 ring-cyan-100",
   "Rural Development": "bg-amber-50 text-amber-900 ring-amber-100",
+  "Ministry of Cooperation": "bg-orange-50 text-orange-900 ring-orange-100",
 };
 
 function complianceLabel(mode: ComplianceMode): string {
@@ -262,7 +266,7 @@ export function SchemePickerStep({
     );
   }
 
-  const filteredGroups = (["central", "convergence", "corporate"] as CentralSchemeGroup[])
+  const filteredGroups = (["central", "cooperative", "convergence", "corporate"] as CentralSchemeGroup[])
     .map((group) => ({
       group,
       items: schemesByGroup[group].filter(matchesScheme),
@@ -278,7 +282,7 @@ export function SchemePickerStep({
         <input
           type="search"
           className="input pl-10"
-          placeholder="Search schemes — CAMPA, NHAI, MISHTI, MGNREGA…"
+          placeholder="Search schemes — CAMPA, NHAI, MISHTI, Sahakar Van…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Search central schemes"

@@ -62,12 +62,34 @@ def test_scheme_specific_checklists_exist():
     assert get_checklist("mishti_coastal") is not None
     assert get_checklist("mgnrega_convergence") is not None
     assert get_checklist("nagar_van_urban") is not None
+    assert get_checklist("sahakar_van_coop") is not None
     assert get_checklist("green_credit_india") is not None
 
 
 def test_checklists_for_scheme_uses_registry():
     codes = checklists_for_scheme("mishti_mangrove")
     assert codes == ["mishti_coastal"]
+
+
+def test_validate_scheme_metadata_accepts_valid_sahakar_refs():
+    result = validate_scheme_metadata(
+        "sahakar_van",
+        {
+            "scheme_refs": {
+                "sahakar_van_project_id": "SV-NCCF-RAJ-2026-01",
+                "nccf_project_ref": "NCCF/SV/2026/SUMEL",
+                "amul_union_name": "GCMMF",
+                "cooperative_society_name": "Sumel Mahila Mandal",
+                "village_name": "Sumel",
+                "district": "Jaipur",
+                "state_name": "Rajasthan",
+                "site_area_acres": 64,
+                "plantation_method": "mixed",
+            }
+        },
+        strict=True,
+    )
+    assert result["scheme_refs"]["village_name"] == "Sumel"
 
 
 def test_parse_campa_apo_csv():

@@ -9,6 +9,7 @@ ProjectSegment = Literal[
     "industrial_greenbelt",
     "township_landscape",
     "nagar_van_urban",
+    "sahakar_van_coop",
     "ngo_watershed",
     "general",
 ]
@@ -36,6 +37,7 @@ SEGMENT_LABELS: dict[str, str] = {
     "industrial_greenbelt": "Industrial / Mine green belt",
     "township_landscape": "Township / Society landscape",
     "nagar_van_urban": "Nagar Van / Urban forest",
+    "sahakar_van_coop": "Sahakar Van / Cooperative forest",
     "ngo_watershed": "NGO / Watershed",
     "general": "General plantation",
 }

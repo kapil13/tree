@@ -165,7 +165,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (_guardType != null) metadata['guard_type'] = _guardType;
       metadata['pit_size_cm'] = _pitSize;
     }
-    if ((_segment == 'township_landscape' || _segment == 'nagar_van_urban') &&
+    if ((_segment == 'township_landscape' ||
+            _segment == 'nagar_van_urban' ||
+            _segment == 'sahakar_van_coop') &&
         _selectedWorkAreaId != null) {
       final wa = _workAreas.cast<Map<String, dynamic>?>().firstWhere(
             (w) => w?['id'] == _selectedWorkAreaId,
