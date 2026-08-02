@@ -670,6 +670,7 @@ export type ProjectSegment =
   | "industrial_greenbelt"
   | "township_landscape"
   | "nagar_van_urban"
+  | "sahakar_van_coop"
   | "ngo_watershed"
   | "general";
 

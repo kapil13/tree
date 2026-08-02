@@ -294,6 +294,29 @@ def _profile_sections(
             {"title": "Carbon estimate", "rows": common_carbon},
         ]
 
+    if profile.code == "sahakar_van":
+        scheme_refs = (base.get("scheme") or {}).get("refs") or {}
+        return [
+            {
+                "title": "Sahakar Van cooperative forest",
+                "rows": [
+                    ["Sahakar Van project ID", str(scheme_refs.get("sahakar_van_project_id") or "—")],
+                    ["NCCF reference", str(scheme_refs.get("nccf_project_ref") or "—")],
+                    ["Amul union", str(scheme_refs.get("amul_union_name") or "—")],
+                    ["Cooperative society", str(scheme_refs.get("cooperative_society_name") or "—")],
+                    ["Village / site", str(scheme_refs.get("village_name") or "—")],
+                    ["District", str(scheme_refs.get("district") or "—")],
+                    ["State", str(scheme_refs.get("state_name") or "—")],
+                    ["Site area (acres)", str(scheme_refs.get("site_area_acres") or "—")],
+                    ["Plantation method", str(scheme_refs.get("plantation_method") or "—")],
+                    ["Target trees", str(scheme_refs.get("target_trees") or "—")],
+                    ["Trees registered", str(summary["tree_count"])],
+                    ["Native species %", str(summary.get("native_species_pct") or "—")],
+                ],
+            },
+            {"title": "Compliance", "rows": [["Open violations", str(summary["open_violations"])]]},
+        ]
+
     # esg_general
     return [
         {

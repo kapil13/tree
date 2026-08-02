@@ -175,6 +175,28 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "active": True,
         "metadata_sections": [],
     },
+    "sahakar_van": {
+        "code": "sahakar_van",
+        "label": "Sahakar Van — Cooperative Afforestation",
+        "description": (
+            "Cooperative-sector afforestation and environmental restoration led by "
+            "NCCF and Amul under the Ministry of Cooperation — Miyawaki and conventional "
+            "planting with community participation on arid land."
+        ),
+        "ministry": "Ministry of Cooperation",
+        "group": "cooperative",
+        "program_codes": ["ngo_community", "government_nhai"],
+        "default_segment": "sahakar_van_coop",
+        "default_compliance_mode": "strict",
+        "default_template_code": "sahakar_van_cooperative_v1",
+        "checklist_codes": ["sahakar_van_coop"],
+        "framework_profiles": ["sahakar_van"],
+        "convergence_allowed": ["mgnrega_convergence"],
+        "legacy_plantation_category": None,
+        "kpi_targets": {"survival_pct_min": 70.0, "geo_tagged_pct_min": 90.0},
+        "active": True,
+        "metadata_sections": [],
+    },
 }
 
 PROGRAMS_REQUIRING_SCHEME = frozenset({"government_nhai", "ngo_community"})

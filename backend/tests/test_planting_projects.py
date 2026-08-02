@@ -17,6 +17,7 @@ def test_all_segment_templates_exist():
         "industrial_greenbelt",
         "township_landscape",
         "nagar_van_urban",
+        "sahakar_van_coop",
         "ngo_watershed",
         "general",
     }
@@ -78,6 +79,31 @@ def test_nagar_van_scheme_uses_urban_forest_template():
     assert scheme is not None
     assert scheme["default_segment"] == "nagar_van_urban"
     assert scheme["default_template_code"] == "nagar_van_urban_forest_v1"
+
+
+def test_sahakar_van_cooperative_template():
+    tpl = get_template("sahakar_van_cooperative_v1")
+    assert tpl is not None
+    assert tpl["segment"] == "sahakar_van_coop"
+    assert tpl["compliance_mode"] == "strict"
+    assert tpl["rules"]["layout_pattern"] == "miyawaki_cluster"
+    assert tpl["rules"]["species_native_pct_min"] == 100
+    assert tpl["rules"]["rainwater_harvest_required"] is True
+    assert "Khejri" in tpl["rules"]["allowed_species"]
+    assert tpl["rules"]["site_area_acres_reference"] == 64
+
+
+def test_sahakar_van_scheme_defaults():
+    from app.services.schemes.registry import get_scheme
+
+    scheme = get_scheme("sahakar_van")
+    assert scheme is not None
+    assert scheme["group"] == "cooperative"
+    assert scheme["ministry"] == "Ministry of Cooperation"
+    assert scheme["default_segment"] == "sahakar_van_coop"
+    assert scheme["default_template_code"] == "sahakar_van_cooperative_v1"
+    assert "ngo_community" in scheme["program_codes"]
+    assert scheme["checklist_codes"] == ["sahakar_van_coop"]
 
 
 def test_risk_from_signals_critical():

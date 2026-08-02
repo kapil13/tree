@@ -46,6 +46,11 @@ const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
     hint: "ULB city-forest blocks, 10,000+ tree targets",
   },
   {
+    code: "sahakar_van_coop",
+    label: "Sahakar Van / Cooperative forest",
+    hint: "NCCF–Amul Miyawaki + conventional arid-land planting",
+  },
+  {
     code: "ngo_watershed",
     label: "NGO / Watershed",
     hint: "Community plots, guided compliance",
@@ -245,7 +250,9 @@ export default function NewProjectPage() {
                     ? "NH44-PKG3"
                     : selectedScheme?.code === "nagar_van"
                       ? "ULB-PARKS-2026"
-                      : "SCHEME-CODE"
+                      : selectedScheme?.code === "sahakar_van"
+                        ? "SV-NCCF-2026"
+                        : "SCHEME-CODE"
                 }
                 value={code}
                 onChange={(e) => setCode(e.target.value)}

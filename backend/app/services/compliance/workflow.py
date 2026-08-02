@@ -22,6 +22,7 @@ SEGMENT_RECOMMENDED_CHECKLIST: dict[str, str] = {
     "ngo_watershed": "gold_standard_luf",
     "township_landscape": "esg_general",
     "nagar_van_urban": "nagar_van_urban",
+    "sahakar_van_coop": "sahakar_van_coop",
     "general": "esg_general",
 }
 
@@ -35,6 +36,7 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "mishti_coastal": "MISHTI",
     "mgnrega_convergence": "MGNREGA",
     "nagar_van_urban": "Nagar Van",
+    "sahakar_van_coop": "Sahakar Van",
     "green_credit_india": "Green Credit",
 }
 

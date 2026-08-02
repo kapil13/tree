@@ -59,6 +59,22 @@ def _segment_report(
             "native_species_pct": native_pct,
             "scheme_tree_target": 10000,
         }
+    if segment == "sahakar_van_coop":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        total_acres = round(total_ha * 2.471, 2) if total_ha else None
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "cooperative_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "total_area_acres": total_acres,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "plantation_methods": ["miyawaki", "conventional", "mixed"],
+            "reference_site_acres": 64,
+        }
     return {"type": "general", "tree_count": len(trees)}
 
 
@@ -202,6 +218,9 @@ async def build_project_mrv_context(
             "min_trees_project": rules.get("min_trees_project"),
             "work_area_geometry": rules.get("work_area_geometry"),
             "block_types": rules.get("block_types"),
+            "plantation_methods": rules.get("plantation_methods"),
+            "rainwater_harvest_required": rules.get("rainwater_harvest_required"),
+            "site_area_acres_reference": rules.get("site_area_acres_reference"),
         },
         "segment_report": _segment_report(project.segment, work_area_rows, tree_rows, native_pct),
         "summary": {

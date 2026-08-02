@@ -16,6 +16,7 @@ ChecklistCode = Literal[
     "mgnrega_convergence",
     "nagar_van_urban",
     "green_credit_india",
+    "sahakar_van_coop",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -465,6 +466,83 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Governance",
                 question="Can auditors receive a packaged evidence bundle?",
                 guidance="Use Compliance → Evidence bundle for verifier review.",
+            ),
+        ),
+    ),
+    "sahakar_van_coop": ComplianceChecklist(
+        code="sahakar_van_coop",
+        title="Sahakar Van — Cooperative Forest Readiness",
+        short_label="Sahakar Van",
+        framework_reference="NCCF–Amul Sahakar Van — Ministry of Cooperation",
+        description=(
+            "Cooperative afforestation compliance for NCCF and Amul-led Sahakar Van "
+            "projects on arid land with Miyawaki and conventional planting."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="nccf_amul_partnership",
+                category="Governance",
+                question="Are NCCF and Amul cooperative partnership references documented?",
+                guidance="Record Sahakar Van project ID, NCCF reference, and Amul union name.",
+            ),
+            ChecklistItemDef(
+                id="cooperative_society",
+                category="Governance",
+                question="Is the implementing cooperative society or women's group on record?",
+                guidance="Sahakar Van emphasises cooperative-led community participation.",
+            ),
+            ChecklistItemDef(
+                id="site_area_documented",
+                category="Eligibility",
+                question="Is the site area (acres) and village location documented?",
+                guidance="Pilot sites range from 1 ha to 64 acres on arid or degraded land.",
+            ),
+            ChecklistItemDef(
+                id="plantation_method_plan",
+                category="Planting standard",
+                question="Is the Miyawaki / conventional / mixed plantation method approved?",
+                guidance="Sahakar Van combines dense Miyawaki patches with conventional blocks.",
+            ),
+            ChecklistItemDef(
+                id="arid_species_list",
+                category="Planting standard",
+                question="Are only approved hardy local species (Khejri, Rohida, Neem, Ber, Babool) used?",
+                guidance="Species must be suited to low-water, high-heat arid conditions.",
+                auto_key="native_species_tracked",
+            ),
+            ChecklistItemDef(
+                id="soil_rainwater_prep",
+                category="Site preparation",
+                question="Are soil treatment, organic manure, and rainwater harvesting measures in place?",
+                guidance="Land levelling, gobar khad, and moisture conservation precede planting.",
+            ),
+            ChecklistItemDef(
+                id="community_participation",
+                category="Cooperative",
+                question="Is community / cooperative participation in planting and maintenance documented?",
+                guidance="Women's groups and cooperative members should lead maintenance activities.",
+            ),
+            ChecklistItemDef(
+                id="geo_tagged_records",
+                category="Monitoring",
+                question="Are at least 80% of living trees geo-tagged with GPS coordinates?",
+                guidance="Geo-tagged records support NCCF audit and cooperative accountability.",
+                auto_key="geo_tagged_majority",
+            ),
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are blocking compliance violations resolved?",
+                guidance="Species, spacing, and boundary violations must be cleared before submission.",
+                auto_key="no_block_violations",
+            ),
+            ChecklistItemDef(
+                id="survival_monitoring",
+                category="Monitoring",
+                question="Is a recurring survival / maintenance survey cadence configured?",
+                guidance="Arid-land sites require seasonal survival checks and sapling protection.",
+                auto_key="survival_survey_configured",
             ),
         ),
     ),

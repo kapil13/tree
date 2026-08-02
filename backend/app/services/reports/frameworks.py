@@ -17,6 +17,7 @@ FrameworkProfileCode = Literal[
     "mishti",
     "nagar_van",
     "green_credit_india",
+    "sahakar_van",
 ]
 
 MethodologyCode = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF", "NONE"]
@@ -137,6 +138,18 @@ FRAMEWORK_PROFILES: dict[FrameworkProfileCode, FrameworkProfile] = {
         description="Land bank registration and verifier-ready planting evidence for GCP credits.",
         disclaimer=DISCLAIMER,
         reference="Green Credit Rules 2023 / MoEFCC",
+    ),
+    "sahakar_van": FrameworkProfile(
+        code="sahakar_van",
+        title="Sahakar Van — Cooperative Afforestation",
+        short_label="Sahakar Van",
+        methodology="NONE",
+        description=(
+            "Cooperative forest evidence for NCCF–Amul Sahakar Van projects with "
+            "Miyawaki/conventional planting, arid-land species, and community participation."
+        ),
+        disclaimer=DISCLAIMER,
+        reference="NCCF–Amul Sahakar Van — Ministry of Cooperation",
     ),
 }
 

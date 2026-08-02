@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypedDict
 
-SchemeGroup = Literal["central", "convergence", "corporate"]
+SchemeGroup = Literal["central", "convergence", "corporate", "cooperative"]
 
 
 class SchemeKpiTargets(TypedDict, total=False):
