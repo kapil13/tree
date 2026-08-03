@@ -14,6 +14,7 @@ from app.core.security import Permission
 from app.models.report import Report
 from app.models.user import User
 from app.services.audit import record_audit
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
 from app.services.storage import get_storage
 
@@ -32,6 +33,7 @@ async def create_report(
     plantation_fence_id: uuid.UUID | None = Query(None),
 ) -> dict:
     """Generate a report synchronously and mark it ready for download."""
+    await assert_org_feature_enabled(db, user, "reports")
     if kind not in {"tree", "plantation", "carbon", "esg", "biodiversity"}:
         raise HTTPException(422, detail="invalid_kind")
     if format not in {"pdf", "xlsx"}:

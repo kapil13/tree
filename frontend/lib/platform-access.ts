@@ -63,6 +63,9 @@ export function canAccessPlatformPath(user: PlatformUser, pathname: string) {
   if (pathname.startsWith("/platform/program-access")) {
     return canManageProgramAccess(user);
   }
+  if (pathname.startsWith("/platform/governance")) {
+    return isFullPlatformAdmin(user);
+  }
   if (pathname.startsWith("/platform/roles")) {
     return hasAnyPlatformAccess(user);
   }

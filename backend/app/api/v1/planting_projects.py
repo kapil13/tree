@@ -77,6 +77,7 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
@@ -226,6 +227,7 @@ async def trigger_project_satellite_scan(
     user: WriteProfessional,
     db: DB,
 ) -> dict:
+    await assert_org_feature_enabled(db, user, "satellite")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -869,6 +871,7 @@ async def export_project_mrv(
     from app.services.planting_projects.mrv_export import build_project_mrv_context
     from app.services.reports.exporter import render_compliance_mrv_pdf, render_compliance_mrv_xlsx
 
+    await assert_org_feature_enabled(db, user, "reports")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")

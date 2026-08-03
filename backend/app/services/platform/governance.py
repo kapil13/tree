@@ -122,6 +122,8 @@ def set_org_feature_flags(org: Organization, updates: dict[str, bool]) -> dict[s
 async def assert_org_feature_enabled(
     db: AsyncSession, user: User, feature_key: str
 ) -> None:
+    if feature_key not in ORG_FEATURE_FLAGS:
+        return
     if user.role == "admin" or user.organization_id is None:
         return
     org = await db.get(Organization, user.organization_id)
@@ -133,3 +135,13 @@ async def assert_org_feature_enabled(
             status.HTTP_403_FORBIDDEN,
             detail=f"org_feature_disabled:{feature_key}",
         )
+
+
+async def org_feature_flags_for_user(db: AsyncSession, user: User) -> dict[str, bool]:
+    """Resolved feature flags for the current user (admins always get defaults)."""
+    if user.role == "admin" or user.organization_id is None:
+        return dict(DEFAULT_ORG_FLAGS)
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        return dict(DEFAULT_ORG_FLAGS)
+    return org_feature_flags(org)
