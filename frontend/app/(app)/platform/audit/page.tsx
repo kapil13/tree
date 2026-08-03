@@ -44,6 +44,9 @@ export default function PlatformAuditPage() {
   const [actionPrefix, setActionPrefix] = useState("platform.");
   const [search, setSearch] = useState("");
   const [actorUserId, setActorUserId] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
+  const [resourceType, setResourceType] = useState("");
+  const [resourceId, setResourceId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -54,6 +57,9 @@ export default function PlatformAuditPage() {
     setActionPrefix(searchParams.get("action_prefix") ?? searchParams.get("action") ?? "platform.");
     setSearch(searchParams.get("search") ?? "");
     setActorUserId(searchParams.get("actor_user_id") ?? "");
+    setOrganizationId(searchParams.get("organization_id") ?? "");
+    setResourceType(searchParams.get("resource_type") ?? "");
+    setResourceId(searchParams.get("resource_id") ?? "");
     setDateFrom(searchParams.get("date_from") ?? "");
     setDateTo(searchParams.get("date_to") ?? "");
     const pageParam = searchParams.get("page");
@@ -66,6 +72,9 @@ export default function PlatformAuditPage() {
       actionPrefix: string;
       search: string;
       actorUserId: string;
+      organizationId: string;
+      resourceType: string;
+      resourceId: string;
       dateFrom: string;
       dateTo: string;
       page: number;
@@ -74,6 +83,9 @@ export default function PlatformAuditPage() {
       if (filters.actionPrefix) q.set("action_prefix", filters.actionPrefix);
       if (filters.search) q.set("search", filters.search);
       if (filters.actorUserId) q.set("actor_user_id", filters.actorUserId);
+      if (filters.organizationId) q.set("organization_id", filters.organizationId);
+      if (filters.resourceType) q.set("resource_type", filters.resourceType);
+      if (filters.resourceId) q.set("resource_id", filters.resourceId);
       if (filters.dateFrom) q.set("date_from", filters.dateFrom);
       if (filters.dateTo) q.set("date_to", filters.dateTo);
       if (filters.page > 1) q.set("page", String(filters.page));
@@ -85,11 +97,44 @@ export default function PlatformAuditPage() {
 
   useEffect(() => {
     if (!urlReady) return;
-    syncUrl({ actionPrefix, search, actorUserId, dateFrom, dateTo, page });
-  }, [actionPrefix, search, actorUserId, dateFrom, dateTo, page, urlReady, syncUrl]);
+    syncUrl({
+      actionPrefix,
+      search,
+      actorUserId,
+      organizationId,
+      resourceType,
+      resourceId,
+      dateFrom,
+      dateTo,
+      page,
+    });
+  }, [
+    actionPrefix,
+    search,
+    actorUserId,
+    organizationId,
+    resourceType,
+    resourceId,
+    dateFrom,
+    dateTo,
+    page,
+    urlReady,
+    syncUrl,
+  ]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["platform-audit", actionPrefix, search, actorUserId, dateFrom, dateTo, page],
+    queryKey: [
+      "platform-audit",
+      actionPrefix,
+      search,
+      actorUserId,
+      organizationId,
+      resourceType,
+      resourceId,
+      dateFrom,
+      dateTo,
+      page,
+    ],
     queryFn: () =>
       platformAdmin.auditLogs({
         page,
@@ -97,6 +142,9 @@ export default function PlatformAuditPage() {
         action_prefix: actionPrefix || undefined,
         search: search || undefined,
         actor_user_id: actorUserId || undefined,
+        organization_id: organizationId || undefined,
+        resource_type: resourceType || undefined,
+        resource_id: resourceId || undefined,
         date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
         date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       }),
@@ -109,6 +157,9 @@ export default function PlatformAuditPage() {
         action_prefix: actionPrefix || undefined,
         search: search || undefined,
         actor_user_id: actorUserId || undefined,
+        organization_id: organizationId || undefined,
+        resource_type: resourceType || undefined,
+        resource_id: resourceId || undefined,
         date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
         date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       }),
@@ -144,7 +195,7 @@ export default function PlatformAuditPage() {
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm">
             <span className="mb-1 block text-stone-600">Action filter</span>
             <select
@@ -183,6 +234,42 @@ export default function PlatformAuditPage() {
               value={actorUserId}
               onChange={(e) => {
                 setActorUserId(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Organization ID</span>
+            <input
+              className="input w-full font-mono text-xs"
+              placeholder="UUID"
+              value={organizationId}
+              onChange={(e) => {
+                setOrganizationId(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Resource type</span>
+            <input
+              className="input w-full"
+              placeholder="e.g. user"
+              value={resourceType}
+              onChange={(e) => {
+                setResourceType(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Resource ID</span>
+            <input
+              className="input w-full font-mono text-xs"
+              placeholder="UUID"
+              value={resourceId}
+              onChange={(e) => {
+                setResourceId(e.target.value);
                 setPage(1);
               }}
             />

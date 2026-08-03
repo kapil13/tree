@@ -5,6 +5,9 @@ export type PlatformAuditLinkParams = {
   actionPrefix?: string;
   search?: string;
   actorUserId?: string;
+  organizationId?: string;
+  resourceType?: string;
+  resourceId?: string;
 };
 
 export function buildPlatformAuditUrl(params: PlatformAuditLinkParams = {}): string {
@@ -13,6 +16,9 @@ export function buildPlatformAuditUrl(params: PlatformAuditLinkParams = {}): str
   if (params.actionPrefix) q.set("action_prefix", params.actionPrefix);
   if (params.search) q.set("search", params.search);
   if (params.actorUserId) q.set("actor_user_id", params.actorUserId);
+  if (params.organizationId) q.set("organization_id", params.organizationId);
+  if (params.resourceType) q.set("resource_type", params.resourceType);
+  if (params.resourceId) q.set("resource_id", params.resourceId);
   const query = q.toString();
   return `/platform/audit${query ? `?${query}` : ""}`;
 }

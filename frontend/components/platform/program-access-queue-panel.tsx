@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { BulkActionBar } from "@/components/platform/bulk-action-bar";
+import { BulkProgramAccessPreviewModal } from "@/components/platform/bulk-program-access-preview-modal";
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
+import { buildBulkApprovePreview } from "@/lib/bulk-program-access-preview";
 import { platformAdmin } from "@/lib/platform-api";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { cn } from "@/lib/cn";
@@ -41,6 +43,7 @@ export function ProgramAccessQueuePanel() {
   const [approveFormById, setApproveFormById] = useState<Record<string, ApproveForm>>({});
   const [orgSearch, setOrgSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPreview, setBulkPreview] = useState<null | "approve" | "reject">(null);
   const [bulkStepUp, setBulkStepUp] = useState<null | "approve" | "reject">(null);
 
   const { data: requests, isLoading } = useQuery({
@@ -170,6 +173,8 @@ export function ProgramAccessQueuePanel() {
     }));
   }
 
+  const previewRows = buildBulkApprovePreview(requests ?? [], selectedIds);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -190,14 +195,14 @@ export function ProgramAccessQueuePanel() {
           <button
             type="button"
             className="btn-secondary text-xs"
-            onClick={() => setBulkStepUp("approve")}
+            onClick={() => setBulkPreview("approve")}
           >
             Approve selected
           </button>
           <button
             type="button"
             className="btn-secondary text-xs text-rose-700"
-            onClick={() => setBulkStepUp("reject")}
+            onClick={() => setBulkPreview("reject")}
           >
             Reject selected
           </button>
@@ -472,6 +477,18 @@ export function ProgramAccessQueuePanel() {
           })}
         </div>
       )}
+
+      <BulkProgramAccessPreviewModal
+        open={bulkPreview !== null}
+        action={bulkPreview ?? "approve"}
+        rows={previewRows}
+        onClose={() => setBulkPreview(null)}
+        onConfirm={() => {
+          if (!bulkPreview) return;
+          setBulkPreview(null);
+          setBulkStepUp(bulkPreview);
+        }}
+      />
 
       <StepUpModal
         open={bulkStepUp !== null}

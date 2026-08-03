@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -357,8 +358,13 @@ export default function PlatformUsersPage() {
                       </td>
                     ) : null}
                     <td className="px-4 py-3">
-                      <div className="font-medium">{row.full_name}</div>
-                      <div className="text-xs text-stone-500">{row.email}</div>
+                      <Link
+                        href={`/platform/users/${row.id}`}
+                        className="block hover:text-forest-700"
+                      >
+                        <div className="font-medium">{row.full_name}</div>
+                        <div className="text-xs text-stone-500">{row.email}</div>
+                      </Link>
                       {!row.is_verified ? (
                         <div className="mt-1 text-xs text-amber-700">Unverified email</div>
                       ) : null}
