@@ -55,6 +55,7 @@ from app.services.planting_projects.access import (
     project_list_filter,
 )
 from app.services.planting_projects.compliance import evaluate_tree_placement
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.planting_projects.rule_engine import (
@@ -226,6 +227,7 @@ async def trigger_project_satellite_scan(
     user: WriteProfessional,
     db: DB,
 ) -> dict:
+    await assert_org_feature_enabled(db, user, "satellite")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -869,6 +871,7 @@ async def export_project_mrv(
     from app.services.planting_projects.mrv_export import build_project_mrv_context
     from app.services.reports.exporter import render_compliance_mrv_pdf, render_compliance_mrv_xlsx
 
+    await assert_org_feature_enabled(db, user, "reports")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")

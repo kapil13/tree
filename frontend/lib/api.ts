@@ -4,6 +4,7 @@
  */
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messages";
+import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
 import { useAuth } from "@/lib/auth-store";
 
 /** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
@@ -166,6 +167,10 @@ export function errorMessage(err: unknown): string {
       if (authMsg) return authMsg;
       if (data.detail === "viewer_read_only") {
         return "Your viewer role is read-only. Ask your program manager to change your access.";
+      }
+      if (data.detail.startsWith("org_feature_disabled:")) {
+        const key = data.detail.slice("org_feature_disabled:".length);
+        return orgFeatureDisabledMessage(key);
       }
       if (err.response.status === 500 && err.config?.url?.includes("/credits/")) {
         return `${data.detail}. Credit ledger may need migration 0015_credit_ledger — run: alembic upgrade head on the server.`;

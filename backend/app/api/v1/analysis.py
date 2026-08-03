@@ -27,6 +27,7 @@ from app.schemas.analysis import (
 )
 from app.services.ai import get_ai_service
 from app.services.ai.metering import assert_ai_scan_allowed, consume_paid_scan_credit
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.ai.types import GrowthContext
 from app.services.carbon import CarbonInputs, estimate_carbon
 from app.services.data_scope import can_access_tree
@@ -60,6 +61,8 @@ async def _run_tree_analysis(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
     if not await can_access_tree(db, user, tree):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    await assert_org_feature_enabled(db, user, "ai_scan")
 
     meter_before = await assert_ai_scan_allowed(db, user)
 
@@ -192,6 +195,8 @@ async def enqueue_analysis(payload: AnalysisRequest, user: AnalysisTriggerAccess
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
     if not await can_access_tree(db, user, tree):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    await assert_org_feature_enabled(db, user, "ai_scan")
 
     await assert_ai_scan_allowed(db, user)
 

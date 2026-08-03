@@ -21,6 +21,7 @@ from app.services.monitoring.satellite_sweep import (
 )
 from app.services.satellite import get_satellite_service
 from app.services.satellite.ndvi_image import render_ndvi_png
+from app.services.platform.governance import assert_org_feature_enabled
 
 router = APIRouter(prefix="/satellite", tags=["satellite"])
 
@@ -37,6 +38,7 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
 
 @router.post("/scan", response_model=SatelliteRecordOut)
 async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteRecordOut:
+    await assert_org_feature_enabled(db, user, "satellite")
     if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     tree = await _load_tree(tree_id, user, db)
@@ -91,6 +93,7 @@ async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> Satellite
 @router.post("/scan/async", status_code=status.HTTP_202_ACCEPTED)
 async def scan_async(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> dict:
     """Queue NDVI satellite scan on the Celery worker when available."""
+    await assert_org_feature_enabled(db, user, "satellite")
     from app.services.workers.enqueue import try_enqueue
     from app.workers.tasks import run_satellite_scan
 
@@ -112,6 +115,7 @@ async def scan_async(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> dic
 async def get_series(
     tree_id: uuid.UUID, user: CurrentUser, db: DB, months: int = 12
 ) -> SatelliteSeries:
+    await assert_org_feature_enabled(db, user, "satellite")
     tree = await _load_tree(tree_id, user, db)
     res = await db.execute(
         select(SatelliteRecord)
@@ -163,6 +167,7 @@ async def get_series(
 @router.get("/ndvi-image/{tree_id}")
 async def ndvi_image(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
     """False-color NDVI chip (10 m, Sentinel-2 resolution) centred on the tree. Requires auth."""
+    await assert_org_feature_enabled(db, user, "satellite")
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     lat, lon = pt.y, pt.x

@@ -6,8 +6,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.v1.deps import WriteAccess
+from app.api.v1.deps import WriteAccess, DB, CurrentUser
 from app.schemas.bioacoustic import PresignUploadRequest, PresignUploadResponse
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
@@ -24,10 +25,13 @@ _ALLOWED_AUDIO = {
 
 
 @router.post("/presign", response_model=PresignUploadResponse)
-async def presign_upload(payload: PresignUploadRequest, user: WriteAccess) -> PresignUploadResponse:
+async def presign_upload(payload: PresignUploadRequest, user: WriteAccess, db: DB) -> PresignUploadResponse:
     ct = payload.content_type.lower().strip()
     if ct not in _ALLOWED_AUDIO and not ct.startswith("image/"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="unsupported_content_type")
+
+    if ct.startswith("audio/"):
+        await assert_org_feature_enabled(db, user, "bioacoustic")
 
     ext = payload.filename.rsplit(".", 1)[-1].lower() if "." in payload.filename else "bin"
     folder = "bioacoustic" if ct.startswith("audio/") else "images"

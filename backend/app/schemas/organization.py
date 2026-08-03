@@ -126,3 +126,13 @@ class OrgInviteAccept(BaseModel):
 
 class OrgTransferOwnership(BaseModel):
     new_owner_user_id: uuid.UUID
+
+
+class OrgFeatureFlagItem(BaseModel):
+    key: str
+    label: str
+    enabled: bool
+
+
+class OrgMyFeatureFlagsOut(BaseModel):
+    flags: list[OrgFeatureFlagItem]
