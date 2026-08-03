@@ -171,8 +171,69 @@ class PaymentOrderAdminOut(BaseModel):
     amount_paise: int
     currency: str
     status: str
+    razorpay_order_id: str | None = None
+    razorpay_payment_id: str | None = None
     paid_at: datetime | None = None
     created_at: datetime
+
+
+class PaymentEventAdminOut(BaseModel):
+    id: str
+    event_type: str
+    event_id: str
+    created_at: datetime
+
+
+class PaymentOrderDetailOut(PaymentOrderAdminOut):
+    user_wallet_balance: int
+    payment_events: list[PaymentEventAdminOut] = Field(default_factory=list)
+
+
+class GrantCreditsRequest(BaseModel):
+    credits: int = Field(..., ge=-1000, le=10000)
+    reason: str = Field(..., min_length=3, max_length=500)
+    password: str = Field(min_length=1)
+
+
+class GrantCreditsOut(BaseModel):
+    user_id: uuid.UUID
+    credits_delta: int
+    new_balance: int
+
+
+class WebhookDeliveryAdminOut(BaseModel):
+    id: uuid.UUID
+    event_type: str
+    status: str
+    attempt_count: int
+    error_message: str | None = None
+    response_status: int | None = None
+    created_at: datetime
+    webhook_id: uuid.UUID
+    webhook_label: str
+    webhook_url: str
+    organization_id: uuid.UUID
+    organization_name: str
+
+
+class PaymentWebhookEventOut(BaseModel):
+    id: str
+    event_id: str
+    event_type: str
+    provider: str
+    created_at: datetime
+    payload_preview: str
+
+
+class TriggerJobRequest(BaseModel):
+    job_name: str = Field(..., min_length=3, max_length=64)
+    password: str = Field(min_length=1)
+
+
+class JobTriggerOut(BaseModel):
+    job_name: str
+    celery_task_id: str | None = None
+    status: str
 
 
 class PlatformBillingSummaryOut(BaseModel):

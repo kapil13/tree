@@ -47,8 +47,11 @@ from app.schemas.platform import (
     CampaApoImportResultOut,
     GovernanceSettingsOut,
     GovernanceSettingsUpdate,
+    GrantCreditsOut,
+    GrantCreditsRequest,
     ImpersonateRequest,
     ImpersonationOut,
+    JobTriggerOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
     OrganizationAdminDetailOut,
@@ -60,6 +63,8 @@ from app.schemas.platform import (
     OrgMemberAdminOut,
     OrgProjectAdminOut,
     PaymentOrderAdminOut,
+    PaymentOrderDetailOut,
+    PaymentWebhookEventOut,
     PermissionMatrixOut,
     PlatformAuditLogOut,
     PlatformBillingSummaryOut,
@@ -71,10 +76,12 @@ from app.schemas.platform import (
     ResendVerificationRequest,
     StepUpPasswordRequest,
     SupportActionOut,
+    TriggerJobRequest,
     UserAdminOut,
     UserPlatformGrantsOut,
     UserPlatformGrantsUpdate,
     UserRoleUpdate,
+    WebhookDeliveryAdminOut,
 )
 from app.services.audit import record_audit
 from app.services.organizations.members import OrgMemberError, transfer_org_ownership
@@ -99,7 +106,12 @@ from app.services.platform.admin import (
     query_platform_users,
 )
 from app.services.platform.audit import export_platform_audit_csv, query_platform_audit_logs
-from app.services.platform.billing import build_billing_summary, query_payment_orders
+from app.services.platform.billing import (
+    build_billing_summary,
+    get_payment_order_detail,
+    grant_user_credits,
+    query_payment_orders,
+)
 from app.services.platform.bulk_ops import (
     BulkOpsError,
     bulk_update_organizations,
@@ -111,6 +123,7 @@ from app.services.platform.bulk_program_access import (
     bulk_review_program_access,
 )
 from app.services.platform.exports import (
+    export_platform_orders_csv,
     export_platform_org_members_csv,
     export_platform_organizations_csv,
     export_platform_users_csv,
@@ -141,7 +154,15 @@ from app.services.platform.modules import (
     list_module_rules,
     module_rule_dict,
 )
-from app.services.platform.ops import build_ops_summary
+from app.services.platform.ops import (
+    build_ops_summary,
+    ping_integrations,
+    query_failed_webhook_deliveries,
+    query_payment_events,
+    retry_monitoring_job,
+    retry_webhook_delivery,
+    trigger_monitoring_job,
+)
 from app.services.platform.settings import build_platform_settings
 from app.services.platform.step_up import verify_admin_step_up
 from app.services.platform.support import (
@@ -244,9 +265,168 @@ async def platform_billing_orders(
     )
 
 
+@router.get("/billing/orders/export")
+async def platform_billing_orders_export(
+    _admin: BillingModuleAdmin,
+    db: DB,
+    status: str | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_orders_csv(db, status=status)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-payment-orders.csv"},
+    )
+
+
+@router.get("/billing/orders/{order_id}", response_model=PaymentOrderDetailOut)
+async def platform_billing_order_detail(
+    order_id: uuid.UUID,
+    _admin: BillingModuleAdmin,
+    db: DB,
+) -> PaymentOrderDetailOut:
+    row = await get_payment_order_detail(db, order_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="order_not_found")
+    return PaymentOrderDetailOut.model_validate(row)
+
+
+@router.post("/billing/users/{user_id}/grant-credits", response_model=GrantCreditsOut)
+async def platform_grant_user_credits(
+    user_id: uuid.UUID,
+    payload: GrantCreditsRequest,
+    request: Request,
+    admin: BillingModuleAdmin,
+    db: DB,
+) -> GrantCreditsOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await grant_user_credits(db, user_id=user_id, credits=payload.credits)
+    except ValueError as exc:
+        code = str(exc)
+        status_code = status.HTTP_404_NOT_FOUND if code == "user_not_found" else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(status_code, detail=code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.billing.grant_credits",
+        resource_type="user",
+        resource_id=user_id,
+        request=request,
+        diff={"credits": payload.credits, "reason": payload.reason, "new_balance": result["new_balance"]},
+    )
+    await db.commit()
+    return GrantCreditsOut.model_validate(result)
+
+
 @router.get("/ops/summary", response_model=PlatformOpsSummaryOut)
 async def platform_ops_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformOpsSummaryOut:
     return PlatformOpsSummaryOut.model_validate(await build_ops_summary(db))
+
+
+@router.post("/ops/integrations/ping")
+async def platform_ops_ping_integrations(_admin: OpsModuleAdmin, db: DB) -> dict:
+    return await ping_integrations(db)
+
+
+@router.get("/ops/webhook-deliveries", response_model=list[WebhookDeliveryAdminOut])
+async def platform_ops_failed_webhooks(
+    _admin: OpsModuleAdmin,
+    db: DB,
+    limit: int = Query(50, ge=1, le=100),
+) -> list[WebhookDeliveryAdminOut]:
+    rows = await query_failed_webhook_deliveries(db, limit=limit)
+    return [WebhookDeliveryAdminOut.model_validate(r) for r in rows]
+
+
+@router.post("/ops/webhook-deliveries/{delivery_id}/retry")
+async def platform_ops_retry_webhook(
+    delivery_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> dict:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await retry_webhook_delivery(db, delivery_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.webhook_retry",
+        resource_type="webhook_delivery",
+        resource_id=delivery_id,
+        request=request,
+        diff={"status": result["status"]},
+    )
+    await db.commit()
+    return result
+
+
+@router.get("/ops/payment-events", response_model=list[PaymentWebhookEventOut])
+async def platform_ops_payment_events(
+    _admin: OpsModuleAdmin,
+    db: DB,
+    event_type: str | None = None,
+    limit: int = Query(50, ge=1, le=100),
+) -> list[PaymentWebhookEventOut]:
+    rows = await query_payment_events(db, event_type=event_type, limit=limit)
+    return [PaymentWebhookEventOut.model_validate(r) for r in rows]
+
+
+@router.post("/ops/jobs/{run_id}/retry", response_model=JobTriggerOut)
+async def platform_ops_retry_job(
+    run_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> JobTriggerOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await retry_monitoring_job(db, run_id)
+    except ValueError as exc:
+        code = str(exc)
+        status_code = status.HTTP_404_NOT_FOUND if code == "job_run_not_found" else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(status_code, detail=code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.job_retry",
+        resource_type="monitoring_job_run",
+        resource_id=run_id,
+        request=request,
+        diff={"job_name": result["job_name"]},
+    )
+    await db.commit()
+    return JobTriggerOut.model_validate(result)
+
+
+@router.post("/ops/jobs/trigger", response_model=JobTriggerOut)
+async def platform_ops_trigger_job(
+    payload: TriggerJobRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> JobTriggerOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await trigger_monitoring_job(db, payload.job_name)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.job_trigger",
+        resource_type="monitoring_job",
+        resource_id=None,
+        request=request,
+        diff={"job_name": result["job_name"]},
+    )
+    await db.commit()
+    return JobTriggerOut.model_validate(result)
 
 
 @router.get("/settings", response_model=PlatformSettingsOut)
