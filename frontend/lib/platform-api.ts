@@ -308,6 +308,8 @@ export const platformAdmin = {
       name?: string;
       is_active?: boolean;
       owner_user_id?: string;
+      reason?: string;
+      revoke_member_sessions?: boolean;
       password_confirm?: string;
     },
   ) {
@@ -426,6 +428,56 @@ export const platformAdmin = {
         password,
       })
     ).data;
+  },
+  async bulkUserAction(payload: {
+    user_ids: string[];
+    action: "activate" | "deactivate" | "revoke_sessions";
+    password: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        sessions_revoked?: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/users/bulk-action", payload)
+    ).data;
+  },
+  async bulkOrgAction(payload: {
+    org_ids: string[];
+    is_active: boolean;
+    reason?: string;
+    revoke_member_sessions?: boolean;
+    password?: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        sessions_revoked?: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/organizations/bulk-action", payload)
+    ).data;
+  },
+  async exportUsers(params?: { search?: string; role?: string; is_active?: boolean }) {
+    const response = await api.get("/v1/platform/users/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportOrganizations(params?: { search?: string; is_active?: boolean }) {
+    const response = await api.get("/v1/platform/organizations/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportOrgMembers(orgId: string) {
+    const response = await api.get(`/v1/platform/organizations/${orgId}/members/export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
   async stopImpersonation() {
     return (

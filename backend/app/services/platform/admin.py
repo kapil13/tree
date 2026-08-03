@@ -53,6 +53,7 @@ async def query_platform_users(
     is_active: bool | None = None,
     page: int = 1,
     page_size: int = 50,
+    max_page_size: int = 100,
 ) -> tuple[list[dict[str, Any]], int]:
     base = (
         select(User, Organization.name.label("organization_name"))
@@ -70,7 +71,7 @@ async def query_platform_users(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = int((await db.execute(count_stmt)).scalar_one())
 
-    page_size = min(max(page_size, 1), 100)
+    page_size = min(max(page_size, 1), max_page_size)
     page = max(page, 1)
     rows = (
         await db.execute(base.offset((page - 1) * page_size).limit(page_size))
@@ -210,6 +211,7 @@ async def query_org_members_for_admin(
     *,
     page: int = 1,
     page_size: int = 50,
+    max_page_size: int = 100,
 ) -> tuple[list[dict[str, Any]], int]:
     base = (
         select(User)
@@ -217,7 +219,7 @@ async def query_org_members_for_admin(
         .order_by(User.is_org_admin.desc(), User.full_name.asc())
     )
     total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
-    page_size = min(max(page_size, 1), 100)
+    page_size = min(max(page_size, 1), max_page_size)
     page = max(page, 1)
     users = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).scalars().all()
     items = [

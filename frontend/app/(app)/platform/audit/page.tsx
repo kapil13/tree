@@ -16,6 +16,11 @@ const ACTION_LABELS: Record<string, string> = {
   "platform.user.resend_verification": "Verification resent",
   "platform.user.mark_verified": "User marked verified",
   "platform.user.revoke_sessions": "Sessions revoked",
+  "platform.user.bulk_activate": "Bulk user activate",
+  "platform.user.bulk_deactivate": "Bulk user deactivate",
+  "platform.user.bulk_revoke_sessions": "Bulk session revoke",
+  "platform.organization.bulk_suspend": "Bulk org suspend",
+  "platform.organization.bulk_activate": "Bulk org activate",
   "platform.organization.update": "Organization updated",
   "platform.module.update": "Module rules updated",
 };

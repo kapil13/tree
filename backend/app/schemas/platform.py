@@ -127,7 +127,30 @@ class OrganizationAdminUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     is_active: bool | None = None
     owner_user_id: uuid.UUID | None = None
+    reason: str | None = Field(default=None, max_length=500)
+    revoke_member_sessions: bool = False
     password_confirm: str | None = Field(default=None, min_length=1)
+
+
+class BulkUserActionRequest(BaseModel):
+    user_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
+    action: Literal["activate", "deactivate", "revoke_sessions"]
+    password: str = Field(min_length=1)
+
+
+class BulkOrgActionRequest(BaseModel):
+    org_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=50)
+    is_active: bool
+    reason: str | None = Field(default=None, max_length=500)
+    revoke_member_sessions: bool = False
+    password: str | None = Field(default=None, min_length=1)
+
+
+class BulkActionResultOut(BaseModel):
+    processed: int
+    skipped: int = 0
+    sessions_revoked: int = 0
+    details: list[dict] = Field(default_factory=list)
 
 
 class PermissionMatrixOut(BaseModel):
