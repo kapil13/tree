@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CmsManager
@@ -720,7 +720,7 @@ async def cms_archive_rule_template(
     request: Request,
     manager: CmsManager,
     db: DB,
-) -> None:
+) -> Response:
     if not is_custom_template_code(template_code):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="builtin_template_not_deletable")
     custom = await get_custom_template_row(db, template_code)
@@ -738,6 +738,7 @@ async def cms_archive_rule_template(
         diff={"template_code": template_code},
     )
     await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @admin_router.get("/rule-templates/{template_code}/versions")
