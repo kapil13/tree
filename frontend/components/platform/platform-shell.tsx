@@ -11,6 +11,7 @@ import {
   ScrollText,
   Server,
   UserCheck,
+  Shield,
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
@@ -67,6 +68,12 @@ const NAV: NavItem[] = [
     label: "Audit log",
     icon: ScrollText,
     visible: (user) => canManagePlatformUsers(user),
+  },
+  {
+    href: "/platform/governance",
+    label: "Governance",
+    icon: Shield,
+    visible: (user) => isFullPlatformAdmin(user),
   },
   {
     href: "/platform/roles",
