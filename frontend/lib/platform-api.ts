@@ -304,7 +304,12 @@ export const platformAdmin = {
   },
   async updateOrganization(
     id: string,
-    payload: { name?: string; is_active?: boolean; password_confirm?: string },
+    payload: {
+      name?: string;
+      is_active?: boolean;
+      owner_user_id?: string;
+      password_confirm?: string;
+    },
   ) {
     return (
       await api.patch<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`, payload)
@@ -380,7 +385,10 @@ export const platformAdmin = {
       )
     ).data;
   },
-  async impersonateUser(userId: string, payload: { password: string; reason?: string }) {
+  async impersonateUser(
+    userId: string,
+    payload: { password: string; reason?: string; read_only?: boolean },
+  ) {
     return (
       await api.post<{
         access_token: string;
@@ -388,8 +396,35 @@ export const platformAdmin = {
         expires_in: number;
         impersonated_by_id: string;
         impersonated_by_email: string;
+        read_only: boolean;
         target_user: PlatformUser;
       }>(`/v1/platform/users/${userId}/impersonate`, payload)
+    ).data;
+  },
+  async forcePasswordReset(userId: string, password: string) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>(
+        `/v1/platform/users/${userId}/force-password-reset`,
+        { password },
+      )
+    ).data;
+  },
+  async resendVerification(
+    userId: string,
+    payload: { password: string; mark_verified?: boolean },
+  ) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>(
+        `/v1/platform/users/${userId}/resend-verification`,
+        payload,
+      )
+    ).data;
+  },
+  async revokeSessions(userId: string, password: string) {
+    return (
+      await api.post<{ status: string }>(`/v1/platform/users/${userId}/revoke-sessions`, {
+        password,
+      })
     ).data;
   },
   async stopImpersonation() {

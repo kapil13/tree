@@ -12,6 +12,10 @@ const ACTION_LABELS: Record<string, string> = {
   "platform.user.impersonate": "Impersonation started",
   "platform.user.impersonate_stop": "Impersonation ended",
   "platform.user.grants_update": "Platform grants updated",
+  "platform.user.force_password_reset": "Password reset sent",
+  "platform.user.resend_verification": "Verification resent",
+  "platform.user.mark_verified": "User marked verified",
+  "platform.user.revoke_sessions": "Sessions revoked",
   "platform.organization.update": "Organization updated",
   "platform.module.update": "Module rules updated",
 };

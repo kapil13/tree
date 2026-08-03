@@ -68,6 +68,7 @@ from app.services.auth.password_reset import (
     confirm_password_reset,
     request_password_reset,
 )
+from app.services.auth.sessions import token_issued_before_invalidation
 from app.services.auth.signup import (
     SignupError,
     complete_signup,
@@ -274,6 +275,8 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     user = res.scalar_one_or_none()
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
+    if token_issued_before_invalidation(user, data.get("iat")):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="session_revoked")
     await assert_user_may_authenticate(db, user)
     # Rotate: revoke the presented refresh token before issuing a new pair.
     exp = data.get("exp")
@@ -650,6 +653,7 @@ async def me(
                 impersonation = {
                     "admin_user_id": str(imp_by),
                     "admin_email": admin.email if admin else "",
+                    "read_only": payload.get("imp_ro") is True,
                 }
         except ValueError:
             pass

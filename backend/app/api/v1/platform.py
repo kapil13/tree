@@ -58,12 +58,16 @@ from app.schemas.platform import (
     PlatformOverviewOut,
     PlatformSchemeSummaryOut,
     PlatformSettingsOut,
+    ResendVerificationRequest,
+    StepUpPasswordRequest,
+    SupportActionOut,
     UserAdminOut,
     UserPlatformGrantsOut,
     UserPlatformGrantsUpdate,
     UserRoleUpdate,
 )
 from app.services.audit import record_audit
+from app.services.organizations.members import OrgMemberError, transfer_org_ownership
 from app.services.organizations.onboarding import (
     OrgOnboardingError,
     onboard_user_on_program_approval,
@@ -107,6 +111,12 @@ from app.services.platform.modules import (
 from app.services.platform.ops import build_ops_summary
 from app.services.platform.settings import build_platform_settings
 from app.services.platform.step_up import verify_admin_step_up
+from app.services.platform.support import (
+    SupportActionError,
+    admin_force_password_reset,
+    admin_resend_verification,
+    admin_revoke_sessions,
+)
 from app.services.schemes.imports.campa_apo_csv import (
     apply_apo_rows_to_projects,
     parse_campa_apo_csv,
@@ -242,7 +252,7 @@ async def platform_impersonate_user(
     except ImpersonationError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
 
-    token_data = impersonation_token_for(admin=admin, target=target)
+    token_data = impersonation_token_for(admin=admin, target=target, read_only=payload.read_only)
     await record_audit(
         db,
         actor=admin,
@@ -254,6 +264,7 @@ async def platform_impersonate_user(
             "email": target.email,
             "impersonated_by": admin.email,
             "reason": payload.reason,
+            "read_only": payload.read_only,
         },
     )
     await db.commit()
@@ -463,6 +474,94 @@ async def platform_update_user_grants(
     )
 
 
+@router.post("/users/{user_id}/force-password-reset", response_model=SupportActionOut)
+async def platform_force_password_reset(
+    user_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    try:
+        dev_hint = await admin_force_password_reset(db, user)
+    except SupportActionError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.force_password_reset",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email},
+    )
+    await db.commit()
+    return SupportActionOut(dev_hint=dev_hint)
+
+
+@router.post("/users/{user_id}/resend-verification", response_model=SupportActionOut)
+async def platform_resend_verification(
+    user_id: uuid.UUID,
+    payload: ResendVerificationRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    try:
+        dev_hint = await admin_resend_verification(
+            db, user, mark_verified=payload.mark_verified
+        )
+    except SupportActionError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.mark_verified"
+        if payload.mark_verified
+        else "platform.user.resend_verification",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "mark_verified": payload.mark_verified},
+    )
+    await db.commit()
+    return SupportActionOut(dev_hint=dev_hint)
+
+
+@router.post("/users/{user_id}/revoke-sessions", response_model=SupportActionOut)
+async def platform_revoke_sessions(
+    user_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    invalidated_at = admin_revoke_sessions(user)
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.revoke_sessions",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "invalidated_at": invalidated_at.isoformat()},
+    )
+    await db.commit()
+    return SupportActionOut()
+
+
 @router.get("/modules", response_model=list[ModuleRuleOut])
 async def platform_list_modules(_access: AnyPlatformModule, db: DB) -> list[dict]:
     rules = await list_module_rules(db)
@@ -576,6 +675,20 @@ async def platform_update_organization(
             verify_admin_step_up(admin, payload.password_confirm)
         diff["is_active"] = {"from": org.is_active, "to": payload.is_active}
         org.is_active = payload.is_active
+    if payload.owner_user_id is not None and payload.owner_user_id != org.owner_user_id:
+        verify_admin_step_up(admin, payload.password_confirm)
+        prev_owner = org.owner_user_id
+        try:
+            new_owner = await transfer_org_ownership(
+                db, org=org, new_owner_id=payload.owner_user_id
+            )
+        except OrgMemberError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+        diff["owner_user_id"] = {
+            "from": str(prev_owner) if prev_owner else None,
+            "to": str(new_owner.id),
+            "owner_email": new_owner.email,
+        }
     await record_audit(
         db,
         actor=admin,

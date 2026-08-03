@@ -9,6 +9,7 @@ export function StepUpModal({
   description,
   confirmLabel = "Confirm",
   busy,
+  showReadOnlyOption,
   onClose,
   onConfirm,
 }: {
@@ -17,11 +18,13 @@ export function StepUpModal({
   description: string;
   confirmLabel?: string;
   busy?: boolean;
+  showReadOnlyOption?: boolean;
   onClose: () => void;
-  onConfirm: (password: string, reason?: string) => void;
+  onConfirm: (password: string, reason?: string, readOnly?: boolean) => void;
 }) {
   const [password, setPassword] = useState("");
   const [reason, setReason] = useState("");
+  const [readOnly, setReadOnly] = useState(true);
 
   if (!open) return null;
 
@@ -63,6 +66,16 @@ export function StepUpModal({
               />
             </div>
           )}
+          {showReadOnlyOption && (
+            <label className="flex items-center gap-2 text-sm text-stone-600">
+              <input
+                type="checkbox"
+                checked={readOnly}
+                onChange={(e) => setReadOnly(e.target.checked)}
+              />
+              Read-only mode (block writes while impersonating)
+            </label>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
@@ -73,7 +86,7 @@ export function StepUpModal({
             type="button"
             className="btn-primary"
             disabled={!password || busy}
-            onClick={() => onConfirm(password, reason || undefined)}
+            onClick={() => onConfirm(password, reason || undefined, readOnly)}
           >
             {busy ? "Confirming…" : confirmLabel}
           </button>

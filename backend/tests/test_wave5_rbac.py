@@ -40,8 +40,10 @@ async def test_org_admin_can_read_audit_without_government_role(monkeypatch):
 @pytest.mark.asyncio
 async def test_viewer_cannot_pass_write_access():
     viewer = MagicMock(org_role="viewer", role="government")
+    request = MagicMock()
+    request.state = MagicMock(impersonation_read_only=False)
     with pytest.raises(Exception) as exc:
-        await require_write_access(viewer)
+        await require_write_access(viewer, request)
     assert exc.value.status_code == 403
 
 

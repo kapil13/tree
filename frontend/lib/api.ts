@@ -215,6 +215,7 @@ export type User = {
   impersonation?: {
     admin_user_id: string;
     admin_email: string;
+    read_only?: boolean;
   } | null;
 };
 
