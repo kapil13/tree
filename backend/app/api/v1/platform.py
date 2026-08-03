@@ -41,6 +41,7 @@ from app.schemas.platform import (
     ASSIGNABLE_ROLES,
     CampaApoImportRequest,
     CampaApoImportResultOut,
+    ImpersonateRequest,
     ImpersonationOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
@@ -58,6 +59,8 @@ from app.schemas.platform import (
     PlatformSchemeSummaryOut,
     PlatformSettingsOut,
     UserAdminOut,
+    UserPlatformGrantsOut,
+    UserPlatformGrantsUpdate,
     UserRoleUpdate,
 )
 from app.services.audit import record_audit
@@ -83,6 +86,10 @@ from app.services.platform.admin import (
 )
 from app.services.platform.audit import export_platform_audit_csv, query_platform_audit_logs
 from app.services.platform.billing import build_billing_summary, query_payment_orders
+from app.services.platform.grants import (
+    list_user_module_grants,
+    set_user_module_grants,
+)
 from app.services.platform.impersonation import (
     ImpersonationError,
     admin_tokens_for,
@@ -90,13 +97,16 @@ from app.services.platform.impersonation import (
     validate_impersonation_target,
 )
 from app.services.platform.modules import (
+    ALL_PLATFORM_MODULES,
     USERS_ADMIN_MODULE,
     WEBSITE_CMS_MODULE,
+    build_platform_access_map,
     list_module_rules,
     module_rule_dict,
 )
 from app.services.platform.ops import build_ops_summary
 from app.services.platform.settings import build_platform_settings
+from app.services.platform.step_up import verify_admin_step_up
 from app.services.schemes.imports.campa_apo_csv import (
     apply_apo_rows_to_projects,
     parse_campa_apo_csv,
@@ -218,10 +228,12 @@ async def platform_audit_export(
 @router.post("/users/{user_id}/impersonate", response_model=ImpersonationOut)
 async def platform_impersonate_user(
     user_id: uuid.UUID,
+    payload: ImpersonateRequest,
     request: Request,
     admin: PlatformAdmin,
     db: DB,
 ) -> ImpersonationOut:
+    verify_admin_step_up(admin, payload.password)
     target = await db.get(User, user_id)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
@@ -238,7 +250,11 @@ async def platform_impersonate_user(
         resource_type="user",
         resource_id=target.id,
         request=request,
-        diff={"email": target.email, "impersonated_by": admin.email},
+        diff={
+            "email": target.email,
+            "impersonated_by": admin.email,
+            "reason": payload.reason,
+        },
     )
     await db.commit()
     row = await get_platform_user(db, target.id)
@@ -351,7 +367,14 @@ async def platform_update_user(
     if user.id == admin.id and payload.is_active is False:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="cannot_deactivate_self")
 
+    role_changing = payload.role != user.role
+    active_changing = payload.is_active is not None and payload.is_active != user.is_active
+    sensitive = payload.role == "admin" or user.role == "admin" or payload.is_active is False
+    if (role_changing or active_changing) and sensitive:
+        verify_admin_step_up(admin, payload.password_confirm)
+
     prev_role = user.role
+    prev_active = user.is_active
     user.role = payload.role
     if payload.is_active is not None:
         user.is_active = payload.is_active
@@ -363,12 +386,81 @@ async def platform_update_user(
         resource_type="user",
         resource_id=user.id,
         request=request,
-        diff={"email": user.email, "from_role": prev_role, "to_role": user.role},
+        diff={
+            "email": user.email,
+            "from_role": prev_role,
+            "to_role": user.role,
+            "from_active": prev_active,
+            "to_active": user.is_active,
+        },
     )
     await db.commit()
     await db.refresh(user)
     row = await get_platform_user(db, user.id)
     return UserAdminOut.model_validate(row or user)
+
+
+@router.get("/users/{user_id}/platform-grants", response_model=UserPlatformGrantsOut)
+async def platform_get_user_grants(
+    user_id: uuid.UUID,
+    admin: PlatformAdmin,
+    db: DB,
+) -> UserPlatformGrantsOut:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    user_grants = await list_user_module_grants(db, user.id)
+    role_modules = await build_platform_access_map(db, role=user.role, user_id=None)
+    effective = await build_platform_access_map(db, role=user.role, user_id=user.id)
+    return UserPlatformGrantsOut(
+        user_id=user.id,
+        role=user.role,
+        role_modules=role_modules,
+        user_grants=user_grants,
+        effective_access=effective,
+    )
+
+
+@router.put("/users/{user_id}/platform-grants", response_model=UserPlatformGrantsOut)
+async def platform_update_user_grants(
+    user_id: uuid.UUID,
+    payload: UserPlatformGrantsUpdate,
+    request: Request,
+    admin: PlatformAdmin,
+    db: DB,
+) -> UserPlatformGrantsOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    if user.role == "admin":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="admin_has_full_access")
+
+    prev = await list_user_module_grants(db, user.id)
+    cleaned = [key for key in payload.module_keys if key in ALL_PLATFORM_MODULES]
+    await set_user_module_grants(
+        db, user_id=user.id, module_keys=cleaned, granted_by_user_id=admin.id
+    )
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.grants_update",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "from": prev, "to": cleaned},
+    )
+    await db.commit()
+
+    role_modules = await build_platform_access_map(db, role=user.role, user_id=None)
+    effective = await build_platform_access_map(db, role=user.role, user_id=user.id)
+    return UserPlatformGrantsOut(
+        user_id=user.id,
+        role=user.role,
+        role_modules=role_modules,
+        user_grants=cleaned,
+        effective_access=effective,
+    )
 
 
 @router.get("/modules", response_model=list[ModuleRuleOut])
@@ -480,6 +572,8 @@ async def platform_update_organization(
         diff["name"] = {"from": org.name, "to": payload.name}
         org.name = payload.name.strip()
     if payload.is_active is not None:
+        if payload.is_active is False and org.is_active:
+            verify_admin_step_up(admin, payload.password_confirm)
         diff["is_active"] = {"from": org.is_active, "to": payload.is_active}
         org.is_active = payload.is_active
     await record_audit(

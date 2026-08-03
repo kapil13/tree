@@ -22,6 +22,7 @@ from app.models.planting_rule_template import PlantingRuleTemplateOverride
 from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
 from app.models.planting_standard import PlantingStandard
 from app.models.platform_module import PlatformModuleRule
+from app.models.platform_user_module_grant import PlatformUserModuleGrant
 from app.models.project_member import ProjectMember
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
@@ -49,6 +50,7 @@ __all__ = [
     "CmsSection",
     "CmsSiteConfig",
     "PlatformModuleRule",
+    "PlatformUserModuleGrant",
     "CreditLedgerEvent",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",

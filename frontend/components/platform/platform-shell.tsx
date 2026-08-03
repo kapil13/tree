@@ -109,8 +109,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Control plane</h1>
         <p className="mt-2 max-w-2xl text-sm text-stone-600 dark:text-stone-300">
           {fullAdmin
-            ? "Full platform control — users, organizations, program onboarding, roles, and CMS."
-            : "Delegated platform modules for your role."}
+            ? "Full platform control — users, organizations, program onboarding, roles, CMS, and audit."
+            : "Delegated platform modules assigned to your role or user grants."}
         </p>
       </div>
 

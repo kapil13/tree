@@ -162,6 +162,8 @@ export type CampaApoImportResult = {
 export type PlatformAuditLog = {
   id: string;
   actor_user_id: string | null;
+  actor_email: string | null;
+  actor_full_name: string | null;
   organization_id: string | null;
   action: string;
   resource_type: string | null;
@@ -170,6 +172,14 @@ export type PlatformAuditLog = {
   user_agent: string | null;
   diff: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type UserPlatformGrants = {
+  user_id: string;
+  role: string;
+  role_modules: Record<string, boolean>;
+  user_grants: string[];
+  effective_access: Record<string, boolean>;
 };
 
 export type PlatformAuditPage = {
@@ -235,8 +245,19 @@ export const platformAdmin = {
   async getUser(id: string) {
     return (await api.get<PlatformUser>(`/v1/platform/users/${id}`)).data;
   },
-  async updateUser(id: string, payload: { role: string; is_active?: boolean }) {
+  async updateUser(
+    id: string,
+    payload: { role: string; is_active?: boolean; password_confirm?: string },
+  ) {
     return (await api.patch<PlatformUser>(`/v1/platform/users/${id}`, payload)).data;
+  },
+  async getUserGrants(id: string) {
+    return (await api.get<UserPlatformGrants>(`/v1/platform/users/${id}/platform-grants`)).data;
+  },
+  async updateUserGrants(id: string, payload: { module_keys: string[]; password: string }) {
+    return (
+      await api.put<UserPlatformGrants>(`/v1/platform/users/${id}/platform-grants`, payload)
+    ).data;
   },
   async listModules() {
     return (await api.get<PlatformModuleRule[]>("/v1/platform/modules")).data;
@@ -281,7 +302,10 @@ export const platformAdmin = {
   async getOrganization(id: string) {
     return (await api.get<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`)).data;
   },
-  async updateOrganization(id: string, payload: { name?: string; is_active?: boolean }) {
+  async updateOrganization(
+    id: string,
+    payload: { name?: string; is_active?: boolean; password_confirm?: string },
+  ) {
     return (
       await api.patch<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`, payload)
     ).data;
@@ -356,7 +380,7 @@ export const platformAdmin = {
       )
     ).data;
   },
-  async impersonateUser(userId: string) {
+  async impersonateUser(userId: string, payload: { password: string; reason?: string }) {
     return (
       await api.post<{
         access_token: string;
@@ -365,7 +389,7 @@ export const platformAdmin = {
         impersonated_by_id: string;
         impersonated_by_email: string;
         target_user: PlatformUser;
-      }>(`/v1/platform/users/${userId}/impersonate`)
+      }>(`/v1/platform/users/${userId}/impersonate`, payload)
     ).data;
   },
   async stopImpersonation() {

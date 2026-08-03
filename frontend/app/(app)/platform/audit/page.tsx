@@ -2,9 +2,24 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { platformAdmin } from "@/lib/platform-api";
+import { cn } from "@/lib/cn";
+
+const ACTION_LABELS: Record<string, string> = {
+  "platform.user.role_update": "User role changed",
+  "platform.user.impersonate": "Impersonation started",
+  "platform.user.impersonate_stop": "Impersonation ended",
+  "platform.user.grants_update": "Platform grants updated",
+  "platform.organization.update": "Organization updated",
+  "platform.module.update": "Module rules updated",
+};
+
+function formatDiff(diff: Record<string, unknown> | null): string {
+  if (!diff || Object.keys(diff).length === 0) return "";
+  return JSON.stringify(diff, null, 2);
+}
 
 export default function PlatformAuditPage() {
   const [actionPrefix, setActionPrefix] = useState("platform.");
@@ -12,6 +27,7 @@ export default function PlatformAuditPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["platform-audit", actionPrefix, search, dateFrom, dateTo, page],
@@ -51,7 +67,7 @@ export default function PlatformAuditPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="text-sm text-stone-600 dark:text-stone-300">
-            Platform-wide audit events with filters and CSV export.
+            Platform-wide audit trail with actor names, structured diffs, and CSV export.
           </p>
           <button
             type="button"
@@ -87,7 +103,7 @@ export default function PlatformAuditPage() {
             <span className="mb-1 block text-stone-600">Search</span>
             <input
               className="input w-full"
-              placeholder="Action or resource"
+              placeholder="Action, actor email, resource…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -128,21 +144,54 @@ export default function PlatformAuditPage() {
             {data?.items.length === 0 ? (
               <p className="p-6 text-sm text-stone-500">No audit events match this filter.</p>
             ) : (
-              data?.items.map((entry) => (
-                <div key={entry.id} className="px-4 py-3 text-sm">
-                  <div className="font-medium">{entry.action}</div>
-                  <div className="text-stone-600">
-                    {entry.resource_type}
-                    {entry.resource_id ? ` · ${entry.resource_id}` : ""}
-                    {entry.organization_id ? ` · org ${entry.organization_id}` : ""}
+              data?.items.map((entry) => {
+                const expanded = expandedId === entry.id;
+                const actorLabel =
+                  entry.actor_email ||
+                  entry.actor_full_name ||
+                  entry.actor_user_id ||
+                  "System";
+                return (
+                  <div key={entry.id} className="px-4 py-3 text-sm">
+                    <button
+                      type="button"
+                      className="flex w-full items-start justify-between gap-3 text-left"
+                      onClick={() => setExpandedId(expanded ? null : entry.id)}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">
+                          {ACTION_LABELS[entry.action] ?? entry.action}
+                        </div>
+                        <div className="mt-0.5 text-stone-600">
+                          {entry.resource_type}
+                          {entry.resource_id ? ` · ${entry.resource_id.slice(0, 8)}…` : ""}
+                        </div>
+                        <div className="mt-1 text-xs text-stone-500">
+                          {new Date(entry.created_at).toLocaleString()} · {actorLabel}
+                          {entry.ip ? ` · ${entry.ip}` : ""}
+                        </div>
+                      </div>
+                      {entry.diff && Object.keys(entry.diff).length > 0 ? (
+                        expanded ? (
+                          <ChevronUp className="h-4 w-4 shrink-0 text-stone-400" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 shrink-0 text-stone-400" />
+                        )
+                      ) : null}
+                    </button>
+                    {expanded && entry.diff && (
+                      <pre
+                        className={cn(
+                          "mt-3 overflow-x-auto rounded-xl bg-stone-50 p-3 text-xs text-stone-800",
+                          "dark:bg-stone-950",
+                        )}
+                      >
+                        {formatDiff(entry.diff)}
+                      </pre>
+                    )}
                   </div>
-                  <div className="mt-1 text-xs text-stone-500">
-                    {new Date(entry.created_at).toLocaleString()}
-                    {entry.actor_user_id ? ` · actor ${entry.actor_user_id}` : ""}
-                    {entry.ip ? ` · ${entry.ip}` : ""}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

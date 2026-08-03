@@ -43,6 +43,25 @@ class UserRoleUpdate(BaseModel):
         "admin",
     ]
     is_active: bool | None = None
+    password_confirm: str | None = Field(default=None, min_length=1)
+
+
+class ImpersonateRequest(BaseModel):
+    password: str = Field(min_length=1)
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class UserPlatformGrantsOut(BaseModel):
+    user_id: uuid.UUID
+    role: str
+    role_modules: dict[str, bool]
+    user_grants: list[str]
+    effective_access: dict[str, bool]
+
+
+class UserPlatformGrantsUpdate(BaseModel):
+    module_keys: list[str] = Field(default_factory=list)
+    password: str = Field(min_length=1)
 
 
 class ModuleRuleOut(BaseModel):
@@ -92,6 +111,7 @@ class OrganizationAdminDetailOut(OrganizationAdminOut):
 class OrganizationAdminUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     is_active: bool | None = None
+    password_confirm: str | None = Field(default=None, min_length=1)
 
 
 class PermissionMatrixOut(BaseModel):
@@ -153,6 +173,8 @@ class OrgProjectAdminOut(BaseModel):
 class PlatformAuditLogOut(BaseModel):
     id: uuid.UUID
     actor_user_id: uuid.UUID | None
+    actor_email: str | None = None
+    actor_full_name: str | None = None
     organization_id: uuid.UUID | None
     action: str
     resource_type: str | None
