@@ -275,3 +275,47 @@ class CampaApoImportResultOut(BaseModel):
 
 class CampaApoImportRequest(BaseModel):
     csv_text: str = Field(..., min_length=10)
+
+
+class PublicGovernanceStatusOut(BaseModel):
+    maintenance_mode: bool
+    maintenance_message: str | None = None
+    registration_enabled: bool
+
+
+class GovernanceSettingsOut(BaseModel):
+    maintenance_mode: bool
+    maintenance_message: str
+    registration_enabled: bool
+    updated_at: datetime | None = None
+    updated_by_user_id: uuid.UUID | None = None
+
+
+class GovernanceSettingsUpdate(BaseModel):
+    maintenance_mode: bool | None = None
+    maintenance_message: str | None = Field(default=None, max_length=1000)
+    registration_enabled: bool | None = None
+    password: str = Field(min_length=1)
+
+
+class OrgFeatureFlagOut(BaseModel):
+    key: str
+    label: str
+    enabled: bool
+
+
+class OrgFeatureFlagsOut(BaseModel):
+    organization_id: uuid.UUID
+    flags: list[OrgFeatureFlagOut]
+
+
+class OrgFeatureFlagsUpdate(BaseModel):
+    flags: dict[str, bool] = Field(default_factory=dict)
+    password_confirm: str = Field(min_length=1)
+
+
+class BulkProgramAccessReviewRequest(BaseModel):
+    request_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=50)
+    action: Literal["approve", "reject"]
+    admin_note: str | None = Field(default=None, max_length=2000)
+    password: str = Field(min_length=1)

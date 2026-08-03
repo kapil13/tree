@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
+import { OrgFeatureFlagsPanel } from "@/components/platform/org-feature-flags-panel";
 import { OrgSuspendModal } from "@/components/platform/org-suspend-modal";
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { errorMessage } from "@/lib/api";
@@ -142,6 +143,19 @@ export default function PlatformOrganizationDetailPage() {
                   Reactivate organization
                 </button>
               )}
+            </div>
+          </section>
+        ) : null}
+
+        {fullAdmin ? (
+          <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
+            <h3 className="text-lg font-semibold">Feature flags</h3>
+            <p className="mt-1 text-sm text-stone-600">
+              Toggle capabilities for this organization. Disabled features return a permission error
+              for org members.
+            </p>
+            <div className="mt-4">
+              <OrgFeatureFlagsPanel orgId={orgId} />
             </div>
           </section>
         ) : null}

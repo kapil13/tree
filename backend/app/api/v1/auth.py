@@ -91,6 +91,7 @@ from app.services.planting_programs.onboarding import (
     repair_stale_onboarding_requests,
     submit_org_profile,
 )
+from app.services.platform.governance import assert_registration_allowed
 from app.services.platform.modules import build_platform_access_map
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -129,6 +130,7 @@ async def captcha_config() -> CaptchaConfigOut:
     dependencies=[rate_limit(10, 60)],
 )
 async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOut:
+    await assert_registration_allowed(db)
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
@@ -320,6 +322,7 @@ def _signup_error(exc: SignupError) -> HTTPException:
 
 @router.post("/signup/start", response_model=SignupStartOut, dependencies=[rate_limit(10, 60)])
 async def signup_start(payload: SignupStartRequest, request: Request, db: DB) -> SignupStartOut:
+    await assert_registration_allowed(db)
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     try:
         token, dev_hint = await start_signup(

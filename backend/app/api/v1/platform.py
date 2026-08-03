@@ -41,9 +41,12 @@ from app.schemas.platform import (
     ASSIGNABLE_ROLES,
     BulkActionResultOut,
     BulkOrgActionRequest,
+    BulkProgramAccessReviewRequest,
     BulkUserActionRequest,
     CampaApoImportRequest,
     CampaApoImportResultOut,
+    GovernanceSettingsOut,
+    GovernanceSettingsUpdate,
     ImpersonateRequest,
     ImpersonationOut,
     ModuleRuleOut,
@@ -51,6 +54,9 @@ from app.schemas.platform import (
     OrganizationAdminDetailOut,
     OrganizationAdminOut,
     OrganizationAdminUpdate,
+    OrgFeatureFlagOut,
+    OrgFeatureFlagsOut,
+    OrgFeatureFlagsUpdate,
     OrgMemberAdminOut,
     OrgProjectAdminOut,
     PaymentOrderAdminOut,
@@ -61,6 +67,7 @@ from app.schemas.platform import (
     PlatformOverviewOut,
     PlatformSchemeSummaryOut,
     PlatformSettingsOut,
+    PublicGovernanceStatusOut,
     ResendVerificationRequest,
     StepUpPasswordRequest,
     SupportActionOut,
@@ -99,10 +106,22 @@ from app.services.platform.bulk_ops import (
     bulk_update_users,
     revoke_org_member_sessions,
 )
+from app.services.platform.bulk_program_access import (
+    BulkProgramAccessError,
+    bulk_review_program_access,
+)
 from app.services.platform.exports import (
     export_platform_org_members_csv,
     export_platform_organizations_csv,
     export_platform_users_csv,
+)
+from app.services.platform.governance import (
+    ORG_FEATURE_FLAGS,
+    governance_settings_dict,
+    org_feature_flags,
+    public_governance_status,
+    set_org_feature_flags,
+    update_governance_settings,
 )
 from app.services.platform.grants import (
     list_user_module_grants,
@@ -138,6 +157,55 @@ from app.services.schemes.imports.campa_apo_csv import (
 from app.services.schemes.summary import build_platform_scheme_summary
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
+
+
+@router.get("/governance/status", response_model=PublicGovernanceStatusOut)
+async def platform_governance_public_status(db: DB) -> PublicGovernanceStatusOut:
+    """Public maintenance/registration status for client banners."""
+    return PublicGovernanceStatusOut.model_validate(await public_governance_status(db))
+
+
+@router.get("/governance", response_model=GovernanceSettingsOut)
+async def platform_get_governance(_admin: PlatformAdmin, db: DB) -> GovernanceSettingsOut:
+    return GovernanceSettingsOut.model_validate(await governance_settings_dict(db))
+
+
+@router.patch("/governance", response_model=GovernanceSettingsOut)
+async def platform_update_governance(
+    payload: GovernanceSettingsUpdate,
+    request: Request,
+    admin: PlatformAdmin,
+    db: DB,
+) -> GovernanceSettingsOut:
+    verify_admin_step_up(admin, payload.password)
+    prev = await governance_settings_dict(db)
+    row = await update_governance_settings(
+        db,
+        actor=admin,
+        maintenance_mode=payload.maintenance_mode,
+        maintenance_message=payload.maintenance_message,
+        registration_enabled=payload.registration_enabled,
+    )
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.governance.update",
+        resource_type="platform_governance",
+        resource_id=None,
+        request=request,
+        diff={
+            "from": {
+                "maintenance_mode": prev["maintenance_mode"],
+                "registration_enabled": prev["registration_enabled"],
+            },
+            "to": {
+                "maintenance_mode": row.maintenance_mode,
+                "registration_enabled": row.registration_enabled,
+            },
+        },
+    )
+    await db.commit()
+    return GovernanceSettingsOut.model_validate(await governance_settings_dict(db))
 
 
 @router.get("/overview", response_model=PlatformOverviewOut)
@@ -826,6 +894,58 @@ async def platform_update_organization(
     return OrganizationAdminDetailOut.model_validate(row)
 
 
+@router.get("/organizations/{org_id}/feature-flags", response_model=OrgFeatureFlagsOut)
+async def platform_get_org_feature_flags(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+) -> OrgFeatureFlagsOut:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    flags = org_feature_flags(org)
+    return OrgFeatureFlagsOut(
+        organization_id=org.id,
+        flags=[
+            OrgFeatureFlagOut(key=key, label=ORG_FEATURE_FLAGS[key], enabled=flags[key])
+            for key in ORG_FEATURE_FLAGS
+        ],
+    )
+
+
+@router.patch("/organizations/{org_id}/feature-flags", response_model=OrgFeatureFlagsOut)
+async def platform_update_org_feature_flags(
+    org_id: uuid.UUID,
+    payload: OrgFeatureFlagsUpdate,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> OrgFeatureFlagsOut:
+    verify_admin_step_up(admin, payload.password_confirm)
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    prev = org_feature_flags(org)
+    updated = set_org_feature_flags(org, payload.flags)
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.organization.feature_flags",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"from": prev, "to": updated},
+    )
+    await db.commit()
+    return OrgFeatureFlagsOut(
+        organization_id=org.id,
+        flags=[
+            OrgFeatureFlagOut(key=key, label=ORG_FEATURE_FLAGS[key], enabled=updated[key])
+            for key in ORG_FEATURE_FLAGS
+        ],
+    )
+
+
 @router.get("/organizations/{org_id}/members/export")
 async def platform_export_org_members(
     org_id: uuid.UUID,
@@ -888,6 +1008,41 @@ async def platform_list_program_access_requests(
 ) -> list[ProgramAccessRequestAdminOut]:
     requests = await list_access_requests(db, status=status or None)
     return [_access_request_admin_out(r) for r in requests]
+
+
+@router.post("/program-access-requests/bulk-review", response_model=BulkActionResultOut)
+async def platform_bulk_review_program_access(
+    payload: BulkProgramAccessReviewRequest,
+    request: Request,
+    admin: ProgramAccessModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_review_program_access(
+            db,
+            request_ids=payload.request_ids,
+            action=payload.action,
+            reviewer=admin,
+            admin_note=payload.admin_note,
+        )
+    except BulkProgramAccessError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action=f"platform.program_access.bulk_{payload.action}",
+        resource_type="program_access_request",
+        resource_id=None,
+        request=request,
+        diff={
+            "request_ids": [str(rid) for rid in payload.request_ids],
+            "admin_note": payload.admin_note,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
 
 
 @router.patch(

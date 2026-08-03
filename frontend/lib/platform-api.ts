@@ -486,4 +486,62 @@ export const platformAdmin = {
       )
     ).data;
   },
+  async getGovernance() {
+    return (
+      await api.get<{
+        maintenance_mode: boolean;
+        maintenance_message: string;
+        registration_enabled: boolean;
+        updated_at: string | null;
+        updated_by_user_id: string | null;
+      }>("/v1/platform/governance")
+    ).data;
+  },
+  async updateGovernance(payload: {
+    maintenance_mode?: boolean;
+    maintenance_message?: string;
+    registration_enabled?: boolean;
+    password: string;
+  }) {
+    return (
+      await api.patch<{
+        maintenance_mode: boolean;
+        maintenance_message: string;
+        registration_enabled: boolean;
+      }>("/v1/platform/governance", payload)
+    ).data;
+  },
+  async getOrgFeatureFlags(orgId: string) {
+    return (
+      await api.get<{
+        organization_id: string;
+        flags: Array<{ key: string; label: string; enabled: boolean }>;
+      }>(`/v1/platform/organizations/${orgId}/feature-flags`)
+    ).data;
+  },
+  async updateOrgFeatureFlags(
+    orgId: string,
+    payload: { flags: Record<string, boolean>; password_confirm: string },
+  ) {
+    return (
+      await api.patch<{
+        organization_id: string;
+        flags: Array<{ key: string; label: string; enabled: boolean }>;
+      }>(`/v1/platform/organizations/${orgId}/feature-flags`, payload)
+    ).data;
+  },
+  async bulkReviewProgramAccess(payload: {
+    request_ids: string[];
+    action: "approve" | "reject";
+    admin_note?: string;
+    password: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/program-access-requests/bulk-review", payload)
+    ).data;
+  },
 };

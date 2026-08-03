@@ -165,7 +165,10 @@ async def require_org_member(user: CurrentUser) -> User:
 OrgMember = Annotated[User, Depends(require_org_member)]
 
 
-async def require_write_access(user: CurrentUser, request: Request) -> User:
+async def require_write_access(user: CurrentUser, request: Request, db: DB) -> User:
+    from app.services.platform.governance import assert_writes_allowed
+
+    await assert_writes_allowed(db, user)
     if getattr(request.state, "impersonation_read_only", False):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="impersonation_read_only")
     if not user_can_write(user):
@@ -197,6 +200,9 @@ ProfessionalAccess = Annotated[User, Depends(require_professional_access)]
 
 
 async def require_write_professional(user: CurrentUser, request: Request, db: DB) -> User:
+    from app.services.platform.governance import assert_writes_allowed
+
+    await assert_writes_allowed(db, user)
     if getattr(request.state, "impersonation_read_only", False):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="impersonation_read_only")
     if not user_can_write(user):
@@ -234,7 +240,10 @@ def require(perm: Permission):
 def require_write_perm(perm: Permission):
     """Write access plus a specific Permission (org viewers blocked)."""
 
-    async def dep(user: CurrentUser, request: Request) -> User:
+    async def dep(user: CurrentUser, request: Request, db: DB) -> User:
+        from app.services.platform.governance import assert_writes_allowed
+
+        await assert_writes_allowed(db, user)
         if getattr(request.state, "impersonation_read_only", False):
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail="impersonation_read_only")
         if not user_can_write(user):

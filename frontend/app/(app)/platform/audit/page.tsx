@@ -21,6 +21,10 @@ const ACTION_LABELS: Record<string, string> = {
   "platform.user.bulk_revoke_sessions": "Bulk session revoke",
   "platform.organization.bulk_suspend": "Bulk org suspend",
   "platform.organization.bulk_activate": "Bulk org activate",
+  "platform.governance.update": "Governance settings updated",
+  "platform.organization.feature_flags": "Org feature flags updated",
+  "platform.program_access.bulk_approve": "Bulk program access approved",
+  "platform.program_access.bulk_reject": "Bulk program access rejected",
   "platform.organization.update": "Organization updated",
   "platform.module.update": "Module rules updated",
 };

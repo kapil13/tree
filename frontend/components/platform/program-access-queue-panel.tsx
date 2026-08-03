@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { BulkActionBar } from "@/components/platform/bulk-action-bar";
+import { StepUpModal } from "@/components/platform/step-up-modal";
 import { errorMessage } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -39,6 +41,8 @@ export function ProgramAccessQueuePanel() {
   const [approveFormById, setApproveFormById] = useState<Record<string, ApproveForm>>({});
   const [orgSearch, setOrgSearch] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStepUp, setBulkStepUp] = useState<null | "approve" | "reject">(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ["platform-program-access", status],
@@ -85,6 +89,50 @@ export function ProgramAccessQueuePanel() {
     onError: (err) => setMessage(errorMessage(err)),
   });
 
+  const bulkReview = useMutation({
+    mutationFn: ({
+      action,
+      password,
+      admin_note,
+    }: {
+      action: "approve" | "reject";
+      password: string;
+      admin_note?: string;
+    }) =>
+      platformAdmin.bulkReviewProgramAccess({
+        request_ids: Array.from(selectedIds),
+        action,
+        password,
+        admin_note,
+      }),
+    onSuccess: (result) => {
+      setBulkStepUp(null);
+      setSelectedIds(new Set());
+      setMessage(
+        `Bulk review complete: ${result.processed} processed, ${result.skipped} skipped.`,
+      );
+      qc.invalidateQueries({ queryKey: ["platform-program-access"] });
+      qc.invalidateQueries({ queryKey: ["planting-programs"] });
+      qc.invalidateQueries({ queryKey: ["platform-overview"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const ids = (requests ?? []).map((r) => r.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(ids));
+  }
+
   function getApproveForm(
     requestId: string,
     programCode: string,
@@ -130,6 +178,25 @@ export function ProgramAccessQueuePanel() {
         ))}
       </div>
 
+      {status === "pending" ? (
+        <BulkActionBar selectedCount={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            onClick={() => setBulkStepUp("approve")}
+          >
+            Approve selected
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-xs text-rose-700"
+            onClick={() => setBulkStepUp("reject")}
+          >
+            Reject selected
+          </button>
+        </BulkActionBar>
+      ) : null}
+
       {message ? (
         <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-900">
           {message}
@@ -144,6 +211,19 @@ export function ProgramAccessQueuePanel() {
         </p>
       ) : (
         <div className="space-y-3">
+          {status === "pending" ? (
+            <label className="inline-flex items-center gap-2 text-sm text-stone-600">
+              <input
+                type="checkbox"
+                checked={
+                  (requests?.length ?? 0) > 0 &&
+                  (requests ?? []).every((r) => selectedIds.has(r.id))
+                }
+                onChange={toggleSelectAll}
+              />
+              Select all on page
+            </label>
+          ) : null}
           {requests.map((request) => {
             const theme = getProgramTheme(request.program_code);
             const Icon = theme.icon;
@@ -161,6 +241,14 @@ export function ProgramAccessQueuePanel() {
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-3">
+                    {status === "pending" ? (
+                      <input
+                        type="checkbox"
+                        className="mb-1"
+                        checked={selectedIds.has(request.id)}
+                        onChange={() => toggleSelect(request.id)}
+                      />
+                    ) : null}
                     <div className="flex items-start gap-3">
                       <div
                         className={cn(
@@ -382,6 +470,27 @@ export function ProgramAccessQueuePanel() {
           })}
         </div>
       )}
+
+      <StepUpModal
+        open={bulkStepUp !== null}
+        title={
+          bulkStepUp === "approve"
+            ? `Approve ${selectedIds.size} requests`
+            : `Reject ${selectedIds.size} requests`
+        }
+        description={
+          bulkStepUp === "approve"
+            ? "Bulk approve uses each applicant's org profile (or auto-generated org name). Re-enter your password to confirm."
+            : "Re-enter your password to reject all selected requests."
+        }
+        confirmLabel={bulkStepUp === "approve" ? "Approve all" : "Reject all"}
+        busy={bulkReview.isPending}
+        onClose={() => setBulkStepUp(null)}
+        onConfirm={(password) => {
+          if (!bulkStepUp) return;
+          bulkReview.mutate({ action: bulkStepUp, password });
+        }}
+      />
     </div>
   );
 }
