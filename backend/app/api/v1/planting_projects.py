@@ -55,7 +55,6 @@ from app.services.planting_projects.access import (
     project_list_filter,
 )
 from app.services.planting_projects.compliance import evaluate_tree_placement
-from app.services.platform.governance import assert_org_feature_enabled
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.planting_projects.rule_engine import (
@@ -78,6 +77,7 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection

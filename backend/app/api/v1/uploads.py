@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.v1.deps import WriteAccess, DB, CurrentUser
+from app.api.v1.deps import DB, WriteAccess
 from app.schemas.bioacoustic import PresignUploadRequest, PresignUploadResponse
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.storage import get_storage

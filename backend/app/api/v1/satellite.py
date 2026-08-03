@@ -19,9 +19,9 @@ from app.services.data_scope import can_access_tree
 from app.services.monitoring.satellite_sweep import (
     maybe_alert_tree_ndvi_decline,
 )
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.satellite import get_satellite_service
 from app.services.satellite.ndvi_image import render_ndvi_png
-from app.services.platform.governance import assert_org_feature_enabled
 
 router = APIRouter(prefix="/satellite", tags=["satellite"])
 

@@ -27,10 +27,10 @@ from app.schemas.analysis import (
 )
 from app.services.ai import get_ai_service
 from app.services.ai.metering import assert_ai_scan_allowed, consume_paid_scan_credit
-from app.services.platform.governance import assert_org_feature_enabled
 from app.services.ai.types import GrowthContext
 from app.services.carbon import CarbonInputs, estimate_carbon
 from app.services.data_scope import can_access_tree
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.storage import get_storage
 
 router = APIRouter(tags=["analysis"])
