@@ -39,6 +39,9 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    BulkActionResultOut,
+    BulkOrgActionRequest,
+    BulkUserActionRequest,
     CampaApoImportRequest,
     CampaApoImportResultOut,
     ImpersonateRequest,
@@ -90,6 +93,17 @@ from app.services.platform.admin import (
 )
 from app.services.platform.audit import export_platform_audit_csv, query_platform_audit_logs
 from app.services.platform.billing import build_billing_summary, query_payment_orders
+from app.services.platform.bulk_ops import (
+    BulkOpsError,
+    bulk_update_organizations,
+    bulk_update_users,
+    revoke_org_member_sessions,
+)
+from app.services.platform.exports import (
+    export_platform_org_members_csv,
+    export_platform_organizations_csv,
+    export_platform_users_csv,
+)
 from app.services.platform.grants import (
     list_user_module_grants,
     set_user_module_grants,
@@ -340,6 +354,55 @@ async def platform_list_users(
         page=max(page, 1),
         page_size=min(max(page_size, 1), 100),
     )
+
+
+@router.get("/users/export")
+async def platform_export_users(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    search: str = "",
+    role: str | None = None,
+    is_active: bool | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_users_csv(
+        db, search=search, role=role, is_active=is_active
+    )
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-users.csv"},
+    )
+
+
+@router.post("/users/bulk-action", response_model=BulkActionResultOut)
+async def platform_bulk_user_action(
+    payload: BulkUserActionRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_update_users(
+            db, actor=admin, user_ids=payload.user_ids, action=payload.action
+        )
+    except BulkOpsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action=f"platform.user.bulk_{payload.action}",
+        resource_type="user",
+        resource_id=None,
+        request=request,
+        diff={
+            "user_ids": [str(uid) for uid in payload.user_ids],
+            "action": payload.action,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
 
 
 @router.get("/users/{user_id}", response_model=UserAdminOut)
@@ -643,6 +706,61 @@ async def platform_list_organizations(
     )
 
 
+@router.get("/organizations/export")
+async def platform_export_organizations(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    search: str = "",
+    is_active: bool | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_organizations_csv(
+        db, search=search, is_active=is_active
+    )
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-organizations.csv"},
+    )
+
+
+@router.post("/organizations/bulk-action", response_model=BulkActionResultOut)
+async def platform_bulk_org_action(
+    payload: BulkOrgActionRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    if payload.is_active is False:
+        verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_update_organizations(
+            db,
+            org_ids=payload.org_ids,
+            is_active=payload.is_active,
+            revoke_member_sessions=payload.revoke_member_sessions,
+        )
+    except BulkOpsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.organization.bulk_activate"
+        if payload.is_active
+        else "platform.organization.bulk_suspend",
+        resource_type="organization",
+        resource_id=None,
+        request=request,
+        diff={
+            "org_ids": [str(oid) for oid in payload.org_ids],
+            "reason": payload.reason,
+            "revoke_member_sessions": payload.revoke_member_sessions,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
+
+
 @router.get("/organizations/{org_id}", response_model=OrganizationAdminDetailOut)
 async def platform_get_organization(
     org_id: uuid.UUID,
@@ -674,7 +792,12 @@ async def platform_update_organization(
         if payload.is_active is False and org.is_active:
             verify_admin_step_up(admin, payload.password_confirm)
         diff["is_active"] = {"from": org.is_active, "to": payload.is_active}
+        if payload.reason:
+            diff["reason"] = payload.reason
         org.is_active = payload.is_active
+        if payload.is_active is False and payload.revoke_member_sessions:
+            revoked = await revoke_org_member_sessions(db, org.id)
+            diff["member_sessions_revoked"] = revoked
     if payload.owner_user_id is not None and payload.owner_user_id != org.owner_user_id:
         verify_admin_step_up(admin, payload.password_confirm)
         prev_owner = org.owner_user_id
@@ -701,6 +824,22 @@ async def platform_update_organization(
     await db.commit()
     row = await get_platform_organization(db, org.id)
     return OrganizationAdminDetailOut.model_validate(row)
+
+
+@router.get("/organizations/{org_id}/members/export")
+async def platform_export_org_members(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+) -> PlainTextResponse:
+    if await get_platform_organization(db, org_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    csv_text = await export_platform_org_members_csv(db, org_id)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=org-{org_id}-members.csv"},
+    )
 
 
 @router.get("/organizations/{org_id}/members", response_model=Page[OrgMemberAdminOut])

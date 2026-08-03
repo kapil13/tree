@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
+import { BulkActionBar } from "@/components/platform/bulk-action-bar";
 import { backupSessionForImpersonation } from "@/components/platform/impersonation-banner";
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { UserPlatformGrantsPanel } from "@/components/platform/user-platform-grants-panel";
@@ -11,6 +13,7 @@ import { errorMessage, auth } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
+import { downloadBlob } from "@/lib/download-blob";
 
 type StepUpState =
   | null
@@ -18,7 +21,8 @@ type StepUpState =
   | { kind: "update"; id: string; role: string; is_active?: boolean }
   | { kind: "force-reset"; userId: string; email: string }
   | { kind: "resend-verify"; userId: string; email: string; markVerified?: boolean }
-  | { kind: "revoke-sessions"; userId: string; email: string };
+  | { kind: "revoke-sessions"; userId: string; email: string }
+  | { kind: "bulk"; action: "activate" | "deactivate" | "revoke_sessions" };
 
 export default function PlatformUsersPage() {
   const qc = useQueryClient();
@@ -31,6 +35,7 @@ export default function PlatformUsersPage() {
   const [page, setPage] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [grantsUserId, setGrantsUserId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stepUp, setStepUp] = useState<StepUpState>(null);
 
   const { data: roles } = useQuery({
@@ -143,9 +148,66 @@ export default function PlatformUsersPage() {
     onError: (err) => setMessage(errorMessage(err)),
   });
 
+  const bulkAction = useMutation({
+    mutationFn: ({
+      action,
+      password,
+    }: {
+      action: "activate" | "deactivate" | "revoke_sessions";
+      password: string;
+    }) =>
+      platformAdmin.bulkUserAction({
+        user_ids: Array.from(selectedIds),
+        action,
+        password,
+      }),
+    onSuccess: (result) => {
+      setStepUp(null);
+      setSelectedIds(new Set());
+      setMessage(
+        `Bulk action complete: ${result.processed} processed, ${result.skipped} skipped.`,
+      );
+      qc.invalidateQueries({ queryKey: ["platform-users"] });
+      qc.invalidateQueries({ queryKey: ["platform-overview"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
+  const exportCsv = useMutation({
+    mutationFn: () =>
+      platformAdmin.exportUsers({
+        search: search || undefined,
+        role: roleFilter || undefined,
+        is_active: activeFilter === "" ? undefined : activeFilter === "active",
+      }),
+    onSuccess: (blob) => {
+      downloadBlob(blob, "platform-users.csv");
+      setMessage("Users exported.");
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
   const stepUpBusy =
-    impersonate.isPending || updateUser.isPending || supportAction.isPending;
+    impersonate.isPending ||
+    updateUser.isPending ||
+    supportAction.isPending ||
+    bulkAction.isPending;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const ids = (data?.items ?? []).map((row) => row.id);
+    const allSelected = ids.length > 0 && ids.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(ids));
+  };
 
   return (
     <PlatformShell>
@@ -196,7 +258,42 @@ export default function PlatformUsersPage() {
               <option value="inactive">Inactive</option>
             </select>
           </label>
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-2 text-sm"
+            disabled={exportCsv.isPending}
+            onClick={() => exportCsv.mutate()}
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
         </div>
+
+        {fullAdmin ? (
+          <BulkActionBar selectedCount={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={() => setStepUp({ kind: "bulk", action: "activate" })}
+            >
+              Activate
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={() => setStepUp({ kind: "bulk", action: "deactivate" })}
+            >
+              Deactivate
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={() => setStepUp({ kind: "bulk", action: "revoke_sessions" })}
+            >
+              Revoke sessions
+            </button>
+          </BulkActionBar>
+        ) : null}
 
         {isLoading ? (
           <p className="text-sm text-stone-500">Loading users…</p>
@@ -205,6 +302,19 @@ export default function PlatformUsersPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-950">
                 <tr>
+                  {fullAdmin ? (
+                    <th className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all on page"
+                        checked={
+                          (data?.items ?? []).length > 0 &&
+                          (data?.items ?? []).every((row) => selectedIds.has(row.id))
+                        }
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
+                  ) : null}
                   <th className="px-4 py-3 font-medium">User</th>
                   <th className="px-4 py-3 font-medium">Org</th>
                   <th className="px-4 py-3 font-medium">Role</th>
@@ -217,6 +327,15 @@ export default function PlatformUsersPage() {
               <tbody>
                 {(data?.items ?? []).map((row) => (
                   <tr key={row.id} className="border-t border-stone-100 dark:border-stone-800">
+                    {fullAdmin ? (
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={() => toggleSelect(row.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td className="px-4 py-3">
                       <div className="font-medium">{row.full_name}</div>
                       <div className="text-xs text-stone-500">{row.email}</div>
@@ -449,6 +568,8 @@ export default function PlatformUsersPage() {
         title={
           stepUp?.kind === "impersonate"
             ? `Impersonate ${stepUp.email}`
+            : stepUp?.kind === "bulk"
+              ? `Bulk ${stepUp.action.replace("_", " ")} (${selectedIds.size} users)`
             : stepUp?.kind === "force-reset"
               ? `Reset password for ${stepUp.email}`
               : stepUp?.kind === "resend-verify"
@@ -462,6 +583,8 @@ export default function PlatformUsersPage() {
         description={
           stepUp?.kind === "impersonate"
             ? "Re-enter your password to view the app as this user. All actions are audited."
+            : stepUp?.kind === "bulk"
+              ? "Re-enter your password to apply this action to all selected users."
             : stepUp?.kind === "force-reset"
               ? "Sends a password-reset OTP to the user. Re-enter your password to confirm."
               : stepUp?.kind === "resend-verify"
@@ -475,6 +598,8 @@ export default function PlatformUsersPage() {
         confirmLabel={
           stepUp?.kind === "impersonate"
             ? "Start impersonation"
+            : stepUp?.kind === "bulk"
+              ? "Apply to selected"
             : stepUp?.kind === "force-reset"
               ? "Send reset email"
               : stepUp?.kind === "resend-verify"
@@ -504,6 +629,8 @@ export default function PlatformUsersPage() {
               is_active: stepUp.is_active,
               password_confirm: password,
             });
+          } else if (stepUp.kind === "bulk") {
+            bulkAction.mutate({ action: stepUp.action, password });
           } else if (
             stepUp.kind === "force-reset" ||
             stepUp.kind === "resend-verify" ||
