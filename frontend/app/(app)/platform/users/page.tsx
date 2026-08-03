@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
@@ -10,10 +10,12 @@ import { backupSessionForImpersonation } from "@/components/platform/impersonati
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { UserPlatformGrantsPanel } from "@/components/platform/user-platform-grants-panel";
 import { errorMessage, auth } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
 import { downloadBlob } from "@/lib/download-blob";
+import type { PlatformHotkey } from "@/lib/use-platform-hotkeys";
 
 type StepUpState =
   | null
@@ -33,10 +35,10 @@ export default function PlatformUsersPage() {
   const [roleFilter, setRoleFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<"" | "active" | "inactive">("");
   const [page, setPage] = useState(1);
-  const [message, setMessage] = useState<string | null>(null);
   const [grantsUserId, setGrantsUserId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stepUp, setStepUp] = useState<StepUpState>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const { data: roles } = useQuery({
     queryKey: ["platform-roles"],
@@ -73,12 +75,13 @@ export default function PlatformUsersPage() {
         password_confirm,
       }),
     onSuccess: () => {
-      setMessage("User updated.");
+      notifyPlatformAction("User updated.", { audit: { actionPrefix: "platform.user." } });
       setStepUp(null);
       qc.invalidateQueries({ queryKey: ["platform-users"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const impersonate = useMutation({
@@ -106,7 +109,7 @@ export default function PlatformUsersPage() {
       setUser(me);
       router.push("/dashboard");
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const supportAction = useMutation({
@@ -141,11 +144,21 @@ export default function PlatformUsersPage() {
           : "Verification email sent.",
         "revoke-sessions": "All sessions revoked.",
       };
+      const auditActions = {
+        "force-reset": "platform.user.force_password_reset",
+        "resend-verify": variables.markVerified
+          ? "platform.user.mark_verified"
+          : "platform.user.resend_verification",
+        "revoke-sessions": "platform.user.revoke_sessions",
+      };
       const hint = result?.dev_hint ? ` Dev hint: ${result.dev_hint}` : "";
-      setMessage(`${labels[variables.kind]}${hint}`);
+      notifyPlatformAction(`${labels[variables.kind]}${hint}`, {
+        audit: { actionPrefix: `${auditActions[variables.kind]}.` },
+      });
       qc.invalidateQueries({ queryKey: ["platform-users"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const bulkAction = useMutation({
@@ -164,13 +177,15 @@ export default function PlatformUsersPage() {
     onSuccess: (result) => {
       setStepUp(null);
       setSelectedIds(new Set());
-      setMessage(
+      notifyPlatformAction(
         `Bulk action complete: ${result.processed} processed, ${result.skipped} skipped.`,
+        { audit: { actionPrefix: "platform.user.bulk_" } },
       );
       qc.invalidateQueries({ queryKey: ["platform-users"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const exportCsv = useMutation({
@@ -182,9 +197,9 @@ export default function PlatformUsersPage() {
       }),
     onSuccess: (blob) => {
       downloadBlob(blob, "platform-users.csv");
-      setMessage("Users exported.");
+      notifyPlatformAction("Users exported.");
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
@@ -209,13 +224,18 @@ export default function PlatformUsersPage() {
     setSelectedIds(allSelected ? new Set() : new Set(ids));
   };
 
+  const pageHotkeys: PlatformHotkey[] = [
+    { keys: "/", description: "Focus search", handler: () => searchRef.current?.focus() },
+  ];
+
   return (
-    <PlatformShell>
+    <PlatformShell pageHotkeys={pageHotkeys}>
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="flex-1 text-sm">
             <span className="mb-1 block text-stone-600">Search</span>
             <input
+              ref={searchRef}
               className="input w-full"
               placeholder="Email or name"
               value={search}
@@ -560,7 +580,6 @@ export default function PlatformUsersPage() {
           </div>
         ) : null}
 
-        {message ? <p className="text-sm text-stone-600">{message}</p> : null}
       </div>
 
       <StepUpModal

@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { BulkActionBar } from "@/components/platform/bulk-action-bar";
 import { OrgSuspendModal } from "@/components/platform/org-suspend-modal";
-import { errorMessage } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
 import { downloadBlob } from "@/lib/download-blob";
+import type { PlatformHotkey } from "@/lib/use-platform-hotkeys";
 
 export default function PlatformOrganizationsPage() {
   const qc = useQueryClient();
@@ -20,8 +21,8 @@ export default function PlatformOrganizationsPage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"" | "active" | "inactive">("");
   const [page, setPage] = useState(1);
-  const [message, setMessage] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const searchRef = useRef<HTMLInputElement>(null);
   const [suspendTarget, setSuspendTarget] = useState<
     | null
     | { kind: "single"; id: string; name: string; suspending: boolean }
@@ -63,12 +64,15 @@ export default function PlatformOrganizationsPage() {
         password_confirm,
       }),
     onSuccess: () => {
-      setMessage("Organization updated.");
+      notifyPlatformAction("Organization updated.", {
+        audit: { actionPrefix: "platform.organization." },
+      });
       setSuspendTarget(null);
       qc.invalidateQueries({ queryKey: ["platform-organizations"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const bulkOrgAction = useMutation({
@@ -88,13 +92,15 @@ export default function PlatformOrganizationsPage() {
     onSuccess: (result) => {
       setSuspendTarget(null);
       setSelectedIds(new Set());
-      setMessage(
+      notifyPlatformAction(
         `Bulk action complete: ${result.processed} processed, ${result.skipped} skipped.`,
+        { audit: { actionPrefix: "platform.organization.bulk_" } },
       );
       qc.invalidateQueries({ queryKey: ["platform-organizations"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const exportCsv = useMutation({
@@ -105,9 +111,9 @@ export default function PlatformOrganizationsPage() {
       }),
     onSuccess: (blob) => {
       downloadBlob(blob, "platform-organizations.csv");
-      setMessage("Organizations exported.");
+      notifyPlatformAction("Organizations exported.");
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
@@ -127,8 +133,12 @@ export default function PlatformOrganizationsPage() {
     setSelectedIds(allSelected ? new Set() : new Set(ids));
   };
 
+  const pageHotkeys: PlatformHotkey[] = [
+    { keys: "/", description: "Focus search", handler: () => searchRef.current?.focus() },
+  ];
+
   return (
-    <PlatformShell>
+    <PlatformShell pageHotkeys={pageHotkeys}>
       <div className="space-y-4">
         <p className="text-sm text-stone-600 dark:text-stone-300">
           View and manage tenant organizations. Suspending blocks member sign-in while preserving
@@ -139,6 +149,7 @@ export default function PlatformOrganizationsPage() {
           <label className="flex-1 text-sm">
             <span className="mb-1 block text-stone-600">Search</span>
             <input
+              ref={searchRef}
               className="input w-full"
               placeholder="Name or slug"
               value={search}
@@ -318,7 +329,6 @@ export default function PlatformOrganizationsPage() {
           </div>
         ) : null}
 
-        {message ? <p className="text-sm text-stone-600">{message}</p> : null}
       </div>
 
       <OrgSuspendModal

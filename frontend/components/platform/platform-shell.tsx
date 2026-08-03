@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   Building2,
   CreditCard,
   Globe2,
+  HelpCircle,
   KeyRound,
   LayoutDashboard,
   ScrollText,
@@ -14,6 +16,8 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import { AdminRunbookPanel } from "@/components/platform/admin-runbook-panel";
+import { ShortcutsHelpModal } from "@/components/platform/shortcuts-help-modal";
 import { useAuth } from "@/lib/auth-store";
 import {
   canAccessBillingAdmin,
@@ -26,6 +30,7 @@ import {
   type PlatformAccess,
 } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
+import { usePlatformHotkeys, type PlatformHotkey } from "@/lib/use-platform-hotkeys";
 
 type PlatformUser = { role?: string; platform_access?: Partial<PlatformAccess> } | null;
 
@@ -101,19 +106,45 @@ const NAV: NavItem[] = [
   },
 ];
 
-export function PlatformShell({ children }: { children: React.ReactNode }) {
+export function PlatformShell({
+  children,
+  pageHotkeys = [],
+}: {
+  children: React.ReactNode;
+  pageHotkeys?: PlatformHotkey[];
+}) {
   const path = usePathname();
   const { user } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
   const items = NAV.filter((item) => item.visible(user));
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  usePlatformHotkeys(pageHotkeys, () => setShortcutsOpen(true));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-1 sm:px-0">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white dark:bg-stone-100 dark:text-stone-900">
-          Platform admin
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white dark:bg-stone-100 dark:text-stone-900">
+            Platform admin
+          </div>
+          <div className="flex items-center gap-2">
+            <AdminRunbookPanel />
+            <button
+              type="button"
+              onClick={() => setShortcutsOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+              title="Keyboard shortcuts"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Shortcuts</span>
+              <kbd className="hidden rounded border border-stone-200 px-1 font-mono text-[10px] sm:inline dark:border-stone-600">
+                ?
+              </kbd>
+            </button>
+          </div>
         </div>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Control plane</h1>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Control plane</h1>
         <p className="mt-2 max-w-2xl text-sm text-stone-600 dark:text-stone-300">
           {fullAdmin
             ? "Full platform control — users, organizations, program onboarding, roles, CMS, and audit."
@@ -121,7 +152,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
         </p>
       </div>
 
-      <nav className="flex flex-wrap gap-2 border-b border-stone-200 pb-2 dark:border-stone-800">
+      <nav className="-mx-1 flex gap-2 overflow-x-auto border-b border-stone-200 pb-2 scrollbar-thin dark:border-stone-800">
         {items.map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
           return (
@@ -129,7 +160,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
                   ? "bg-forest-700 text-white"
                   : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
@@ -143,6 +174,12 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       {children}
+
+      <ShortcutsHelpModal
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        pageHotkeys={pageHotkeys}
+      />
     </div>
   );
 }
