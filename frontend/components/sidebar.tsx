@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
+  CreditCard,
   FileText,
   ClipboardList,
   FolderKanban,
@@ -14,6 +15,8 @@ import {
   Map,
   Mic,
   Satellite,
+  ScrollText,
+  Server,
   Settings,
   Sparkles,
   TreePine,
@@ -25,7 +28,14 @@ import {
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { useAuth } from "@/lib/auth-store";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
-import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
+import {
+  canAccessBillingAdmin,
+  canAccessOpsAdmin,
+  canAccessWebsiteCms,
+  canManagePlatformUsers,
+  canManageProgramAccess,
+  hasAnyPlatformAccess,
+} from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
@@ -107,7 +117,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
 
   const adminItems: NavItem[] = [];
-  if (canManagePlatformUsers(user)) {
+  if (hasAnyPlatformAccess(user)) {
     adminItems.push({
       href: "/platform",
       label: "Platform admin",
@@ -115,6 +125,8 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       audience: "all",
       exact: true,
     });
+  }
+  if (canManagePlatformUsers(user)) {
     adminItems.push({
       href: "/platform/users",
       label: "Users",
@@ -122,9 +134,33 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       audience: "all",
     });
     adminItems.push({
+      href: "/platform/audit",
+      label: "Audit log",
+      icon: ScrollText,
+      audience: "all",
+    });
+  }
+  if (canManageProgramAccess(user)) {
+    adminItems.push({
       href: "/platform/program-access",
       label: "Program access",
       icon: UserCheck,
+      audience: "all",
+    });
+  }
+  if (canAccessBillingAdmin(user)) {
+    adminItems.push({
+      href: "/platform/billing",
+      label: "Billing",
+      icon: CreditCard,
+      audience: "all",
+    });
+  }
+  if (canAccessOpsAdmin(user)) {
+    adminItems.push({
+      href: "/platform/ops",
+      label: "Operations",
+      icon: Server,
       audience: "all",
     });
   }

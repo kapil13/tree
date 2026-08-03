@@ -7,6 +7,8 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import {
   backupSessionForImpersonation,
 } from "@/components/platform/impersonation-banner";
+import { StepUpModal } from "@/components/platform/step-up-modal";
+import { UserPlatformGrantsPanel } from "@/components/platform/user-platform-grants-panel";
 import { errorMessage, auth } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
@@ -22,6 +24,12 @@ export default function PlatformUsersPage() {
   const [activeFilter, setActiveFilter] = useState<"" | "active" | "inactive">("");
   const [page, setPage] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
+  const [grantsUserId, setGrantsUserId] = useState<string | null>(null);
+  const [stepUp, setStepUp] = useState<
+    | null
+    | { kind: "impersonate"; userId: string; email: string }
+    | { kind: "update"; id: string; role: string; is_active?: boolean }
+  >(null);
 
   const { data: roles } = useQuery({
     queryKey: ["platform-roles"],
@@ -45,13 +53,21 @@ export default function PlatformUsersPage() {
       id,
       role,
       is_active,
+      password_confirm,
     }: {
       id: string;
       role?: string;
       is_active?: boolean;
-    }) => platformAdmin.updateUser(id, { role: role!, is_active }),
+      password_confirm?: string;
+    }) =>
+      platformAdmin.updateUser(id, {
+        role: role!,
+        is_active,
+        password_confirm,
+      }),
     onSuccess: () => {
       setMessage("User updated.");
+      setStepUp(null);
       qc.invalidateQueries({ queryKey: ["platform-users"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
     },
@@ -59,8 +75,10 @@ export default function PlatformUsersPage() {
   });
 
   const impersonate = useMutation({
-    mutationFn: (id: string) => platformAdmin.impersonateUser(id),
+    mutationFn: ({ id, password, reason }: { id: string; password: string; reason?: string }) =>
+      platformAdmin.impersonateUser(id, { password, reason }),
     onSuccess: async (data) => {
+      setStepUp(null);
       backupSessionForImpersonation();
       setSession({
         access_token: data.access_token,
@@ -150,6 +168,15 @@ export default function PlatformUsersPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium">{row.full_name}</div>
                       <div className="text-xs text-stone-500">{row.email}</div>
+                      {grantsUserId === row.id && fullAdmin ? (
+                        <div className="mt-3">
+                          <UserPlatformGrantsPanel
+                            userId={row.id}
+                            userEmail={row.email}
+                            userRole={row.role}
+                          />
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-stone-600">
                       {row.organization_name ?? "—"}
@@ -166,9 +193,22 @@ export default function PlatformUsersPage() {
                           row.id === user?.id ||
                           (!fullAdmin && row.role === "admin")
                         }
-                        onChange={(e) =>
-                          updateUser.mutate({ id: row.id, role: e.target.value })
-                        }
+                        onChange={(e) => {
+                          const nextRole = e.target.value;
+                          if (
+                            fullAdmin &&
+                            (nextRole === "admin" || row.role === "admin")
+                          ) {
+                            setStepUp({
+                              kind: "update",
+                              id: row.id,
+                              role: nextRole,
+                              is_active: row.is_active,
+                            });
+                          } else {
+                            updateUser.mutate({ id: row.id, role: nextRole });
+                          }
+                        }}
                       >
                         {(roles ?? [])
                           .filter((role) => fullAdmin || role.value !== "admin")
@@ -190,9 +230,23 @@ export default function PlatformUsersPage() {
                           type="checkbox"
                           checked={row.is_active}
                           disabled={updateUser.isPending || row.id === user?.id}
-                          onChange={(e) =>
-                            updateUser.mutate({ id: row.id, role: row.role, is_active: e.target.checked })
-                          }
+                          onChange={(e) => {
+                            const active = e.target.checked;
+                            if (!active) {
+                              setStepUp({
+                                kind: "update",
+                                id: row.id,
+                                role: row.role,
+                                is_active: false,
+                              });
+                            } else {
+                              updateUser.mutate({
+                                id: row.id,
+                                role: row.role,
+                                is_active: true,
+                              });
+                            }
+                          }}
                         />
                         <span className="text-xs">{row.is_active ? "Active" : "Inactive"}</span>
                       </label>
@@ -204,19 +258,38 @@ export default function PlatformUsersPage() {
                     </td>
                     {fullAdmin ? (
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs"
-                          disabled={
-                            impersonate.isPending ||
-                            row.id === user?.id ||
-                            row.role === "admin" ||
-                            !row.is_active
-                          }
-                          onClick={() => impersonate.mutate(row.id)}
-                        >
-                          View as user
-                        </button>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            className="btn-secondary text-xs"
+                            disabled={
+                              impersonate.isPending ||
+                              row.id === user?.id ||
+                              row.role === "admin" ||
+                              !row.is_active
+                            }
+                            onClick={() =>
+                              setStepUp({
+                                kind: "impersonate",
+                                userId: row.id,
+                                email: row.email,
+                              })
+                            }
+                          >
+                            View as user
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-ghost text-xs"
+                            onClick={() =>
+                              setGrantsUserId((current) =>
+                                current === row.id ? null : row.id,
+                              )
+                            }
+                          >
+                            {grantsUserId === row.id ? "Hide grants" : "Module grants"}
+                          </button>
+                        </div>
                       </td>
                     ) : null}
                   </tr>
@@ -254,6 +327,36 @@ export default function PlatformUsersPage() {
 
         {message ? <p className="text-sm text-stone-600">{message}</p> : null}
       </div>
+
+      <StepUpModal
+        open={stepUp !== null}
+        title={
+          stepUp?.kind === "impersonate"
+            ? `Impersonate ${stepUp.email}`
+            : "Confirm sensitive change"
+        }
+        description={
+          stepUp?.kind === "impersonate"
+            ? "Re-enter your password to view the app as this user. All actions are audited."
+            : "Re-enter your password to change admin access or deactivate this user."
+        }
+        confirmLabel={stepUp?.kind === "impersonate" ? "Start impersonation" : "Confirm change"}
+        busy={impersonate.isPending || updateUser.isPending}
+        onClose={() => setStepUp(null)}
+        onConfirm={(password, reason) => {
+          if (!stepUp) return;
+          if (stepUp.kind === "impersonate") {
+            impersonate.mutate({ id: stepUp.userId, password, reason });
+          } else {
+            updateUser.mutate({
+              id: stepUp.id,
+              role: stepUp.role,
+              is_active: stepUp.is_active,
+              password_confirm: password,
+            });
+          }
+        }}
+      />
     </PlatformShell>
   );
 }

@@ -588,7 +588,7 @@ async def _user_out_enriched(
     *,
     impersonation: dict[str, str] | None = None,
 ) -> UserOut:
-    platform_access = await build_platform_access_map(db, role=user.role)
+    platform_access = await build_platform_access_map(db, role=user.role, user_id=user.id)
     codes = await user_enrolled_program_codes(db, user.id)
     org_name = None
     if user.organization_id:

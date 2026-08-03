@@ -33,7 +33,7 @@ async def list_audit_logs(
     is_platform_viewer = has_permission(user.role, Permission.ADMIN_ALL)
     if not is_platform_viewer:
         is_platform_viewer = await user_can_access_module(
-            db, role=user.role, module_key=USERS_ADMIN_MODULE
+            db, role=user.role, module_key=USERS_ADMIN_MODULE, user_id=user.id
         )
     if not is_platform_viewer:
         if user.organization_id is None:

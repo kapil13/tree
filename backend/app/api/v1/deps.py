@@ -80,7 +80,7 @@ PlatformAdmin = Annotated[User, Depends(require_platform_admin)]
 async def _require_module(user: User, db: AsyncSession, module_key: str) -> User:
     if has_permission(user.role, Permission.ADMIN_ALL):
         return user
-    if await user_can_access_module(db, role=user.role, module_key=module_key):
+    if await user_can_access_module(db, role=user.role, module_key=module_key, user_id=user.id):
         return user
     raise HTTPException(
         status.HTTP_403_FORBIDDEN, detail=f"platform_module_denied:{module_key}"
@@ -118,7 +118,7 @@ BillingModuleAdmin = Annotated[User, Depends(require_billing_module)]
 async def require_any_platform_module(user: CurrentUser, db: DB) -> User:
     if has_permission(user.role, Permission.ADMIN_ALL):
         return user
-    access = await build_platform_access_map(db, role=user.role)
+    access = await build_platform_access_map(db, role=user.role, user_id=user.id)
     if any(access.values()):
         return user
     raise HTTPException(status.HTTP_403_FORBIDDEN, detail="platform_access_denied")
@@ -130,7 +130,7 @@ AnyPlatformModule = Annotated[User, Depends(require_any_platform_module)]
 async def require_cms_manager(user: CurrentUser, db: DB) -> User:
     if has_permission(user.role, Permission.CMS_MANAGE):
         return user
-    if await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE):
+    if await user_can_access_module(db, role=user.role, module_key=WEBSITE_CMS_MODULE, user_id=user.id):
         return user
     raise HTTPException(status.HTTP_403_FORBIDDEN, detail="cms_access_denied")
 
@@ -201,7 +201,7 @@ WriteProfessional = Annotated[User, Depends(require_write_professional)]
 async def require_audit_reader(user: CurrentUser, db: DB) -> User:
     if has_permission(user.role, Permission.ADMIN_ALL):
         return user
-    if await user_can_access_module(db, role=user.role, module_key=USERS_ADMIN_MODULE):
+    if await user_can_access_module(db, role=user.role, module_key=USERS_ADMIN_MODULE, user_id=user.id):
         return user
     if user.organization_id and user.is_org_admin:
         return user

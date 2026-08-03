@@ -29,7 +29,7 @@ async def test_query_platform_audit_logs_empty():
     count_result = MagicMock()
     count_result.scalar_one.return_value = 0
     rows_result = MagicMock()
-    rows_result.scalars.return_value.all.return_value = []
+    rows_result.all.return_value = []
     db.execute = AsyncMock(side_effect=[count_result, rows_result])
     items, total = await query_platform_audit_logs(db)
     assert items == []
@@ -40,10 +40,10 @@ async def test_query_platform_audit_logs_empty():
 async def test_export_platform_audit_csv_header():
     db = AsyncMock()
     rows_result = MagicMock()
-    rows_result.scalars.return_value.all.return_value = []
+    rows_result.all.return_value = []
     db.execute = AsyncMock(return_value=rows_result)
     csv_text = await export_platform_audit_csv(db)
-    assert "created_at,action" in csv_text
+    assert "created_at,action,actor_email" in csv_text
 
 
 def test_impersonation_token_contains_imp_by():
