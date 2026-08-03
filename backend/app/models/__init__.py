@@ -14,6 +14,7 @@ from app.models.payment import PaymentEvent, PaymentOrder
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_compliance_violation import PlantingComplianceViolation
+from app.models.planting_custom_template import PlantingCustomTemplate
 from app.models.planting_program import PlantingProgram, ProgramAccessRequest, UserPlantingProgram
 from app.models.planting_project import PlantingProject
 from app.models.planting_project_rule_override import PlantingProjectRuleOverride
@@ -56,6 +57,7 @@ __all__ = [
     "WebhookDelivery",
     "Organization",
     "OrganizationInvite",
+    "PlantingCustomTemplate",
     "PlantingComplianceViolation",
     "PlantingProgram",
     "ProgramAccessRequest",

@@ -11,6 +11,7 @@ import {
   Save,
   Search,
   Sprout,
+  Trash2,
   Trees,
   Users,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import {
   setNestedValue,
   type RuleFieldSection,
 } from "@/lib/rule-template-fields";
+import { CreateTemplateDialog } from "./create-template-dialog";
 import { RuleFieldInput } from "./rule-field-input";
 
 const TEMPLATE_ICONS: Record<string, typeof Leaf> = {
@@ -55,7 +57,11 @@ export function TemplatesTab({
 
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "code" | "custom">("all");
   const [enabled, setEnabled] = useState(true);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [templateSegment, setTemplateSegment] = useState("general");
   const [complianceMode, setComplianceMode] = useState<string>("strict");
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [publishNote, setPublishNote] = useState("");
@@ -67,15 +73,18 @@ export function TemplatesTab({
 
   const filtered = useMemo(() => {
     if (!templates) return [];
+    let list = templates;
+    if (sourceFilter === "code") list = list.filter((t) => !t.is_custom);
+    if (sourceFilter === "custom") list = list.filter((t) => t.is_custom);
     const q = search.trim().toLowerCase();
-    if (!q) return templates;
-    return templates.filter(
+    if (!q) return list;
+    return list.filter(
       (t) =>
         t.name.toLowerCase().includes(q) ||
         t.template_code.toLowerCase().includes(q) ||
         t.segment_label.toLowerCase().includes(q),
     );
-  }, [templates, search]);
+  }, [templates, search, sourceFilter]);
 
   const selected = useMemo(() => {
     if (jumpTemplateCode) return templates?.find((t) => t.template_code === jumpTemplateCode) ?? null;
@@ -91,12 +100,16 @@ export function TemplatesTab({
 
   useEffect(() => {
     if (!selected) return;
-    setEnabled(selected.override.enabled);
+    setTemplateName(selected.name);
+    setTemplateDescription(selected.description);
+    setTemplateSegment(selected.segment);
+    setEnabled(selected.is_custom ? true : selected.override.enabled);
     setComplianceMode(selected.compliance_mode);
     setEffectiveFrom(selected.override.effective_from?.slice(0, 16) ?? "");
     setPublishNote(selected.override.publish_note ?? "");
-    const source =
-      selected.override.enabled && Object.keys(selected.override.rules).length > 0
+    const source = selected.is_custom
+      ? selected.effective_rules
+      : selected.override.enabled && Object.keys(selected.override.rules).length > 0
         ? { ...selected.code_defaults, ...selected.override.rules }
         : selected.code_defaults;
     const built = buildEditableRules(selected.code_defaults, source);
@@ -116,24 +129,52 @@ export function TemplatesTab({
       if (!selected) throw new Error("No template");
       const payloadRules = showJson ? (JSON.parse(jsonText) as Record<string, unknown>) : rules;
       return cmsAdmin.updateRuleTemplate(selected.template_code, {
-        enabled,
+        enabled: selected.is_custom ? true : enabled,
         rules: payloadRules,
         compliance_mode: complianceMode,
-        effective_from: effectiveFrom ? new Date(effectiveFrom).toISOString() : null,
+        effective_from: selected.is_custom || !effectiveFrom ? null : new Date(effectiveFrom).toISOString(),
         publish_note: publishNote || null,
+        ...(selected.is_custom
+          ? {
+              name: templateName,
+              description: templateDescription,
+              segment: templateSegment,
+            }
+          : {}),
       });
     },
     onSuccess: () => {
-      setMessage({ type: "ok", text: "Published successfully. Rules are live for all projects." });
+      setMessage({
+        type: "ok",
+        text: selected?.is_custom
+          ? "Custom template saved. It is available when creating new projects."
+          : "Published successfully. Rules are live for all projects.",
+      });
       qc.invalidateQueries({ queryKey: ["cms-rule-templates"] });
       qc.invalidateQueries({ queryKey: ["cms-rule-versions"] });
+      qc.invalidateQueries({ queryKey: ["project-templates"] });
     },
     onError: (err) => setMessage({ type: "err", text: errorMessage(err) }),
   });
 
-  if (isLoading || !templates?.length) {
+  const archive = useMutation({
+    mutationFn: () => {
+      if (!selected?.is_custom) throw new Error("Only custom templates can be archived");
+      return cmsAdmin.archiveRuleTemplate(selected.template_code);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cms-rule-templates"] });
+      setSelectedCode(null);
+      setMessage({ type: "ok", text: "Template archived. It will no longer appear in project setup." });
+    },
+    onError: (err) => setMessage({ type: "err", text: errorMessage(err) }),
+  });
+
+  if (isLoading) {
     return <LoadingCard label="Loading templates…" />;
   }
+
+  const isCustom = Boolean(selected?.is_custom);
 
   const sections = selected ? sectionsForTemplate(selected.code_defaults) : [];
   const visibleSections =
@@ -142,7 +183,11 @@ export function TemplatesTab({
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(250px,280px)_1fr]">
       <aside className="card flex flex-col overflow-hidden p-0">
-        <div className="border-b border-stone-100 p-4 dark:border-stone-800">
+        <div className="space-y-3 border-b border-stone-100 p-4 dark:border-stone-800">
+          <CreateTemplateDialog
+            templates={templates ?? []}
+            onCreated={(code) => setSelectedCode(code)}
+          />
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
@@ -152,6 +197,23 @@ export function TemplatesTab({
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
+          <div className="flex gap-1 rounded-lg bg-stone-100 p-1 text-xs dark:bg-stone-800">
+            {(["all", "code", "custom"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSourceFilter(key)}
+                className={cn(
+                  "flex-1 rounded-md px-2 py-1.5 font-medium capitalize",
+                  sourceFilter === key
+                    ? "bg-white text-forest-800 shadow-sm dark:bg-stone-900"
+                    : "text-stone-600",
+                )}
+              >
+                {key === "code" ? "Built-in" : key}
+              </button>
+            ))}
+          </div>
         </div>
         <ul className="max-h-[540px] overflow-y-auto p-2">
           {filtered.map((tpl) => (
@@ -171,30 +233,75 @@ export function TemplatesTab({
         <div className="space-y-4">
           <div className="card space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">{selected.name}</h3>
-                <p className="mt-1 text-sm text-stone-600 dark:text-stone-300">
-                  {selected.description}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <div className="min-w-0 flex-1 space-y-3">
+                {isCustom ? (
+                  <>
+                    <div>
+                      <label className="kpi-label">Template name</label>
+                      <input
+                        className="input mt-1"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="kpi-label">Description</label>
+                      <textarea
+                        className="input mt-1 min-h-[72px]"
+                        value={templateDescription}
+                        onChange={(e) => setTemplateDescription(e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold">{selected.name}</h3>
+                    <p className="text-sm text-stone-600 dark:text-stone-300">{selected.description}</p>
+                  </>
+                )}
+                <div className="flex flex-wrap gap-2 text-xs">
                   <Badge>{selected.template_code}</Badge>
-                  <Badge>{selected.segment_label}</Badge>
+                  {isCustom ? (
+                    <Badge tone="custom">Custom</Badge>
+                  ) : (
+                    <Badge>{selected.segment_label}</Badge>
+                  )}
                   {changedKeys.length > 0 && (
                     <Badge tone="warn">{changedKeys.length} unsaved</Badge>
                   )}
                 </div>
               </div>
-              <label className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-800/50">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={(e) => setEnabled(e.target.checked)}
-                />
-                CMS override on
-              </label>
+              {!isCustom && (
+                <label className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-800/50">
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(e) => setEnabled(e.target.checked)}
+                  />
+                  CMS override on
+                </label>
+              )}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
+              {isCustom && (
+                <div>
+                  <label className="kpi-label">Segment</label>
+                  <select
+                    className="input mt-1"
+                    value={templateSegment}
+                    onChange={(e) => setTemplateSegment(e.target.value)}
+                  >
+                    <option value="general">General plantation</option>
+                    <option value="nhai_highway">NHAI / Highway</option>
+                    <option value="industrial_greenbelt">Industrial / Mine</option>
+                    <option value="township_landscape">Township / Society</option>
+                    <option value="nagar_van_urban">Nagar Van / Urban forest</option>
+                    <option value="sahakar_van_coop">Sahakar Van / Cooperative</option>
+                    <option value="ngo_watershed">NGO / Watershed</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="kpi-label">Compliance mode</label>
                 <select
@@ -207,17 +314,19 @@ export function TemplatesTab({
                   <option value="open">Open — no boundary checks</option>
                 </select>
               </div>
-              <div>
-                <label className="kpi-label">Effective from (optional)</label>
-                <input
-                  type="datetime-local"
-                  className="input mt-1"
-                  value={effectiveFrom}
-                  onChange={(e) => setEffectiveFrom(e.target.value)}
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label className="kpi-label">Publish note</label>
+              {!isCustom && (
+                <div>
+                  <label className="kpi-label">Effective from (optional)</label>
+                  <input
+                    type="datetime-local"
+                    className="input mt-1"
+                    value={effectiveFrom}
+                    onChange={(e) => setEffectiveFrom(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className={isCustom ? "" : "sm:col-span-1"}>
+                <label className="kpi-label">{isCustom ? "Change note" : "Publish note"}</label>
                 <input
                   className="input mt-1"
                   placeholder="e.g. Updated native % for Q2 audit"
@@ -292,6 +401,21 @@ export function TemplatesTab({
           )}
 
           <div className="sticky bottom-2 z-10 flex flex-wrap justify-end gap-2 rounded-2xl border bg-white/95 p-4 shadow-lg backdrop-blur dark:bg-stone-900/95">
+            {isCustom && (
+              <button
+                type="button"
+                className="btn-secondary text-rose-700"
+                disabled={archive.isPending}
+                onClick={() => {
+                  if (window.confirm(`Archive "${selected.name}"? Existing projects keep their snapshot.`)) {
+                    archive.mutate();
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Archive
+              </button>
+            )}
             <button
               type="button"
               className="btn-secondary"
@@ -309,14 +433,14 @@ export function TemplatesTab({
             <button
               type="button"
               className="btn-primary"
-              disabled={save.isPending}
+              disabled={save.isPending || (isCustom && templateName.trim().length < 3)}
               onClick={() => {
                 setMessage(null);
                 save.mutate();
               }}
             >
               <Save className="h-4 w-4" />
-              {save.isPending ? "Publishing…" : "Publish rules"}
+              {save.isPending ? "Saving…" : isCustom ? "Save template" : "Publish rules"}
             </button>
           </div>
         </div>
@@ -356,7 +480,10 @@ function TemplateListItem({
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
             <span className="truncate text-sm font-medium">{tpl.name}</span>
-            {tpl.has_custom_rules && <span className="h-2 w-2 rounded-full bg-amber-500" />}
+            {tpl.is_custom && <span className="h-2 w-2 rounded-full bg-violet-500" />}
+            {tpl.has_custom_rules && !tpl.is_custom && (
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+            )}
           </span>
           <span className="mt-0.5 block truncate text-xs text-stone-500">{tpl.segment_label}</span>
           <span
@@ -396,14 +523,16 @@ function SectionPill({
   );
 }
 
-function Badge({ children, tone }: { children: ReactNode; tone?: "warn" }) {
+function Badge({ children, tone }: { children: ReactNode; tone?: "warn" | "custom" }) {
   return (
     <span
       className={cn(
         "rounded-full px-2 py-0.5 font-mono text-[10px] ring-1",
         tone === "warn"
           ? "bg-amber-50 text-amber-900 ring-amber-200"
-          : "bg-stone-100 text-stone-700 ring-stone-200",
+          : tone === "custom"
+            ? "bg-violet-50 text-violet-900 ring-violet-200"
+            : "bg-stone-100 text-stone-700 ring-stone-200",
       )}
     >
       {children}

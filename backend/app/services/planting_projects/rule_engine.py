@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from copy import deepcopy
 from datetime import UTC, datetime
@@ -10,6 +11,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.planting_custom_template import PlantingCustomTemplate
 from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_rule_template import PlantingRuleTemplateOverride
 from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
@@ -22,6 +24,8 @@ from app.services.planting_projects.templates import (
     list_templates,
 )
 from app.services.schemes.registry import SCHEME_REGISTRY
+
+CUSTOM_TEMPLATE_PREFIX = "custom_"
 
 # Keys platform admins may override via CMS (subset of full template rules).
 OVERRIDABLE_RULE_KEYS: frozenset[str] = frozenset(
@@ -59,13 +63,104 @@ OVERRIDABLE_RULE_KEYS: frozenset[str] = frozenset(
 
 ADMIN_EDITABLE_TEMPLATE_CODES: frozenset[str] = frozenset(STANDARD_TEMPLATES.keys())
 
+VALID_TEMPLATE_SEGMENTS: frozenset[str] = frozenset(SEGMENT_LABELS.keys())
+
+
+def is_custom_template_code(code: str | None) -> bool:
+    return bool(code and code.startswith(CUSTOM_TEMPLATE_PREFIX))
+
 
 def list_editable_template_codes() -> list[str]:
     return sorted(ADMIN_EDITABLE_TEMPLATE_CODES)
 
 
+async def list_all_template_codes(db: AsyncSession, *, include_archived: bool = False) -> list[str]:
+    codes = list(list_editable_template_codes())
+    custom_rows = await list_custom_templates(db, include_archived=include_archived)
+    codes.extend(row.template_code for row in custom_rows)
+    return sorted(set(codes))
+
+
 def is_admin_editable_template(code: str | None) -> bool:
-    return bool(code and code in ADMIN_EDITABLE_TEMPLATE_CODES)
+    return bool(code and (code in ADMIN_EDITABLE_TEMPLATE_CODES or is_custom_template_code(code)))
+
+
+def slugify_template_code(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    slug = slug[:48] or "template"
+    return f"{CUSTOM_TEMPLATE_PREFIX}{slug}"
+
+
+def bootstrap_rules_from_clone(clone_from: str | None) -> dict[str, Any]:
+    if clone_from:
+        src = get_template(clone_from)
+        if src:
+            return deepcopy(src["rules"])
+    open_tpl = get_template("open_byot_v1")
+    return deepcopy(open_tpl["rules"]) if open_tpl else {}
+
+
+def sanitize_custom_rules(rules: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in rules.items() if key in OVERRIDABLE_RULE_KEYS and value is not None}
+
+
+def custom_row_to_standard(row: PlantingCustomTemplate) -> StandardTemplate:
+    return {
+        "code": row.template_code,
+        "name": row.name,
+        "segment": row.segment,
+        "description": row.description,
+        "compliance_mode": row.compliance_mode,
+        "recommended_program_codes": list(row.recommended_program_codes or []),
+        "rules": dict(row.rules or {}),
+    }
+
+
+async def get_custom_template_row(
+    db: AsyncSession, template_code: str, *, include_archived: bool = False
+) -> PlantingCustomTemplate | None:
+    res = await db.execute(
+        select(PlantingCustomTemplate).where(PlantingCustomTemplate.template_code == template_code)
+    )
+    row = res.scalar_one_or_none()
+    if row is None or (row.archived and not include_archived):
+        return None
+    return row
+
+
+async def list_custom_templates(
+    db: AsyncSession, *, segment: str | None = None, include_archived: bool = False
+) -> list[PlantingCustomTemplate]:
+    stmt = select(PlantingCustomTemplate).order_by(PlantingCustomTemplate.name.asc())
+    if not include_archived:
+        stmt = stmt.where(PlantingCustomTemplate.archived.is_(False))
+    if segment:
+        stmt = stmt.where(PlantingCustomTemplate.segment == segment)
+    res = await db.execute(stmt)
+    return list(res.scalars().all())
+
+
+async def ensure_unique_template_code(db: AsyncSession, base_code: str) -> str:
+    code = base_code
+    suffix = 2
+    while get_template(code) is not None or await get_custom_template_row(
+        db, code, include_archived=True
+    ):
+        code = f"{base_code}_{suffix}"
+        suffix += 1
+        if len(code) > 64:
+            code = f"{base_code[:56]}_{suffix}"
+    return code
+
+
+async def resolve_template_base(
+    db: AsyncSession | None, template_code: str
+) -> StandardTemplate | None:
+    if db is not None and is_custom_template_code(template_code):
+        row = await get_custom_template_row(db, template_code)
+        if row:
+            return custom_row_to_standard(row)
+    return get_template(template_code)
 
 
 def sanitize_override_rules(base_rules: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -327,16 +422,21 @@ async def resolve_template_rules(
     fallback_rules: dict[str, Any] | None = None,
     project_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
-    """Resolve rules: code → CMS template override → project override."""
+    """Resolve rules: code/custom template → CMS override → project override."""
     rules: dict[str, Any] = {}
     if template_code and is_admin_editable_template(template_code):
-        base = get_template(template_code)
-        if base:
-            rules = deepcopy(base["rules"])
-            if db is not None:
-                row = await get_template_override_row(db, template_code)
-                if _override_is_active(row) and row and row.rules:
-                    rules = merge_rules(rules, row.rules)
+        if db is not None and is_custom_template_code(template_code):
+            row = await get_custom_template_row(db, template_code)
+            if row:
+                rules = deepcopy(row.rules or {})
+        else:
+            base = get_template(template_code)
+            if base:
+                rules = deepcopy(base["rules"])
+                if db is not None:
+                    override_row = await get_template_override_row(db, template_code)
+                    if _override_is_active(override_row) and override_row and override_row.rules:
+                        rules = merge_rules(rules, override_row.rules)
     elif fallback_rules:
         rules = deepcopy(fallback_rules)
 
@@ -357,9 +457,14 @@ async def resolve_compliance_mode(
 ) -> str:
     mode = project_compliance_mode
     if db is not None and template_code:
-        row = await get_template_override_row(db, template_code)
-        if _override_is_active(row) and row and row.compliance_mode:
-            mode = row.compliance_mode
+        if is_custom_template_code(template_code):
+            row = await get_custom_template_row(db, template_code)
+            if row:
+                mode = row.compliance_mode
+        else:
+            row = await get_template_override_row(db, template_code)
+            if _override_is_active(row) and row and row.compliance_mode:
+                mode = row.compliance_mode
     if db is not None and project_id is not None:
         proj_row = await get_project_override_row(db, project_id)
         if proj_row and proj_row.enabled and proj_row.compliance_mode:
@@ -381,6 +486,12 @@ async def get_template_override_row(
 async def get_effective_template(
     db: AsyncSession | None, code: str
 ) -> StandardTemplate | None:
+    if db is not None and is_custom_template_code(code):
+        row = await get_custom_template_row(db, code)
+        if row:
+            return custom_row_to_standard(row)
+        return None
+
     base = get_template(code)
     if base is None:
         return None
@@ -424,8 +535,11 @@ def rule_template_admin_dict(
     override: PlantingRuleTemplateOverride | None,
     effective_rules: dict[str, Any],
     effective_compliance_mode: str | None = None,
+    source: str = "code",
+    archived: bool = False,
 ) -> dict[str, Any]:
-    has_custom_rules = bool(override and override.enabled and override.rules)
+    is_custom = source == "custom"
+    has_custom_rules = is_custom or bool(override and override.enabled and override.rules)
     eff_mode = effective_compliance_mode or (
         override.compliance_mode if override and override.compliance_mode else base["compliance_mode"]
     )
@@ -439,20 +553,64 @@ def rule_template_admin_dict(
         "code_compliance_mode": base["compliance_mode"],
         "recommended_program_codes": base["recommended_program_codes"],
         "editable": True,
+        "source": source,
+        "is_custom": is_custom,
+        "archived": archived,
         "has_custom_rules": has_custom_rules,
         "code_defaults": base["rules"],
         "override": {
-            "enabled": override.enabled if override else False,
-            "rules": override.rules if override else {},
-            "compliance_mode": override.compliance_mode if override else None,
-            "effective_from": override.effective_from.isoformat()
-            if override and override.effective_from
-            else None,
-            "publish_note": override.publish_note if override else None,
-            "updated_at": override.updated_at.isoformat() if override and override.updated_at else None,
+            "enabled": True if is_custom else (override.enabled if override else False),
+            "rules": effective_rules if is_custom else (override.rules if override else {}),
+            "compliance_mode": eff_mode if is_custom else (override.compliance_mode if override else None),
+            "effective_from": None
+            if is_custom
+            else (
+                override.effective_from.isoformat()
+                if override and override.effective_from
+                else None
+            ),
+            "publish_note": None if is_custom else (override.publish_note if override else None),
+            "updated_at": None
+            if is_custom
+            else (override.updated_at.isoformat() if override and override.updated_at else None),
         },
         "effective_rules": effective_rules,
     }
+
+
+async def build_rule_template_admin_entry(
+    db: AsyncSession, code: str
+) -> dict[str, Any] | None:
+    if is_custom_template_code(code):
+        row = await get_custom_template_row(db, code)
+        if row is None:
+            return None
+        base = custom_row_to_standard(row)
+        return rule_template_admin_dict(
+            code=code,
+            base=base,
+            override=None,
+            effective_rules=dict(row.rules or {}),
+            effective_compliance_mode=row.compliance_mode,
+            source="custom",
+            archived=row.archived,
+        )
+
+    base = get_template(code)
+    if base is None:
+        return None
+    override = await get_template_override_row(db, code)
+    effective_tpl = await get_effective_template(db, code)
+    effective_rules = dict(effective_tpl["rules"]) if effective_tpl else dict(base["rules"])
+    eff_mode = effective_tpl["compliance_mode"] if effective_tpl else base["compliance_mode"]
+    return rule_template_admin_dict(
+        code=code,
+        base=base,
+        override=override,
+        effective_rules=effective_rules,
+        effective_compliance_mode=eff_mode,
+        source="code",
+    )
 
 
 def project_rule_override_dict(

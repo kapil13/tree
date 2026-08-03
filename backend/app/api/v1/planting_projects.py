@@ -181,11 +181,22 @@ async def list_segments() -> dict:
 
 @router.get("/templates", response_model=list[StandardTemplateOut])
 async def list_standard_templates(segment: str | None = None, *, db: DB) -> list[StandardTemplateOut]:
-    items = list_templates(segment=segment)
+    from app.services.planting_projects.rule_engine import (
+        custom_row_to_standard,
+        list_custom_templates,
+    )
+
     out: list[StandardTemplateOut] = []
-    for tpl in items:
+    seen: set[str] = set()
+    for tpl in list_templates(segment=segment):
         effective = await get_effective_template(db, tpl["code"])
         out.append(StandardTemplateOut.model_validate(effective or tpl))
+        seen.add(tpl["code"])
+    for row in await list_custom_templates(db, segment=segment):
+        if row.template_code in seen:
+            continue
+        effective = await get_effective_template(db, row.template_code)
+        out.append(StandardTemplateOut.model_validate(effective or custom_row_to_standard(row)))
     return out
 
 
