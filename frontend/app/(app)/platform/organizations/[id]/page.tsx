@@ -9,7 +9,7 @@ import { PlatformShell } from "@/components/platform/platform-shell";
 import { OrgFeatureFlagsPanel } from "@/components/platform/org-feature-flags-panel";
 import { OrgSuspendModal } from "@/components/platform/org-suspend-modal";
 import { StepUpModal } from "@/components/platform/step-up-modal";
-import { errorMessage } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
@@ -21,7 +21,6 @@ export default function PlatformOrganizationDetailPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
-  const [message, setMessage] = useState<string | null>(null);
   const [transferOwnerId, setTransferOwnerId] = useState("");
   const [stepUpOpen, setStepUpOpen] = useState(false);
   const [suspendOpen, setSuspendOpen] = useState(false);
@@ -51,11 +50,14 @@ export default function PlatformOrganizationDetailPage() {
       }),
     onSuccess: () => {
       setStepUpOpen(false);
-      setMessage("Organization owner updated.");
+      notifyPlatformAction("Organization owner updated.", {
+        audit: { actionPrefix: "platform.organization." },
+      });
       qc.invalidateQueries({ queryKey: ["platform-organization", orgId] });
       qc.invalidateQueries({ queryKey: ["platform-org-members", orgId] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const updateOrg = useMutation({
@@ -67,20 +69,23 @@ export default function PlatformOrganizationDetailPage() {
     }) => platformAdmin.updateOrganization(orgId, payload),
     onSuccess: () => {
       setSuspendOpen(false);
-      setMessage("Organization updated.");
+      notifyPlatformAction("Organization updated.", {
+        audit: { actionPrefix: "platform.organization." },
+      });
       qc.invalidateQueries({ queryKey: ["platform-organization", orgId] });
       qc.invalidateQueries({ queryKey: ["platform-organizations"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const exportMembers = useMutation({
     mutationFn: () => platformAdmin.exportOrgMembers(orgId),
     onSuccess: (blob) => {
       downloadBlob(blob, `org-${orgId}-members.csv`);
-      setMessage("Members exported.");
+      notifyPlatformAction("Members exported.");
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   if (isLoading || !org) {
@@ -280,7 +285,6 @@ export default function PlatformOrganizationDetailPage() {
           )}
         </section>
 
-        {message ? <p className="text-sm text-stone-600">{message}</p> : null}
       </div>
 
       <OrgSuspendModal

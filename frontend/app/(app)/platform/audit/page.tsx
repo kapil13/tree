@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
+import { notifyPlatformAction } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { cn } from "@/lib/cn";
 
@@ -35,24 +37,70 @@ function formatDiff(diff: Record<string, unknown> | null): string {
 }
 
 export default function PlatformAuditPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [actionPrefix, setActionPrefix] = useState("platform.");
   const [search, setSearch] = useState("");
+  const [actorUserId, setActorUserId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [urlReady, setUrlReady] = useState(false);
+
+  useEffect(() => {
+    setActionPrefix(searchParams.get("action_prefix") ?? searchParams.get("action") ?? "platform.");
+    setSearch(searchParams.get("search") ?? "");
+    setActorUserId(searchParams.get("actor_user_id") ?? "");
+    setDateFrom(searchParams.get("date_from") ?? "");
+    setDateTo(searchParams.get("date_to") ?? "");
+    const pageParam = searchParams.get("page");
+    setPage(pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1);
+    setUrlReady(true);
+  }, [searchParams]);
+
+  const syncUrl = useCallback(
+    (filters: {
+      actionPrefix: string;
+      search: string;
+      actorUserId: string;
+      dateFrom: string;
+      dateTo: string;
+      page: number;
+    }) => {
+      const q = new URLSearchParams();
+      if (filters.actionPrefix) q.set("action_prefix", filters.actionPrefix);
+      if (filters.search) q.set("search", filters.search);
+      if (filters.actorUserId) q.set("actor_user_id", filters.actorUserId);
+      if (filters.dateFrom) q.set("date_from", filters.dateFrom);
+      if (filters.dateTo) q.set("date_to", filters.dateTo);
+      if (filters.page > 1) q.set("page", String(filters.page));
+      const query = q.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  useEffect(() => {
+    if (!urlReady) return;
+    syncUrl({ actionPrefix, search, actorUserId, dateFrom, dateTo, page });
+  }, [actionPrefix, search, actorUserId, dateFrom, dateTo, page, urlReady, syncUrl]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["platform-audit", actionPrefix, search, dateFrom, dateTo, page],
+    queryKey: ["platform-audit", actionPrefix, search, actorUserId, dateFrom, dateTo, page],
     queryFn: () =>
       platformAdmin.auditLogs({
         page,
         page_size: 50,
         action_prefix: actionPrefix || undefined,
         search: search || undefined,
+        actor_user_id: actorUserId || undefined,
         date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
         date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       }),
+    enabled: urlReady,
   });
 
   const exportCsv = useMutation({
@@ -60,6 +108,7 @@ export default function PlatformAuditPage() {
       platformAdmin.exportAudit({
         action_prefix: actionPrefix || undefined,
         search: search || undefined,
+        actor_user_id: actorUserId || undefined,
         date_from: dateFrom ? new Date(dateFrom).toISOString() : undefined,
         date_to: dateTo ? new Date(dateTo).toISOString() : undefined,
       }),
@@ -70,6 +119,7 @@ export default function PlatformAuditPage() {
       a.download = "platform-audit.csv";
       a.click();
       URL.revokeObjectURL(url);
+      notifyPlatformAction("Audit log exported.");
     },
   });
 
@@ -80,7 +130,8 @@ export default function PlatformAuditPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="text-sm text-stone-600 dark:text-stone-300">
-            Platform-wide audit trail with actor names, structured diffs, and CSV export.
+            Platform-wide audit trail with actor names, structured diffs, and CSV export. Filters
+            sync to the URL for sharing and deep links.
           </p>
           <button
             type="button"
@@ -93,7 +144,7 @@ export default function PlatformAuditPage() {
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="text-sm">
             <span className="mb-1 block text-stone-600">Action filter</span>
             <select
@@ -120,6 +171,18 @@ export default function PlatformAuditPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-stone-600">Actor user ID</span>
+            <input
+              className="input w-full font-mono text-xs"
+              placeholder="UUID"
+              value={actorUserId}
+              onChange={(e) => {
+                setActorUserId(e.target.value);
                 setPage(1);
               }}
             />
@@ -210,7 +273,7 @@ export default function PlatformAuditPage() {
         )}
 
         {data && data.total > 0 ? (
-          <div className="flex items-center justify-between text-sm text-stone-600">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-stone-600">
             <span>
               {data.total} events · page {data.page} of {totalPages}
             </span>

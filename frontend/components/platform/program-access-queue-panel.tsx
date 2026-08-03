@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { BulkActionBar } from "@/components/platform/bulk-action-bar";
 import { StepUpModal } from "@/components/platform/step-up-modal";
-import { errorMessage } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { cn } from "@/lib/cn";
@@ -40,7 +40,6 @@ export function ProgramAccessQueuePanel() {
   const [noteById, setNoteById] = useState<Record<string, string>>({});
   const [approveFormById, setApproveFormById] = useState<Record<string, ApproveForm>>({});
   const [orgSearch, setOrgSearch] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStepUp, setBulkStepUp] = useState<null | "approve" | "reject">(null);
 
@@ -82,11 +81,17 @@ export function ProgramAccessQueuePanel() {
           : {}),
       }),
     onSuccess: (_, vars) => {
-      setMessage(vars.action === "approve" ? "Request approved and organization onboarded." : "Request rejected.");
+      notifyPlatformAction(
+        vars.action === "approve"
+          ? "Request approved and organization onboarded."
+          : "Request rejected.",
+        { audit: { actionPrefix: "platform.program_access." } },
+      );
       qc.invalidateQueries({ queryKey: ["platform-program-access"] });
       qc.invalidateQueries({ queryKey: ["planting-programs"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   const bulkReview = useMutation({
@@ -108,14 +113,16 @@ export function ProgramAccessQueuePanel() {
     onSuccess: (result) => {
       setBulkStepUp(null);
       setSelectedIds(new Set());
-      setMessage(
+      notifyPlatformAction(
         `Bulk review complete: ${result.processed} processed, ${result.skipped} skipped.`,
+        { audit: { actionPrefix: "platform.program_access.bulk_" } },
       );
       qc.invalidateQueries({ queryKey: ["platform-program-access"] });
       qc.invalidateQueries({ queryKey: ["planting-programs"] });
       qc.invalidateQueries({ queryKey: ["platform-overview"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   function toggleSelect(id: string) {
@@ -197,11 +204,6 @@ export function ProgramAccessQueuePanel() {
         </BulkActionBar>
       ) : null}
 
-      {message ? (
-        <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-700 dark:bg-stone-900">
-          {message}
-        </p>
-      ) : null}
 
       {isLoading ? (
         <p className="text-sm text-stone-500">Loading requests…</p>

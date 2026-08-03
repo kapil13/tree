@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { StepUpModal } from "@/components/platform/step-up-modal";
-import { errorMessage } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
@@ -14,7 +14,6 @@ export default function PlatformGovernancePage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
-  const [message, setMessage] = useState<string | null>(null);
   const [stepUpOpen, setStepUpOpen] = useState(false);
   const [draft, setDraft] = useState({
     maintenance_mode: false,
@@ -48,11 +47,14 @@ export default function PlatformGovernancePage() {
       }),
     onSuccess: () => {
       setStepUpOpen(false);
-      setMessage("Governance settings updated.");
+      notifyPlatformAction("Governance settings updated.", {
+        audit: { actionPrefix: "platform.governance." },
+      });
       qc.invalidateQueries({ queryKey: ["platform-governance"] });
       qc.invalidateQueries({ queryKey: ["governance-status"] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   if (!fullAdmin) {
@@ -163,7 +165,7 @@ export default function PlatformGovernancePage() {
           </p>
         </div>
 
-        {message ? <p className="text-sm text-stone-600">{message}</p> : null}
+
       </div>
 
       <StepUpModal

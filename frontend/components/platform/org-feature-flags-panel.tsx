@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { StepUpModal } from "@/components/platform/step-up-modal";
-import { errorMessage } from "@/lib/api";
+import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 
 export function OrgFeatureFlagsPanel({ orgId }: { orgId: string }) {
   const qc = useQueryClient();
-  const [message, setMessage] = useState<string | null>(null);
   const [stepUpOpen, setStepUpOpen] = useState(false);
   const [localFlags, setLocalFlags] = useState<Record<string, boolean> | null>(null);
 
@@ -25,11 +24,14 @@ export function OrgFeatureFlagsPanel({ orgId }: { orgId: string }) {
       }),
     onSuccess: () => {
       setStepUpOpen(false);
-      setMessage("Feature flags updated.");
+      notifyPlatformAction("Feature flags updated.", {
+        audit: { actionPrefix: "platform.organization.feature_flags" },
+      });
       setLocalFlags(null);
       qc.invalidateQueries({ queryKey: ["platform-org-feature-flags", orgId] });
+      qc.invalidateQueries({ queryKey: ["platform-audit-recent"] });
     },
-    onError: (err) => setMessage(errorMessage(err)),
+    onError: (err) => notifyPlatformError(err),
   });
 
   if (isLoading || !data) {
@@ -76,7 +78,6 @@ export function OrgFeatureFlagsPanel({ orgId }: { orgId: string }) {
           </button>
         ) : null}
       </div>
-      {message ? <p className="text-xs text-stone-500">{message}</p> : null}
 
       <StepUpModal
         open={stepUpOpen}
