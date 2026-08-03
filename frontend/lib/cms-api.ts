@@ -72,6 +72,9 @@ export type RuleTemplateAdmin = {
   code_compliance_mode?: string;
   recommended_program_codes: string[];
   editable: boolean;
+  source?: "code" | "custom";
+  is_custom?: boolean;
+  archived?: boolean;
   has_custom_rules: boolean;
   code_defaults: Record<string, unknown>;
   override: {
@@ -212,6 +215,20 @@ export const cmsAdmin = {
   async listRuleTemplates() {
     return (await api.get<RuleTemplateAdmin[]>("/v1/platform/cms/rule-templates")).data;
   },
+  async createRuleTemplate(payload: {
+    name: string;
+    segment: string;
+    description?: string;
+    compliance_mode?: "open" | "guided" | "strict";
+    recommended_program_codes?: string[];
+    clone_from?: string | null;
+    rules?: Record<string, unknown>;
+  }) {
+    return (await api.post<RuleTemplateAdmin>("/v1/platform/cms/rule-templates", payload)).data;
+  },
+  async archiveRuleTemplate(code: string) {
+    await api.delete(`/v1/platform/cms/rule-templates/${code}`);
+  },
   async getRuleTemplate(code: string) {
     return (await api.get<RuleTemplateAdmin>(`/v1/platform/cms/rule-templates/${code}`)).data;
   },
@@ -223,6 +240,10 @@ export const cmsAdmin = {
       compliance_mode?: string | null;
       effective_from?: string | null;
       publish_note?: string | null;
+      name?: string;
+      description?: string;
+      segment?: string;
+      recommended_program_codes?: string[];
     },
   ) {
     return (await api.put<RuleTemplateAdmin>(`/v1/platform/cms/rule-templates/${code}`, payload))

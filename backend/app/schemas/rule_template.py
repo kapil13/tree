@@ -14,6 +14,20 @@ class RuleTemplateOverrideUpdate(BaseModel):
     compliance_mode: Literal["open", "guided", "strict"] | None = None
     effective_from: datetime | None = None
     publish_note: str | None = Field(default=None, max_length=2000)
+    name: str | None = Field(default=None, min_length=3, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    segment: str | None = Field(default=None, max_length=48)
+    recommended_program_codes: list[str] | None = None
+
+
+class RuleTemplateCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=160)
+    segment: str = Field(min_length=3, max_length=48)
+    description: str = Field(default="", max_length=4000)
+    compliance_mode: Literal["open", "guided", "strict"] = "guided"
+    recommended_program_codes: list[str] = Field(default_factory=list)
+    clone_from: str | None = Field(default=None, max_length=64)
+    rules: dict[str, Any] | None = None
 
 
 class RuleTemplatePreviewRequest(BaseModel):
@@ -54,6 +68,9 @@ class RuleTemplateAdminOut(BaseModel):
     code_compliance_mode: str = ""
     recommended_program_codes: list[str] = Field(default_factory=list)
     editable: bool
+    source: Literal["code", "custom"] = "code"
+    is_custom: bool = False
+    archived: bool = False
     has_custom_rules: bool = False
     code_defaults: dict[str, Any]
     override: dict[str, Any]
