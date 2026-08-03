@@ -38,6 +38,7 @@ async def get_recent_job_runs(db: AsyncSession, *, limit: int = 10) -> list[dict
     )
     return [
         {
+            "id": str(r.id),
             "job_name": r.job_name,
             "status": r.status,
             "result": r.result,

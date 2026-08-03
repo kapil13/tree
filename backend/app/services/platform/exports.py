@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.organization import Organization
 from app.services.platform.admin import query_org_members_for_admin, query_platform_users
+from app.services.platform.billing import query_payment_orders
 
 MAX_EXPORT_ROWS = 5000
 
@@ -133,6 +134,57 @@ async def export_platform_org_members_csv(db: AsyncSession, org_id: uuid.UUID) -
                 member["is_active"],
                 member["last_login_at"].isoformat() if member.get("last_login_at") else "",
                 member["created_at"].isoformat(),
+            ]
+        )
+    return buf.getvalue()
+
+
+async def export_platform_orders_csv(
+    db: AsyncSession,
+    *,
+    status: str | None = None,
+) -> str:
+    items, _ = await query_payment_orders(
+        db,
+        status=status,
+        page=1,
+        page_size=MAX_EXPORT_ROWS,
+    )
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "id",
+            "user_id",
+            "user_email",
+            "user_full_name",
+            "sku",
+            "credits_granted",
+            "amount_paise",
+            "currency",
+            "status",
+            "razorpay_order_id",
+            "razorpay_payment_id",
+            "paid_at",
+            "created_at",
+        ]
+    )
+    for row in items:
+        writer.writerow(
+            [
+                str(row["id"]),
+                str(row["user_id"]),
+                row["user_email"],
+                row["user_full_name"],
+                row["sku"],
+                row["credits_granted"],
+                row["amount_paise"],
+                row["currency"],
+                row["status"],
+                row.get("razorpay_order_id") or "",
+                row.get("razorpay_payment_id") or "",
+                row["paid_at"].isoformat() if row.get("paid_at") else "",
+                row["created_at"].isoformat(),
             ]
         )
     return buf.getvalue()

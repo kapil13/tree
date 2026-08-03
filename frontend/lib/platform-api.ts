@@ -108,8 +108,44 @@ export type PlatformPaymentOrder = {
   amount_paise: number;
   currency: string;
   status: string;
+  razorpay_order_id?: string | null;
+  razorpay_payment_id?: string | null;
   paid_at: string | null;
   created_at: string;
+};
+
+export type PlatformPaymentOrderDetail = PlatformPaymentOrder & {
+  user_wallet_balance: number;
+  payment_events: Array<{
+    id: string;
+    event_type: string;
+    event_id: string;
+    created_at: string;
+  }>;
+};
+
+export type WebhookDeliveryAdmin = {
+  id: string;
+  event_type: string;
+  status: string;
+  attempt_count: number;
+  error_message: string | null;
+  response_status: number | null;
+  created_at: string;
+  webhook_id: string;
+  webhook_label: string;
+  webhook_url: string;
+  organization_id: string;
+  organization_name: string;
+};
+
+export type PaymentWebhookEvent = {
+  id: string;
+  event_id: string;
+  event_type: string;
+  provider: string;
+  created_at: string;
+  payload_preview: string;
 };
 
 export type PlatformPaymentOrderPage = {
@@ -133,6 +169,7 @@ export type PlatformOpsSummary = {
     recent_count: number;
     recent_by_status: Record<string, number>;
     recent: Array<{
+      id: string;
       job_name: string;
       status: string;
       finished_at: string | null;
@@ -330,8 +367,67 @@ export const platformAdmin = {
     return (await api.get<PlatformPaymentOrderPage>("/v1/platform/billing/orders", { params }))
       .data;
   },
+  async getPaymentOrder(id: string) {
+    return (await api.get<PlatformPaymentOrderDetail>(`/v1/platform/billing/orders/${id}`)).data;
+  },
+  async exportPaymentOrders(params?: { status?: string }) {
+    const response = await api.get("/v1/platform/billing/orders/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async grantCredits(
+    userId: string,
+    payload: { credits: number; reason: string; password: string },
+  ) {
+    return (
+      await api.post<{ user_id: string; credits_delta: number; new_balance: number }>(
+        `/v1/platform/billing/users/${userId}/grant-credits`,
+        payload,
+      )
+    ).data;
+  },
   async opsSummary() {
     return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
+  },
+  async pingIntegrations() {
+    return (await api.post<PlatformOpsSummary["integrations"]>("/v1/platform/ops/integrations/ping")).data;
+  },
+  async listFailedWebhooks(limit = 50) {
+    return (
+      await api.get<WebhookDeliveryAdmin[]>("/v1/platform/ops/webhook-deliveries", {
+        params: { limit },
+      })
+    ).data;
+  },
+  async retryWebhook(deliveryId: string, password: string) {
+    return (
+      await api.post<{ id: string; status: string }>(
+        `/v1/platform/ops/webhook-deliveries/${deliveryId}/retry`,
+        { password },
+      )
+    ).data;
+  },
+  async listPaymentEvents(params?: { event_type?: string; limit?: number }) {
+    return (await api.get<PaymentWebhookEvent[]>("/v1/platform/ops/payment-events", { params }))
+      .data;
+  },
+  async retryJob(runId: string, password: string) {
+    return (
+      await api.post<{ job_name: string; celery_task_id: string | null; status: string }>(
+        `/v1/platform/ops/jobs/${runId}/retry`,
+        { password },
+      )
+    ).data;
+  },
+  async triggerJob(jobName: string, password: string) {
+    return (
+      await api.post<{ job_name: string; celery_task_id: string | null; status: string }>(
+        "/v1/platform/ops/jobs/trigger",
+        { job_name: jobName, password },
+      )
+    ).data;
   },
   async schemeSummary() {
     return (

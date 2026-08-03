@@ -1,16 +1,18 @@
-"""Platform billing admin — payment orders and AI scan wallets (read-only)."""
+"""Platform billing admin — payment orders, wallets, and credit grants."""
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_scan_wallet import UserAiScanWallet
-from app.models.payment import PaymentOrder
+from app.models.payment import PaymentEvent, PaymentOrder
 from app.models.user import User
 from app.services.payments.razorpay_client import payments_enabled
+from app.services.payments.wallet import adjust_scans, ensure_wallet
 
 
 async def build_billing_summary(db: AsyncSession) -> dict[str, Any]:
@@ -85,6 +87,24 @@ async def build_billing_summary(db: AsyncSession) -> dict[str, Any]:
     }
 
 
+def _serialize_order(order: PaymentOrder, email: str, full_name: str) -> dict[str, Any]:
+    return {
+        "id": order.id,
+        "user_id": order.user_id,
+        "user_email": email,
+        "user_full_name": full_name,
+        "sku": order.sku,
+        "credits_granted": order.credits_granted,
+        "amount_paise": order.amount_paise,
+        "currency": order.currency,
+        "status": order.status,
+        "razorpay_order_id": order.razorpay_order_id,
+        "razorpay_payment_id": order.razorpay_payment_id,
+        "paid_at": order.paid_at,
+        "created_at": order.created_at,
+    }
+
+
 async def query_payment_orders(
     db: AsyncSession,
     *,
@@ -105,21 +125,59 @@ async def query_payment_orders(
     page = max(page, 1)
     rows = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).all()
 
-    items: list[dict[str, Any]] = []
-    for order, email, full_name in rows:
-        items.append(
-            {
-                "id": order.id,
-                "user_id": order.user_id,
-                "user_email": email,
-                "user_full_name": full_name,
-                "sku": order.sku,
-                "credits_granted": order.credits_granted,
-                "amount_paise": order.amount_paise,
-                "currency": order.currency,
-                "status": order.status,
-                "paid_at": order.paid_at,
-                "created_at": order.created_at,
-            }
-        )
+    items = [_serialize_order(order, email, full_name) for order, email, full_name in rows]
     return items, total
+
+
+async def get_payment_order_detail(db: AsyncSession, order_id: uuid.UUID) -> dict[str, Any] | None:
+    row = (
+        await db.execute(
+            select(PaymentOrder, User.email, User.full_name)
+            .join(User, User.id == PaymentOrder.user_id)
+            .where(PaymentOrder.id == order_id)
+        )
+    ).one_or_none()
+    if row is None:
+        return None
+    order, email, full_name = row
+    wallet = await ensure_wallet(db, order.user_id)
+    events = (
+        await db.execute(
+            select(PaymentEvent)
+            .where(PaymentEvent.event_type.ilike("%payment%"))
+            .order_by(PaymentEvent.created_at.desc())
+            .limit(20)
+        )
+    ).scalars().all()
+    related_events = [
+        {
+            "id": str(ev.id),
+            "event_type": ev.event_type,
+            "event_id": ev.event_id,
+            "created_at": ev.created_at,
+        }
+        for ev in events
+        if order.razorpay_order_id in str(ev.payload)
+        or (order.razorpay_payment_id and order.razorpay_payment_id in str(ev.payload))
+    ]
+    detail = _serialize_order(order, email, full_name)
+    detail["user_wallet_balance"] = wallet.purchased_scan_balance
+    detail["payment_events"] = related_events
+    return detail
+
+
+async def grant_user_credits(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    credits: int,
+) -> dict[str, Any]:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise ValueError("user_not_found")
+    wallet = await adjust_scans(db, user_id, credits)
+    return {
+        "user_id": user_id,
+        "credits_delta": credits,
+        "new_balance": wallet.purchased_scan_balance,
+    }
