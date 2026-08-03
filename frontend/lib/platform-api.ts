@@ -11,6 +11,9 @@ export type PlatformUser = {
   is_org_admin?: boolean;
   is_active: boolean;
   is_verified: boolean;
+  phone?: string | null;
+  email_verified_at?: string | null;
+  sessions_invalidated_at?: string | null;
   created_at: string;
   last_login_at: string | null;
   enrolled_program_codes?: string[];
@@ -349,6 +352,8 @@ export const platformAdmin = {
     page?: number;
     page_size?: number;
     action_prefix?: string;
+    resource_type?: string;
+    resource_id?: string;
     organization_id?: string;
     actor_user_id?: string;
     date_from?: string;
@@ -359,6 +364,8 @@ export const platformAdmin = {
   },
   async exportAudit(params?: {
     action_prefix?: string;
+    resource_type?: string;
+    resource_id?: string;
     organization_id?: string;
     actor_user_id?: string;
     date_from?: string;

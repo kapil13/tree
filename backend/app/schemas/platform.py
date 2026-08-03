@@ -26,6 +26,9 @@ class UserAdminOut(BaseModel):
     is_org_admin: bool = False
     is_active: bool
     is_verified: bool
+    phone: str | None = None
+    email_verified_at: datetime | None = None
+    sessions_invalidated_at: datetime | None = None
     created_at: datetime
     last_login_at: datetime | None
     enrolled_program_codes: list[str] = Field(default_factory=list)
