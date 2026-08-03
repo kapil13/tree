@@ -4,15 +4,21 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
-import {
-  backupSessionForImpersonation,
-} from "@/components/platform/impersonation-banner";
+import { backupSessionForImpersonation } from "@/components/platform/impersonation-banner";
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { UserPlatformGrantsPanel } from "@/components/platform/user-platform-grants-panel";
 import { errorMessage, auth } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
+
+type StepUpState =
+  | null
+  | { kind: "impersonate"; userId: string; email: string }
+  | { kind: "update"; id: string; role: string; is_active?: boolean }
+  | { kind: "force-reset"; userId: string; email: string }
+  | { kind: "resend-verify"; userId: string; email: string; markVerified?: boolean }
+  | { kind: "revoke-sessions"; userId: string; email: string };
 
 export default function PlatformUsersPage() {
   const qc = useQueryClient();
@@ -25,11 +31,7 @@ export default function PlatformUsersPage() {
   const [page, setPage] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [grantsUserId, setGrantsUserId] = useState<string | null>(null);
-  const [stepUp, setStepUp] = useState<
-    | null
-    | { kind: "impersonate"; userId: string; email: string }
-    | { kind: "update"; id: string; role: string; is_active?: boolean }
-  >(null);
+  const [stepUp, setStepUp] = useState<StepUpState>(null);
 
   const { data: roles } = useQuery({
     queryKey: ["platform-roles"],
@@ -75,8 +77,17 @@ export default function PlatformUsersPage() {
   });
 
   const impersonate = useMutation({
-    mutationFn: ({ id, password, reason }: { id: string; password: string; reason?: string }) =>
-      platformAdmin.impersonateUser(id, { password, reason }),
+    mutationFn: ({
+      id,
+      password,
+      reason,
+      read_only,
+    }: {
+      id: string;
+      password: string;
+      reason?: string;
+      read_only?: boolean;
+    }) => platformAdmin.impersonateUser(id, { password, reason, read_only }),
     onSuccess: async (data) => {
       setStepUp(null);
       backupSessionForImpersonation();
@@ -93,7 +104,48 @@ export default function PlatformUsersPage() {
     onError: (err) => setMessage(errorMessage(err)),
   });
 
+  const supportAction = useMutation({
+    mutationFn: async ({
+      kind,
+      userId,
+      password,
+      markVerified,
+    }: {
+      kind: "force-reset" | "resend-verify" | "revoke-sessions";
+      userId: string;
+      password: string;
+      markVerified?: boolean;
+    }) => {
+      if (kind === "force-reset") {
+        return platformAdmin.forcePasswordReset(userId, password);
+      }
+      if (kind === "resend-verify") {
+        return platformAdmin.resendVerification(userId, {
+          password,
+          mark_verified: markVerified,
+        });
+      }
+      return platformAdmin.revokeSessions(userId, password);
+    },
+    onSuccess: (result: { status: string; dev_hint?: string | null }, variables) => {
+      setStepUp(null);
+      const labels = {
+        "force-reset": "Password reset email sent.",
+        "resend-verify": variables.markVerified
+          ? "User marked as verified."
+          : "Verification email sent.",
+        "revoke-sessions": "All sessions revoked.",
+      };
+      const hint = result?.dev_hint ? ` Dev hint: ${result.dev_hint}` : "";
+      setMessage(`${labels[variables.kind]}${hint}`);
+      qc.invalidateQueries({ queryKey: ["platform-users"] });
+    },
+    onError: (err) => setMessage(errorMessage(err)),
+  });
+
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
+  const stepUpBusy =
+    impersonate.isPending || updateUser.isPending || supportAction.isPending;
 
   return (
     <PlatformShell>
@@ -168,6 +220,9 @@ export default function PlatformUsersPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium">{row.full_name}</div>
                       <div className="text-xs text-stone-500">{row.email}</div>
+                      {!row.is_verified ? (
+                        <div className="mt-1 text-xs text-amber-700">Unverified email</div>
+                      ) : null}
                       {grantsUserId === row.id && fullAdmin ? (
                         <div className="mt-3">
                           <UserPlatformGrantsPanel
@@ -213,10 +268,10 @@ export default function PlatformUsersPage() {
                         {(roles ?? [])
                           .filter((role) => fullAdmin || role.value !== "admin")
                           .map((role) => (
-                          <option key={role.value} value={role.value}>
-                            {role.label}
-                          </option>
-                        ))}
+                            <option key={role.value} value={role.value}>
+                              {role.label}
+                            </option>
+                          ))}
                       </select>
                     </td>
                     <td className="px-4 py-3 text-xs text-stone-500">
@@ -258,7 +313,7 @@ export default function PlatformUsersPage() {
                     </td>
                     {fullAdmin ? (
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-2">
+                        <div className="flex min-w-[9rem] flex-col gap-1">
                           <button
                             type="button"
                             className="btn-secondary text-xs"
@@ -277,6 +332,67 @@ export default function PlatformUsersPage() {
                             }
                           >
                             View as user
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-ghost text-xs"
+                            disabled={supportAction.isPending}
+                            onClick={() =>
+                              setStepUp({
+                                kind: "force-reset",
+                                userId: row.id,
+                                email: row.email,
+                              })
+                            }
+                          >
+                            Reset password
+                          </button>
+                          {!row.is_verified ? (
+                            <>
+                              <button
+                                type="button"
+                                className="btn-ghost text-xs"
+                                disabled={supportAction.isPending}
+                                onClick={() =>
+                                  setStepUp({
+                                    kind: "resend-verify",
+                                    userId: row.id,
+                                    email: row.email,
+                                  })
+                                }
+                              >
+                                Resend verification
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-ghost text-xs"
+                                disabled={supportAction.isPending}
+                                onClick={() =>
+                                  setStepUp({
+                                    kind: "resend-verify",
+                                    userId: row.id,
+                                    email: row.email,
+                                    markVerified: true,
+                                  })
+                                }
+                              >
+                                Mark verified
+                              </button>
+                            </>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="btn-ghost text-xs text-rose-700"
+                            disabled={supportAction.isPending || row.id === user?.id}
+                            onClick={() =>
+                              setStepUp({
+                                kind: "revoke-sessions",
+                                userId: row.id,
+                                email: row.email,
+                              })
+                            }
+                          >
+                            Revoke sessions
                           </button>
                           <button
                             type="button"
@@ -333,26 +449,71 @@ export default function PlatformUsersPage() {
         title={
           stepUp?.kind === "impersonate"
             ? `Impersonate ${stepUp.email}`
-            : "Confirm sensitive change"
+            : stepUp?.kind === "force-reset"
+              ? `Reset password for ${stepUp.email}`
+              : stepUp?.kind === "resend-verify"
+                ? stepUp.markVerified
+                  ? `Mark ${stepUp.email} verified`
+                  : `Resend verification to ${stepUp.email}`
+                : stepUp?.kind === "revoke-sessions"
+                  ? `Revoke sessions for ${stepUp.email}`
+                  : "Confirm sensitive change"
         }
         description={
           stepUp?.kind === "impersonate"
             ? "Re-enter your password to view the app as this user. All actions are audited."
-            : "Re-enter your password to change admin access or deactivate this user."
+            : stepUp?.kind === "force-reset"
+              ? "Sends a password-reset OTP to the user. Re-enter your password to confirm."
+              : stepUp?.kind === "resend-verify"
+                ? stepUp.markVerified
+                  ? "Marks the account verified without an OTP. Re-enter your password to confirm."
+                  : "Sends a verification OTP to the user. Re-enter your password to confirm."
+                : stepUp?.kind === "revoke-sessions"
+                  ? "Signs the user out everywhere. Existing tokens stop working immediately."
+                  : "Re-enter your password to change admin access or deactivate this user."
         }
-        confirmLabel={stepUp?.kind === "impersonate" ? "Start impersonation" : "Confirm change"}
-        busy={impersonate.isPending || updateUser.isPending}
+        confirmLabel={
+          stepUp?.kind === "impersonate"
+            ? "Start impersonation"
+            : stepUp?.kind === "force-reset"
+              ? "Send reset email"
+              : stepUp?.kind === "resend-verify"
+                ? stepUp.markVerified
+                  ? "Mark verified"
+                  : "Send verification"
+                : stepUp?.kind === "revoke-sessions"
+                  ? "Revoke sessions"
+                  : "Confirm change"
+        }
+        showReadOnlyOption={stepUp?.kind === "impersonate"}
+        busy={stepUpBusy}
         onClose={() => setStepUp(null)}
-        onConfirm={(password, reason) => {
+        onConfirm={(password, reason, readOnly) => {
           if (!stepUp) return;
           if (stepUp.kind === "impersonate") {
-            impersonate.mutate({ id: stepUp.userId, password, reason });
-          } else {
+            impersonate.mutate({
+              id: stepUp.userId,
+              password,
+              reason,
+              read_only: readOnly,
+            });
+          } else if (stepUp.kind === "update") {
             updateUser.mutate({
               id: stepUp.id,
               role: stepUp.role,
               is_active: stepUp.is_active,
               password_confirm: password,
+            });
+          } else if (
+            stepUp.kind === "force-reset" ||
+            stepUp.kind === "resend-verify" ||
+            stepUp.kind === "revoke-sessions"
+          ) {
+            supportAction.mutate({
+              kind: stepUp.kind,
+              userId: stepUp.userId,
+              password,
+              markVerified: stepUp.kind === "resend-verify" ? stepUp.markVerified : undefined,
             });
           }
         }}

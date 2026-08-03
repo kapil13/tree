@@ -49,6 +49,21 @@ class UserRoleUpdate(BaseModel):
 class ImpersonateRequest(BaseModel):
     password: str = Field(min_length=1)
     reason: str | None = Field(default=None, max_length=500)
+    read_only: bool = False
+
+
+class StepUpPasswordRequest(BaseModel):
+    password: str = Field(min_length=1)
+
+
+class ResendVerificationRequest(BaseModel):
+    password: str = Field(min_length=1)
+    mark_verified: bool = False
+
+
+class SupportActionOut(BaseModel):
+    status: str = "ok"
+    dev_hint: str | None = None
 
 
 class UserPlatformGrantsOut(BaseModel):
@@ -111,6 +126,7 @@ class OrganizationAdminDetailOut(OrganizationAdminOut):
 class OrganizationAdminUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     is_active: bool | None = None
+    owner_user_id: uuid.UUID | None = None
     password_confirm: str | None = Field(default=None, min_length=1)
 
 
@@ -207,6 +223,7 @@ class ImpersonationOut(BaseModel):
     expires_in: int
     impersonated_by_id: uuid.UUID
     impersonated_by_email: EmailStr
+    read_only: bool = False
     target_user: UserAdminOut
 
 

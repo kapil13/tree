@@ -39,6 +39,9 @@ export function ImpersonationBanner() {
           <span>
             Viewing as <strong>{user.full_name}</strong> ({user.email}). Signed in as admin{" "}
             {user.impersonation.admin_email}.
+            {user.impersonation.read_only ? (
+              <span className="ml-1 font-medium">Read-only.</span>
+            ) : null}
           </span>
         </div>
         <button

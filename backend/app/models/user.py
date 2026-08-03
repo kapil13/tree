@@ -31,6 +31,7 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sessions_invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notification_preferences: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=default_notification_preferences
     )
