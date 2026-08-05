@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -74,6 +74,17 @@ async def can_access_tree(db: AsyncSession, user: User, tree: Tree) -> bool:
     if user.role == "admin":
         return True
     if tree.owner_user_id == user.id:
+        return True
+    from app.models.tree_steward import TreeSteward
+
+    steward = (
+        await db.execute(
+            select(TreeSteward.id).where(
+                TreeSteward.tree_id == tree.id, TreeSteward.user_id == user.id
+            )
+        )
+    ).scalar_one_or_none()
+    if steward is not None:
         return True
     if user_sees_org_portfolio(user) and user.organization_id:
         return tree.organization_id == user.organization_id

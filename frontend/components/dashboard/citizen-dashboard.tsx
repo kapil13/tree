@@ -26,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 import { TreesMap } from "@/components/trees-map";
+import { CitizenStewardshipPanel } from "@/components/dashboard/citizen-stewardship-panel";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { CHART_COLORS, fmtCompact, fmtNum, fmtPct, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
@@ -185,6 +186,19 @@ export function CitizenDashboard() {
       </section>
 
       <DataTrustBanner variant="strip" />
+
+      <div className="dash-panel">
+        <div className="dash-panel-head">
+          <div>
+            <h2 className="dash-panel-title">Stewardship & rewards</h2>
+            <p className="dash-panel-sub">Adopt trees, complete check-ins, and earn badges</p>
+          </div>
+          <Link href="/stewardship" className="dash-link">
+            Open stewardship hub
+          </Link>
+        </div>
+        <CitizenStewardshipPanel compact />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard

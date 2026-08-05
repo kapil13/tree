@@ -25,6 +25,7 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
 import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
+import { citizen } from "@/lib/citizen-api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp, viewerReadOnlyMessage } from "@/lib/nav-access";
 
@@ -62,6 +63,36 @@ export function TreeDetailView() {
     queryFn: () => trees.get(id),
     enabled: !!id,
   });
+
+  const { data: stewardship } = useQuery({
+    queryKey: ["citizen-stewardship"],
+    queryFn: () => citizen.stewardship(),
+    enabled: Boolean(user?.id),
+  });
+
+  const adoptTree = useMutation({
+    mutationFn: () => citizen.adoptTree(id),
+    onSuccess: (result) => {
+      showToast(
+        result.new_badges.length
+          ? `Adopted! Badge: ${result.new_badges[0]?.label}`
+          : "You are now stewarding this tree.",
+      );
+      qc.invalidateQueries({ queryKey: ["citizen-stewardship"] });
+      qc.invalidateQueries({ queryKey: ["citizen-profile"] });
+    },
+    onError: (err) => showToast(errorMessage(err)),
+  });
+
+  const isOwner = tree?.owner_user_id === user?.id;
+  const isAdopted = stewardship?.adopted.some((t) => t.id === id);
+  const canAdopt =
+    tree &&
+    user &&
+    !isOwner &&
+    !isAdopted &&
+    !tree.project_id &&
+    (tree.metadata?.visibility_public ?? true);
 
   const { data: sat } = useQuery({
     queryKey: ["sat", id],
@@ -238,6 +269,28 @@ export function TreeDetailView() {
           {viewerReadOnlyMessage("trees")}
         </div>
       )}
+
+      {canAdopt ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <p className="text-sm text-emerald-900 dark:text-emerald-100">
+            This tree is open for community adoption. Steward it with monthly check-ins and earn badges.
+          </p>
+          <button
+            type="button"
+            className="btn-primary mt-3"
+            disabled={adoptTree.isPending}
+            onClick={() => adoptTree.mutate()}
+          >
+            Adopt this tree
+          </button>
+        </div>
+      ) : null}
+
+      {isAdopted ? (
+        <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900 dark:border-violet-900/40 dark:bg-violet-950/20">
+          You are stewarding this tree. Complete survival check-ins to keep your streak and badges.
+        </div>
+      ) : null}
 
       <AiScanUsagePanel compact />
       {scanUsage?.tier === "byot_metered" && scanUsage.payment_enabled && !scanUsage.can_scan ? (

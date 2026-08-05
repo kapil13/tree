@@ -3,6 +3,7 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
+from app.models.citizen_profile import CitizenProfile
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
 from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.compliance_checklist_override import ComplianceChecklistOverride
@@ -33,6 +34,7 @@ from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
+from app.models.tree_steward import TreeSteward
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
@@ -46,6 +48,7 @@ __all__ = [
     "PaymentEvent",
     "AuditLog",
     "CarbonCalculation",
+    "CitizenProfile",
     "ComplianceChecklistOverride",
     "CmsPage",
     "CmsSection",
@@ -78,6 +81,7 @@ __all__ = [
     "SatelliteHealthAnalysis",
     "Species",
     "Tree",
+    "TreeSteward",
     "TreeAnalysis",
     "TreeImage",
     "User",

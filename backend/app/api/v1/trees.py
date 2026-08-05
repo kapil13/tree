@@ -251,6 +251,9 @@ async def create_tree(
     if compliance.chainage_km is not None:
         metadata["chainage_km"] = str(compliance.chainage_km)
 
+    if program.code == "byot" and metadata.get("visibility_public") is None:
+        metadata["visibility_public"] = True
+
     wkt = f"POINT({core_values['longitude']} {core_values['latitude']})"
     tree = Tree(
         public_code=_gen_public_code(),
@@ -304,6 +307,10 @@ async def create_tree(
             "photo_count": len(payload.photo_keys),
         },
     )
+    if program.code == "byot":
+        from app.services.citizen.gamification import record_tree_created
+
+        await record_tree_created(db, user)
     await db.commit()
     await db.refresh(tree, attribute_names=["planting_program"])
     return _to_out(tree)
@@ -514,6 +521,11 @@ async def regeotag_tree(
         meta["regeotag_remarks"] = payload.remarks
     meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
     tree.metadata_ = meta
+    gamification = None
+    if tree.project_id is None:
+        from app.services.citizen.gamification import record_stewardship_checkin
+
+        gamification = await record_stewardship_checkin(db, user=user, tree=tree)
     await record_audit(
         db,
         actor=user,
@@ -534,6 +546,7 @@ async def regeotag_tree(
     return TreeRegeotagOut(
         **base.model_dump(),
         compliance=RegeotagComplianceOut(**compliance_out) if compliance_out else None,
+        gamification=gamification,
     )
 
 

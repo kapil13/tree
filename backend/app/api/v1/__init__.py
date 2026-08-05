@@ -11,6 +11,7 @@ from app.api.v1 import (
     bhoonidhi,
     bioacoustic,
     carbon,
+    citizen,
     cms,
     compliance,
     credits,
@@ -58,6 +59,7 @@ api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)
 api_router.include_router(credits.router)
+api_router.include_router(citizen.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(devices.router)
 api_router.include_router(intelligence.router)

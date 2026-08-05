@@ -10,6 +10,7 @@ import {
   ClipboardList,
   FolderKanban,
   Globe2,
+  Heart,
   Leaf,
   LayoutDashboard,
   Map,
@@ -57,7 +58,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: "home",
     label: "Home",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: BarChart3, audience: "all", exact: true }],
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: BarChart3, audience: "all", exact: true },
+      { href: "/stewardship", label: "Stewardship", icon: Heart, audience: "all", exact: true },
+    ],
   },
   {
     id: "operate",

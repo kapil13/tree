@@ -315,6 +315,7 @@ export type TreeImage = {
 export type TreeDetail = {
   id: string;
   public_code: string;
+  owner_user_id: string;
   program_code: string | null;
   species_text: string | null;
   status: string;

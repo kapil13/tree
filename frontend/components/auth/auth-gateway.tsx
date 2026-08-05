@@ -16,6 +16,7 @@ import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
+import { CitizenSignupWizard } from "@/components/auth/citizen-signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import {
   formatPhoneDisplay,
@@ -64,6 +65,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [signupVariant, setSignupVariant] = useState<"citizen" | "professional">("citizen");
   const [method, setMethod] = useState<AuthMethod>(initialMode === "signin" ? "email" : "phone");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -312,29 +314,60 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
             </div>
 
             {mode === "signup" ? (
-              <SignupWizard
-                captchaConfig={captchaConfig}
-                invitePreview={invitePreview}
-                inviteToken={inviteToken}
-                onComplete={async () => {
-                  if (inviteToken) {
-                    try {
-                      const member = await organizations.acceptInvite(inviteToken);
+              <>
+                <div className="mb-4 flex rounded-xl bg-emerald-50 p-0.5 dark:bg-emerald-950/30">
+                  {(["citizen", "professional"] as const).map((variant) => (
+                    <button
+                      key={variant}
+                      type="button"
+                      onClick={() => setSignupVariant(variant)}
+                      className={cn(
+                        "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition",
+                        signupVariant === variant
+                          ? "bg-white text-emerald-900 shadow-sm dark:bg-stone-900 dark:text-emerald-100"
+                          : "text-emerald-800/70 hover:text-emerald-900 dark:text-emerald-200/70",
+                      )}
+                    >
+                      {variant === "citizen" ? "Citizen (quick)" : "Professional"}
+                    </button>
+                  ))}
+                </div>
+                {signupVariant === "citizen" ? (
+                  <CitizenSignupWizard
+                    captchaConfig={captchaConfig}
+                    onComplete={async () => {
                       const refreshed = await auth.me();
                       setUser(refreshed);
-                      router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
-                      return;
-                    } catch (err) {
-                      setError(inviteErrorMessage(errorMessage(err)));
-                      return;
-                    }
-                  }
-                  const refreshed = await auth.me();
-                  setUser(refreshed);
-                  router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
-                }}
-                onSwitchToSignIn={() => switchMode("signin")}
-              />
+                      router.push("/trees/new");
+                    }}
+                    onSwitchToFullSignup={() => setSignupVariant("professional")}
+                  />
+                ) : (
+                  <SignupWizard
+                    captchaConfig={captchaConfig}
+                    invitePreview={invitePreview}
+                    inviteToken={inviteToken}
+                    onComplete={async () => {
+                      if (inviteToken) {
+                        try {
+                          const member = await organizations.acceptInvite(inviteToken);
+                          const refreshed = await auth.me();
+                          setUser(refreshed);
+                          router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
+                          return;
+                        } catch (err) {
+                          setError(inviteErrorMessage(errorMessage(err)));
+                          return;
+                        }
+                      }
+                      const refreshed = await auth.me();
+                      setUser(refreshed);
+                      router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
+                    }}
+                    onSwitchToSignIn={() => switchMode("signin")}
+                  />
+                )}
+              </>
             ) : showForgotPassword ? (
               <ForgotPasswordForm
                 captchaConfig={captchaConfig}

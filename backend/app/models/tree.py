@@ -80,6 +80,9 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     carbon_records = relationship(
         "CarbonCalculation", back_populates="tree", cascade="all, delete-orphan"
     )
+    stewards = relationship(
+        "TreeSteward", back_populates="tree", cascade="all, delete-orphan"
+    )
     satellite_records = relationship(
         "SatelliteRecord", back_populates="tree", cascade="all, delete-orphan"
     )
