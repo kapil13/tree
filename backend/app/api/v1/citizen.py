@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import Response
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.schemas.citizen import (
@@ -77,13 +78,14 @@ async def citizen_adopt_tree(
     )
 
 
-@router.delete("/trees/{tree_id}/adopt", status_code=204)
-async def citizen_relinquish_tree(tree_id: uuid.UUID, user: WriteAccess, db: DB) -> None:
+@router.delete("/trees/{tree_id}/adopt", status_code=204, response_class=Response)
+async def citizen_relinquish_tree(tree_id: uuid.UUID, user: WriteAccess, db: DB) -> Response:
     try:
         await relinquish_adoption(db, user=user, tree_id=tree_id)
         await db.commit()
     except AdoptionError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    return Response(status_code=204)
 
 
 @router.post("/adopt-by-code", response_model=GamificationEventOut)
@@ -106,10 +108,11 @@ async def citizen_adopt_by_code(
     return GamificationEventOut(points=profile["points"], new_badges=[])
 
 
-@router.post("/onboarding/{step_id}", status_code=204)
-async def citizen_mark_onboarding_step(step_id: str, user: CurrentUser, db: DB) -> None:
+@router.post("/onboarding/{step_id}", status_code=204, response_class=Response)
+async def citizen_mark_onboarding_step(step_id: str, user: CurrentUser, db: DB) -> Response:
     await mark_onboarding_step(db, user, step_id)
     await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/signup/start", response_model=dict)
