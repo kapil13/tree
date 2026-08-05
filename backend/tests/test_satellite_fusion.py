@@ -49,6 +49,25 @@ def test_recommended_action_stale_scan():
     assert "stale" in action.lower()
 
 
+def test_fusion_status_optical_sar_aligned():
+    sentinel = {"last_scan_at": "2026-01-01T00:00:00Z"}
+    bhoonidhi = {"scenes_available": 0}
+    sar = {"last_scan_at": "2026-01-02T00:00:00Z"}
+    assert _fusion_status(sentinel, bhoonidhi, sar) == "optical_sar_aligned"
+
+
+def test_recommended_action_sar_moisture():
+    action = _recommended_action(
+        fusion_status="optical_sar_aligned",
+        days_since_scan=5,
+        ndvi_trend="stable",
+        scenes_available=0,
+        sar_ground_status="hidden_moisture",
+    )
+    assert "SAR" in action
+    assert "drainage" in action.lower() or "moisture" in action.lower()
+
+
 def test_recommended_action_none():
     action = _recommended_action(
         fusion_status="none",
