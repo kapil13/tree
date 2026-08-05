@@ -117,6 +117,7 @@ class RegeotagComplianceOut(BaseModel):
 
 class TreeRegeotagOut(TreeOut):
     compliance: RegeotagComplianceOut | None = None
+    gamification: dict[str, Any] | None = None
 
 
 class TreePassport(BaseModel):

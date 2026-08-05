@@ -127,20 +127,33 @@ def recalc_carbon(tree_id: str, user_id: str) -> dict:
 
 
 @celery_app.task(name="app.workers.tasks.send_notification")
-def send_notification(user_id: str, channel: str, title: str, message: str) -> dict:
-    """Async dispatch for email/SMS (decoupled from request path)."""
+def send_notification(
+    user_id: str,
+    channel: str,
+    title: str,
+    message: str,
+    push_data: dict | None = None,
+) -> dict:
+    """Async dispatch for email/SMS/push (decoupled from request path)."""
     log.info("worker.send_notification", user_id=user_id, channel=channel)
 
     async def _run() -> dict:
         from app.core.database import AsyncSessionLocal
         from app.models.user import User
-        from app.services.alerts.service import dispatch_alert_channels
+        from app.services.alerts.service import _dispatch_push_inline, dispatch_alert_channels
 
         async with AsyncSessionLocal() as db:
             user = await db.get(User, uuid.UUID(user_id))
             if user is None:
                 return {"status": "user_not_found"}
-            delivered = await dispatch_alert_channels(user, [channel], title=title, message=message)
+            if channel == "push":
+                delivered = await _dispatch_push_inline(
+                    db, user, title=title, message=message, push_data=push_data
+                )
+                return {"status": "ok", "delivered": {"push": delivered}}
+            delivered = await dispatch_alert_channels(
+                user, [channel], title=title, message=message, push_data=push_data
+            )
             return {"status": "ok", "delivered": delivered}
 
     return run_async(_run())
@@ -191,6 +204,20 @@ def survival_survey_reminders() -> dict:
             return await create_survival_survey_alerts(db)
 
     return _execute_recorded("survival_survey_reminders", _run)
+
+
+@celery_app.task(name="app.workers.tasks.citizen_stewardship_reminders")
+def citizen_stewardship_reminders() -> dict:
+    log.info("worker.citizen_stewardship_reminders")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.citizen.stewardship_alerts import create_citizen_stewardship_alerts
+
+        async with AsyncSessionLocal() as db:
+            return await create_citizen_stewardship_alerts(db)
+
+    return _execute_recorded("citizen_stewardship_reminders", _run)
 
 
 @celery_app.task(name="app.workers.tasks.biodiversity_baseline")

@@ -17,7 +17,7 @@ from app.services.auth.gmail_sender import (
     send_signup_otp_email,
 )
 from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
-from app.services.auth.otp import normalize_phone, otp_dev_hint
+from app.services.auth.otp import normalize_phone, otp_dev_hint, phone_placeholder_email
 from app.services.auth.otp_store import (
     check_otp,
     delete_signup_session,
@@ -159,5 +159,86 @@ async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) 
             if exc.code != "request_already_pending":
                 raise SignupError(exc.code) from exc
 
+    await delete_signup_session(signup_token)
+    return user
+
+
+async def start_citizen_fast_signup(
+    db: AsyncSession,
+    *,
+    full_name: str,
+    phone: str,
+    password: str,
+) -> tuple[str, str | None]:
+    """Lightweight BYOT signup — phone OTP only, placeholder email."""
+    if len(password) < 8:
+        raise SignupError("password_too_short")
+    normalized_phone = normalize_phone(phone)
+    email_lower = phone_placeholder_email(normalized_phone)
+
+    existing_phone = await db.execute(select(User.id).where(User.phone == normalized_phone))
+    if existing_phone.scalar_one_or_none():
+        raise SignupError("phone_taken")
+
+    existing_email = await db.execute(select(User.id).where(User.email == email_lower))
+    if existing_email.scalar_one_or_none():
+        raise SignupError("phone_taken")
+
+    token = str(uuid.uuid4())
+    await save_signup_session(
+        token,
+        {
+            "full_name": full_name.strip(),
+            "email": email_lower,
+            "phone": normalized_phone,
+            "password_hash": hash_password(password),
+            "phone_verified": False,
+            "email_verified": True,
+            "signup_category": SIGNUP_CATEGORY_BYOT,
+            "citizen_fast": True,
+        },
+    )
+    if not sms_auth_configured() and not settings.allow_dev_otp:
+        raise SignupError("sms_not_configured")
+
+    dev_code = await issue_otp("signup_phone", token)
+    if sms_auth_configured():
+        try:
+            await send_auth_otp_sms(phone=normalized_phone, code=dev_code)
+            return token, None
+        except SmsSendError as exc:
+            if not settings.allow_dev_otp:
+                raise SignupError("sms_send_failed") from exc
+            return token, otp_dev_hint(dev_code)
+    return token, otp_dev_hint(dev_code)
+
+
+async def complete_citizen_fast_signup(db: AsyncSession, signup_token: str, phone_code: str) -> User:
+    session = await load_signup_session(signup_token)
+    if session is None:
+        raise SignupError("signup_session_expired")
+    if not session.get("citizen_fast"):
+        raise SignupError("invalid_signup_mode")
+    if not await check_otp("signup_phone", signup_token, phone_code):
+        raise SignupError("invalid_otp")
+
+    now = datetime.now(UTC)
+    user = User(
+        email=session["email"],
+        phone=session["phone"],
+        full_name=session["full_name"],
+        hashed_password=session["password_hash"],
+        role="user",
+        is_active=True,
+        is_verified=True,
+        phone_verified_at=now,
+        email_verified_at=None,
+    )
+    db.add(user)
+    await db.flush()
+    await ensure_default_enrollment(db, user.id)
+    from app.services.citizen.gamification import ensure_citizen_profile
+
+    await ensure_citizen_profile(db, user.id)
     await delete_signup_session(signup_token)
     return user

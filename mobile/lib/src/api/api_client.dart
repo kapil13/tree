@@ -757,4 +757,40 @@ class ApiClient {
       'events': events,
     });
   }
+
+  Future<Map<String, dynamic>> citizenProfile() async {
+    final r = await _dio.get('/citizen/profile');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenStewardship() async {
+    final r = await _dio.get('/citizen/stewardship');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenSignupStart({
+    required String fullName,
+    required String phone,
+    required String password,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/citizen/signup/start', data: {
+      'full_name': fullName,
+      'phone': phone,
+      'password': password,
+      if (captchaToken != null) 'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenSignupComplete({
+    required String signupToken,
+    required String code,
+  }) async {
+    final r = await _dio.post('/citizen/signup/complete', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
 }

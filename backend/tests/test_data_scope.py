@@ -60,7 +60,22 @@ async def test_citizen_tree_scope_is_owner_only(monkeypatch):
 async def test_can_access_tree_denies_other_org_tree():
     user = _user(role="user", organization_id=uuid4())
     tree = MagicMock(owner_user_id=uuid4(), organization_id=uuid4(), project_id=None)
-    assert await can_access_tree(AsyncMock(), user, tree) is False
+    db = AsyncMock()
+    steward_result = MagicMock()
+    steward_result.scalar_one_or_none.return_value = None
+    db.execute = AsyncMock(return_value=steward_result)
+    assert await can_access_tree(db, user, tree) is False
+
+
+@pytest.mark.asyncio
+async def test_can_access_tree_allows_steward():
+    user = _user(role="user", organization_id=None)
+    tree = MagicMock(owner_user_id=uuid4(), organization_id=uuid4(), project_id=None, id=uuid4())
+    db = AsyncMock()
+    steward_result = MagicMock()
+    steward_result.scalar_one_or_none.return_value = uuid4()
+    db.execute = AsyncMock(return_value=steward_result)
+    assert await can_access_tree(db, user, tree) is True
 
 
 @pytest.mark.asyncio
