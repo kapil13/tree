@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
@@ -9,7 +9,7 @@ import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
 import { bhoonidhi, plantationFences, trees } from "@/lib/api";
 
 export default function SatellitePage() {
-  const [selectedFenceId, setSelectedFenceId] = useState("");
+  const [selectedFenceId, setSelectedFenceId] = useState<string | null>(null);
   const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
     queryFn: () => trees.list({ page_size: 100 }),
@@ -26,7 +26,13 @@ export default function SatellitePage() {
   const items = treePage?.items ?? [];
   const verified = items.filter((t) => t.satellite_verified).length;
   const fences = fencePage?.items ?? [];
-  const selectedFence = fences.find((f) => f.id === selectedFenceId);
+  const selectedFence = fences.find((f) => f.id === selectedFenceId) ?? null;
+
+  useEffect(() => {
+    if (!selectedFenceId && fences.length === 1) {
+      setSelectedFenceId(fences[0]!.id);
+    }
+  }, [fences, selectedFenceId]);
 
   return (
     <div className="space-y-4">
@@ -48,45 +54,11 @@ export default function SatellitePage() {
             </p>
           ) : (
             <p className="mt-2 text-xs text-amber-800">
-              API credentials not configured yet — you can still select a site below; scene search will run once
-              credentials are set. Email {bhoonidhiStatus.registration_email} with your VPS public IP to enable access.
+              API credentials not configured yet — Bhoonidhi scene search is optional. SAR and NDVI
+              still work without it.
             </p>
           )}
         </div>
-      )}
-
-      <div className="card">
-        <label className="label">Plantation site — Bhoonidhi STAC catalog</label>
-        {fences.length > 0 ? (
-          <select
-            className="input max-w-md"
-            value={selectedFenceId}
-            onChange={(e) => setSelectedFenceId(e.target.value)}
-          >
-            <option value="">Select a site to browse ISRO scenes…</option>
-            {fences.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <p className="text-sm text-stone-600">
-            No plantation fences yet. Draw a fence on the map below, then return here to browse IRS / ResourceSat /
-            EOS-06 scenes for that site.
-          </p>
-        )}
-      </div>
-
-      {selectedFence && (
-        <>
-          <SarGroundPanel fenceId={selectedFence.id} />
-          <BhoonidhiFenceCatalogPanel
-            fenceId={selectedFence.id}
-            fenceName={selectedFence.name}
-            configured={bhoonidhiStatus?.configured ?? false}
-          />
-        </>
       )}
 
       <div className="grid gap-4 sm:grid-cols-4">
@@ -96,7 +68,55 @@ export default function SatellitePage() {
         <Stat label="Pending tree scan" value={items.length - verified} />
       </div>
 
-      <PlantationFenceMap mapType="satellite" height="65vh" />
+      <PlantationFenceMap
+        mapType="satellite"
+        height="65vh"
+        selectedFenceId={selectedFenceId}
+        onFenceSelect={setSelectedFenceId}
+      />
+
+      <div className="card">
+        <label className="label">Selected plantation site</label>
+        {fences.length > 0 ? (
+          <select
+            className="input max-w-md"
+            value={selectedFenceId ?? ""}
+            onChange={(e) => setSelectedFenceId(e.target.value || null)}
+          >
+            <option value="">Select a site for SAR & Bhoonidhi panels…</option>
+            {fences.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-sm text-stone-600">
+            Draw a fence on the map above, then run <strong>Run SAR scan</strong> from the fence
+            sidebar.
+          </p>
+        )}
+        {selectedFence ? (
+          <p className="mt-2 text-xs text-stone-500">
+            Tip: you can also click a fence in the right sidebar on the map to select it.
+          </p>
+        ) : fences.length > 0 ? (
+          <p className="mt-2 text-xs text-amber-800">
+            Select a site to show the SAR ground panel and Bhoonidhi catalog below.
+          </p>
+        ) : null}
+      </div>
+
+      {selectedFence ? (
+        <>
+          <SarGroundPanel fenceId={selectedFence.id} />
+          <BhoonidhiFenceCatalogPanel
+            fenceId={selectedFence.id}
+            fenceName={selectedFence.name}
+            configured={bhoonidhiStatus?.configured ?? false}
+          />
+        </>
+      ) : null}
     </div>
   );
 }
