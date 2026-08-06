@@ -1351,13 +1351,7 @@ export const sar = {
     ).data;
   },
   async scanFence(fenceId: string) {
-    return (
-      await api.post<{
-        fence_id: string;
-        record: SarRecord;
-        analysis: SarAnalysis;
-      }>(`/v1/sar/work-areas/${fenceId}/scan`)
-    ).data;
+    return (await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`)).data;
   },
   async fenceMonitoring(fenceId: string) {
     return (
@@ -1370,13 +1364,7 @@ export const sar = {
     ).data;
   },
   async scanTree(treeId: string) {
-    return (
-      await api.post<{
-        tree_id: string;
-        record: SarRecord;
-        analysis: SarAnalysis;
-      }>(`/v1/sar/trees/${treeId}/scan`)
-    ).data;
+    return (await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`)).data;
   },
   async treeMonitoring(treeId: string) {
     return (
@@ -1426,6 +1414,14 @@ export type SarFusion = {
   sar_analysis: SarAnalysis;
   findings: SarFinding[];
   pipeline: string;
+};
+
+export type SarScanResponse = {
+  tree_id?: string;
+  fence_id?: string;
+  record: SarRecord;
+  analysis: SarAnalysis;
+  fusion?: SarFusion | null;
 };
 
 export type SarRecord = {
