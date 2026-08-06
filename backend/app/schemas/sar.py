@@ -28,6 +28,21 @@ class SarAnalysisOut(BaseModel):
     pipeline: str
 
 
+class SarFusionOut(BaseModel):
+    forest_integrity_score: float
+    integrity_grade: str
+    monitoring_mode: str
+    summary: str
+    optical_ndvi: float | None = None
+    optical_stale: bool = False
+    sar_analysis: SarAnalysisOut
+    findings: list[SarFindingOut] = Field(default_factory=list)
+    pipeline: str
+    tree_id: str | None = None
+    fence_id: str | None = None
+    sar_record_id: str | None = None
+
+
 class SarRecordOut(BaseModel):
     id: uuid.UUID
     provider: str
@@ -43,6 +58,7 @@ class SarRecordOut(BaseModel):
     polarimetric_composite: dict[str, float] | None = None
     coherence: float | None = None
     analysis: SarAnalysisOut | None = None
+    fusion: SarFusionOut | None = None
 
 
 class SarScanResponse(BaseModel):
@@ -50,6 +66,7 @@ class SarScanResponse(BaseModel):
     fence_id: uuid.UUID | None = None
     record: SarRecordOut
     analysis: SarAnalysisOut
+    fusion: SarFusionOut | None = None
 
 
 class SarMonitoringSeries(BaseModel):

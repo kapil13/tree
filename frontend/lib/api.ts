@@ -1388,6 +1388,12 @@ export const sar = {
       }>(`/v1/sar/trees/${treeId}/monitoring`)
     ).data;
   },
+  async treeFusion(treeId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/trees/${treeId}/fusion`)).data;
+  },
+  async fenceFusion(fenceId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/work-areas/${fenceId}/fusion`)).data;
+  },
 };
 
 export type SarFinding = {
@@ -1410,6 +1416,18 @@ export type SarAnalysis = {
   pipeline: string;
 };
 
+export type SarFusion = {
+  forest_integrity_score: number;
+  integrity_grade: string;
+  monitoring_mode: string;
+  summary: string;
+  optical_ndvi: number | null;
+  optical_stale: boolean;
+  sar_analysis: SarAnalysis;
+  findings: SarFinding[];
+  pipeline: string;
+};
+
 export type SarRecord = {
   id: string;
   provider: string;
@@ -1425,6 +1443,7 @@ export type SarRecord = {
   polarimetric_composite?: Record<string, number> | null;
   coherence?: number | null;
   analysis?: SarAnalysis | null;
+  fusion?: SarFusion | null;
 };
 
 export const plantationFences = {
