@@ -21,7 +21,9 @@ import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
+import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast";
+import { showToast } from "@/components/toast";
 import {
   estimatePolygonAreaHa,
   formatAreaHa,
@@ -101,16 +103,20 @@ type Props = {
   mapType?: "roadmap" | "satellite" | "hybrid";
   height?: string;
   className?: string;
+  selectedFenceId?: string | null;
+  onFenceSelect?: (fenceId: string | null) => void;
 };
 
 export function PlantationFenceMap({
   mapType = "satellite",
   height = "65vh",
   className = "",
+  selectedFenceId = null,
+  onFenceSelect,
 }: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const qc = useQueryClient();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(selectedFenceId);
   const [ndviRefresh, setNdviRefresh] = useState(0);
   const [drawMode, setDrawMode] = useState(false);
   const [draftPaths, setDraftPaths] = useState<google.maps.LatLngLiteral[]>([]);
@@ -140,6 +146,21 @@ export function PlantationFenceMap({
 
   const fences = fencePage?.items ?? [];
   const treeItems = treePage?.items ?? [];
+
+  useEffect(() => {
+    if (selectedFenceId !== undefined && selectedFenceId !== selectedId) {
+      setSelectedId(selectedFenceId);
+    }
+  }, [selectedFenceId, selectedId]);
+
+  const selectFence = useCallback(
+    (id: string | null) => {
+      setSelectedId(id);
+      onFenceSelect?.(id);
+    },
+    [onFenceSelect],
+  );
+
   const activeFenceId =
     selectedId ?? (fences.length === 1 ? fences[0]?.id ?? null : null);
 
@@ -185,16 +206,25 @@ export function PlantationFenceMap({
       setPendingPaths(null);
       setPendingName("");
       setDrawMode(false);
-      setSelectedId(fence.id);
+      selectFence(fence.id);
       await qc.invalidateQueries({ queryKey: ["plantation-fences"] });
-      scanFence.mutate(fence.id);
+      try {
+        await plantationFences.scan(fence.id);
+        setNdviRefresh((n) => n + 1);
+        qc.invalidateQueries({ queryKey: ["fence-sat", fence.id] });
+        showToast("Fence saved and NDVI scan started.");
+      } catch (err) {
+        showToast(
+          `Fence saved, but NDVI scan failed: ${errorMessage(err)}. Use Rescan NDVI when ready.`,
+        );
+      }
     },
   });
 
   const deleteFence = useMutation({
     mutationFn: (id: string) => plantationFences.remove(id),
     onSuccess: () => {
-      setSelectedId(null);
+      selectFence(null);
       qc.invalidateQueries({ queryKey: ["plantation-fences"] });
     },
   });
@@ -384,7 +414,7 @@ export function PlantationFenceMap({
                     fillOpacity={active ? 0.35 : 0.2}
                     strokeColor={active ? "#14532d" : "#15803d"}
                     strokeWeight={active ? 3 : 2}
-                    onClick={() => setSelectedId(fence.id)}
+                    onClick={() => selectFence(fence.id)}
                   />
                 );
               })}
@@ -426,7 +456,7 @@ export function PlantationFenceMap({
                 <button
                   type="button"
                   className="w-full text-left"
-                  onClick={() => setSelectedId(fence.id)}
+                  onClick={() => selectFence(fence.id)}
                 >
                   <div className="font-medium">{fence.name}</div>
                   <div
@@ -457,6 +487,7 @@ export function PlantationFenceMap({
                       resolutionLabel="polygon"
                     />
                     <SatelliteHealthPanel kind="fence" targetId={fence.id} />
+                    <SarGroundPanel fenceId={fence.id} compact />
                     <PestIntelPanel kind="work-area" targetId={fence.id} />
                     <WeatherForecastPanel fenceId={fence.id} fenceName={fence.name} />
                     <div className="flex gap-2">

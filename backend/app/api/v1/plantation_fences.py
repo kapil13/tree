@@ -144,7 +144,13 @@ async def list_fences(
 async def create_fence(
     payload: PlantationFenceCreate, user: WriteProfessional, db: DB
 ) -> PlantationFenceOut:
-    wkt = geojson_polygon_to_wkt(payload.boundary.model_dump())
+    try:
+        wkt = geojson_polygon_to_wkt(payload.boundary.model_dump())
+    except ValueError as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"invalid_polygon:{exc}",
+        ) from exc
     fence = PlantationFence(
         name=payload.name,
         owner_user_id=user.id,
@@ -206,7 +212,7 @@ async def scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> Pl
     fence = await _load_fence(fence_id, user, db)
     boundary = geography_to_geojson_polygon(fence.boundary)
     try:
-        result = await scan_plantation_polygon(boundary, require_sentinel=True)
+        result = await scan_plantation_polygon(boundary, require_sentinel=False)
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 

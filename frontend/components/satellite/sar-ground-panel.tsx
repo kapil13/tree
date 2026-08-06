@@ -29,7 +29,11 @@ export function SarGroundPanel({
   compact?: boolean;
 }) {
   const qc = useQueryClient();
-  const statusQ = useQuery({ queryKey: ["sar-status"], queryFn: () => sar.status() });
+  const statusQ = useQuery({
+    queryKey: ["sar-status"],
+    queryFn: () => sar.status(),
+    retry: false,
+  });
   const monitoringQ = useQuery({
     queryKey: ["sar-monitoring", fenceId],
     queryFn: () => sar.fenceMonitoring(fenceId),
@@ -71,6 +75,13 @@ export function SarGroundPanel({
           Run SAR scan
         </button>
       </div>
+
+      {statusQ.isError ? (
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          SAR API is not available on this server yet — redeploy the latest backend to enable{" "}
+          <strong>Run SAR scan</strong>.
+        </p>
+      ) : null}
 
       {statusQ.data ? (
         <p className="text-xs text-stone-500">{statusQ.data.message}</p>
