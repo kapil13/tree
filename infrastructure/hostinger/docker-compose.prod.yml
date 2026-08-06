@@ -113,6 +113,7 @@ services:
       - .env.production
     volumes:
       - ${GMAIL_SA_JSON_HOST:-/opt/aranyix/secrets/gmail-service-account.json}:/run/secrets/gmail-sa.json:ro
+      - ${GEE_SA_JSON_HOST:-/opt/aranyix/secrets/gee-service-account.json}:/run/secrets/gee-sa.json:ro
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -166,6 +167,7 @@ services:
     volumes:
       - ./worker-entrypoint.sh:/worker-entrypoint.sh:ro
       - ${GMAIL_SA_JSON_HOST:-/opt/aranyix/secrets/gmail-service-account.json}:/run/secrets/gmail-sa.json:ro
+      - ${GEE_SA_JSON_HOST:-/opt/aranyix/secrets/gee-service-account.json}:/run/secrets/gee-sa.json:ro
     entrypoint: ["/bin/sh", "/worker-entrypoint.sh"]
     env_file:
       - .env.production
