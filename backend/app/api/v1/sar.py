@@ -15,6 +15,7 @@ from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.sar import (
     SarAnalysisOut,
+    SarFusionOut,
     SarMonitoringSeries,
     SarRecordOut,
     SarScanResponse,
@@ -30,6 +31,7 @@ from app.services.monitoring.sar_sweep import (
 )
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.satellite.sar_analytics import analysis_to_dict
+from app.services.satellite.sar_fusion_ops import build_fence_sar_fusion, build_tree_sar_fusion
 from app.services.satellite.sar_service import (
     get_sar_service,
     has_sar_credentials,
@@ -42,6 +44,7 @@ router = APIRouter(prefix="/sar", tags=["sar"])
 
 def _record_out(data: dict) -> SarRecordOut:
     analysis = data.get("analysis")
+    fusion = data.get("fusion")
     return SarRecordOut(
         id=uuid.UUID(data["id"]),
         provider=data["provider"],
@@ -57,7 +60,14 @@ def _record_out(data: dict) -> SarRecordOut:
         polarimetric_composite=data.get("polarimetric_composite"),
         coherence=data.get("coherence"),
         analysis=SarAnalysisOut.model_validate(analysis) if analysis else None,
+        fusion=SarFusionOut.model_validate(fusion) if fusion else None,
     )
+
+
+def _fusion_out(data: dict | None) -> SarFusionOut | None:
+    if not data:
+        return None
+    return SarFusionOut.model_validate(data)
 
 
 async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
@@ -123,6 +133,7 @@ async def sar_scan_tree(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> 
         tree_id=tree.id,
         record=_record_out(serialized),
         analysis=SarAnalysisOut.model_validate(analysis_to_dict(analysis)),
+        fusion=_fusion_out(serialized.get("fusion")),
     )
 
 
@@ -179,7 +190,28 @@ async def sar_scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -
         fence_id=fence.id,
         record=_record_out(serialized),
         analysis=SarAnalysisOut.model_validate(analysis_to_dict(analysis)),
+        fusion=_fusion_out(serialized.get("fusion")),
     )
+
+
+@router.get("/trees/{tree_id}/fusion", response_model=SarFusionOut)
+async def sar_tree_fusion(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SarFusionOut:
+    await assert_org_feature_enabled(db, user, "satellite")
+    await _load_tree(tree_id, user, db)
+    fusion = await build_tree_sar_fusion(db, tree_id)
+    if fusion is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="sar_fusion_not_available")
+    return SarFusionOut.model_validate(fusion)
+
+
+@router.get("/work-areas/{fence_id}/fusion", response_model=SarFusionOut)
+async def sar_fence_fusion(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> SarFusionOut:
+    await assert_org_feature_enabled(db, user, "satellite")
+    await _load_fence(fence_id, user, db)
+    fusion = await build_fence_sar_fusion(db, fence_id)
+    if fusion is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="sar_fusion_not_available")
+    return SarFusionOut.model_validate(fusion)
 
 
 @router.get("/work-areas/{fence_id}/monitoring", response_model=SarMonitoringSeries)

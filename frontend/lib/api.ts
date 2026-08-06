@@ -1351,13 +1351,7 @@ export const sar = {
     ).data;
   },
   async scanFence(fenceId: string) {
-    return (
-      await api.post<{
-        fence_id: string;
-        record: SarRecord;
-        analysis: SarAnalysis;
-      }>(`/v1/sar/work-areas/${fenceId}/scan`)
-    ).data;
+    return (await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`)).data;
   },
   async fenceMonitoring(fenceId: string) {
     return (
@@ -1370,13 +1364,7 @@ export const sar = {
     ).data;
   },
   async scanTree(treeId: string) {
-    return (
-      await api.post<{
-        tree_id: string;
-        record: SarRecord;
-        analysis: SarAnalysis;
-      }>(`/v1/sar/trees/${treeId}/scan`)
-    ).data;
+    return (await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`)).data;
   },
   async treeMonitoring(treeId: string) {
     return (
@@ -1387,6 +1375,12 @@ export const sar = {
         sar_configured: boolean;
       }>(`/v1/sar/trees/${treeId}/monitoring`)
     ).data;
+  },
+  async treeFusion(treeId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/trees/${treeId}/fusion`)).data;
+  },
+  async fenceFusion(fenceId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/work-areas/${fenceId}/fusion`)).data;
   },
 };
 
@@ -1410,6 +1404,26 @@ export type SarAnalysis = {
   pipeline: string;
 };
 
+export type SarFusion = {
+  forest_integrity_score: number;
+  integrity_grade: string;
+  monitoring_mode: string;
+  summary: string;
+  optical_ndvi: number | null;
+  optical_stale: boolean;
+  sar_analysis: SarAnalysis;
+  findings: SarFinding[];
+  pipeline: string;
+};
+
+export type SarScanResponse = {
+  tree_id?: string;
+  fence_id?: string;
+  record: SarRecord;
+  analysis: SarAnalysis;
+  fusion?: SarFusion | null;
+};
+
 export type SarRecord = {
   id: string;
   provider: string;
@@ -1425,6 +1439,7 @@ export type SarRecord = {
   polarimetric_composite?: Record<string, number> | null;
   coherence?: number | null;
   analysis?: SarAnalysis | null;
+  fusion?: SarFusion | null;
 };
 
 export const plantationFences = {

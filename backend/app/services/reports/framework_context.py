@@ -9,11 +9,14 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.plantation_fence import PlantationFence
+from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.carbon.engine import BUFFER_POOL, ENGINE_VERSION
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 from app.services.reports.frameworks import FrameworkProfile, get_framework_profile
+from app.services.satellite.sar_service import is_sar_provider_record
 
 
 def _methodology_buffer(methodology: str) -> float:
@@ -50,6 +53,29 @@ async def build_framework_report_context(
     satellite_verified = sum(1 for t in trees if t.satellite_verified)
     geo_tagged = sum(1 for t in trees if t.last_geotag_at is not None)
 
+    sar_scores: list[float] = []
+    sar_ground_risk = 0
+    sar_res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .join(PlantationFence, PlantationFence.id == PlantationSatelliteRecord.fence_id)
+        .where(PlantationFence.project_id == project.id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+    )
+    seen_fences: set[str] = set()
+    for rec in sar_res.scalars().all():
+        fid = str(rec.fence_id)
+        if fid in seen_fences or not is_sar_provider_record(rec.provider):
+            continue
+        seen_fences.add(fid)
+        fusion = (rec.raw_metadata or {}).get("sar_fusion") or {}
+        score = fusion.get("forest_integrity_score")
+        if score is not None:
+            sar_scores.append(float(score))
+        if fusion.get("integrity_grade") in {"at_risk", "critical"}:
+            sar_ground_risk += 1
+
+    sar_avg_integrity = round(sum(sar_scores) / len(sar_scores), 1) if sar_scores else None
+
     carbon_summary = {
         "total_trees": len(trees),
         "total_carbon_kg": round(total_carbon_kg, 3),
@@ -62,7 +88,12 @@ async def build_framework_report_context(
         "methodology": profile.methodology,
     }
 
-    sections = _profile_sections(profile, base, carbon_summary, trees)
+    sections = _profile_sections(profile, base, carbon_summary, trees, monitoring={
+            "satellite_verified_trees": satellite_verified,
+            "sar_avg_forest_integrity": sar_avg_integrity,
+            "sar_work_areas_scanned": len(sar_scores),
+            "sar_ground_risk_sites": sar_ground_risk,
+        })
 
     return {
         **base,
@@ -82,6 +113,10 @@ async def build_framework_report_context(
             "geo_tagged_trees": geo_tagged,
             "open_violations": base["summary"].get("open_violations", 0),
             "native_species_pct": base["summary"].get("native_species_pct"),
+            "sar_work_areas_scanned": len(sar_scores),
+            "sar_avg_forest_integrity": sar_avg_integrity,
+            "sar_ground_risk_sites": sar_ground_risk,
+            "sar_methodology": "NISAR-inspired L/S-band proxy with optical NDVI fusion (Phase 2)",
         },
         "sections": sections,
     }
@@ -92,9 +127,11 @@ def _profile_sections(
     base: dict[str, Any],
     carbon: dict[str, Any],
     trees: list[Tree],
+    monitoring: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     summary = base["summary"]
     project = base["project"]
+    monitoring = monitoring or {}
 
     common_carbon = [
         ["Total trees", str(carbon["total_trees"])],
@@ -117,7 +154,9 @@ def _profile_sections(
                 "title": "Data lineage",
                 "rows": [
                     ["Field registration", f"{summary['tree_count']} geo-tagged trees"],
-                    ["Satellite monitoring", f"{carbon.get('satellite_verified_trees', '—')} verified"],
+                    ["Satellite monitoring", f"{monitoring.get('satellite_verified_trees', carbon.get('satellite_verified_trees', '—'))} verified"],
+                    ["SAR Forest Integrity", str(monitoring.get("sar_avg_forest_integrity") or "—")],
+                    ["SAR ground-risk sites", str(monitoring.get("sar_ground_risk_sites", "—"))],
                     ["Compliance mode", project.get("compliance_mode", "—")],
                 ],
             },

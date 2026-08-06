@@ -18,6 +18,7 @@ from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
 from app.services.satellite.sar_analytics import analyze_sar_sample
+from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
 from app.services.satellite.sar_types import SarAnalysisResult
 
@@ -50,8 +51,50 @@ async def _latest_ndvi_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> float
     return None
 
 
-def _analysis_to_metadata(analysis: SarAnalysisResult) -> dict[str, Any]:
-    return {
+async def _latest_optical_context_tree(db: AsyncSession, tree_id: uuid.UUID):
+    from app.services.satellite.sar_fusion import OpticalContext
+
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(8)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            continue
+        return OpticalContext(
+            ndvi_mean=float(row.ndvi_mean) if row.ndvi_mean is not None else None,
+            cloud_cover_pct=float(row.cloud_cover_pct) if row.cloud_cover_pct is not None else None,
+            scene_acquired_at=row.scene_acquired_at,
+            provider=row.provider,
+        )
+    return None
+
+
+async def _latest_optical_context_fence(db: AsyncSession, fence_id: uuid.UUID):
+    from app.services.satellite.sar_fusion import OpticalContext
+
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(8)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            continue
+        return OpticalContext(
+            ndvi_mean=float(row.ndvi_mean) if row.ndvi_mean is not None else None,
+            cloud_cover_pct=float(row.cloud_cover_pct) if row.cloud_cover_pct is not None else None,
+            scene_acquired_at=row.scene_acquired_at,
+            provider=row.provider,
+        )
+    return None
+
+
+def _analysis_to_metadata(analysis: SarAnalysisResult, fusion: dict | None = None) -> dict[str, Any]:
+    out: dict[str, Any] = {
         "sar_analysis": {
             "risk_level": analysis.risk_level,
             "ground_status": analysis.ground_status,
@@ -70,6 +113,9 @@ def _analysis_to_metadata(analysis: SarAnalysisResult) -> dict[str, Any]:
             "raw_signals": analysis.raw_signals,
         }
     }
+    if fusion:
+        out["sar_fusion"] = fusion
+    return out
 
 
 async def maybe_alert_sar_risks(
@@ -150,10 +196,11 @@ async def scan_and_persist_tree_sar(
         return None
 
     sample = await get_sar_service().sample_point(lat, lon)
-    ndvi = await _latest_ndvi_for_tree(db, tree.id)
-    analysis = analyze_sar_sample(sample, ndvi_mean=ndvi)
+    optical = await _latest_optical_context_tree(db, tree.id)
+    analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
+    fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
     meta = sample.to_raw_metadata()
-    meta.update(_analysis_to_metadata(analysis))
+    meta.update(_analysis_to_metadata(analysis, fusion))
 
     rec = SatelliteRecord(
         tree_id=tree.id,
@@ -194,10 +241,11 @@ async def scan_and_persist_fence_sar(
         log.warning("fence_sar_scan_failed", fence_id=str(fence.id), error=str(exc))
         return None
 
-    ndvi = await _latest_ndvi_for_fence(db, fence.id)
-    analysis = analyze_sar_sample(sample, ndvi_mean=ndvi)
+    optical = await _latest_optical_context_fence(db, fence.id)
+    analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
+    fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
     meta = sample.to_raw_metadata()
-    meta.update(_analysis_to_metadata(analysis))
+    meta.update(_analysis_to_metadata(analysis, fusion))
 
     rec = PlantationSatelliteRecord(
         fence_id=fence.id,
@@ -255,6 +303,7 @@ async def latest_sar_record_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> 
 def serialize_sar_record(rec: SatelliteRecord | PlantationSatelliteRecord) -> dict[str, Any]:
     meta = rec.raw_metadata or {}
     analysis = meta.get("sar_analysis") or {}
+    fusion = meta.get("sar_fusion") or {}
     return {
         "id": str(rec.id),
         "provider": rec.provider,
@@ -270,4 +319,5 @@ def serialize_sar_record(rec: SatelliteRecord | PlantationSatelliteRecord) -> di
         "polarimetric_composite": meta.get("polarimetric_composite"),
         "coherence": meta.get("coherence"),
         "analysis": analysis,
+        "fusion": fusion if fusion else None,
     }

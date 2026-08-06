@@ -23,6 +23,7 @@ import { BuyAiScanPacks } from "@/components/payments/buy-ai-scan-packs";
 import { NdviImagePreview } from "@/components/ndvi-image-preview";
 import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
+import { SarTreePanel } from "@/components/satellite/sar-tree-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
 import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
 import { citizen } from "@/lib/citizen-api";
@@ -571,6 +572,7 @@ export function TreeDetailView() {
         )}
 
         <SatelliteHealthPanel kind="tree" targetId={id} />
+        <SarTreePanel treeId={id} />
         {tree.plantation_id && (
           <PestIntelPanel kind="work-area" targetId={tree.plantation_id} />
         )}

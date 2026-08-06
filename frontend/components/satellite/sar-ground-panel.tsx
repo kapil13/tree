@@ -51,7 +51,8 @@ export function SarGroundPanel({
   });
 
   const latest = monitoringQ.data?.latest;
-  const analysis = latest?.analysis;
+  const analysis = latest?.analysis ?? latest?.fusion?.sar_analysis;
+  const fusion = latest?.fusion;
 
   return (
     <div className={cn("card space-y-3", compact && "p-4")}>
@@ -85,6 +86,20 @@ export function SarGroundPanel({
 
       {statusQ.data ? (
         <p className="text-xs text-stone-500">{statusQ.data.message}</p>
+      ) : null}
+
+      {fusion ? (
+        <div className="rounded-lg border border-forest-200 bg-forest-50/60 p-3">
+          <p className="text-xs uppercase tracking-wide text-forest-800">Forest Integrity Score</p>
+          <p className="mt-1 text-2xl font-semibold text-forest-900">
+            {fusion.forest_integrity_score}
+            <span className="text-sm font-normal text-stone-600"> / 100</span>
+          </p>
+          <p className="mt-1 text-xs capitalize text-stone-600">
+            {fusion.integrity_grade.replaceAll("_", " ")} · {fusion.monitoring_mode.replaceAll("_", " ")}
+          </p>
+          <p className="mt-2 text-sm text-stone-700">{fusion.summary}</p>
+        </div>
       ) : null}
 
       {monitoringQ.isLoading ? (

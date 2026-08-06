@@ -7,6 +7,7 @@ dev, demos, and CI working end-to-end.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import random
 from datetime import UTC, datetime, timedelta
@@ -15,6 +16,7 @@ from typing import Protocol
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.geo import polygon_centroid
+from app.services.satellite.gee_sar_sampler import gee_python_available, sample_sentinel1_point
 from app.services.satellite.sar_types import SarSample
 
 log = get_logger(__name__)
@@ -113,8 +115,27 @@ class StubSarService:
         return await self.sample_point(lat, lon, when=when)
 
 
+def _sample_from_gee_dict(data: dict) -> SarSample:
+    return SarSample(
+        provider=data["provider"],
+        scene_id=data["scene_id"],
+        scene_acquired_at=data["scene_acquired_at"],
+        l_band_hh_db=data["l_band_hh_db"],
+        s_band_hh_db=data["s_band_hh_db"],
+        vh_hv_ratio=data.get("vh_hv_ratio"),
+        double_bounce_index=data["double_bounce_index"],
+        wetland_probability=data["wetland_probability"],
+        ground_moisture_index=data["ground_moisture_index"],
+        canopy_ground_mismatch=data["canopy_ground_mismatch"],
+        frequency_bands=data.get("frequency_bands", ["C"]),
+        polarimetric_composite=data.get("polarimetric_composite"),
+        coherence=data.get("coherence"),
+        pipeline=data.get("pipeline", "byot-sar-gee-2.0.0"),
+    )
+
+
 class GeeSarService:
-    """GEE-backed SAR — falls back to stub until earthengine is wired."""
+    """GEE-backed SAR (Sentinel-1) with stub fallback."""
 
     name = SAR_PROVIDER_GEE
 
@@ -122,31 +143,14 @@ class GeeSarService:
         self._fallback = fallback or StubSarService()
 
     async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample:
-        if not settings.gee_service_account_json:
-            return await self._fallback.sample_point(lat, lon, when=when)
-        try:
-            # Hook for future GEE NISAR / Sentinel-1 / EOS-04 sampling.
-            log.info("sar_gee_not_implemented_using_stub", lat=lat, lon=lon)
-            sample = await self._fallback.sample_point(lat, lon, when=when)
-            return SarSample(
-                provider=SAR_PROVIDER_GEE,
-                scene_id=sample.scene_id.replace("NISAR_STUB", "SAR_GEE"),
-                scene_acquired_at=sample.scene_acquired_at,
-                l_band_hh_db=sample.l_band_hh_db,
-                s_band_hh_db=sample.s_band_hh_db,
-                vh_hv_ratio=sample.vh_hv_ratio,
-                double_bounce_index=sample.double_bounce_index,
-                wetland_probability=sample.wetland_probability,
-                ground_moisture_index=sample.ground_moisture_index,
-                canopy_ground_mismatch=sample.canopy_ground_mismatch,
-                frequency_bands=sample.frequency_bands,
-                polarimetric_composite=sample.polarimetric_composite,
-                coherence=sample.coherence,
-                pipeline="byot-sar-gee-1.0.0",
-            )
-        except Exception as exc:
-            log.warning("sar_gee_sample_failed", lat=lat, lon=lon, error=str(exc))
-            return await self._fallback.sample_point(lat, lon, when=when)
+        if settings.gee_service_account_json and gee_python_available():
+            try:
+                data = await asyncio.to_thread(sample_sentinel1_point, lat, lon, when=when)
+                if data is not None:
+                    return _sample_from_gee_dict(data)
+            except Exception as exc:
+                log.warning("sar_gee_sample_failed", lat=lat, lon=lon, error=str(exc))
+        return await self._fallback.sample_point(lat, lon, when=when)
 
     async def sample_polygon(
         self, boundary_geojson: dict, *, when: datetime | None = None
@@ -164,7 +168,7 @@ def reset_sar_service() -> None:
 
 
 def has_sar_credentials() -> bool:
-    return bool(settings.gee_service_account_json) or settings.sar_provider == "gee"
+    return bool(settings.gee_service_account_json) and gee_python_available()
 
 
 def is_sar_provider_record(provider: str) -> bool:

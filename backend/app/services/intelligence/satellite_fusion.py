@@ -109,6 +109,7 @@ async def _sar_layer(db: AsyncSession, fence: PlantationFence) -> dict[str, Any]
         }
     serialized = serialize_sar_record(latest)
     analysis = (latest.raw_metadata or {}).get("sar_analysis") or {}
+    fusion = (latest.raw_metadata or {}).get("sar_fusion") or {}
     return {
         "configured": True,
         "provider": latest.provider,
@@ -119,6 +120,9 @@ async def _sar_layer(db: AsyncSession, fence: PlantationFence) -> dict[str, Any]
         "double_bounce_index": serialized.get("double_bounce_index"),
         "ground_moisture_index": serialized.get("ground_moisture_index"),
         "canopy_ground_mismatch": serialized.get("canopy_ground_mismatch"),
+        "forest_integrity_score": fusion.get("forest_integrity_score"),
+        "integrity_grade": fusion.get("integrity_grade"),
+        "monitoring_mode": fusion.get("monitoring_mode"),
         "l_band_hh_db": serialized.get("l_band_hh_db"),
         "s_band_hh_db": serialized.get("s_band_hh_db"),
     }
