@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 from typing import Any
 
 from geoalchemy2.shape import to_shape
@@ -20,7 +19,7 @@ from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
 from app.services.satellite.sar_analytics import analyze_sar_sample
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
-from app.services.satellite.sar_types import SarAnalysisResult, SarSample
+from app.services.satellite.sar_types import SarAnalysisResult
 
 log = get_logger("monitoring.sar")
 

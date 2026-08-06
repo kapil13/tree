@@ -9,18 +9,18 @@ from app.services.satellite.sar_types import SarSample
 
 
 def _sample(**kwargs) -> SarSample:
-    base = dict(
-        provider="nisar-sar-stub",
-        scene_id="TEST",
-        scene_acquired_at=datetime.now(UTC),
-        l_band_hh_db=-6.0,
-        s_band_hh_db=-10.0,
-        vh_hv_ratio=0.3,
-        double_bounce_index=0.3,
-        wetland_probability=0.3,
-        ground_moisture_index=0.4,
-        canopy_ground_mismatch=False,
-    )
+    base = {
+        "provider": "nisar-sar-stub",
+        "scene_id": "TEST",
+        "scene_acquired_at": datetime.now(UTC),
+        "l_band_hh_db": -6.0,
+        "s_band_hh_db": -10.0,
+        "vh_hv_ratio": 0.3,
+        "double_bounce_index": 0.3,
+        "wetland_probability": 0.3,
+        "ground_moisture_index": 0.4,
+        "canopy_ground_mismatch": False,
+    }
     base.update(kwargs)
     return SarSample(**base)
 

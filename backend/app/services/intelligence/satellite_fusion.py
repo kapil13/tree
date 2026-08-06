@@ -14,6 +14,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.services.geo import geography_to_geojson_polygon
+from app.services.monitoring.sar_sweep import latest_sar_record_for_fence, serialize_sar_record
 from app.services.planting_projects.access import project_list_filter
 from app.services.satellite.bhoonidhi_client import (
     get_bhoonidhi_client,
@@ -22,7 +23,6 @@ from app.services.satellite.bhoonidhi_client import (
 )
 from app.services.satellite.plantation import has_sentinel_credentials
 from app.services.satellite.sar_service import get_sar_service
-from app.services.monitoring.sar_sweep import latest_sar_record_for_fence, serialize_sar_record
 
 log = get_logger("intelligence.satellite_fusion")
 

@@ -13,7 +13,13 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
-from app.schemas.sar import SarAnalysisOut, SarMonitoringSeries, SarRecordOut, SarScanResponse, SarStatusOut
+from app.schemas.sar import (
+    SarAnalysisOut,
+    SarMonitoringSeries,
+    SarRecordOut,
+    SarScanResponse,
+    SarStatusOut,
+)
 from app.services.data_scope import can_access_tree, user_sees_org_portfolio
 from app.services.monitoring.sar_sweep import (
     latest_sar_record_for_fence,
@@ -24,7 +30,11 @@ from app.services.monitoring.sar_sweep import (
 )
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.satellite.sar_analytics import analysis_to_dict
-from app.services.satellite.sar_service import get_sar_service, has_sar_credentials, is_sar_provider_record
+from app.services.satellite.sar_service import (
+    get_sar_service,
+    has_sar_credentials,
+    is_sar_provider_record,
+)
 from app.services.workers.enqueue import try_enqueue
 
 router = APIRouter(prefix="/sar", tags=["sar"])
