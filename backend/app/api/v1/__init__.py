@@ -27,6 +27,7 @@ from app.api.v1 import (
     platform,
     reporting,
     reports,
+    sar,
     satellite,
     satellite_health,
     schemes,
@@ -46,6 +47,7 @@ api_router.include_router(analysis.router)
 api_router.include_router(ai_scans.router)
 api_router.include_router(payments.router)
 api_router.include_router(satellite.router)
+api_router.include_router(sar.router)
 api_router.include_router(satellite_health.router)
 api_router.include_router(plantation_fences.router)
 api_router.include_router(planting_programs.router)

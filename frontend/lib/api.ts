@@ -1338,6 +1338,95 @@ export const bhoonidhi = {
   },
 };
 
+export const sar = {
+  async status() {
+    return (
+      await api.get<{
+        configured: boolean;
+        provider: string;
+        pipeline: string;
+        message: string;
+        gee_available: boolean;
+      }>("/v1/sar/status")
+    ).data;
+  },
+  async scanFence(fenceId: string) {
+    return (
+      await api.post<{
+        fence_id: string;
+        record: SarRecord;
+        analysis: SarAnalysis;
+      }>(`/v1/sar/work-areas/${fenceId}/scan`)
+    ).data;
+  },
+  async fenceMonitoring(fenceId: string) {
+    return (
+      await api.get<{
+        fence_id: string;
+        latest: SarRecord | null;
+        points: SarRecord[];
+        sar_configured: boolean;
+      }>(`/v1/sar/work-areas/${fenceId}/monitoring`)
+    ).data;
+  },
+  async scanTree(treeId: string) {
+    return (
+      await api.post<{
+        tree_id: string;
+        record: SarRecord;
+        analysis: SarAnalysis;
+      }>(`/v1/sar/trees/${treeId}/scan`)
+    ).data;
+  },
+  async treeMonitoring(treeId: string) {
+    return (
+      await api.get<{
+        tree_id: string;
+        latest: SarRecord | null;
+        points: SarRecord[];
+        sar_configured: boolean;
+      }>(`/v1/sar/trees/${treeId}/monitoring`)
+    ).data;
+  },
+};
+
+export type SarFinding = {
+  category: string;
+  name: string;
+  confidence: number;
+  severity: string;
+  evidence: string;
+};
+
+export type SarAnalysis = {
+  risk_level: string;
+  ground_status: string;
+  summary: string;
+  findings: SarFinding[];
+  wetland_probability: number;
+  double_bounce_index: number;
+  ground_moisture_index: number;
+  canopy_ground_mismatch: boolean;
+  pipeline: string;
+};
+
+export type SarRecord = {
+  id: string;
+  provider: string;
+  scene_id: string;
+  scene_acquired_at: string;
+  l_band_hh_db?: number | null;
+  s_band_hh_db?: number | null;
+  double_bounce_index?: number | null;
+  wetland_probability?: number | null;
+  ground_moisture_index?: number | null;
+  canopy_ground_mismatch?: boolean | null;
+  frequency_bands?: string[];
+  polarimetric_composite?: Record<string, number> | null;
+  coherence?: number | null;
+  analysis?: SarAnalysis | null;
+};
+
 export const plantationFences = {
   async list(params?: { page?: number; page_size?: number }) {
     return (await api.get("/v1/plantation-fences", { params })).data as {

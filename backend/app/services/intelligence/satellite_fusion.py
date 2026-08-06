@@ -14,6 +14,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.services.geo import geography_to_geojson_polygon
+from app.services.monitoring.sar_sweep import latest_sar_record_for_fence, serialize_sar_record
 from app.services.planting_projects.access import project_list_filter
 from app.services.satellite.bhoonidhi_client import (
     get_bhoonidhi_client,
@@ -21,6 +22,7 @@ from app.services.satellite.bhoonidhi_client import (
     summarize_stac_features,
 )
 from app.services.satellite.plantation import has_sentinel_credentials
+from app.services.satellite.sar_service import get_sar_service
 
 log = get_logger("intelligence.satellite_fusion")
 
@@ -44,13 +46,22 @@ def _ndvi_trend(records: list[PlantationSatelliteRecord]) -> str:
     return "stable"
 
 
-def _fusion_status(sentinel: dict[str, Any], bhoonidhi: dict[str, Any]) -> str:
+def _fusion_status(sentinel: dict[str, Any], bhoonidhi: dict[str, Any], sar: dict[str, Any] | None = None) -> str:
     has_sentinel = sentinel.get("last_scan_at") is not None
     has_bhoonidhi = int(bhoonidhi.get("scenes_available") or 0) > 0
+    has_sar = sar is not None and sar.get("last_scan_at") is not None
+    if has_sentinel and has_bhoonidhi and has_sar:
+        return "optical_sar_bhoonidhi"
+    if has_sentinel and has_sar:
+        return "optical_sar_aligned"
     if has_sentinel and has_bhoonidhi:
         return "aligned"
     if has_sentinel:
         return "sentinel_only"
+    if has_sar and has_bhoonidhi:
+        return "sar_bhoonidhi"
+    if has_sar:
+        return "sar_only"
     if has_bhoonidhi:
         return "bhoonidhi_only"
     return "none"
@@ -62,7 +73,13 @@ def _recommended_action(
     days_since_scan: int | None,
     ndvi_trend: str,
     scenes_available: int,
+    sar_ground_status: str | None = None,
 ) -> str:
+    if sar_ground_status in {"wetland_risk", "hidden_moisture"}:
+        return (
+            "SAR detected ground moisture or wetland risk under canopy — "
+            "verify drainage and schedule a field check-in."
+        )
     if fusion_status == "none":
         return "Draw a work-area boundary and run a Sentinel scan or configure Bhoonidhi credentials."
     if days_since_scan is not None and days_since_scan > STALE_SCAN_DAYS:
@@ -74,6 +91,37 @@ def _recommended_action(
     if fusion_status == "bhoonidhi_only":
         return "Bhoonidhi scenes found; run Sentinel scan for quantitative NDVI trend."
     return "Continue routine dual-source monitoring."
+
+
+async def _sar_layer(db: AsyncSession, fence: PlantationFence) -> dict[str, Any]:
+    latest = await latest_sar_record_for_fence(db, fence.id)
+    svc = get_sar_service()
+    if latest is None:
+        return {
+            "configured": True,
+            "provider": svc.name,
+            "last_scan_at": None,
+            "ground_status": None,
+            "risk_level": None,
+            "wetland_probability": None,
+            "double_bounce_index": None,
+            "canopy_ground_mismatch": False,
+        }
+    serialized = serialize_sar_record(latest)
+    analysis = (latest.raw_metadata or {}).get("sar_analysis") or {}
+    return {
+        "configured": True,
+        "provider": latest.provider,
+        "last_scan_at": latest.scene_acquired_at.isoformat(),
+        "ground_status": analysis.get("ground_status"),
+        "risk_level": analysis.get("risk_level"),
+        "wetland_probability": serialized.get("wetland_probability"),
+        "double_bounce_index": serialized.get("double_bounce_index"),
+        "ground_moisture_index": serialized.get("ground_moisture_index"),
+        "canopy_ground_mismatch": serialized.get("canopy_ground_mismatch"),
+        "l_band_hh_db": serialized.get("l_band_hh_db"),
+        "s_band_hh_db": serialized.get("s_band_hh_db"),
+    }
 
 
 async def _sentinel_layer(db: AsyncSession, fence: PlantationFence) -> dict[str, Any]:
@@ -192,7 +240,8 @@ async def build_fence_satellite_fusion(
     boundary = geography_to_geojson_polygon(fence.boundary)
     sentinel = await _sentinel_layer(db, fence)
     bhoonidhi = await _bhoonidhi_layer(boundary, live=query_bhoonidhi)
-    status = _fusion_status(sentinel, bhoonidhi)
+    sar = await _sar_layer(db, fence)
+    status = _fusion_status(sentinel, bhoonidhi, sar)
     return {
         "work_area_id": str(fence.id),
         "work_area_name": fence.name,
@@ -201,12 +250,14 @@ async def build_fence_satellite_fusion(
         "segment": project.segment if project else None,
         "sentinel": sentinel,
         "bhoonidhi": bhoonidhi,
+        "sar": sar,
         "fusion_status": status,
         "recommended_action": _recommended_action(
             fusion_status=status,
             days_since_scan=sentinel.get("days_since_scan"),
             ndvi_trend=sentinel.get("ndvi_trend", "unknown"),
             scenes_available=int(bhoonidhi.get("scenes_available") or 0),
+            sar_ground_status=sar.get("ground_status"),
         ),
     }
 
@@ -239,6 +290,7 @@ async def build_portfolio_satellite_fusion(
     aligned_count = 0
     sentinel_only = 0
     bhoonidhi_only = 0
+    sar_risk_count = 0
 
     for idx, fence in enumerate(fences[:site_limit]):
         project = project_by_id.get(fence.project_id) if fence.project_id else None
@@ -249,12 +301,15 @@ async def build_portfolio_satellite_fusion(
         sites.append(row)
         if row["sentinel"].get("stale"):
             stale_count += 1
-        if row["fusion_status"] == "aligned":
+        if row["fusion_status"] in {"aligned", "optical_sar_aligned", "optical_sar_bhoonidhi"}:
             aligned_count += 1
         elif row["fusion_status"] == "sentinel_only":
             sentinel_only += 1
         elif row["fusion_status"] == "bhoonidhi_only":
             bhoonidhi_only += 1
+        sar_status = row.get("sar") or {}
+        if sar_status.get("ground_status") in {"wetland_risk", "hidden_moisture", "moist"}:
+            sar_risk_count += 1
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -265,8 +320,11 @@ async def build_portfolio_satellite_fusion(
             "aligned_dual_source": aligned_count,
             "sentinel_only": sentinel_only,
             "bhoonidhi_only": bhoonidhi_only,
+            "sar_ground_risk_sites": sar_risk_count,
             "sentinel_configured": has_sentinel_credentials(),
             "bhoonidhi_configured": has_bhoonidhi_credentials(),
+            "sar_configured": True,
+            "sar_provider": get_sar_service().name,
         },
         "sites": sites,
     }
