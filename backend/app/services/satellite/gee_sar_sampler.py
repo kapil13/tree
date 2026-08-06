@@ -11,6 +11,7 @@ import os
 import tempfile
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from app.core.config import settings
@@ -31,6 +32,19 @@ def gee_python_available() -> bool:
         return False
 
 
+def _load_service_account_info() -> dict[str, Any]:
+    """Parse inline JSON or read a service-account key file (same pattern as Gmail)."""
+    raw = (settings.gee_service_account_json or "").strip()
+    if not raw:
+        raise ValueError("gee_not_configured")
+    if raw.startswith("{"):
+        return json.loads(raw)
+    path = Path(raw)
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    raise ValueError("invalid_service_account_json")
+
+
 @lru_cache(maxsize=1)
 def _initialize_gee() -> bool:
     if not settings.gee_service_account_json:
@@ -40,19 +54,25 @@ def _initialize_gee() -> bool:
     try:
         import ee
 
+        info = _load_service_account_info()
+        client_email = info.get("client_email")
+        if not client_email:
+            raise ValueError("service_account_missing_client_email")
+
         raw = settings.gee_service_account_json.strip()
         if raw.startswith("{"):
-            info = json.loads(raw)
             with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
                 json.dump(info, fh)
                 key_path = fh.name
             try:
-                credentials = ee.ServiceAccountCredentials(info["client_email"], key_path)
+                credentials = ee.ServiceAccountCredentials(client_email, key_path)
                 ee.Initialize(credentials)
             finally:
                 os.unlink(key_path)
         else:
-            ee.Initialize()  # Application Default Credentials / prior auth
+            key_path = str(Path(raw).resolve())
+            credentials = ee.ServiceAccountCredentials(client_email, key_path)
+            ee.Initialize(credentials)
         return True
     except Exception as exc:
         log.warning("gee_initialize_failed", error=str(exc))

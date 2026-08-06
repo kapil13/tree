@@ -16,7 +16,11 @@ from typing import Protocol
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.geo import polygon_centroid
-from app.services.satellite.gee_sar_sampler import gee_python_available, sample_sentinel1_point
+from app.services.satellite.gee_sar_sampler import (
+    _initialize_gee,
+    gee_python_available,
+    sample_sentinel1_point,
+)
 from app.services.satellite.sar_types import SarSample
 
 log = get_logger(__name__)
@@ -168,7 +172,7 @@ def reset_sar_service() -> None:
 
 
 def has_sar_credentials() -> bool:
-    return bool(settings.gee_service_account_json) and gee_python_available()
+    return bool(settings.gee_service_account_json) and gee_python_available() and _initialize_gee()
 
 
 def is_sar_provider_record(provider: str) -> bool:
