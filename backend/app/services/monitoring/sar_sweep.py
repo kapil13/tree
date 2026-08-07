@@ -17,12 +17,18 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
-from app.services.satellite.sar_analytics import analyze_sar_sample
+from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
 from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
 from app.services.satellite.sar_types import SarAnalysisResult
 
 log = get_logger("monitoring.sar")
+
+SCENE_ID_MAX_LEN = 250
+
+
+def _clip_scene_id(scene_id: str) -> str:
+    return (scene_id or "SAR")[:SCENE_ID_MAX_LEN]
 
 
 async def _latest_ndvi_for_tree(db: AsyncSession, tree_id: uuid.UUID) -> float | None:
@@ -94,25 +100,7 @@ async def _latest_optical_context_fence(db: AsyncSession, fence_id: uuid.UUID):
 
 
 def _analysis_to_metadata(analysis: SarAnalysisResult, fusion: dict | None = None) -> dict[str, Any]:
-    out: dict[str, Any] = {
-        "sar_analysis": {
-            "risk_level": analysis.risk_level,
-            "ground_status": analysis.ground_status,
-            "summary": analysis.summary,
-            "findings": [
-                {
-                    "category": f.category,
-                    "name": f.name,
-                    "confidence": f.confidence,
-                    "severity": f.severity,
-                    "evidence": f.evidence,
-                }
-                for f in analysis.findings
-            ],
-            "pipeline": analysis.pipeline,
-            "raw_signals": analysis.raw_signals,
-        }
-    }
+    out: dict[str, Any] = {"sar_analysis": analysis_to_dict(analysis)}
     if fusion:
         out["sar_fusion"] = fusion
     return out
@@ -205,7 +193,7 @@ async def scan_and_persist_tree_sar(
     rec = SatelliteRecord(
         tree_id=tree.id,
         provider=sample.provider,
-        scene_id=sample.scene_id,
+        scene_id=_clip_scene_id(sample.scene_id),
         scene_acquired_at=sample.scene_acquired_at,
         cloud_cover_pct=0.0,
         raw_metadata=meta,
@@ -234,7 +222,12 @@ async def scan_and_persist_fence_sar(
     *,
     notify_user_id: uuid.UUID | None = None,
 ) -> tuple[PlantationSatelliteRecord, SarAnalysisResult] | None:
-    boundary = geography_to_geojson_polygon(fence.boundary)
+    try:
+        boundary = geography_to_geojson_polygon(fence.boundary)
+    except Exception as exc:
+        log.warning("fence_sar_boundary_failed", fence_id=str(fence.id), error=str(exc))
+        return None
+
     try:
         sample = await get_sar_service().sample_polygon(boundary)
     except Exception as exc:
@@ -250,7 +243,7 @@ async def scan_and_persist_fence_sar(
     rec = PlantationSatelliteRecord(
         fence_id=fence.id,
         provider=sample.provider,
-        scene_id=sample.scene_id,
+        scene_id=_clip_scene_id(sample.scene_id),
         scene_acquired_at=sample.scene_acquired_at,
         cloud_cover_pct=0.0,
         raw_metadata=meta,
@@ -302,7 +295,23 @@ async def latest_sar_record_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> 
 
 def serialize_sar_record(rec: SatelliteRecord | PlantationSatelliteRecord) -> dict[str, Any]:
     meta = rec.raw_metadata or {}
-    analysis = meta.get("sar_analysis") or {}
+    analysis = dict(meta.get("sar_analysis") or {})
+    # Backfill legacy/partial sar_analysis blobs from top-level SAR sample fields.
+    for key in (
+        "wetland_probability",
+        "double_bounce_index",
+        "ground_moisture_index",
+        "canopy_ground_mismatch",
+        "risk_level",
+        "ground_status",
+        "summary",
+        "findings",
+        "pipeline",
+    ):
+        if key not in analysis and meta.get(key) is not None:
+            analysis[key] = meta[key]
+    if "findings" not in analysis:
+        analysis["findings"] = []
     fusion = meta.get("sar_fusion") or {}
     return {
         "id": str(rec.id),

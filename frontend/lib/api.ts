@@ -1338,20 +1338,28 @@ export const bhoonidhi = {
   },
 };
 
+export type SarStatus = {
+  configured: boolean;
+  provider: string;
+  pipeline: string;
+  message: string;
+  gee_available: boolean;
+  sar_enabled?: boolean;
+  live_data_provider?: string;
+  monthly_sweep_schedule?: string;
+  worker_queue?: string;
+};
+
 export const sar = {
   async status() {
-    return (
-      await api.get<{
-        configured: boolean;
-        provider: string;
-        pipeline: string;
-        message: string;
-        gee_available: boolean;
-      }>("/v1/sar/status")
-    ).data;
+    return (await api.get<SarStatus>("/v1/sar/status")).data;
   },
   async scanFence(fenceId: string) {
-    return (await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`)).data;
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
   },
   async fenceMonitoring(fenceId: string) {
     return (
@@ -1364,7 +1372,11 @@ export const sar = {
     ).data;
   },
   async scanTree(treeId: string) {
-    return (await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`)).data;
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
   },
   async treeMonitoring(treeId: string) {
     return (

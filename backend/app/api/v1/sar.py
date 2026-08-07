@@ -8,6 +8,8 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.core.config import settings
+from app.core.logging import get_logger
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -40,6 +42,7 @@ from app.services.satellite.sar_service import (
 from app.services.workers.enqueue import try_enqueue
 
 router = APIRouter(prefix="/sar", tags=["sar"])
+log = get_logger(__name__)
 
 
 def _record_out(data: dict) -> SarRecordOut:
@@ -68,6 +71,23 @@ def _fusion_out(data: dict | None) -> SarFusionOut | None:
     if not data:
         return None
     return SarFusionOut.model_validate(data)
+
+
+def _build_scan_response(
+    *,
+    tree_id: uuid.UUID | None = None,
+    fence_id: uuid.UUID | None = None,
+    rec: SatelliteRecord | PlantationSatelliteRecord,
+    analysis,
+) -> SarScanResponse:
+    serialized = serialize_sar_record(rec)
+    return SarScanResponse(
+        tree_id=tree_id,
+        fence_id=fence_id,
+        record=_record_out(serialized),
+        analysis=SarAnalysisOut.model_validate(analysis_to_dict(analysis)),
+        fusion=_fusion_out(serialized.get("fusion")),
+    )
 
 
 async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
@@ -103,10 +123,14 @@ async def sar_status(_user: CurrentUser) -> SarStatusOut:
     svc = get_sar_service()
     gee = has_sar_credentials()
     return SarStatusOut(
-        configured=True,
+        configured=settings.sar_enabled,
         provider=svc.name,
         pipeline=getattr(svc, "name", "nisar-sar-stub"),
         gee_available=gee,
+        sar_enabled=settings.sar_enabled,
+        live_data_provider="sar-gee-sentinel1",
+        monthly_sweep_schedule="5th of month, 03:00 UTC (Celery beat → satellite queue)",
+        worker_queue="satellite",
         message=(
             "SAR ground intelligence active (NISAR-inspired L/S-band stub). "
             "Configure GEE_SERVICE_ACCOUNT_JSON for live NISAR / Sentinel-1 processing."
@@ -122,19 +146,20 @@ async def sar_scan_tree(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> 
     if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     tree = await _load_tree(tree_id, user, db)
-    result = await scan_and_persist_tree_sar(db, tree, notify_user=user)
-    if result is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="sar_scan_failed")
-    rec, analysis = result
-    await db.commit()
-    await db.refresh(rec)
-    serialized = serialize_sar_record(rec)
-    return SarScanResponse(
-        tree_id=tree.id,
-        record=_record_out(serialized),
-        analysis=SarAnalysisOut.model_validate(analysis_to_dict(analysis)),
-        fusion=_fusion_out(serialized.get("fusion")),
-    )
+    try:
+        result = await scan_and_persist_tree_sar(db, tree, notify_user=user)
+        if result is None:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="sar_scan_failed")
+        rec, analysis = result
+        await db.commit()
+        await db.refresh(rec)
+        return _build_scan_response(tree_id=tree.id, rec=rec, analysis=analysis)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await db.rollback()
+        log.exception("sar_tree_scan_error", tree_id=str(tree_id))
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="sar_scan_error") from exc
 
 
 @router.post("/trees/{tree_id}/scan/async", status_code=status.HTTP_202_ACCEPTED)
@@ -179,19 +204,20 @@ async def sar_scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -
     if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     fence = await _load_fence(fence_id, user, db)
-    result = await scan_and_persist_fence_sar(db, fence, notify_user_id=user.id)
-    if result is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="sar_scan_failed")
-    rec, analysis = result
-    await db.commit()
-    await db.refresh(rec)
-    serialized = serialize_sar_record(rec)
-    return SarScanResponse(
-        fence_id=fence.id,
-        record=_record_out(serialized),
-        analysis=SarAnalysisOut.model_validate(analysis_to_dict(analysis)),
-        fusion=_fusion_out(serialized.get("fusion")),
-    )
+    try:
+        result = await scan_and_persist_fence_sar(db, fence, notify_user_id=user.id)
+        if result is None:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="sar_scan_failed")
+        rec, analysis = result
+        await db.commit()
+        await db.refresh(rec)
+        return _build_scan_response(fence_id=fence.id, rec=rec, analysis=analysis)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        await db.rollback()
+        log.exception("sar_fence_scan_error", fence_id=str(fence_id))
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="sar_scan_error") from exc
 
 
 @router.get("/trees/{tree_id}/fusion", response_model=SarFusionOut)
