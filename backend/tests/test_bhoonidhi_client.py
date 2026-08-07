@@ -8,6 +8,8 @@ import pytest
 
 from app.services.satellite.bhoonidhi_client import (
     BhoonidhiClient,
+    build_polygon_search_body,
+    normalize_search_geometry,
     polygon_bbox_wgs84,
     summarize_stac_features,
 )
@@ -19,6 +21,41 @@ def test_polygon_bbox():
         "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
     }
     assert polygon_bbox_wgs84(geo) == [78.0, 17.0, 79.0, 18.0]
+
+
+def test_normalize_search_geometry_strips_z():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0, 0.0], [79.0, 17.0, 0.0], [79.0, 18.0, 0.0], [78.0, 18.0, 0.0], [78.0, 17.0, 0.0]]],
+    }
+    out = normalize_search_geometry(geo)
+    assert out == {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+
+
+def test_build_polygon_search_body_uses_intersects_only():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+    body = build_polygon_search_body(geo, days_back=30, limit=5, online_only=True)
+    assert "intersects" in body
+    assert "bbox" not in body
+    assert body["limit"] == 5
+    assert body["filter-lang"] == "cql2-json"
+
+
+def test_build_polygon_search_body_bbox_mode():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+    body = build_polygon_search_body(geo, spatial_mode="bbox", online_only=False)
+    assert "bbox" in body
+    assert "intersects" not in body
+    assert "filter" not in body
 
 
 def test_summarize_stac_features():

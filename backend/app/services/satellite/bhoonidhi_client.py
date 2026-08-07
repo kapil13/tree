@@ -37,6 +37,63 @@ def polygon_bbox_wgs84(geojson: dict[str, Any]) -> list[float]:
     return [min(lons), min(lats), max(lons), max(lats)]
 
 
+def normalize_search_geometry(geojson: dict[str, Any]) -> dict[str, Any]:
+    """Return a 2D GeoJSON Polygon for Bhoonidhi STAC ``intersects`` queries."""
+    geom_type = geojson.get("type")
+    if geom_type != "Polygon":
+        raise ValueError(f"unsupported_geometry:{geom_type}")
+    rings: list[list[list[float]]] = []
+    for ring in geojson.get("coordinates") or []:
+        rings.append([[float(pt[0]), float(pt[1])] for pt in ring])
+    if not rings:
+        raise ValueError("empty_polygon")
+    return {"type": "Polygon", "coordinates": rings}
+
+
+def build_polygon_search_body(
+    boundary_geojson: dict[str, Any],
+    *,
+    collections: list[str] | None = None,
+    days_back: int = 90,
+    limit: int = 20,
+    online_only: bool = True,
+    spatial_mode: str = "intersects",
+) -> dict[str, Any]:
+    """Build a Bhoonidhi STAC search body.
+
+    NRSC examples use ``intersects`` *or* ``bbox``, not both. Default is intersects-only.
+    """
+    end = datetime.now(UTC)
+    start = end - timedelta(days=days_back)
+    geometry = normalize_search_geometry(boundary_geojson)
+    body: dict[str, Any] = {
+        "collections": collections or list(DEFAULT_VEGETATION_COLLECTIONS),
+        "datetime": f"{start.strftime('%Y-%m-%dT%H:%M:%SZ')}/{end.strftime('%Y-%m-%dT%H:%M:%SZ')}",
+        "limit": min(limit, 500),
+    }
+    if spatial_mode == "bbox":
+        body["bbox"] = polygon_bbox_wgs84(geometry)
+    else:
+        body["intersects"] = geometry
+    if online_only:
+        body["filter"] = {"args": [{"property": "Online"}, "Y"], "op": "eq"}
+        body["filter-lang"] = "cql2-json"
+    return body
+
+
+def _parse_stac_response(resp: httpx.Response) -> dict[str, Any]:
+    text = (resp.text or "").strip()
+    if not text:
+        raise RuntimeError(f"bhoonidhi_empty_search_response status={resp.status_code}")
+    try:
+        return resp.json()
+    except ValueError as exc:
+        preview = text[:240].replace("\n", " ")
+        raise RuntimeError(
+            f"bhoonidhi_invalid_search_response status={resp.status_code} body={preview!r}"
+        ) from exc
+
+
 class BhoonidhiClient:
     """JWT auth + STAC search + product download for Bhoonidhi API."""
 
@@ -136,12 +193,12 @@ class BhoonidhiClient:
     async def list_collections(self) -> dict[str, Any]:
         resp = await self._request("GET", "/data/collections")
         resp.raise_for_status()
-        return resp.json()
+        return _parse_stac_response(resp)
 
     async def search_stac(self, body: dict[str, Any]) -> dict[str, Any]:
         resp = await self._request("POST", "/data/search", json_body=body)
         resp.raise_for_status()
-        return resp.json()
+        return _parse_stac_response(resp)
 
     async def search_polygon(
         self,
@@ -152,19 +209,27 @@ class BhoonidhiClient:
         limit: int = 20,
         online_only: bool = True,
     ) -> dict[str, Any]:
-        end = datetime.now(UTC)
-        start = end - timedelta(days=days_back)
-        body: dict[str, Any] = {
-            "collections": collections or list(DEFAULT_VEGETATION_COLLECTIONS),
-            "datetime": f"{start.strftime('%Y-%m-%dT%H:%M:%SZ')}/{end.strftime('%Y-%m-%dT%H:%M:%SZ')}",
-            "intersects": boundary_geojson,
-            "limit": min(limit, 500),
-            "bbox": polygon_bbox_wgs84(boundary_geojson),
-        }
-        if online_only:
-            body["filter"] = {"args": [{"property": "Online"}, "Y"], "op": "eq"}
-            body["filter-lang"] = "cql2-json"
-        return await self.search_stac(body)
+        primary = build_polygon_search_body(
+            boundary_geojson,
+            collections=collections,
+            days_back=days_back,
+            limit=limit,
+            online_only=online_only,
+            spatial_mode="intersects",
+        )
+        try:
+            return await self.search_stac(primary)
+        except (RuntimeError, httpx.HTTPStatusError) as exc:
+            log.warning("bhoonidhi_search_intersects_failed", error=str(exc))
+            fallback = build_polygon_search_body(
+                boundary_geojson,
+                collections=collections,
+                days_back=days_back,
+                limit=limit,
+                online_only=online_only,
+                spatial_mode="bbox",
+            )
+            return await self.search_stac(fallback)
 
     def download_url(self, *, item_id: str, collection: str) -> str:
         from urllib.parse import urlencode
