@@ -38,15 +38,17 @@ def test_sentinel_hub_sar_service_uses_live_sample(monkeypatch):
         lon=77.2,
     )
 
-    with patch(
-        "app.services.satellite.sar_service.sample_sentinel1_point_sh",
-        new=AsyncMock(return_value=payload),
-    ):
-        with patch(
+    with (
+        patch(
+            "app.services.satellite.sar_service.sample_sentinel1_point_sh",
+            new=AsyncMock(return_value=payload),
+        ),
+        patch(
             "app.services.satellite.sar_service.sentinel_hub_sar_configured",
             return_value=True,
-        ):
-            svc = SentinelHubSarService()
-            sample = asyncio.run(svc.sample_point(28.6, 77.2))
-            assert sample.provider == "sar-sentinel-hub-s1"
-            assert svc.name == SAR_PROVIDER_SENTINEL_HUB
+        ),
+    ):
+        svc = SentinelHubSarService()
+        sample = asyncio.run(svc.sample_point(28.6, 77.2))
+        assert sample.provider == "sar-sentinel-hub-s1"
+        assert svc.name == SAR_PROVIDER_SENTINEL_HUB
