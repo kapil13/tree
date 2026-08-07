@@ -90,7 +90,7 @@ if [[ -x ./verify-phase3.sh ]]; then
   ./verify-phase3.sh || true
 fi
 
-if [[ -x ./verify-sar-gee.sh ]] && grep -q '^SAR_PROVIDER=gee' "$ENV_FILE" 2>/dev/null; then
+if [[ -x ./verify-sar-gee.sh ]] && grep -qE '^SAR_PROVIDER=(gee|sentinel_hub)' "$ENV_FILE" 2>/dev/null; then
   echo "==> SAR / GEE verification..."
   ./verify-sar-gee.sh || true
 fi

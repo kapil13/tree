@@ -38,6 +38,7 @@ from app.services.satellite.sar_service import (
     get_sar_service,
     has_sar_credentials,
     is_sar_provider_record,
+    live_sar_provider_name,
 )
 from app.services.workers.enqueue import try_enqueue
 
@@ -121,22 +122,35 @@ async def _load_fence(fence_id: uuid.UUID, user, db) -> PlantationFence:
 @router.get("/status", response_model=SarStatusOut)
 async def sar_status(_user: CurrentUser) -> SarStatusOut:
     svc = get_sar_service()
-    gee = has_sar_credentials()
+    live = has_sar_credentials()
+    provider_mode = settings.sar_provider
+    if provider_mode == "sentinel_hub":
+        stub_msg = (
+            "SAR ground intelligence active (stub). "
+            "Set SENTINEL_HUB_CLIENT_ID and SENTINEL_HUB_CLIENT_SECRET for live Sentinel-1 SAR."
+        )
+        live_msg = "SAR service configured with Copernicus Sentinel Hub (Sentinel-1)."
+    elif provider_mode == "gee":
+        stub_msg = (
+            "SAR ground intelligence active (NISAR-inspired stub). "
+            "Configure GEE_SERVICE_ACCOUNT_JSON for live Sentinel-1 processing."
+        )
+        live_msg = "SAR service configured with GEE credentials."
+    else:
+        stub_msg = "SAR ground intelligence active (deterministic stub)."
+        live_msg = stub_msg
+
     return SarStatusOut(
         configured=settings.sar_enabled,
         provider=svc.name,
         pipeline=getattr(svc, "name", "nisar-sar-stub"),
-        gee_available=gee,
+        gee_available=live,
         sar_enabled=settings.sar_enabled,
-        live_data_provider="sar-gee-sentinel1",
+        sar_provider=provider_mode,
+        live_data_provider=live_sar_provider_name(),
         monthly_sweep_schedule="5th of month, 03:00 UTC (Celery beat → satellite queue)",
         worker_queue="satellite",
-        message=(
-            "SAR ground intelligence active (NISAR-inspired L/S-band stub). "
-            "Configure GEE_SERVICE_ACCOUNT_JSON for live NISAR / Sentinel-1 processing."
-            if not gee
-            else "SAR service configured with GEE credentials."
-        ),
+        message=live_msg if live else stub_msg,
     )
 
 

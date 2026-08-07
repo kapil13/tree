@@ -1,4 +1,4 @@
-"""SAR / GEE production readiness check.
+"""SAR production readiness check (GEE or Copernicus Sentinel Hub).
 
 Run inside the backend or worker container:
 
@@ -20,11 +20,12 @@ from app.core.database import AsyncSessionLocal
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.services.satellite.gee_sar_sampler import _initialize_gee, gee_python_available
+from app.services.satellite.plantation import has_sentinel_credentials
 from app.services.satellite.sar_service import (
-    SAR_PROVIDER_GEE,
     get_sar_service,
     has_sar_credentials,
     is_sar_provider_record,
+    live_sar_provider_name,
 )
 
 
@@ -37,7 +38,12 @@ def check_config() -> bool:
     ok = True
     print(f"SAR_ENABLED={settings.sar_enabled}")
     print(f"SAR_PROVIDER={settings.sar_provider}")
+    print(f"live_data_provider={live_sar_provider_name()}")
+    print(f"SENTINEL_HUB_CLIENT_ID={'set' if settings.sentinel_hub_client_id else 'missing'}")
     print(f"GEE_SERVICE_ACCOUNT_JSON={'set' if settings.gee_service_account_json else 'missing'}")
+    if settings.sar_provider == "sentinel_hub" and not has_sentinel_credentials():
+        print("FAIL: SAR_PROVIDER=sentinel_hub but Sentinel Hub credentials are missing")
+        ok = False
     if settings.sar_provider == "gee" and not settings.gee_service_account_json:
         print("FAIL: SAR_PROVIDER=gee but GEE_SERVICE_ACCOUNT_JSON is empty")
         ok = False
@@ -46,20 +52,35 @@ def check_config() -> bool:
     return ok
 
 
-def check_gee() -> bool:
-    _print_section("Earth Engine")
-    pkg = gee_python_available()
-    print(f"earthengine-api import: {pkg}")
-    if not pkg:
-        print("FAIL: pip package earthengine-api not installed")
-        return False
-    init = _initialize_gee()
-    print(f"GEE initialize: {init}")
-    if settings.sar_provider == "gee" and not init:
-        print("FAIL: GEE init failed — register GCP project at Earth Engine signup")
-        return False
-    print(f"has_sar_credentials(): {has_sar_credentials()}")
-    return init or settings.sar_provider != "gee"
+def check_live_provider() -> bool:
+    if settings.sar_provider == "sentinel_hub":
+        _print_section("Copernicus Sentinel Hub")
+        sh_ok = has_sentinel_credentials()
+        print(f"Sentinel Hub credentials: {sh_ok}")
+        if not sh_ok:
+            print("FAIL: set SENTINEL_HUB_CLIENT_ID and SENTINEL_HUB_CLIENT_SECRET")
+            return False
+        print(f"has_sar_credentials(): {has_sar_credentials()}")
+        return has_sar_credentials()
+
+    if settings.sar_provider == "gee":
+        _print_section("Earth Engine")
+        pkg = gee_python_available()
+        print(f"earthengine-api import: {pkg}")
+        if not pkg:
+            print("FAIL: pip package earthengine-api not installed")
+            return False
+        init = _initialize_gee()
+        print(f"GEE initialize: {init}")
+        if not init:
+            print("FAIL: GEE init failed — register GCP project at Earth Engine signup")
+            return False
+        print(f"has_sar_credentials(): {has_sar_credentials()}")
+        return has_sar_credentials()
+
+    _print_section("Live provider")
+    print("SAR_PROVIDER=stub — using deterministic stub (no live credentials required)")
+    return True
 
 
 async def check_providers() -> None:
@@ -106,15 +127,15 @@ async def sample_point(lat: float, lon: float) -> bool:
         default=str,
     ))
     live = sample.provider not in ("nisar-sar-stub",) and "stub" not in sample.provider
-    if settings.sar_provider == "gee" and svc.name == SAR_PROVIDER_GEE and not live:
-        print("WARN: GEE configured but sample fell back to stub (no S1 scene or API error)")
+    if settings.sar_provider in {"gee", "sentinel_hub"} and not live:
+        print(f"WARN: {settings.sar_provider} configured but sample fell back to stub")
         return False
     print("OK: sample complete")
     return True
 
 
 async def async_main(args: argparse.Namespace) -> int:
-    ok = check_config() and check_gee()
+    ok = check_config() and check_live_provider()
     await check_providers()
     if args.list_fences:
         await list_fences(args.list_fences)
@@ -130,7 +151,7 @@ async def async_main(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="SAR / GEE production readiness check")
+    parser = argparse.ArgumentParser(description="SAR production readiness check")
     parser.add_argument("--list-fences", type=int, metavar="N", help="List up to N fence IDs")
     parser.add_argument("--sample", nargs=2, type=float, metavar=("LAT", "LON"), help="Run a live SAR sample")
     args = parser.parse_args()

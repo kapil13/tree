@@ -82,8 +82,9 @@ class SarStatusOut(BaseModel):
     provider: str
     pipeline: str
     message: str
-    gee_available: bool = False
+    gee_available: bool = False  # live SAR credentials ready (GEE or Sentinel Hub)
     sar_enabled: bool = True
+    sar_provider: str = "stub"
     live_data_provider: str = "sar-gee-sentinel1"
     monthly_sweep_schedule: str = "5th of month, 03:00 UTC (Celery beat)"
     worker_queue: str = "satellite"

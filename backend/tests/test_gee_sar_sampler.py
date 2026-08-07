@@ -52,6 +52,7 @@ def test_has_sar_credentials_requires_successful_init(monkeypatch):
     from app.services.satellite import sar_service
 
     sar_service.reset_sar_service()
+    monkeypatch.setattr(sar_service.settings, "sar_provider", "gee")
     monkeypatch.setattr(sar_service.settings, "gee_service_account_json", "/run/secrets/gee-sa.json")
     monkeypatch.setattr(sar_service, "gee_python_available", lambda: True)
     monkeypatch.setattr(sar_service, "_initialize_gee", lambda: False)

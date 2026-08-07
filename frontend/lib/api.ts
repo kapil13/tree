@@ -1345,6 +1345,7 @@ export type SarStatus = {
   message: string;
   gee_available: boolean;
   sar_enabled?: boolean;
+  sar_provider?: string;
   live_data_provider?: string;
   monthly_sweep_schedule?: string;
   worker_queue?: string;
