@@ -48,6 +48,19 @@ def test_initialize_gee_uses_service_account_file(monkeypatch, tmp_path):
         mock_ee.Initialize.assert_called_once()
 
 
+def test_backscatter_db_accepts_gee_decibel_values():
+    assert gee_sar_sampler._backscatter_db(-15.06) == -15.06
+    assert gee_sar_sampler._backscatter_db(-5.96) == -5.96
+
+
+def test_backscatter_db_converts_linear_power():
+    assert gee_sar_sampler._backscatter_db(0.1) == -10.0
+
+
+def test_backscatter_db_none_for_missing():
+    assert gee_sar_sampler._backscatter_db(None) is None
+
+
 def test_has_sar_credentials_requires_successful_init(monkeypatch):
     from app.services.satellite import sar_service
 

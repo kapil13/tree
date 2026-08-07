@@ -86,12 +86,19 @@ def _initialize_gee() -> bool:
         return False
 
 
-def _db_from_linear(linear: float | None) -> float | None:
-    if linear is None or linear <= 0:
+def _backscatter_db(value: float | None) -> float | None:
+    """Normalize GEE VH/VV to dB.
+
+    COPERNICUS/S1_GRD bands are already in dB (negative values). Older code assumed
+    linear power and rejected negatives, which caused silent stub fallback in production.
+    """
+    if value is None:
         return None
+    if value <= 0:
+        return round(value, 2)
     import math
 
-    return round(10.0 * math.log10(linear), 2)
+    return round(10.0 * math.log10(value), 2)
 
 
 def sample_sentinel1_point(lat: float, lon: float, *, when: datetime | None = None) -> dict[str, Any] | None:
@@ -134,8 +141,8 @@ def sample_sentinel1_point(lat: float, lon: float, *, when: datetime | None = No
         props = info.get("properties") or {}
         vh_lin = stats.get("VH")
         vv_lin = stats.get("VV")
-        vh_db = _db_from_linear(vh_lin)
-        vv_db = _db_from_linear(vv_lin)
+        vh_db = _backscatter_db(vh_lin)
+        vv_db = _backscatter_db(vv_lin)
         if vh_db is None or vv_db is None:
             return None
 
