@@ -67,12 +67,19 @@ def _initialize_gee() -> bool:
             try:
                 credentials = ee.ServiceAccountCredentials(client_email, key_path)
                 ee.Initialize(credentials)
+            except Exception as init_exc:
+                if "already initialized" not in str(init_exc).lower():
+                    raise
             finally:
                 os.unlink(key_path)
         else:
             key_path = str(Path(raw).resolve())
             credentials = ee.ServiceAccountCredentials(client_email, key_path)
-            ee.Initialize(credentials)
+            try:
+                ee.Initialize(credentials)
+            except Exception as init_exc:
+                if "already initialized" not in str(init_exc).lower():
+                    raise
         return True
     except Exception as exc:
         log.warning("gee_initialize_failed", error=str(exc))
@@ -140,7 +147,7 @@ def sample_sentinel1_point(lat: float, lon: float, *, when: datetime | None = No
         ground_moisture = round(min(1.0, double_bounce * 0.65 + 0.15), 3)
         wetland_prob = round(min(1.0, double_bounce * 0.5 + ground_moisture * 0.35), 3)
 
-        scene_id = props.get("system:index") or props.get("PRODUCT_ID") or "S1_GEE"
+        scene_id = str(props.get("system:index") or props.get("PRODUCT_ID") or "S1_GEE")[:250]
         acquired_ms = props.get("system:time_start")
         acquired = (
             datetime.fromtimestamp(acquired_ms / 1000, tz=UTC)
