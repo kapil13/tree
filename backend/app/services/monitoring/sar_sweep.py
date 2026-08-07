@@ -17,7 +17,7 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
-from app.services.satellite.sar_analytics import analyze_sar_sample
+from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
 from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
 from app.services.satellite.sar_types import SarAnalysisResult
@@ -100,25 +100,7 @@ async def _latest_optical_context_fence(db: AsyncSession, fence_id: uuid.UUID):
 
 
 def _analysis_to_metadata(analysis: SarAnalysisResult, fusion: dict | None = None) -> dict[str, Any]:
-    out: dict[str, Any] = {
-        "sar_analysis": {
-            "risk_level": analysis.risk_level,
-            "ground_status": analysis.ground_status,
-            "summary": analysis.summary,
-            "findings": [
-                {
-                    "category": f.category,
-                    "name": f.name,
-                    "confidence": f.confidence,
-                    "severity": f.severity,
-                    "evidence": f.evidence,
-                }
-                for f in analysis.findings
-            ],
-            "pipeline": analysis.pipeline,
-            "raw_signals": analysis.raw_signals,
-        }
-    }
+    out: dict[str, Any] = {"sar_analysis": analysis_to_dict(analysis)}
     if fusion:
         out["sar_fusion"] = fusion
     return out
@@ -313,7 +295,23 @@ async def latest_sar_record_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> 
 
 def serialize_sar_record(rec: SatelliteRecord | PlantationSatelliteRecord) -> dict[str, Any]:
     meta = rec.raw_metadata or {}
-    analysis = meta.get("sar_analysis") or {}
+    analysis = dict(meta.get("sar_analysis") or {})
+    # Backfill legacy/partial sar_analysis blobs from top-level SAR sample fields.
+    for key in (
+        "wetland_probability",
+        "double_bounce_index",
+        "ground_moisture_index",
+        "canopy_ground_mismatch",
+        "risk_level",
+        "ground_status",
+        "summary",
+        "findings",
+        "pipeline",
+    ):
+        if key not in analysis and meta.get(key) is not None:
+            analysis[key] = meta[key]
+    if "findings" not in analysis:
+        analysis["findings"] = []
     fusion = meta.get("sar_fusion") or {}
     return {
         "id": str(rec.id),
