@@ -156,7 +156,7 @@ services:
         limits:
           memory: 2048M
 
-  # Slim Celery worker — no TensorFlow/BirdNET (~1 GB image vs ~4 GB with ML stack).
+  # Slim Celery worker — runs satellite queue (NDVI + SAR monthly sweep). Needs GEE mount when SAR_PROVIDER=gee.
   worker:
     build:
       context: ../../backend

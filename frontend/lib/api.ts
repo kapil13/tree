@@ -1338,17 +1338,21 @@ export const bhoonidhi = {
   },
 };
 
+export type SarStatus = {
+  configured: boolean;
+  provider: string;
+  pipeline: string;
+  message: string;
+  gee_available: boolean;
+  sar_enabled?: boolean;
+  live_data_provider?: string;
+  monthly_sweep_schedule?: string;
+  worker_queue?: string;
+};
+
 export const sar = {
   async status() {
-    return (
-      await api.get<{
-        configured: boolean;
-        provider: string;
-        pipeline: string;
-        message: string;
-        gee_available: boolean;
-      }>("/v1/sar/status")
-    ).data;
+    return (await api.get<SarStatus>("/v1/sar/status")).data;
   },
   async scanFence(fenceId: string) {
     return (

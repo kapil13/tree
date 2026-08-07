@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
@@ -122,10 +123,14 @@ async def sar_status(_user: CurrentUser) -> SarStatusOut:
     svc = get_sar_service()
     gee = has_sar_credentials()
     return SarStatusOut(
-        configured=True,
+        configured=settings.sar_enabled,
         provider=svc.name,
         pipeline=getattr(svc, "name", "nisar-sar-stub"),
         gee_available=gee,
+        sar_enabled=settings.sar_enabled,
+        live_data_provider="sar-gee-sentinel1",
+        monthly_sweep_schedule="5th of month, 03:00 UTC (Celery beat → satellite queue)",
+        worker_queue="satellite",
         message=(
             "SAR ground intelligence active (NISAR-inspired L/S-band stub). "
             "Configure GEE_SERVICE_ACCOUNT_JSON for live NISAR / Sentinel-1 processing."

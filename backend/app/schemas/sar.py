@@ -83,3 +83,7 @@ class SarStatusOut(BaseModel):
     pipeline: str
     message: str
     gee_available: bool = False
+    sar_enabled: bool = True
+    live_data_provider: str = "sar-gee-sentinel1"
+    monthly_sweep_schedule: str = "5th of month, 03:00 UTC (Celery beat)"
+    worker_queue: str = "satellite"
