@@ -1351,7 +1351,11 @@ export const sar = {
     ).data;
   },
   async scanFence(fenceId: string) {
-    return (await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`)).data;
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
   },
   async fenceMonitoring(fenceId: string) {
     return (
@@ -1364,7 +1368,11 @@ export const sar = {
     ).data;
   },
   async scanTree(treeId: string) {
-    return (await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`)).data;
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
   },
   async treeMonitoring(treeId: string) {
     return (

@@ -24,6 +24,12 @@ from app.services.satellite.sar_types import SarAnalysisResult
 
 log = get_logger("monitoring.sar")
 
+SCENE_ID_MAX_LEN = 250
+
+
+def _clip_scene_id(scene_id: str) -> str:
+    return (scene_id or "SAR")[:SCENE_ID_MAX_LEN]
+
 
 async def _latest_ndvi_for_tree(db: AsyncSession, tree_id: uuid.UUID) -> float | None:
     res = await db.execute(
@@ -205,7 +211,7 @@ async def scan_and_persist_tree_sar(
     rec = SatelliteRecord(
         tree_id=tree.id,
         provider=sample.provider,
-        scene_id=sample.scene_id,
+        scene_id=_clip_scene_id(sample.scene_id),
         scene_acquired_at=sample.scene_acquired_at,
         cloud_cover_pct=0.0,
         raw_metadata=meta,
@@ -234,7 +240,12 @@ async def scan_and_persist_fence_sar(
     *,
     notify_user_id: uuid.UUID | None = None,
 ) -> tuple[PlantationSatelliteRecord, SarAnalysisResult] | None:
-    boundary = geography_to_geojson_polygon(fence.boundary)
+    try:
+        boundary = geography_to_geojson_polygon(fence.boundary)
+    except Exception as exc:
+        log.warning("fence_sar_boundary_failed", fence_id=str(fence.id), error=str(exc))
+        return None
+
     try:
         sample = await get_sar_service().sample_polygon(boundary)
     except Exception as exc:
@@ -250,7 +261,7 @@ async def scan_and_persist_fence_sar(
     rec = PlantationSatelliteRecord(
         fence_id=fence.id,
         provider=sample.provider,
-        scene_id=sample.scene_id,
+        scene_id=_clip_scene_id(sample.scene_id),
         scene_acquired_at=sample.scene_acquired_at,
         cloud_cover_pct=0.0,
         raw_metadata=meta,
