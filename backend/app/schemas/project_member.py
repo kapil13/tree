@@ -42,6 +42,9 @@ class FieldOpsSummaryOut(BaseModel):
 
 class MonitoringSummaryOut(FieldOpsSummaryOut):
     stale_satellite_work_areas: int
+    stale_sar_work_areas: int = 0
+    sar_at_risk_work_areas: int = 0
+    sar_avg_forest_integrity: float | None = None
     work_area_monitoring: list[dict]
     unread_alerts_by_kind: dict[str, int]
     recent_jobs: list[dict]

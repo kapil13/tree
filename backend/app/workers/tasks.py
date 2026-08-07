@@ -171,6 +171,50 @@ def monthly_sar_sweep() -> dict:
     return _execute_recorded("monthly_sar_sweep", _run)
 
 
+@celery_app.task(name="app.workers.tasks.weekly_sar_integrity_watch")
+def weekly_sar_integrity_watch() -> dict:
+    log.info("worker.weekly_sar_integrity_watch")
+
+    async def _run() -> dict:
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.plantation_fence import PlantationFence
+        from app.models.planting_project import PlantingProject
+        from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
+        from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
+
+        scanned = failed = 0
+        async with AsyncSessionLocal() as db:
+            projects_res = await db.execute(
+                select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
+            )
+            project_ids = {p.id for p in projects_res.scalars().all()}
+            fences_res = await db.execute(
+                select(PlantationFence).where(PlantationFence.project_id.isnot(None))
+            )
+            fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+            at_risk_ids = await list_at_risk_fence_ids(db, [f.id for f in fences], limit=20)
+            fence_by_id = {f.id: f for f in fences}
+            for fence_id in at_risk_ids:
+                fence = fence_by_id.get(fence_id)
+                if fence is None:
+                    continue
+                result = await scan_and_persist_fence_sar(db, fence)
+                if result:
+                    scanned += 1
+                else:
+                    failed += 1
+            await db.commit()
+        return {
+            "scanned": scanned,
+            "failed": failed,
+            "candidates": len(at_risk_ids),
+        }
+
+    return _execute_recorded("weekly_sar_integrity_watch", _run)
+
+
 @celery_app.task(name="app.workers.tasks.recalc_carbon")
 def recalc_carbon(tree_id: str, user_id: str) -> dict:
     log.info("worker.recalc_carbon", tree_id=tree_id, user_id=user_id)

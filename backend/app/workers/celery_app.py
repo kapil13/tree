@@ -32,6 +32,7 @@ celery_app.conf.update(
         "app.workers.tasks.run_satellite_scan": {"queue": "satellite"},
         "app.workers.tasks.run_sar_scan": {"queue": "satellite"},
         "app.workers.tasks.monthly_sar_sweep": {"queue": "satellite"},
+        "app.workers.tasks.weekly_sar_integrity_watch": {"queue": "satellite"},
         "app.workers.tasks.recalc_carbon": {"queue": "carbon"},
         "app.workers.tasks.send_notification": {"queue": "notifications"},
         "app.workers.tasks.deliver_webhook": {"queue": "notifications"},
@@ -45,6 +46,10 @@ celery_app.conf.update(
         "monthly-sar-sweep": {
             "task": "app.workers.tasks.monthly_sar_sweep",
             "schedule": crontab(day_of_month="5", hour="3", minute="0"),
+        },
+        "weekly-sar-integrity-watch": {
+            "task": "app.workers.tasks.weekly_sar_integrity_watch",
+            "schedule": crontab(day_of_week="1", hour="4", minute="0"),
         },
         "daily-health-roundup": {
             "task": "app.workers.tasks.daily_health_roundup",
