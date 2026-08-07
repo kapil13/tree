@@ -17,6 +17,8 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.sar_alert_links import enrich_sar_alert_payload
+from app.services.monitoring.sar_field_tasks import maybe_create_sar_field_verification
 from app.services.monitoring.sar_fusion_alerts import fusion_from_metadata, maybe_alert_sar_fusion
 from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
 from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
@@ -119,6 +121,7 @@ async def maybe_alert_sar_risks(
     if user is None or analysis.risk_level == "low":
         return
 
+    payload_base = enrich_sar_alert_payload(payload_base)
     alert_map = {
         "sar_hidden_moisture": (
             "sar_hidden_moisture",
@@ -152,7 +155,7 @@ async def maybe_alert_sar_risks(
         if spec is None:
             continue
         kind, severity, label = spec
-        await create_monitoring_alert(
+        alert = await create_monitoring_alert(
             db,
             user=user,
             kind=kind,
@@ -170,6 +173,17 @@ async def maybe_alert_sar_risks(
             dedupe_hours=168,
             dedupe_keys=dedupe_keys,
         )
+        if alert and severity in {"high", "critical"}:
+            await maybe_create_sar_field_verification(
+                db,
+                project_id=payload_base.get("project_id"),
+                work_area_id=payload_base.get("fence_id"),
+                tree_id=payload_base.get("tree_id"),
+                alert_kind=kind,
+                severity=severity,
+                message=finding.evidence,
+                fusion=None,
+            )
 
 
 async def scan_and_persist_tree_sar(

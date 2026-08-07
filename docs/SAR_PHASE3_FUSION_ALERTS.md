@@ -74,9 +74,11 @@ docker compose ... exec beat celery -A app.workers.celery_app inspect scheduled
 
 ## Next (Phase 3 follow-ups)
 
-- Alert → field task workflow
-- Mobile notification deep links to SAR panel
+- ~~Alert → field task workflow~~ — **Phase 3b** (`sar_field_verification` compliance tasks)
+- ~~Mobile notification deep links to SAR panel~~ — `mobile_deep_link` on alert payloads
 - Copernicus + GEE dual-provider fallback
 - Portfolio SAR trend charts
+
+See [SAR_PHASE3B_FIELD_ACTIONS.md](./SAR_PHASE3B_FIELD_ACTIONS.md) for the field-action loop.
 
 See also [SAR_OPERATIONS.md](./SAR_OPERATIONS.md) and [PHASE3_MONITORING.md](./PHASE3_MONITORING.md).
