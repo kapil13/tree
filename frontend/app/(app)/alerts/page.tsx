@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
 import { alerts, errorMessage } from "@/lib/api";
@@ -218,7 +219,10 @@ export default function AlertsPage() {
         {alertItems.length === 0 && (
           <div className="text-sm text-stone-500">No alerts. Your trees are happy.</div>
         )}
-        {alertItems.map((a) => (
+        {alertItems.map((a) => {
+          const payload = a.payload as Record<string, string> | undefined;
+          const deepLink = payload?.deep_link;
+          return (
           <div key={a.id} className="flex items-start justify-between gap-3 py-3">
             <div>
               <div className="font-medium">{a.title}</div>
@@ -226,6 +230,11 @@ export default function AlertsPage() {
               <div className="mt-1 text-xs text-stone-500">
                 {a.kind} · {a.severity} · {new Date(a.created_at).toLocaleString()}
               </div>
+              {deepLink && (
+                <Link href={deepLink} className="mt-2 inline-block text-xs text-forest-700 hover:underline">
+                  {payload?.action_label ?? "Open related view"} →
+                </Link>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {!a.is_read && <span className="badge-moderate">unread</span>}
@@ -242,7 +251,8 @@ export default function AlertsPage() {
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

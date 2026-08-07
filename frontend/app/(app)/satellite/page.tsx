@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
@@ -9,7 +10,9 @@ import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
 import { bhoonidhi, plantationFences, trees } from "@/lib/api";
 
 export default function SatellitePage() {
-  const [selectedFenceId, setSelectedFenceId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const fenceFromUrl = searchParams.get("fence");
+  const [selectedFenceId, setSelectedFenceId] = useState<string | null>(fenceFromUrl);
   const { data: treePage } = useQuery({
     queryKey: ["trees-map"],
     queryFn: () => trees.list({ page_size: 100 }),
@@ -27,6 +30,12 @@ export default function SatellitePage() {
   const verified = items.filter((t) => t.satellite_verified).length;
   const fences = fencePage?.items ?? [];
   const selectedFence = fences.find((f) => f.id === selectedFenceId) ?? null;
+
+  useEffect(() => {
+    if (fenceFromUrl) {
+      setSelectedFenceId(fenceFromUrl);
+    }
+  }, [fenceFromUrl]);
 
   useEffect(() => {
     if (!selectedFenceId && fences.length === 1) {

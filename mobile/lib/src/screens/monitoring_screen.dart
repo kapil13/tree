@@ -39,8 +39,11 @@ class MonitoringScreen extends ConsumerWidget {
         ),
         data: (summary) {
           final stale = summary['stale_satellite_work_areas'] ?? 0;
+          final sarAtRisk = summary['sar_at_risk_work_areas'] ?? 0;
+          final sarAvg = summary['sar_avg_forest_integrity'];
           final alertsByKind = Map<String, dynamic>.from(summary['unread_alerts_by_kind'] ?? {});
           final workAreas = List<dynamic>.from(summary['work_area_monitoring'] ?? []);
+          final highlightFenceId = GoRouterState.of(context).uri.queryParameters['fence'];
 
           return RefreshIndicator(
             color: AranyixColors.forest,
@@ -77,6 +80,14 @@ class MonitoringScreen extends ConsumerWidget {
                   subtitle: 'Work areas without a recent satellite pass',
                 ),
                 const SizedBox(height: 12),
+                _StatCard(
+                  title: 'SAR at risk',
+                  value: '$sarAtRisk',
+                  subtitle: sarAvg != null
+                      ? 'Portfolio avg Forest Integrity: $sarAvg'
+                      : 'Run SAR scans from the web satellite page',
+                ),
+                const SizedBox(height: 12),
                 Text('Unread alerts by kind', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (alertsByKind.isEmpty)
@@ -103,11 +114,16 @@ class MonitoringScreen extends ConsumerWidget {
                   for (final raw in workAreas.take(30))
                     ListTile(
                       contentPadding: EdgeInsets.zero,
+                      tileColor: highlightFenceId != null && raw['id'] == highlightFenceId
+                          ? Colors.green.shade50
+                          : null,
                       title: Text((raw as Map)['name'] as String? ?? 'Work area'),
                       subtitle: Text(
                         [
                           raw['project_name'] ?? '',
                           if (raw['latest_ndvi'] != null) 'NDVI ${raw['latest_ndvi']}',
+                          if (raw['sar_forest_integrity'] != null)
+                            'SAR integrity ${raw['sar_forest_integrity']}',
                           if (raw['days_since_scan'] != null) '${raw['days_since_scan']}d since scan',
                           if (raw['days_since_scan'] == null) 'No scan yet',
                         ].where((s) => s.toString().isNotEmpty).join(' · '),
