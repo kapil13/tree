@@ -66,6 +66,26 @@ function evaluatePixel(samples) {
 }
 """
 
+S1_SAR_EVALSCRIPT = """//VERSION=3
+function setup() {
+  return {
+    input: ["VH", "VV", "dataMask"],
+    output: [
+      { id: "vh", bands: 1, sampleType: "FLOAT32" },
+      { id: "vv", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1 }
+    ]
+  };
+}
+function evaluatePixel(samples) {
+  return {
+    vh: [samples.VH],
+    vv: [samples.VV],
+    dataMask: [samples.dataMask]
+  };
+}
+"""
+
 
 def bbox_wgs84_around_point(lat: float, lon: float, buffer_m: float = 15.0) -> list[float]:
     """Return [west, south, east, north] in CRS84 (lon/lat) order."""
@@ -94,6 +114,25 @@ def _stats_from_entry(entry: dict[str, Any]) -> dict[str, float] | None:
         "max": float(bands.get("max", mean)),
         "mean": float(mean),
     }
+
+
+def _band_mean_from_entry(entry: dict[str, Any], output_id: str) -> float | None:
+    try:
+        bands = entry["outputs"][output_id]["bands"]["B0"]["stats"]
+    except (KeyError, TypeError):
+        return None
+    if int(bands.get("sampleCount") or 0) == 0:
+        return None
+    mean = bands.get("mean")
+    if mean is None:
+        return None
+    return float(mean)
+
+
+def _linear_to_db(linear: float | None) -> float | None:
+    if linear is None or linear <= 0:
+        return None
+    return round(10.0 * math.log10(linear), 2)
 
 
 class SentinelHubClient:
@@ -313,6 +352,94 @@ class SentinelHubClient:
                 )
             resp.raise_for_status()
             return resp.content
+
+    def _build_s1_statistics_request(
+        self,
+        bounds: dict[str, Any],
+        *,
+        time_from: datetime,
+        time_to: datetime,
+    ) -> dict[str, Any]:
+        return {
+            "input": {
+                "bounds": bounds,
+                "data": [
+                    {
+                        "type": "sentinel-1-grd",
+                        "dataFilter": {
+                            "timeRange": {
+                                "from": time_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                "to": time_to.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            },
+                            "mosaickingOrder": "mostRecent",
+                        },
+                    }
+                ],
+            },
+            "aggregation": {
+                "timeRange": {
+                    "from": time_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "to": time_to.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                },
+                "aggregationInterval": {"of": "P1D"},
+                "evalscript": S1_SAR_EVALSCRIPT,
+                "resx": 10,
+                "resy": 10,
+            },
+        }
+
+    async def fetch_s1_point_sample(
+        self, lat: float, lon: float, *, when: datetime | None = None
+    ) -> tuple[datetime, float, float] | None:
+        """Return (scene_time, vh_db, vv_db) from latest Sentinel-1 GRD near a point."""
+        anchor = when or datetime.now(UTC)
+        time_from = anchor - timedelta(days=45)
+        time_to = anchor + timedelta(days=1)
+        bounds = {
+            "bbox": bbox_wgs84_around_point(lat, lon, buffer_m=75.0),
+            "properties": {"crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"},
+        }
+        token = await self._get_token()
+        body = self._build_s1_statistics_request(bounds, time_from=time_from, time_to=time_to)
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            resp = await client.post(
+                f"{self._api_base_url}/api/v1/statistics",
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+            )
+            if resp.status_code >= 400:
+                log.warning(
+                    "sentinel_hub_s1_statistics_error",
+                    status=resp.status_code,
+                    body=resp.text[:500],
+                )
+            resp.raise_for_status()
+            payload = resp.json()
+
+        if payload.get("status") not in (None, "OK"):
+            raise RuntimeError(f"sentinel_hub_status_{payload.get('status')}")
+
+        candidates: list[tuple[datetime, float, float]] = []
+        for entry in payload.get("data") or []:
+            vh_lin = _band_mean_from_entry(entry, "vh")
+            vv_lin = _band_mean_from_entry(entry, "vv")
+            vh_db = _linear_to_db(vh_lin)
+            vv_db = _linear_to_db(vv_lin)
+            if vh_db is None or vv_db is None:
+                continue
+            interval = entry.get("interval") or {}
+            ts_raw = interval.get("from") or interval.get("to")
+            if not ts_raw:
+                continue
+            candidates.append((_parse_iso(ts_raw), vh_db, vv_db))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: x[0])
+        return candidates[-1]
 
     # Point helpers (tree chips)
     async def fetch_latest_sample(

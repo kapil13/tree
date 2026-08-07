@@ -1,9 +1,4 @@
-"""SAR monitoring service — NISAR-inspired L/S-band backscatter (stub + GEE hook).
-
-When GEE credentials are configured, this module can be extended to sample
-NISAR / Sentinel-1 / EOS-04 collections. Until then a deterministic stub keeps
-dev, demos, and CI working end-to-end.
-"""
+"""SAR monitoring service — NISAR-inspired analytics with stub, GEE, or Copernicus providers."""
 
 from __future__ import annotations
 
@@ -22,11 +17,16 @@ from app.services.satellite.gee_sar_sampler import (
     sample_sentinel1_point,
 )
 from app.services.satellite.sar_types import SarSample
+from app.services.satellite.sentinel_hub_sar import (
+    sample_sentinel1_point_sh,
+    sentinel_hub_sar_configured,
+)
 
 log = get_logger(__name__)
 
 SAR_PROVIDER_STUB = "nisar-sar-stub"
 SAR_PROVIDER_GEE = "sar-gee"
+SAR_PROVIDER_SENTINEL_HUB = "sar-sentinel-hub"
 
 
 class SarService(Protocol):
@@ -47,7 +47,6 @@ def _wetland_bias(lat: float, lon: float) -> float:
     """Deterministic wetland/moisture bias from coordinates (demo + test stability)."""
     h = hashlib.sha256(f"wet:{lat:.3f}:{lon:.3f}".encode()).digest()
     base = (h[0] / 255.0) * 0.55
-    # Himalayan foothill / riparian belt heuristic (India-centric demo)
     if 29.5 <= lat <= 31.5 and 77.5 <= lon <= 79.5:
         base += 0.25
     if abs(lat) < 15:
@@ -66,7 +65,6 @@ def _build_sample(
     rng = _rng(lat, lon, ts)
     wetland_bias = _wetland_bias(lat, lon)
 
-    # L-band penetrates deeper; S-band interacts with upper canopy (IIRS NISAR article).
     s_hh = round(rng.uniform(-18.0, -8.0), 2)
     l_penetration = wetland_bias * rng.uniform(4.0, 9.0)
     l_hh = round(s_hh + l_penetration + rng.uniform(-1.5, 1.5), 2)
@@ -79,8 +77,6 @@ def _build_sample(
         3,
     )
     vh_ratio = round(rng.uniform(0.15, 0.45) + wetland_bias * 0.1, 3)
-
-    # Healthy canopy greenness proxy mismatch: high L-band moisture under normal S-band.
     canopy_mismatch = wetland_prob >= 0.55 and l_s_ratio >= 3.5 and s_hh > -14.0
 
     hh_r = round(min(1.0, (l_hh + 25) / 20), 3)
@@ -119,7 +115,7 @@ class StubSarService:
         return await self.sample_point(lat, lon, when=when)
 
 
-def _sample_from_gee_dict(data: dict) -> SarSample:
+def _sample_from_live_dict(data: dict) -> SarSample:
     return SarSample(
         provider=data["provider"],
         scene_id=data["scene_id"],
@@ -134,7 +130,7 @@ def _sample_from_gee_dict(data: dict) -> SarSample:
         frequency_bands=data.get("frequency_bands", ["C"]),
         polarimetric_composite=data.get("polarimetric_composite"),
         coherence=data.get("coherence"),
-        pipeline=data.get("pipeline", "byot-sar-gee-2.0.0"),
+        pipeline=data.get("pipeline", "byot-sar-live-2.0.0"),
     )
 
 
@@ -151,9 +147,31 @@ class GeeSarService:
             try:
                 data = await asyncio.to_thread(sample_sentinel1_point, lat, lon, when=when)
                 if data is not None:
-                    return _sample_from_gee_dict(data)
+                    return _sample_from_live_dict(data)
             except Exception as exc:
                 log.warning("sar_gee_sample_failed", lat=lat, lon=lon, error=str(exc))
+        return await self._fallback.sample_point(lat, lon, when=when)
+
+    async def sample_polygon(
+        self, boundary_geojson: dict, *, when: datetime | None = None
+    ) -> SarSample:
+        lat, lon = polygon_centroid(boundary_geojson)
+        return await self.sample_point(lat, lon, when=when)
+
+
+class SentinelHubSarService:
+    """Copernicus Sentinel Hub Sentinel-1 with stub fallback."""
+
+    name = SAR_PROVIDER_SENTINEL_HUB
+
+    def __init__(self, *, fallback: StubSarService | None = None) -> None:
+        self._fallback = fallback or StubSarService()
+
+    async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample:
+        if sentinel_hub_sar_configured():
+            data = await sample_sentinel1_point_sh(lat, lon, when=when)
+            if data is not None:
+                return _sample_from_live_dict(data)
         return await self._fallback.sample_point(lat, lon, when=when)
 
     async def sample_polygon(
@@ -171,8 +189,20 @@ def reset_sar_service() -> None:
     _service = None
 
 
+def live_sar_provider_name() -> str:
+    if settings.sar_provider == "sentinel_hub":
+        return "sar-sentinel-hub-s1"
+    if settings.sar_provider == "gee":
+        return "sar-gee-sentinel1"
+    return "nisar-sar-stub"
+
+
 def has_sar_credentials() -> bool:
-    return bool(settings.gee_service_account_json) and gee_python_available() and _initialize_gee()
+    if settings.sar_provider == "sentinel_hub":
+        return sentinel_hub_sar_configured()
+    if settings.sar_provider == "gee":
+        return bool(settings.gee_service_account_json) and gee_python_available() and _initialize_gee()
+    return False
 
 
 def is_sar_provider_record(provider: str) -> bool:
@@ -185,7 +215,9 @@ def get_sar_service() -> SarService:
     if _service is not None:
         return _service
 
-    if settings.sar_provider == "gee" and settings.gee_service_account_json:
+    if settings.sar_provider == "sentinel_hub" and sentinel_hub_sar_configured():
+        _service = SentinelHubSarService()
+    elif settings.sar_provider == "gee" and settings.gee_service_account_json:
         _service = GeeSarService()
     else:
         _service = StubSarService()

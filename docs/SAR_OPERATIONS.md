@@ -1,6 +1,16 @@
-# SAR / GEE Operations Runbook
+# SAR Operations Runbook
 
-Operational guide for **live SAR ground intelligence** (Sentinel-1 via Google Earth Engine) on Aranyix production.
+Operational guide for **live SAR ground intelligence** (Sentinel-1 C-band) on Aranyix production.
+
+## Provider options (Stage B)
+
+| `SAR_PROVIDER` | Data source | Credentials | Live provider tag |
+|----------------|-------------|-------------|-------------------|
+| `gee` | Google Earth Engine `COPERNICUS/S1_GRD` | `GEE_SERVICE_ACCOUNT_JSON` | `sar-gee-sentinel1` |
+| `sentinel_hub` | Copernicus Data Space Statistics API | `SENTINEL_HUB_CLIENT_ID` / `SECRET` | `sar-sentinel-hub-s1` |
+| `stub` | Deterministic demo | none | `nisar-sar-stub` |
+
+**Recommendation:** Use `sentinel_hub` if you already have Copernicus credentials and want to avoid Google. Use `gee` if Earth Engine is already registered.
 
 ## Architecture
 
@@ -9,11 +19,29 @@ Operational guide for **live SAR ground intelligence** (Sentinel-1 via Google Ea
 | **backend** | API scans (`POST /v1/sar/work-areas/{id}/scan`) |
 | **worker** | Celery `run_sar_scan`, `monthly_sar_sweep` (queue: `satellite`) |
 | **beat** | Schedules monthly SAR sweep — **5th of month, 03:00 UTC** |
-| **GEE** | Samples `COPERNICUS/S1_GRD` VH/VV at fence centroid |
+| **GEE / Sentinel Hub** | Samples Sentinel-1 VH/VV at fence centroid |
 
-Live records use provider **`sar-gee-sentinel1`**. Stub fallback uses **`nisar-sar-stub`**.
+Live records: **`sar-gee-sentinel1`** or **`sar-sentinel-hub-s1`**. Stub: **`nisar-sar-stub`**.
 
-## Required environment (`.env.production`)
+## Copernicus Sentinel Hub setup (no Google)
+
+```env
+SAR_PROVIDER=sentinel_hub
+SAR_ENABLED=true
+SENTINEL_HUB_CLIENT_ID=your-cdse-client-id
+SENTINEL_HUB_CLIENT_SECRET=your-cdse-secret
+```
+
+Uses the same Copernicus Data Space credentials as optical NDVI. No extra volume mounts required.
+
+## Google Earth Engine setup
+
+1. Register GCP project at [Earth Engine signup](https://signup.earthengine.google.com/)
+2. Enable **Earth Engine API**
+3. Create service account + JSON key → `/opt/aranyix/secrets/gee-service-account.json` (`chmod 600`)
+4. Grant service account Earth Engine access
+
+### GEE environment
 
 ```env
 SAR_PROVIDER=gee
@@ -29,13 +57,6 @@ GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gee-sa.json
 volumes:
   - ${GEE_SA_JSON_HOST}:/run/secrets/gee-sa.json:ro
 ```
-
-## Google Cloud setup
-
-1. Register GCP project at [Earth Engine signup](https://signup.earthengine.google.com/)
-2. Enable **Earth Engine API**
-3. Create service account + JSON key → `/opt/aranyix/secrets/gee-service-account.json` (`chmod 600`)
-4. Grant service account Earth Engine access
 
 ## Deploy / upgrade
 

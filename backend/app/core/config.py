@@ -68,7 +68,7 @@ class Settings(BaseSettings):
         "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
     )
     gee_service_account_json: str | None = None
-    sar_provider: Literal["stub", "gee"] = "stub"
+    sar_provider: Literal["stub", "gee", "sentinel_hub"] = "stub"
     sar_enabled: bool = True
 
     # Weather (Open-Meteo — free, no API key)
