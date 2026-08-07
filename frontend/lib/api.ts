@@ -1120,6 +1120,9 @@ export const plantingProjects = {
           created_at: string | null;
         }>;
         stale_satellite_work_areas: number;
+        stale_sar_work_areas?: number;
+        sar_at_risk_work_areas?: number;
+        sar_avg_forest_integrity?: number | null;
         work_area_monitoring: Array<{
           id: string;
           name: string;
@@ -1130,6 +1133,16 @@ export const plantingProjects = {
           days_since_scan: number | null;
           latest_ndvi: number | null;
           tree_count: number | null;
+          last_sar_at?: string | null;
+          days_since_sar_scan?: number | null;
+          sar_provider?: string | null;
+          sar_forest_integrity?: number | null;
+          sar_integrity_grade?: string | null;
+          sar_monitoring_mode?: string | null;
+          sar_ground_status?: string | null;
+          sar_stale?: boolean;
+          sar_live?: boolean;
+          sar_at_risk?: boolean;
         }>;
         unread_alerts_by_kind: Record<string, number>;
         recent_jobs: Array<{

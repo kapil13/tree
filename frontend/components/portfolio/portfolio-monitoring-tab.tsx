@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
-  AlertTriangle,
   Bell,
+  Radar,
   RefreshCw,
   Satellite,
   Server,
@@ -33,6 +33,22 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   satellite_health_digest: "Satellite digest",
   compliance_deadline_approaching: "Compliance deadline",
   compliance_deadline_overdue: "Compliance overdue",
+  sar_integrity_drop: "SAR integrity drop",
+  sar_optical_divergent: "SAR optical mismatch",
+  sar_integrity_at_risk: "SAR at risk",
+  sar_monsoon_gap_fill: "SAR monsoon alert",
+  sar_hidden_moisture: "SAR hidden moisture",
+  sar_wetland_detected: "SAR wetland",
+  sar_flood_risk: "SAR waterlogging",
+  sar_ground_moisture: "SAR ground moisture",
+  sar_ground_instability: "SAR ground instability",
+};
+
+const SAR_MODE_LABEL: Record<string, string> = {
+  aligned: "Aligned",
+  optical_sar_divergent: "Mismatch",
+  sar_gap_fill: "Gap-fill",
+  sar_stress: "Stress",
 };
 
 export function PortfolioMonitoringTab() {
@@ -63,23 +79,37 @@ export function PortfolioMonitoringTab() {
           warn={data.stale_satellite_work_areas > 0}
         />
         <PortfolioKpiCard
+          icon={Radar}
+          label="SAR at risk"
+          value={String(data.sar_at_risk_work_areas ?? 0)}
+          warn={(data.sar_at_risk_work_areas ?? 0) > 0}
+        />
+        <PortfolioKpiCard
           icon={Bell}
           label="Unread alerts (30d)"
           value={String(unreadTotal)}
           warn={unreadTotal > 0}
         />
         <PortfolioKpiCard
-          icon={AlertTriangle}
-          label="Open violations"
-          value={String(data.open_violations)}
-          warn={data.open_violations > 0}
-        />
-        <PortfolioKpiCard
           icon={Activity}
-          label="Work areas tracked"
-          value={String(data.work_area_monitoring.length)}
+          label="Avg Forest Integrity"
+          value={
+            data.sar_avg_forest_integrity != null
+              ? `${data.sar_avg_forest_integrity}`
+              : "—"
+          }
+          warn={
+            data.sar_avg_forest_integrity != null && data.sar_avg_forest_integrity < 50
+          }
         />
       </div>
+
+      {(data.stale_sar_work_areas ?? 0) > 0 && (
+        <p className="text-sm text-amber-800">
+          {data.stale_sar_work_areas} work area{(data.stale_sar_work_areas ?? 0) === 1 ? "" : "s"}{" "}
+          have no SAR scan in the last 35 days. Run a SAR scan from the Satellite page.
+        </p>
+      )}
 
       {Object.keys(data.unread_alerts_by_kind).length > 0 && (
         <section className="card">
@@ -110,6 +140,8 @@ export function PortfolioMonitoringTab() {
               <th className="px-4 py-2">Segment</th>
               <th className="px-4 py-2">Last scan</th>
               <th className="px-4 py-2">NDVI</th>
+              <th className="px-4 py-2">SAR integrity</th>
+              <th className="px-4 py-2">SAR mode</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -143,6 +175,21 @@ export function PortfolioMonitoringTab() {
                 </td>
                 <td className="px-4 py-2">
                   {wa.latest_ndvi != null ? wa.latest_ndvi.toFixed(2) : "—"}
+                </td>
+                <td className="px-4 py-2">
+                  {wa.sar_forest_integrity != null ? (
+                    <span className={wa.sar_at_risk ? "font-medium text-amber-800" : ""}>
+                      {wa.sar_forest_integrity}
+                      {wa.sar_integrity_grade ? ` (${wa.sar_integrity_grade})` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-stone-400">No SAR</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-xs">
+                  {wa.sar_monitoring_mode
+                    ? SAR_MODE_LABEL[wa.sar_monitoring_mode] ?? wa.sar_monitoring_mode
+                    : "—"}
                 </td>
                 <td className="px-4 py-2 text-right">
                   {wa.project_id && (

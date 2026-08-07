@@ -17,6 +17,7 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.sar_fusion_alerts import fusion_from_metadata, maybe_alert_sar_fusion
 from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
 from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
@@ -185,6 +186,8 @@ async def scan_and_persist_tree_sar(
 
     sample = await get_sar_service().sample_point(lat, lon)
     optical = await _latest_optical_context_tree(db, tree.id)
+    prior_rec = await latest_sar_record_for_tree(db, tree.id)
+    prior_fusion = fusion_from_metadata(prior_rec.raw_metadata if prior_rec else None)
     analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
     fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
     meta = sample.to_raw_metadata()
@@ -213,6 +216,14 @@ async def scan_and_persist_tree_sar(
         title_prefix=tree.public_code,
         dedupe_keys=("tree_id", "finding"),
     )
+    await maybe_alert_sar_fusion(
+        db,
+        user=notify,
+        fusion=fusion,
+        previous_fusion=prior_fusion,
+        payload_base={"tree_id": str(tree.id), "project_id": str(tree.project_id) if tree.project_id else None},
+        title_prefix=tree.public_code,
+    )
     return rec, analysis
 
 
@@ -235,6 +246,8 @@ async def scan_and_persist_fence_sar(
         return None
 
     optical = await _latest_optical_context_fence(db, fence.id)
+    prior_rec = await latest_sar_record_for_fence(db, fence.id)
+    prior_fusion = fusion_from_metadata(prior_rec.raw_metadata if prior_rec else None)
     analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
     fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
     meta = sample.to_raw_metadata()
@@ -263,6 +276,17 @@ async def scan_and_persist_fence_sar(
         },
         title_prefix=fence.name,
         dedupe_keys=("fence_id", "finding"),
+    )
+    await maybe_alert_sar_fusion(
+        db,
+        user=owner,
+        fusion=fusion,
+        previous_fusion=prior_fusion,
+        payload_base={
+            "fence_id": str(fence.id),
+            "project_id": str(fence.project_id) if fence.project_id else None,
+        },
+        title_prefix=fence.name,
     )
     return rec, analysis
 
