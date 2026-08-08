@@ -1122,6 +1122,11 @@ export const plantingProjects = {
         stale_satellite_work_areas: number;
         stale_sar_work_areas?: number;
         sar_at_risk_work_areas?: number;
+        sar_aligned_work_areas?: number;
+        sar_divergent_work_areas?: number;
+        sar_gap_fill_work_areas?: number;
+        sar_live_providers?: number;
+        sar_stub_providers?: number;
         sar_avg_forest_integrity?: number | null;
         work_area_monitoring: Array<{
           id: string;
@@ -1143,8 +1148,23 @@ export const plantingProjects = {
           sar_stale?: boolean;
           sar_live?: boolean;
           sar_at_risk?: boolean;
+          sar_recommended_action?: string | null;
         }>;
         unread_alerts_by_kind: Record<string, number>;
+        unread_sar_alerts_by_kind?: Record<string, number>;
+        open_sar_field_verifications?: Array<{
+          id: string;
+          project_id: string | null;
+          work_area_id: string | null;
+          work_area_name: string | null;
+          severity: string;
+          message: string;
+          alert_kind: string | null;
+          forest_integrity_score: number | null;
+          monitoring_mode: string | null;
+          created_at: string | null;
+          deep_link: string | null;
+        }>;
         recent_jobs: Array<{
           job_name: string;
           status: string;
@@ -1407,6 +1427,13 @@ export const sar = {
   },
   async fenceFusion(fenceId: string) {
     return (await api.get<SarFusion>(`/v1/sar/work-areas/${fenceId}/fusion`)).data;
+  },
+  async portfolioExport() {
+    return (
+      await api.get<string>("/v1/sar/portfolio-export", {
+        responseType: "text",
+      })
+    ).data;
   },
 };
 
@@ -1710,6 +1737,10 @@ export type IntelligenceSummary = {
       work_areas_tracked: number;
       stale_sentinel_scans: number;
       aligned_dual_source: number;
+      sar_ground_risk_sites?: number;
+      sar_divergent_sites?: number;
+      sar_avg_forest_integrity?: number | null;
+      sar_provider?: string;
       sentinel_configured: boolean;
       bhoonidhi_configured: boolean;
     };
@@ -1720,6 +1751,11 @@ export type IntelligenceSummary = {
       recommended_action: string;
       sentinel: { latest_ndvi: number | null; days_since_scan: number | null; ndvi_trend: string };
       bhoonidhi: { scenes_available: number; latest_scene_at: string | null };
+      sar?: {
+        forest_integrity_score?: number | null;
+        monitoring_mode?: string | null;
+        ground_status?: string | null;
+      };
     }>;
   };
   highest_risk: string;

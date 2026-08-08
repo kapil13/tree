@@ -163,4 +163,14 @@ def intelligence_context_for_assistant(summary: dict[str, Any]) -> dict[str, Any
         "biodiversity": summary.get("biodiversity"),
         "integrations_status": summary.get("integrations", {}).get("status"),
         "satellite_fusion": summary.get("satellite_fusion", {}).get("summary"),
+        "sar_ground_risk_sites": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_ground_risk_sites"),
+        "sar_divergent_sites": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_divergent_sites"),
+        "sar_avg_forest_integrity": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_avg_forest_integrity"),
+        "sar_provider": summary.get("satellite_fusion", {}).get("summary", {}).get("sar_provider"),
     }

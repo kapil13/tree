@@ -295,6 +295,8 @@ async def build_portfolio_satellite_fusion(
     sentinel_only = 0
     bhoonidhi_only = 0
     sar_risk_count = 0
+    sar_divergent_count = 0
+    sar_integrity_scores: list[float] = []
 
     for idx, fence in enumerate(fences[:site_limit]):
         project = project_by_id.get(fence.project_id) if fence.project_id else None
@@ -314,6 +316,11 @@ async def build_portfolio_satellite_fusion(
         sar_status = row.get("sar") or {}
         if sar_status.get("ground_status") in {"wetland_risk", "hidden_moisture", "moist"}:
             sar_risk_count += 1
+        if sar_status.get("monitoring_mode") == "optical_sar_divergent":
+            sar_divergent_count += 1
+        score = sar_status.get("forest_integrity_score")
+        if score is not None:
+            sar_integrity_scores.append(float(score))
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -325,6 +332,12 @@ async def build_portfolio_satellite_fusion(
             "sentinel_only": sentinel_only,
             "bhoonidhi_only": bhoonidhi_only,
             "sar_ground_risk_sites": sar_risk_count,
+            "sar_divergent_sites": sar_divergent_count,
+            "sar_avg_forest_integrity": (
+                round(sum(sar_integrity_scores) / len(sar_integrity_scores), 1)
+                if sar_integrity_scores
+                else None
+            ),
             "sentinel_configured": has_sentinel_credentials(),
             "bhoonidhi_configured": has_bhoonidhi_credentials(),
             "sar_configured": True,

@@ -1,19 +1,54 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
 import { alerts, errorMessage } from "@/lib/api";
 
+const SAR_ALERT_KINDS = new Set([
+  "sar_integrity_drop",
+  "sar_optical_divergent",
+  "sar_integrity_at_risk",
+  "sar_monsoon_gap_fill",
+  "sar_hidden_moisture",
+  "sar_wetland_detected",
+  "sar_flood_risk",
+  "sar_ground_moisture",
+  "sar_ground_instability",
+  "sar_sweep_health",
+]);
+
+const SAR_KIND_LABEL: Record<string, string> = {
+  sar_integrity_drop: "Integrity drop",
+  sar_optical_divergent: "Optical mismatch",
+  sar_integrity_at_risk: "At risk",
+  sar_monsoon_gap_fill: "Monsoon gap-fill",
+  sar_hidden_moisture: "Hidden moisture",
+  sar_wetland_detected: "Wetland",
+  sar_flood_risk: "Waterlogging",
+  sar_ground_moisture: "Ground moisture",
+  sar_ground_instability: "Ground instability",
+  sar_sweep_health: "Sweep health",
+};
+
 export default function AlertsPage() {
   const qc = useQueryClient();
+  const searchParams = useSearchParams();
+  const sarFilter = searchParams.get("sar");
 
   const { data, isLoading } = useQuery({
     queryKey: ["alerts"],
     queryFn: () => alerts.list(),
   });
 
-  const alertItems = data?.items ?? [];
+  const alertItems = (data?.items ?? []).filter((a) => {
+    if (!sarFilter) return true;
+    if (sarFilter === "all") return SAR_ALERT_KINDS.has(a.kind);
+    return a.kind === sarFilter;
+  });
+
+  const sarKindsInList = [...new Set((data?.items ?? []).map((a) => a.kind).filter((k) => SAR_ALERT_KINDS.has(k)))];
 
   const { data: prefs } = useQuery({
     queryKey: ["alert-preferences"],
@@ -39,6 +74,38 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Alerts</h1>
+
+      {sarKindsInList.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/alerts"
+            className={`rounded-full px-3 py-1 text-sm ${
+              !sarFilter ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+            }`}
+          >
+            All alerts
+          </Link>
+          <Link
+            href="/alerts?sar=all"
+            className={`rounded-full px-3 py-1 text-sm ${
+              sarFilter === "all" ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+            }`}
+          >
+            All SAR
+          </Link>
+          {sarKindsInList.map((kind) => (
+            <Link
+              key={kind}
+              href={`/alerts?sar=${kind}`}
+              className={`rounded-full px-3 py-1 text-sm ${
+                sarFilter === kind ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+              }`}
+            >
+              {SAR_KIND_LABEL[kind] ?? kind}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="card space-y-4">
         <div className="flex items-center gap-2 text-sm font-medium">

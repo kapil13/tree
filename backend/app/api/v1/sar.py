@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
@@ -24,6 +24,7 @@ from app.schemas.sar import (
     SarStatusOut,
 )
 from app.services.data_scope import can_access_tree, user_sees_org_portfolio
+from app.services.monitoring.sar_ops_dashboard import build_sar_portfolio_export
 from app.services.monitoring.sar_sweep import (
     latest_sar_record_for_fence,
     latest_sar_record_for_tree,
@@ -117,6 +118,17 @@ async def _load_fence(fence_id: uuid.UUID, user, db) -> PlantationFence:
     if not _can_access_fence(user, fence):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return fence
+
+
+@router.get("/portfolio-export")
+async def sar_portfolio_export(user: CurrentUser, db: DB) -> Response:
+    """CSV export of SAR Forest Integrity across accessible work areas (Phase 3.6)."""
+    csv_body = await build_sar_portfolio_export(db, user)
+    return Response(
+        content=csv_body,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="sar-portfolio-export.csv"'},
+    )
 
 
 @router.get("/status", response_model=SarStatusOut)
