@@ -12,6 +12,8 @@ import {
   TreePine,
 } from "lucide-react";
 import { DataTrustBanner } from "@/components/data-trust-banner";
+import { MetricCard } from "@/components/dashboard/metric-card";
+import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
@@ -61,7 +63,7 @@ export function FieldWorkerDashboard() {
 
   for (const p of dueProjects.slice(0, 4)) {
     const bits: string[] = [];
-    if (p.survival_due > 0) bits.push(`${p.survival_due} survival / geotag due`);
+    if (p.survival_due > 0) bits.push(`${p.survival_due} survival due`);
     if (p.open_violations > 0) bits.push(`${p.open_violations} open violation${p.open_violations === 1 ? "" : "s"}`);
     attention.push({
       id: `project-${p.id}`,
@@ -95,72 +97,115 @@ export function FieldWorkerDashboard() {
   }
 
   const unassigned = !projectsLoading && projectItems.length === 0;
+  const firstName = user?.full_name?.split(" ")[0] ?? "there";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <p className="text-sm font-medium text-forest-700">
-          Field workspace{user?.organization_name ? ` · ${user.organization_name}` : ""}
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-50">
-          Today&apos;s work
-        </h1>
-        <p className="mt-1 text-sm text-stone-600 dark:text-stone-300">
-          Register trees in your assigned packages and keep GPS / photos up to date.
-        </p>
-      </div>
+    <div className="dash-shell space-y-6">
+      <section className="dash-hero">
+        <div className="dash-hero-grid">
+          <div className="dash-hero-header">
+            <div className="dash-live-pill">
+              <span className="dash-live-dot" />
+              Field workspace
+            </div>
+            <h1 className="dash-hero-title mt-4 font-display">Today&apos;s work, {firstName}</h1>
+            <p className="dash-hero-copy">
+              {user?.organization_name ? `${user.organization_name} · ` : ""}
+              Register trees, refresh GPS, and close survival checks in your assigned packages.
+            </p>
+            <Link
+              href="/trees/new"
+              className="btn-primary mt-5 inline-flex items-center gap-2"
+            >
+              <Leaf className="h-4 w-4" />
+              Register tree
+            </Link>
+          </div>
+          <div className="dash-hero-stats">
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(projectItems.length)}</p>
+              <p className="dash-hero-stat-label">Projects</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(fieldOps?.tree_count ?? recentTrees.length)}</p>
+              <p className="dash-hero-stat-label">Trees in scope</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(fieldOps?.survival_due ?? 0)}</p>
+              <p className="dash-hero-stat-label">Survival due</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(attention.length)}</p>
+              <p className="dash-hero-stat-label">Queue items</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <DataTrustBanner compact />
 
-      <Link
-        href="/trees/new"
-        className="card group flex items-center gap-4 border-forest-200 bg-forest-50/50 transition hover:border-forest-400 dark:border-forest-900 dark:bg-forest-950/30"
-      >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest-700 text-white">
-          <Leaf className="h-6 w-6" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold text-stone-900 dark:text-stone-50">Register tree</p>
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            GPS, photos, and compliance fields — primary field action
-          </p>
-        </div>
-        <ArrowRight className="h-5 w-5 text-forest-700 group-hover:translate-x-0.5" />
-      </Link>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          icon={ClipboardList}
+          label="Assigned projects"
+          value={fmtNum(projectItems.length)}
+          sub={unassigned ? "Ask supervisor to add you" : "Active packages"}
+          accent="green"
+        />
+        <MetricCard
+          icon={AlertTriangle}
+          label="Open violations"
+          value={fmtNum(fieldOps?.open_violations ?? 0)}
+          sub="Across your portfolio"
+          accent="amber"
+        />
+        <MetricCard
+          icon={RefreshCw}
+          label="Survival due"
+          value={fmtNum(fieldOps?.survival_due ?? 0)}
+          sub="Geotag / survival checks"
+          accent="sky"
+        />
+        <MetricCard
+          icon={TreePine}
+          label="Recent trees"
+          value={fmtNum(recentTrees.length)}
+          sub="Last registrations"
+          accent="lime"
+        />
+      </section>
 
-      <div className="card space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-medium">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            Due today / needs attention
-          </h2>
-          <Link href="/field-ops" className="text-xs text-forest-700 hover:underline">
-            Field ops
+      <div className="dash-panel dash-panel--priority">
+        <div className="dash-panel-head">
+          <div>
+            <h2 className="dash-panel-title flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Due today / needs attention
+            </h2>
+            <p className="dash-panel-sub">Survival, geotag, and compliance items</p>
+          </div>
+          <Link href="/field-ops" className="dash-link">
+            Field ops <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
         {fieldOpsQ.isLoading || treesLoading ? (
-          <p className="text-sm text-stone-500">Loading queue…</p>
+          <p className="mt-4 text-sm text-stone-500">Loading queue…</p>
         ) : attention.length === 0 ? (
           <EmptyState
-            className="border-0 bg-transparent py-8"
+            className="mt-4 border-0 bg-transparent py-8"
             icon={RefreshCw}
             title="Nothing due right now"
             description="No survival checks, geotag updates, or open violations in your queue."
             action={{ label: "Register a tree", href: "/trees/new" }}
           />
         ) : (
-          <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {attention.slice(0, 5).map((item) => (
               <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className="flex items-start justify-between gap-3 py-2.5 text-sm hover:text-forest-800"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{item.title}</p>
-                    <p className="text-xs text-stone-500">{item.detail}</p>
-                  </div>
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" />
+                <Link href={item.href} className="dash-priority-card dash-priority-card--warn">
+                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
+                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
+                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
                 </Link>
               </li>
             ))}
@@ -169,91 +214,100 @@ export function FieldWorkerDashboard() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Link href="/projects" className="card group flex items-center gap-3 transition hover:border-forest-300">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-800">
-            <ClipboardList className="h-5 w-5" />
+        <Link href="/projects" className="dash-action-row">
+          <div className="dash-action-icon">
+            <ClipboardList className="h-4 w-4" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">My projects</p>
+          <div>
+            <p className="text-sm font-medium text-stone-900">My projects</p>
             <p className="text-xs text-stone-500">Packages & work areas</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-stone-400 group-hover:text-forest-700" />
+          <ArrowRight className="ml-auto h-4 w-4 text-stone-400" />
         </Link>
-        <Link href="/map" className="card group flex items-center gap-3 transition hover:border-forest-300">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-stone-800">
-            <MapPin className="h-5 w-5" />
+        <Link href="/map" className="dash-action-row">
+          <div className="dash-action-icon">
+            <MapPin className="h-4 w-4" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">Field map</p>
+          <div>
+            <p className="text-sm font-medium text-stone-900">Field map</p>
             <p className="text-xs text-stone-500">Find nearby trees</p>
           </div>
-          <ArrowRight className="h-4 w-4 text-stone-400 group-hover:text-forest-700" />
+          <ArrowRight className="ml-auto h-4 w-4 text-stone-400" />
         </Link>
       </div>
 
-      <div className="card space-y-3">
-        <h2 className="text-sm font-medium">Assigned projects</h2>
-        {projectsLoading ? (
-          <p className="text-sm text-stone-500">Loading…</p>
-        ) : unassigned ? (
-          <EmptyState
-            className="border-0 bg-transparent py-8"
-            icon={ClipboardList}
-            title="No projects assigned yet"
-            description="Ask your supervisor to add you on the project Team tab so packages appear here."
-          />
-        ) : (
-          <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-            {projectItems.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/projects/${p.id}`}
-                  className="flex justify-between py-2.5 text-sm hover:text-forest-800"
-                >
-                  <span className="font-medium">{p.name}</span>
-                  <span className="text-xs text-stone-500">{p.segment?.replace(/_/g, " ")}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-medium">
-            <TreePine className="h-4 w-4 text-forest-700" />
-            Recent trees
-          </h2>
-          <Link href="/trees" className="text-sm text-forest-700 hover:underline">
-            View all
-          </Link>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="dash-panel">
+          <div className="dash-panel-head">
+            <div>
+              <h2 className="dash-panel-title">Assigned projects</h2>
+              <p className="dash-panel-sub">Open a package to register trees</p>
+            </div>
+          </div>
+          {projectsLoading ? (
+            <p className="mt-4 text-sm text-stone-500">Loading…</p>
+          ) : unassigned ? (
+            <EmptyState
+              className="mt-4 border-0 bg-transparent py-8"
+              icon={ClipboardList}
+              title="No projects assigned yet"
+              description="Ask your supervisor to add you on the project Team tab so packages appear here."
+            />
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {projectItems.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/projects/${p.id}`} className="dash-list-row dash-list-row--link">
+                    <div>
+                      <p className="font-medium text-stone-800">{p.name}</p>
+                      <p className="text-xs text-stone-500">{p.segment?.replace(/_/g, " ")}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-stone-400" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {treesLoading ? (
-          <p className="text-sm text-stone-500">Loading…</p>
-        ) : recentTrees.length === 0 ? (
-          <EmptyState
-            className="border-0 bg-transparent py-8"
-            icon={TreePine}
-            title="No trees registered yet"
-            description="Use Register tree to capture your first GPS-tagged planting."
-            action={{ label: "Register tree", href: "/trees/new" }}
-          />
-        ) : (
-          <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-            {recentTrees.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/trees/${t.id}`}
-                  className="flex justify-between py-2.5 text-sm hover:text-forest-800"
-                >
-                  <span className="font-medium">{t.species_text || "Tree"}</span>
-                  <span className="text-xs text-stone-500">{t.public_code}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+
+        <div className="dash-panel">
+          <div className="dash-panel-head">
+            <div>
+              <h2 className="dash-panel-title">Recent trees</h2>
+              <p className="dash-panel-sub">Continue field surveys</p>
+            </div>
+            <Link href="/trees" className="dash-link">
+              View all <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {treesLoading ? (
+            <p className="mt-4 text-sm text-stone-500">Loading…</p>
+          ) : recentTrees.length === 0 ? (
+            <EmptyState
+              className="mt-4 border-0 bg-transparent py-8"
+              icon={TreePine}
+              title="No trees registered yet"
+              description="Use Register tree to capture your first GPS-tagged planting."
+              action={{ label: "Register tree", href: "/trees/new" }}
+            />
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {recentTrees.map((t) => (
+                <li key={t.id}>
+                  <Link href={`/trees/${t.id}`} className="dash-list-row dash-list-row--link">
+                    <div>
+                      <p className="font-medium text-stone-800">{t.species_text || "Tree"}</p>
+                      <p className="text-xs text-stone-500">{t.public_code}</p>
+                    </div>
+                    <span className="dash-health-badge dash-health-badge--unknown">
+                      {t.current_health}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
