@@ -7,6 +7,7 @@ import { DataTrustBanner } from "@/components/data-trust-banner";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
 import { BhoonidhiFenceCatalogPanel } from "@/components/satellite/bhoonidhi-fence-catalog-panel";
 import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
+import { SarProductStoryBanner } from "@/components/satellite/sar-integrity-hero";
 import { bhoonidhi, plantationFences, trees } from "@/lib/api";
 
 export default function SatellitePage() {
@@ -52,6 +53,7 @@ export default function SatellitePage() {
         <strong>ISRO Bhoonidhi</strong> IRS / ResourceSat / EOS-06 scenes for each site.
       </p>
       <DataTrustBanner />
+      <SarProductStoryBanner />
 
       {bhoonidhiStatus && (
         <div className="card text-sm">

@@ -45,6 +45,10 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
+  SarIntelligencePanel,
+  SarIntegrityTrendPreview,
+} from "@/components/dashboard/sar-intelligence-panel";
+import {
   CHART_COLORS,
   fmtCompact,
   fmtNum,
@@ -283,6 +287,13 @@ export function ExecutiveDashboard() {
           sub={`${bio?.threatened_species_count ?? 0} threatened species`}
           accent="green"
         />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-12">
+          <SarIntelligencePanel />
+          {primaryFenceId ? <SarIntegrityTrendPreview fenceId={primaryFenceId} /> : null}
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-12">
