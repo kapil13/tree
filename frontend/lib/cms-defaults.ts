@@ -20,7 +20,7 @@ export const CMS_FOOTER_FALLBACK: CmsPublicSite["site"]["footer"] = {
     {
       title: "Platform",
       links: [
-        { label: "Dashboard", href: "/dashboard" },
+        { label: "Dashboard", href: "/auth?mode=signin&next=/dashboard" },
         { label: "Register a tree", href: "/auth?mode=signup" },
       ],
     },

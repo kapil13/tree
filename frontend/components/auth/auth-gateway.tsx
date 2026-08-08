@@ -65,8 +65,10 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [signupVariant, setSignupVariant] = useState<"citizen" | "professional">("citizen");
-  const [method, setMethod] = useState<AuthMethod>(initialMode === "signin" ? "email" : "phone");
+  const [signupVariant, setSignupVariant] = useState<"citizen" | "professional">(
+    inviteToken ? "professional" : "citizen",
+  );
+  const [method, setMethod] = useState<AuthMethod>("email");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -83,6 +85,10 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  useEffect(() => {
+    if (inviteToken) setSignupVariant("professional");
+  }, [inviteToken]);
 
   function switchMode(next: AuthMode) {
     setMode(next);
@@ -134,8 +140,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     }
     return msg;
   }
-
-  const title = mode === "signin" ? "Welcome back" : "Join Aranyix";
 
   const subtitle =
     method === "phone"
@@ -288,86 +292,69 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       <AuthBrandPanel />
 
       <div className="flex min-h-0 flex-col justify-center">
+        <div className="mb-3 space-y-1 lg:hidden">
+          <p className="font-display text-2xl font-semibold tracking-tight text-forest-900">Aranyix</p>
+          <p className="text-sm text-stone-500">Intelligence for a thriving planet</p>
+        </div>
+
         <div className="flex max-h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-[0_20px_60px_-28px_rgba(5,46,31,0.28)] backdrop-blur-xl">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
             {invitePreview ? <InviteAuthBanner preview={invitePreview} /> : null}
 
-            <div className="mb-3 flex rounded-xl bg-stone-100 p-0.5">
-              {(["signin", "signup"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => {
-                    switchMode(tab);
-                    resetPhoneFlow();
-                  }}
-                  className={cn(
-                    "flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition",
-                    mode === tab
-                      ? "bg-white text-stone-900 shadow-sm"
-                      : "text-stone-500 hover:text-stone-700",
-                  )}
-                >
-                  {tab === "signin" ? "Sign in" : "Create account"}
-                </button>
-              ))}
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">
+                {mode === "signin" ? "Welcome back" : "Join Aranyix"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  switchMode(mode === "signin" ? "signup" : "signin");
+                  resetPhoneFlow();
+                  setSignupVariant("citizen");
+                }}
+                className="shrink-0 text-sm font-medium text-forest-700 hover:text-forest-900"
+              >
+                {mode === "signin" ? "Create account" : "Sign in"}
+              </button>
             </div>
 
             {mode === "signup" ? (
-              <>
-                <div className="mb-4 flex rounded-xl bg-emerald-50 p-0.5 dark:bg-emerald-950/30">
-                  {(["citizen", "professional"] as const).map((variant) => (
-                    <button
-                      key={variant}
-                      type="button"
-                      onClick={() => setSignupVariant(variant)}
-                      className={cn(
-                        "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition",
-                        signupVariant === variant
-                          ? "bg-white text-emerald-900 shadow-sm dark:bg-stone-900 dark:text-emerald-100"
-                          : "text-emerald-800/70 hover:text-emerald-900 dark:text-emerald-200/70",
-                      )}
-                    >
-                      {variant === "citizen" ? "Citizen (quick)" : "Professional"}
-                    </button>
-                  ))}
-                </div>
-                {signupVariant === "citizen" ? (
-                  <CitizenSignupWizard
-                    captchaConfig={captchaConfig}
-                    onComplete={async () => {
-                      const refreshed = await auth.me();
-                      setUser(refreshed);
-                      router.push("/trees/new");
-                    }}
-                    onSwitchToFullSignup={() => setSignupVariant("professional")}
-                  />
-                ) : (
-                  <SignupWizard
-                    captchaConfig={captchaConfig}
-                    invitePreview={invitePreview}
-                    inviteToken={inviteToken}
-                    onComplete={async () => {
-                      if (inviteToken) {
-                        try {
-                          const member = await organizations.acceptInvite(inviteToken);
-                          const refreshed = await auth.me();
-                          setUser(refreshed);
-                          router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
-                          return;
-                        } catch (err) {
-                          setError(inviteErrorMessage(errorMessage(err)));
-                          return;
-                        }
+              signupVariant === "citizen" ? (
+                <CitizenSignupWizard
+                  captchaConfig={captchaConfig}
+                  onComplete={async () => {
+                    const refreshed = await auth.me();
+                    setUser(refreshed);
+                    router.push("/trees/new");
+                  }}
+                  onSwitchToFullSignup={() => setSignupVariant("professional")}
+                />
+              ) : (
+                <SignupWizard
+                  captchaConfig={captchaConfig}
+                  invitePreview={invitePreview}
+                  inviteToken={inviteToken}
+                  onComplete={async () => {
+                    if (inviteToken) {
+                      try {
+                        const member = await organizations.acceptInvite(inviteToken);
+                        const refreshed = await auth.me();
+                        setUser(refreshed);
+                        router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
+                        return;
+                      } catch (err) {
+                        setError(inviteErrorMessage(errorMessage(err)));
+                        return;
                       }
-                      const refreshed = await auth.me();
-                      setUser(refreshed);
-                      router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
-                    }}
-                    onSwitchToSignIn={() => switchMode("signin")}
-                  />
-                )}
-              </>
+                    }
+                    const refreshed = await auth.me();
+                    setUser(refreshed);
+                    router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
+                  }}
+                  onSwitchToSignIn={() => switchMode("signin")}
+                  onSwitchToCitizen={() => setSignupVariant("citizen")}
+                />
+              )
             ) : showForgotPassword ? (
               <ForgotPasswordForm
                 captchaConfig={captchaConfig}
@@ -382,10 +369,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
               />
             ) : (
               <>
-                <div className="mb-3">
-                  <h2 className="text-xl font-semibold tracking-tight text-stone-950">{title}</h2>
-                  <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>
-                </div>
+                <p className="mb-3 text-sm text-stone-500">{subtitle}</p>
 
                 <div className="space-y-3">
                   <button
@@ -404,22 +388,38 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     <div className="h-px flex-1 bg-stone-200" />
                   </div>
 
-                  <div className="flex rounded-xl bg-stone-100 p-0.5">
-                    <MethodTab
-                      active={method === "phone"}
+                  <div className="flex gap-4 border-b border-stone-200 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMethod("email");
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-medium transition",
+                        method === "email"
+                          ? "border-forest-700 text-forest-800"
+                          : "border-transparent text-stone-500 hover:text-stone-700",
+                      )}
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      Email
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setMethod("phone");
                         resetPhoneFlow();
                       }}
-                      icon={Phone}
-                      label="Phone OTP"
-                    />
-                    <MethodTab
-                      active={method === "email"}
-                      onClick={() => setMethod("email")}
-                      icon={Mail}
-                      label="Email"
-                    />
+                      className={cn(
+                        "flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-medium transition",
+                        method === "phone"
+                          ? "border-forest-700 text-forest-800"
+                          : "border-transparent text-stone-500 hover:text-stone-700",
+                      )}
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      Phone OTP
+                    </button>
                   </div>
 
                   {method === "phone" ? (
@@ -576,32 +576,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
         </div>
       </div>
     </div>
-  );
-}
-
-function MethodTab({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Phone;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition",
-        active ? "bg-white text-stone-900 shadow-sm" : "text-stone-500",
-      )}
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-    </button>
   );
 }
 
