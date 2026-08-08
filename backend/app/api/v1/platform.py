@@ -1252,6 +1252,8 @@ async def platform_review_program_access_request(
     admin: ProgramAccessModuleAdmin,
     db: DB,
 ) -> ProgramAccessRequestAdminOut:
+    if payload.action == "approve":
+        verify_admin_step_up(admin, payload.password)
     try:
         reviewed = await review_access_request(
             db,

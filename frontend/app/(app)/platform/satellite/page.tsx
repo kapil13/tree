@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
+  ExternalLink,
   Satellite,
   Server,
   XCircle,
@@ -16,6 +18,14 @@ export default function PlatformSatelliteHealthPage() {
     queryKey: ["platform-satellite-health"],
     queryFn: () => platformAdmin.satelliteHealth(),
   });
+
+  const degraded =
+    data &&
+    (data.status === "degraded" ||
+      data.status === "error" ||
+      !data.providers.optical.configured ||
+      (data.providers.sar.enabled && !data.providers.sar.credentials_ready) ||
+      data.recent_jobs.some((job) => job.status === "failed"));
 
   return (
     <PlatformShell>
@@ -38,6 +48,28 @@ export default function PlatformSatelliteHealthPage() {
           <p className="text-sm text-stone-500">Loading satellite health…</p>
         ) : (
           <>
+            {degraded ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                <p className="font-medium">Satellite health needs attention</p>
+                <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-200/80">
+                  Check provider credentials, retry failed satellite jobs, or follow the admin
+                  runbook.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Link
+                    href="/platform/ops"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-amber-950 underline-offset-2 hover:underline dark:text-amber-100"
+                  >
+                    Open Operations → Jobs
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                  <span className="text-xs text-amber-800/80 dark:text-amber-200/70">
+                    Use the Runbook control in the header for credential and stub-scan guidance.
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatusCard
                 label="Overall"

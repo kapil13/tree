@@ -71,6 +71,7 @@ class ProgramAccessRequestReview(BaseModel):
     organization_id: uuid.UUID | None = None
     platform_role: Literal["government", "corporate", "ngo"] | None = None
     make_org_admin: bool = True
+    password: str | None = Field(default=None, min_length=1)
 
 
 class OrgProfileSubmit(BaseModel):

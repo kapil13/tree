@@ -207,6 +207,32 @@ export default function PlatformOrganizationsPage() {
 
         {isLoading ? (
           <p className="text-sm text-stone-500">Loading organizations…</p>
+        ) : (data?.items.length ?? 0) === 0 ? (
+          <div className="rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center dark:border-stone-700">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
+              {search || activeFilter
+                ? "No organizations match these filters."
+                : "No organizations yet."}
+            </p>
+            <p className="mt-1 text-xs text-stone-500">
+              {search || activeFilter
+                ? "Clear search or status filters to broaden results."
+                : "Tenant orgs created during signup or program onboarding appear here."}
+            </p>
+            {search || activeFilter ? (
+              <button
+                type="button"
+                className="btn-secondary mt-4 text-xs"
+                onClick={() => {
+                  setSearch("");
+                  setActiveFilter("");
+                  setPage(1);
+                }}
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
             <table className="min-w-full text-sm">
@@ -257,7 +283,13 @@ export default function PlatformOrganizationsPage() {
                     <td className="px-4 py-3 text-stone-600">{row.type}</td>
                     <td className="px-4 py-3">{row.member_count}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs">
+                      <span
+                        className={
+                          row.is_active
+                            ? "inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800"
+                            : "inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800"
+                        }
+                      >
                         {row.is_active ? "Active" : "Suspended"}
                       </span>
                     </td>

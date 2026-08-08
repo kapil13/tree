@@ -135,6 +135,7 @@ function SectionEditor({
 export function CmsPageEditor({ page, sectionTypes }: Props) {
   const qc = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pageForm, setPageForm] = useState({
     title: page.title,
@@ -347,18 +348,38 @@ export function CmsPageEditor({ page, sectionTypes }: Props) {
                     <Pencil className="h-3.5 w-3.5" />
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    className="btn-ghost text-xs text-red-600"
-                    disabled={deleteSection.isPending}
-                    onClick={() => {
-                      if (window.confirm("Delete this section?")) {
-                        deleteSection.mutate(section.id);
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {confirmDeleteId === section.id ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 dark:border-rose-900 dark:bg-rose-950/40">
+                      <span className="text-xs text-rose-800 dark:text-rose-200">Delete?</span>
+                      <button
+                        type="button"
+                        className="btn-ghost text-xs text-rose-700"
+                        disabled={deleteSection.isPending}
+                        onClick={() => {
+                          deleteSection.mutate(section.id);
+                          setConfirmDeleteId(null);
+                        }}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-ghost text-xs"
+                        onClick={() => setConfirmDeleteId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-ghost text-xs text-red-600"
+                      disabled={deleteSection.isPending}
+                      onClick={() => setConfirmDeleteId(section.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
               {editingId === section.id ? (

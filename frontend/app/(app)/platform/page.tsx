@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { buildPlatformAuditUrl } from "@/lib/platform-audit-link";
+import { canAccessOpsAdmin } from "@/lib/platform-access";
 import { platformAdmin } from "@/lib/platform-api";
+import { useAuth } from "@/lib/auth-store";
 
 const ACTION_LABELS: Record<string, string> = {
   "platform.user.role_update": "User role changed",
@@ -33,9 +35,19 @@ const QUICK_LINKS = [
 ];
 
 export default function PlatformOverviewPage() {
+  const { user } = useAuth();
+  const canOps = canAccessOpsAdmin(user);
+
   const { data, isLoading } = useQuery({
     queryKey: ["platform-overview"],
     queryFn: () => platformAdmin.overview(),
+  });
+
+  const { data: opsSummary } = useQuery({
+    queryKey: ["platform-ops-summary"],
+    queryFn: () => platformAdmin.opsSummary(),
+    enabled: canOps,
+    retry: 0,
   });
 
   const { data: recentAudit, isLoading: auditLoading } = useQuery({
@@ -48,12 +60,39 @@ export default function PlatformOverviewPage() {
       }),
   });
 
+  const pendingAccess = data?.program_access.pending ?? 0;
+  const failedJobs = opsSummary?.workers.failed_job_count ?? 0;
+
   return (
     <PlatformShell>
       {isLoading || !data ? (
         <p className="text-sm text-stone-500">Loading overview…</p>
       ) : (
         <div className="space-y-6">
+          {pendingAccess > 0 || failedJobs > 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-medium">Needs attention</p>
+              <ul className="mt-2 space-y-1 text-xs">
+                {pendingAccess > 0 ? (
+                  <li>
+                    <Link href="/platform/program-access" className="font-medium underline-offset-2 hover:underline">
+                      {pendingAccess} pending program access request
+                      {pendingAccess === 1 ? "" : "s"}
+                    </Link>
+                  </li>
+                ) : null}
+                {failedJobs > 0 ? (
+                  <li>
+                    <Link href="/platform/ops" className="font-medium underline-offset-2 hover:underline">
+                      {failedJobs} failed monitoring job
+                      {failedJobs === 1 ? "" : "s"} in the recent window
+                    </Link>
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Users}
