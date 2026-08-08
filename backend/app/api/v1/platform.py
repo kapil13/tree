@@ -70,6 +70,7 @@ from app.schemas.platform import (
     PlatformBillingSummaryOut,
     PlatformOpsSummaryOut,
     PlatformOverviewOut,
+    PlatformSatelliteHealthOut,
     PlatformSchemeSummaryOut,
     PlatformSettingsOut,
     PublicGovernanceStatusOut,
@@ -163,6 +164,7 @@ from app.services.platform.ops import (
     retry_webhook_delivery,
     trigger_monitoring_job,
 )
+from app.services.platform.satellite_health import build_satellite_health_panel
 from app.services.platform.settings import build_platform_settings
 from app.services.platform.step_up import verify_admin_step_up
 from app.services.platform.support import (
@@ -322,6 +324,14 @@ async def platform_grant_user_credits(
 @router.get("/ops/summary", response_model=PlatformOpsSummaryOut)
 async def platform_ops_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformOpsSummaryOut:
     return PlatformOpsSummaryOut.model_validate(await build_ops_summary(db))
+
+
+@router.get("/ops/satellite-health", response_model=PlatformSatelliteHealthOut)
+async def platform_ops_satellite_health(
+    _admin: OpsModuleAdmin,
+    db: DB,
+) -> PlatformSatelliteHealthOut:
+    return PlatformSatelliteHealthOut.model_validate(await build_satellite_health_panel(db))
 
 
 @router.post("/ops/integrations/ping")

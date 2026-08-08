@@ -251,6 +251,14 @@ class PlatformOpsSummaryOut(BaseModel):
     jobs: dict
 
 
+class PlatformSatelliteHealthOut(BaseModel):
+    generated_at: str
+    status: str
+    providers: dict
+    scans: dict
+    recent_jobs: list[dict]
+
+
 class OrgMemberAdminOut(BaseModel):
     id: uuid.UUID
     email: EmailStr

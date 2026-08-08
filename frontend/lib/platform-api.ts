@@ -178,6 +178,78 @@ export type PlatformOpsSummary = {
   };
 };
 
+type ScanAggregate = {
+  optical_live: number;
+  optical_stub: number;
+  sar_live: number;
+  sar_stub: number;
+  sar_other: number;
+  total: number;
+  by_provider: Array<{
+    provider: string;
+    count: number;
+    bucket: string;
+    modality: string;
+  }>;
+};
+
+export type PlatformSatelliteHealth = {
+  generated_at: string;
+  status: string;
+  providers: {
+    optical: {
+      label: string;
+      configured: boolean;
+      mode: string;
+      provider_tag: string;
+    };
+    sar: {
+      label: string;
+      enabled: boolean;
+      primary: string;
+      fallback: string | null;
+      service_name: string;
+      live_data_provider: string | null;
+      credentials_ready: boolean;
+      gee_configured: boolean;
+      gee_initialized: boolean;
+      sentinel_hub_sar_configured: boolean;
+      primary_configured: boolean;
+      fallback_configured: boolean;
+    };
+    bhoonidhi: {
+      label: string;
+      configured: boolean;
+      mode: string;
+    };
+  };
+  scans: {
+    window_days: number;
+    since: string;
+    plantation_fences: ScanAggregate;
+    trees: ScanAggregate;
+    combined: {
+      optical_live: number;
+      optical_stub: number;
+      sar_live: number;
+      sar_stub: number;
+      total: number;
+    };
+    latest_plantation_scan: { provider: string; scene_acquired_at: string | null } | null;
+    latest_sar_scan: { provider: string; scene_acquired_at: string | null } | null;
+  };
+  recent_jobs: Array<{
+    job_name: string;
+    status: string;
+    finished_at: string | null;
+    error?: string | null;
+    scanned?: number;
+    failed?: number;
+    stub_scans?: number;
+    live_scans?: number;
+  }>;
+};
+
 export type PlatformSchemeSummary = {
   scheme_count: number;
   tagged_project_count: number;
@@ -390,6 +462,9 @@ export const platformAdmin = {
   },
   async opsSummary() {
     return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
+  },
+  async satelliteHealth() {
+    return (await api.get<PlatformSatelliteHealth>("/v1/platform/ops/satellite-health")).data;
   },
   async pingIntegrations() {
     return (await api.post<PlatformOpsSummary["integrations"]>("/v1/platform/ops/integrations/ping")).data;
