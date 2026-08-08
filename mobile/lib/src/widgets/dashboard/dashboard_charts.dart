@@ -12,8 +12,9 @@ class DashboardChartsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final carbon = _series(dashboard['carbon_growth']);
-    final health = _series(dashboard['health_distribution']);
-    final species = _series(dashboard['species_distribution']);
+    final health = _series(dashboard['health_distribution'], dropZeros: true);
+    final species = _series(dashboard['species_distribution'], dropZeros: true);
+    final carbonTotal = carbon.fold<double>(0, (sum, p) => sum + p.value);
 
     if (carbon.isEmpty && health.isEmpty && species.isEmpty) {
       return const SizedBox.shrink();
@@ -29,7 +30,9 @@ class DashboardChartsSection extends StatelessWidget {
         if (carbon.isNotEmpty) ...[
           _ChartCard(
             title: 'Carbon growth',
-            subtitle: 'Estimated sequestration trend',
+            subtitle: carbonTotal > 0
+                ? 'Estimated sequestration trend'
+                : 'Run AI analysis on trees to start accumulating credits',
             height: 200,
             child: _CarbonLineChart(points: carbon),
           ),
@@ -55,18 +58,20 @@ class DashboardChartsSection extends StatelessWidget {
     );
   }
 
-  List<_ChartPoint> _series(dynamic raw) {
+  List<_ChartPoint> _series(dynamic raw, {bool dropZeros = false}) {
     if (raw is! List) return [];
-    return raw
-        .map((e) {
-          final m = e as Map<String, dynamic>;
-          return _ChartPoint(
-            label: m['label'] as String? ?? '',
-            value: (m['value'] as num?)?.toDouble() ?? 0,
-          );
-        })
-        .where((p) => p.value > 0)
-        .toList();
+    final points = raw.map((e) {
+      final m = e as Map<String, dynamic>;
+      return _ChartPoint(
+        label: m['label'] as String? ?? '',
+        value: (m['value'] as num?)?.toDouble() ?? 0,
+      );
+    }).toList();
+    if (dropZeros) {
+      return points.where((p) => p.value > 0).toList();
+    }
+    // Keep zero carbon series visible so accumulation is not "missing"
+    return points;
   }
 }
 

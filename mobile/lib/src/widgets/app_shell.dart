@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../nav_access.dart';
@@ -36,8 +37,20 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = sessionController.user;
     final location = GoRouterState.of(context).matchedLocation;
+    final l10n = AppLocalizations.of(context);
 
-    final destinations = navDestinationsFor(user);
+    final destinations = navDestinationsFor(
+      user,
+      labels: NavLabels(
+        home: l10n?.home ?? 'Home',
+        trees: l10n?.trees ?? 'Trees',
+        map: l10n?.map ?? 'Map',
+        alerts: l10n?.alerts ?? 'Alerts',
+        monitoring: l10n?.monitoring ?? 'Monitoring',
+        projects: l10n?.projects ?? 'Projects',
+        profile: l10n?.profile ?? 'Profile',
+      ),
+    );
 
     final selectedIndex = destinations.indexWhere((d) => location.startsWith(d.path));
     final currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
