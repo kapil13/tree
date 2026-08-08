@@ -10,6 +10,7 @@ import {
   HelpCircle,
   KeyRound,
   LayoutDashboard,
+  Satellite,
   ScrollText,
   Server,
   UserCheck,
@@ -96,6 +97,12 @@ const NAV: NavItem[] = [
     href: "/platform/ops",
     label: "Operations",
     icon: Server,
+    visible: (user) => canAccessOpsAdmin(user),
+  },
+  {
+    href: "/platform/satellite",
+    label: "Satellite health",
+    icon: Satellite,
     visible: (user) => canAccessOpsAdmin(user),
   },
   {
