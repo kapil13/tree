@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Leaf, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-compliance-workflow-widget";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
@@ -14,6 +14,7 @@ import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
+import { PageHeader } from "@/components/ui/page-header";
 import { centralSchemes, plantingProjects } from "@/lib/api";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
@@ -94,35 +95,112 @@ export default function ProjectDetailPage() {
   const surveyDays =
     (project.metadata?.survey_interval_days as number | undefined) ?? 30;
 
+  const openViolations = project.summary?.open_violations ?? 0;
+  const treesDue = survivalDue?.trees_due ?? 0;
+  const treeCount = project.summary?.tree_count ?? 0;
+  const workAreaCount = project.summary?.work_area_count ?? 0;
+
+  let nextAction: {
+    title: string;
+    description: string;
+    href?: string;
+    onClick?: () => void;
+    label: string;
+    icon: typeof AlertTriangle;
+  } | null = null;
+
+  if (openViolations > 0) {
+    nextAction = {
+      title: "Resolve open compliance",
+      description: `${openViolations} open violation${openViolations === 1 ? "" : "s"} need attention before the next audit checkpoint.`,
+      onClick: () => setTab("compliance"),
+      label: "Open compliance",
+      icon: AlertTriangle,
+    };
+  } else if (treesDue > 0) {
+    nextAction = {
+      title: "Complete survival surveys",
+      description: `${treesDue} tree${treesDue === 1 ? "" : "s"} due for re-geotag (every ${surveyDays} days).`,
+      onClick: () => setTab("trees"),
+      label: "Open trees due",
+      icon: MapPin,
+    };
+  } else if (workAreaCount === 0) {
+    nextAction = {
+      title: "Draw a work area",
+      description: "Add at least one boundary so field teams can register trees inside the project.",
+      onClick: () => setTab("settings"),
+      label: "Project settings",
+      icon: ShieldCheck,
+    };
+  } else if (treeCount === 0) {
+    nextAction = {
+      title: "Register the first tree",
+      description: "Tag a tree with GPS and a photo to start survival and satellite tracking.",
+      href: `/trees/new?project=${project.id}${workAreas[0] ? `&work_area=${workAreas[0].id}` : ""}`,
+      label: "Register tree",
+      icon: Leaf,
+    };
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link href="/projects" className="text-sm text-forest-700 hover:underline">
-            ← All projects
+      <PageHeader
+        title={project.name}
+        description={`${project.code} · ${project.segment.replace(/_/g, " ")} · ${project.compliance_mode} mode · survival survey every ${surveyDays} days`}
+        breadcrumbs={[
+          { label: "Operate" },
+          { label: "Projects", href: "/projects" },
+          { label: project.name },
+        ]}
+        actions={
+          <Link
+            href={`/trees/new?project=${project.id}${workAreas[0] ? `&work_area=${workAreas[0].id}` : ""}`}
+            className="btn-primary"
+          >
+            <Leaf className="h-4 w-4" />
+            Register tree
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold">{project.name}</h1>
-          <p className="text-sm text-stone-500">
-            {project.code} · {project.segment.replace(/_/g, " ")} · {project.compliance_mode} mode ·
-            survival survey every {surveyDays} days
-          </p>
-          {scheme && (
-            <p className="mt-2 inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
-              {scheme.label}
-              <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
-            </p>
-          )}
-        </div>
-        <Link
-          href={`/trees/new?project=${project.id}${workAreas[0] ? `&work_area=${workAreas[0].id}` : ""}`}
-          className="btn-primary"
-        >
-          <Leaf className="h-4 w-4" />
-          Register tree
-        </Link>
-      </div>
+        }
+      />
 
-      {survivalDue && survivalDue.trees_due > 0 && (
+      {scheme && (
+        <p className="inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
+          {scheme.label}
+          <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
+        </p>
+      )}
+
+      {nextAction && tab === "overview" && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold text-amber-950 dark:text-amber-100">
+                <nextAction.icon className="h-4 w-4 shrink-0" />
+                Next: {nextAction.title}
+              </p>
+              <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-100/80">
+                {nextAction.description}
+              </p>
+            </div>
+            {nextAction.href ? (
+              <Link href={nextAction.href} className="btn-primary shrink-0 text-xs">
+                {nextAction.label}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="btn-primary shrink-0 text-xs"
+                onClick={nextAction.onClick}
+              >
+                {nextAction.label}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {survivalDue && survivalDue.trees_due > 0 && tab !== "overview" && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>{survivalDue.trees_due}</strong> of {survivalDue.trees_total} trees are due for
           re-geotagging (every {survivalDue.survey_interval_days} days). Open the Trees tab or
@@ -196,22 +274,24 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-      <div className="flex gap-2 border-b border-stone-200">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            className={cn(
-              "border-b-2 px-4 py-2 text-sm font-medium capitalize",
-              tab === t
-                ? "border-forest-700 text-forest-800"
-                : "border-transparent text-stone-500 hover:text-stone-800",
-            )}
-            onClick={() => setTab(t)}
-          >
-            {TAB_LABELS[t]}
-          </button>
-        ))}
+      <div className="-mx-1 overflow-x-auto">
+        <div className="flex min-w-max gap-1 border-b border-stone-200 px-1">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={cn(
+                "shrink-0 border-b-2 px-4 py-2 text-sm font-medium capitalize",
+                tab === t
+                  ? "border-forest-700 text-forest-800"
+                  : "border-transparent text-stone-500 hover:text-stone-800",
+              )}
+              onClick={() => setTab(t)}
+            >
+              {TAB_LABELS[t]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === "overview" && (
