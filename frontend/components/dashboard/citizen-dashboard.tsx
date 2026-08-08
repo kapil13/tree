@@ -25,7 +25,8 @@ import {
 import { TreesMap } from "@/components/trees-map";
 import { CitizenStewardshipPanel } from "@/components/dashboard/citizen-stewardship-panel";
 import { DataTrustBanner } from "@/components/data-trust-banner";
-import { CHART_COLORS, fmtCompact, fmtNum, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
+import { MetricCard } from "@/components/dashboard/metric-card";
+import { fmtCompact, fmtNum, CHART_COLORS, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { aiScans, dashboard, trees } from "@/lib/api";
@@ -110,50 +111,105 @@ export function CitizenDashboard() {
   const showChecklist = treeCount < 3 || stepsDone < 3;
 
   return (
-    <div className="dash-shell mx-auto max-w-6xl space-y-6">
+    <div className="dash-shell space-y-6">
       <section className="dash-hero">
-        <div className="dash-hero-header">
-          <div className="dash-live-pill">
-            <span className="dash-live-dot" />
-            Your grove
+        <div className="dash-hero-grid">
+          <div className="dash-hero-header">
+            <div className="dash-live-pill">
+              <span className="dash-live-dot" />
+              Your grove
+            </div>
+            <h1 className="dash-hero-title mt-4 font-display">
+              Hi {firstName}
+              {treeCount > 0 ? ` — ${treeCount} tree${treeCount === 1 ? "" : "s"} tagged` : ""}
+            </h1>
+            <p className="dash-hero-copy">
+              {treeCount > 0 ? (
+                <>
+                  Keep adding GPS-tagged trees with photos and free AI health checks.
+                  {kpi && kpi.total_co2e_kg > 0
+                    ? ` About ${fmtCompact(kpi.total_co2e_kg)} kg estimated carbon stored so far.`
+                    : ""}
+                </>
+              ) : (
+                <>
+                  Register trees you plant or care for — map pins, photos, and AI health checks to
+                  get started.
+                </>
+              )}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
+                <Leaf className="h-4 w-4" />
+                {treeCount > 0 ? "Tag a tree" : "Tag your first tree"}
+              </Link>
+              <Link
+                href="/map"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
+              >
+                <Map className="h-4 w-4" />
+                Open map
+              </Link>
+            </div>
           </div>
-          <h1 className="dash-hero-title mt-4">
-            Hi {firstName}
-            {treeCount > 0 ? ` — ${treeCount} tree${treeCount === 1 ? "" : "s"} tagged` : ""}
-          </h1>
-          <p className="dash-hero-copy">
-            {treeCount > 0 ? (
-              <>
-                Keep adding GPS-tagged trees
-                {kpi && kpi.total_co2e_kg > 0
-                  ? ` · about ${fmtCompact(kpi.total_co2e_kg)} kg estimated carbon stored`
-                  : ""}
-                {scansLeft !== null ? ` · ${scansLeft} AI scan${scansLeft === 1 ? "" : "s"} left` : ""}.
-              </>
-            ) : (
-              <>
-                Register trees you plant or care for — with map pins, photos, and free AI health
-                checks to get started.
-              </>
-            )}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
-              <Leaf className="h-4 w-4" />
-              {treeCount > 0 ? "Tag a tree" : "Tag your first tree"}
-            </Link>
-            <Link
-              href="/map"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
-            >
-              <Map className="h-4 w-4" />
-              Open map
-            </Link>
+
+          <div className="dash-hero-stats">
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(treeCount)}</p>
+              <p className="dash-hero-stat-label">Trees tagged</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">
+                {kpi ? fmtCompact(kpi.total_co2e_kg) : "—"}
+              </p>
+              <p className="dash-hero-stat-label">kg carbon (est.)</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{kpi ? `${Math.round(kpi.pct_healthy)}%` : "—"}</p>
+              <p className="dash-hero-stat-label">Healthy canopy</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{scansLeft ?? "∞"}</p>
+              <p className="dash-hero-stat-label">AI scans left</p>
+            </div>
           </div>
         </div>
       </section>
 
       <DataTrustBanner variant="strip" />
+
+      {treeCount > 0 ? (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            icon={TreePine}
+            label="Trees"
+            value={fmtNum(treeCount)}
+            sub={kpi ? `${Math.round(kpi.pct_healthy)}% healthy` : undefined}
+            accent="green"
+          />
+          <MetricCard
+            icon={Satellite}
+            label="Satellite checked"
+            value={kpi ? `${Math.round(kpi.pct_satellite_verified)}%` : "—"}
+            sub="When scans are available"
+            accent="sky"
+          />
+          <MetricCard
+            icon={HeroIcon}
+            label="Carbon stored"
+            value={kpi ? fmtCompact(kpi.total_co2e_kg) : "—"}
+            sub="kg CO₂e estimated"
+            accent="lime"
+          />
+          <MetricCard
+            icon={Leaf}
+            label="AI scans"
+            value={scansLeft != null ? String(scansLeft) : "Unlimited"}
+            sub="Complimentary + purchased"
+            accent="amber"
+          />
+        </section>
+      ) : null}
 
       <div className="dash-panel">
         <div className="dash-panel-head">
