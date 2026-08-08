@@ -10,7 +10,14 @@ Operational guide for **live SAR ground intelligence** (Sentinel-1 C-band) on Ar
 | `sentinel_hub` | Copernicus Data Space Statistics API | `SENTINEL_HUB_CLIENT_ID` / `SECRET` | `sar-sentinel-hub-s1` |
 | `stub` | Deterministic demo | none | `nisar-sar-stub` |
 
-**Recommendation:** Use `sentinel_hub` if you already have Copernicus credentials and want to avoid Google. Use `gee` if Earth Engine is already registered.
+**Dual-provider (Phase 4.7):** set `SAR_FALLBACK_PROVIDER` to try a second live source before stub:
+
+```env
+SAR_PROVIDER=sentinel_hub
+SAR_FALLBACK_PROVIDER=gee
+```
+
+**Recommendation:** Use `sentinel_hub` primary with `gee` fallback for production resilience, or `gee` alone if Earth Engine is already registered.
 
 ## Architecture
 

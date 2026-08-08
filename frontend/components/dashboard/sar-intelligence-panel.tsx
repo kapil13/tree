@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Download, Radar } from "lucide-react";
+import { ArrowRight, Download, FileText, Radar } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
 import { SarIntegrityTrendChart } from "@/components/satellite/sar-integrity-trend-chart";
 
@@ -45,6 +45,16 @@ export function SarIntelligencePanel() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPdf = async () => {
+    const blob = await sar.portfolioReportPdf();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sar-forest-integrity-report.pdf";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="dash-panel">
       <div className="dash-panel-head">
@@ -58,6 +68,14 @@ export function SarIntelligencePanel() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2.5 py-1 text-xs hover:bg-stone-50"
+            onClick={() => void handleExportPdf()}
+          >
+            <FileText className="h-3 w-3" />
+            PDF
+          </button>
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2.5 py-1 text-xs hover:bg-stone-50"

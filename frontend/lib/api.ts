@@ -1379,6 +1379,7 @@ export type SarStatus = {
   gee_available: boolean;
   sar_enabled?: boolean;
   sar_provider?: string;
+  sar_fallback_provider?: string | null;
   live_data_provider?: string;
   monthly_sweep_schedule?: string;
   worker_queue?: string;
@@ -1432,6 +1433,13 @@ export const sar = {
     return (
       await api.get<string>("/v1/sar/portfolio-export", {
         responseType: "text",
+      })
+    ).data;
+  },
+  async portfolioReportPdf() {
+    return (
+      await api.get<Blob>("/v1/sar/portfolio-report", {
+        responseType: "blob",
       })
     ).data;
   },

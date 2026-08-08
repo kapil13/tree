@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     )
     gee_service_account_json: str | None = None
     sar_provider: Literal["stub", "gee", "sentinel_hub"] = "stub"
+    sar_fallback_provider: Literal["stub", "gee", "sentinel_hub"] | None = None
     sar_enabled: bool = True
 
     # Weather (Open-Meteo — free, no API key)

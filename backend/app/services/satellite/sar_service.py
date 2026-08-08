@@ -28,6 +28,8 @@ SAR_PROVIDER_STUB = "nisar-sar-stub"
 SAR_PROVIDER_GEE = "sar-gee"
 SAR_PROVIDER_SENTINEL_HUB = "sar-sentinel-hub"
 
+SarProviderMode = str  # "stub" | "gee" | "sentinel_hub"
+
 
 class SarService(Protocol):
     async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample: ...
@@ -134,6 +136,45 @@ def _sample_from_live_dict(data: dict) -> SarSample:
     )
 
 
+def is_stub_sar_provider(provider: str | None) -> bool:
+    if not provider:
+        return True
+    p = provider.lower()
+    return p == SAR_PROVIDER_STUB or "stub" in p
+
+
+def provider_mode_configured(mode: SarProviderMode) -> bool:
+    if mode == "sentinel_hub":
+        return sentinel_hub_sar_configured()
+    if mode == "gee":
+        return bool(settings.gee_service_account_json) and gee_python_available() and _initialize_gee()
+    return False
+
+
+async def sample_live_point(
+    mode: SarProviderMode,
+    lat: float,
+    lon: float,
+    *,
+    when: datetime | None = None,
+) -> SarSample | None:
+    if mode == "gee" and settings.gee_service_account_json and gee_python_available():
+        try:
+            data = await asyncio.to_thread(sample_sentinel1_point, lat, lon, when=when)
+            if data is not None:
+                return _sample_from_live_dict(data)
+        except Exception as exc:
+            log.warning("sar_gee_sample_failed", lat=lat, lon=lon, error=str(exc))
+    elif mode == "sentinel_hub" and sentinel_hub_sar_configured():
+        try:
+            data = await sample_sentinel1_point_sh(lat, lon, when=when)
+            if data is not None:
+                return _sample_from_live_dict(data)
+        except Exception as exc:
+            log.warning("sar_sentinel_hub_sample_failed", lat=lat, lon=lon, error=str(exc))
+    return None
+
+
 class GeeSarService:
     """GEE-backed SAR (Sentinel-1) with stub fallback."""
 
@@ -143,13 +184,9 @@ class GeeSarService:
         self._fallback = fallback or StubSarService()
 
     async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample:
-        if settings.gee_service_account_json and gee_python_available():
-            try:
-                data = await asyncio.to_thread(sample_sentinel1_point, lat, lon, when=when)
-                if data is not None:
-                    return _sample_from_live_dict(data)
-            except Exception as exc:
-                log.warning("sar_gee_sample_failed", lat=lat, lon=lon, error=str(exc))
+        live = await sample_live_point("gee", lat, lon, when=when)
+        if live is not None:
+            return live
         return await self._fallback.sample_point(lat, lon, when=when)
 
     async def sample_polygon(
@@ -168,11 +205,54 @@ class SentinelHubSarService:
         self._fallback = fallback or StubSarService()
 
     async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample:
-        if sentinel_hub_sar_configured():
-            data = await sample_sentinel1_point_sh(lat, lon, when=when)
-            if data is not None:
-                return _sample_from_live_dict(data)
+        live = await sample_live_point("sentinel_hub", lat, lon, when=when)
+        if live is not None:
+            return live
         return await self._fallback.sample_point(lat, lon, when=when)
+
+    async def sample_polygon(
+        self, boundary_geojson: dict, *, when: datetime | None = None
+    ) -> SarSample:
+        lat, lon = polygon_centroid(boundary_geojson)
+        return await self.sample_point(lat, lon, when=when)
+
+
+class CompositeSarService:
+    """Try primary SAR provider, then optional fallback, then deterministic stub."""
+
+    def __init__(self, primary: SarProviderMode, fallback: SarProviderMode | None) -> None:
+        self._chain = [primary]
+        if fallback and fallback != "stub" and fallback != primary:
+            self._chain.append(fallback)
+        self._stub = StubSarService()
+        self.name = self._service_name()
+
+    def _service_name(self) -> str:
+        if len(self._chain) > 1:
+            return f"sar-composite-{'-'.join(self._chain)}"
+        mode = self._chain[0]
+        if mode == "gee":
+            return SAR_PROVIDER_GEE
+        if mode == "sentinel_hub":
+            return SAR_PROVIDER_SENTINEL_HUB
+        return SAR_PROVIDER_STUB
+
+    async def sample_point(self, lat: float, lon: float, *, when: datetime | None = None) -> SarSample:
+        for mode in self._chain:
+            if mode == "stub":
+                continue
+            live = await sample_live_point(mode, lat, lon, when=when)
+            if live is not None and not is_stub_sar_provider(live.provider):
+                if len(self._chain) > 1 and mode != self._chain[0]:
+                    log.info(
+                        "sar_fallback_provider_used",
+                        primary=self._chain[0],
+                        fallback=mode,
+                        lat=lat,
+                        lon=lon,
+                    )
+                return live
+        return await self._stub.sample_point(lat, lon, when=when)
 
     async def sample_polygon(
         self, boundary_geojson: dict, *, when: datetime | None = None
@@ -198,11 +278,10 @@ def live_sar_provider_name() -> str:
 
 
 def has_sar_credentials() -> bool:
-    if settings.sar_provider == "sentinel_hub":
-        return sentinel_hub_sar_configured()
-    if settings.sar_provider == "gee":
-        return bool(settings.gee_service_account_json) and gee_python_available() and _initialize_gee()
-    return False
+    if provider_mode_configured(settings.sar_provider):
+        return True
+    fb = settings.sar_fallback_provider
+    return bool(fb and fb != "stub" and fb != settings.sar_provider and provider_mode_configured(fb))
 
 
 def is_sar_provider_record(provider: str) -> bool:
@@ -215,7 +294,10 @@ def get_sar_service() -> SarService:
     if _service is not None:
         return _service
 
-    if settings.sar_provider == "sentinel_hub" and sentinel_hub_sar_configured():
+    fb = settings.sar_fallback_provider
+    if fb and fb != "stub" and fb != settings.sar_provider:
+        _service = CompositeSarService(settings.sar_provider, fb)
+    elif settings.sar_provider == "sentinel_hub" and sentinel_hub_sar_configured():
         _service = SentinelHubSarService()
     elif settings.sar_provider == "gee" and settings.gee_service_account_json:
         _service = GeeSarService()

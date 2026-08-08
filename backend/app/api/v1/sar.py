@@ -33,6 +33,10 @@ from app.services.monitoring.sar_sweep import (
     serialize_sar_record,
 )
 from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.sar_portfolio_report import (
+    build_sar_portfolio_report_context,
+    render_sar_portfolio_pdf,
+)
 from app.services.satellite.sar_analytics import analysis_to_dict
 from app.services.satellite.sar_fusion_ops import build_fence_sar_fusion, build_tree_sar_fusion
 from app.services.satellite.sar_service import (
@@ -131,6 +135,18 @@ async def sar_portfolio_export(user: CurrentUser, db: DB) -> Response:
     )
 
 
+@router.get("/portfolio-report")
+async def sar_portfolio_report(user: CurrentUser, db: DB) -> Response:
+    """PDF Forest Integrity report for compliance reviewers (Phase 4.6)."""
+    ctx = await build_sar_portfolio_report_context(db, user)
+    pdf = render_sar_portfolio_pdf(ctx)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="sar-forest-integrity-report.pdf"'},
+    )
+
+
 @router.get("/status", response_model=SarStatusOut)
 async def sar_status(_user: CurrentUser) -> SarStatusOut:
     svc = get_sar_service()
@@ -159,6 +175,7 @@ async def sar_status(_user: CurrentUser) -> SarStatusOut:
         gee_available=live,
         sar_enabled=settings.sar_enabled,
         sar_provider=provider_mode,
+        sar_fallback_provider=settings.sar_fallback_provider,
         live_data_provider=live_sar_provider_name(),
         monthly_sweep_schedule="5th of month, 03:00 UTC (Celery beat → satellite queue)",
         worker_queue="satellite",
