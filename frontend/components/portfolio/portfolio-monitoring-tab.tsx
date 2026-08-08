@@ -100,39 +100,33 @@ export function PortfolioMonitoringTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <p className="text-sm text-stone-600">
+        Check which sites need a fresh satellite scan, review alerts, and open field follow-ups.
+        Greenness (NDVI) is the everyday signal; radar (SAR) fills in during clouds and monsoon.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PortfolioKpiCard
           icon={Satellite}
-          label="Stale satellite scans"
+          label="Sites needing scan"
           value={String(data.stale_satellite_work_areas)}
           warn={data.stale_satellite_work_areas > 0}
         />
         <PortfolioKpiCard
           icon={Radar}
-          label="SAR at risk"
+          label="At-risk sites"
           value={String(data.sar_at_risk_work_areas ?? 0)}
           warn={(data.sar_at_risk_work_areas ?? 0) > 0}
         />
         <PortfolioKpiCard
-          icon={Radar}
-          label="SAR divergent"
-          value={String(data.sar_divergent_work_areas ?? 0)}
-          warn={(data.sar_divergent_work_areas ?? 0) > 0}
-        />
-        <PortfolioKpiCard
-          icon={Radar}
-          label="SAR aligned"
-          value={String(data.sar_aligned_work_areas ?? 0)}
-        />
-        <PortfolioKpiCard
           icon={Bell}
-          label="SAR alerts (30d)"
-          value={String(sarUnreadTotal)}
-          warn={sarUnreadTotal > 0}
+          label="Unread alerts"
+          value={String(unreadTotal + sarUnreadTotal)}
+          warn={unreadTotal + sarUnreadTotal > 0}
         />
         <PortfolioKpiCard
           icon={Activity}
-          label="Avg Forest Integrity"
+          label="Avg site health"
           value={
             data.sar_avg_forest_integrity != null
               ? `${data.sar_avg_forest_integrity}`

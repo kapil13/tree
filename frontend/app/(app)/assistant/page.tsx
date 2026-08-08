@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkles, Send, Lightbulb, AlertTriangle } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { assistant, errorMessage, type AssistantAnswer } from "@/lib/api";
 
 type Msg = {
@@ -29,7 +30,6 @@ function visibleCalculations(calculations?: Record<string, unknown>) {
 }
 
 function renderInlineMarkdown(text: string): ReactNode[] {
-  // Bold first, then keep remaining text as-is (avoids broken ** * ** artifacts)
   const parts = text.split(/(\*\*[^*\n]+?\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
@@ -63,7 +63,7 @@ function renderAnswerText(text: string) {
   lines.forEach((line, idx) => {
     const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
     if (bullet) {
-      listItems.push(bullet[1]);
+      listItems.push(bullet[1]!);
       return;
     }
     flushList(`list-${idx}`);
@@ -94,6 +94,11 @@ export default function AssistantPage() {
   const [history, setHistory] = useState<Msg[]>([]);
   const [lastMode, setLastMode] = useState<AssistantAnswer["mode"] | null>(null);
   const [lastLlmError, setLastLlmError] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [history, busy]);
 
   async function ask(e?: React.FormEvent, text?: string) {
     e?.preventDefault();
@@ -115,10 +120,7 @@ export default function AssistantPage() {
       const ans = await assistant.query(question);
       setLastMode(ans.mode ?? "rules");
       setLastLlmError(ans.llm_error ?? null);
-      setHistory((h) => [
-        ...h,
-        { role: "assistant", text: ans.answer, data: ans },
-      ]);
+      setHistory((h) => [...h, { role: "assistant", text: ans.answer, data: ans }]);
       setPrompt("");
     } catch (err) {
       setHistory((h) => [...h, { role: "assistant", text: errorMessage(err) }]);
@@ -128,17 +130,16 @@ export default function AssistantPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold">
-        <Sparkles className="h-6 w-6 text-forest-700" /> AI assistant
-      </h1>
-      <p className="text-sm text-stone-600">
-        Ask about your live portfolio — carbon, health, satellite NDVI, biodiversity,
-        weather, alerts, and species recommendations. Answers use your registered data.
-      </p>
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col">
+      <PageHeader
+        className="mb-4"
+        title="AI assistant"
+        description="Ask about your live portfolio — carbon, health, satellite, biodiversity, weather, and alerts."
+        actions={<Sparkles className="h-6 w-6 text-forest-700" aria-hidden />}
+      />
 
       {lastMode === "rules" && lastLlmError ? (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           <div>
             <p className="font-medium">Live LLM unavailable — using portfolio rules engine</p>
@@ -147,7 +148,7 @@ export default function AssistantPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {SUGGESTIONS.map((s) => (
           <button
             key={s}
@@ -161,7 +162,7 @@ export default function AssistantPage() {
         ))}
       </div>
 
-      <div className="card max-h-[55vh] space-y-3 overflow-y-auto">
+      <div className="card min-h-0 flex-1 space-y-3 overflow-y-auto pb-28">
         {history.length === 0 && (
           <div className="flex items-start gap-2 text-sm text-stone-500">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
@@ -177,7 +178,7 @@ export default function AssistantPage() {
             <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
               <div
                 className={
-                  "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm text-left " +
+                  "inline-block max-w-[85%] rounded-2xl px-4 py-2 text-left text-sm " +
                   (m.role === "user"
                     ? "bg-forest-600 text-white"
                     : "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100")
@@ -187,7 +188,7 @@ export default function AssistantPage() {
                 {metrics && (
                   <details className="mt-3 rounded-lg border border-stone-200/80 bg-white/70 p-2 text-xs dark:border-stone-700 dark:bg-stone-900/50">
                     <summary className="cursor-pointer font-medium text-stone-600">
-                      View metrics
+                      Technical details (JSON)
                     </summary>
                     <pre className="mt-2 max-w-full overflow-x-auto text-[11px] text-stone-700 dark:text-stone-200">
                       {JSON.stringify(metrics, null, 2)}
@@ -212,23 +213,29 @@ export default function AssistantPage() {
             </div>
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={(e) => void ask(e)} className="flex gap-2">
-        <input
-          className="input flex-1"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask about your trees, carbon, health, weather, satellite…"
-          disabled={busy}
-        />
-        <button
-          type="submit"
-          className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={busy}
-        >
-          <Send className="h-4 w-4" /> {busy ? "Thinking…" : "Ask"}
-        </button>
+      <form
+        onSubmit={(e) => void ask(e)}
+        className="sticky bottom-0 z-10 -mx-1 mt-auto border-t border-stone-200 bg-white/95 px-1 py-3 backdrop-blur dark:border-stone-800 dark:bg-stone-950/95"
+      >
+        <div className="flex gap-2">
+          <input
+            className="input flex-1"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ask about your trees, carbon, health, weather, satellite…"
+            disabled={busy}
+          />
+          <button
+            type="submit"
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={busy}
+          >
+            <Send className="h-4 w-4" /> {busy ? "Thinking…" : "Ask"}
+          </button>
+        </div>
       </form>
     </div>
   );

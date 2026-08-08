@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, Lock, XCircle } from "lucide-react";
+import { Clock, Lock, XCircle } from "lucide-react";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { errorMessage, plantingPrograms, type PlantingProgram, type ProgramAccessRequest } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -66,12 +66,12 @@ export default function SettingsProgramsPage() {
         </p>
       ) : null}
 
-      <div className="card space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {isLoading ? (
-          <p className="py-6 text-center text-sm text-stone-500">Loading programs…</p>
+          <p className="col-span-full py-6 text-center text-sm text-stone-500">Loading programs…</p>
         ) : (
           (data?.available || []).map((program) => {
-            const checked = enrolled.has(program.code);
+            const active = enrolled.has(program.code);
             const theme = getProgramTheme(program.code);
             const Icon = theme.icon;
             const locked = !program.is_default;
@@ -81,16 +81,16 @@ export default function SettingsProgramsPage() {
               <div
                 key={program.code}
                 className={cn(
-                  "flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center",
-                  checked
+                  "flex flex-col rounded-xl border p-4",
+                  active
                     ? "border-forest-300 bg-forest-50/50 dark:border-forest-800 dark:bg-forest-950/20"
-                    : "border-stone-200 dark:border-stone-700",
+                    : "border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-950",
                 )}
               >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white",
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white",
                       theme.gradient,
                     )}
                   >
@@ -99,7 +99,7 @@ export default function SettingsProgramsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-stone-900 dark:text-stone-50">{program.name}</p>
-                      {program.is_default || checked ? (
+                      {program.is_default || active ? (
                         <span className="rounded bg-forest-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-forest-800 dark:bg-forest-950/40 dark:text-forest-200">
                           Active
                         </span>
@@ -120,26 +120,15 @@ export default function SettingsProgramsPage() {
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-0.5 text-sm text-stone-500">{program.description}</p>
+                    <p className="mt-1 text-sm text-stone-500">{program.description}</p>
                     {access?.admin_note && access.status === "rejected" ? (
                       <p className="mt-1 text-xs text-stone-500">Note: {access.admin_note}</p>
                     ) : null}
                   </div>
-                  <div
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
-                      checked
-                        ? "border-forest-600 bg-forest-600 text-white"
-                        : "border-stone-300 bg-white dark:border-stone-600 dark:bg-stone-900",
-                    )}
-                    aria-hidden
-                  >
-                    {checked ? <Check className="h-3 w-3" /> : null}
-                  </div>
                 </div>
 
-                {locked && !checked ? (
-                  <div className="flex shrink-0 gap-2 sm:ml-auto">
+                {locked && !active ? (
+                  <div className="mt-4 flex gap-2 border-t border-stone-100 pt-3 dark:border-stone-800">
                     {access?.status === "pending" ? (
                       <button
                         type="button"
@@ -147,12 +136,12 @@ export default function SettingsProgramsPage() {
                         disabled={withdrawRequest.isPending}
                         onClick={() => withdrawRequest.mutate(access.id)}
                       >
-                        Withdraw
+                        Withdraw request
                       </button>
                     ) : (
                       <button
                         type="button"
-                        className="btn-secondary text-sm"
+                        className="btn-primary text-sm"
                         onClick={() => {
                           setSelectedProgram(program);
                           setMessage("");

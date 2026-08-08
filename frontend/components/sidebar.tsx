@@ -5,38 +5,24 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
-  CreditCard,
   FileText,
   ClipboardList,
   FolderKanban,
-  Globe2,
   Heart,
-  Leaf,
   LayoutDashboard,
   Map,
   Mic,
   Satellite,
-  ScrollText,
-  Server,
   Settings,
   Sparkles,
   TreePine,
-  Users,
   Activity,
-  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { useAuth } from "@/lib/auth-store";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
-import {
-  canAccessBillingAdmin,
-  canAccessOpsAdmin,
-  canAccessWebsiteCms,
-  canManagePlatformUsers,
-  canManageProgramAccess,
-  hasAnyPlatformAccess,
-} from "@/lib/platform-access";
+import { hasAnyPlatformAccess } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
@@ -60,7 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Home",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: BarChart3, audience: "all", exact: true },
-      { href: "/stewardship", label: "Stewardship", icon: Heart, audience: "all", exact: true },
+      { href: "/stewardship", label: "Stewardship", icon: Heart, audience: "byot", exact: true },
     ],
   },
   {
@@ -76,7 +62,6 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/projects", label: "Projects", icon: FolderKanban, audience: ["professional", "field_supervisor", "field_worker"] },
       { href: "/trees", label: "Trees", icon: TreePine, audience: "all", exact: true },
-      { href: "/trees/new", label: "Add tree", icon: Leaf, audience: "can_write", exact: true },
       { href: "/map", label: "Map", icon: Map, audience: "all" },
     ],
   },
@@ -102,8 +87,12 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/reports", label: "Reports", icon: FileText, audience: ["professional", "field_supervisor"] },
       { href: "/assistant", label: "AI assistant", icon: Sparkles, audience: "all" },
-      { href: "/settings", label: "Settings", icon: Settings, audience: "all" },
     ],
+  },
+  {
+    id: "account",
+    label: "Account",
+    items: [{ href: "/settings", label: "Settings", icon: Settings, audience: "all" }],
   },
 ];
 
@@ -129,47 +118,6 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       audience: "all",
       exact: true,
     });
-  }
-  if (canManagePlatformUsers(user)) {
-    adminItems.push({
-      href: "/platform/users",
-      label: "Users",
-      icon: Users,
-      audience: "all",
-    });
-    adminItems.push({
-      href: "/platform/audit",
-      label: "Audit log",
-      icon: ScrollText,
-      audience: "all",
-    });
-  }
-  if (canManageProgramAccess(user)) {
-    adminItems.push({
-      href: "/platform/program-access",
-      label: "Program access",
-      icon: UserCheck,
-      audience: "all",
-    });
-  }
-  if (canAccessBillingAdmin(user)) {
-    adminItems.push({
-      href: "/platform/billing",
-      label: "Billing",
-      icon: CreditCard,
-      audience: "all",
-    });
-  }
-  if (canAccessOpsAdmin(user)) {
-    adminItems.push({
-      href: "/platform/ops",
-      label: "Operations",
-      icon: Server,
-      audience: "all",
-    });
-  }
-  if (canAccessWebsiteCms(user)) {
-    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2, audience: "all" });
   }
 
   const groups = NAV_GROUPS.map((group) => ({

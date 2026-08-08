@@ -1,14 +1,82 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { audit } from "@/lib/api";
+import { organizations } from "@/lib/organizations-api";
+import { useAuth } from "@/lib/auth-store";
+import { ScrollText } from "lucide-react";
+
+const ACTION_LABELS: Record<string, string> = {
+  "tree.create": "Tree created",
+  "tree.update": "Tree updated",
+  "tree.delete": "Tree deleted",
+  "tree.regeotag": "Tree re-geotagged",
+  "tree.image.add": "Tree photo added",
+  "project.create": "Project created",
+  "project.update": "Project updated",
+  "project.delete": "Project deleted",
+  "auth.login": "Signed in",
+  "auth.logout": "Signed out",
+  "auth.password_reset": "Password reset",
+  "export.mrv": "MRV export",
+  "export.report": "Report exported",
+  "compliance.update": "Compliance updated",
+  "member.invite": "Team member invited",
+  "member.update": "Team member updated",
+  "program.access_request": "Program access requested",
+};
+
+function humanizeAction(action: string): string {
+  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const parts = action.split(".");
+  const last = parts[parts.length - 1] ?? action;
+  const noun = parts[0] ?? "";
+  const verb = last.replace(/_/g, " ");
+  const label = `${noun} ${verb}`.trim();
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function shortId(id: string | null | undefined): string {
+  if (!id) return "—";
+  return `${id.slice(0, 8)}…`;
+}
 
 export default function AuditLogPage() {
+  const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryKey: ["audit-logs"],
     queryFn: () => audit.logs({ page: 1, page_size: 100 }),
   });
+
+  const membersQ = useQuery({
+    queryKey: ["org-members-audit"],
+    queryFn: () => organizations.members(),
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const actorById = useMemo(() => {
+    const map = new Map<string, { name: string; email: string }>();
+    if (user?.id) {
+      map.set(user.id, { name: user.full_name || "You", email: user.email || "" });
+    }
+    for (const m of membersQ.data?.members ?? []) {
+      map.set(m.id, { name: m.full_name || m.email, email: m.email });
+    }
+    return map;
+  }, [membersQ.data?.members, user?.email, user?.full_name, user?.id]);
+
+  function actorLabel(actorId: string | null): string {
+    if (!actorId) return "System";
+    const known = actorById.get(actorId);
+    if (known) {
+      return known.email ? `${known.name} (${known.email})` : known.name;
+    }
+    return shortId(actorId);
+  }
 
   return (
     <SettingsSection
@@ -22,9 +90,11 @@ export default function AuditLogPage() {
       ) : isLoading ? (
         <p className="text-sm text-stone-500">Loading audit events…</p>
       ) : !data?.items.length ? (
-        <div className="card py-10 text-center text-sm text-stone-500">
-          No audit events yet. Tree registration, MRV exports, and logins will appear here.
-        </div>
+        <EmptyState
+          icon={ScrollText}
+          title="No audit events yet"
+          description="Tree registration, MRV exports, and logins will appear here."
+        />
       ) : (
         <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
@@ -45,25 +115,33 @@ export default function AuditLogPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-stone-500">
                       {new Date(row.created_at).toISOString().replace("T", " ").slice(0, 19)}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs">{row.action}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-stone-800 dark:text-stone-100">
+                      {humanizeAction(row.action)}
+                      <div className="mt-0.5 font-mono text-[10px] font-normal text-stone-400">
+                        {row.action}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-xs">
                       {row.resource_type || "—"}
                       {row.resource_id ? (
                         <div className="mt-0.5 font-mono text-[10px] text-stone-400">
-                          {row.resource_id.slice(0, 8)}…
+                          {shortId(row.resource_id)}
                         </div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 font-mono text-[10px] text-stone-500">
-                      {row.actor_user_id?.slice(0, 8) ?? "—"}…
+                    <td className="px-4 py-3 text-xs text-stone-700 dark:text-stone-200">
+                      {actorLabel(row.actor_user_id)}
                     </td>
                     <td className="px-4 py-3 text-xs text-stone-500">{row.ip || "—"}</td>
                     <td className="max-w-xs px-4 py-3">
                       {row.diff ? (
-                        <pre className="overflow-x-auto rounded bg-stone-50 p-2 text-[10px] text-stone-600 dark:bg-stone-900">
-                          {JSON.stringify(row.diff, null, 0).slice(0, 180)}
-                          {JSON.stringify(row.diff).length > 180 ? "…" : ""}
-                        </pre>
+                        <details>
+                          <summary className="cursor-pointer text-xs text-forest-700">View JSON</summary>
+                          <pre className="mt-1 overflow-x-auto rounded bg-stone-50 p-2 text-[10px] text-stone-600 dark:bg-stone-900">
+                            {JSON.stringify(row.diff, null, 2).slice(0, 400)}
+                            {JSON.stringify(row.diff).length > 400 ? "…" : ""}
+                          </pre>
+                        </details>
                       ) : (
                         "—"
                       )}

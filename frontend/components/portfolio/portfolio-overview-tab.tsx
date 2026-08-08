@@ -4,15 +4,11 @@ import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  ArrowRight,
   Bell,
-  FolderKanban,
-  Radar,
   Satellite,
-  ShieldCheck,
   TreePine,
 } from "lucide-react";
-import { dashboard, intelligence, plantingProjects } from "@/lib/api";
+import { dashboard, plantingProjects } from "@/lib/api";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -26,16 +22,16 @@ const SEGMENT_LABEL: Record<string, string> = {
 };
 
 export function PortfolioOverviewTab({
-  onSelectTab,
+  onSelectTab: _unusedSelectTab,
 }: {
   onSelectTab: (tab: "threats" | "monitoring" | "biodiversity") => void;
 }) {
-  const [dashQ, monitoringQ, fieldOpsQ, briefQ] = useQueries({
+  void _unusedSelectTab;
+  const [dashQ, monitoringQ, fieldOpsQ] = useQueries({
     queries: [
       { queryKey: ["dashboard-portfolio"], queryFn: dashboard.get, staleTime: 60_000 },
       { queryKey: ["monitoring-summary"], queryFn: () => plantingProjects.monitoringSummary() },
       { queryKey: ["field-ops-summary"], queryFn: () => plantingProjects.fieldOpsSummary() },
-      { queryKey: ["executive-brief-portfolio"], queryFn: () => intelligence.brief(), staleTime: 60_000 },
     ],
   });
 
@@ -46,7 +42,6 @@ export function PortfolioOverviewTab({
   const kpi = dashQ.data?.kpi;
   const monitoring = monitoringQ.data;
   const fieldOps = fieldOpsQ.data;
-  const brief = briefQ.data;
   const unreadAlerts = Object.values(monitoring?.unread_alerts_by_kind ?? {}).reduce(
     (a, b) => a + b,
     0,
@@ -57,9 +52,8 @@ export function PortfolioOverviewTab({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PortfolioKpiCard icon={TreePine} label="Trees" value={String(kpi?.total_trees ?? fieldOps?.tree_count ?? 0)} />
-        <PortfolioKpiCard icon={FolderKanban} label="Projects" value={String(fieldOps?.project_count ?? 0)} />
         <PortfolioKpiCard
           icon={AlertTriangle}
           label="Open violations"
@@ -68,15 +62,13 @@ export function PortfolioOverviewTab({
         />
         <PortfolioKpiCard
           icon={Satellite}
-          label="Stale NDVI scans"
-          value={String(monitoring?.stale_satellite_work_areas ?? 0)}
-          warn={(monitoring?.stale_satellite_work_areas ?? 0) > 0}
-        />
-        <PortfolioKpiCard
-          icon={Radar}
-          label="SAR at risk"
-          value={String(monitoring?.sar_at_risk_work_areas ?? 0)}
-          warn={(monitoring?.sar_at_risk_work_areas ?? 0) > 0}
+          label="Sites needing scan"
+          value={String(
+            (monitoring?.stale_satellite_work_areas ?? 0) + (monitoring?.sar_at_risk_work_areas ?? 0),
+          )}
+          warn={
+            (monitoring?.stale_satellite_work_areas ?? 0) + (monitoring?.sar_at_risk_work_areas ?? 0) > 0
+          }
         />
         <PortfolioKpiCard
           icon={Bell}
@@ -84,65 +76,11 @@ export function PortfolioOverviewTab({
           value={String(unreadAlerts)}
           warn={unreadAlerts > 0}
         />
-        <PortfolioKpiCard
-          icon={ShieldCheck}
-          label="Portfolio risk"
-          value={brief?.highest_risk ?? "—"}
-          warn={brief?.highest_risk != null && brief.highest_risk !== "low"}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <button
-          type="button"
-          className="card text-left transition hover:border-forest-300"
-          onClick={() => onSelectTab("threats")}
-        >
-          <p className="text-sm font-semibold text-stone-900">Threats & weather</p>
-          <p className="mt-1 text-xs text-stone-600">
-            Pest hotspots, weather alerts, and threat watch across work areas.
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-forest-700">
-            Open tab <ArrowRight className="h-3 w-3" />
-          </span>
-        </button>
-        <button
-          type="button"
-          className="card text-left transition hover:border-forest-300"
-          onClick={() => onSelectTab("monitoring")}
-        >
-          <p className="text-sm font-semibold text-stone-900">Satellite & SAR monitoring</p>
-          <p className="mt-1 text-xs text-stone-600">
-            NDVI staleness, Forest Integrity scores, SAR field verifications, and job health.
-          </p>
-          {(monitoring?.sar_avg_forest_integrity != null || (monitoring?.sar_at_risk_work_areas ?? 0) > 0) && (
-            <p className="mt-2 text-xs text-forest-800">
-              Avg Forest Integrity: {monitoring?.sar_avg_forest_integrity ?? "—"} ·{" "}
-              {monitoring?.sar_at_risk_work_areas ?? 0} at risk
-            </p>
-          )}
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-forest-700">
-            Open tab <ArrowRight className="h-3 w-3" />
-          </span>
-        </button>
-        <button
-          type="button"
-          className="card text-left transition hover:border-forest-300"
-          onClick={() => onSelectTab("biodiversity")}
-        >
-          <p className="text-sm font-semibold text-stone-900">Biodiversity</p>
-          <p className="mt-1 text-xs text-stone-600">
-            Bioacoustic recordings, species richness, and ecosystem health scores.
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-forest-700">
-            Open tab <ArrowRight className="h-3 w-3" />
-          </span>
-        </button>
       </div>
 
       <section className="card overflow-hidden p-0">
         <div className="border-b border-stone-200 px-4 py-3">
-          <h2 className="font-medium">Projects needing attention</h2>
+          <h2 className="font-medium">Needs attention</h2>
           <p className="text-xs text-stone-500">Open violations or survival surveys due</p>
         </div>
         {attentionProjects.length === 0 ? (
