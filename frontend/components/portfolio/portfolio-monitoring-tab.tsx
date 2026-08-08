@@ -7,6 +7,7 @@ import {
   Bell,
   ClipboardList,
   Download,
+  FileText,
   Radar,
   RefreshCw,
   Satellite,
@@ -87,6 +88,16 @@ export function PortfolioMonitoringTab() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportPdf = async () => {
+    const blob = await sar.portfolioReportPdf();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sar-forest-integrity-report.pdf";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
@@ -137,6 +148,14 @@ export function PortfolioMonitoringTab() {
         <span className="text-stone-600">
           SAR providers: {data.sar_live_providers ?? 0} live · {data.sar_stub_providers ?? 0} stub
         </span>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50"
+          onClick={() => void handleExportPdf()}
+        >
+          <FileText className="h-3 w-3" />
+          Export SAR PDF
+        </button>
         <button
           type="button"
           className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50"

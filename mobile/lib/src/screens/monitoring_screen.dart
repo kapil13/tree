@@ -7,6 +7,7 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/sar_monitoring_cards.dart';
 
 class MonitoringScreen extends ConsumerWidget {
   const MonitoringScreen({super.key});
@@ -41,8 +42,12 @@ class MonitoringScreen extends ConsumerWidget {
           final stale = summary['stale_satellite_work_areas'] ?? 0;
           final sarAtRisk = summary['sar_at_risk_work_areas'] ?? 0;
           final sarAvg = summary['sar_avg_forest_integrity'];
+          final sarDivergent = summary['sar_divergent_work_areas'] ?? 0;
+          final sarAligned = summary['sar_aligned_work_areas'] ?? 0;
+          final sarAlerts = Map<String, dynamic>.from(summary['unread_sar_alerts_by_kind'] ?? {});
           final alertsByKind = Map<String, dynamic>.from(summary['unread_alerts_by_kind'] ?? {});
           final workAreas = List<dynamic>.from(summary['work_area_monitoring'] ?? []);
+          final fieldTasks = List<dynamic>.from(summary['open_sar_field_verifications'] ?? []);
           final highlightFenceId = GoRouterState.of(context).uri.queryParameters['fence'];
 
           return RefreshIndicator(
@@ -73,21 +78,50 @@ class MonitoringScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                SarIntegrityHeroCard(
+                  avgIntegrity: sarAvg is num ? sarAvg : null,
+                  atRisk: sarAtRisk is int ? sarAtRisk : int.tryParse('$sarAtRisk') ?? 0,
+                  divergent: sarDivergent is int ? sarDivergent : int.tryParse('$sarDivergent') ?? 0,
+                  aligned: sarAligned is int ? sarAligned : int.tryParse('$sarAligned') ?? 0,
+                ),
+                const SizedBox(height: 12),
                 _StatCard(
                   title: 'Stale satellite scans',
                   value: '$stale',
-                  subtitle: 'Work areas without a recent satellite pass',
+                  subtitle: 'Work areas without a recent NDVI pass',
                 ),
-                const SizedBox(height: 12),
-                _StatCard(
-                  title: 'SAR at risk',
-                  value: '$sarAtRisk',
-                  subtitle: sarAvg != null
-                      ? 'Portfolio avg Forest Integrity: $sarAvg'
-                      : 'Run SAR scans from the web satellite page',
-                ),
-                const SizedBox(height: 12),
+                if (fieldTasks.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text('Open SAR field verifications', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  for (final raw in fieldTasks.take(8))
+                    SarWorkAreaTile(
+                      name: (raw as Map)['work_area_name'] as String? ?? 'Work area',
+                      subtitle: raw['alert_kind'] as String? ?? raw['message'] as String? ?? '',
+                      integrity: raw['forest_integrity_score'] as num?,
+                      onTap: raw['work_area_id'] != null
+                          ? () => context.push('/monitoring?fence=${raw['work_area_id']}')
+                          : null,
+                    ),
+                ],
+                if (sarAlerts.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text('SAR alerts (30d)', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final e in sarAlerts.entries)
+                        Chip(
+                          backgroundColor: Colors.amber.shade50,
+                          label: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 11)),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 20),
                 Text('Unread alerts by kind', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (alertsByKind.isEmpty)
@@ -102,7 +136,7 @@ class MonitoringScreen extends ConsumerWidget {
                     ],
                   ),
                 const SizedBox(height: 20),
-                Text('Work area monitoring', style: Theme.of(context).textTheme.titleMedium),
+                Text('Work area SAR status', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (workAreas.isEmpty)
                   Text(
@@ -112,25 +146,22 @@ class MonitoringScreen extends ConsumerWidget {
                   )
                 else
                   for (final raw in workAreas.take(30))
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      tileColor: highlightFenceId != null && raw['id'] == highlightFenceId
-                          ? Colors.green.shade50
-                          : null,
-                      title: Text((raw as Map)['name'] as String? ?? 'Work area'),
-                      subtitle: Text(
-                        [
-                          raw['project_name'] ?? '',
-                          if (raw['latest_ndvi'] != null) 'NDVI ${raw['latest_ndvi']}',
-                          if (raw['sar_forest_integrity'] != null)
-                            'SAR integrity ${raw['sar_forest_integrity']}',
-                          if (raw['days_since_scan'] != null) '${raw['days_since_scan']}d since scan',
-                          if (raw['days_since_scan'] == null) 'No scan yet',
-                        ].where((s) => s.toString().isNotEmpty).join(' · '),
-                      ),
-                      onTap: raw['project_id'] != null
-                          ? () => context.push('/projects/${raw['project_id']}')
-                          : null,
+                    SarWorkAreaTile(
+                      name: (raw as Map)['name'] as String? ?? 'Work area',
+                      subtitle: [
+                        raw['project_name'] ?? '',
+                        if (raw['latest_ndvi'] != null) 'NDVI ${raw['latest_ndvi']}',
+                        if (raw['days_since_scan'] != null) '${raw['days_since_scan']}d since NDVI',
+                      ].where((s) => s.toString().isNotEmpty).join(' · '),
+                      integrity: raw['sar_forest_integrity'] as num?,
+                      mode: sarModeLabel(raw['sar_monitoring_mode'] as String?),
+                      recommendedAction: raw['sar_recommended_action'] as String?,
+                      highlight: highlightFenceId != null && raw['id'] == highlightFenceId,
+                      onTap: raw['id'] != null
+                          ? () => context.push('/monitoring?fence=${raw['id']}')
+                          : (raw['project_id'] != null
+                              ? () => context.push('/projects/${raw['project_id']}')
+                              : null),
                     ),
               ],
             ),
