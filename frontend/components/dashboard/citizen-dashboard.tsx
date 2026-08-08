@@ -4,15 +4,12 @@ import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import {
   ArrowRight,
-  Camera,
   CheckCircle2,
   Circle,
   Leaf,
   Map,
   Satellite,
-  Sparkles,
   TreePine,
-  TrendingUp,
 } from "lucide-react";
 import {
   Area,
@@ -28,8 +25,8 @@ import {
 import { TreesMap } from "@/components/trees-map";
 import { CitizenStewardshipPanel } from "@/components/dashboard/citizen-stewardship-panel";
 import { DataTrustBanner } from "@/components/data-trust-banner";
-import { MetricCard } from "@/components/dashboard/metric-card";
-import { CHART_COLORS, fmtCompact, fmtNum, fmtPct, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
+import { CHART_COLORS, fmtCompact, fmtNum, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { aiScans, dashboard, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
@@ -46,12 +43,8 @@ function healthBadgeClass(health: string) {
 function DashboardSkeleton() {
   return (
     <div className="dash-shell mx-auto max-w-6xl space-y-6">
-      <div className="dash-hero dash-skeleton h-52" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="dash-skeleton h-28 rounded-2xl" />
-        ))}
-      </div>
+      <div className="dash-hero dash-skeleton h-44" />
+      <div className="dash-skeleton h-40 rounded-2xl" />
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="dash-skeleton h-72 rounded-2xl" />
         <div className="dash-skeleton h-72 rounded-2xl" />
@@ -122,33 +115,32 @@ export function CitizenDashboard() {
         <div className="dash-hero-header">
           <div className="dash-live-pill">
             <span className="dash-live-dot" />
-            BYOT Public
+            Your grove
           </div>
           <h1 className="dash-hero-title mt-4">
-            {treeCount > 0 ? "Your green impact" : "Start your grove"}
+            Hi {firstName}
+            {treeCount > 0 ? ` — ${treeCount} tree${treeCount === 1 ? "" : "s"} tagged` : ""}
           </h1>
           <p className="dash-hero-copy">
             {treeCount > 0 ? (
               <>
-                Hi {firstName} — you&apos;ve tagged{" "}
-                <strong className="text-white">{treeCount}</strong> tree
-                {treeCount === 1 ? "" : "s"}
+                Keep adding GPS-tagged trees
                 {kpi && kpi.total_co2e_kg > 0
-                  ? ` storing about ${fmtCompact(kpi.total_co2e_kg)} kg CO₂e.`
-                  : "."}{" "}
-                Keep adding GPS-tagged trees and use complimentary AI scans to track health.
+                  ? ` · about ${fmtCompact(kpi.total_co2e_kg)} kg estimated carbon stored`
+                  : ""}
+                {scansLeft !== null ? ` · ${scansLeft} AI scan${scansLeft === 1 ? "" : "s"} left` : ""}.
               </>
             ) : (
               <>
-                Welcome, {firstName}. Register trees you plant or care for — with map pins, photos,
-                and up to 5 free AI health scans.
+                Register trees you plant or care for — with map pins, photos, and free AI health
+                checks to get started.
               </>
             )}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
               <Leaf className="h-4 w-4" />
-              {treeCount > 0 ? "Add another tree" : "Tag your first tree"}
+              {treeCount > 0 ? "Tag a tree" : "Tag your first tree"}
             </Link>
             <Link
               href="/map"
@@ -157,30 +149,6 @@ export function CitizenDashboard() {
               <Map className="h-4 w-4" />
               Open map
             </Link>
-          </div>
-        </div>
-
-        <div className="dash-hero-kpi-row">
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">{treeCount}</p>
-            <p className="dash-hero-stat-label">Trees tagged</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">
-              {kpi ? fmtCompact(kpi.total_co2e_kg) : "0"}
-              <span className="ml-1 text-sm font-medium text-emerald-100/60">kg CO₂e</span>
-            </p>
-            <p className="dash-hero-stat-label">Estimated storage</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">{kpi ? fmtPct(kpi.pct_healthy) : "—"}</p>
-            <p className="dash-hero-stat-label">Healthy trees</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">
-              {scansLeft !== null ? scansLeft : "∞"}
-            </p>
-            <p className="dash-hero-stat-label">AI scans available</p>
           </div>
         </div>
       </section>
@@ -200,51 +168,12 @@ export function CitizenDashboard() {
         <CitizenStewardshipPanel compact />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          icon={TreePine}
-          label="Trees"
-          value={String(treeCount)}
-          sub={kpi ? `${fmtPct(kpi.pct_satellite_verified)} satellite checked` : undefined}
-          accent="green"
-        />
-        <MetricCard
-          icon={TrendingUp}
-          label="Carbon stock (est.)"
-          value={kpi ? `${fmtCompact(kpi.total_carbon_kg)} kg` : "0"}
-          sub={kpi ? `~${fmtCompact(kpi.annual_sequestration_kg)} kg/yr growth` : undefined}
-          accent="lime"
-        />
-        <MetricCard
-          icon={Satellite}
-          label="Satellite"
-          value={kpi ? fmtPct(kpi.pct_satellite_verified) : "0%"}
-          sub="NDVI-verified trees"
-          accent="sky"
-        />
-        <MetricCard
-          icon={Sparkles}
-          label="AI scans"
-          value={
-            scans?.tier === "byot_metered"
-              ? `${scans.complimentary_used}/${scans.complimentary_limit}`
-              : "Included"
-          }
-          sub={
-            scans?.tier === "byot_metered"
-              ? `${scans.remaining_complimentary} complimentary left`
-              : "Professional programs are unlimited"
-          }
-          accent="violet"
-        />
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="dash-panel lg:col-span-2">
           <div className="dash-panel-head">
             <div>
               <h2 className="dash-panel-title">Carbon over time</h2>
-              <p className="dash-panel-sub">Estimated biomass growth from your tagged trees</p>
+              <p className="dash-panel-sub">Estimated carbon stored from your tagged trees</p>
             </div>
           </div>
           {carbonSeries.length > 1 ? (
@@ -260,7 +189,7 @@ export function CitizenDashboard() {
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#a8a29e" />
                   <YAxis tick={{ fontSize: 11 }} stroke="#a8a29e" width={40} />
                   <Tooltip
-                    formatter={(v: number) => [`${fmtNum(v, " kg")}`, "Carbon"]}
+                    formatter={(v: number) => [`${fmtNum(v, " kg")}`, "Carbon stored"]}
                     contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4" }}
                   />
                   <Area
@@ -274,15 +203,13 @@ export function CitizenDashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="mt-4 flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-stone-200 bg-stone-50 text-center dark:border-stone-700 dark:bg-stone-900/50">
-              <HeroIcon className={cn("h-10 w-10", theme.accent)} />
-              <p className="mt-3 text-sm text-stone-600 dark:text-stone-300">
-                Tag a few trees to see your carbon trajectory chart.
-              </p>
-              <Link href="/trees/new" className="btn-primary mt-4 inline-flex text-sm">
-                Get started
-              </Link>
-            </div>
+            <EmptyState
+              className="mt-4"
+              icon={HeroIcon}
+              title="No trend yet"
+              description="Tag a few trees to see estimated carbon stored over time."
+              action={{ label: "Tag a tree", href: "/trees/new" }}
+            />
           )}
         </div>
 
@@ -322,7 +249,9 @@ export function CitizenDashboard() {
               </ul>
             </div>
           ) : (
-            <p className="mt-6 text-sm text-stone-500">Health breakdown appears after your first analysis.</p>
+            <p className="mt-6 text-sm text-stone-500">
+              Health breakdown appears after your first analysis.
+            </p>
           )}
         </div>
       </div>
@@ -412,16 +341,12 @@ export function CitizenDashboard() {
           </Link>
         </div>
         {recent.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-stone-300 px-6 py-10 text-center dark:border-stone-700">
-            <TreePine className="mx-auto h-10 w-10 text-stone-300" />
-            <p className="mt-3 text-sm text-stone-600 dark:text-stone-300">
-              No trees yet. Your dashboard will light up once you tag your first one.
-            </p>
-            <Link href="/trees/new" className="btn-primary mt-4 inline-flex">
-              <Camera className="h-4 w-4" />
-              Tag your first tree
-            </Link>
-          </div>
+          <EmptyState
+            icon={TreePine}
+            title="No trees yet"
+            description="Your dashboard will light up once you tag your first one."
+            action={{ label: "Tag your first tree", href: "/trees/new" }}
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {recent.map((tree) => (
@@ -435,7 +360,7 @@ export function CitizenDashboard() {
                     {tree.species_text || "Unknown species"}
                   </p>
                   {tree.satellite_verified ? (
-                    <span title="Satellite verified">
+                    <span title="Satellite checked">
                       <Satellite className="h-4 w-4 shrink-0 text-sky-600" aria-hidden />
                     </span>
                   ) : null}
@@ -452,7 +377,7 @@ export function CitizenDashboard() {
                   </span>
                   {tree.current_carbon_kg > 0 ? (
                     <span className="text-xs text-stone-500">
-                      {fmtCompact(tree.current_carbon_kg)} kg C
+                      ~{fmtCompact(tree.current_carbon_kg)} kg C
                     </span>
                   ) : null}
                 </div>
@@ -463,20 +388,18 @@ export function CitizenDashboard() {
         )}
       </div>
 
-      <div className="rounded-[1.25rem] border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-900/40 dark:from-amber-950/30 dark:to-stone-900">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
-              Need NHAI, ESG, or NGO workflows?
-            </p>
-            <p className="mt-1 text-sm text-amber-900/80 dark:text-amber-200/80">
-              Professional programs unlock unlimited AI scans, team projects, compliance reports,
-              and satellite monitoring — billed via work orders, not in-app.
-            </p>
-          </div>
-          <Link href="/settings/programs" className="btn-secondary shrink-0 inline-flex">
-            Request program access
-            <ArrowRight className="h-4 w-4" />
+      <div className="rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-3 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900/40 dark:text-stone-300">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Looking for team projects, compliance reports, or unlimited AI scans?{" "}
+            <span className="text-stone-500">Professional programs are available on request.</span>
+          </p>
+          <Link
+            href="/settings/programs"
+            className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-forest-700 hover:underline"
+          >
+            Explore programs
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>

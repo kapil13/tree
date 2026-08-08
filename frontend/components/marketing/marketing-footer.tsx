@@ -26,9 +26,13 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((item) => {
                   const link = linkProps(item);
+                  const href =
+                    link.href === "/dashboard" || link.href.startsWith("/dashboard?")
+                      ? "/auth?mode=signin&next=/dashboard"
+                      : link.href;
                   return (
                     <li key={`${col.title}-${link.label}`}>
-                      <Link href={link.href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
+                      <Link href={href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
                         {link.label}
                       </Link>
                     </li>

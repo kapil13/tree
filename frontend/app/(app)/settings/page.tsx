@@ -6,9 +6,13 @@ import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summar
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useAuth } from "@/lib/auth-store";
+import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
 export default function SettingsGeneralPage() {
   const { user } = useAuth();
+  const roleLabel = user?.org_role
+    ? formatOrgRole(user.org_role)
+    : formatPlatformRole(user?.role);
 
   return (
     <div className="space-y-8">
@@ -21,8 +25,8 @@ export default function SettingsGeneralPage() {
             <p className="truncate font-medium text-stone-900 dark:text-stone-50">{user?.full_name}</p>
             <p className="truncate text-sm text-stone-500">{user?.email}</p>
           </div>
-          <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium capitalize text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-            {user?.role}
+          <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            {roleLabel}
           </span>
         </div>
       </SettingsSection>

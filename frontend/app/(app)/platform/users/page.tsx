@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Download } from "lucide-react";
+import { Download, MoreHorizontal } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { BulkActionBar } from "@/components/platform/bulk-action-bar";
 import { backupSessionForImpersonation } from "@/components/platform/impersonation-banner";
 import { StepUpModal } from "@/components/platform/step-up-modal";
-import { UserPlatformGrantsPanel } from "@/components/platform/user-platform-grants-panel";
-import { errorMessage, auth } from "@/lib/api";
+import { auth } from "@/lib/api";
 import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { isFullPlatformAdmin } from "@/lib/platform-access";
@@ -27,19 +26,171 @@ type StepUpState =
   | { kind: "revoke-sessions"; userId: string; email: string }
   | { kind: "bulk"; action: "activate" | "deactivate" | "revoke_sessions" };
 
+type MenuUser = {
+  id: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  is_verified: boolean;
+};
+
+function UserRowMenu({
+  row,
+  currentUserId,
+  busy,
+  onAction,
+}: {
+  row: MenuUser;
+  currentUserId?: string;
+  busy: boolean;
+  onAction: (stepUp: NonNullable<StepUpState>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative flex items-center justify-end gap-2" ref={rootRef}>
+      <Link
+        href={`/platform/users/${row.id}`}
+        className="text-xs font-medium text-forest-700 hover:underline dark:text-forest-400"
+      >
+        Support
+      </Link>
+      <button
+        type="button"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+        aria-label={`More actions for ${row.email}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-9 z-30 min-w-[11rem] rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-2 text-left text-xs hover:bg-stone-50 disabled:opacity-50 dark:hover:bg-stone-800"
+            disabled={busy || row.id === currentUserId || row.role === "admin" || !row.is_active}
+            onClick={() => {
+              setOpen(false);
+              onAction({ kind: "impersonate", userId: row.id, email: row.email });
+            }}
+          >
+            View as user
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-2 text-left text-xs hover:bg-stone-50 disabled:opacity-50 dark:hover:bg-stone-800"
+            disabled={busy}
+            onClick={() => {
+              setOpen(false);
+              onAction({ kind: "force-reset", userId: row.id, email: row.email });
+            }}
+          >
+            Reset password
+          </button>
+          {!row.is_verified ? (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-xs hover:bg-stone-50 disabled:opacity-50 dark:hover:bg-stone-800"
+                disabled={busy}
+                onClick={() => {
+                  setOpen(false);
+                  onAction({ kind: "resend-verify", userId: row.id, email: row.email });
+                }}
+              >
+                Resend verification
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-xs hover:bg-stone-50 disabled:opacity-50 dark:hover:bg-stone-800"
+                disabled={busy}
+                onClick={() => {
+                  setOpen(false);
+                  onAction({
+                    kind: "resend-verify",
+                    userId: row.id,
+                    email: row.email,
+                    markVerified: true,
+                  });
+                }}
+              >
+                Mark verified
+              </button>
+            </>
+          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full px-3 py-2 text-left text-xs text-rose-700 hover:bg-stone-50 disabled:opacity-50 dark:hover:bg-stone-800"
+            disabled={busy || row.id === currentUserId}
+            onClick={() => {
+              setOpen(false);
+              onAction({ kind: "revoke-sessions", userId: row.id, email: row.email });
+            }}
+          >
+            Revoke sessions
+          </button>
+          <Link
+            href={`/platform/users/${row.id}`}
+            role="menuitem"
+            className="block w-full px-3 py-2 text-left text-xs hover:bg-stone-50 dark:hover:bg-stone-800"
+            onClick={() => setOpen(false)}
+          >
+            Open detail
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function PlatformUsersPage() {
   const qc = useQueryClient();
   const router = useRouter();
   const { user, setSession, setUser } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState<"" | "active" | "inactive">("");
   const [page, setPage] = useState(1);
-  const [grantsUserId, setGrantsUserId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stepUp, setStepUp] = useState<StepUpState>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   const { data: roles } = useQuery({
     queryKey: ["platform-roles"],
@@ -209,6 +360,8 @@ export default function PlatformUsersPage() {
     updateUser.isPending ||
     supportAction.isPending ||
     bulkAction.isPending;
+  const hasFilters = Boolean(search || roleFilter || activeFilter);
+  const empty = !isLoading && (data?.items.length ?? 0) === 0;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -239,11 +392,8 @@ export default function PlatformUsersPage() {
               ref={searchRef}
               className="input w-full"
               placeholder="Email or name"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </label>
           <label className="text-sm">
@@ -318,6 +468,32 @@ export default function PlatformUsersPage() {
 
         {isLoading ? (
           <p className="text-sm text-stone-500">Loading users…</p>
+        ) : empty ? (
+          <div className="rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center dark:border-stone-700">
+            <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
+              {hasFilters ? "No users match these filters." : "No users yet."}
+            </p>
+            <p className="mt-1 text-xs text-stone-500">
+              {hasFilters
+                ? "Clear search or status filters to broaden results."
+                : "New signups will appear here."}
+            </p>
+            {hasFilters ? (
+              <button
+                type="button"
+                className="btn-secondary mt-4 text-xs"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  setRoleFilter("");
+                  setActiveFilter("");
+                  setPage(1);
+                }}
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
             <table className="min-w-full text-sm">
@@ -342,7 +518,7 @@ export default function PlatformUsersPage() {
                   <th className="px-4 py-3 font-medium">Programs</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Last login</th>
-                  {fullAdmin ? <th className="px-4 py-3 font-medium">Support</th> : null}
+                  {fullAdmin ? <th className="px-4 py-3 text-right font-medium">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -367,15 +543,6 @@ export default function PlatformUsersPage() {
                       </Link>
                       {!row.is_verified ? (
                         <div className="mt-1 text-xs text-amber-700">Unverified email</div>
-                      ) : null}
-                      {grantsUserId === row.id && fullAdmin ? (
-                        <div className="mt-3">
-                          <UserPlatformGrantsPanel
-                            userId={row.id}
-                            userEmail={row.email}
-                            userRole={row.role}
-                          />
-                        </div>
                       ) : null}
                     </td>
                     <td className="px-4 py-3 text-stone-600">
@@ -458,99 +625,12 @@ export default function PlatformUsersPage() {
                     </td>
                     {fullAdmin ? (
                       <td className="px-4 py-3">
-                        <div className="flex min-w-[9rem] flex-col gap-1">
-                          <button
-                            type="button"
-                            className="btn-secondary text-xs"
-                            disabled={
-                              impersonate.isPending ||
-                              row.id === user?.id ||
-                              row.role === "admin" ||
-                              !row.is_active
-                            }
-                            onClick={() =>
-                              setStepUp({
-                                kind: "impersonate",
-                                userId: row.id,
-                                email: row.email,
-                              })
-                            }
-                          >
-                            View as user
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-ghost text-xs"
-                            disabled={supportAction.isPending}
-                            onClick={() =>
-                              setStepUp({
-                                kind: "force-reset",
-                                userId: row.id,
-                                email: row.email,
-                              })
-                            }
-                          >
-                            Reset password
-                          </button>
-                          {!row.is_verified ? (
-                            <>
-                              <button
-                                type="button"
-                                className="btn-ghost text-xs"
-                                disabled={supportAction.isPending}
-                                onClick={() =>
-                                  setStepUp({
-                                    kind: "resend-verify",
-                                    userId: row.id,
-                                    email: row.email,
-                                  })
-                                }
-                              >
-                                Resend verification
-                              </button>
-                              <button
-                                type="button"
-                                className="btn-ghost text-xs"
-                                disabled={supportAction.isPending}
-                                onClick={() =>
-                                  setStepUp({
-                                    kind: "resend-verify",
-                                    userId: row.id,
-                                    email: row.email,
-                                    markVerified: true,
-                                  })
-                                }
-                              >
-                                Mark verified
-                              </button>
-                            </>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="btn-ghost text-xs text-rose-700"
-                            disabled={supportAction.isPending || row.id === user?.id}
-                            onClick={() =>
-                              setStepUp({
-                                kind: "revoke-sessions",
-                                userId: row.id,
-                                email: row.email,
-                              })
-                            }
-                          >
-                            Revoke sessions
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-ghost text-xs"
-                            onClick={() =>
-                              setGrantsUserId((current) =>
-                                current === row.id ? null : row.id,
-                              )
-                            }
-                          >
-                            {grantsUserId === row.id ? "Hide grants" : "Module grants"}
-                          </button>
-                        </div>
+                        <UserRowMenu
+                          row={row}
+                          currentUserId={user?.id}
+                          busy={stepUpBusy}
+                          onAction={setStepUp}
+                        />
                       </td>
                     ) : null}
                   </tr>
@@ -585,7 +665,6 @@ export default function PlatformUsersPage() {
             </div>
           </div>
         ) : null}
-
       </div>
 
       <StepUpModal
@@ -595,45 +674,50 @@ export default function PlatformUsersPage() {
             ? `Impersonate ${stepUp.email}`
             : stepUp?.kind === "bulk"
               ? `Bulk ${stepUp.action.replace("_", " ")} (${selectedIds.size} users)`
-            : stepUp?.kind === "force-reset"
-              ? `Reset password for ${stepUp.email}`
-              : stepUp?.kind === "resend-verify"
-                ? stepUp.markVerified
-                  ? `Mark ${stepUp.email} verified`
-                  : `Resend verification to ${stepUp.email}`
-                : stepUp?.kind === "revoke-sessions"
-                  ? `Revoke sessions for ${stepUp.email}`
-                  : "Confirm sensitive change"
+              : stepUp?.kind === "force-reset"
+                ? `Reset password for ${stepUp.email}`
+                : stepUp?.kind === "resend-verify"
+                  ? stepUp.markVerified
+                    ? `Mark ${stepUp.email} verified`
+                    : `Resend verification to ${stepUp.email}`
+                  : stepUp?.kind === "revoke-sessions"
+                    ? `Revoke sessions for ${stepUp.email}`
+                    : "Confirm sensitive change"
         }
         description={
           stepUp?.kind === "impersonate"
             ? "Re-enter your password to view the app as this user. All actions are audited."
             : stepUp?.kind === "bulk"
               ? "Re-enter your password to apply this action to all selected users."
-            : stepUp?.kind === "force-reset"
-              ? "Sends a password-reset OTP to the user. Re-enter your password to confirm."
-              : stepUp?.kind === "resend-verify"
-                ? stepUp.markVerified
-                  ? "Marks the account verified without an OTP. Re-enter your password to confirm."
-                  : "Sends a verification OTP to the user. Re-enter your password to confirm."
-                : stepUp?.kind === "revoke-sessions"
-                  ? "Signs the user out everywhere. Existing tokens stop working immediately."
-                  : "Re-enter your password to change admin access or deactivate this user."
+              : stepUp?.kind === "force-reset"
+                ? "Sends a password-reset OTP to the user. Re-enter your password to confirm."
+                : stepUp?.kind === "resend-verify"
+                  ? stepUp.markVerified
+                    ? "Marks the account verified without an OTP. Re-enter your password to confirm."
+                    : "Sends a verification OTP to the user. Re-enter your password to confirm."
+                  : stepUp?.kind === "revoke-sessions"
+                    ? "Signs the user out everywhere. Existing tokens stop working immediately."
+                    : "Re-enter your password to change admin access or deactivate this user."
         }
         confirmLabel={
           stepUp?.kind === "impersonate"
             ? "Start impersonation"
             : stepUp?.kind === "bulk"
               ? "Apply to selected"
-            : stepUp?.kind === "force-reset"
-              ? "Send reset email"
-              : stepUp?.kind === "resend-verify"
-                ? stepUp.markVerified
-                  ? "Mark verified"
-                  : "Send verification"
-                : stepUp?.kind === "revoke-sessions"
-                  ? "Revoke sessions"
-                  : "Confirm change"
+              : stepUp?.kind === "force-reset"
+                ? "Send reset email"
+                : stepUp?.kind === "resend-verify"
+                  ? stepUp.markVerified
+                    ? "Mark verified"
+                    : "Send verification"
+                  : stepUp?.kind === "revoke-sessions"
+                    ? "Revoke sessions"
+                    : "Confirm change"
+        }
+        danger={
+          stepUp?.kind === "revoke-sessions" ||
+          (stepUp?.kind === "bulk" && stepUp.action !== "activate") ||
+          (stepUp?.kind === "update" && stepUp.is_active === false)
         }
         showReadOnlyOption={stepUp?.kind === "impersonate"}
         busy={stepUpBusy}

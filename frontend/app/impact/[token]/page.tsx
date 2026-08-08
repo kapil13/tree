@@ -34,7 +34,7 @@ export default function PublicImpactPage() {
 
       <main className="mx-auto max-w-5xl space-y-8 px-4 py-10">
         {isLoading ? (
-          <p className="text-sm text-stone-500">Loading impact snapshot…</p>
+          <ImpactSkeleton />
         ) : error ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
             <p className="font-medium">Impact page unavailable</p>
@@ -44,6 +44,20 @@ export default function PublicImpactPage() {
           <ImpactView data={data} />
         ) : null}
       </main>
+    </div>
+  );
+}
+
+function ImpactSkeleton() {
+  return (
+    <div className="space-y-8" aria-busy="true" aria-label="Loading impact snapshot">
+      <div className="h-52 animate-pulse rounded-3xl bg-stone-200/80" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-2xl bg-stone-200/70" />
+        ))}
+      </div>
+      <div className="h-40 animate-pulse rounded-2xl bg-stone-200/70" />
     </div>
   );
 }
@@ -144,9 +158,27 @@ function ImpactView({ data }: { data: PublicVerificationPayload }) {
       ) : null}
 
       <p className="text-center text-xs text-stone-500">{data.disclaimer}</p>
-      <p className="text-center font-mono text-[10px] text-stone-400">
-        SHA-256 {data.snapshot_sha256}
-      </p>
+
+      <details className="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm open:shadow-sm">
+        <summary className="cursor-pointer font-medium text-stone-800">Cryptographic proof</summary>
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+          SHA-256 hash of this impact snapshot for integrity checks.
+        </p>
+        <p className="mt-2 break-all font-mono text-[11px] text-stone-600">{data.snapshot_sha256}</p>
+      </details>
+
+      <section className="rounded-3xl border border-forest-200/70 bg-gradient-to-br from-forest-900 via-forest-800 to-stone-900 px-6 py-10 text-center sm:px-10">
+        <h2 className="font-display text-2xl font-semibold text-white">Run your own plantation OS</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-emerald-100/80">
+          Register trees, track survival, and share verified impact with Aranyix.
+        </p>
+        <Link
+          href="/auth?mode=signup"
+          className="mt-6 inline-flex rounded-full bg-lime-300 px-6 py-2.5 text-sm font-semibold text-forest-950 transition hover:bg-lime-200"
+        >
+          Start with Aranyix
+        </Link>
+      </section>
     </div>
   );
 }

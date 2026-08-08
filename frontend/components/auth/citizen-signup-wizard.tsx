@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowRight, Leaf, Loader2 } from "lucide-react";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import { showToast } from "@/components/toast";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/phone";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
-import { useRef } from "react";
 
 type CaptchaConfig = { enabled: boolean; site_key?: string | null };
 
@@ -105,45 +104,85 @@ export function CitizenSignupWizard({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-        <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
-          <Leaf className="h-5 w-5" />
-          <p className="font-semibold">Quick citizen signup</p>
+      <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3.5">
+        <div className="flex items-center gap-2 text-emerald-800">
+          <Leaf className="h-4 w-4" />
+          <p className="text-sm font-semibold">Quick citizen signup</p>
         </div>
-        <p className="mt-1 text-sm text-emerald-900/80 dark:text-emerald-100/80">
-          Name, phone, and password only — no email verification. Start tagging trees in under a minute.
+        <p className="mt-1 text-sm text-emerald-900/75">
+          Name, phone, and password only — start tagging trees in under a minute.
         </p>
       </div>
 
       {step === "details" ? (
         <>
           <div>
-            <label className="kpi-label">Your name</label>
-            <input className="input mt-1" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          </div>
-          <div>
-            <label className="kpi-label">Mobile number</label>
+            <label className="label" htmlFor="citizen-name">
+              Your name
+            </label>
             <input
-              className="input mt-1"
-              inputMode="numeric"
-              value={formatPhoneDisplay(phone)}
-              onChange={(e) => setPhone(sanitizePhoneDigits(e.target.value))}
-              placeholder="10-digit mobile"
+              id="citizen-name"
+              className="field-input !rounded-xl !py-2.5"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              autoComplete="name"
             />
           </div>
           <div>
-            <label className="kpi-label">Password</label>
+            <label className="label" htmlFor="citizen-phone">
+              Mobile number
+            </label>
+            <div className="flex gap-2">
+              <div className="phone-prefix !rounded-xl" aria-hidden>
+                +91
+              </div>
+              <input
+                id="citizen-phone"
+                className="field-input-flex !rounded-xl !py-2.5"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={formatPhoneDisplay(phone)}
+                onChange={(e) => setPhone(sanitizePhoneDigits(e.target.value))}
+                placeholder="98765 43210"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="label" htmlFor="citizen-password">
+              Password
+            </label>
             <input
+              id="citizen-password"
               type="password"
-              className="input mt-1"
+              className="field-input !rounded-xl !py-2.5"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
+              autoComplete="new-password"
             />
           </div>
-          <label className="flex items-start gap-2 text-sm text-stone-600">
-            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
-            I agree to the terms and privacy policy.
+          <label className="flex items-start gap-3 text-sm text-stone-600">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Terms of Service
+              </a>
+              ,{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Privacy Policy
+              </a>
+              , and{" "}
+              <a href="/data-use" target="_blank" rel="noreferrer" className="text-forest-700 underline">
+                Data Use Policy
+              </a>
+              .
+            </span>
           </label>
           {captchaEnabled ? (
             <TurnstileCaptcha
@@ -166,7 +205,7 @@ export function CitizenSignupWizard({
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">Dev code: {devHint}</p>
           ) : null}
           <input
-            className="input text-center font-mono text-lg tracking-widest"
+            className="field-input !rounded-xl text-center font-mono text-lg tracking-widest"
             inputMode="numeric"
             maxLength={6}
             value={phoneOtp}

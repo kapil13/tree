@@ -40,82 +40,87 @@ function LegalPlainBody({ text }: { text: string }) {
   );
 }
 
-function CtaLink({ cta, className }: { cta?: { label?: string; href?: string }; className?: string }) {
+function CtaLink({
+  cta,
+  className,
+  hrefOverride,
+}: {
+  cta?: { label?: string; href?: string };
+  className?: string;
+  hrefOverride?: string;
+}) {
   const link = linkProps(cta as { label: string; href: string } | undefined);
+  const href = hrefOverride ?? link.href;
+  if (href.startsWith("#")) {
+    return (
+      <a href={href} className={className}>
+        {link.label}
+        {className?.includes("btn-primary") ? <ArrowRight className="h-4 w-4" /> : null}
+      </a>
+    );
+  }
   return (
-    <Link href={link.href} className={className}>
+    <Link href={href} className={className}>
       {link.label}
       {className?.includes("btn-primary") ? <ArrowRight className="h-4 w-4" /> : null}
     </Link>
   );
 }
 
+/** Cold-traffic secondary CTAs should not deep-link into /dashboard. */
+function marketingSecondaryHref(href: string): string {
+  if (href === "/dashboard" || href.startsWith("/dashboard?")) return "#how-it-works";
+  return href;
+}
+
 export function CmsSectionRenderer({ section }: { section: CmsSection }) {
   const c = section.content;
 
   switch (section.section_type) {
-    case "hero":
+    case "hero": {
+      const secondary = linkProps(c.secondary_cta as { label: string; href: string } | undefined);
+      const secondaryHref = marketingSecondaryHref(secondary.href);
+      const headline = [String(c.title || ""), String(c.title_highlight || "")]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       return (
         <section className="marketing-hero">
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
-            <div className="space-y-8">
-              <div className="marketing-pill">
-                {(() => {
-                  const Icon = cmsIcon(String(c.pill_icon || "Sparkles"));
-                  return <Icon className="h-3.5 w-3.5 text-lime-400" />;
-                })()}
-                {String(c.pill || "")}
+          <div className="marketing-hero-atmosphere motion-soft-glow" aria-hidden>
+            <HeroEmblem className="marketing-hero-emblem" />
+          </div>
+          <div className="relative z-10 mx-auto flex min-h-[min(88vh,52rem)] max-w-7xl flex-col justify-center px-6 py-20 sm:py-24">
+            <div className="max-w-2xl space-y-7">
+              <p className="marketing-hero-brand motion-fade-up font-display">Aranyix</p>
+              <div className="space-y-4 motion-fade-up-delay">
+                <h1 className="marketing-hero-title font-display">{headline}</h1>
+                <p className="max-w-xl text-base leading-relaxed text-emerald-50/80 sm:text-lg">
+                  {String(c.subtitle || "")}
+                </p>
               </div>
-              <div className="space-y-5">
-                <h1 className="marketing-hero-title">
-                  {String(c.title || "")}
-                  <span className="marketing-gradient-text"> {String(c.title_highlight || "")}</span>
-                </h1>
-                <p className="max-w-xl text-lg leading-relaxed text-stone-600">{String(c.subtitle || "")}</p>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 motion-fade-up-delay">
+                <CtaLink
+                  cta={c.primary_cta as { label: string; href: string }}
+                  className="btn-primary bg-white px-6 py-3 text-base text-forest-900 hover:bg-emerald-50"
+                />
+                <CtaLink
+                  cta={c.secondary_cta as { label: string; href: string }}
+                  hrefOverride={secondaryHref}
+                  className="text-sm font-semibold text-lime-200/95 underline-offset-4 transition hover:text-white hover:underline"
+                />
               </div>
-              <div className="flex flex-wrap gap-3">
-                <CtaLink cta={c.primary_cta as { label: string; href: string }} className="btn-primary px-6 py-3 text-base" />
-                <CtaLink cta={c.secondary_cta as { label: string; href: string }} className="btn-secondary px-6 py-3 text-base" />
-              </div>
-              <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {(Array.isArray(c.stats) ? c.stats : []).map((stat: { value?: string; label?: string }) => (
-                  <div key={String(stat.label)} className="marketing-stat">
-                    <dt className="text-2xl font-bold text-forest-800">{stat.value}</dt>
-                    <dd className="mt-1 text-xs leading-snug text-stone-500">{stat.label}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <div className="relative mx-auto w-full max-w-[520px] lg:max-w-none">
-              <div className="marketing-hero-visual">
-                <HeroEmblem className="relative z-10 h-auto w-full drop-shadow-2xl" />
-              </div>
-              {(Array.isArray(c.float_cards) ? c.float_cards : []).map((card: Record<string, string>, i) => {
-                const Icon = cmsIcon(card.icon);
-                return (
-                  <div
-                    key={card.title}
-                    className={`marketing-float-card ${i === 0 ? "marketing-float-card--left" : "marketing-float-card--right"}`}
-                  >
-                    <Icon className="h-4 w-4 text-lime-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-white">{card.title}</p>
-                      <p className="text-[11px] text-emerald-100/70">{card.subtitle}</p>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </section>
       );
+    }
 
     case "features":
       return (
         <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
           <div className="marketing-section-head">
             <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-            <h2 className="marketing-section-title">{String(c.title || "")}</h2>
+            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
             <p className="marketing-section-copy">{String(c.copy || "")}</p>
           </div>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -126,7 +131,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                   <div className="marketing-feature-icon">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-5 text-lg font-semibold text-stone-900">{item.title}</h3>
+                  <h3 className="mt-5 font-display text-lg font-semibold text-stone-900">{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
                 </article>
               );
@@ -141,7 +146,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           <div className="mx-auto max-w-7xl px-6 py-20">
             <div className="marketing-section-head marketing-section-head--light">
               <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-              <h2 className="marketing-section-title text-white">{String(c.title || "")}</h2>
+              <h2 className="marketing-section-title font-display text-white">{String(c.title || "")}</h2>
               <p className="marketing-section-copy text-emerald-100/75">{String(c.copy || "")}</p>
             </div>
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -170,7 +175,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
         <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
           <div className="marketing-section-head">
             <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-            <h2 className="marketing-section-title">{String(c.title || "")}</h2>
+            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
             <p className="marketing-section-copy">{String(c.copy || "")}</p>
           </div>
           <div className="mt-12 grid gap-5 lg:grid-cols-2">
@@ -184,7 +189,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                     </div>
                     <span className="marketing-program-badge">{item.badge}</span>
                   </div>
-                  <h3 className="mt-5 text-xl font-semibold text-stone-900">{item.title}</h3>
+                  <h3 className="mt-5 font-display text-xl font-semibold text-stone-900">{item.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
                 </article>
               );
@@ -199,7 +204,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           <div className="grid items-start gap-12 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="marketing-section-head lg:sticky lg:top-28">
               <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-              <h2 className="marketing-section-title">{String(c.title || "")}</h2>
+              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
               <p className="marketing-section-copy">{String(c.copy || "")}</p>
               <CtaLink cta={c.cta as { label: string; href: string }} className="btn-primary mt-8 inline-flex" />
             </div>
@@ -208,7 +213,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                 <article key={step.step} className="marketing-step-card">
                   <span className="marketing-step-number">{step.step}</span>
                   <div>
-                    <h3 className="text-lg font-semibold text-stone-900">{step.title}</h3>
+                    <h3 className="font-display text-lg font-semibold text-stone-900">{step.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-stone-600">{step.description}</p>
                   </div>
                 </article>
@@ -225,7 +230,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
             <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
               <div className="space-y-6">
                 <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-                <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
+                <h2 className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
                 <p className="text-sm leading-relaxed text-emerald-100/75">{String(c.copy || "")}</p>
                 <ul className="space-y-3">
                   {(Array.isArray(c.bullets) ? c.bullets : []).map((point: string) => (
@@ -272,7 +277,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           <div className="marketing-cta">
             <div className="relative z-10 max-w-2xl">
               <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
               <p className="mt-4 text-sm leading-relaxed text-emerald-100/75">{String(c.copy || "")}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <CtaLink cta={c.primary_cta as { label: string; href: string }} className="btn-primary bg-white px-6 py-3 text-base text-forest-900 hover:bg-emerald-50" />

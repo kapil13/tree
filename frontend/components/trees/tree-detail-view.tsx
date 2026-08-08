@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, Download, ExternalLink, MapPin, Satellite, Sparkles } from "lucide-react";
+import { Download, ExternalLink, Heart, MapPin, Satellite, Sparkles } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { DataTrustBadge, isSatelliteProviderLive, isTrustModeLive } from "@/components/data-trust-badge";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
@@ -25,10 +25,47 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { SarTreePanel } from "@/components/satellite/sar-tree-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
+import { PageHeader } from "@/components/ui/page-header";
+import { TrustChip, trustToneFromProvider } from "@/components/ui/trust-chip";
 import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
 import { citizen } from "@/lib/citizen-api";
 import { useAuth } from "@/lib/auth-store";
-import { canWriteInApp, viewerReadOnlyMessage } from "@/lib/nav-access";
+import { canWriteInApp, userHasProfessionalAccess, viewerReadOnlyMessage } from "@/lib/nav-access";
+import { cn } from "@/lib/cn";
+
+const TABS = ["overview", "field", "intelligence"] as const;
+type Tab = (typeof TABS)[number];
+
+const TAB_LABELS: Record<Tab, string> = {
+  overview: "Overview",
+  field: "Field survey",
+  intelligence: "Intelligence",
+};
+
+const METADATA_LABELS: Record<string, string> = {
+  chainage_km: "Chainage (km)",
+  survival_status: "Survival status",
+  visibility_public: "Public visibility",
+  survey_interval_days: "Survey interval (days)",
+  guard_type: "Tree guard",
+  pit_size_cm: "Pit size (cm)",
+  spacing_m: "Spacing (m)",
+  species_native: "Native species",
+  planting_method: "Planting method",
+  notes: "Notes",
+  side: "Road side",
+  row: "Row",
+  plot_id: "Plot ID",
+  block: "Block",
+  zone: "Zone",
+};
+
+function humanizeMetaKey(key: string): string {
+  if (METADATA_LABELS[key]) return METADATA_LABELS[key];
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -56,8 +93,10 @@ export function TreeDetailView() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const canWrite = canWriteInApp(user);
+  const showChainage = userHasProfessionalAccess(user);
   const [survivalStatus, setSurvivalStatus] = useState("live");
   const [complianceNote, setComplianceNote] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("overview");
 
   const { data: tree, isLoading, error } = useQuery({
     queryKey: ["tree", id],
@@ -131,6 +170,11 @@ export function TreeDetailView() {
     satProvider && isSatelliteProviderLive(satProvider)
       ? "live"
       : (satIntegration?.mode ?? "estimate");
+  const satTrustChip = satProvider
+    ? trustToneFromProvider(satProvider)
+    : satTrustMode === "live" || satTrustMode === "configured"
+      ? { tone: "live" as const, label: "Live data" }
+      : { tone: "stub" as const, label: "Stub / estimate" };
 
   const analyze = useMutation({
     mutationFn: () => trees.analyze(id),
@@ -179,6 +223,17 @@ export function TreeDetailView() {
     }
   }, [tree?.metadata?.survival_status]);
 
+  useEffect(() => {
+    const applyHash = () => {
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      if (hash === "#survival") setTab("field");
+      if (hash === "#ai-analysis") setTab("intelligence");
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
   function handleRegeotag() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -223,46 +278,100 @@ export function TreeDetailView() {
     ([, v]) => v !== null && v !== "" && v !== undefined,
   );
 
+  const needsSurvey =
+    !tree.last_geotag_at ||
+    Date.now() - new Date(tree.last_geotag_at).getTime() > 30 * 24 * 60 * 60 * 1000;
+  const needsAnalysis = !analyses?.length;
+
+  let primaryCta: React.ReactNode = null;
+  if (canAdopt) {
+    primaryCta = (
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={adoptTree.isPending}
+        onClick={() => adoptTree.mutate()}
+      >
+        <Heart className="h-4 w-4" />
+        {adoptTree.isPending ? "Adopting…" : "Adopt this tree"}
+      </button>
+    );
+  } else if (canWrite && needsSurvey) {
+    primaryCta = (
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={regeotag.isPending}
+        onClick={() => {
+          setTab("field");
+          handleRegeotag();
+        }}
+      >
+        <MapPin className="h-4 w-4" />
+        {regeotag.isPending ? "Updating GPS…" : "Re-geotag survey"}
+      </button>
+    );
+  } else if (canWrite && needsAnalysis) {
+    primaryCta = (
+      <button
+        className="btn-primary"
+        onClick={() => {
+          setTab("intelligence");
+          analyze.mutate();
+        }}
+        disabled={analyze.isPending || scanUsage?.can_scan === false}
+        title={
+          scanUsage?.can_scan === false
+            ? "Complimentary BYOT AI scans used — request a professional program or wait for paid top-ups"
+            : undefined
+        }
+      >
+        <Sparkles className="h-4 w-4" />
+        {analyze.isPending ? "Analyzing…" : "Run AI analysis"}
+      </button>
+    );
+  } else {
+    primaryCta = (
+      <button
+        className="btn-primary"
+        onClick={() => downloadPassport.mutate()}
+        disabled={downloadPassport.isPending}
+      >
+        <Download className="h-4 w-4" /> Passport PDF
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <Link href="/trees" className="inline-flex items-center gap-2 text-sm text-forest-700 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Back to trees
-      </Link>
+      <PageHeader
+        title={tree.species_text || "Unknown species"}
+        description={tree.public_code}
+        breadcrumbs={[
+          { label: "Operate", href: "/trees" },
+          { label: "Trees", href: "/trees" },
+          { label: tree.public_code },
+        ]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {primaryCta}
+            {mapsUrl ? (
+              <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary">
+                <ExternalLink className="h-4 w-4" /> Maps
+              </a>
+            ) : null}
+          </div>
+        }
+      />
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{tree.species_text || "Unknown species"}</h1>
-          <p className="font-mono text-sm text-stone-500">{tree.public_code}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canWrite ? (
-            <button
-              className="btn-primary"
-              onClick={() => analyze.mutate()}
-              disabled={analyze.isPending || scanUsage?.can_scan === false}
-              title={
-                scanUsage?.can_scan === false
-                  ? "Complimentary BYOT AI scans used — request a professional program or wait for paid top-ups"
-                  : undefined
-              }
-            >
-              <Sparkles className="h-4 w-4" />
-              {analyze.isPending ? "Analyzing…" : "Run AI analysis"}
-            </button>
-          ) : null}
-          <button
-            className="btn-secondary"
-            onClick={() => downloadPassport.mutate()}
-            disabled={downloadPassport.isPending}
-          >
-            <Download className="h-4 w-4" /> Passport PDF
-          </button>
-          {mapsUrl && (
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary">
-              <ExternalLink className="h-4 w-4" /> Maps
-            </a>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {healthBadge(tree.current_health)}
+        <DataTrustBadge mode={aiTrustMode} />
+        {satProvider || sat?.latest ? (
+          <TrustChip tone={satTrustChip.tone} label={satTrustChip.label} />
+        ) : (
+          <TrustChip tone="warn" label="Satellite pending" />
+        )}
       </div>
 
       {!canWrite && (
@@ -272,18 +381,8 @@ export function TreeDetailView() {
       )}
 
       {canAdopt ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <p className="text-sm text-emerald-900 dark:text-emerald-100">
-            This tree is open for community adoption. Steward it with monthly check-ins and earn badges.
-          </p>
-          <button
-            type="button"
-            className="btn-primary mt-3"
-            disabled={adoptTree.isPending}
-            onClick={() => adoptTree.mutate()}
-          >
-            Adopt this tree
-          </button>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100">
+          This tree is open for community adoption. Steward it with monthly check-ins and earn badges.
         </div>
       ) : null}
 
@@ -293,290 +392,386 @@ export function TreeDetailView() {
         </div>
       ) : null}
 
-      <AiScanUsagePanel compact />
-      {scanUsage?.tier === "byot_metered" && scanUsage.payment_enabled && !scanUsage.can_scan ? (
-        <BuyAiScanPacks
-          compact
-          onSuccess={() => {
-            qc.invalidateQueries({ queryKey: ["ai-scan-usage"] });
-          }}
-        />
-      ) : null}
-
-      {analyze.error && (
-        <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          {errorMessage(analyze.error)}
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Photo</h2>
-          {primaryImage ? (
-            <TreePhoto
-              treeId={tree.id}
-              imageId={primaryImage.id}
-              alt={tree.species_text || tree.public_code}
-              className="aspect-[4/3] w-full rounded-lg object-cover"
-            />
-          ) : (
-            <p className="text-sm text-stone-500">No photo uploaded.</p>
-          )}
-        </div>
-
-        <div className="card lg:col-span-2">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Overview</h2>
-          <dl>
-            <Field label="Health" value={healthBadge(tree.current_health)} />
-            <Field label="Status" value={tree.status} />
-            <Field label="Program" value={tree.program_code?.replace(/_/g, " ") || "—"} />
-            {tree.project_id && (
-              <Field
-                label="Project"
-                value={
-                  <Link href={`/projects/${tree.project_id}`} className="text-forest-700 hover:underline">
-                    Open project
-                  </Link>
-                }
-              />
-            )}
-            <Field
-              label="Chainage"
-              value={tree.metadata?.chainage_km ? String(tree.metadata.chainage_km) : "—"}
-            />
-            <Field
-              label="Survival"
-              value={tree.metadata?.survival_status ? String(tree.metadata.survival_status) : "—"}
-            />
-            <Field
-              label="Last geotag"
-              value={
-                tree.last_geotag_at
-                  ? new Date(tree.last_geotag_at).toLocaleString()
-                  : "—"
-              }
-            />
-            <Field
-              label="Carbon"
-              value={
-                <span className="inline-flex items-center gap-1.5">
-                  {`${Number(tree.current_carbon_kg).toFixed(2)} kg`}
-                  <CarbonEstimateLabel compact />
-                </span>
-              }
-            />
-            <Field
-              label="CO₂e"
-              value={
-                <span className="inline-flex items-center gap-1.5">
-                  {`${co2e.toFixed(2)} kg`}
-                  <CarbonEstimateLabel compact />
-                </span>
-              }
-            />
-            <Field label="DBH" value={tree.current_dbh_cm ? `${tree.current_dbh_cm} cm` : "—"} />
-            <Field label="Height" value={tree.current_height_m ? `${tree.current_height_m} m` : "—"} />
-            <Field label="Canopy" value={tree.current_canopy_m ? `${tree.current_canopy_m} m` : "—"} />
-            <Field label="Satellite" value={tree.satellite_verified ? "Verified" : "Pending"} />
-            <Field label="Registered" value={new Date(tree.registered_at).toLocaleString()} />
-            <Field
-              label="Planted"
-              value={tree.planted_at ? new Date(tree.planted_at).toLocaleDateString() : "—"}
-            />
-          </dl>
-        </div>
-      </div>
-
-      <div id="survival" className="grid scroll-mt-20 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Location</h2>
-          <dl>
-            <Field label="Latitude" value={tree.latitude?.toFixed(6) ?? "—"} />
-            <Field label="Longitude" value={tree.longitude?.toFixed(6) ?? "—"} />
-            <Field label="Altitude" value={tree.altitude_m != null ? `${tree.altitude_m} m` : "—"} />
-            <Field label="Accuracy" value={tree.accuracy_m != null ? `±${tree.accuracy_m} m` : "—"} />
-          </dl>
-          <div className="mt-4 space-y-2">
-            <label className="kpi-label">Survival status at survey</label>
-            <select
-              className="input"
-              value={survivalStatus}
-              onChange={(e) => setSurvivalStatus(e.target.value)}
-              disabled={!canWrite}
-            >
-              <option value="live">Live</option>
-              <option value="stressed">Stressed</option>
-              <option value="dead">Dead</option>
-              <option value="replaced">Replaced</option>
-              <option value="missing">Missing / uprooted</option>
-            </select>
-          </div>
-          {canWrite ? (
+      <div className="-mx-1 overflow-x-auto">
+        <div className="flex min-w-max gap-1 border-b border-stone-200 px-1">
+          {TABS.map((t) => (
             <button
+              key={t}
               type="button"
-              className="btn-secondary mt-4"
-              disabled={regeotag.isPending}
-              onClick={handleRegeotag}
+              className={cn(
+                "shrink-0 border-b-2 px-4 py-2 text-sm font-medium",
+                tab === t
+                  ? "border-forest-700 text-forest-800"
+                  : "border-transparent text-stone-500 hover:text-stone-800",
+              )}
+              onClick={() => setTab(t)}
             >
-              <MapPin className="h-4 w-4" />
-              {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
+              {TAB_LABELS[t]}
             </button>
-          ) : null}
-          {regeotag.error && (
-            <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>
-          )}
-          {complianceNote && (
-            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              {complianceNote}
-            </p>
-          )}
-          {tree.project_id && (
-            <p className="mt-2 text-xs text-stone-500">
-              Compliance rules are re-checked on re-geotag for project-linked trees.
-            </p>
-          )}
-        </div>
-
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Registration metadata</h2>
-          {metadataEntries.length === 0 ? (
-            <p className="text-sm text-stone-500">No extra metadata.</p>
-          ) : (
-            <dl>
-              {metadataEntries.map(([key, value]) => (
-                <Field key={key} label={key.replace(/_/g, " ")} value={String(value)} />
-              ))}
-            </dl>
-          )}
+          ))}
         </div>
       </div>
 
-      {tree.images.length > 1 && (
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">All photos ({tree.images.length})</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {tree.images.map((img) => (
-              <TreePhoto
-                key={img.id}
-                treeId={tree.id}
-                imageId={img.id}
-                alt=""
-                className="aspect-[4/3] w-full rounded-lg object-cover"
+      {tab === "overview" && (
+        <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="card lg:col-span-1">
+              <h2 className="mb-3 text-sm font-medium text-stone-700">Photo</h2>
+              {primaryImage ? (
+                <TreePhoto
+                  treeId={tree.id}
+                  imageId={primaryImage.id}
+                  alt={tree.species_text || tree.public_code}
+                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                />
+              ) : (
+                <p className="text-sm text-stone-500">No photo uploaded.</p>
+              )}
+            </div>
+
+            <div className="card lg:col-span-2">
+              <h2 className="mb-3 text-sm font-medium text-stone-700">Overview</h2>
+              <dl>
+                <Field label="Health" value={healthBadge(tree.current_health)} />
+                <Field label="Status" value={tree.status} />
+                <Field label="Program" value={tree.program_code?.replace(/_/g, " ") || "—"} />
+                {tree.project_id && (
+                  <Field
+                    label="Project"
+                    value={
+                      <Link
+                        href={`/projects/${tree.project_id}`}
+                        className="text-forest-700 hover:underline"
+                      >
+                        Open project
+                      </Link>
+                    }
+                  />
+                )}
+                {showChainage ? (
+                  <Field
+                    label="Chainage"
+                    value={
+                      tree.metadata?.chainage_km != null
+                        ? String(tree.metadata.chainage_km)
+                        : "—"
+                    }
+                  />
+                ) : null}
+                <Field
+                  label="Survival"
+                  value={
+                    tree.metadata?.survival_status
+                      ? String(tree.metadata.survival_status)
+                      : "—"
+                  }
+                />
+                <Field
+                  label="Last geotag"
+                  value={
+                    tree.last_geotag_at
+                      ? new Date(tree.last_geotag_at).toLocaleString()
+                      : "—"
+                  }
+                />
+                <Field
+                  label="Carbon"
+                  value={
+                    <span className="inline-flex items-center gap-1.5">
+                      {`${Number(tree.current_carbon_kg).toFixed(2)} kg`}
+                      <CarbonEstimateLabel compact />
+                    </span>
+                  }
+                />
+                <Field
+                  label="CO₂e"
+                  value={
+                    <span className="inline-flex items-center gap-1.5">
+                      {`${co2e.toFixed(2)} kg`}
+                      <CarbonEstimateLabel compact />
+                    </span>
+                  }
+                />
+                <Field
+                  label="DBH"
+                  value={tree.current_dbh_cm ? `${tree.current_dbh_cm} cm` : "—"}
+                />
+                <Field
+                  label="Height"
+                  value={tree.current_height_m ? `${tree.current_height_m} m` : "—"}
+                />
+                <Field
+                  label="Canopy"
+                  value={tree.current_canopy_m ? `${tree.current_canopy_m} m` : "—"}
+                />
+                <Field
+                  label="Satellite"
+                  value={tree.satellite_verified ? "Verified" : "Pending"}
+                />
+                <Field
+                  label="Registered"
+                  value={new Date(tree.registered_at).toLocaleString()}
+                />
+                <Field
+                  label="Planted"
+                  value={
+                    tree.planted_at
+                      ? new Date(tree.planted_at).toLocaleDateString()
+                      : "—"
+                  }
+                />
+              </dl>
+            </div>
+          </div>
+
+          {tree.images.length > 1 && (
+            <div className="card">
+              <h2 className="mb-3 text-sm font-medium text-stone-700">
+                All photos ({tree.images.length})
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {tree.images.map((img) => (
+                  <TreePhoto
+                    key={img.id}
+                    treeId={tree.id}
+                    imageId={img.id}
+                    alt=""
+                    className="aspect-[4/3] w-full rounded-lg object-cover"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "field" && (
+        <div id="survival" className="grid scroll-mt-20 gap-4 lg:grid-cols-2">
+          <div className="card">
+            <h2 className="mb-3 text-sm font-medium text-stone-700">Location & survey</h2>
+            <dl>
+              <Field label="Latitude" value={tree.latitude?.toFixed(6) ?? "—"} />
+              <Field label="Longitude" value={tree.longitude?.toFixed(6) ?? "—"} />
+              <Field
+                label="Altitude"
+                value={tree.altitude_m != null ? `${tree.altitude_m} m` : "—"}
               />
-            ))}
+              <Field
+                label="Accuracy"
+                value={tree.accuracy_m != null ? `±${tree.accuracy_m} m` : "—"}
+              />
+            </dl>
+            <div className="mt-4 space-y-2">
+              <label className="kpi-label">Survival status at survey</label>
+              <select
+                className="input"
+                value={survivalStatus}
+                onChange={(e) => setSurvivalStatus(e.target.value)}
+                disabled={!canWrite}
+              >
+                <option value="live">Live</option>
+                <option value="stressed">Stressed</option>
+                <option value="dead">Dead</option>
+                <option value="replaced">Replaced</option>
+                <option value="missing">Missing / uprooted</option>
+              </select>
+            </div>
+            {canWrite ? (
+              <button
+                type="button"
+                className="btn-secondary mt-4"
+                disabled={regeotag.isPending}
+                onClick={handleRegeotag}
+              >
+                <MapPin className="h-4 w-4" />
+                {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
+              </button>
+            ) : null}
+            {regeotag.error && (
+              <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>
+            )}
+            {complianceNote && (
+              <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                {complianceNote}
+              </p>
+            )}
+            {tree.project_id && (
+              <p className="mt-2 text-xs text-stone-500">
+                Compliance rules are re-checked on re-geotag for project-linked trees.
+              </p>
+            )}
+          </div>
+
+          <div className="card">
+            <h2 className="mb-3 text-sm font-medium text-stone-700">Registration details</h2>
+            {metadataEntries.length === 0 ? (
+              <p className="text-sm text-stone-500">No extra registration details.</p>
+            ) : (
+              <dl>
+                {metadataEntries.map(([key, value]) => (
+                  <Field key={key} label={humanizeMetaKey(key)} value={String(value)} />
+                ))}
+              </dl>
+            )}
           </div>
         </div>
       )}
 
-      <div id="ai-analysis" className="card scroll-mt-20">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-stone-700">AI analysis</h2>
-          <DataTrustBadge mode={aiTrustMode} />
-        </div>
-        <p className="mb-3 text-xs text-stone-500">
-          {aiIntegration?.label ??
-            (isTrustModeLive(aiTrustMode)
-              ? "Species and health use your configured live AI provider."
-              : "Results use the built-in estimate model until live AI providers are enabled.")}
-        </p>
-        {!analyses?.length ? (
-          <p className="text-sm text-stone-500">No analysis yet. Run AI analysis to populate metrics.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-stone-200">
-            <table className="min-w-full text-sm">
-              <thead className="bg-stone-50 text-stone-600">
-                <tr>
-                  <th className="px-3 py-2 text-left">Date</th>
-                  <th className="px-3 py-2 text-left">Health</th>
-                  <th className="px-3 py-2 text-right">DBH</th>
-                  <th className="px-3 py-2 text-right">Height</th>
-                  <th className="px-3 py-2 text-right">Confidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analyses.map((a) => (
-                  <tr key={a.id} className="border-t border-stone-100">
-                    <td className="px-3 py-2">{new Date(a.created_at).toLocaleString()}</td>
-                    <td className="px-3 py-2">{healthBadge(a.health ?? "unknown")}</td>
-                    <td className="px-3 py-2 text-right">
-                      {a.estimated_dbh_cm ? `${a.estimated_dbh_cm} cm` : "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {a.estimated_height_m ? `${a.estimated_height_m} m` : "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {a.overall_confidence != null ? `${Math.round(a.overall_confidence * 100)}%` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {tab === "intelligence" && (
+        <div className="space-y-4">
+          <AiScanUsagePanel compact />
+          {scanUsage?.tier === "byot_metered" &&
+          scanUsage.payment_enabled &&
+          !scanUsage.can_scan ? (
+            <BuyAiScanPacks
+              compact
+              onSuccess={() => {
+                qc.invalidateQueries({ queryKey: ["ai-scan-usage"] });
+              }}
+            />
+          ) : null}
+
+          {analyze.error && (
+            <div className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {errorMessage(analyze.error)}
+            </div>
+          )}
+
+          <div id="ai-analysis" className="card scroll-mt-20">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-stone-700">AI analysis</h2>
+              <div className="flex items-center gap-2">
+                <DataTrustBadge mode={aiTrustMode} />
+                {canWrite ? (
+                  <button
+                    className="btn-secondary text-xs"
+                    onClick={() => analyze.mutate()}
+                    disabled={analyze.isPending || scanUsage?.can_scan === false}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {analyze.isPending ? "Analyzing…" : "Run analysis"}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <p className="mb-3 text-xs text-stone-500">
+              {aiIntegration?.label ??
+                (isTrustModeLive(aiTrustMode)
+                  ? "Species and health use your configured live AI provider."
+                  : "Results use the built-in estimate model until live AI providers are enabled.")}
+            </p>
+            {!analyses?.length ? (
+              <p className="text-sm text-stone-500">
+                No analysis yet. Run AI analysis to populate metrics.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-stone-200">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-stone-50 text-stone-600">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Date</th>
+                      <th className="px-3 py-2 text-left">Health</th>
+                      <th className="px-3 py-2 text-right">DBH</th>
+                      <th className="px-3 py-2 text-right">Height</th>
+                      <th className="px-3 py-2 text-right">Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analyses.map((a) => (
+                      <tr key={a.id} className="border-t border-stone-100">
+                        <td className="px-3 py-2">
+                          {new Date(a.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2">
+                          {healthBadge(a.health ?? "unknown")}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {a.estimated_dbh_cm ? `${a.estimated_dbh_cm} cm` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {a.estimated_height_m ? `${a.estimated_height_m} m` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {a.overall_confidence != null
+                            ? `${Math.round(a.overall_confidence * 100)}%`
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="card space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-stone-700">
-            <Satellite className="mr-1 inline h-4 w-4" />
-            Satellite monitoring
-          </h2>
-          <DataTrustBadge mode={satTrustMode} />
+          <div className="card space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-stone-700">
+                <Satellite className="mr-1 inline h-4 w-4" />
+                Satellite monitoring
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <TrustChip tone={satTrustChip.tone} label={satTrustChip.label} />
+                <DataTrustBadge mode={satTrustMode} />
+              </div>
+            </div>
+            <p className="text-xs text-stone-500">
+              {satIntegration?.label ??
+                (isTrustModeLive(satTrustMode)
+                  ? "Individual-tree NDVI from live Sentinel Hub scenes."
+                  : "Individual-tree NDVI is simulated until per-tree live scenes are enabled. Plantation fence scans can use live Sentinel Hub when configured.")}
+              {satProvider ? ` Provider: ${satProvider}.` : null}
+            </p>
+
+            {sat?.points?.length ? (
+              <>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <p className="mb-2 text-xs text-stone-500">NDVI map</p>
+                    <NdviImagePreview
+                      treeId={id}
+                      ndvi={sat.latest?.ndvi_mean ?? sat.points[sat.points.length - 1]?.ndvi}
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs text-stone-500">NDVI parameters</p>
+                    <NdviStatsPanel latest={sat.latest} resolutionLabel="10 m chip" />
+                  </div>
+                </div>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={sat.points.map((p) => ({
+                        date: new Date(p.ts).toISOString().slice(0, 7),
+                        ndvi: p.ndvi,
+                      }))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                      <XAxis dataKey="date" fontSize={11} stroke="#78716c" />
+                      <YAxis domain={[0, 1]} fontSize={11} stroke="#78716c" />
+                      <Tooltip formatter={(value: number) => [value.toFixed(3), "NDVI"]} />
+                      <Area type="monotone" dataKey="ndvi" stroke="#16a34a" fill="#16a34a33" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-stone-500">
+                No NDVI data yet.{" "}
+                <Link href="/satellite" className="text-forest-700 underline">
+                  Run satellite scan
+                </Link>
+              </p>
+            )}
+
+            <SatelliteHealthPanel kind="tree" targetId={id} />
+            <SarTreePanel treeId={id} />
+            {tree.plantation_id && (
+              <PestIntelPanel kind="work-area" targetId={tree.plantation_id} />
+            )}
+          </div>
         </div>
-        <p className="text-xs text-stone-500">
-          {satIntegration?.label ??
-            (isTrustModeLive(satTrustMode)
-              ? "Individual-tree NDVI from live Sentinel Hub scenes."
-              : "Individual-tree NDVI is simulated until per-tree live scenes are enabled. Plantation fence scans can use live Sentinel Hub when configured.")}
-        </p>
-
-        {sat?.points?.length ? (
-          <>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs text-stone-500">NDVI map</p>
-                <NdviImagePreview
-                  treeId={id}
-                  ndvi={sat.latest?.ndvi_mean ?? sat.points[sat.points.length - 1]?.ndvi}
-                />
-              </div>
-              <div>
-                <p className="mb-2 text-xs text-stone-500">NDVI parameters</p>
-                <NdviStatsPanel latest={sat.latest} resolutionLabel="10 m chip" />
-              </div>
-            </div>
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={sat.points.map((p) => ({
-                    date: new Date(p.ts).toISOString().slice(0, 7),
-                    ndvi: p.ndvi,
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
-                  <XAxis dataKey="date" fontSize={11} stroke="#78716c" />
-                  <YAxis domain={[0, 1]} fontSize={11} stroke="#78716c" />
-                  <Tooltip formatter={(value: number) => [value.toFixed(3), "NDVI"]} />
-                  <Area type="monotone" dataKey="ndvi" stroke="#16a34a" fill="#16a34a33" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-stone-500">
-            No NDVI data yet.{" "}
-            <Link href="/satellite" className="text-forest-700 underline">
-              Run satellite scan
-            </Link>
-          </p>
-        )}
-
-        <SatelliteHealthPanel kind="tree" targetId={id} />
-        <SarTreePanel treeId={id} />
-        {tree.plantation_id && (
-          <PestIntelPanel kind="work-area" targetId={tree.plantation_id} />
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -394,6 +394,7 @@ export const platformAdmin = {
       organization_id?: string;
       platform_role?: "government" | "corporate" | "ngo";
       make_org_admin?: boolean;
+      password?: string;
     },
   ) {
     return (

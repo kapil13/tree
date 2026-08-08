@@ -44,6 +44,7 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
+  // Overview
   {
     href: "/platform",
     label: "Overview",
@@ -51,6 +52,7 @@ const NAV: NavItem[] = [
     exact: true,
     visible: (user) => hasAnyPlatformAccess(user),
   },
+  // Identity & access
   {
     href: "/platform/users",
     label: "Users",
@@ -87,12 +89,14 @@ const NAV: NavItem[] = [
     icon: KeyRound,
     visible: (user) => hasAnyPlatformAccess(user),
   },
+  // Billing
   {
     href: "/platform/billing",
     label: "Billing",
     icon: CreditCard,
     visible: (user) => canAccessBillingAdmin(user),
   },
+  // Operations
   {
     href: "/platform/ops",
     label: "Operations",
@@ -105,6 +109,7 @@ const NAV: NavItem[] = [
     icon: Satellite,
     visible: (user) => canAccessOpsAdmin(user),
   },
+  // Content
   {
     href: "/platform/cms",
     label: "Website CMS",
@@ -129,11 +134,18 @@ export function PlatformShell({
   usePlatformHotkeys(pageHotkeys, () => setShortcutsOpen(true));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-1 sm:px-0">
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white dark:bg-stone-100 dark:text-stone-900">
-            Platform admin
+    <div className="mx-auto max-w-6xl space-y-5 px-1 sm:px-0">
+      <header className="sticky top-0 z-20 -mx-1 border-b border-stone-200/80 bg-stone-50/95 px-1 pb-2 pt-1 backdrop-blur dark:border-stone-800/80 dark:bg-stone-950/95 sm:mx-0 sm:px-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-white dark:bg-stone-100 dark:text-stone-900">
+              Platform admin
+            </div>
+            <p className="truncate text-xs text-stone-500 dark:text-stone-400">
+              {fullAdmin
+                ? "Users, orgs, programs, ops, CMS."
+                : "Delegated modules for your grants."}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <AdminRunbookPanel />
@@ -151,34 +163,28 @@ export function PlatformShell({
             </button>
           </div>
         </div>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Control plane</h1>
-        <p className="mt-2 max-w-2xl text-sm text-stone-600 dark:text-stone-300">
-          {fullAdmin
-            ? "Full platform control — users, organizations, program onboarding, roles, CMS, and audit."
-            : "Delegated platform modules assigned to your role or user grants."}
-        </p>
-      </div>
 
-      <nav className="-mx-1 flex gap-2 overflow-x-auto border-b border-stone-200 pb-2 scrollbar-thin dark:border-stone-800">
-        {items.map(({ href, label, icon: Icon, exact }) => {
-          const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-forest-700 text-white"
-                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+        <nav className="-mx-1 mt-2 flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
+          {items.map(({ href, label, icon: Icon, exact }) => {
+            const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-forest-700 text-white"
+                    : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+      </header>
 
       {children}
 

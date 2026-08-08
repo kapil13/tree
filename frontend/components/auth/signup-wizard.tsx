@@ -27,12 +27,14 @@ export function SignupWizard({
   inviteToken: _inviteToken,
   onComplete,
   onSwitchToSignIn,
+  onSwitchToCitizen,
 }: {
   captchaConfig?: CaptchaConfig;
   invitePreview?: InvitePreview | null;
   inviteToken?: string | null;
   onComplete: () => void | Promise<void>;
   onSwitchToSignIn: () => void;
+  onSwitchToCitizen?: () => void;
 }) {
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
@@ -382,12 +384,26 @@ export function SignupWizard({
 
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 
-      <p className="text-center text-sm text-stone-600">
-        Already have an account?{" "}
-        <button type="button" className="font-medium text-forest-700 hover:underline" onClick={onSwitchToSignIn}>
-          Sign in
-        </button>
-      </p>
+      <div className="space-y-2 text-center text-sm text-stone-600">
+        {onSwitchToCitizen ? (
+          <p>
+            Just tagging trees?{" "}
+            <button
+              type="button"
+              className="font-medium text-forest-700 hover:underline"
+              onClick={onSwitchToCitizen}
+            >
+              Quick citizen signup
+            </button>
+          </p>
+        ) : null}
+        <p>
+          Already have an account?{" "}
+          <button type="button" className="font-medium text-forest-700 hover:underline" onClick={onSwitchToSignIn}>
+            Sign in
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

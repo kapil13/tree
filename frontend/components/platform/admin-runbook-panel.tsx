@@ -35,6 +35,14 @@ const SECTIONS = [
       "Step-up is required again after the step-up window expires.",
     ],
   },
+  {
+    title: "Satellite & jobs",
+    items: [
+      "Degraded optical/SAR usually means missing credentials or stub mode — check Satellite health.",
+      "Retry failed monitoring jobs from Operations → Jobs (step-up required).",
+      "Stub scan counts rising while live is flat often means provider credentials expired.",
+    ],
+  },
 ];
 
 export function AdminRunbookPanel() {
