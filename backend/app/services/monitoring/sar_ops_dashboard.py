@@ -10,8 +10,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.plantation_fence import PlantationFence
+from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.services.monitoring.sar_field_tasks import FIELD_VERIFICATION_TYPE
 from app.services.monitoring.sar_portfolio import sar_fence_snapshot
@@ -104,7 +104,7 @@ async def list_open_sar_field_verifications(
             PlantingComplianceViolation.violation_type == FIELD_VERIFICATION_TYPE,
             PlantingComplianceViolation.resolved_at.is_(None),
         )
-        .order_by(PlantationComplianceViolation.created_at.desc())
+        .order_by(PlantingComplianceViolation.created_at.desc())
         .limit(limit)
     )
     out: list[dict[str, Any]] = []
