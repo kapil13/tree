@@ -198,7 +198,7 @@ export default function PlatformOrganizationsPage() {
               type="button"
               className="btn-secondary text-xs"
               disabled={bulkOrgAction.isPending}
-              onClick={() => bulkOrgAction.mutate({ is_active: true })}
+              onClick={() => setSuspendTarget({ kind: "bulk", suspending: false })}
             >
               Reactivate selected
             </button>
@@ -319,7 +319,12 @@ export default function PlatformOrganizationsPage() {
                             className="btn-ghost text-xs"
                             disabled={updateOrg.isPending}
                             onClick={() =>
-                              updateOrg.mutate({ id: row.id, is_active: true })
+                              setSuspendTarget({
+                                kind: "single",
+                                id: row.id,
+                                name: row.name,
+                                suspending: false,
+                              })
                             }
                           >
                             Reactivate
@@ -364,16 +369,16 @@ export default function PlatformOrganizationsPage() {
       </div>
 
       <OrgSuspendModal
-        open={suspendTarget?.kind === "single" && suspendTarget.suspending}
+        open={suspendTarget?.kind === "single"}
         orgName={suspendTarget?.kind === "single" ? suspendTarget.name : ""}
-        suspending
+        suspending={suspendTarget?.kind === "single" ? suspendTarget.suspending : true}
         busy={updateOrg.isPending}
         onClose={() => setSuspendTarget(null)}
         onConfirm={(password, reason, revokeMemberSessions) => {
           if (suspendTarget?.kind !== "single") return;
           updateOrg.mutate({
             id: suspendTarget.id,
-            is_active: false,
+            is_active: !suspendTarget.suspending,
             reason,
             revoke_member_sessions: revokeMemberSessions,
             password_confirm: password,
@@ -382,14 +387,15 @@ export default function PlatformOrganizationsPage() {
       />
 
       <OrgSuspendModal
-        open={suspendTarget?.kind === "bulk" && suspendTarget.suspending}
+        open={suspendTarget?.kind === "bulk"}
         orgName={`${selectedIds.size} organizations`}
-        suspending
+        suspending={suspendTarget?.kind === "bulk" ? suspendTarget.suspending : true}
         busy={bulkOrgAction.isPending}
         onClose={() => setSuspendTarget(null)}
         onConfirm={(password, reason, revokeMemberSessions) => {
+          if (suspendTarget?.kind !== "bulk") return;
           bulkOrgAction.mutate({
-            is_active: false,
+            is_active: !suspendTarget.suspending,
             password,
             reason,
             revoke_member_sessions: revokeMemberSessions,
