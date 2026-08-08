@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Bell,
   FolderKanban,
+  Radar,
   Satellite,
   ShieldCheck,
   TreePine,
@@ -72,6 +73,12 @@ export function PortfolioOverviewTab({
           warn={(monitoring?.stale_satellite_work_areas ?? 0) > 0}
         />
         <PortfolioKpiCard
+          icon={Radar}
+          label="SAR at risk"
+          value={String(monitoring?.sar_at_risk_work_areas ?? 0)}
+          warn={(monitoring?.sar_at_risk_work_areas ?? 0) > 0}
+        />
+        <PortfolioKpiCard
           icon={Bell}
           label="Unread alerts"
           value={String(unreadAlerts)}
@@ -104,10 +111,16 @@ export function PortfolioOverviewTab({
           className="card text-left transition hover:border-forest-300"
           onClick={() => onSelectTab("monitoring")}
         >
-          <p className="text-sm font-semibold text-stone-900">Satellite monitoring</p>
+          <p className="text-sm font-semibold text-stone-900">Satellite & SAR monitoring</p>
           <p className="mt-1 text-xs text-stone-600">
-            NDVI scan status, trigger project scans, and background job health.
+            NDVI staleness, Forest Integrity scores, SAR field verifications, and job health.
           </p>
+          {(monitoring?.sar_avg_forest_integrity != null || (monitoring?.sar_at_risk_work_areas ?? 0) > 0) && (
+            <p className="mt-2 text-xs text-forest-800">
+              Avg Forest Integrity: {monitoring?.sar_avg_forest_integrity ?? "—"} ·{" "}
+              {monitoring?.sar_at_risk_work_areas ?? 0} at risk
+            </p>
+          )}
           <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-forest-700">
             Open tab <ArrowRight className="h-3 w-3" />
           </span>

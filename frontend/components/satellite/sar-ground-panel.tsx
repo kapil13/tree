@@ -2,23 +2,23 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Radar, RefreshCw } from "lucide-react";
-import { sar } from "@/lib/api";
+import { SarIntegrityHero } from "@/components/satellite/sar-integrity-hero";
+import { SarIntegrityTrendChart } from "@/components/satellite/sar-integrity-trend-chart";
 import { showToast } from "@/components/toast";
-import { errorMessage } from "@/lib/api";
+import { errorMessage, sar } from "@/lib/api";
 import { cn } from "@/lib/cn";
-
-const GROUND_STATUS_LABELS: Record<string, string> = {
-  stable: "Stable",
-  moist: "Moist ground",
-  hidden_moisture: "Hidden moisture",
-  wetland_risk: "Wetland risk",
-};
+import { SAR_GROUND_STATUS_LABEL } from "@/lib/sar-labels";
 
 function statusBadge(status: string | null | undefined) {
   if (!status) return "bg-stone-100 text-stone-600";
   if (status === "stable") return "bg-emerald-100 text-emerald-800";
   if (status === "hidden_moisture" || status === "wetland_risk") return "bg-amber-100 text-amber-900";
   return "bg-sky-100 text-sky-900";
+}
+
+function daysSince(iso: string | undefined): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export function SarGroundPanel({
@@ -43,19 +43,24 @@ export function SarGroundPanel({
   const scan = useMutation({
     mutationFn: () => sar.scanFence(fenceId),
     onSuccess: (data) => {
-      showToast(`SAR scan complete — ${GROUND_STATUS_LABELS[data.analysis.ground_status] ?? data.analysis.ground_status}`);
+      showToast(
+        `SAR scan complete — ${SAR_GROUND_STATUS_LABEL[data.analysis.ground_status] ?? data.analysis.ground_status}`,
+      );
       qc.invalidateQueries({ queryKey: ["sar-monitoring", fenceId] });
       qc.invalidateQueries({ queryKey: ["intelligence-satellite-fusion"] });
+      qc.invalidateQueries({ queryKey: ["monitoring-summary"] });
     },
     onError: (err) => showToast(errorMessage(err)),
   });
 
   const latest = monitoringQ.data?.latest;
+  const points = monitoringQ.data?.points ?? [];
   const analysis = latest?.analysis ?? latest?.fusion?.sar_analysis;
   const fusion = latest?.fusion;
+  const scanDays = daysSince(latest?.scene_acquired_at);
 
   return (
-    <div className={cn("card space-y-3", compact && "p-4")}>
+    <div className={cn("card space-y-4", compact && "p-4")}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 font-medium text-stone-800">
@@ -63,7 +68,8 @@ export function SarGroundPanel({
             SAR ground intelligence
           </div>
           <p className="mt-1 text-xs text-stone-500">
-            NISAR-inspired L/S-band — detects moisture, wetlands, and double-bounce under canopy.
+            Forest Integrity fuses optical NDVI with L/S-band ground truth — moisture, wetlands, and
+            canopy mismatch.
           </p>
         </div>
         <button
@@ -88,17 +94,19 @@ export function SarGroundPanel({
         <p className="text-xs text-stone-500">{statusQ.data.message}</p>
       ) : null}
 
-      {fusion ? (
-        <div className="rounded-lg border border-forest-200 bg-forest-50/60 p-3">
-          <p className="text-xs uppercase tracking-wide text-forest-800">Forest Integrity Score</p>
-          <p className="mt-1 text-2xl font-semibold text-forest-900">
-            {fusion.forest_integrity_score}
-            <span className="text-sm font-normal text-stone-600"> / 100</span>
+      <SarIntegrityHero
+        fusion={fusion}
+        groundStatus={analysis?.ground_status}
+        daysSinceScan={scanDays}
+        compact={compact}
+      />
+
+      {!compact && points.length > 0 ? (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Forest Integrity trend
           </p>
-          <p className="mt-1 text-xs capitalize text-stone-600">
-            {fusion.integrity_grade.replaceAll("_", " ")} · {fusion.monitoring_mode.replaceAll("_", " ")}
-          </p>
-          <p className="mt-2 text-sm text-stone-700">{fusion.summary}</p>
+          <SarIntegrityTrendChart points={points} height={220} />
         </div>
       ) : null}
 
@@ -114,13 +122,17 @@ export function SarGroundPanel({
                 statusBadge(analysis?.ground_status),
               )}
             >
-              {GROUND_STATUS_LABELS[analysis?.ground_status ?? ""] ?? analysis?.ground_status ?? "Unknown"}
+              {SAR_GROUND_STATUS_LABEL[analysis?.ground_status ?? ""] ??
+                analysis?.ground_status ??
+                "Unknown"}
             </span>
           </div>
           <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-800">
             <p className="text-xs uppercase tracking-wide text-stone-500">Wetland probability</p>
             <p className="mt-1 text-lg font-semibold">
-              {latest.wetland_probability != null ? `${Math.round(latest.wetland_probability * 100)}%` : "—"}
+              {latest.wetland_probability != null
+                ? `${Math.round(latest.wetland_probability * 100)}%`
+                : "—"}
             </p>
           </div>
           <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-800">
@@ -133,17 +145,24 @@ export function SarGroundPanel({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-stone-500">No SAR scan yet — run one to check ground moisture under the canopy.</p>
+        <p className="text-sm text-stone-500">
+          No SAR scan yet — run one to check ground moisture under the canopy.
+        </p>
       )}
 
       {analysis?.summary ? (
-        <p className="rounded-lg bg-stone-50 p-3 text-sm text-stone-700 dark:bg-stone-900">{analysis.summary}</p>
+        <p className="rounded-lg bg-stone-50 p-3 text-sm text-stone-700 dark:bg-stone-900">
+          {analysis.summary}
+        </p>
       ) : null}
 
       {analysis?.findings?.length ? (
         <ul className="space-y-2 text-sm">
           {analysis.findings.map((f) => (
-            <li key={f.name} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
+            <li
+              key={f.name}
+              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950"
+            >
               <span className="font-medium capitalize">{f.name.replaceAll("_", " ")}</span>
               <span className="ml-2 text-xs uppercase text-amber-800">{f.severity}</span>
               <p className="mt-1 text-xs">{f.evidence}</p>
