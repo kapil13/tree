@@ -10,6 +10,7 @@ import {
   Plus,
   TreePine,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { plantingProjects } from "@/lib/api";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -73,7 +74,7 @@ export default function FieldOpsPage() {
         />
         <KpiCard
           icon={ClipboardList}
-          label="Survival survey due"
+          label="Survival due"
           value={String(data.survival_due)}
           warn={data.survival_due > 0}
           href={data.survival_due > 0 ? "#attention" : undefined}
@@ -81,16 +82,12 @@ export default function FieldOpsPage() {
       </div>
 
       {data.project_count === 0 ? (
-        <div className="card text-center">
-          <FolderKanban className="mx-auto h-10 w-10 text-forest-700" />
-          <h2 className="mt-3 text-lg font-medium">No field projects yet</h2>
-          <p className="mt-2 text-sm text-stone-600">
-            Create a project, draw work areas, then register trees with spacing standards.
-          </p>
-          <Link href="/projects/new" className="btn-primary mt-4 inline-flex">
-            Create first project
-          </Link>
-        </div>
+        <EmptyState
+          icon={FolderKanban}
+          title="No field projects yet"
+          description="Create a project, draw work areas, then register trees with spacing standards."
+          action={{ label: "Create first project", href: "/projects/new" }}
+        />
       ) : (
         <>
           {needsAttention.length > 0 && (
@@ -136,7 +133,7 @@ export default function FieldOpsPage() {
                     <th className="px-4 py-2">Segment</th>
                     <th className="px-4 py-2">Trees</th>
                     <th className="px-4 py-2">Violations</th>
-                    <th className="px-4 py-2">Geotag due</th>
+                    <th className="px-4 py-2">Survival due</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -261,7 +258,7 @@ function ProjectActionCard({
             className="inline-flex items-center gap-1 rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-medium text-sky-950"
           >
             <MapPin className="h-3.5 w-3.5" />
-            {p.survival_due} geotag due
+            {p.survival_due} survival due
           </Link>
         )}
         {p.open_violations === 0 && p.survival_due === 0 && (
