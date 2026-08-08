@@ -32,6 +32,7 @@ async def sar_fence_snapshot(db: AsyncSession, fence_id: uuid.UUID) -> dict[str,
             "sar_ground_status": None,
             "sar_stale": True,
             "sar_live": False,
+            "sar_at_risk": False,
         }
 
     serialized = serialize_sar_record(rec)

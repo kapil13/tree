@@ -13,9 +13,25 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.services.monitoring.job_runs import get_recent_job_runs
-from app.services.monitoring.sar_portfolio import sar_fence_snapshot
+from app.services.monitoring.sar_ops_dashboard import (
+    build_sar_ops_summary,
+    list_open_sar_field_verifications,
+)
 from app.services.planting_projects.access import project_list_filter
 from app.services.planting_projects.field_ops import build_field_ops_summary
+
+SAR_ALERT_KINDS = {
+    "sar_integrity_drop",
+    "sar_optical_divergent",
+    "sar_integrity_at_risk",
+    "sar_monsoon_gap_fill",
+    "sar_hidden_moisture",
+    "sar_wetland_detected",
+    "sar_flood_risk",
+    "sar_ground_moisture",
+    "sar_ground_instability",
+    "sar_sweep_health",
+}
 
 
 async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
@@ -27,10 +43,19 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
     project_ids = [p.id for p in projects]
 
     stale_satellite = 0
-    stale_sar = 0
-    sar_at_risk = 0
-    sar_scores: list[float] = []
     work_area_rows: list[dict[str, Any]] = []
+    sar_ops: dict[str, Any] = {
+        "sar_aligned_work_areas": 0,
+        "sar_divergent_work_areas": 0,
+        "sar_gap_fill_work_areas": 0,
+        "sar_at_risk_work_areas": 0,
+        "stale_sar_work_areas": 0,
+        "sar_live_providers": 0,
+        "sar_stub_providers": 0,
+        "sar_avg_forest_integrity": None,
+        "work_areas": [],
+    }
+
     if project_ids:
         fences = list(
             (
@@ -39,7 +64,10 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
                 )
             ).scalars().all()
         )
+        sar_ops = await build_sar_ops_summary(db, fences)
+        sar_by_fence = {row["fence_id"]: row for row in sar_ops.get("work_areas", [])}
         now = datetime.now(UTC)
+
         for fence in fences:
             days_since = None
             latest_ndvi = None
@@ -57,14 +85,8 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
             ).scalar_one_or_none()
             if rec and rec.ndvi_mean is not None:
                 latest_ndvi = float(rec.ndvi_mean)
-            sar_snap = await sar_fence_snapshot(db, fence.id)
-            if sar_snap.get("sar_stale"):
-                stale_sar += 1
-            if sar_snap.get("sar_at_risk"):
-                sar_at_risk += 1
-            if sar_snap.get("sar_forest_integrity") is not None:
-                sar_scores.append(float(sar_snap["sar_forest_integrity"]))
             project = next((p for p in projects if p.id == fence.project_id), None)
+            sar_row = sar_by_fence.get(str(fence.id), {})
             work_area_rows.append(
                 {
                     "id": str(fence.id),
@@ -78,7 +100,8 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
                     "days_since_scan": days_since,
                     "latest_ndvi": latest_ndvi,
                     "tree_count": None,
-                    **sar_snap,
+                    "sar_recommended_action": sar_row.get("sar_recommended_action"),
+                    **{k: v for k, v in sar_row.items() if k not in {"fence_id", "fence_name", "project_id"}},
                 }
             )
 
@@ -102,13 +125,23 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
     for kind, count in kinds_res.all():
         alert_counts[kind] = int(count)
 
+    sar_alert_counts = {k: v for k, v in alert_counts.items() if k in SAR_ALERT_KINDS}
+    open_field_tasks = await list_open_sar_field_verifications(db, project_ids)
+
     return {
         **field_ops,
         "stale_satellite_work_areas": stale_satellite,
-        "stale_sar_work_areas": stale_sar,
-        "sar_at_risk_work_areas": sar_at_risk,
-        "sar_avg_forest_integrity": round(sum(sar_scores) / len(sar_scores), 1) if sar_scores else None,
+        "stale_sar_work_areas": sar_ops.get("stale_sar_work_areas", 0),
+        "sar_at_risk_work_areas": sar_ops.get("sar_at_risk_work_areas", 0),
+        "sar_aligned_work_areas": sar_ops.get("sar_aligned_work_areas", 0),
+        "sar_divergent_work_areas": sar_ops.get("sar_divergent_work_areas", 0),
+        "sar_gap_fill_work_areas": sar_ops.get("sar_gap_fill_work_areas", 0),
+        "sar_live_providers": sar_ops.get("sar_live_providers", 0),
+        "sar_stub_providers": sar_ops.get("sar_stub_providers", 0),
+        "sar_avg_forest_integrity": sar_ops.get("sar_avg_forest_integrity"),
         "work_area_monitoring": work_area_rows[:100],
         "unread_alerts_by_kind": alert_counts,
+        "unread_sar_alerts_by_kind": sar_alert_counts,
+        "open_sar_field_verifications": open_field_tasks,
         "recent_jobs": await get_recent_job_runs(db, limit=10),
     }

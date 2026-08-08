@@ -5,12 +5,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   Bell,
+  ClipboardList,
+  Download,
   Radar,
   RefreshCw,
   Satellite,
   Server,
 } from "lucide-react";
-import { plantingProjects } from "@/lib/api";
+import { plantingProjects, sar } from "@/lib/api";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -42,6 +44,7 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   sar_flood_risk: "SAR waterlogging",
   sar_ground_moisture: "SAR ground moisture",
   sar_ground_instability: "SAR ground instability",
+  sar_sweep_health: "SAR sweep health",
 };
 
 const SAR_MODE_LABEL: Record<string, string> = {
@@ -68,10 +71,25 @@ export function PortfolioMonitoringTab() {
   }
 
   const unreadTotal = Object.values(data.unread_alerts_by_kind).reduce((a, b) => a + b, 0);
+  const sarUnreadTotal = Object.values(data.unread_sar_alerts_by_kind ?? {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const openFieldTasks = data.open_sar_field_verifications ?? [];
+
+  const handleExport = async () => {
+    const blob = new Blob([await sar.portfolioExport()], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sar-portfolio-export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <PortfolioKpiCard
           icon={Satellite}
           label="Stale satellite scans"
@@ -85,10 +103,21 @@ export function PortfolioMonitoringTab() {
           warn={(data.sar_at_risk_work_areas ?? 0) > 0}
         />
         <PortfolioKpiCard
+          icon={Radar}
+          label="SAR divergent"
+          value={String(data.sar_divergent_work_areas ?? 0)}
+          warn={(data.sar_divergent_work_areas ?? 0) > 0}
+        />
+        <PortfolioKpiCard
+          icon={Radar}
+          label="SAR aligned"
+          value={String(data.sar_aligned_work_areas ?? 0)}
+        />
+        <PortfolioKpiCard
           icon={Bell}
-          label="Unread alerts (30d)"
-          value={String(unreadTotal)}
-          warn={unreadTotal > 0}
+          label="SAR alerts (30d)"
+          value={String(sarUnreadTotal)}
+          warn={sarUnreadTotal > 0}
         />
         <PortfolioKpiCard
           icon={Activity}
@@ -104,11 +133,84 @@ export function PortfolioMonitoringTab() {
         />
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className="text-stone-600">
+          SAR providers: {data.sar_live_providers ?? 0} live · {data.sar_stub_providers ?? 0} stub
+        </span>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50"
+          onClick={() => void handleExport()}
+        >
+          <Download className="h-3 w-3" />
+          Export SAR CSV
+        </button>
+      </div>
+
       {(data.stale_sar_work_areas ?? 0) > 0 && (
         <p className="text-sm text-amber-800">
           {data.stale_sar_work_areas} work area{(data.stale_sar_work_areas ?? 0) === 1 ? "" : "s"}{" "}
           have no SAR scan in the last 35 days. Run a SAR scan from the Satellite page.
         </p>
+      )}
+
+      {Object.keys(data.unread_sar_alerts_by_kind ?? {}).length > 0 && (
+        <section className="card">
+          <h2 className="text-lg font-medium">SAR alerts by type</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {Object.entries(data.unread_sar_alerts_by_kind ?? {}).map(([kind, count]) => (
+              <Link
+                key={kind}
+                href={`/alerts?sar=${kind}`}
+                className="rounded-full bg-amber-50 px-3 py-1 text-sm text-amber-900 hover:bg-amber-100"
+              >
+                {ALERT_KIND_LABEL[kind] ?? kind}: {count}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {openFieldTasks.length > 0 && (
+        <section className="card overflow-hidden p-0">
+          <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">
+            <ClipboardList className="h-4 w-4 text-stone-500" />
+            <h2 className="font-medium">Open SAR field verifications</h2>
+            <span className="ml-auto text-xs text-stone-500">{openFieldTasks.length} open</span>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+              <tr>
+                <th className="px-4 py-2">Work area</th>
+                <th className="px-4 py-2">Alert</th>
+                <th className="px-4 py-2">Severity</th>
+                <th className="px-4 py-2">Integrity</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {openFieldTasks.map((task) => (
+                <tr key={task.id} className="border-t border-stone-100">
+                  <td className="px-4 py-2 font-medium">{task.work_area_name ?? "—"}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {ALERT_KIND_LABEL[task.alert_kind ?? ""] ?? task.alert_kind ?? task.message}
+                  </td>
+                  <td className="px-4 py-2 capitalize">{task.severity}</td>
+                  <td className="px-4 py-2">
+                    {task.forest_integrity_score != null ? task.forest_integrity_score : "—"}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {task.deep_link && (
+                      <Link href={task.deep_link} className="text-xs text-forest-700 hover:underline">
+                        Open satellite →
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
 
       {Object.keys(data.unread_alerts_by_kind).length > 0 && (
@@ -142,6 +244,7 @@ export function PortfolioMonitoringTab() {
               <th className="px-4 py-2">NDVI</th>
               <th className="px-4 py-2">SAR integrity</th>
               <th className="px-4 py-2">SAR mode</th>
+              <th className="px-4 py-2">Recommended action</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -190,6 +293,9 @@ export function PortfolioMonitoringTab() {
                   {wa.sar_monitoring_mode
                     ? SAR_MODE_LABEL[wa.sar_monitoring_mode] ?? wa.sar_monitoring_mode
                     : "—"}
+                </td>
+                <td className="max-w-xs truncate px-4 py-2 text-xs text-stone-600">
+                  {wa.sar_recommended_action ?? "—"}
                 </td>
                 <td className="px-4 py-2 text-right">
                   {wa.project_id && (

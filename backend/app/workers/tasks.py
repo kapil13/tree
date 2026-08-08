@@ -142,8 +142,14 @@ def monthly_sar_sweep() -> dict:
         from app.models.plantation_fence import PlantationFence
         from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
+        from app.services.monitoring.sar_sweep_health import (
+            classify_sar_provider,
+            notify_project_owners_sweep_health,
+            summarize_sweep_counts,
+        )
 
-        scanned = failed = skipped = 0
+        scanned = failed = skipped = stub_scans = live_scans = 0
+        touched_projects: set = set()
         async with AsyncSessionLocal() as db:
             projects_res = await db.execute(
                 select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
@@ -162,11 +168,34 @@ def monthly_sar_sweep() -> dict:
                         continue
                 result = await scan_and_persist_fence_sar(db, fence)
                 if result:
+                    rec, _analysis = result
                     scanned += 1
+                    if fence.project_id:
+                        touched_projects.add(fence.project_id)
+                    if classify_sar_provider(rec.provider) == "live":
+                        live_scans += 1
+                    elif classify_sar_provider(rec.provider) == "stub":
+                        stub_scans += 1
                 else:
                     failed += 1
+            outcome = summarize_sweep_counts(
+                scanned=scanned,
+                failed=failed,
+                stub_scans=stub_scans,
+                live_scans=live_scans,
+            )
+            await notify_project_owners_sweep_health(
+                db,
+                project_ids=touched_projects,
+                job_name="monthly_sar_sweep",
+                outcome=outcome,
+            )
             await db.commit()
-        return {"scanned": scanned, "failed": failed, "skipped": skipped, "total": len(fences)}
+        return {
+            **outcome,
+            "skipped": skipped,
+            "total": len(fences),
+        }
 
     return _execute_recorded("monthly_sar_sweep", _run)
 
@@ -183,8 +212,14 @@ def weekly_sar_integrity_watch() -> dict:
         from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
+        from app.services.monitoring.sar_sweep_health import (
+            classify_sar_provider,
+            notify_project_owners_sweep_health,
+            summarize_sweep_counts,
+        )
 
-        scanned = failed = 0
+        scanned = failed = stub_scans = live_scans = 0
+        touched_projects: set = set()
         async with AsyncSessionLocal() as db:
             projects_res = await db.execute(
                 select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
@@ -202,17 +237,73 @@ def weekly_sar_integrity_watch() -> dict:
                     continue
                 result = await scan_and_persist_fence_sar(db, fence)
                 if result:
+                    rec, _analysis = result
                     scanned += 1
+                    if fence.project_id:
+                        touched_projects.add(fence.project_id)
+                    if classify_sar_provider(rec.provider) == "live":
+                        live_scans += 1
+                    elif classify_sar_provider(rec.provider) == "stub":
+                        stub_scans += 1
                 else:
                     failed += 1
+            outcome = summarize_sweep_counts(
+                scanned=scanned,
+                failed=failed,
+                stub_scans=stub_scans,
+                live_scans=live_scans,
+            )
+            await notify_project_owners_sweep_health(
+                db,
+                project_ids=touched_projects,
+                job_name="weekly_sar_integrity_watch",
+                outcome=outcome,
+            )
             await db.commit()
         return {
-            "scanned": scanned,
-            "failed": failed,
+            **outcome,
             "candidates": len(at_risk_ids),
         }
 
     return _execute_recorded("weekly_sar_integrity_watch", _run)
+
+
+@celery_app.task(name="app.workers.tasks.daily_sar_sweep_health")
+def daily_sar_sweep_health() -> dict:
+    log.info("worker.daily_sar_sweep_health")
+
+    async def _run() -> dict:
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.planting_project import PlantingProject
+        from app.models.user import User
+        from app.services.monitoring.sar_sweep_health import evaluate_recent_sar_jobs
+
+        reviewed = 0
+        async with AsyncSessionLocal() as db:
+            owner_ids = {
+                p.owner_user_id
+                for p in (
+                    await db.execute(
+                        select(PlantingProject).where(
+                            PlantingProject.status.in_(("active", "planning")),
+                            PlantingProject.owner_user_id.isnot(None),
+                        )
+                    )
+                ).scalars().all()
+                if p.owner_user_id
+            }
+            for owner_id in owner_ids:
+                user = await db.get(User, owner_id)
+                if user is None:
+                    continue
+                await evaluate_recent_sar_jobs(db, user)
+                reviewed += 1
+            await db.commit()
+        return {"owners_reviewed": reviewed}
+
+    return _execute_recorded("daily_sar_sweep_health", _run)
 
 
 @celery_app.task(name="app.workers.tasks.recalc_carbon")

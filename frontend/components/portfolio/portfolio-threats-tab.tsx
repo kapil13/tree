@@ -121,6 +121,9 @@ export function PortfolioThreatsTab() {
             <span className="ml-auto text-xs text-stone-500">
               {fusion.summary.aligned_dual_source} dual-source · {fusion.summary.stale_sentinel_scans}{" "}
               stale NDVI
+              {fusion.summary.sar_avg_forest_integrity != null && (
+                <> · SAR integrity avg {fusion.summary.sar_avg_forest_integrity}</>
+              )}
             </span>
           </div>
           <table className="w-full text-sm">
@@ -129,6 +132,8 @@ export function PortfolioThreatsTab() {
                 <th className="px-4 py-2">Work area</th>
                 <th className="px-4 py-2">Fusion</th>
                 <th className="px-4 py-2">NDVI</th>
+                <th className="px-4 py-2">SAR integrity</th>
+                <th className="px-4 py-2">SAR mode</th>
                 <th className="px-4 py-2">Trend</th>
                 <th className="px-4 py-2">Bhoonidhi scenes</th>
                 <th className="px-4 py-2">Action</th>
@@ -137,7 +142,7 @@ export function PortfolioThreatsTab() {
             <tbody>
               {fusionSites.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-stone-500">
+                  <td colSpan={8} className="px-4 py-6 text-center text-stone-500">
                     No project work areas yet.
                   </td>
                 </tr>
@@ -148,6 +153,16 @@ export function PortfolioThreatsTab() {
                     <td className="px-4 py-2 capitalize">{site.fusion_status.replace(/_/g, " ")}</td>
                     <td className="px-4 py-2">
                       {site.sentinel.latest_ndvi != null ? site.sentinel.latest_ndvi.toFixed(2) : "—"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {site.sar?.forest_integrity_score != null
+                        ? site.sar.forest_integrity_score
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      {site.sar?.monitoring_mode
+                        ? site.sar.monitoring_mode.replace(/_/g, " ")
+                        : "—"}
                     </td>
                     <td className="px-4 py-2 capitalize">{site.sentinel.ndvi_trend}</td>
                     <td className="px-4 py-2">{site.bhoonidhi.scenes_available ?? 0}</td>

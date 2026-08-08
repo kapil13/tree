@@ -44,7 +44,14 @@ class MonitoringSummaryOut(FieldOpsSummaryOut):
     stale_satellite_work_areas: int
     stale_sar_work_areas: int = 0
     sar_at_risk_work_areas: int = 0
+    sar_aligned_work_areas: int = 0
+    sar_divergent_work_areas: int = 0
+    sar_gap_fill_work_areas: int = 0
+    sar_live_providers: int = 0
+    sar_stub_providers: int = 0
     sar_avg_forest_integrity: float | None = None
     work_area_monitoring: list[dict]
     unread_alerts_by_kind: dict[str, int]
+    unread_sar_alerts_by_kind: dict[str, int] = Field(default_factory=dict)
+    open_sar_field_verifications: list[dict] = Field(default_factory=list)
     recent_jobs: list[dict]
