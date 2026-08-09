@@ -11,6 +11,7 @@ import '../location_helper.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/bioacoustic_sync.dart';
 import '../providers.dart';
+import '../widgets/mobile_app_bar.dart';
 
 class BioacousticScreen extends ConsumerStatefulWidget {
   const BioacousticScreen({super.key});
@@ -266,8 +267,8 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     final sync = ref.watch(bioacousticSyncProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Biodiversity Assessment'),
+      appBar: MobileAppBar(
+        title: 'Bioacoustic',
         actions: [
           if (sync.syncing)
             const Padding(

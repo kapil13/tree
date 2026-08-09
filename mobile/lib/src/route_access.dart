@@ -14,6 +14,8 @@ const _routeRules = [
   _RouteRule('/bioacoustic', 'professional'),
   _RouteRule('/field-ops', ['professional', 'field_supervisor', 'field_worker'], excludeViewers: true),
   _RouteRule('/monitoring', ['professional', 'field_supervisor']),
+  _RouteRule('/portfolio-health', ['professional', 'field_supervisor']),
+  _RouteRule('/stewardship', 'byot'),
   _RouteRule('/map/draw', 'can_write'),
   _RouteRule('/reports', ['professional', 'field_supervisor']),
   _RouteRule('/credits', ['professional', 'field_supervisor']),
@@ -55,6 +57,12 @@ String routeAccessDeniedMessage(String path) {
   }
   if (path.startsWith('/monitoring')) {
     return 'Monitoring is limited to supervisors and program members.';
+  }
+  if (path.startsWith('/portfolio-health')) {
+    return 'Portfolio health is limited to supervisors and program members.';
+  }
+  if (path.startsWith('/stewardship')) {
+    return 'Stewardship is available for citizen tree owners.';
   }
   if (path.startsWith('/reports')) {
     return 'Reports are limited to supervisors and program members.';

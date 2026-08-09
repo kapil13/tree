@@ -9,6 +9,7 @@ import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../widgets/offline_tree_queue_section.dart';
+import '../widgets/app_shell_scope.dart';
 
 class FieldWorkerHomeScreen extends ConsumerWidget {
   const FieldWorkerHomeScreen({super.key});
@@ -57,9 +58,9 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                     Align(
                       alignment: Alignment.centerRight,
                       child: IconButton(
-                        tooltip: 'Profile',
-                        onPressed: () => context.go('/profile'),
-                        icon: const Icon(Icons.person_outline, color: AranyixColors.forestDark),
+                        tooltip: 'Menu',
+                        onPressed: () => AppShellScope.openDrawerOf(context),
+                        icon: const Icon(Icons.menu_rounded, color: AranyixColors.forestDark),
                       ),
                     ),
                     const SizedBox(height: 8),

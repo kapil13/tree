@@ -7,6 +7,7 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/mobile_app_bar.dart';
 import '../widgets/sar_monitoring_cards.dart';
 
 class MonitoringScreen extends ConsumerWidget {
@@ -19,7 +20,7 @@ class MonitoringScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Monitoring')),
+      appBar: const MobileAppBar(title: 'Monitoring'),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

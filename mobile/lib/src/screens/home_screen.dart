@@ -13,6 +13,7 @@ import '../theme.dart';
 import '../widgets/dashboard/dashboard_charts.dart';
 import '../widgets/dashboard/dashboard_map_preview.dart';
 import '../widgets/dashboard/dashboard_quick_actions.dart';
+import '../widgets/app_shell_scope.dart';
 import '../services/coach_marks.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
@@ -102,7 +103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       greeting: firstName != null ? 'Hello, $firstName' : null,
                       projectName: _projectLabel(fences, user),
                       onNotifications: () => context.go('/notifications'),
-                      onProfile: () => context.go('/profile'),
+                      onMenu: () => AppShellScope.openDrawerOf(context),
                       onProjectTap: () => _showProjectPicker(context, fences),
                     ),
                   ),
@@ -125,12 +126,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           trendDelta: health.trendDelta,
                           onViewDetails: () => context.push('/trees'),
                         ),
-                        if (canSeeMonitoring(user) || canSeeFieldOps(user) || canSeeReports(user)) ...[
+                        if (canSeePortfolioHealth(user) || canSeeMonitoring(user) || canSeeFieldOps(user)) ...[
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
+                              if (canSeePortfolioHealth(user))
+                                ActionChip(
+                                  avatar: const Icon(Icons.insights_outlined, size: 18),
+                                  label: const Text('Portfolio health'),
+                                  onPressed: () => context.go('/portfolio-health'),
+                                ),
                               if (canSeeMonitoring(user))
                                 ActionChip(
                                   avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
@@ -279,14 +286,14 @@ class _DashboardTopBar extends StatelessWidget {
     this.greeting,
     required this.projectName,
     required this.onNotifications,
-    required this.onProfile,
+    required this.onMenu,
     required this.onProjectTap,
   });
 
   final String? greeting;
   final String projectName;
   final VoidCallback onNotifications;
-  final VoidCallback onProfile;
+  final VoidCallback onMenu;
   final VoidCallback onProjectTap;
 
   @override
@@ -298,6 +305,12 @@ class _DashboardTopBar extends StatelessWidget {
         children: [
           Row(
             children: [
+              IconButton(
+                tooltip: 'Menu',
+                onPressed: onMenu,
+                icon: const Icon(Icons.menu_rounded),
+                color: AranyixColors.forestDark,
+              ),
               Container(
                 width: 36,
                 height: 36,
@@ -353,14 +366,6 @@ class _DashboardTopBar extends StatelessWidget {
                 onPressed: onNotifications,
                 icon: const Icon(Icons.notifications_outlined),
                 color: AranyixColors.forestDark,
-              ),
-              IconButton(
-                onPressed: onProfile,
-                icon: const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: AranyixColors.forestLight,
-                  child: Icon(Icons.person, size: 16, color: AranyixColors.forest),
-                ),
               ),
             ],
           ),
