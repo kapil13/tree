@@ -9,6 +9,8 @@ Implements:
 - Lifetime credits + revenue projection with methodology buffer pool
   (Verra VM0047 default 20%) and verification-tier discount.
 - Confidence score combining input completeness with species/growth confidence.
+- Monte Carlo uncertainty propagation with 90% CO₂e confidence intervals
+  and Verra VM0047 uncertainty deduction when applicable.
 
 The engine is pure, deterministic, and version-tagged. Inputs/outputs are
 dataclasses to keep the engine free of Pydantic/SQLAlchemy import cycles.
@@ -16,22 +18,20 @@ dataclasses to keep the engine free of Pydantic/SQLAlchemy import cycles.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Literal
 
-from app.services.carbon.species_catalog import SpeciesAllometric, by_name
+from app.services.carbon.biomass_math import (
+    agb_chave,
+    agb_ipcc_generic,
+    agb_species,
+    height_from_dbh,
+    interp_growth,
+    ipcc_root_shoot,
+)
+from app.services.carbon.species_catalog import by_name
 
-ENGINE_VERSION = "byot-carbon-1.0.0"
-
-# IPCC AR6 root-shoot defaults
-IPCC_ROOT_SHOOT_DEFAULT = {
-    "tropical_moist": 0.235,
-    "tropical_dry": 0.275,
-    "temperate": 0.260,
-    "boreal": 0.320,
-    "plantation": 0.250,
-}
+ENGINE_VERSION = "byot-carbon-1.1.0"
 
 # Verification tier discount applied to lifetime revenue
 TIER_FACTOR = {
@@ -66,6 +66,10 @@ class CarbonInputs:
     ecological_zone: str | None = None
     price_usd_per_credit: float = 12.0
     verification_tier: VerificationTier = "ai_verified"
+    # MRV measurement provenance (from tree_measurements when available)
+    measurement_method: str | None = None
+    uncertainty_dbh_pct: float | None = None
+    uncertainty_height_pct: float | None = None
 
 
 @dataclass
@@ -82,67 +86,23 @@ class CarbonResult:
     methodology: Methodology
     engine_version: str
     notes: list[str] = field(default_factory=list)
+    co2e_kg_lower_90: float | None = None
+    co2e_kg_upper_90: float | None = None
+    uncertainty_pct: float | None = None
+    verra_deduction_pct: float | None = None
+    creditable_co2e_kg: float | None = None
 
 
 # ---------------------------------------------------------------------------
-# Core math
+# Core math — delegated to biomass_math
 # ---------------------------------------------------------------------------
 
-
-def _ipcc_root_shoot(zone: ClimateZone, ecological_zone: str | None) -> float:
-    if ecological_zone == "plantation":
-        return IPCC_ROOT_SHOOT_DEFAULT["plantation"]
-    if zone in ("tropical", "subtropical"):
-        if ecological_zone == "dry_forest":
-            return IPCC_ROOT_SHOOT_DEFAULT["tropical_dry"]
-        return IPCC_ROOT_SHOOT_DEFAULT["tropical_moist"]
-    if zone == "temperate":
-        return IPCC_ROOT_SHOOT_DEFAULT["temperate"]
-    return IPCC_ROOT_SHOOT_DEFAULT["boreal"]
-
-
-def _agb_species(dbh: float, sp: SpeciesAllometric) -> float:
-    return float(sp.agb_coef_a) * (dbh ** float(sp.agb_coef_b))
-
-
-def _agb_chave(dbh: float, height: float, wd: float) -> float:
-    # Chave 2014 pan-tropical: AGB = 0.0673 * (rho * D^2 * H)^0.976
-    return 0.0673 * (wd * (dbh ** 2) * height) ** 0.976
-
-
-def _agb_ipcc_generic(dbh: float) -> float:
-    # ln(AGB) = -2.289 + 2.649 * ln(DBH) - 0.021 * (ln(DBH))^2
-    ld = math.log(max(dbh, 0.1))
-    return math.exp(-2.289 + 2.649 * ld - 0.021 * ld * ld)
-
-
-def _interp_growth(curve: dict[int, float], age: float) -> float:
-    if not curve:
-        return 0.0
-    pts = sorted(curve.items())
-    ages = [p[0] for p in pts]
-    if age <= ages[0]:
-        return pts[0][1] * (age / ages[0]) if ages[0] > 0 else pts[0][1]
-    if age >= ages[-1]:
-        return pts[-1][1]
-    from itertools import pairwise
-    for (a0, v0), (a1, v1) in pairwise(pts):
-        if a0 <= age <= a1:
-            t = (age - a0) / (a1 - a0)
-            return v0 + t * (v1 - v0)
-    return pts[-1][1]
-
-
-def _height_from_dbh(dbh: float, sp: SpeciesAllometric | None) -> float:
-    # Generic H-DBH: H = 1.3 + a*(1 - exp(-b*DBH))  (Feldpausch-style)
-    a = float(sp.max_height_m) if sp else 22.0
-    b = 0.05
-    return 1.3 + a * (1.0 - math.exp(-b * dbh))
-
-
-# ---------------------------------------------------------------------------
-# Engine
-# ---------------------------------------------------------------------------
+_agb_species = agb_species
+_agb_chave = agb_chave
+_agb_ipcc_generic = agb_ipcc_generic
+_interp_growth = interp_growth
+_height_from_dbh = height_from_dbh
+_ipcc_root_shoot = ipcc_root_shoot
 
 
 class CarbonEngine:
@@ -235,15 +195,6 @@ class CarbonEngine:
                 1.0 - BUFFER_POOL.get(inp.methodology, 0.0)
             )
 
-        # Revenue
-        revenue: float | None = None
-        if lifetime_credits_t is not None:
-            revenue = (
-                lifetime_credits_t
-                * inp.price_usd_per_credit
-                * TIER_FACTOR.get(inp.verification_tier, 0.55)
-            )
-
         # Confidence: input completeness + species coverage
         comp = 0.0
         if inp.dbh_cm is not None:
@@ -257,6 +208,46 @@ class CarbonEngine:
         if inp.wood_density is not None or sp is not None:
             comp += 0.10
         confidence = max(0.05, min(1.0, comp))
+
+        height_estimated = inp.height_m is None
+        from app.services.carbon.uncertainty import (
+            apply_verra_deduction_to_credits,
+            propagate_co2e_uncertainty,
+        )
+
+        uncertainty = propagate_co2e_uncertainty(
+            inp,
+            point_co2e_kg=co2e,
+            dbh_cm=dbh,
+            height_m=height,
+            wd=wd,
+            root_shoot=r,
+            carbon_fraction=cf,
+            sp=sp,
+            agb_method=agb_method,
+            derived_dbh=derived_dbh,
+            height_estimated=height_estimated,
+        )
+        if uncertainty.uncertainty_pct > 0:
+            notes.append(
+                f"90% CI CO₂e: {uncertainty.co2e_kg_lower_90:.1f}–{uncertainty.co2e_kg_upper_90:.1f} kg "
+                f"(±{uncertainty.uncertainty_pct:.1f}%)"
+            )
+        if uncertainty.verra_deduction_pct > 0:
+            notes.append(
+                f"Verra VM0047 uncertainty deduction: {uncertainty.verra_deduction_pct:.1f}% "
+                f"(threshold 15%)"
+            )
+        lifetime_credits_t = apply_verra_deduction_to_credits(
+            lifetime_credits_t, uncertainty.uncertainty_pct, inp.methodology
+        )
+        revenue: float | None = None
+        if lifetime_credits_t is not None:
+            revenue = (
+                lifetime_credits_t
+                * inp.price_usd_per_credit
+                * TIER_FACTOR.get(inp.verification_tier, 0.55)
+            )
 
         return CarbonResult(
             agb_kg=round(agb, 2),
@@ -273,6 +264,11 @@ class CarbonEngine:
             methodology=inp.methodology,
             engine_version=self.version,
             notes=notes,
+            co2e_kg_lower_90=uncertainty.co2e_kg_lower_90,
+            co2e_kg_upper_90=uncertainty.co2e_kg_upper_90,
+            uncertainty_pct=uncertainty.uncertainty_pct,
+            verra_deduction_pct=uncertainty.verra_deduction_pct,
+            creditable_co2e_kg=uncertainty.creditable_co2e_kg,
         )
 
 

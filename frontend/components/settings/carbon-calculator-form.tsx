@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Leaf } from "lucide-react";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { CarbonCo2eRange } from "@/components/carbon-co2e-range";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { carbon, errorMessage } from "@/lib/api";
 
@@ -119,13 +120,26 @@ export function CarbonCalculatorForm() {
           </div>
           <Metric label="Biomass" value={`${result.total_biomass_kg.toFixed(1)} kg`} />
           <Metric label="Stored carbon" value={`${result.carbon_kg.toFixed(1)} kg`} />
-          <Metric label="CO₂ equivalent" value={`${(result.co2e_kg / 1000).toFixed(3)} t`} />
+          <div className="rounded-lg border border-stone-200 px-3 py-2 dark:border-stone-700 sm:col-span-2">
+            <div className="text-xs text-stone-500">CO₂ equivalent (90% CI)</div>
+            <div className="mt-1 text-lg font-semibold text-forest-800 dark:text-forest-300">
+              <CarbonCo2eRange data={result} />
+            </div>
+            {result.uncertainty_pct != null ? (
+              <p className="mt-1 text-xs text-stone-500">
+                Combined measurement + model uncertainty ±{result.uncertainty_pct.toFixed(1)}%.
+                {result.creditable_co2e_kg != null && result.verra_deduction_pct
+                  ? ` Creditable after Verra deduction: ${(result.creditable_co2e_kg / 1000).toFixed(3)} t.`
+                  : null}
+              </p>
+            ) : null}
+          </div>
           <Metric label="Annual sequestration" value={`${(result.annual_sequestration_kg ?? 0).toFixed(1)} kg/yr`} />
           <Metric label="Lifetime credits" value={`${(result.lifetime_credits_tco2e ?? 0).toFixed(3)} tCO₂e`} />
           <Metric label="Est. revenue" value={`$${(result.estimated_revenue_usd ?? 0).toFixed(0)}`} />
           <p className="sm:col-span-2 lg:col-span-3 text-xs text-stone-500">
-            Indicative only — field verification is required for credit issuance. Confidence{" "}
-            {(result.confidence * 100).toFixed(0)}%.
+            Indicative only — field verification is required for credit issuance. Input completeness{" "}
+            {(result.confidence * 100).toFixed(0)}% (not the same as statistical uncertainty above).
           </p>
         </div>
       ) : null}
