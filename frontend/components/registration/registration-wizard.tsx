@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   ArrowRight,
@@ -109,21 +110,23 @@ export function RegistrationWizard({
     if (inferred) setGovCategory(inferred);
   }, [programCode, values.legal_basis, values.land_category]);
 
+  const t = useTranslations("trees");
+
   const steps: WizardStep[] = useMemo(() => {
     const base: WizardStep[] = [];
-    if (programs.length > 1 && !lockProgram) base.push({ id: "program", label: "Program" });
+    if (programs.length > 1 && !lockProgram) base.push({ id: "program", label: t("wizardProgram") });
     if (programCode === GOVERNMENT_PROGRAM_CODE && !skipGovCategory) {
-      base.push({ id: "gov_category", label: "Scheme type" });
+      base.push({ id: "gov_category", label: t("wizardProgram") });
     }
     for (const section of contentSections(schema, { programCode, govCategory })) {
       base.push({ id: section.id, label: section.title });
     }
     const location = schema.sections.find((s) => s.id === "location");
-    if (location) base.push({ id: "location", label: "Location" });
-    base.push({ id: "photos", label: "Evidence" });
-    base.push({ id: "review", label: "Review" });
+    if (location) base.push({ id: "location", label: t("wizardLocation") });
+    base.push({ id: "photos", label: t("wizardPhotos") });
+    base.push({ id: "review", label: t("wizardReview") });
     return base;
-  }, [programs.length, schema, programCode, govCategory, lockProgram, skipGovCategory]);
+  }, [programs.length, schema, programCode, govCategory, lockProgram, skipGovCategory, t]);
 
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;

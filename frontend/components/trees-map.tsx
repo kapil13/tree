@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   APIProvider,
@@ -143,6 +144,7 @@ export function TreesMap({
   className = "",
   showFilters = false,
 }: TreesMapProps) {
+  const t = useTranslations("trees");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const { user } = useAuth();
   const canAdd = canWriteInApp(user);
@@ -363,6 +365,25 @@ export function TreesMap({
           <TreeActionSheet tree={selected} onClose={() => setSelected(null)} />
         )}
       </div>
+
+      {items.length > 0 ? (
+        <section aria-label={t("mapListFallback")} className="rounded-xl border border-stone-200 bg-white p-3">
+          <p className="mb-2 text-xs text-stone-500">{t("mapListHint")}</p>
+          <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
+            {items.slice(0, 25).map((tree) => (
+              <li key={tree.id}>
+                <Link
+                  href={`/trees/${tree.id}`}
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                >
+                  <span>{tree.species_text || tree.public_code}</span>
+                  <span className="text-xs text-stone-500">{tree.public_code}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

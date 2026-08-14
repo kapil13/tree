@@ -684,6 +684,11 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
         user.full_name = payload.full_name
     if payload.phone is not None:
         user.phone = payload.phone
+    if payload.locale is not None:
+        allowed = {"en", "hi", "mr", "ta", "te", "bn", "kn", "gu"}
+        if payload.locale not in allowed:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported_locale")
+        user.locale = payload.locale
     await db.commit()
     await db.refresh(user)
     return await _user_out_enriched(db, user)

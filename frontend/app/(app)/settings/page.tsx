@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summary-panel";
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { SettingsSection } from "@/components/settings/settings-section";
@@ -10,13 +12,14 @@ import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
 export default function SettingsGeneralPage() {
   const { user } = useAuth();
+  const ts = useTranslations("settings");
   const roleLabel = user?.org_role
     ? formatOrgRole(user.org_role)
     : formatPlatformRole(user?.role);
 
   return (
     <div className="space-y-8">
-      <SettingsSection title="Account">
+      <SettingsSection title={ts("account")}>
         <div className="card flex items-center gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-600 text-lg font-semibold text-white">
             {(user?.full_name || "U").slice(0, 1).toUpperCase()}
@@ -28,6 +31,12 @@ export default function SettingsGeneralPage() {
           <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
             {roleLabel}
           </span>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={ts("languagePreference")} description={ts("languageHint")}>
+        <div className="card">
+          <LanguageSwitcher />
         </div>
       </SettingsSection>
 

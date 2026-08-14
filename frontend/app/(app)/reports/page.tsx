@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
+import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
@@ -52,8 +54,9 @@ type ReportRow = {
 export default function ReportsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const tr = useTranslations("reports");
   const canGenerate = canGenerateReports(user);
-  const [tab, setTab] = useState<"standard" | "brsr">("standard");
+  const [tab, setTab] = useState<"standard" | "brsr" | "iso14064">("standard");
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
@@ -99,7 +102,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Reports"
+        title={tr("title")}
         description={
           canGenerate
             ? "Generate carbon, inventory, biodiversity, and ESG exports for your portfolio."
@@ -107,28 +110,45 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="flex gap-2 border-b border-stone-200 pb-2">
+      <div className="flex gap-2 border-b border-stone-200 pb-2" role="tablist" aria-label={tr("title")}>
         <button
           type="button"
+          role="tab"
+          aria-selected={tab === "standard"}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
             tab === "standard" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
           }`}
           onClick={() => setTab("standard")}
         >
-          Standard reports
+          {tr("standardTab")}
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={tab === "brsr"}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
             tab === "brsr" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
           }`}
           onClick={() => setTab("brsr")}
         >
-          BRSR (SEBI)
+          {tr("brsrTab")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "iso14064"}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            tab === "iso14064" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+          }`}
+          onClick={() => setTab("iso14064")}
+        >
+          {tr("iso14064Tab")}
         </button>
       </div>
 
-      {tab === "brsr" ? (
+      {tab === "iso14064" ? (
+        <Iso14064ExportPanel />
+      ) : tab === "brsr" ? (
         <BrsrExportPanel />
       ) : (
         <>

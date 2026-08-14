@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -30,6 +31,9 @@ import { inviteErrorMessage, inviteLandingPath, storePendingInviteToken } from "
 import { useAuth } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
+import { setLocaleCookie } from "@/lib/locale-actions";
+import type { AppLocale } from "@/i18n/request";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { cn } from "@/lib/cn";
 
 type AuthMode = "signin" | "signup";
@@ -45,6 +49,7 @@ function getSafeNextPath(next: string | null): string | null {
 export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("auth");
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
 
@@ -151,6 +156,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
+    if (me.locale === "en" || me.locale === "hi") {
+      await setLocaleCookie(me.locale as AppLocale);
+    }
     await syncSessionCookieFromToken();
     if (inviteToken) {
       try {
@@ -303,7 +311,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
             <div className="mb-4 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">
-                {mode === "signin" ? "Welcome back" : "Join Aranyix"}
+                {mode === "signin" ? t("signIn") : t("signUp")}
               </h2>
               <button
                 type="button"
@@ -314,8 +322,11 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                 }}
                 className="shrink-0 text-sm font-medium text-forest-700 hover:text-forest-900"
               >
-                {mode === "signin" ? "Create account" : "Sign in"}
+                {mode === "signin" ? t("signUp") : t("signIn")}
               </button>
+            </div>
+            <div className="mb-4">
+              <LanguageSwitcher />
             </div>
 
             {mode === "signup" ? (
@@ -379,7 +390,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
                   >
                     <GoogleMark />
-                    Continue with Google
+                    {t("continueWithGoogle")}
                   </button>
 
                   <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-stone-400">
@@ -401,8 +412,8 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           : "border-transparent text-stone-500 hover:text-stone-700",
                       )}
                     >
-                      <Mail className="h-3.5 w-3.5" />
-                      Email
+                      <Mail className="h-3.5 w-3.5" aria-hidden />
+                      {t("email")}
                     </button>
                     <button
                       type="button"
@@ -502,7 +513,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                   ) : (
                     <div className="space-y-2.5">
                       <div>
-                        <label className="label mb-1">Email address</label>
+                        <label className="label mb-1">{t("email")}</label>
                         <input
                           className="field-input !rounded-xl !py-2.5"
                           type="email"
@@ -513,13 +524,13 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                       </div>
                       <div>
                         <div className="mb-1 flex items-center justify-between gap-2">
-                          <label className="label mb-0">Password</label>
+                          <label className="label mb-0">{t("password")}</label>
                           <button
                             type="button"
                             className="text-xs font-medium text-emerald-800 hover:text-emerald-900"
                             onClick={openForgotPassword}
                           >
-                            Forgot password?
+                            {t("forgotPassword")}
                           </button>
                         </div>
                         <div className="relative">
@@ -534,7 +545,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                             type="button"
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400"
                             onClick={() => setShowPassword((v) => !v)}
-                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4" />
@@ -553,7 +564,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                         className="btn-primary w-full"
                         onClick={() => void emailSignIn()}
                       >
-                        Sign in
+                        {t("signIn")}
                         <ArrowRight className="h-4 w-4" />
                       </button>
                     </div>

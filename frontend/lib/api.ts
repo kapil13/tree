@@ -222,6 +222,7 @@ export type User = {
     admin_email: string;
     read_only?: boolean;
   } | null;
+  locale?: string;
 };
 
 export type PlantingProgram = {
@@ -516,6 +517,9 @@ export const auth = {
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
+  },
+  async updateProfile(payload: { full_name?: string; phone?: string; locale?: string }) {
+    return (await api.patch<User>("/v1/auth/me", payload)).data;
   },
   async onboardingState() {
     return (await api.get<OnboardingState>("/v1/auth/onboarding")).data;

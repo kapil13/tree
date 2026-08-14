@@ -25,6 +25,8 @@ import {
   ClipboardList,
   FolderKanban,
 } from "lucide-react";
+import { ChartDataTable } from "@/components/dashboard/chart-data-table";
+import { useTranslations } from "next-intl";
 import {
   Area,
   AreaChart,
@@ -96,6 +98,7 @@ function DashboardSkeleton() {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
+  const t = useTranslations("dashboard");
   const canWrite = canWriteInApp(user);
   const canReport = canGenerateReports(user);
 
@@ -531,6 +534,17 @@ export function ExecutiveDashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          <ChartDataTable
+            caption={t("chartDataTable")}
+            columns={[
+              { key: "label", label: t("month") },
+              { key: "value", label: t("value") },
+            ]}
+            rows={data.carbon_growth.map((p) => ({
+              label: p.label,
+              value: +(p.value / 1000).toFixed(2),
+            }))}
+          />
         </div>
 
         <div className="dash-panel xl:col-span-3">
