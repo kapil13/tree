@@ -30,9 +30,13 @@ def test_verra_buffer_pool_reduces_lifetime_credits():
     verra = estimate_carbon(CarbonInputs(species="Neem", age_years=10, methodology="VERRA_VM0047"))
     assert base.lifetime_credits_tco2e is not None
     assert verra.lifetime_credits_tco2e is not None
-    assert verra.lifetime_credits_tco2e == pytest.approx(
-        base.lifetime_credits_tco2e * 0.8, rel=0.01
-    )
+    # 20% methodology buffer always applies; VM0047 uncertainty deduction may add further reduction.
+    buffer_only = base.lifetime_credits_tco2e * 0.8
+    if verra.verra_deduction_pct and verra.verra_deduction_pct > 0:
+        expected = buffer_only * (1 - verra.verra_deduction_pct / 100)
+        assert verra.lifetime_credits_tco2e == pytest.approx(expected, rel=0.01)
+    else:
+        assert verra.lifetime_credits_tco2e == pytest.approx(buffer_only, rel=0.01)
 
 
 def test_revenue_scales_with_tier():
