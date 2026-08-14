@@ -215,6 +215,7 @@ async def transition_ledger_status(
     actor_user_id: uuid.UUID | None,
     notes: str | None = None,
     registry_reference: str | None = None,
+    project: PlantingProject | None = None,
 ) -> ProjectCreditLedger:
     from_status = ledger.status
     allowed = VALID_TRANSITIONS.get(from_status, set())
@@ -238,6 +239,13 @@ async def transition_ledger_status(
     )
     db.add(event)
     await db.flush()
+
+    if to_status == "issued" and project is not None:
+        from app.services.credits.serials import mint_serial_for_issue, register_project_tree_claims
+
+        await mint_serial_for_issue(db, ledger=ledger, ledger_event=event, project=project)
+        await register_project_tree_claims(db, project=project, ledger_event=event)
+
     return ledger
 
 

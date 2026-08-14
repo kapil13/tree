@@ -91,6 +91,27 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 7–8 · Registry ledger + verifier workflow",
+    items: [
+      {
+        label: "Credit serials & retirement",
+        href: "/projects",
+        hint: "Project → Credits tab → issue ledger → retire serial → download certificate PDF",
+      },
+      {
+        label: "Verifier sample attestation",
+        href: "/projects",
+        hint: "Project → Credits tab → Create sample → Approve/Reject items (verifier role)",
+      },
+      {
+        label: "Double-claim prevention API",
+        href: "http://localhost:8000/docs#/credits/register_claim_api_v1_credits_claims_post",
+        external: true,
+        hint: "POST /credits/claims — second exclusive claim in same scheme family returns 409",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -98,7 +119,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 5–6 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 7–8 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

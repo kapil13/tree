@@ -5,10 +5,13 @@ from app.models.audit_chain_root import AuditChainRoot
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.citizen_profile import CitizenProfile
+from app.models.claim_registry import ClaimRegistry
 from app.models.cms import CmsPage, CmsSection, CmsSiteConfig
 from app.models.compliance_checklist import ProjectChecklistResponse
 from app.models.compliance_checklist_override import ComplianceChecklistOverride
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
+from app.models.credit_serial import CreditSerial
+from app.models.credit_transfer import CreditTransfer
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
 from app.models.organization_invite import OrganizationInvite
@@ -42,8 +45,8 @@ from app.models.tree_steward import TreeSteward
 from app.models.tree_survival_event import TreeSurvivalEvent
 from app.models.user import User
 from app.models.user_device import UserDevice
+from app.models.verification_workflow import VerificationItem, VerificationSample
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
-from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 
 __all__ = [
     "BioacousticRecording",
@@ -62,6 +65,9 @@ __all__ = [
     "PlatformGovernanceSettings",
     "PlatformModuleRule",
     "PlatformUserModuleGrant",
+    "ClaimRegistry",
+    "CreditSerial",
+    "CreditTransfer",
     "CreditLedgerEvent",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",
@@ -100,5 +106,7 @@ __all__ = [
     "ProjectMember",
     "ProjectRiskAssessment",
     "MonitoringJobRun",
+    "VerificationItem",
+    "VerificationSample",
     "WorkAreaBiodiversitySnapshot",
 ]
