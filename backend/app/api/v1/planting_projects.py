@@ -42,6 +42,7 @@ from app.schemas.project_member import (
     ProjectMemberCreate,
     ProjectMemberOut,
 )
+from app.schemas.project_risk import ProjectRiskAssessmentCreate
 from app.schemas.rule_template import ProjectRuleOverrideUpdate
 from app.schemas.tree import TreeListItem
 from app.services.audit import record_audit
@@ -1156,3 +1157,46 @@ async def remove_project_member(
     await db.delete(member)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{project_id}/risk-assessments")
+async def list_project_risk_assessments(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> list[dict]:
+    from app.services.carbon.risk_ops import list_risk_assessments
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    rows = await list_risk_assessments(db, project.id)
+    return [r.model_dump() for r in rows]
+
+
+@router.post("/{project_id}/risk-assessments", status_code=status.HTTP_201_CREATED)
+async def create_project_risk_assessment(
+    project_id: uuid.UUID,
+    payload: ProjectRiskAssessmentCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.risk_ops import create_risk_assessment
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_risk_assessment(db, project=project, payload=payload, assessor=user)
+    await record_audit(
+        db,
+        actor=user,
+        action="project.risk_assessment.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"nprt_score": payload.nprt_score, "buffer_pct": row.buffer_pct},
+    )
+    await db.commit()
+    return row.model_dump()

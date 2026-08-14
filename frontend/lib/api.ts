@@ -2097,6 +2097,8 @@ export type CreditLedger = {
   }>;
   last_computed_at: string;
   disclaimer: string;
+  buffer_from_nprt?: boolean;
+  nprt_score?: number;
   events: Array<{
     id: string;
     from_status: string | null;

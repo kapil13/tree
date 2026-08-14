@@ -26,6 +26,7 @@ from app.models.platform_governance_settings import PlatformGovernanceSettings
 from app.models.platform_module import PlatformModuleRule
 from app.models.platform_user_module_grant import PlatformUserModuleGrant
 from app.models.project_member import ProjectMember
+from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
@@ -36,6 +37,7 @@ from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
 from app.models.tree_measurement import TreeMeasurement
 from app.models.tree_steward import TreeSteward
+from app.models.tree_survival_event import TreeSurvivalEvent
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
@@ -82,6 +84,7 @@ __all__ = [
     "SatelliteHealthAnalysis",
     "Species",
     "Tree",
+    "TreeSurvivalEvent",
     "TreeSteward",
     "TreeAnalysis",
     "TreeImage",
@@ -89,6 +92,7 @@ __all__ = [
     "User",
     "UserDevice",
     "ProjectMember",
+    "ProjectRiskAssessment",
     "MonitoringJobRun",
     "WorkAreaBiodiversitySnapshot",
 ]

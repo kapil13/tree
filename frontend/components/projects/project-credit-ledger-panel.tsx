@@ -162,6 +162,13 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
         <Stat
           label={`Buffer (${(bufferPct * 100).toFixed(0)}%)`}
           value={`${bufferWithheld.toFixed(4)} tCO₂e`}
+          hint={
+            ledger.buffer_from_nprt
+              ? `NPRT-assessed${ledger.nprt_score != null ? ` (score ${ledger.nprt_score})` : ""}`
+              : ledger.methodology === "VERRA_VM0047"
+                ? "Default methodology 20%"
+                : undefined
+          }
         />
         <Stat
           label="Net (issuable est.)"
@@ -274,11 +281,20 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+}) {
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-3">
       <p className="text-xs text-stone-500">{label}</p>
       <div className="mt-1 font-mono text-sm font-semibold text-stone-900">{value}</div>
+      {hint ? <p className="mt-1 text-[10px] text-stone-500">{hint}</p> : null}
     </div>
   );
 }

@@ -11,6 +11,8 @@ Implements:
 - Confidence score combining input completeness with species/growth confidence.
 - Monte Carlo uncertainty propagation with 90% CO₂e confidence intervals
   and Verra VM0047 uncertainty deduction when applicable.
+- Mortality-adjusted lifetime credit projections and dynamic NPRT buffer pools.
+- Ex-ante (projected) vs ex-post (verified standing stock) credit split.
 
 The engine is pure, deterministic, and version-tagged. Inputs/outputs are
 dataclasses to keep the engine free of Pydantic/SQLAlchemy import cycles.
@@ -31,7 +33,10 @@ from app.services.carbon.biomass_math import (
 )
 from app.services.carbon.species_catalog import by_name
 
-ENGINE_VERSION = "byot-carbon-1.1.0"
+ENGINE_VERSION = "byot-carbon-1.2.0"
+
+# Re-export for ledger / reports (prefer buffer.resolve_buffer_pct at runtime)
+from app.services.carbon.buffer import DEFAULT_BUFFER_POOL as BUFFER_POOL  # noqa: E402, F401
 
 # Verification tier discount applied to lifetime revenue
 TIER_FACTOR = {
@@ -41,14 +46,7 @@ TIER_FACTOR = {
     "verra_issued": 1.00,
 }
 
-# Methodology buffer pools (fraction WITHHELD from lifetime credits)
-BUFFER_POOL = {
-    "IPCC_AR6": 0.0,
-    "VERRA_VM0047": 0.20,
-    "GOLD_STANDARD_LUF": 0.15,
-}
-
-
+_EX_POST_TIERS = frozenset({"verra_listed", "verra_issued"})
 Methodology = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF"]
 ClimateZone = Literal["tropical", "subtropical", "temperate", "boreal"]
 VerificationTier = Literal["speculative", "ai_verified", "verra_listed", "verra_issued"]
@@ -70,6 +68,11 @@ class CarbonInputs:
     measurement_method: str | None = None
     uncertainty_dbh_pct: float | None = None
     uncertainty_height_pct: float | None = None
+    # Mortality / buffer (Sprint 3–4)
+    annual_mortality_pct: float | None = None
+    buffer_pct: float | None = None
+    nprt_score: float | None = None
+    ex_post_verified: bool = False
 
 
 @dataclass
@@ -91,6 +94,11 @@ class CarbonResult:
     uncertainty_pct: float | None = None
     verra_deduction_pct: float | None = None
     creditable_co2e_kg: float | None = None
+    projected_lifetime_credits_tco2e: float | None = None
+    verified_co2e_kg: float | None = None
+    verified_lifetime_credits_tco2e: float | None = None
+    buffer_pct_applied: float | None = None
+    effective_annual_mortality_pct: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -179,10 +187,37 @@ class CarbonEngine:
             annual_seq_kg = max(0.0, co2e - prev_co2e)
 
         # Lifetime credits projected over species useful life (max DBH age)
+        from app.services.carbon.buffer import resolve_buffer_pct
+        from app.services.carbon.mortality import (
+            apply_mortality_to_yearly_deltas,
+            effective_annual_mortality_pct,
+        )
+
+        buffer_pct = resolve_buffer_pct(
+            inp.methodology,
+            buffer_pct=inp.buffer_pct,
+            nprt_score=inp.nprt_score,
+        )
+        mortality_pct = effective_annual_mortality_pct(
+            climate_zone=inp.climate_zone,
+            ecological_zone=inp.ecological_zone,
+            age_years=inp.age_years or 0.0,
+            annual_mortality_pct=inp.annual_mortality_pct,
+        )
+        if inp.nprt_score is not None:
+            notes.append(
+                f"Dynamic NPRT buffer: {buffer_pct * 100:.0f}% (NPRT score {inp.nprt_score:.0f})"
+            )
+        elif inp.buffer_pct is not None:
+            notes.append(f"Custom buffer pool: {buffer_pct * 100:.0f}%")
+        if mortality_pct > 0:
+            notes.append(f"Mortality-adjusted projection: {mortality_pct:.1f}% annual mortality")
+
         lifetime_credits_t: float | None = None
+        projected_lifetime_t: float | None = None
         if sp and sp.growth_curve:
             max_age = max(sp.growth_curve.keys())
-            cumulative = 0.0
+            yearly_deltas: list[float] = []
             for yr in range(1, int(max_age) + 1):
                 d_now = _interp_growth(sp.growth_curve, yr)
                 d_prev = _interp_growth(sp.growth_curve, yr - 1)
@@ -190,10 +225,17 @@ class CarbonEngine:
                 a_prev = _agb_species(d_prev, sp) if d_prev > 0 else 0.0
                 delta_biomass = (a_now - a_prev) * (1 + r)
                 delta_co2e = delta_biomass * cf * (44.0 / 12.0)
-                cumulative += max(0.0, delta_co2e)
-            lifetime_credits_t = (cumulative / 1000.0) * (
-                1.0 - BUFFER_POOL.get(inp.methodology, 0.0)
+                yearly_deltas.append(max(0.0, delta_co2e))
+
+            gross_kg = apply_mortality_to_yearly_deltas(
+                yearly_deltas,
+                climate_zone=inp.climate_zone,
+                ecological_zone=inp.ecological_zone,
+                start_age_years=inp.age_years or 0.0,
+                annual_mortality_pct=inp.annual_mortality_pct,
             )
+            projected_lifetime_t = (gross_kg / 1000.0) * (1.0 - buffer_pct)
+            lifetime_credits_t = projected_lifetime_t
 
         # Confidence: input completeness + species coverage
         comp = 0.0
@@ -241,6 +283,19 @@ class CarbonEngine:
         lifetime_credits_t = apply_verra_deduction_to_credits(
             lifetime_credits_t, uncertainty.uncertainty_pct, inp.methodology
         )
+        if projected_lifetime_t is not None and lifetime_credits_t is not None:
+            projected_lifetime_t = lifetime_credits_t
+
+        verified_co2e: float | None = None
+        verified_lifetime_t: float | None = None
+        is_ex_post = inp.ex_post_verified or inp.verification_tier in _EX_POST_TIERS
+        if is_ex_post:
+            verified_co2e = uncertainty.creditable_co2e_kg or co2e
+            verified_lifetime_t = round(
+                (verified_co2e / 1000.0) * (1.0 - buffer_pct), 3
+            )
+            notes.append("Ex-post verified standing stock applied to creditable quantity")
+
         revenue: float | None = None
         if lifetime_credits_t is not None:
             revenue = (
@@ -269,6 +324,13 @@ class CarbonEngine:
             uncertainty_pct=uncertainty.uncertainty_pct,
             verra_deduction_pct=uncertainty.verra_deduction_pct,
             creditable_co2e_kg=uncertainty.creditable_co2e_kg,
+            projected_lifetime_credits_tco2e=(
+                round(projected_lifetime_t, 3) if projected_lifetime_t is not None else None
+            ),
+            verified_co2e_kg=round(verified_co2e, 2) if verified_co2e is not None else None,
+            verified_lifetime_credits_tco2e=verified_lifetime_t,
+            buffer_pct_applied=round(buffer_pct, 4),
+            effective_annual_mortality_pct=mortality_pct,
         )
 
 
