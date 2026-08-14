@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy MRV sprint stack (0037–0042) on Hostinger VPS and print verification paths.
+# Deploy MRV sprint stack (0037–0043) on Hostinger VPS and print verification paths.
 #
 # Run ON THE VPS from repo root or infrastructure/hostinger/:
 #   cd /opt/byot/infrastructure/hostinger
@@ -28,11 +28,11 @@ echo "==> Running standard deploy..."
 ENV_FILE=".env.production"
 COMPOSE_FILE="docker-compose.prod.yml"
 
-echo "==> Verifying Alembic head (expect 0042_registry_credit_ledger or later)..."
+echo "==> Verifying Alembic head (expect 0043_user_locale or later)..."
 HEAD="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current 2>/dev/null | tail -1 || true)"
 echo "    Current revision: ${HEAD:-unknown}"
 
-for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger; do
+for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale; do
   if echo "$HEAD" | grep -q "$rev"; then
     echo "    ✓ At or past $rev"
   fi
@@ -85,6 +85,12 @@ Sprint 7–8  Registry credit ledger + verifier workflow
 Sprint 8–9  BRSR Core (SEBI) export
   ${APP_URL}/reports → BRSR (SEBI) tab → Export assurance pack
   ${API_URL}/docs → POST /reports/brsr (viewers / auditors read-only)
+
+Sprint 9–10  ISO 14064-2 + Hindi web + WCAG
+  ${APP_URL}/reports → ISO 14064-2 tab → Export project report
+  ${API_URL}/docs → POST /reports/iso14064
+  ${APP_URL}/settings → Language preference (Hindi)
+  ${APP_URL}/auth → Hindi auth strings + language switcher
 
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head

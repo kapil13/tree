@@ -133,6 +133,33 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 9–10 · ISO 14064-2 + Hindi web + WCAG",
+    items: [
+      {
+        label: "ISO 14064-2 project report",
+        href: "/reports",
+        hint: "Reports → ISO 14064-2 tab → enter project UUID → Export zip",
+      },
+      {
+        label: "Hindi language (auth + dashboard + trees)",
+        href: "/settings",
+        hint: "Settings → Language preference → Hindi; check /auth, /dashboard, /trees/new",
+      },
+      {
+        label: "ISO 14064 API",
+        href: "http://localhost:8000/docs#/reports/export_iso14064_report_api_v1_reports_iso14064_post",
+        external: true,
+        hint: "POST /reports/iso14064 — format json | xlsx | zip",
+      },
+      {
+        label: "Locale profile sync",
+        href: "http://localhost:8000/docs#/auth/update_me_api_v1_auth_me_patch",
+        external: true,
+        hint: "PATCH /auth/me { locale: \"hi\" } — syncs with mobile preference",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -140,7 +167,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 8–9 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 9–10 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

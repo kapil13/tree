@@ -15,6 +15,7 @@ from app.models.organization import Organization
 from app.models.report import Report
 from app.models.user import User
 from app.schemas.brsr import BrsrExportRequest
+from app.schemas.iso14064 import Iso14064ExportRequest
 from app.services.audit import record_audit
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.reports.brsr import (
@@ -24,6 +25,12 @@ from app.services.reports.brsr import (
     render_brsr_zip,
 )
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
+from app.services.reports.iso14064 import (
+    build_iso14064_context,
+    render_iso14064_json,
+    render_iso14064_xlsx,
+    render_iso14064_zip,
+)
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -222,6 +229,65 @@ async def export_brsr_report(
         diff={
             "format": payload.format,
             "project_id": str(payload.project_id) if payload.project_id else None,
+            "org_role": user.org_role,
+        },
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/iso14064")
+async def export_iso14064_report(
+    payload: Iso14064ExportRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """ISO 14064-2 project GHG quantification document — org members including viewers."""
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+
+    from app.services.planting_projects.access import load_project
+
+    project = await load_project(payload.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    try:
+        ctx = await build_iso14064_context(db, project=project)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    code = (project.code or "project").replace("/", "-")
+    if payload.format == "json":
+        data = render_iso14064_json(ctx)
+        media = "application/json"
+        filename = f"iso14064-{code}.json"
+    elif payload.format == "xlsx":
+        data = render_iso14064_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"iso14064-{code}.xlsx"
+    else:
+        data = render_iso14064_zip(ctx)
+        media = "application/zip"
+        filename = f"iso14064-{code}-pack.zip"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="report.iso14064.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={
+            "format": payload.format,
+            "project_id": str(project.id),
             "org_role": user.org_role,
         },
     )

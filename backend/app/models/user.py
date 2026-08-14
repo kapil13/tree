@@ -35,6 +35,7 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     notification_preferences: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=default_notification_preferences
     )
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
 
     organization = relationship(
         "Organization", back_populates="users", foreign_keys=[organization_id]
