@@ -26,6 +26,10 @@ class CarbonEstimateRequest(BaseModel):
     )
     uncertainty_dbh_pct: float | None = Field(default=None, ge=0, le=100)
     uncertainty_height_pct: float | None = Field(default=None, ge=0, le=100)
+    annual_mortality_pct: float | None = Field(default=None, ge=0, le=100)
+    buffer_pct: float | None = Field(default=None, ge=0, le=50)
+    nprt_score: float | None = Field(default=None, ge=0, le=100)
+    ex_post_verified: bool = False
 
 
 class CarbonEstimateResponse(BaseModel):
@@ -39,6 +43,11 @@ class CarbonEstimateResponse(BaseModel):
     uncertainty_pct: float | None = None
     verra_deduction_pct: float | None = None
     creditable_co2e_kg: float | None = None
+    projected_lifetime_credits_tco2e: float | None = None
+    verified_co2e_kg: float | None = None
+    verified_lifetime_credits_tco2e: float | None = None
+    buffer_pct_applied: float | None = None
+    effective_annual_mortality_pct: float | None = None
     annual_sequestration_kg: float | None
     lifetime_credits_tco2e: float | None
     estimated_revenue_usd: float | None

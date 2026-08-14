@@ -18,6 +18,7 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_custom_template import PlantingCustomTemplate
 from app.models.planting_program import PlantingProgram, ProgramAccessRequest, UserPlantingProgram
 from app.models.planting_project import PlantingProject
+from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_rule_template import PlantingRuleTemplateOverride
 from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
@@ -36,6 +37,7 @@ from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
 from app.models.tree_measurement import TreeMeasurement
 from app.models.tree_steward import TreeSteward
+from app.models.tree_survival_event import TreeSurvivalEvent
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
@@ -82,6 +84,7 @@ __all__ = [
     "SatelliteHealthAnalysis",
     "Species",
     "Tree",
+    "TreeSurvivalEvent",
     "TreeSteward",
     "TreeAnalysis",
     "TreeImage",
@@ -89,6 +92,7 @@ __all__ = [
     "User",
     "UserDevice",
     "ProjectMember",
+    "ProjectRiskAssessment",
     "MonitoringJobRun",
     "WorkAreaBiodiversitySnapshot",
 ]

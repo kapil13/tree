@@ -13,7 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
-from app.services.carbon.engine import BUFFER_POOL, ENGINE_VERSION
+from app.services.carbon.buffer import resolve_buffer_pct
+from app.services.carbon.engine import ENGINE_VERSION
+from app.services.carbon.risk_ops import buffer_pct_for_project, latest_risk_assessment
 
 MethodologyCode = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF"]
 CreditStatus = Literal["estimated", "verified", "buffered", "issued"]
@@ -39,8 +41,10 @@ def _age_cohort(planted_at: date | None) -> str:
     return "10+y"
 
 
-def _buffer_pct(methodology: str) -> float:
-    return BUFFER_POOL.get(methodology, 0.0)
+def _buffer_pct(methodology: str, nprt_buffer_pct: float | None = None) -> float:
+    if nprt_buffer_pct is not None:
+        return nprt_buffer_pct
+    return resolve_buffer_pct(methodology)  # type: ignore[arg-type]
 
 
 def compute_strata(trees: list[Tree]) -> list[dict[str, Any]]:
@@ -69,12 +73,27 @@ def compute_strata(trees: list[Tree]) -> list[dict[str, Any]]:
 
 
 def compute_ledger_totals(
-    trees: list[Tree], methodology: MethodologyCode = "VERRA_VM0047"
+    trees: list[Tree],
+    methodology: MethodologyCode = "VERRA_VM0047",
+    *,
+    buffer_pct_override: float | None = None,
+    ex_post_only: bool = False,
 ) -> dict[str, Any]:
     total_carbon_kg = sum(float(t.current_carbon_kg or 0) for t in trees)
+    if ex_post_only:
+        dead_statuses = {"dead", "removed", "mortality"}
+        total_carbon_kg = 0.0
+        for t in trees:
+            if str(getattr(t, "status", "active")) == "removed":
+                continue
+            meta = getattr(t, "metadata_", None) or {}
+            survival = str(meta.get("survival_status", "alive")).lower()
+            if survival in dead_statuses:
+                continue
+            total_carbon_kg += float(t.current_carbon_kg or 0)
     total_co2e_kg = total_carbon_kg * 44 / 12
     gross = total_co2e_kg / 1000.0
-    buffer_pct = _buffer_pct(methodology)
+    buffer_pct = _buffer_pct(methodology, buffer_pct_override)
     buffer_withheld = gross * buffer_pct
     net = gross * (1.0 - buffer_pct)
     return {
@@ -85,6 +104,7 @@ def compute_ledger_totals(
         "net_credits_tco2e": round(net, 4),
         "engine_version": ENGINE_VERSION,
         "strata": compute_strata(trees),
+        "buffer_from_nprt": buffer_pct_override is not None,
     }
 
 
@@ -107,10 +127,18 @@ async def sync_project_ledger(
         select(Tree).where(Tree.project_id == project.id, Tree.status != "removed")
     )
     trees = list(trees_res.scalars().all())
-    totals = compute_ledger_totals(trees, methodology)
+    ledger = await get_or_create_ledger(db, project)
+    risk = await latest_risk_assessment(db, project.id)
+    buffer_pct, from_nprt = buffer_pct_for_project(risk, methodology)
+    ex_post = ledger.status in ("verified", "buffered", "issued") if ledger else False
+    totals = compute_ledger_totals(
+        trees,
+        methodology,
+        buffer_pct_override=buffer_pct if from_nprt else None,
+        ex_post_only=ex_post,
+    )
     now = datetime.now(UTC)
 
-    ledger = await get_or_create_ledger(db, project)
     if ledger is None:
         ledger = ProjectCreditLedger(
             project_id=project.id,

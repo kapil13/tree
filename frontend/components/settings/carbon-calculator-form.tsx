@@ -135,10 +135,32 @@ export function CarbonCalculatorForm() {
             ) : null}
           </div>
           <Metric label="Annual sequestration" value={`${(result.annual_sequestration_kg ?? 0).toFixed(1)} kg/yr`} />
-          <Metric label="Lifetime credits" value={`${(result.lifetime_credits_tco2e ?? 0).toFixed(3)} tCO₂e`} />
+          <Metric
+            label="Ex-ante lifetime (projected)"
+            value={`${(result.projected_lifetime_credits_tco2e ?? result.lifetime_credits_tco2e ?? 0).toFixed(3)} tCO₂e`}
+          />
+          {result.verified_lifetime_credits_tco2e != null ? (
+            <Metric
+              label="Ex-post verified (standing stock)"
+              value={`${result.verified_lifetime_credits_tco2e.toFixed(3)} tCO₂e`}
+            />
+          ) : null}
+          {result.buffer_pct_applied != null ? (
+            <Metric
+              label="Buffer applied"
+              value={`${(result.buffer_pct_applied * 100).toFixed(0)}%`}
+            />
+          ) : null}
+          {result.effective_annual_mortality_pct != null ? (
+            <Metric
+              label="Mortality (annual est.)"
+              value={`${result.effective_annual_mortality_pct.toFixed(1)}%`}
+            />
+          ) : null}
           <Metric label="Est. revenue" value={`$${(result.estimated_revenue_usd ?? 0).toFixed(0)}`} />
           <p className="sm:col-span-2 lg:col-span-3 text-xs text-stone-500">
-            Indicative only — field verification is required for credit issuance. Input completeness{" "}
+            Ex-ante lifetime credits include mortality decay and permanence buffer. Ex-post verified
+            credits reflect current standing biomass only (field-verified tiers).
             {(result.confidence * 100).toFixed(0)}% (not the same as statistical uncertainty above).
           </p>
         </div>

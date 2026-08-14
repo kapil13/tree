@@ -38,6 +38,8 @@ def _raise_credit_ledger_db_error(exc: Exception) -> None:
 
 
 async def _ledger_with_events(db: DB, ledger: ProjectCreditLedger) -> dict:
+    from app.services.carbon.risk_ops import latest_risk_assessment
+
     events = (
         await db.execute(
             select(CreditLedgerEvent)
@@ -46,7 +48,14 @@ async def _ledger_with_events(db: DB, ledger: ProjectCreditLedger) -> dict:
             .limit(20)
         )
     ).scalars().all()
-    return ledger_to_dict(ledger, list(events))
+    data = ledger_to_dict(ledger, list(events))
+    risk = await latest_risk_assessment(db, ledger.project_id)
+    if risk is not None:
+        data["buffer_from_nprt"] = True
+        data["nprt_score"] = float(risk.nprt_score)
+    else:
+        data["buffer_from_nprt"] = False
+    return data
 
 
 @router.get("/summary")

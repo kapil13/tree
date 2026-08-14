@@ -570,6 +570,20 @@ async def regeotag_tree(
         measurer_id=user.id,
     )
 
+    if payload.survival_status:
+        from app.schemas.tree_survival import TreeSurvivalEventCreate
+        from app.services.trees.survival_events import record_survival_event
+
+        await record_survival_event(
+            db,
+            tree=tree,
+            payload=TreeSurvivalEventCreate(
+                status=payload.survival_status,
+                cause=payload.remarks,
+            ),
+            recorder=user,
+        )
+
     gamification = None
     if tree.project_id is None:
         from app.services.citizen.gamification import record_stewardship_checkin

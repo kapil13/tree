@@ -34,6 +34,10 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
             measurement_method=payload.measurement_method,
             uncertainty_dbh_pct=payload.uncertainty_dbh_pct,
             uncertainty_height_pct=payload.uncertainty_height_pct,
+            annual_mortality_pct=payload.annual_mortality_pct,
+            buffer_pct=payload.buffer_pct,
+            nprt_score=payload.nprt_score,
+            ex_post_verified=payload.ex_post_verified,
         )
     )
     return CarbonEstimateResponse(**res.__dict__)
@@ -108,6 +112,9 @@ async def carbon_report(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
         "uncertainty_pct": float(latest.uncertainty_pct or 0),
         "verra_deduction_pct": float(latest.verra_deduction_pct or 0),
         "creditable_co2e_kg": float(latest.creditable_co2e_kg or latest.co2e_kg),
+        "projected_lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
+        "verified_co2e_kg": float(latest.creditable_co2e_kg or latest.co2e_kg),
+        "verified_lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
         "annual_sequestration_kg": float(latest.annual_sequestration_kg or 0),
         "lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
         "estimated_revenue_usd": float(latest.estimated_revenue_usd or 0),
