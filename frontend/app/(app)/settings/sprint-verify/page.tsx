@@ -112,6 +112,27 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 8–9 · BRSR Core export (SEBI)",
+    items: [
+      {
+        label: "BRSR Principle 6 assurance pack",
+        href: "/reports",
+        hint: "Reports → BRSR (SEBI) tab → Export zip (JSON + Excel with scope-tagged GHG lines)",
+      },
+      {
+        label: "Auditor read-only access",
+        href: "/settings",
+        hint: "Org admin invites member with org_role=viewer — can export BRSR without write access",
+      },
+      {
+        label: "BRSR API",
+        href: "http://localhost:8000/docs#/reports/export_brsr_report_api_v1_reports_brsr_post",
+        external: true,
+        hint: "POST /reports/brsr — format json | xlsx | zip",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -119,7 +140,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 7–8 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 8–9 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

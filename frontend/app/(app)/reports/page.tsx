@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
@@ -52,6 +53,7 @@ export default function ReportsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const canGenerate = canGenerateReports(user);
+  const [tab, setTab] = useState<"standard" | "brsr">("standard");
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
@@ -105,6 +107,31 @@ export default function ReportsPage() {
         }
       />
 
+      <div className="flex gap-2 border-b border-stone-200 pb-2">
+        <button
+          type="button"
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            tab === "standard" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+          }`}
+          onClick={() => setTab("standard")}
+        >
+          Standard reports
+        </button>
+        <button
+          type="button"
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            tab === "brsr" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+          }`}
+          onClick={() => setTab("brsr")}
+        >
+          BRSR (SEBI)
+        </button>
+      </div>
+
+      {tab === "brsr" ? (
+        <BrsrExportPanel />
+      ) : (
+        <>
       {canGenerate ? (
         <div className="card space-y-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -241,6 +268,8 @@ export default function ReportsPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }

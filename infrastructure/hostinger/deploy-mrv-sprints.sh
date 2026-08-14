@@ -82,6 +82,10 @@ Sprint 7–8  Registry credit ledger + verifier workflow
   ${APP_URL}/projects → [project] → Credits → serials + verifier sample
   ${API_URL}/docs → POST /credits/claims, /verification/projects/{id}/samples
 
+Sprint 8–9  BRSR Core (SEBI) export
+  ${APP_URL}/reports → BRSR (SEBI) tab → Export assurance pack
+  ${API_URL}/docs → POST /reports/brsr (viewers / auditors read-only)
+
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head
 

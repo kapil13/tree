@@ -11,10 +11,18 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, require_write_perm
 from app.core.security import Permission
+from app.models.organization import Organization
 from app.models.report import Report
 from app.models.user import User
+from app.schemas.brsr import BrsrExportRequest
 from app.services.audit import record_audit
 from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.brsr import (
+    build_brsr_context,
+    render_brsr_json,
+    render_brsr_xlsx,
+    render_brsr_zip,
+)
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
 from app.services.storage import get_storage
 
@@ -159,4 +167,68 @@ async def download_report(
         headers={
             "Content-Disposition": f'attachment; filename="{rpt.kind}-{rpt.id}.{ext}"'
         },
+    )
+
+
+@router.post("/brsr")
+async def export_brsr_report(
+    payload: BrsrExportRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """SEBI BRSR Core Principle 6 export — available to org viewers (auditor read-only)."""
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+
+    if payload.project_id is not None:
+        from app.services.planting_projects.access import load_project
+
+        project = await load_project(payload.project_id, user, db)
+        if project is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    try:
+        ctx = await build_brsr_context(db, organization=org, project_id=payload.project_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    slug = (org.slug or "org").replace("/", "-")
+    if payload.format == "json":
+        data = render_brsr_json(ctx)
+        media = "application/json"
+        filename = f"brsr-{slug}-p6.json"
+    elif payload.format == "xlsx":
+        data = render_brsr_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"brsr-{slug}-p6.xlsx"
+    else:
+        data = render_brsr_zip(ctx)
+        media = "application/zip"
+        filename = f"brsr-{slug}-p6-pack.zip"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="report.brsr.export",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={
+            "format": payload.format,
+            "project_id": str(payload.project_id) if payload.project_id else None,
+            "org_role": user.org_role,
+        },
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
