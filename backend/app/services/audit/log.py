@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditLog
 from app.models.user import User
+from app.services.audit.chain import append_audit_chain
 from app.services.audit.request import client_ip, client_user_agent
 
 
@@ -40,7 +41,10 @@ async def record_audit(
         ip=ip if ip is not None else client_ip(request),
         user_agent=user_agent if user_agent is not None else client_user_agent(request),
         diff=diff,
+        prev_hash="0" * 64,  # sealed by append_audit_chain
+        record_hash="0" * 64,
     )
+    await append_audit_chain(db, entry)
     db.add(entry)
     await enqueue_audit_webhooks_safe(db, entry)
     return entry

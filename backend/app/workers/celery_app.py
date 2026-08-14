@@ -84,5 +84,9 @@ celery_app.conf.update(
             "task": "app.workers.tasks.biodiversity_baseline",
             "schedule": crontab(hour="4", minute="30", day_of_week="0"),
         },
+        "daily-audit-root-publish": {
+            "task": "app.workers.tasks.publish_daily_audit_root",
+            "schedule": crontab(hour="0", minute="5"),
+        },
     },
 )

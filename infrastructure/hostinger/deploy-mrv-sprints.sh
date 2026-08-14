@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy MRV sprint stack (0037–0040) on Hostinger VPS and print verification paths.
+# Deploy MRV sprint stack (0037–0041) on Hostinger VPS and print verification paths.
 #
 # Run ON THE VPS from repo root or infrastructure/hostinger/:
 #   cd /opt/byot/infrastructure/hostinger
@@ -28,11 +28,11 @@ echo "==> Running standard deploy..."
 ENV_FILE=".env.production"
 COMPOSE_FILE="docker-compose.prod.yml"
 
-echo "==> Verifying Alembic head (expect 0040_dpdp_privacy or later)..."
+echo "==> Verifying Alembic head (expect 0041_audit_evidence_chain or later)..."
 HEAD="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current 2>/dev/null | tail -1 || true)"
 echo "    Current revision: ${HEAD:-unknown}"
 
-for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy; do
+for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain; do
   if echo "$HEAD" | grep -q "$rev"; then
     echo "    ✓ At or past $rev"
   fi
@@ -72,6 +72,11 @@ Sprint 3–4  Mortality + NPRT buffer
 Sprint 4–5  DPDP privacy
   ${APP_URL}/settings/privacy → export / consent / grievance
   ${APP_URL}/settings/sprint-verify → full checklist
+
+Sprint 5–6  Tamper-evident audit + signed evidence
+  ${APP_URL}/projects → [project] → Compliance → evidence bundle (signed)
+  ${API_URL}/api/v1/evidence/signing-key → Ed25519 public key
+  ${API_URL}/docs → GET /audit/chain/verify (admin)
 
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head

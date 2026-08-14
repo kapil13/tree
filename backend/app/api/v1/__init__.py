@@ -17,6 +17,7 @@ from app.api.v1 import (
     credits,
     dashboard,
     devices,
+    evidence,
     health,
     intelligence,
     organizations,
@@ -57,6 +58,7 @@ api_router.include_router(planting_projects.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
+api_router.include_router(evidence.router)
 api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
 api_router.include_router(cms.public_router)

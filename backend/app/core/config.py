@@ -189,6 +189,12 @@ class Settings(BaseSettings):
     bioacoustic_review_confidence: float = Field(default=0.70, ge=0.05, le=0.99)
     bioacoustic_spl_warning_db: float = Field(default=62.0, ge=40.0, le=90.0)
 
+    # Evidence bundle signing (Ed25519 detached signature)
+    evidence_signing_key: str | None = None  # base64-encoded 32-byte Ed25519 seed
+    evidence_tsa_enabled: bool = True
+    evidence_tsa_url: str | None = None
+    evidence_tsa_stub_label: str = "byot-dev-tsa-stub"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
