@@ -511,3 +511,17 @@ def deliver_webhook(delivery_id: str) -> dict:
     except Exception as exc:
         log.exception("deliver_webhook_failed", delivery_id=delivery_id)
         return {"delivery_id": delivery_id, "status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="app.workers.tasks.publish_daily_audit_root")
+def publish_daily_audit_root() -> dict:
+    log.info("worker.publish_daily_audit_root")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.audit.chain import run_daily_audit_root_publish
+
+        async with AsyncSessionLocal() as db:
+            return await run_daily_audit_root_publish(db)
+
+    return _execute_recorded("publish_daily_audit_root", _run)

@@ -920,7 +920,7 @@ async def export_evidence_bundle(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
-    zip_bytes, summary = await build_project_evidence_bundle(
+    zip_bytes, summary, signature = await build_project_evidence_bundle(
         db, project, include_photos=include_photos
     )
     safe_code = project.code.replace("/", "-")
@@ -932,16 +932,22 @@ async def export_evidence_bundle(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff=summary,
+        diff={**summary, "signature_key_id": signature.key_id if signature else None},
     )
     await db.commit()
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{safe_code}-evidence-bundle.zip"',
+    }
+    if signature is not None:
+        headers["X-BYOT-Evidence-SHA256"] = signature.zip_sha256
+        headers["X-BYOT-Evidence-Signature"] = signature.signature_b64
+        headers["X-BYOT-Evidence-Key-Id"] = signature.key_id
 
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{safe_code}-evidence-bundle.zip"'
-        },
+        headers=headers,
     )
 
 

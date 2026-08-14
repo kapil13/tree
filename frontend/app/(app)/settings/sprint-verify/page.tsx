@@ -69,6 +69,28 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 5–6 · Tamper-evident audit + signed evidence",
+    items: [
+      {
+        label: "Evidence bundle download (signed zip)",
+        href: "/projects",
+        hint: "Project → Compliance tab → Download evidence bundle; check response headers for X-BYOT-Evidence-Signature",
+      },
+      {
+        label: "Public signing key",
+        href: "http://localhost:8000/api/v1/evidence/signing-key",
+        external: true,
+        hint: "Ed25519 public key for offline bundle verification",
+      },
+      {
+        label: "Audit chain verification",
+        href: "http://localhost:8000/docs#/audit/verify_audit_chain_endpoint_api_v1_audit_chain_verify_get",
+        external: true,
+        hint: "Admin: GET /audit/chain/verify — tampering any row breaks the chain",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -76,7 +98,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 4–5 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 5–6 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}
