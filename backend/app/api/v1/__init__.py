@@ -36,6 +36,7 @@ from app.api.v1 import (
     trees,
     uploads,
     verification,
+    verification_workflow,
     weather,
     webhooks,
 )
@@ -78,3 +79,4 @@ api_router.include_router(reporting.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(verification.router)
 api_router.include_router(verification.public_router)
+api_router.include_router(verification_workflow.router)

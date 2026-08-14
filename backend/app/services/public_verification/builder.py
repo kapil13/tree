@@ -70,6 +70,47 @@ async def build_project_verification_payload(
         for t in trees_res.scalars().all()
     ]
 
+    from app.models.credit_serial import CreditSerial
+    from app.models.verification_workflow import VerificationItem, VerificationSample
+
+    serials_res = await db.execute(
+        select(CreditSerial).where(CreditSerial.project_id == project.id).limit(10)
+    )
+    serials = [
+        {
+            "serial_number": s.serial_number,
+            "vintage_year": s.vintage_year,
+            "tco2e_amount": float(s.tco2e_amount),
+            "status": s.status,
+        }
+        for s in serials_res.scalars().all()
+    ]
+
+    samples_res = await db.execute(
+        select(VerificationSample).where(VerificationSample.project_id == project.id).limit(5)
+    )
+    samples = list(samples_res.scalars().all())
+    attestations: list[dict[str, Any]] = []
+    for sample in samples:
+        items = (
+            await db.execute(
+                select(VerificationItem).where(
+                    VerificationItem.sample_id == sample.id,
+                    VerificationItem.status.in_(("approved", "rejected")),
+                )
+            )
+        ).scalars().all()
+        for item in items:
+            attestations.append(
+                {
+                    "sample_id": str(sample.id),
+                    "tree_id": str(item.tree_id),
+                    "status": item.status,
+                    "attestation_hash": item.attestation_hash,
+                    "signed_at": item.signed_at.isoformat() if item.signed_at else None,
+                }
+            )
+
     core = {
         "resource_type": "planting_project",
         "project": {
@@ -90,6 +131,8 @@ async def build_project_verification_payload(
             "net_credits_tco2e": float(ledger.net_credits_tco2e) if ledger else None,
             "methodology": ledger.methodology if ledger else None,
         },
+        "credit_serials": serials,
+        "verifier_attestations": attestations,
         "checklists": [
             {
                 "code": row.checklist_code,

@@ -2183,6 +2183,15 @@ export type CreditLedger = {
     registry_reference: string | null;
     created_at: string;
   }>;
+  serials?: Array<{
+    id: string;
+    serial_number: string;
+    vintage_year: number;
+    tco2e_amount: number;
+    status: string;
+    beneficiary?: string | null;
+    retired_at?: string | null;
+  }>;
 };
 
 export const credits = {
@@ -2220,6 +2229,60 @@ export const credits = {
     return (
       await api.post<CreditLedger>(`/v1/credits/projects/${projectId}/transition`, payload)
     ).data;
+  },
+  async retireSerial(
+    serialId: string,
+    payload: {
+      beneficiary: string;
+      retirement_reason?: string;
+      paris_article6?: boolean;
+      corresponding_adjustment_ref?: string;
+    },
+  ) {
+    return (await api.post(`/v1/credits/serials/${serialId}/retire`, payload)).data;
+  },
+  async downloadRetirementCertificate(serialId: string) {
+    const response = await api.get(`/v1/credits/serials/${serialId}/certificate.pdf`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+};
+
+export type VerificationSample = {
+  id: string;
+  project_id: string;
+  sample_pct: number;
+  method: string;
+  status: string;
+  item_count: number;
+  by_status: Record<string, number>;
+  created_at: string;
+  items?: Array<{
+    id: string;
+    tree_id: string;
+    tree_public_code: string | null;
+    status: string;
+    attestation_hash: string | null;
+    signed_at: string | null;
+  }>;
+};
+
+export const verificationWorkflow = {
+  async createSample(projectId: string, payload: { sample_pct: number; method?: "random" | "stratified" }) {
+    return (await api.post<VerificationSample>(`/v1/verification/projects/${projectId}/samples`, payload)).data;
+  },
+  async getSample(sampleId: string) {
+    return (await api.get<VerificationSample>(`/v1/verification/samples/${sampleId}`)).data;
+  },
+  async attestItem(sampleId: string, itemId: string, payload: { status: "approved" | "rejected"; notes?: string }) {
+    return (await api.post(`/v1/verification/samples/${sampleId}/items/${itemId}/attest`, payload)).data;
+  },
+  async downloadReport(sampleId: string) {
+    const response = await api.get(`/v1/verification/samples/${sampleId}/report.pdf`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
 };
 

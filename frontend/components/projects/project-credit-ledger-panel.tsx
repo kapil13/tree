@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, RefreshCw } from "lucide-react";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { ProjectCreditSerialsPanel } from "@/components/projects/project-credit-serials-panel";
 import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
@@ -277,6 +278,8 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
           </ul>
         </div>
       )}
+
+      <ProjectCreditSerialsPanel ledger={ledger} />
     </div>
   );
 }

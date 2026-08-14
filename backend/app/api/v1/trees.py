@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
-from app.core.security import Permission
+from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
@@ -58,6 +58,11 @@ from app.services.storage.key_ownership import assert_owned_upload_key
 from app.services.trees.measurements import create_measurement, list_measurements
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+
+
+def _require_measurement_write(user: User) -> None:
+    if not has_permission(user.role, Permission.TREE_UPDATE):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="measurement_write_forbidden")
 
 TreeDeleteAccess = Annotated[User, require_write_perm(Permission.TREE_DELETE)]
 
@@ -781,6 +786,7 @@ async def add_tree_measurement(
     user: WriteAccess,
     db: DB,
 ) -> TreeMeasurementOut:
+    _require_measurement_write(user)
     tree = await _get_owned_tree(tree_id, user, db)
     if payload.photo_key:
         try:
