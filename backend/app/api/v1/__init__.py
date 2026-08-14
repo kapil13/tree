@@ -25,6 +25,7 @@ from app.api.v1 import (
     planting_programs,
     planting_projects,
     platform,
+    privacy,
     reporting,
     reports,
     sar,
@@ -56,6 +57,7 @@ api_router.include_router(planting_projects.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
+api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)

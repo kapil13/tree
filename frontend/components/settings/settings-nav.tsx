@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, CreditCard, Globe2, ScrollText, Settings2, Sprout, UserCheck, Users, Webhook } from "lucide-react";
+import { Calculator, ClipboardCheck, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
@@ -50,6 +50,18 @@ function baseItems(showTeam: boolean, showAudit: boolean, showWebhooks: boolean)
       label: "Carbon calculator",
       icon: Calculator,
       match: (path) => path.startsWith("/settings/carbon"),
+    },
+    {
+      href: "/settings/privacy",
+      label: "Privacy",
+      icon: Shield,
+      match: (path) => path.startsWith("/settings/privacy"),
+    },
+    {
+      href: "/settings/sprint-verify",
+      label: "Sprint verify",
+      icon: ClipboardCheck,
+      match: (path) => path.startsWith("/settings/sprint-verify"),
     },
   );
   if (showAudit) {
