@@ -32,6 +32,11 @@ from app.schemas.tree import (
     TreeRegeotagOut,
     TreeUpdate,
 )
+from app.schemas.tree_measurement import (
+    TreeInitialMeasurement,
+    TreeMeasurementCreate,
+    TreeMeasurementOut,
+)
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
 from app.services.passport import generate_passport_pdf, generate_qr_png
@@ -50,6 +55,7 @@ from app.services.planting_projects.rule_engine import get_effective_rules, reso
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
+from app.services.trees.measurements import create_measurement, list_measurements
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
@@ -292,6 +298,26 @@ async def create_tree(
                 uploaded_by=user.id,
             )
         )
+
+    initial = payload.initial_measurement or TreeInitialMeasurement()
+    photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
+    await create_measurement(
+        db,
+        tree=tree,
+        payload=TreeMeasurementCreate(
+            source="registration",
+            method=initial.method,
+            instrument=initial.instrument,
+            dbh_cm=initial.dbh_cm,
+            height_m=initial.height_m,
+            canopy_m=initial.canopy_m,
+            gps_accuracy_m=payload.accuracy_m,
+            photo_key=photo_key,
+            notes=initial.notes,
+        ),
+        measurer_id=user.id,
+    )
+
     await record_audit(
         db,
         actor=user,
@@ -521,6 +547,29 @@ async def regeotag_tree(
         meta["regeotag_remarks"] = payload.remarks
     meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
     tree.metadata_ = meta
+
+    survey_notes = payload.remarks
+    if payload.survival_status:
+        survey_notes = (
+            f"Survival: {payload.survival_status}"
+            + (f" — {payload.remarks}" if payload.remarks else "")
+        )
+    await create_measurement(
+        db,
+        tree=tree,
+        payload=TreeMeasurementCreate(
+            source="survival_survey",
+            method=payload.method or "tape",
+            instrument=payload.instrument,
+            dbh_cm=payload.dbh_cm,
+            height_m=payload.height_m,
+            canopy_m=payload.canopy_m,
+            gps_accuracy_m=payload.accuracy_m,
+            notes=survey_notes,
+        ),
+        measurer_id=user.id,
+    )
+
     gamification = None
     if tree.project_id is None:
         from app.services.citizen.gamification import record_stewardship_checkin
@@ -689,11 +738,77 @@ async def get_qr_png(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
     return Response(content=png, media_type="image/png")
 
 
+@router.get("/{tree_id}/measurements", response_model=Page[TreeMeasurementOut])
+async def get_tree_measurements(
+    tree_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> Page[TreeMeasurementOut]:
+    tree = await _get_owned_tree(tree_id, user, db)
+    offset = (page - 1) * page_size
+    rows, total = await list_measurements(db, tree.id, limit=page_size, offset=offset)
+    items = [TreeMeasurementOut.model_validate(r) for r in rows]
+    return Page[TreeMeasurementOut](
+        items=items, page=page, page_size=page_size, total=total
+    )
+
+
+@router.post(
+    "/{tree_id}/measurements",
+    response_model=TreeMeasurementOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_tree_measurement(
+    tree_id: uuid.UUID,
+    payload: TreeMeasurementCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> TreeMeasurementOut:
+    tree = await _get_owned_tree(tree_id, user, db)
+    if payload.photo_key:
+        try:
+            assert_owned_upload_key(user.id, payload.photo_key, folders=("images",))
+        except ValueError as exc:
+            code = str(exc)
+            if code == "s3_key_forbidden":
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
+
+    row = await create_measurement(
+        db,
+        tree=tree,
+        payload=payload,
+        measurer_id=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.measurement.add",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={
+            "measurement_id": str(row.id),
+            "source": row.source,
+            "method": row.method,
+            "dbh_cm": _as_float(row.dbh_cm),
+            "height_m": _as_float(row.height_m),
+        },
+    )
+    await db.commit()
+    await db.refresh(row)
+    return TreeMeasurementOut.model_validate(row)
+
+
 @router.get("/{tree_id}/timeline")
 async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
     tree = await _get_owned_tree(tree_id, user, db)
-    # Return any historical analyses + satellite samples we have. (Synth values
-    # in dev because the tree_metrics_ts hypertable is empty without a worker run.)
+    measurements, _ = await list_measurements(db, tree.id, limit=200, offset=0)
+    from app.services.trees.measurements import measurement_to_dict
+
     return {
         "tree_id": str(tree.id),
         "registered_at": tree.registered_at.isoformat(),
@@ -701,7 +816,11 @@ async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
             "health": tree.current_health,
             "carbon_kg": float(tree.current_carbon_kg or 0),
             "satellite_verified": tree.satellite_verified,
+            "dbh_cm": _as_float(tree.current_dbh_cm),
+            "height_m": _as_float(tree.current_height_m),
+            "canopy_m": _as_float(tree.current_canopy_m),
         },
+        "measurements": [measurement_to_dict(m) for m in measurements],
     }
 
 

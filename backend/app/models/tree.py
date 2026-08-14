@@ -86,6 +86,12 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     satellite_records = relationship(
         "SatelliteRecord", back_populates="tree", cascade="all, delete-orphan"
     )
+    measurements = relationship(
+        "TreeMeasurement",
+        back_populates="tree",
+        cascade="all, delete-orphan",
+        order_by="TreeMeasurement.measured_at.desc()",
+    )
 
     __table_args__ = (
         Index("trees_location_gix", "location", postgresql_using="gist"),
