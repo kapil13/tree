@@ -25,6 +25,7 @@ from app.models.planting_standard import PlantingStandard
 from app.models.platform_governance_settings import PlatformGovernanceSettings
 from app.models.platform_module import PlatformModuleRule
 from app.models.platform_user_module_grant import PlatformUserModuleGrant
+from app.models.privacy import ConsentRecord, DataSubjectRequest, GrievanceTicket
 from app.models.project_member import ProjectMember
 from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.public_verification import PublicVerificationLink
@@ -71,6 +72,9 @@ __all__ = [
     "PlantingComplianceViolation",
     "PlantingProgram",
     "ProgramAccessRequest",
+    "ConsentRecord",
+    "DataSubjectRequest",
+    "GrievanceTicket",
     "UserPlantingProgram",
     "PlantingProject",
     "PlantingProjectRuleOverride",

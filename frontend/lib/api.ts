@@ -1212,6 +1212,34 @@ export const plantingProjects = {
   async removeMember(projectId: string, memberId: string) {
     await api.delete(`/v1/planting-projects/${projectId}/members/${memberId}`);
   },
+  async listRiskAssessments(projectId: string) {
+    return (
+      await api.get<
+        Array<{
+          id: string;
+          project_id: string;
+          nprt_score: number;
+          buffer_pct: number;
+          assessed_at: string;
+          factors: Record<string, unknown>;
+          notes: string | null;
+        }>
+      >(`/v1/planting-projects/${projectId}/risk-assessments`)
+    ).data;
+  },
+  async createRiskAssessment(
+    projectId: string,
+    payload: { nprt_score: number; factors?: Record<string, unknown>; notes?: string },
+  ) {
+    return (
+      await api.post<{
+        id: string;
+        nprt_score: number;
+        buffer_pct: number;
+        assessed_at: string;
+      }>(`/v1/planting-projects/${projectId}/risk-assessments`, payload)
+    ).data;
+  },
 };
 
 export const uploads = {
@@ -1858,8 +1886,56 @@ export const carbon = {
     age_years?: number;
     methodology?: "IPCC_AR6" | "VERRA_VM0047" | "GOLD_STANDARD_LUF";
     price_usd_per_credit?: number;
+    measurement_method?: string;
+    verification_tier?: string;
+    nprt_score?: number;
+    annual_mortality_pct?: number;
   }) {
     return (await api.post("/v1/carbon/estimate", payload)).data;
+  },
+};
+
+export type PrivacyConsent = {
+  id: string;
+  purpose: string;
+  policy_version: string;
+  granted_at: string;
+  withdrawn_at: string | null;
+  active: boolean;
+};
+
+export const privacy = {
+  async summary() {
+    return (
+      await api.get<{
+        policy_version: string;
+        consents: PrivacyConsent[];
+        data_requests: Array<{ id: string; request_type: string; status: string; created_at: string }>;
+        grievances: Array<{ id: string; subject: string; status: string; created_at: string }>;
+      }>("/v1/privacy/summary")
+    ).data;
+  },
+  async officer() {
+    return (await api.get<{ name: string; email: string; policy_version: string }>("/v1/privacy/officer")).data;
+  },
+  async grantConsent(purpose: "essential" | "analytics" | "marketing") {
+    return (await api.post<PrivacyConsent>("/v1/privacy/consent", { purpose })).data;
+  },
+  async withdrawConsent(purpose: string) {
+    return (await api.delete<PrivacyConsent>(`/v1/privacy/consent/${purpose}`)).data;
+  },
+  async submitDataRequest(request_type: "access" | "correction" | "erasure" | "portability", notes?: string) {
+    return (await api.post("/v1/privacy/data-requests", { request_type, notes })).data;
+  },
+  async downloadExport() {
+    const res = await api.get("/v1/privacy/data-export", { responseType: "blob" });
+    return res.data as Blob;
+  },
+  async deleteAccount(confirm_email: string, reason?: string) {
+    return (await api.post("/v1/privacy/delete-account", { confirm_email, reason })).data;
+  },
+  async fileGrievance(subject: string, body: string) {
+    return (await api.post("/v1/privacy/grievances", { subject, body })).data;
   },
 };
 

@@ -8,6 +8,7 @@ import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-compliance-workflow-widget";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
+import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
 import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
@@ -360,8 +361,13 @@ export default function ProjectDetailPage() {
       )}
 
       {tab === "credits" && (
-        <div className="card">
-          <ProjectCreditLedgerPanel projectId={project.id} />
+        <div className="space-y-4">
+          <div className="card">
+            <ProjectNprtAssessmentPanel projectId={project.id} />
+          </div>
+          <div className="card">
+            <ProjectCreditLedgerPanel projectId={project.id} />
+          </div>
         </div>
       )}
 

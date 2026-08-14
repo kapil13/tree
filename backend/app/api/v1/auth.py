@@ -159,6 +159,12 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     )
     db.add(user)
     await db.flush()
+    from app.services.privacy.consent import record_signup_consents
+
+    ip = request.client.host if request.client else None
+    await record_signup_consents(
+        db, user=user, ip=ip, user_agent=request.headers.get("user-agent")
+    )
     await ensure_default_enrollment(db, user.id)
     await record_audit(
         db,
@@ -382,6 +388,12 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
         user = await complete_signup(db, payload.signup_token, payload.code)
     except SignupError as exc:
         raise _signup_error(exc) from exc
+    from app.services.privacy.consent import record_signup_consents
+
+    ip = request.client.host if request.client else None
+    await record_signup_consents(
+        db, user=user, ip=ip, user_agent=request.headers.get("user-agent")
+    )
     onboarding = await get_user_onboarding_state(db, user.id)
     await record_audit(
         db,
