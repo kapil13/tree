@@ -17,6 +17,15 @@ echo "==> Container status"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps -a
 
 echo ""
+echo "==> Redis logs (last 60 lines)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs redis --tail 60 2>&1 || true
+
+echo ""
+echo "==> Redis health"
+docker inspect byot-prod-redis-1 --format 'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' 2>/dev/null || \
+  echo "(redis container not found)"
+
+echo ""
 echo "==> Backend logs (last 120 lines)"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs backend --tail 120 2>&1 || true
 
@@ -49,6 +58,7 @@ docker system df 2>/dev/null || true
 echo ""
 echo "==> Common fixes"
 echo "  1. Disk 100+ GB with no data: ./cleanup-docker-disk.sh (old Docker images from deploys)"
+echo "  1b. Redis unhealthy: ./recover-redis.sh (auth healthcheck, disk full, corrupted AOF)"
 echo "  2. OOM / unhealthy: rebuild slim API image (no TensorFlow on backend):"
 echo "     docker compose -f $COMPOSE_FILE --env-file $ENV_FILE build --no-cache backend worker"
 echo "  2. alembic head should be 0024_org_team_management — run: alembic upgrade head"

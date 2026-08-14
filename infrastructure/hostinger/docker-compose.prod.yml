@@ -42,6 +42,9 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    environment:
+      # In-container env for healthcheck (hex-only password — see .env.production.example)
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env.production}
     command:
       - redis-server
       - --appendonly
@@ -55,10 +58,12 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      # Use CMD-SHELL + $$REDIS_PASSWORD so auth matches runtime env (compose ${VAR} in CMD is brittle).
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping 2>/dev/null | grep -q PONG"]
       interval: 10s
-      timeout: 3s
-      retries: 5
+      timeout: 5s
+      retries: 8
+      start_period: 20s
     mem_limit: 384m
     deploy:
       resources:
