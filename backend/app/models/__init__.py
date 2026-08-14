@@ -18,7 +18,6 @@ from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_custom_template import PlantingCustomTemplate
 from app.models.planting_program import PlantingProgram, ProgramAccessRequest, UserPlantingProgram
 from app.models.planting_project import PlantingProject
-from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_rule_template import PlantingRuleTemplateOverride
 from app.models.planting_rule_template_version import PlantingRuleTemplateVersion
@@ -27,6 +26,7 @@ from app.models.platform_governance_settings import PlatformGovernanceSettings
 from app.models.platform_module import PlatformModuleRule
 from app.models.platform_user_module_grant import PlatformUserModuleGrant
 from app.models.project_member import ProjectMember
+from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
 from app.models.satellite import SatelliteRecord
