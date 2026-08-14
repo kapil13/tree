@@ -1271,9 +1271,22 @@ export const trees = {
       accuracy_m?: number;
       survival_status?: string;
       remarks?: string;
+      dbh_cm?: number;
+      height_m?: number;
+      canopy_m?: number;
+      method?: string;
+      instrument?: string;
     },
   ) {
     return (await api.post<TreeDetail>(`/v1/trees/${id}/regeotag`, payload)).data;
+  },
+  async measurements(id: string, params?: { page?: number; page_size?: number }) {
+    return (await api.get(`/v1/trees/${id}/measurements`, { params })).data as {
+      items: import("@/components/trees/tree-measurements-panel").TreeMeasurement[];
+      page: number;
+      page_size: number;
+      total: number;
+    };
   },
   async timeline(id: string) {
     return (await api.get(`/v1/trees/${id}/timeline`)).data as {

@@ -25,6 +25,7 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { SarTreePanel } from "@/components/satellite/sar-tree-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
+import { TreeMeasurementsPanel } from "@/components/trees/tree-measurements-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrustChip, trustToneFromProvider } from "@/components/ui/trust-chip";
 import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
@@ -613,6 +614,10 @@ export function TreeDetailView() {
                 ))}
               </dl>
             )}
+          </div>
+
+          <div className="lg:col-span-2">
+            <TreeMeasurementsPanel treeId={id} />
           </div>
         </div>
       )}

@@ -34,6 +34,7 @@ from app.models.species import Species
 from app.models.tree import Tree
 from app.models.tree_analysis import TreeAnalysis
 from app.models.tree_image import TreeImage
+from app.models.tree_measurement import TreeMeasurement
 from app.models.tree_steward import TreeSteward
 from app.models.user import User
 from app.models.user_device import UserDevice
@@ -84,6 +85,7 @@ __all__ = [
     "TreeSteward",
     "TreeAnalysis",
     "TreeImage",
+    "TreeMeasurement",
     "User",
     "UserDevice",
     "ProjectMember",
