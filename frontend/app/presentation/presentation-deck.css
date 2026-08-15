@@ -1,0 +1,201 @@
+/* Aranyix client deck — 16:9 slides, screen + print/PDF */
+
+.deck-root {
+  --deck-green-950: #041f17;
+  --deck-green-900: #052e1f;
+  --deck-green-700: #15803d;
+  --deck-green-500: #22c55e;
+  --deck-green-300: #86efac;
+  --deck-sky-500: #0ea5e9;
+  --deck-amber-500: #f59e0b;
+  --deck-slide-w: min(100vw - 2rem, 1280px);
+  --deck-slide-ratio: 16 / 9;
+  background: #0a0f0c;
+  min-height: 100vh;
+}
+
+.deck-slide {
+  position: relative;
+  width: var(--deck-slide-w);
+  aspect-ratio: var(--deck-slide-ratio);
+  margin: 0 auto 1.5rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 25px 50px -12px rgba(0, 0, 0, 0.55);
+  print-shadow: none;
+}
+
+@media print {
+  .deck-root {
+    background: white !important;
+    min-height: auto;
+  }
+
+  .deck-no-print {
+    display: none !important;
+  }
+
+  .deck-slide {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-after: always;
+    break-after: page;
+    aspect-ratio: auto;
+    height: 100vh;
+    max-height: 56.25vw;
+  }
+
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  html,
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+.deck-slide-inner {
+  position: absolute;
+  inset: 0;
+  padding: 4.5% 5.5%;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-slide--dark {
+  background: linear-gradient(145deg, var(--deck-green-950) 0%, var(--deck-green-900) 45%, #0c1a14 100%);
+  color: #f0fdf4;
+}
+
+.deck-slide--light {
+  background: linear-gradient(180deg, #fafcfa 0%, #f0f5f1 100%);
+  color: #1c1917;
+}
+
+.deck-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.deck-eyebrow {
+  font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.deck-title {
+  font-family: var(--font-display), "Source Serif 4", Georgia, serif;
+  font-size: clamp(1.35rem, 2.8vw, 2.35rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.deck-subtitle {
+  font-size: clamp(0.75rem, 1.35vw, 1.05rem);
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.deck-bullet {
+  display: flex;
+  gap: 0.55em;
+  font-size: clamp(0.62rem, 1.05vw, 0.82rem);
+  line-height: 1.45;
+}
+
+.deck-bullet::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.35em;
+  height: 0.35em;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: var(--deck-green-500);
+}
+
+.deck-slide--light .deck-bullet::before {
+  background: var(--deck-green-700);
+}
+
+.deck-card {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  padding: 0.65rem 0.75rem;
+}
+
+.deck-slide--light .deck-card {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.deck-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  padding: 0.2rem 0.55rem;
+  font-size: clamp(0.5rem, 0.85vw, 0.65rem);
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.deck-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.5rem, 0.82vw, 0.72rem);
+}
+
+.deck-table th {
+  text-align: left;
+  font-weight: 700;
+  padding: 0.35rem 0.45rem;
+  border-bottom: 2px solid rgba(34, 197, 94, 0.4);
+  font-size: clamp(0.48rem, 0.78vw, 0.68rem);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.deck-table td {
+  padding: 0.3rem 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+
+.deck-slide--light .deck-table td {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.deck-footer {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  font-size: clamp(0.45rem, 0.75vw, 0.6rem);
+  opacity: 0.5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deck-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+}
