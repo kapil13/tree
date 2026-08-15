@@ -45,9 +45,9 @@ export function SlideFooter({ slideNum, total = 26 }: { slideNum: number; total?
   );
 }
 
-export function SlideBullets({ items }: { items: string[] }) {
+export function SlideBullets({ items, className }: { items: string[]; className?: string }) {
   return (
-    <ul className="mt-3 space-y-1.5">
+    <ul className={cn("mt-3 space-y-1.5", className)}>
       {items.map((item) => (
         <li key={item} className="deck-bullet">
           {item}
