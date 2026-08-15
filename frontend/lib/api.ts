@@ -2280,46 +2280,6 @@ export type GreenCreditEstimate = {
   verifier_reference?: string | null;
 };
 
-export type IndiaStackStatus = {
-  esign: { enabled: boolean; configured: boolean; provider_mode: string; stub_on_failure: boolean };
-  digilocker: { enabled: boolean; configured: boolean; stub_mode: boolean };
-  aadhaar_ekyc: { enabled: boolean; provider: string; configured: boolean; stub_mode: boolean };
-  bhuvan_wms: { enabled: boolean; base_url: string; layer_count: number; message: string };
-};
-
-export type BhuvanWmsLayer = {
-  id: string;
-  title: string;
-  description: string;
-  layer: string;
-  wms_url_template: string;
-  capabilities_url: string;
-  service: string;
-  provider: string;
-};
-
-export const indiaStack = {
-  async status() {
-    return (await api.get<IndiaStackStatus>("/v1/india-stack/status")).data;
-  },
-  async bhuvanLayers() {
-    return (await api.get<{ layers: BhuvanWmsLayer[] }>("/v1/india-stack/bhuvan/layers")).data;
-  },
-  async digilockerVerify(payload: {
-    document_uri?: string;
-    land_record_number?: string;
-    aadhaar_last4?: string;
-  }) {
-    return (await api.post("/v1/india-stack/digilocker/verify", payload)).data;
-  },
-  async aadhaarEkyc(payload: { aadhaar_last4: string; full_name: string; consent: boolean }) {
-    return (await api.post<{ ekyc_ref?: string; verified: boolean }>(
-      "/v1/india-stack/aadhaar/ekyc",
-      payload,
-    )).data;
-  },
-};
-
 export type VerificationSample = {
   id: string;
   project_id: string;
@@ -2335,7 +2295,6 @@ export type VerificationSample = {
     tree_public_code: string | null;
     status: string;
     attestation_hash: string | null;
-    esign_ref: string | null;
     signed_at: string | null;
   }>;
 };

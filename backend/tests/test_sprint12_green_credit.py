@@ -1,10 +1,10 @@
-"""Tests for Sprint 12–13 India Stack + Green Credit Rules."""
+"""Tests for Sprint 12–13 Green Credit Rules."""
 
 from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -13,10 +13,6 @@ from app.services.credits.green_credit import (
     compute_green_credit_estimate,
     build_project_green_credit_summary,
 )
-from app.services.india_stack.aadhaar_ekyc import initiate_ekyc
-from app.services.india_stack.digilocker import verify_land_record
-from app.services.satellite.bhuvan_wms import list_bhuvan_layers
-from app.services.signing.india_esign import document_hash, esign_status, sign_document
 
 
 def test_compute_green_credit_eligible():
@@ -75,51 +71,3 @@ async def test_build_project_green_credit_summary():
     assert summary["project_code"] == "GCP-01"
     assert summary["land_bank_id"] == "LB-99"
     assert summary["tree_count"] == 450
-
-
-@pytest.mark.asyncio
-async def test_india_esign_stub_sign():
-    result = await sign_document("test-attestation-hash", signer_name="Verifier One")
-    assert result.stub is True
-    assert result.esign_ref.startswith("STUB-ESIGN-")
-    assert len(result.signature_b64) > 0
-
-
-def test_esign_status():
-    status = esign_status()
-    assert "provider_mode" in status
-    assert status["provider_mode"] in {"stub", "asp"}
-
-
-@pytest.mark.asyncio
-async def test_digilocker_stub_verify():
-    with patch("app.services.india_stack.digilocker.settings") as mock_settings:
-        mock_settings.digilocker_enabled = True
-        mock_settings.digilocker_stub_mode = True
-        mock_settings.digilocker_client_id = None
-        result = await verify_land_record(land_record_number="KA-BLR-1234")
-    assert result["verified"] is True
-    assert result["stub"] is True
-
-
-@pytest.mark.asyncio
-async def test_aadhaar_ekyc_stub():
-    with patch("app.services.india_stack.aadhaar_ekyc.settings") as mock_settings:
-        mock_settings.aadhaar_ekyc_enabled = True
-        mock_settings.aadhaar_ekyc_provider = "stub"
-        result = await initiate_ekyc(aadhaar_last4="1234", full_name="Field Worker", consent=True)
-    assert result["verified"] is True
-    assert result["ekyc_ref"].startswith("EKYC-STUB-")
-
-
-def test_bhuvan_wms_layers():
-    layers = list_bhuvan_layers()
-    assert len(layers) >= 3
-    assert all("wms_url_template" in layer for layer in layers)
-
-
-def test_document_hash_deterministic():
-    h1 = document_hash("abc")
-    h2 = document_hash("abc")
-    assert h1 == h2
-    assert len(h1) == 64

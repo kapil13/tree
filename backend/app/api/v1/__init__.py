@@ -38,7 +38,6 @@ from app.api.v1 import (
     uploads,
     verification,
     verification_workflow,
-    india_stack,
     weather,
     webhooks,
 )
@@ -83,4 +82,3 @@ api_router.include_router(webhooks.router)
 api_router.include_router(verification.router)
 api_router.include_router(verification.public_router)
 api_router.include_router(verification_workflow.router)
-api_router.include_router(india_stack.router)

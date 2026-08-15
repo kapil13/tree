@@ -195,24 +195,6 @@ class Settings(BaseSettings):
     evidence_tsa_url: str | None = None
     evidence_tsa_stub_label: str = "byot-dev-tsa-stub"
 
-    # India Stack — eSign / DigiLocker / Aadhaar e-KYC (optional; stubs when unset)
-    india_esign_enabled: bool = False
-    india_esign_api_url: str | None = None
-    india_esign_client_id: str | None = None
-    india_esign_client_secret: str | None = None
-    india_esign_stub_on_failure: bool = True
-
-    digilocker_enabled: bool = False
-    digilocker_client_id: str | None = None
-    digilocker_stub_mode: bool = True
-
-    aadhaar_ekyc_enabled: bool = False
-    aadhaar_ekyc_provider: Literal["stub", "uidai"] = "stub"
-
-    # ISRO Bhuvan WMS (map overlays — complements Bhoonidhi STAC)
-    bhuvan_wms_base_url: str = "https://bhuvan-ras1.nrsc.gov.in/bhuvan/wms"
-    bhuvan_wms_layers: str | None = None  # comma-separated layer|title overrides
-
     # MoEFCC Green Credit Programme registry (informational URL)
     green_credit_registry_url: str = "https://greencredit.moefcc.gov.in"
 

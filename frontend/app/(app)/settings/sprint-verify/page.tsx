@@ -187,7 +187,7 @@ const SPRINT_CHECKS = [
     ],
   },
   {
-    sprint: "Sprint 12–13 · India Stack + Green Credit Rules",
+    sprint: "Sprint 12–13 · Green Credit Rules",
     items: [
       {
         label: "Green Credit estimate (MoEFCC)",
@@ -195,26 +195,15 @@ const SPRINT_CHECKS = [
         hint: "Green Credit scheme project → Credits tab → vested/provisional GC, trees/ha, 5-yr vesting",
       },
       {
-        label: "India Stack integration status",
-        href: "/settings/india-stack",
-        hint: "Settings → India Stack — eSign, DigiLocker, Aadhaar e-KYC, Bhuvan WMS layers",
-      },
-      {
-        label: "Verifier eSign attestation",
+        label: "Green Credit in evidence bundle",
         href: "/projects",
-        hint: "Project → Credits → Create sample → Approve — item shows eSign ref (stub in dev)",
+        hint: "Project → Compliance → Download evidence bundle — includes green-credit-summary.json",
       },
       {
         label: "Green Credit API",
         href: "http://localhost:8000/docs#/credits/get_project_green_credit_estimate_api_v1_credits_projects__project_id__green_credit_get",
         external: true,
         hint: "GET /credits/projects/{id}/green-credit",
-      },
-      {
-        label: "India Stack API",
-        href: "http://localhost:8000/docs#/india-stack/india_stack_status_api_v1_india_stack_status_get",
-        external: true,
-        hint: "GET /india-stack/status, /india-stack/bhuvan/layers",
       },
     ],
   },

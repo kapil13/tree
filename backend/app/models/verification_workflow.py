@@ -58,8 +58,6 @@ class VerificationItem(UUIDPKMixin, Base):
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notes: Mapped[str | None] = mapped_column(Text)
     attestation_hash: Mapped[str | None] = mapped_column(String(64))
-    esign_ref: Mapped[str | None] = mapped_column(String(128))
-    esign_signature_b64: Mapped[str | None] = mapped_column(Text)
 
     sample = relationship("VerificationSample", back_populates="items")
 
