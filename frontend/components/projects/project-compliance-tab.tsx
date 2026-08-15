@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Download, FileText, Link2 } from "lucide-react";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
@@ -35,11 +35,13 @@ export function ProjectComplianceTab({
   projectId,
   projectCode,
   projectMetadata,
+  schemeCode,
   onNavigateTab,
 }: {
   projectId: string;
   projectCode?: string;
   projectMetadata?: Record<string, unknown>;
+  schemeCode?: string | null;
   onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
@@ -49,6 +51,13 @@ export function ProjectComplianceTab({
   const [frameworkProfile, setFrameworkProfile] = useState<FrameworkProfileCode>("verra_vm0047");
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (schemeCode === "green_credit_india") {
+      setFrameworkProfile("green_credit_india");
+      setChecklistCode("green_credit_india");
+    }
+  }, [schemeCode]);
 
   const { data: frameworks = [] } = useQuery({
     queryKey: ["reporting-frameworks"],

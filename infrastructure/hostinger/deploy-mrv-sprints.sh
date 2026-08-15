@@ -97,6 +97,10 @@ Sprint 11–12  TNFD + GHG Land Sector + Darwin Core
   ${API_URL}/docs → POST /reports/tnfd, /reports/ghg-protocol, /reports/darwin-core
   ${API_URL}/docs → GET /ogc/stac/catalog, /ogc/projects/{id}/features
 
+Sprint 12–13  Green Credit Rules (MoEFCC)
+  ${APP_URL}/projects → [green credit project] → Credits → Green Credit estimate
+  ${API_URL}/docs → GET /credits/projects/{id}/green-credit
+
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head
 

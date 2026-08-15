@@ -2251,6 +2251,33 @@ export const credits = {
     });
     return response.data as Blob;
   },
+  async greenCreditEstimate(projectId: string) {
+    return (await api.get<GreenCreditEstimate>(`/v1/credits/projects/${projectId}/green-credit`)).data;
+  },
+};
+
+export type GreenCreditEstimate = {
+  standard: string;
+  activity_type: string;
+  land_bank_id: string | null;
+  tree_count: number;
+  eligible_trees: number;
+  total_area_ha: number;
+  trees_per_ha: number | null;
+  min_trees_per_ha: number;
+  density_eligible: boolean;
+  land_bank_registered: boolean;
+  monitoring_period_years: number;
+  years_elapsed: number;
+  vesting_fraction: number;
+  full_green_credits: number;
+  vested_green_credits: number;
+  provisional_green_credits: number;
+  eligibility_status: "eligible" | "gaps_identified" | "not_eligible";
+  gaps: string[];
+  disclaimer: string;
+  computed_at: string;
+  verifier_reference?: string | null;
 };
 
 export type VerificationSample = {
@@ -2297,6 +2324,7 @@ export type FrameworkProfileCode =
   | "redd_plus"
   | "paris_ndc"
   | "ngt_campa"
+  | "green_credit_india"
   | "esg_general";
 
 export type FrameworkProfile = {
@@ -2319,6 +2347,7 @@ export type ChecklistCode =
   | "gold_standard_luf"
   | "redd_plus"
   | "ngt_campa"
+  | "green_credit_india"
   | "esg_general";
 
 export type ChecklistAnswer = "yes" | "no" | "partial" | "na";

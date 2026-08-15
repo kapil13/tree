@@ -195,6 +195,9 @@ class Settings(BaseSettings):
     evidence_tsa_url: str | None = None
     evidence_tsa_stub_label: str = "byot-dev-tsa-stub"
 
+    # MoEFCC Green Credit Programme registry (informational URL)
+    green_credit_registry_url: str = "https://greencredit.moefcc.gov.in"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
