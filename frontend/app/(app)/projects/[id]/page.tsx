@@ -10,6 +10,7 @@ import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-c
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
 import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
+import { ProjectPlotMonitoringPanel } from "@/components/projects/project-plot-monitoring-panel";
 import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
 import { ProjectVerificationPanel } from "@/components/projects/project-verification-panel";
 import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
@@ -379,6 +380,9 @@ export default function ProjectDetailPage() {
           </div>
           <div className="card">
             <ProjectCreditLedgerPanel projectId={project.id} />
+          </div>
+          <div className="card">
+            <ProjectPlotMonitoringPanel projectId={project.id} />
           </div>
           <div className="card">
             <ProjectVerificationPanel projectId={project.id} />

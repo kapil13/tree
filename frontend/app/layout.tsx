@@ -4,6 +4,7 @@ import { Noto_Sans_Devanagari, Source_Sans_3, Source_Serif_4 } from "next/font/g
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
+import { PwaRegister } from "@/components/pwa/pwa-register";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -27,6 +28,12 @@ export const metadata: Metadata = {
   title: "Aranyix — Intelligence for a Thriving Planet",
   description:
     "Register trees, monitor ecosystems, assess biodiversity, and generate verifiable environmental evidence.",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#16a34a",
+  appleWebApp: {
+    capable: true,
+    title: "Aranyix",
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -41,7 +48,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="min-h-screen font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <PwaRegister />
+            {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aranyix">
+  <rect width="512" height="512" rx="96" fill="#16a34a"/>
+  <path d="M256 96c-22 74-74 118-74 182a74 74 0 0 0 148 0c0-64-52-108-74-182z" fill="#dcfce7"/>
+  <rect x="234" y="314" width="44" height="102" rx="12" fill="#14532d"/>
+</svg>

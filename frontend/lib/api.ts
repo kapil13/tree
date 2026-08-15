@@ -429,6 +429,9 @@ export type Dashboard = {
     total_biomass_kg: number;
     total_carbon_kg: number;
     total_co2e_kg: number;
+    co2e_kg_lower_90?: number | null;
+    co2e_kg_upper_90?: number | null;
+    uncertainty_pct?: number | null;
     annual_sequestration_kg: number;
     lifetime_credits_tco2e: number;
     estimated_revenue_usd: number;
@@ -2378,6 +2381,74 @@ export const verificationWorkflow = {
       responseType: "blob",
     });
     return response.data as Blob;
+  },
+};
+
+export type PlotMonitoringSummary = {
+  project_id: string;
+  has_design: boolean;
+  mode: string;
+  stratification?: string | null;
+  plot_area_m2?: number | null;
+  plots_per_stratum?: number | null;
+  total_plots?: number;
+  visited_plots?: number;
+  strata?: Array<Record<string, unknown>>;
+  extrapolated_biomass_kg?: number | null;
+  extrapolated_carbon_kg?: number | null;
+  extrapolated_co2e_kg?: number | null;
+  co2e_kg_lower_90?: number | null;
+  co2e_kg_upper_90?: number | null;
+  uncertainty_pct?: number | null;
+  disclosure?: string | null;
+  design_id?: string | null;
+  status?: string | null;
+  layout_seed?: number | null;
+  stratum_count?: number | null;
+};
+
+export type PlotMonitoringPlot = {
+  id: string;
+  stratum_id: string;
+  plot_code: string;
+  status: string;
+  center: { type: "Point"; coordinates: [number, number] };
+};
+
+export const plotMonitoring = {
+  async summary(projectId: string) {
+    return (await api.get<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/summary`)).data;
+  },
+  async upsertDesign(
+    projectId: string,
+    payload: {
+      mode: "full_census" | "plot_based" | "hybrid";
+      stratification?: string;
+      plots_per_stratum?: number;
+      plot_area_m2?: number;
+    },
+  ) {
+    return (await api.put<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/design`, payload)).data;
+  },
+  async generatePlots(projectId: string) {
+    return (await api.post<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/generate-plots`)).data;
+  },
+  async listPlots(projectId: string) {
+    return (await api.get<PlotMonitoringPlot[]>(`/v1/plot-monitoring/projects/${projectId}/plots`)).data;
+  },
+  async createVisit(
+    plotId: string,
+    payload: {
+      observations?: Array<{
+        species_text?: string;
+        dbh_cm?: number;
+        height_m?: number;
+        alive?: boolean;
+      }>;
+      notes?: string;
+    },
+  ) {
+    return (await api.post(`/v1/plot-monitoring/plots/${plotId}/visits`, payload)).data;
   },
 };
 

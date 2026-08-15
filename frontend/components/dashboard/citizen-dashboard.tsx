@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   CheckCircle2,
@@ -22,11 +23,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { CarbonCo2eRange } from "@/components/carbon-co2e-range";
 import { TreesMap } from "@/components/trees-map";
 import { CitizenStewardshipPanel } from "@/components/dashboard/citizen-stewardship-panel";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { fmtCompact, fmtNum, CHART_COLORS, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
+import { Badge, healthBadgeVariant } from "@/components/ui/badge";
+import { DashboardSkeletonShell } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { aiScans, dashboard, trees } from "@/lib/api";
@@ -34,27 +38,12 @@ import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
 import { scopedKey } from "@/lib/query-keys";
 
-function healthBadgeClass(health: string) {
-  if (health === "healthy") return "bg-emerald-100 text-emerald-800";
-  if (health === "moderate") return "bg-amber-100 text-amber-800";
-  if (health === "unhealthy") return "bg-red-100 text-red-800";
-  return "bg-stone-100 text-stone-600";
-}
-
 function DashboardSkeleton() {
-  return (
-    <div className="dash-shell mx-auto max-w-6xl space-y-6">
-      <div className="dash-hero dash-skeleton h-44" />
-      <div className="dash-skeleton h-40 rounded-2xl" />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="dash-skeleton h-72 rounded-2xl" />
-        <div className="dash-skeleton h-72 rounded-2xl" />
-      </div>
-    </div>
-  );
+  return <DashboardSkeletonShell />;
 }
 
 export function CitizenDashboard() {
+  const t = useTranslations("citizenDashboard");
   const { user } = useAuth();
   const theme = getProgramTheme("byot");
   const HeroIcon = theme.icon;
@@ -97,15 +86,15 @@ export function CitizenDashboard() {
   const speciesData = (dash?.species_distribution ?? []).slice(0, 5);
 
   const steps = [
-    { id: "tree", done: treeCount > 0, label: "Tag your first tree", href: "/trees/new" },
-    { id: "map", done: treeCount > 0, label: "View trees on the map", href: "/map" },
+    { id: "tree", done: treeCount > 0, label: t("stepFirstTree"), href: "/trees/new" },
+    { id: "map", done: treeCount > 0, label: t("stepMap"), href: "/map" },
     {
       id: "scan",
-      done: Boolean(recent.some((t) => t.current_health && t.current_health !== "unknown")),
-      label: "Run an AI health check",
+      done: Boolean(recent.some((tr) => tr.current_health && tr.current_health !== "unknown")),
+      label: t("stepAiScan"),
       href: recent[0] ? `/trees/${recent[0].id}` : "/trees/new",
     },
-    { id: "programs", done: false, label: "Explore professional programs", href: "/settings/programs" },
+    { id: "programs", done: false, label: t("stepPrograms"), href: "/settings/programs" },
   ];
   const stepsDone = steps.filter((s) => s.done).length;
   const showChecklist = treeCount < 3 || stepsDone < 3;
@@ -117,38 +106,27 @@ export function CitizenDashboard() {
           <div className="dash-hero-header">
             <div className="dash-live-pill">
               <span className="dash-live-dot" />
-              Your grove
+              {t("groveLabel")}
             </div>
             <h1 className="dash-hero-title mt-4 font-display">
-              Hi {firstName}
-              {treeCount > 0 ? ` — ${treeCount} tree${treeCount === 1 ? "" : "s"} tagged` : ""}
+              {treeCount > 0
+                ? t("greetingWithTrees", { name: firstName, count: treeCount })
+                : t("greetingEmpty", { name: firstName })}
             </h1>
             <p className="dash-hero-copy">
-              {treeCount > 0 ? (
-                <>
-                  Keep adding GPS-tagged trees with photos and free AI health checks.
-                  {kpi && kpi.total_co2e_kg > 0
-                    ? ` About ${fmtCompact(kpi.total_co2e_kg)} kg estimated carbon stored so far.`
-                    : ""}
-                </>
-              ) : (
-                <>
-                  Register trees you plant or care for — map pins, photos, and AI health checks to
-                  get started.
-                </>
-              )}
+              {treeCount > 0 ? t("heroWithTrees") : t("heroEmpty")}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
                 <Leaf className="h-4 w-4" />
-                {treeCount > 0 ? "Tag a tree" : "Tag your first tree"}
+                {treeCount > 0 ? t("tagTree") : t("tagFirstTree")}
               </Link>
               <Link
                 href="/map"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
               >
                 <Map className="h-4 w-4" />
-                Open map
+                {t("openMap")}
               </Link>
             </div>
           </div>
@@ -156,21 +134,33 @@ export function CitizenDashboard() {
           <div className="dash-hero-stats">
             <div className="dash-hero-stat">
               <p className="dash-hero-stat-value">{fmtNum(treeCount)}</p>
-              <p className="dash-hero-stat-label">Trees tagged</p>
+              <p className="dash-hero-stat-label">{t("treesTagged")}</p>
             </div>
             <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">
-                {kpi ? fmtCompact(kpi.total_co2e_kg) : "—"}
+              <p className="dash-hero-stat-value text-sm">
+                {kpi && kpi.total_co2e_kg > 0 ? (
+                  <CarbonCo2eRange
+                    compact
+                    data={{
+                      co2e_kg: kpi.total_co2e_kg,
+                      co2e_kg_lower_90: kpi.co2e_kg_lower_90,
+                      co2e_kg_upper_90: kpi.co2e_kg_upper_90,
+                      uncertainty_pct: kpi.uncertainty_pct,
+                    }}
+                  />
+                ) : (
+                  "—"
+                )}
               </p>
-              <p className="dash-hero-stat-label">kg carbon (est.)</p>
+              <p className="dash-hero-stat-label">{t("carbonStored")}</p>
             </div>
             <div className="dash-hero-stat">
               <p className="dash-hero-stat-value">{kpi ? `${Math.round(kpi.pct_healthy)}%` : "—"}</p>
-              <p className="dash-hero-stat-label">Healthy canopy</p>
+              <p className="dash-hero-stat-label">{t("healthyCanopy")}</p>
             </div>
             <div className="dash-hero-stat">
               <p className="dash-hero-stat-value">{scansLeft ?? "∞"}</p>
-              <p className="dash-hero-stat-label">AI scans left</p>
+              <p className="dash-hero-stat-label">{t("aiScansLeft")}</p>
             </div>
           </div>
         </div>
@@ -196,9 +186,24 @@ export function CitizenDashboard() {
           />
           <MetricCard
             icon={HeroIcon}
-            label="Carbon stored"
-            value={kpi ? fmtCompact(kpi.total_co2e_kg) : "—"}
-            sub="kg CO₂e estimated"
+            label={t("carbonMetric")}
+            value={
+              kpi && kpi.total_co2e_kg > 0 ? (
+                <CarbonCo2eRange
+                  compact
+                  showLabel={false}
+                  data={{
+                    co2e_kg: kpi.total_co2e_kg,
+                    co2e_kg_lower_90: kpi.co2e_kg_lower_90,
+                    co2e_kg_upper_90: kpi.co2e_kg_upper_90,
+                    uncertainty_pct: kpi.uncertainty_pct,
+                  }}
+                />
+              ) : (
+                "—"
+              )
+            }
+            sub={t("carbonMetricSub")}
             accent="lime"
           />
           <MetricCard
@@ -423,14 +428,9 @@ export function CitizenDashboard() {
                 </div>
                 <p className="mt-1 font-mono text-xs text-stone-500">{tree.public_code}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                      healthBadgeClass(tree.current_health),
-                    )}
-                  >
+                  <Badge variant={healthBadgeVariant(tree.current_health)}>
                     {tree.current_health}
-                  </span>
+                  </Badge>
                   {tree.current_carbon_kg > 0 ? (
                     <span className="text-xs text-stone-500">
                       ~{fmtCompact(tree.current_carbon_kg)} kg C

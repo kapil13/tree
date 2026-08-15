@@ -59,6 +59,26 @@
     "month": "Month",
     "value": "Value"
   },
+  "citizenDashboard": {
+    "groveLabel": "Your grove",
+    "greetingWithTrees": "Hi {name} — {count} trees tagged",
+    "greetingEmpty": "Hi {name}",
+    "heroWithTrees": "Keep adding GPS-tagged trees with photos and free AI health checks. Carbon figures are modeled estimates — not verified credits.",
+    "heroEmpty": "Register trees you plant or care for — map pins, photos, and AI health checks to get started.",
+    "tagTree": "Tag a tree",
+    "tagFirstTree": "Tag your first tree",
+    "openMap": "Open map",
+    "treesTagged": "Trees tagged",
+    "carbonStored": "Carbon stored (90% CI)",
+    "healthyCanopy": "Healthy canopy",
+    "aiScansLeft": "AI scans left",
+    "carbonMetric": "Carbon stored",
+    "carbonMetricSub": "Modeled CO₂e with uncertainty band",
+    "stepFirstTree": "Tag your first tree",
+    "stepMap": "View trees on the map",
+    "stepAiScan": "Run an AI health check",
+    "stepPrograms": "Explore professional programs"
+  },
   "trees": {
     "registerTree": "Register tree",
     "newTreeTitle": "Register a tree",
