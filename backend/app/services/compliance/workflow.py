@@ -38,6 +38,7 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "nagar_van_urban": "Nagar Van",
     "sahakar_van_coop": "Sahakar Van",
     "green_credit_india": "Green Credit",
+    "icvcm_ccp": "ICVCM CCPs",
 }
 
 

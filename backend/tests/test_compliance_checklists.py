@@ -151,9 +151,11 @@ async def test_build_auto_signals_no_trees():
     count_zero.scalar_one.return_value = 0
     ledger_none = MagicMock()
     ledger_none.scalar_one_or_none.return_value = None
+    risk_none = MagicMock()
+    risk_none.scalar_one_or_none.return_value = None
 
     db.execute = AsyncMock(
-        side_effect=[empty_trees, empty_violations, count_zero, ledger_none]
+        side_effect=[empty_trees, empty_violations, count_zero, ledger_none, risk_none]
     )
 
     async def fake_standard(db_, proj):
@@ -168,3 +170,4 @@ async def test_build_auto_signals_no_trees():
     monkeypatch.undo()
     assert signals["has_trees"] == "no"
     assert signals["geo_tagged_majority"] == "no"
+    assert signals["nprt_assessed"] == "no"

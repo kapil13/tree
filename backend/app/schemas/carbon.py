@@ -30,6 +30,11 @@ class CarbonEstimateRequest(BaseModel):
     buffer_pct: float | None = Field(default=None, ge=0, le=50)
     nprt_score: float | None = Field(default=None, ge=0, le=100)
     ex_post_verified: bool = False
+    include_other_pools: bool = False
+    deadwood_ratio: float = Field(default=0.08, ge=0, le=1)
+    litter_ratio: float = Field(default=0.04, ge=0, le=1)
+    soc_tco2e_per_ha: float | None = Field(default=None, ge=0)
+    area_ha: float | None = Field(default=None, ge=0)
 
 
 class CarbonEstimateResponse(BaseModel):
@@ -48,6 +53,10 @@ class CarbonEstimateResponse(BaseModel):
     verified_lifetime_credits_tco2e: float | None = None
     buffer_pct_applied: float | None = None
     effective_annual_mortality_pct: float | None = None
+    deadwood_kg: float | None = None
+    litter_kg: float | None = None
+    soc_carbon_kg: float | None = None
+    total_with_pools_co2e_kg: float | None = None
     annual_sequestration_kg: float | None
     lifetime_credits_tco2e: float | None
     estimated_revenue_usd: float | None

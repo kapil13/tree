@@ -46,6 +46,12 @@ from app.models.tree_survival_event import TreeSurvivalEvent
 from app.models.user import User
 from app.models.user_device import UserDevice
 from app.models.verification_workflow import VerificationItem, VerificationSample
+from app.models.vm0047_accounting import (
+    AdditionalityAssessment,
+    LeakageAccount,
+    ProjectBaseline,
+    ProjectCarbonPools,
+)
 from app.models.webhook import OrganizationWebhook, WebhookDelivery
 
 __all__ = [
@@ -108,5 +114,9 @@ __all__ = [
     "MonitoringJobRun",
     "VerificationItem",
     "VerificationSample",
+    "ProjectBaseline",
+    "AdditionalityAssessment",
+    "LeakageAccount",
+    "ProjectCarbonPools",
     "WorkAreaBiodiversitySnapshot",
 ]

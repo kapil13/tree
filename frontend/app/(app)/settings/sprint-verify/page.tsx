@@ -207,6 +207,32 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 13–14 · Full VM0047 + ICVCM",
+    items: [
+      {
+        label: "VM0047 baseline / additionality / leakage",
+        href: "/projects",
+        hint: "Project → Credits tab → VM0047 accounting panel → save baseline, additionality, leakage",
+      },
+      {
+        label: "ICVCM Core Carbon Principles checklist",
+        href: "/projects",
+        hint: "Project → Compliance → select ICVCM CCPs checklist (10 principles with auto-signals)",
+      },
+      {
+        label: "Carbon pools in engine",
+        href: "/settings/carbon",
+        hint: "Settings → Carbon calculator — enable other pools (deadwood, litter, SOC) via API include_other_pools",
+      },
+      {
+        label: "VM0047 summary API",
+        href: "http://localhost:8000/docs#/planting-projects/get_project_vm0047_summary_api_v1_planting_projects__project_id__vm0047_summary_get",
+        external: true,
+        hint: "GET /planting-projects/{id}/vm0047/summary",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -214,7 +240,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 12–13 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 13–14 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

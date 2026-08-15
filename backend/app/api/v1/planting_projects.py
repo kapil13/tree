@@ -45,6 +45,12 @@ from app.schemas.project_member import (
 from app.schemas.project_risk import ProjectRiskAssessmentCreate
 from app.schemas.rule_template import ProjectRuleOverrideUpdate
 from app.schemas.tree import TreeListItem
+from app.schemas.vm0047 import (
+    AdditionalityCreate,
+    CarbonPoolsUpsert,
+    LeakageCreate,
+    ProjectBaselineCreate,
+)
 from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
@@ -1206,3 +1212,212 @@ async def create_project_risk_assessment(
     )
     await db.commit()
     return row.model_dump()
+
+
+@router.get("/{project_id}/vm0047/summary")
+async def get_project_vm0047_summary(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    from app.services.carbon.vm0047_ops import build_vm0047_summary
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await build_vm0047_summary(db, project)
+
+
+@router.get("/{project_id}/baselines")
+async def list_project_baselines(project_id: uuid.UUID, user: CurrentUser, db: DB) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_baselines
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_baselines(db, project.id)
+
+
+@router.post("/{project_id}/baselines", status_code=status.HTTP_201_CREATED)
+async def create_project_baseline(
+    project_id: uuid.UUID,
+    payload: ProjectBaselineCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_baseline
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_baseline(
+        db,
+        project=project,
+        scenario=payload.scenario,
+        land_cover_class=payload.land_cover_class,
+        description=payload.description,
+        baseline_emissions_tco2e=payload.baseline_emissions_tco2e,
+        baseline_removals_tco2e=payload.baseline_removals_tco2e,
+        created_by=user.id,
+        metadata=payload.metadata,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.baseline.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"scenario": payload.scenario},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/additionality")
+async def list_project_additionality(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_additionality
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_additionality(db, project.id)
+
+
+@router.post("/{project_id}/additionality", status_code=status.HTTP_201_CREATED)
+async def create_project_additionality(
+    project_id: uuid.UUID,
+    payload: AdditionalityCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_additionality
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_additionality(
+        db,
+        project=project,
+        status=payload.status,
+        score_pct=payload.score_pct,
+        narrative=payload.narrative,
+        factors=payload.factors,
+        assessor_id=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.additionality.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"score_pct": payload.score_pct},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/leakage")
+async def list_project_leakage(project_id: uuid.UUID, user: CurrentUser, db: DB) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_leakage
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_leakage(db, project.id)
+
+
+@router.post("/{project_id}/leakage", status_code=status.HTTP_201_CREATED)
+async def create_project_leakage(
+    project_id: uuid.UUID,
+    payload: LeakageCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_leakage
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_leakage(
+        db,
+        project=project,
+        leakage_type=payload.leakage_type,
+        estimated_leakage_tco2e=payload.estimated_leakage_tco2e,
+        mitigation_tco2e=payload.mitigation_tco2e,
+        notes=payload.notes,
+        created_by=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.leakage.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"leakage_type": payload.leakage_type},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/carbon-pools")
+async def get_project_carbon_pools(project_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+    from app.services.carbon.vm0047_ops import _pools_dict, get_carbon_pools
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    row = await get_carbon_pools(db, project.id)
+    return _pools_dict(row)
+
+
+@router.put("/{project_id}/carbon-pools")
+async def upsert_project_carbon_pools(
+    project_id: uuid.UUID,
+    payload: CarbonPoolsUpsert,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import upsert_carbon_pools
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await upsert_carbon_pools(
+        db,
+        project=project,
+        deadwood_ratio=payload.deadwood_ratio,
+        litter_ratio=payload.litter_ratio,
+        soc_tco2e_per_ha=payload.soc_tco2e_per_ha,
+        area_ha=payload.area_ha,
+        updated_by=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.carbon_pools.upsert",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"deadwood_ratio": payload.deadwood_ratio, "litter_ratio": payload.litter_ratio},
+    )
+    await db.commit()
+    return row

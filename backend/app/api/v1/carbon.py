@@ -38,6 +38,11 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
             buffer_pct=payload.buffer_pct,
             nprt_score=payload.nprt_score,
             ex_post_verified=payload.ex_post_verified,
+            include_other_pools=payload.include_other_pools,
+            deadwood_ratio=payload.deadwood_ratio,
+            litter_ratio=payload.litter_ratio,
+            soc_tco2e_per_ha=payload.soc_tco2e_per_ha,
+            area_ha=payload.area_ha,
         )
     )
     return CarbonEstimateResponse(**res.__dict__)
