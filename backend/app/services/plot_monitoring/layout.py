@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import uuid
 from typing import Any
 
 from geoalchemy2 import WKTElement
@@ -18,27 +19,31 @@ from app.models.plot_monitoring import (
 
 
 async def _point_in_polygon(
-    db: AsyncSession, fence: PlantationFence, rng: random.Random
+    db: AsyncSession, fence_id: uuid.UUID, boundary: Any, rng: random.Random
 ) -> tuple[float, float] | None:
     """Rejection sample a point inside the work-area bounding envelope."""
     bbox = (
         await db.execute(
             select(
-                func.ST_XMin(fence.boundary).label("xmin"),
-                func.ST_XMax(fence.boundary).label("xmax"),
-                func.ST_YMin(fence.boundary).label("ymin"),
-                func.ST_YMax(fence.boundary).label("ymax"),
-            )
+                func.ST_XMin(PlantationFence.boundary).label("xmin"),
+                func.ST_XMax(PlantationFence.boundary).label("xmax"),
+                func.ST_YMin(PlantationFence.boundary).label("ymin"),
+                func.ST_YMax(PlantationFence.boundary).label("ymax"),
+            ).where(PlantationFence.id == fence_id)
         )
     ).one()
+    xmin, xmax = float(bbox.xmin), float(bbox.xmax)
+    ymin, ymax = float(bbox.ymin), float(bbox.ymax)
+    if xmin >= xmax or ymin >= ymax:
+        return None
     for _ in range(40):
-        lon = rng.uniform(float(bbox.xmin), float(bbox.xmax))
-        lat = rng.uniform(float(bbox.ymin), float(bbox.ymax))
+        lon = rng.uniform(xmin, xmax)
+        lat = rng.uniform(ymin, ymax)
         inside = (
             await db.execute(
                 select(
                     func.ST_Contains(
-                        fence.boundary,
+                        boundary,
                         func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326),
                     )
                 )
@@ -93,7 +98,7 @@ async def generate_plots_for_design(
         await db.flush()
 
         for plot_n in range(1, design.plots_per_stratum + 1):
-            coords = await _point_in_polygon(db, fence, rng)
+            coords = await _point_in_polygon(db, fence.id, fence.boundary, rng)
             if coords is None:
                 continue
             lon, lat = coords
