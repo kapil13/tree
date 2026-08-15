@@ -4,10 +4,8 @@ import {
   Activity,
   Bird,
   Check,
-  CheckCircle2,
   CloudRain,
   FileCheck,
-  Globe2,
   Leaf,
   Lock,
   MapPin,
@@ -20,30 +18,20 @@ import {
   TrendingUp,
   Users,
   X,
-  Zap,
 } from "lucide-react";
-import {
-  BrowserChrome,
-  CoverSlide,
-  FlowPipeline,
-  MetricRibbon,
-  PillRow,
-  SlideSplit,
-} from "./deck-primitives";
-import {
-  BioacousticMock,
-  CarbonCreditsMock,
-  CompliancePortalMock,
-  ExecutiveDashboardMock,
-  FieldOpsMock,
-  SatelliteMonitoringMock,
-} from "./portal-mocks";
+import { CoverSlide } from "./deck-primitives";
 import { SlideBullets, SlideFooter, SlideFrame } from "./slide-frame";
+import {
+  FullBleedSlide,
+  VisualSlide,
+} from "./visual-slide-layout";
 
 export const DECK_SLIDE_COUNT = 26;
+const T = DECK_SLIDE_COUNT;
+const SHOT = "/presentation/screenshots";
 
 const INDIAN_SCHEMES = [
-  ["CAMPA", "MoEFCC", "Checklist · report · APO import"],
+  ["CAMPA", "MoEFCC", "Checklist · report · APO"],
   ["Green India Mission", "MoEFCC", "Readiness checklist"],
   ["MISHTI Mangrove", "MoEFCC", "Coastal checklist"],
   ["Nagar Van", "MoEFCC", "Urban forest template"],
@@ -68,6 +56,34 @@ const INTL_STANDARDS = [
   ["STAC / OGC", "OGC", "GeoJSON + catalog"],
 ];
 
+function PipelineFull() {
+  const steps = [
+    { icon: TreePine, label: "Register", sub: "GPS + photo" },
+    { icon: Activity, label: "Measure", sub: "DBH / height" },
+    { icon: Satellite, label: "Monitor", sub: "Sat + SAR" },
+    { icon: Leaf, label: "Quantify", sub: "90% CI CO₂e" },
+    { icon: ShieldCheck, label: "Comply", sub: "IN + global" },
+    { icon: FileCheck, label: "Prove", sub: "Signed bundle" },
+  ];
+  return (
+    <div className="deck-pipeline-full">
+      {steps.map(({ icon: Icon, label, sub }, i) => (
+        <div key={label} className="flex flex-1 items-center gap-0.5">
+          <div className="deck-pipeline-node">
+            <span className="deck-pipeline-node-num">{String(i + 1).padStart(2, "0")}</span>
+            <div className="deck-pipeline-node-icon">
+              <Icon className="h-4 w-4" />
+            </div>
+            <span className="deck-pipeline-node-label">{label}</span>
+            <span className="deck-pipeline-node-sub">{sub}</span>
+          </div>
+          {i < steps.length - 1 ? <div className="deck-pipeline-arrow" aria-hidden /> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ComparisonTable() {
   const rows = [
     "Per-tree GPS MRV",
@@ -81,7 +97,7 @@ function ComparisonTable() {
     "Offline field capture",
   ];
   return (
-    <table className="deck-table mt-2">
+    <table className="deck-table">
       <thead>
         <tr>
           <th>Capability</th>
@@ -110,499 +126,187 @@ function ComparisonTable() {
   );
 }
 
-function IntegrityGauge({ score = 87 }: { score?: number }) {
-  const r = 36;
-  const c = 2 * Math.PI * r;
-  const offset = c - (score / 100) * c;
-  return (
-    <div className="flex flex-col items-center">
-      <svg width="90" height="90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          stroke="#22c55e"
-          strokeWidth="8"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          transform="rotate(-90 50 50)"
-        />
-        <text x="50" y="52" textAnchor="middle" fill="#f0fdf4" fontSize="18" fontWeight="700">
-          {score}
-        </text>
-      </svg>
-      <span className="text-[0.5rem] font-semibold uppercase tracking-wider text-emerald-300">
-        Forest Integrity
-      </span>
-    </div>
-  );
-}
-
 export function DeckSlides({ onlySlide }: { onlySlide?: number }) {
   const slides = renderAllSlides();
-  if (onlySlide != null) {
-    return <>{slides[onlySlide - 1]}</>;
-  }
+  if (onlySlide != null) return <>{slides[onlySlide - 1]}</>;
   return <>{slides}</>;
 }
 
 function renderAllSlides() {
-  const T = DECK_SLIDE_COUNT;
   return [
     <CoverSlide key="s1" />,
 
-    <SlideFrame key="s2" slideNum={2} variant="light">
-      <SlideSplit
-        eyebrow="The challenge"
-        title="Plantation claims collapse under audit"
-        copy="Spreadsheets, WhatsApp photos, and one-off consultant reports cannot survive regulator scrutiny — or buyer due diligence."
-        variant="light"
-      >
-        <div className="grid h-full grid-cols-2 gap-2">
-          <div className="rounded-lg border-2 border-dashed border-red-200 bg-gradient-to-br from-red-50 to-white p-3">
-            <p className="text-[0.55rem] font-bold uppercase tracking-wider text-red-700">Today</p>
-            <SlideBullets
-              items={[
-                "Fragmented field data",
-                "Single-point carbon guesses",
-                "Manual compliance packs",
-                "No tamper-evident trail",
-              ]}
-            />
-          </div>
-          <div className="rounded-lg border border-emerald-300 bg-gradient-to-br from-emerald-50 to-white p-3 shadow-sm">
-            <p className="text-[0.55rem] font-bold uppercase tracking-wider text-emerald-800">With Aranyix</p>
-            <SlideBullets
-              items={[
-                "GPS-verified per-tree registry",
-                "90% CI on every CO₂e claim",
-                "Auto-filled scheme checklists",
-                "Hash-chained signed bundles",
-              ]}
-            />
-          </div>
+    <FullBleedSlide key="s2" slideNum={2} total={T} screenshot={`${SHOT}/dashboard.png`} screenshotAlt="Executive dashboard" eyebrow="The challenge" title="Plantation claims collapse under audit" subtitle="Spreadsheets fail regulators. Aranyix delivers GPS-verified, satellite-backed, signed evidence.">
+      <div className="deck-glass-panel deck-glass-panel--row w-full">
+        <div className="deck-glass-panel flex-1 border-red-400/40">
+          <p className="text-[0.55rem] font-bold uppercase tracking-wider text-red-300">Without Aranyix</p>
+          <SlideBullets items={["WhatsApp photos", "Carbon guesses", "Manual packs", "No audit trail"]} className="mt-2 !space-y-1" />
         </div>
-      </SlideSplit>
-      <SlideFooter slideNum={2} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s3" slideNum={3} variant="dark">
-      <div className="deck-eyebrow text-emerald-300">End-to-end MRV</div>
-      <h2 className="deck-title mt-1">From geotagged sapling to signed evidence bundle</h2>
-      <FlowPipeline
-        steps={[
-          { label: "Register", sub: "GPS + photo", icon: <TreePine className="h-3.5 w-3.5" /> },
-          { label: "Measure", sub: "DBH / height", icon: <Activity className="h-3.5 w-3.5" /> },
-          { label: "Monitor", sub: "Sat + SAR", icon: <Satellite className="h-3.5 w-3.5" /> },
-          { label: "Quantify", sub: "90% CI CO₂e", icon: <Leaf className="h-3.5 w-3.5" /> },
-          { label: "Comply", sub: "IN + global", icon: <ShieldCheck className="h-3.5 w-3.5" /> },
-          { label: "Prove", sub: "Signed bundle", icon: <FileCheck className="h-3.5 w-3.5" /> },
-        ]}
-      />
-      <MetricRibbon
-        items={[
-          { label: "Audit events", value: "12.4k", delta: "hash-chained", tone: "up" },
-          { label: "Schemes", value: "9+", delta: "MoEFCC built-in", tone: "up" },
-          { label: "Standards", value: "11", delta: "global mapped", tone: "neutral" },
-          { label: "Evidence", value: "Ed25519", delta: "signed export", tone: "up" },
-        ]}
-      />
-      <SlideFooter slideNum={3} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s4" slideNum={4} variant="dark">
-      <SlideSplit
-        eyebrow="Live platform"
-        title="One portal. Field to boardroom."
-        copy="The same Aranyix experience your teams sign into — web dashboard, mobile field app, API, and automated workers."
-      >
-        <BrowserChrome
-          url="https://byot.earth/login"
-          imageSrc="/presentation/screenshots/login-page.png"
-          imageAlt="Aranyix sign-in — satellite MRV, tree health, biodiversity, AI insights"
-          glow="emerald"
-        />
-      </SlideSplit>
-      <PillRow items={["Satellite MRV", "Tree health", "Biodiversity", "AI insights", "Offline field"]} highlight={[0, 3]} />
-      <SlideFooter slideNum={4} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s5" slideNum={5} variant="light">
-      <SlideSplit
-        eyebrow="Executive command center"
-        title="Portfolio intelligence at a glance"
-        copy="Carbon, canopy health, SAR integrity, alerts, and compliance — unified for decision-makers."
-        variant="light"
-        reverse
-      >
-        <BrowserChrome url="https://byot.earth/dashboard" glow="sky">
-          <ExecutiveDashboardMock />
-        </BrowserChrome>
-      </SlideSplit>
-      <SlideFooter slideNum={5} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s6" slideNum={6} variant="dark">
-      <SlideSplit
-        eyebrow="Field operations"
-        title="Field data that survives an audit"
-        copy="GPS-tagged registration, append-only measurements, survival surveys, and offline mobile sync."
-        reverse
-      >
-        <FieldOpsMock />
-      </SlideSplit>
-      <SlideFooter slideNum={6} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s7" slideNum={7} variant="dark">
-      <div className="deck-eyebrow text-emerald-300">Automation</div>
-      <h2 className="deck-title mt-1">Monitoring is scheduled, not requested</h2>
-      <div className="mt-2 grid flex-1 grid-cols-3 gap-2">
-        {[
-          { icon: Satellite, label: "Monthly optical sweep", sub: "Every work area + tree" },
-          { icon: Radar, label: "Monthly SAR + weekly watch", sub: "At-risk re-scan" },
-          { icon: Shield, label: "Daily health roundup", sub: "Stale data + violations" },
-          { icon: FileCheck, label: "Compliance deadlines", sub: "Escalation alerts" },
-          { icon: Activity, label: "Job-run audit log", sub: "Ops traceability" },
-          { icon: Zap, label: "Health digest", sub: "Email / SMS delivery" },
-        ].map(({ icon: Icon, label, sub }) => (
-          <div key={label} className="deck-card flex flex-col gap-1 p-2">
-            <Icon className="h-4 w-4 text-sky-400" />
-            <span className="text-[0.62rem] font-semibold">{label}</span>
-            <span className="text-[0.48rem] opacity-70">{sub}</span>
-          </div>
-        ))}
+        <div className="deck-glass-panel flex-1 border-emerald-400/50">
+          <p className="text-[0.55rem] font-bold uppercase tracking-wider text-emerald-300">With Aranyix</p>
+          <SlideBullets items={["Per-tree GPS MRV", "90% CI carbon", "Auto checklists", "Ed25519 bundles"]} className="mt-2 !space-y-1" />
+        </div>
       </div>
-      <SlideFooter slideNum={7} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s8" slideNum={8} variant="light">
-      <SlideSplit
-        eyebrow="Optical satellite"
-        title="Sentinel-2 NDVI, from pixel to project KPI"
-        copy="NDVI + EVI for trees and work areas. Alert when canopy drops >0.15 vs baseline."
-        variant="light"
-      >
-        <BrowserChrome url="https://byot.earth/satellite" glow="emerald">
-          <SatelliteMonitoringMock />
-        </BrowserChrome>
-      </SlideSplit>
-      <SlideFooter slideNum={8} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s9" slideNum={9} variant="dark">
-      <SlideSplit
-        eyebrow="SAR monitoring"
-        title="See through cloud and monsoon"
-        copy="Sentinel-1 C-band integrity scoring when optical is unusable — NISAR-inspired L/S analytics."
-      >
-        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="deck-card p-3 text-center opacity-60">
-            <CloudRain className="mx-auto h-6 w-6 text-stone-400" />
-            <p className="mt-2 text-[0.58rem] font-semibold">Optical (cloudy)</p>
-            <p className="text-[0.48rem] opacity-70">No usable NDVI</p>
-          </div>
-          <IntegrityGauge score={87} />
-          <div className="deck-card border-emerald-500/30 p-3 text-center">
-            <Radar className="mx-auto h-6 w-6 text-emerald-400" />
-            <p className="mt-2 text-[0.58rem] font-semibold">Sentinel-1 SAR</p>
-            <p className="text-[0.48rem] opacity-70">Grade B+ integrity</p>
-          </div>
-        </div>
-      </SlideSplit>
-      <SlideFooter slideNum={9} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s10" slideNum={10} variant="light">
-      <div className="deck-eyebrow text-emerald-800">Indian EO</div>
-      <h2 className="deck-title mt-1 text-stone-900">ISRO Bhoonidhi & multi-source fusion</h2>
-      <div className="mt-3 flex flex-1 items-center justify-center gap-2">
-        {["Sentinel-2", "Bhoonidhi", "Sentinel-1"].map((src, i) => (
-          <div key={src} className="flex items-center gap-2">
-            <div className="deck-card w-24 p-3 text-center">
-              <Satellite className="mx-auto h-5 w-5 text-emerald-600" />
-              <p className="mt-1 text-[0.6rem] font-semibold">{src}</p>
+    <FullBleedSlide key="s3" slideNum={3} total={T} screenshot={`${SHOT}/trees.png`} screenshotAlt="Tree registry" eyebrow="End-to-end MRV" title="From geotagged sapling to signed evidence bundle" subtitle="Hash-chained audit log at every step.">
+      <div className="deck-glass-panel w-full">
+        <PipelineFull />
+        <div className="deck-metric-wall mt-3">
+          {[
+            ["12.4k+", "Audit events"],
+            ["9+", "MoEFCC schemes"],
+            ["11", "Global standards"],
+            ["Ed25519", "Signed exports"],
+          ].map(([v, l]) => (
+            <div key={l} className="deck-glass-stat">
+              <span className="deck-stat-value text-emerald-300">{v}</span>
+              <span className="deck-stat-label">{l}</span>
             </div>
-            {i < 2 ? <span className="text-emerald-600">→</span> : null}
-          </div>
-        ))}
-        <div className="deck-card ml-2 border-emerald-400 bg-emerald-50 p-3 text-center">
-          <Sparkles className="mx-auto h-5 w-5 text-emerald-700" />
-          <p className="mt-1 text-[0.6rem] font-bold">Fused score</p>
+          ))}
         </div>
       </div>
-      <SlideFooter slideNum={10} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s11" slideNum={11} variant="dark">
-      <SlideSplit
-        eyebrow="Satellite health AI"
-        title="NDVI decline, explained in plain language"
-        copy="Rule-based time-series analysis classifies pest, disease, and stress — with treatment recommendations."
-      >
-        <div className="deck-card w-full p-3">
-          <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[0.5rem] font-bold text-amber-300">
-            MODERATE RISK
-          </span>
-          <p className="mt-2 text-[0.62rem] font-semibold">Pest stress detected — Sector B</p>
-          <p className="mt-1 text-[0.52rem] opacity-80">
-            NDVI heterogeneity ↑ 23% over 6 weeks. Recommend ground survey within 14 days.
-          </p>
-          <div className="mt-3 h-12 rounded bg-gradient-to-r from-amber-900/30 via-emerald-900/20 to-emerald-900/30" />
-        </div>
-      </SlideSplit>
-      <SlideFooter slideNum={11} total={T} />
-    </SlideFrame>,
+    <VisualSlide key="s4" slideNum={4} total={T} eyebrow="Live platform" title="One portal — field to boardroom" subtitle="Real Aranyix sign-in: satellite MRV, tree health, biodiversity, AI insights." screenshot={`${SHOT}/login-page.png`} screenshotAlt="Aranyix login portal" stats={[{ label: "Surfaces", value: "Web + Mobile" }, { label: "Roles", value: "RBAC" }, { label: "API", value: "PostGIS" }, { label: "Offline", value: "PWA" }]} bullets={["Satellite MRV", "Tree health", "Biodiversity", "AI insights"]} />,
 
-    <SlideFrame key="s12" slideNum={12} variant="light">
-      <div className="deck-eyebrow text-emerald-800">Threat intelligence</div>
-      <h2 className="deck-title mt-1 text-stone-900">Risk before damage</h2>
-      <div className="mt-2 grid flex-1 grid-cols-3 gap-2">
+    <VisualSlide key="s5" slideNum={5} total={T} variant="light" eyebrow="Executive command center" title="Portfolio intelligence at a glance" subtitle="Live dashboard — Demo Program Manager · NHAI portfolio." screenshot={`${SHOT}/dashboard.png`} screenshotAlt="Executive dashboard" stats={[{ label: "Trees", value: "18" }, { label: "CO₂e", value: "6.36 t" }, { label: "Canopy", value: "83.3%" }, { label: "Verified", value: "50%" }]} bullets={["Intelligence brief", "Command strip KPIs", "Carbon + NDVI charts", "Program chips"]} />,
+
+    <VisualSlide key="s6" slideNum={6} total={T} eyebrow="Field operations" title="Field data that survives an audit" subtitle="GPS registration, append-only measurements, survival surveys, offline sync." screenshot={`${SHOT}/field-ops.png`} screenshotAlt="Field operations" stats={[{ label: "Capture", value: "GPS+photo" }, { label: "Sync", value: "Offline" }, { label: "Unit", value: "Work area" }, { label: "Trail", value: "Append-only" }]} bullets={["Mobile field app", "Supervisor queues", "Survey workflows", "Polygon boundaries"]} />,
+
+    <FullBleedSlide key="s7" slideNum={7} total={T} screenshot={`${SHOT}/monitoring.png`} screenshotAlt="Automated monitoring" eyebrow="Automation" title="Monitoring is scheduled, not requested" subtitle="Monthly optical + SAR sweeps, daily health roundups, compliance escalations.">
+      <div className="deck-glass-panel deck-glass-panel--row w-full">
         {[
-          { label: "7-day forecast", val: "Open-Meteo", icon: CloudRain },
-          { label: "Pest intel", val: "Sat + rain + bio", icon: Leaf },
-          { label: "Locust corridors", val: "Seasonal watch", icon: MapPin },
-        ].map(({ label, val, icon: Icon }) => (
-          <div key={label} className="deck-card p-3 text-center">
-            <Icon className="mx-auto h-5 w-5 text-sky-600" />
-            <p className="mt-2 text-[0.62rem] font-semibold">{label}</p>
-            <p className="text-[0.48rem] text-stone-500">{val}</p>
+          ["Monthly", "Optical sweep"],
+          ["Weekly", "SAR watch"],
+          ["Daily", "Health roundup"],
+          ["Auto", "Compliance alerts"],
+        ].map(([v, l]) => (
+          <div key={l} className="deck-glass-stat">
+            <span className="deck-stat-value text-emerald-300">{v}</span>
+            <span className="deck-stat-label">{l}</span>
           </div>
         ))}
       </div>
-      <SlideFooter slideNum={12} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s13" slideNum={13} variant="dark">
-      <SlideSplit
-        eyebrow="Differentiator"
-        title="Prove the forest came back to life"
-        copy="BirdNET + multi-taxa audio, Shannon diversity, IUCN baselines, and Darwin Core export."
-        reverse
-      >
-        <BioacousticMock />
-      </SlideSplit>
-      <SlideFooter slideNum={13} total={T} />
-    </SlideFrame>,
+    <VisualSlide key="s8" slideNum={8} total={T} variant="light" eyebrow="Optical satellite" title="Sentinel-2 NDVI — pixel to project KPI" subtitle="Site satellite scan with NDVI, radar, and ISRO Bhoonidhi integration." screenshot={`${SHOT}/satellite.png`} screenshotAlt="Satellite monitoring" stats={[{ label: "Trees", value: "18" }, { label: "Verified", value: "9" }, { label: "NDVI", value: "Active" }, { label: "SAR", value: "Ready" }]} bullets={["Sentinel Hub", "Cloud cover check", "Alert >0.15 drop", "Time-series charts"]} />,
 
-    <SlideFrame key="s14" slideNum={14} variant="light">
-      <SlideSplit
-        eyebrow="Carbon MRV"
-        title="A range, not a marketing number"
-        copy="IPCC AR6 · VM0047 · Gold Standard LUF with Monte Carlo 90% confidence intervals."
-        variant="light"
-      >
-        <CarbonCreditsMock />
-      </SlideSplit>
-      <SlideFooter slideNum={14} total={T} />
-    </SlideFrame>,
+    <VisualSlide key="s9" slideNum={9} total={T} eyebrow="SAR monitoring" title="See through cloud and monsoon" subtitle="Sentinel-1 C-band integrity when optical is unusable." screenshot={`${SHOT}/monitoring.png`} screenshotAlt="SAR monitoring" stats={[{ label: "Integrity", value: "87 B+" }, { label: "Band", value: "C-band" }, { label: "Feed", value: "GEE/Hub" }, { label: "Watch", value: "Weekly" }]} bullets={["NISAR-inspired L/S", "Forest integrity grade", "Monsoon-resilient", "Fusion alerts"]} />,
 
-    <SlideFrame key="s15" slideNum={15} variant="dark">
-      <div className="deck-eyebrow text-emerald-300">Verra VM0047</div>
-      <h2 className="deck-title mt-1">Baseline, additionality, leakage — structured</h2>
-      <div className="mt-3 grid flex-1 grid-cols-4 gap-2">
-        {["Baseline", "Additionality", "Leakage", "Carbon pools"].map((t) => (
-          <div key={t} className="deck-card flex flex-col items-center justify-center p-3 text-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            <span className="mt-2 text-[0.62rem] font-semibold">{t}</span>
+    <FullBleedSlide key="s10" slideNum={10} total={T} screenshot={`${SHOT}/map.png`} screenshotAlt="Map view" eyebrow="Indian EO" title="ISRO Bhoonidhi & multi-source fusion" subtitle="Sentinel-2 + Bhoonidhi + Sentinel-1 → unified canopy intelligence." position="center">
+      <div className="deck-glass-panel deck-glass-panel--row w-full">
+        {["Sentinel-2", "Bhoonidhi", "Sentinel-1", "Fused KPI"].map((s) => (
+          <div key={s} className="deck-glass-stat">
+            <Satellite className="mx-auto h-4 w-4 text-emerald-400" />
+            <span className="deck-stat-label mt-1 block">{s}</span>
           </div>
         ))}
       </div>
-      <SlideFooter slideNum={15} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s16" slideNum={16} variant="light">
-      <SlideSplit
-        eyebrow="Credit integrity"
-        title="Registry-grade discipline before the registry"
-        copy="Credit ledger, serial numbers, Paris Art. 6 retirement metadata, exclusive claim registry."
-        variant="light"
-        reverse
-      >
-        <div className="deck-card w-full p-3 font-mono text-[0.52rem]">
-          <p className="text-emerald-700">BYOT-2026-MH-00042</p>
-          <p className="mt-1 text-stone-500">status: verified · buffer: 18%</p>
-          <p className="mt-2 text-red-600">✕ Claim conflict: campa ↔ gim</p>
-          <div className="mt-3 h-16 rounded bg-gradient-to-r from-emerald-100 to-sky-50" />
-        </div>
-      </SlideSplit>
-      <SlideFooter slideNum={16} total={T} />
-    </SlideFrame>,
+    <VisualSlide key="s11" slideNum={11} total={T} eyebrow="Satellite health AI" title="NDVI decline, explained in plain language" subtitle="Rule-based analysis + optional AI narrative for field teams." screenshot={`${SHOT}/intelligence.png`} screenshotAlt="Threat intelligence" stats={[{ label: "Risk", value: "Composite" }, { label: "Forecast", value: "7-day" }, { label: "Pest", value: "Intel" }, { label: "Action", value: "Recommended" }]} bullets={["Pest classification", "Treatment recs", "Alert triggers", "Persisted analysis"]} />,
 
-    <SlideFrame key="s17" slideNum={17} variant="dark" className="text-[0.92em]">
-      <div className="deck-eyebrow text-emerald-300">National compliance</div>
-      <h2 className="deck-title mt-1">Nine central government schemes, built in</h2>
-      <table className="deck-table mt-2">
-        <thead>
-          <tr>
-            <th>Scheme</th>
-            <th>Ministry</th>
-            <th>Platform</th>
-          </tr>
-        </thead>
-        <tbody>
-          {INDIAN_SCHEMES.map(([a, b, c]) => (
-            <tr key={a}>
-              <td className="font-medium">{a}</td>
-              <td>{b}</td>
-              <td>{c}</td>
+    <VisualSlide key="s12" slideNum={12} total={T} variant="light" eyebrow="Threat intelligence" title="Risk before damage" subtitle="Portfolio threat watch — weather, pest corridors, composite risk score." screenshot={`${SHOT}/portfolio-health.png`} screenshotAlt="Portfolio health" stats={[{ label: "Watch", value: "Portfolio" }, { label: "Weather", value: "Open-Meteo" }, { label: "Locust", value: "Seasonal" }, { label: "Score", value: "Composite" }]} bullets={["Early warnings", "Per-site actions", "Executive rollup", "Alert routing"]} />,
+
+    <VisualSlide key="s13" slideNum={13} total={T} eyebrow="Differentiator" title="Prove the forest came back to life" subtitle="BirdNET + multi-taxa audio, Shannon diversity, Darwin Core export." screenshot={`${SHOT}/bioacoustic.png`} screenshotAlt="Bioacoustic panel" stats={[{ label: "Shannon", value: "3.42" }, { label: "Health", value: "78" }, { label: "Species", value: "Multi-taxa" }, { label: "Export", value: "Darwin" }]} bullets={["BirdNET pipeline", "IUCN baselines", "NDVI correlation", "GBIF-ready"]} />,
+
+    <VisualSlide key="s14" slideNum={14} total={T} variant="light" eyebrow="Carbon MRV" title="A range, not a marketing number" subtitle="IPCC AR6 · VM0047 · Gold Standard with Monte Carlo 90% CI." screenshot={`${SHOT}/carbon-tools.png`} screenshotAlt="Carbon MRV tools" stats={[{ label: "CI", value: "90%" }, { label: "Buffer", value: "10–30%" }, { label: "Pools", value: "SOC+ litter" }, { label: "Method", value: "VM0047" }]} bullets={["Mortality adjusted", "Verra deduction", "Ex-ante credits", "Uncertainty bands"]} />,
+
+    <VisualSlide key="s15" slideNum={15} total={T} eyebrow="Verra VM0047" title="Baseline, additionality, leakage — structured" subtitle="Full ARR accounting in project workflows." screenshot={`${SHOT}/projects.png`} screenshotAlt="Projects" stats={[{ label: "Baseline", value: "✓" }, { label: "Additionality", value: "✓" }, { label: "Leakage", value: "✓" }, { label: "Pools", value: "✓" }]} bullets={["VM0047 profile", "Strata documented", "ICVCM aligned", "Pool accounting"]} />,
+
+    <VisualSlide key="s16" slideNum={16} total={T} variant="light" eyebrow="Credit integrity" title="Registry-grade discipline before the registry" subtitle="Credit ledger, serial numbers, Paris Art. 6 metadata, exclusive claims." screenshot={`${SHOT}/carbon-tools.png`} screenshotAlt="Credit ledger" stats={[{ label: "States", value: "4" }, { label: "Serial", value: "BYOT" }, { label: "Buffer", value: "10–30%" }, { label: "Paris", value: "Art.6" }]} bullets={["Estimated → issued", "Claim registry", "Conflict detect", "Green Credit calc"]} />,
+
+    <FullBleedSlide key="s17" slideNum={17} total={T} screenshot={`${SHOT}/compliance-settings.png`} screenshotAlt="Compliance standards" eyebrow="National compliance" title="Nine central government schemes, built in" subtitle="SEBI BRSR P6 · India DPDP Act · MoEFCC templates.">
+      <div className="deck-glass-panel deck-table-fill w-full max-h-[8rem] overflow-hidden">
+        <table className="deck-table text-emerald-50">
+          <thead>
+            <tr>
+              <th>Scheme</th>
+              <th>Ministry</th>
+              <th>Platform</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="mt-1 text-[0.48rem] text-emerald-200/60">+ SEBI BRSR P6 · India DPDP Act</p>
-      <SlideFooter slideNum={17} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s18" slideNum={18} variant="light" className="text-[0.9em]">
-      <div className="deck-eyebrow text-emerald-800">Global standards</div>
-      <h2 className="deck-title mt-1 text-stone-900">International standards, same evidence base</h2>
-      <table className="deck-table mt-2">
-        <thead>
-          <tr>
-            <th>Standard</th>
-            <th>Body</th>
-            <th>Capability</th>
-          </tr>
-        </thead>
-        <tbody>
-          {INTL_STANDARDS.map(([a, b, c]) => (
-            <tr key={a}>
-              <td className="font-medium">{a}</td>
-              <td>{b}</td>
-              <td>{c}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <SlideFooter slideNum={18} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s19" slideNum={19} variant="dark">
-      <SlideSplit
-        eyebrow="Compliance portal"
-        title="Twelve guided checklists that fill themselves in"
-        copy="Scheme drives checklist + report profile. Auto-signals from live platform data."
-      >
-        <BrowserChrome url="https://byot.earth/reports" glow="emerald">
-          <CompliancePortalMock />
-        </BrowserChrome>
-      </SlideSplit>
-      <SlideFooter slideNum={19} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s20" slideNum={20} variant="light">
-      <SlideSplit
-        eyebrow="Trust layer"
-        title="Tamper-evident by construction"
-        copy="SHA-256 hash-chained audit log, daily root hash, Ed25519 signed bundles, RFC 3161 TSA."
-        variant="light"
-      >
-        <div className="flex w-full items-center gap-3">
-          <div className="flex flex-col items-center gap-1">
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-emerald-600" />
-                <div className="h-7 w-14 rounded border border-emerald-300 bg-emerald-50 text-center text-[0.42rem] leading-7">
-                  hash {n}
-                </div>
-              </div>
+          </thead>
+          <tbody>
+            {INDIAN_SCHEMES.slice(0, 6).map(([a, b, c]) => (
+              <tr key={a}>
+                <td className="font-medium">{a}</td>
+                <td>{b}</td>
+                <td>{c}</td>
+              </tr>
             ))}
-          </div>
-          <div className="deck-card flex-1 p-3 text-[0.52rem]">
-            <p className="font-semibold text-emerald-800">Verifier-callable chain verify API</p>
-            <p className="mt-1 text-stone-500">Daily anchor → object storage · bundle signature valid</p>
-          </div>
-        </div>
-      </SlideSplit>
-      <SlideFooter slideNum={20} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s21" slideNum={21} variant="dark">
-      <div className="deck-eyebrow text-emerald-300">Verification</div>
-      <h2 className="deck-title mt-1">Auditors attest — without edit rights</h2>
-      <SlideBullets
-        items={[
-          "Verifier role: attest-only permissions",
-          "Random or species-stratified tree sampling",
-          "Cryptographic attestation hash per item",
-          "PDF sample audit report export",
-          "Stratified plot monitoring — census alternative",
-        ]}
-      />
-      <SlideFooter slideNum={21} total={T} />
-    </SlideFrame>,
-
-    <SlideFrame key="s22" slideNum={22} variant="light">
-      <div className="deck-eyebrow text-emerald-800">Reporting</div>
-      <h2 className="deck-title mt-1 text-stone-900">One click from dashboard to disclosure</h2>
-      <div className="mt-3 grid flex-1 grid-cols-4 gap-2">
-        {["BRSR P6", "ISO 14064-2", "TNFD LEAP", "GHG Protocol", "Darwin Core", "Framework PDF", "STAC catalog", "GeoJSON"].map(
-          (r) => (
-            <div key={r} className="deck-card flex items-center justify-center p-2 text-center text-[0.58rem] font-semibold">
-              {r}
-            </div>
-          ),
-        )}
+          </tbody>
+        </table>
       </div>
-      <SlideFooter slideNum={22} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s23" slideNum={23} variant="dark">
-      <div className="deck-eyebrow text-emerald-300">Personas</div>
-      <h2 className="deck-title mt-1">Purpose-built views for every stakeholder</h2>
-      <div className="mt-3 grid flex-1 grid-cols-4 gap-2">
-        {[
-          { icon: Users, title: "Citizen", sub: "Tag · scan · stewardship" },
-          { icon: MapPin, title: "Field worker", sub: "Offline · surveys" },
-          { icon: FileCheck, title: "Compliance", sub: "Checklists · exports" },
-          { icon: TrendingUp, title: "Executive", sub: "KPIs · integrity" },
-        ].map(({ icon: Icon, title, sub }) => (
-          <div key={title} className="deck-card flex flex-col items-center p-3 text-center">
-            <Icon className="h-6 w-6 text-emerald-400" />
-            <span className="mt-2 text-[0.68rem] font-semibold">{title}</span>
-            <span className="text-[0.48rem] opacity-70">{sub}</span>
-          </div>
-        ))}
+    <FullBleedSlide key="s18" slideNum={18} total={T} screenshot={`${SHOT}/reports.png`} screenshotAlt="Global standards reports" eyebrow="Global standards" title="International standards, same evidence base" subtitle="Verra · Gold Standard · ICVCM · TNFD · ISO · Paris Art. 6.">
+      <div className="deck-glass-panel deck-table-fill w-full max-h-[8rem] overflow-hidden">
+        <table className="deck-table text-emerald-50">
+          <thead>
+            <tr>
+              <th>Standard</th>
+              <th>Body</th>
+              <th>Capability</th>
+            </tr>
+          </thead>
+          <tbody>
+            {INTL_STANDARDS.slice(0, 6).map(([a, b, c]) => (
+              <tr key={a}>
+                <td className="font-medium">{a}</td>
+                <td>{b}</td>
+                <td>{c}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <SlideFooter slideNum={23} total={T} />
-    </SlideFrame>,
+    </FullBleedSlide>,
 
-    <SlideFrame key="s24" slideNum={24} variant="light">
-      <SlideSplit
-        eyebrow="Enterprise ready"
-        title="Built for procurement review"
-        copy="DPDP Act, Hindi i18n, WCAG a11y, PWA offline, RBAC, webhooks + API."
-        variant="light"
-      >
-        <div className="grid grid-cols-2 gap-2">
-          {["DPDP Act", "Hindi i18n", "WCAG a11y", "PWA offline", "RBAC + orgs", "Webhooks + API"].map((b) => (
-            <div key={b} className="deck-card flex items-center p-2.5 text-[0.58rem] font-semibold">
-              <ShieldCheck className="mr-2 h-4 w-4 shrink-0 text-emerald-600" />
-              {b}
+    <VisualSlide key="s19" slideNum={19} total={T} eyebrow="Compliance portal" title="Twelve guided checklists that fill themselves in" subtitle="Scheme-driven profiles, auto-signals, violation tracking, signed exports." screenshot={`${SHOT}/reports.png`} screenshotAlt="Reports and compliance" stats={[{ label: "Checklists", value: "12+" }, { label: "Auto-fill", value: "Live data" }, { label: "Export", value: "PDF+JSON" }, { label: "Sign", value: "Ed25519" }]} bullets={["VM0047 profile", "CAMPA report", "BRSR P6", "Rule engine"]} />,
+
+    <FullBleedSlide key="s20" slideNum={20} total={T} screenshot={`${SHOT}/settings-team.png`} screenshotAlt="Team governance" eyebrow="Trust layer" title="Tamper-evident by construction" subtitle="SHA-256 hash chain · daily root · Ed25519 bundles · RFC 3161 TSA.">
+      <div className="deck-glass-panel w-full">
+        <div className="deck-trust-blocks">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="deck-trust-block !bg-white/10 !border-emerald-400/40 text-emerald-50">
+              <Lock className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              hash block {n} · SHA-256 → anchor {n === 4 ? "S3" : "→"}
             </div>
           ))}
         </div>
-      </SlideSplit>
-      <SlideFooter slideNum={24} total={T} />
-    </SlideFrame>,
+      </div>
+    </FullBleedSlide>,
 
-    <SlideFrame key="s25" slideNum={25} variant="light">
-      <div className="deck-eyebrow text-emerald-800">Competitive edge</div>
-      <h2 className="deck-title mt-1 text-stone-900">The only platform that closes the loop</h2>
-      <ComparisonTable />
-      <SlideFooter slideNum={25} total={T} />
-    </SlideFrame>,
+    <VisualSlide key="s21" slideNum={21} total={T} eyebrow="Verification" title="Auditors attest — without edit rights" subtitle="Verifier role, stratified sampling, cryptographic attestation per item." screenshot={`${SHOT}/trees.png`} screenshotAlt="Tree registry for verification" stats={[{ label: "Role", value: "Attest-only" }, { label: "Sample", value: "Stratified" }, { label: "Plot MRV", value: "Tier 4" }, { label: "Report", value: "PDF audit" }]} bullets={["Random sampling", "Species strata", "Plot extrapolation", "Chain verify API"]} />,
+
+    <VisualSlide key="s22" slideNum={22} total={T} variant="light" eyebrow="Reporting" title="One click from dashboard to disclosure" subtitle="BRSR · ISO 14064-2 · TNFD LEAP · GHG Protocol · Darwin Core · STAC." screenshot={`${SHOT}/reports.png`} screenshotAlt="Framework reports" stats={[{ label: "BRSR P6", value: "Export" }, { label: "TNFD", value: "LEAP" }, { label: "ISO", value: "14064" }, { label: "Darwin", value: "Core" }]} bullets={["Framework PDF", "GeoJSON", "STAC catalog", "Evidence pack"]} />,
+
+    <VisualSlide key="s23" slideNum={23} total={T} eyebrow="Personas" title="Purpose-built views for every stakeholder" subtitle="Citizen · field · compliance · executive — same evidence base." screenshot={`${SHOT}/assistant.png`} screenshotAlt="AI assistant" stats={[{ label: "Citizen", value: "BYOT" }, { label: "Field", value: "Offline" }, { label: "Compliance", value: "12+" }, { label: "Executive", value: "KPIs" }]} bullets={["Role-based views", "Shared audit log", "One org truth", "AI grounded in data"]} />,
+
+    <FullBleedSlide key="s24" slideNum={24} total={T} screenshot={`${SHOT}/settings-team.png`} screenshotAlt="Enterprise settings" eyebrow="Enterprise ready" title="Built for procurement review" subtitle="DPDP · Hindi · WCAG · PWA · RBAC · webhooks · API.">
+      <div className="deck-glass-panel deck-glass-panel--row w-full">
+        {["DPDP Act", "Hindi i18n", "WCAG a11y", "PWA offline", "RBAC", "Webhooks"].map((b) => (
+          <div key={b} className="deck-glass-stat">
+            <ShieldCheck className="mx-auto h-4 w-4 text-emerald-400" />
+            <span className="deck-stat-label mt-1 block">{b}</span>
+          </div>
+        ))}
+      </div>
+    </FullBleedSlide>,
+
+    <FullBleedSlide key="s25" slideNum={25} total={T} screenshot={`${SHOT}/dashboard.png`} screenshotAlt="Platform comparison" eyebrow="Competitive edge" title="The only platform that closes the loop" subtitle="Field → satellite → carbon → compliance → signed evidence.">
+      <div className="deck-glass-panel w-full overflow-hidden">
+        <ComparisonTable />
+      </div>
+    </FullBleedSlide>,
 
     <SlideFrame key="s26" slideNum={26} variant="dark">
       <div className="relative flex flex-1 flex-col items-center justify-center text-center">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.18),transparent_60%)]" />
+        <div className="deck-cta-glow" aria-hidden />
         <Leaf className="relative h-10 w-10 text-emerald-400" />
         <h2 className="deck-title relative mt-3">See your own plantation, verified</h2>
-        <div className="relative mt-5 max-w-md space-y-2 text-left">
+        <div className="relative mt-4 max-w-lg space-y-2 text-left">
           {[
             "Pilot: register trees · satellite sweep · evidence bundle",
             "Compliance mapping workshop for your schemes",
@@ -613,10 +317,10 @@ function renderAllSlides() {
             </p>
           ))}
         </div>
-        <p className="relative mt-6 text-[clamp(0.8rem,1.4vw,1.05rem)] font-medium text-lime-300">
+        <p className="relative mt-5 text-[clamp(0.8rem,1.4vw,1.05rem)] font-medium text-lime-300">
           Evidence you can hand to a regulator, an auditor, or a buyer.
         </p>
-        <p className="relative mt-3 text-[0.58rem] text-emerald-200/60">demo@byot.earth · aranyix.tech</p>
+        <p className="relative mt-3 text-[0.58rem] text-emerald-200/60">manager@byot.earth · demo@byot.earth · aranyix.tech</p>
       </div>
       <SlideFooter slideNum={26} total={T} />
     </SlideFrame>,
