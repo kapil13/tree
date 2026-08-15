@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
+from app.services.credits.green_credit import build_project_green_credit_summary
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 from app.services.reports.exporter import render_compliance_mrv_pdf
 from app.services.schemes.kpis import compute_scheme_kpis
@@ -34,6 +35,7 @@ Contents:
 - mrv-compliance.pdf  Human-readable MRV compliance report
 - carbon-summary.json Aggregated carbon metrics from registered trees
 - scheme-summary.json Central govt scheme refs, convergence, and KPI status
+- green-credit-summary.json MoEFCC Green Credit estimate (when scheme applies)
 - photos/manifest.json Photo metadata (S3 keys, tree linkage)
 - photos/*            Up to 50 primary tree photos when storage is available
 
@@ -71,6 +73,12 @@ async def build_project_evidence_bundle(
     scheme_summary["scheme_refs"] = meta.get("scheme_refs") or {}
     scheme_summary["funding_sources"] = meta.get("funding_sources") or []
     scheme_summary["convergence"] = meta.get("convergence") or []
+
+    green_credit_summary: dict[str, Any] | None = None
+    if project.scheme_code == "green_credit_india" or (
+        (meta.get("scheme_refs") or {}).get("green_credit_land_bank_id")
+    ):
+        green_credit_summary = await build_project_green_credit_summary(db, project)
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -123,6 +131,13 @@ async def build_project_evidence_bundle(
             json.dumps(scheme_summary, indent=2, default=str).encode("utf-8"),
             manifest_files,
         )
+        if green_credit_summary is not None:
+            _add_file(
+                zf,
+                "green-credit-summary.json",
+                json.dumps(green_credit_summary, indent=2, default=str).encode("utf-8"),
+                manifest_files,
+            )
         pdf = render_compliance_mrv_pdf(ctx)
         _add_file(zf, "mrv-compliance.pdf", pdf, manifest_files)
 

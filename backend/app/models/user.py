@@ -36,6 +36,7 @@ class User(UUIDPKMixin, TimestampMixin, Base):
         JSONB, nullable=False, default=default_notification_preferences
     )
     locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    kyc_metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
 
     organization = relationship(
         "Organization", back_populates="users", foreign_keys=[organization_id]

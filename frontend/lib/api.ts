@@ -2251,6 +2251,73 @@ export const credits = {
     });
     return response.data as Blob;
   },
+  async greenCreditEstimate(projectId: string) {
+    return (await api.get<GreenCreditEstimate>(`/v1/credits/projects/${projectId}/green-credit`)).data;
+  },
+};
+
+export type GreenCreditEstimate = {
+  standard: string;
+  activity_type: string;
+  land_bank_id: string | null;
+  tree_count: number;
+  eligible_trees: number;
+  total_area_ha: number;
+  trees_per_ha: number | null;
+  min_trees_per_ha: number;
+  density_eligible: boolean;
+  land_bank_registered: boolean;
+  monitoring_period_years: number;
+  years_elapsed: number;
+  vesting_fraction: number;
+  full_green_credits: number;
+  vested_green_credits: number;
+  provisional_green_credits: number;
+  eligibility_status: "eligible" | "gaps_identified" | "not_eligible";
+  gaps: string[];
+  disclaimer: string;
+  computed_at: string;
+  verifier_reference?: string | null;
+};
+
+export type IndiaStackStatus = {
+  esign: { enabled: boolean; configured: boolean; provider_mode: string; stub_on_failure: boolean };
+  digilocker: { enabled: boolean; configured: boolean; stub_mode: boolean };
+  aadhaar_ekyc: { enabled: boolean; provider: string; configured: boolean; stub_mode: boolean };
+  bhuvan_wms: { enabled: boolean; base_url: string; layer_count: number; message: string };
+};
+
+export type BhuvanWmsLayer = {
+  id: string;
+  title: string;
+  description: string;
+  layer: string;
+  wms_url_template: string;
+  capabilities_url: string;
+  service: string;
+  provider: string;
+};
+
+export const indiaStack = {
+  async status() {
+    return (await api.get<IndiaStackStatus>("/v1/india-stack/status")).data;
+  },
+  async bhuvanLayers() {
+    return (await api.get<{ layers: BhuvanWmsLayer[] }>("/v1/india-stack/bhuvan/layers")).data;
+  },
+  async digilockerVerify(payload: {
+    document_uri?: string;
+    land_record_number?: string;
+    aadhaar_last4?: string;
+  }) {
+    return (await api.post("/v1/india-stack/digilocker/verify", payload)).data;
+  },
+  async aadhaarEkyc(payload: { aadhaar_last4: string; full_name: string; consent: boolean }) {
+    return (await api.post<{ ekyc_ref?: string; verified: boolean }>(
+      "/v1/india-stack/aadhaar/ekyc",
+      payload,
+    )).data;
+  },
 };
 
 export type VerificationSample = {
@@ -2268,6 +2335,7 @@ export type VerificationSample = {
     tree_public_code: string | null;
     status: string;
     attestation_hash: string | null;
+    esign_ref: string | null;
     signed_at: string | null;
   }>;
 };
@@ -2297,6 +2365,7 @@ export type FrameworkProfileCode =
   | "redd_plus"
   | "paris_ndc"
   | "ngt_campa"
+  | "green_credit_india"
   | "esg_general";
 
 export type FrameworkProfile = {
@@ -2319,6 +2388,7 @@ export type ChecklistCode =
   | "gold_standard_luf"
   | "redd_plus"
   | "ngt_campa"
+  | "green_credit_india"
   | "esg_general";
 
 export type ChecklistAnswer = "yes" | "no" | "partial" | "na";

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tree import Tree
 from app.models.verification_workflow import VerificationItem, VerificationSample
+from app.services.signing.india_esign import sign_attestation
 
 SampleMethod = Literal["random", "stratified"]
 ItemStatus = Literal["pending", "approved", "rejected"]
@@ -100,6 +101,8 @@ async def attest_verification_item(
     verifier_id: uuid.UUID,
     status: ItemStatus,
     notes: str | None = None,
+    verifier_name: str | None = None,
+    with_esign: bool = True,
 ) -> VerificationItem:
     if item.status != "pending":
         raise ValueError("item_already_attested")
@@ -110,6 +113,17 @@ async def attest_verification_item(
     item.signed_at = datetime.now(UTC)
     item.notes = notes
     item.attestation_hash = _attestation_hash(item, tree, verifier_id)
+
+    if with_esign and item.attestation_hash:
+        esign = await sign_attestation(
+            item.attestation_hash,
+            verifier_name=verifier_name,
+            tree_public_code=tree.public_code,
+            sample_id=str(item.sample_id),
+        )
+        item.esign_ref = esign.esign_ref
+        item.esign_signature_b64 = esign.signature_b64
+
     await db.flush()
     return item
 
@@ -160,6 +174,8 @@ def render_sample_audit_pdf(
         line = f"{code} — {item.status}"
         if item.attestation_hash:
             line += f" · hash {item.attestation_hash[:12]}…"
+        if item.esign_ref:
+            line += f" · eSign {item.esign_ref[:16]}…"
         c.drawString(25 * mm, y, line)
         y -= 5 * mm
         if y < 30 * mm:

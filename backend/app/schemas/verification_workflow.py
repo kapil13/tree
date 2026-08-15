@@ -27,3 +27,4 @@ class VerificationItemOut(BaseModel):
     signed_at: str | None = None
     notes: str | None = None
     attestation_hash: str | None = None
+    esign_ref: str | None = None

@@ -118,6 +118,7 @@ async def get_verification_sample(
             signed_at=item.signed_at.isoformat() if item.signed_at else None,
             notes=item.notes,
             attestation_hash=item.attestation_hash,
+            esign_ref=item.esign_ref,
         ).model_dump()
         for item in items
     ]
@@ -160,6 +161,7 @@ async def attest_sample_item(
             verifier_id=user.id,
             status=payload.status,
             notes=payload.notes,
+            verifier_name=user.full_name,
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
@@ -178,6 +180,7 @@ async def attest_sample_item(
         "id": str(updated.id),
         "status": updated.status,
         "attestation_hash": updated.attestation_hash,
+        "esign_ref": updated.esign_ref,
         "signed_at": updated.signed_at.isoformat() if updated.signed_at else None,
     }
 

@@ -22,6 +22,7 @@ from app.schemas.credit_registry import (
 )
 from app.services.audit import record_audit
 from app.services.credits.claims import claim_to_dict, register_tree_claim
+from app.services.credits.green_credit import build_project_green_credit_summary
 from app.services.credits.ledger import (
     ledger_to_dict,
     org_credit_summary,
@@ -81,6 +82,16 @@ async def _ledger_with_events(db: DB, ledger: ProjectCreditLedger) -> dict:
     ).scalars().all()
     data["serials"] = [serial_to_dict(s) for s in serials]
     return data
+
+
+@router.get("/projects/{project_id}/green-credit")
+async def get_project_green_credit_estimate(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await build_project_green_credit_summary(db, project)
 
 
 @router.get("/summary")

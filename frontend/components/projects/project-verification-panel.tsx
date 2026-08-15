@@ -47,7 +47,8 @@ export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
         <h3 className="text-sm font-medium text-stone-800">Verifier sample workflow</h3>
       </div>
       <p className="text-xs text-stone-500">
-        Supervisors create a random sample; verifiers attest trees without editing measurements (read-only role).
+        Supervisors create a random sample; verifiers attest trees without editing measurements.
+        Approved items receive an India eSign stub reference (configure ASP for production DSC).
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <div>
@@ -90,6 +91,11 @@ export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
             <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
               <span className="font-mono text-xs">{item.tree_public_code ?? item.tree_id}</span>
               <span className="text-xs capitalize text-stone-600">{item.status}</span>
+              {item.esign_ref && (
+                <span className="font-mono text-[10px] text-forest-700" title="India eSign reference">
+                  eSign {item.esign_ref.slice(0, 18)}…
+                </span>
+              )}
               {item.status === "pending" && (
                 <div className="flex gap-1">
                   <button

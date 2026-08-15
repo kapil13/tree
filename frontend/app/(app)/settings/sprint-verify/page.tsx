@@ -186,6 +186,38 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 12–13 · India Stack + Green Credit Rules",
+    items: [
+      {
+        label: "Green Credit estimate (MoEFCC)",
+        href: "/projects",
+        hint: "Green Credit scheme project → Credits tab → vested/provisional GC, trees/ha, 5-yr vesting",
+      },
+      {
+        label: "India Stack integration status",
+        href: "/settings/india-stack",
+        hint: "Settings → India Stack — eSign, DigiLocker, Aadhaar e-KYC, Bhuvan WMS layers",
+      },
+      {
+        label: "Verifier eSign attestation",
+        href: "/projects",
+        hint: "Project → Credits → Create sample → Approve — item shows eSign ref (stub in dev)",
+      },
+      {
+        label: "Green Credit API",
+        href: "http://localhost:8000/docs#/credits/get_project_green_credit_estimate_api_v1_credits_projects__project_id__green_credit_get",
+        external: true,
+        hint: "GET /credits/projects/{id}/green-credit",
+      },
+      {
+        label: "India Stack API",
+        href: "http://localhost:8000/docs#/india-stack/india_stack_status_api_v1_india_stack_status_get",
+        external: true,
+        hint: "GET /india-stack/status, /india-stack/bhuvan/layers",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -193,7 +225,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 11–12 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 12–13 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

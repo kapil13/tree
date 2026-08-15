@@ -28,11 +28,11 @@ echo "==> Running standard deploy..."
 ENV_FILE=".env.production"
 COMPOSE_FILE="docker-compose.prod.yml"
 
-echo "==> Verifying Alembic head (expect 0043_user_locale or later)..."
+echo "==> Verifying Alembic head (expect 0044_india_stack_esign or later)..."
 HEAD="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current 2>/dev/null | tail -1 || true)"
 echo "    Current revision: ${HEAD:-unknown}"
 
-for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale; do
+for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale 0044_india_stack_esign; do
   if echo "$HEAD" | grep -q "$rev"; then
     echo "    ✓ At or past $rev"
   fi
@@ -96,6 +96,11 @@ Sprint 11–12  TNFD + GHG Land Sector + Darwin Core
   ${APP_URL}/reports → TNFD / GHG / Darwin Core tabs
   ${API_URL}/docs → POST /reports/tnfd, /reports/ghg-protocol, /reports/darwin-core
   ${API_URL}/docs → GET /ogc/stac/catalog, /ogc/projects/{id}/features
+
+Sprint 12–13  India Stack + Green Credit Rules
+  ${APP_URL}/projects → [green credit project] → Credits → Green Credit estimate
+  ${APP_URL}/settings/india-stack → eSign / DigiLocker / e-KYC / Bhuvan WMS status
+  ${API_URL}/docs → GET /credits/projects/{id}/green-credit, /india-stack/status
 
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head
