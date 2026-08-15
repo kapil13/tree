@@ -32,7 +32,7 @@ echo "==> Verifying Alembic head (expect 0045_vm0047_icvcm or later)..."
 HEAD="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current 2>/dev/null | tail -1 || true)"
 echo "    Current revision: ${HEAD:-unknown}"
 
-for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale 0045_vm0047_icvcm; do
+for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale 0045_vm0047_icvcm 0046_plot_monitoring; do
   if echo "$HEAD" | grep -q "$rev"; then
     echo "    ✓ At or past $rev"
   fi
@@ -105,6 +105,12 @@ Sprint 13–14  Full VM0047 + ICVCM
   ${APP_URL}/projects → [project] → Credits → VM0047 accounting
   ${APP_URL}/projects → [project] → Compliance → ICVCM CCPs checklist
   ${API_URL}/docs → GET /planting-projects/{id}/vm0047/summary
+
+Sprint 15      Tier 4 design system + PWA + plot monitoring
+  ${APP_URL}/field-ops/offline-trees → PWA cached tree list
+  ${APP_URL}/projects → [project] → Credits → Stratified plot monitoring
+  ${API_URL}/docs → /plot-monitoring/projects/{id}/summary
+  Repo: docs/LAUNCH_GATES.md
 
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head

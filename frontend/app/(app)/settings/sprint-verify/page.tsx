@@ -233,6 +233,31 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 15 · Tier 4 + launch gates + plot sampling",
+    items: [
+      {
+        label: "Design system components",
+        href: "/settings/sprint-verify",
+        hint: "Radix UI primitives in components/ui — Button, Dialog, Table, Tabs, etc.",
+      },
+      {
+        label: "PWA offline tree list",
+        href: "/field-ops/offline-trees",
+        hint: "Installable app manifest + service worker cached tree registry for supervisors",
+      },
+      {
+        label: "Launch gates audit",
+        href: "/settings/sprint-verify",
+        hint: "See docs/LAUNCH_GATES.md in repo — Gate A/B status with citizen CI bands + Hindi i18n",
+      },
+      {
+        label: "Stratified plot monitoring",
+        href: "/projects",
+        hint: "Project → Credits → Stratified plot monitoring — design, generate plots, extrapolation",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -240,7 +265,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 13–14 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 15 before production soft launch."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

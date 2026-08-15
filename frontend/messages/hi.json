@@ -59,6 +59,26 @@
     "month": "माह",
     "value": "मान"
   },
+  "citizenDashboard": {
+    "groveLabel": "आपका वन",
+    "greetingWithTrees": "नमस्ते {name} — {count} पेड़ टैग किए",
+    "greetingEmpty": "नमस्ते {name}",
+    "heroWithTrees": "GPS-टैग पेड़, फ़ोटो और मुफ़्त AI स्वास्थ्य जाँच जोड़ते रहें। कार्बन आँकड़े अनुमानित हैं — सत्यापित क्रेडिट नहीं।",
+    "heroEmpty": "आपके द्वारा लगाए या संभाले गए पेड़ पंजीकृत करें — मानचित्र, फ़ोटो और AI जाँच से शुरू करें।",
+    "tagTree": "पेड़ टैग करें",
+    "tagFirstTree": "पहला पेड़ टैग करें",
+    "openMap": "मानचित्र खोलें",
+    "treesTagged": "टैग किए पेड़",
+    "carbonStored": "कार्बन स्टॉक (90% CI)",
+    "healthyCanopy": "स्वस्थ वनस्पति",
+    "aiScansLeft": "शेष AI स्कैन",
+    "carbonMetric": "कार्बन स्टॉक",
+    "carbonMetricSub": "अनिश्चितता बैंड के साथ CO₂e अनुमान",
+    "stepFirstTree": "पहला पेड़ टैग करें",
+    "stepMap": "मानचित्र पर पेड़ देखें",
+    "stepAiScan": "AI स्वास्थ्य जाँच चलाएँ",
+    "stepPrograms": "पेशेवर कार्यक्रम देखें"
+  },
   "trees": {
     "registerTree": "पेड़ पंजीकृत करें",
     "newTreeTitle": "पेड़ पंजीकृत करें",

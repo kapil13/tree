@@ -9,6 +9,7 @@ import { downloadBlob } from "@/lib/download-blob";
 export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const [samplePct, setSamplePct] = useState("10");
+  const [sampleMethod, setSampleMethod] = useState<"random" | "stratified">("stratified");
   const [lastSampleId, setLastSampleId] = useState<string | null>(null);
 
   const sample = useQuery({
@@ -21,7 +22,7 @@ export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
     mutationFn: () =>
       verificationWorkflow.createSample(projectId, {
         sample_pct: Number(samplePct),
-        method: "random",
+        method: sampleMethod,
       }),
     onSuccess: (data) => {
       setLastSampleId(data.id);
@@ -47,7 +48,7 @@ export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
         <h3 className="text-sm font-medium text-stone-800">Verifier sample workflow</h3>
       </div>
       <p className="text-xs text-stone-500">
-        Supervisors create a random sample; verifiers attest trees without editing measurements (read-only role).
+        Supervisors create a sample (random or species-stratified); verifiers attest trees without editing measurements.
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <div>
@@ -60,6 +61,17 @@ export function ProjectVerificationPanel({ projectId }: { projectId: string }) {
             value={samplePct}
             onChange={(e) => setSamplePct(e.target.value)}
           />
+        </div>
+        <div>
+          <label className="label text-xs">Method</label>
+          <select
+            className="input mt-1 w-36 text-sm"
+            value={sampleMethod}
+            onChange={(e) => setSampleMethod(e.target.value as "random" | "stratified")}
+          >
+            <option value="stratified">Stratified (species)</option>
+            <option value="random">Random</option>
+          </select>
         </div>
         <button
           type="button"
