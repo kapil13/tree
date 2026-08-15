@@ -10,8 +10,8 @@ import pytest
 
 from app.services.credits.green_credit import (
     MONITORING_PERIOD_YEARS,
-    compute_green_credit_estimate,
     build_project_green_credit_summary,
+    compute_green_credit_estimate,
 )
 
 

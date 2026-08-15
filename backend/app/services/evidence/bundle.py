@@ -15,8 +15,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
-from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
 from app.services.credits.green_credit import build_project_green_credit_summary
+from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 from app.services.reports.exporter import render_compliance_mrv_pdf
 from app.services.schemes.kpis import compute_scheme_kpis
