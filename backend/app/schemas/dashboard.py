@@ -8,6 +8,9 @@ class KPI(BaseModel):
     total_biomass_kg: float
     total_carbon_kg: float
     total_co2e_kg: float
+    co2e_kg_lower_90: float | None = None
+    co2e_kg_upper_90: float | None = None
+    uncertainty_pct: float | None = None
     annual_sequestration_kg: float
     lifetime_credits_tco2e: float
     estimated_revenue_usd: float

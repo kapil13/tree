@@ -29,6 +29,13 @@ from app.models.planting_standard import PlantingStandard
 from app.models.platform_governance_settings import PlatformGovernanceSettings
 from app.models.platform_module import PlatformModuleRule
 from app.models.platform_user_module_grant import PlatformUserModuleGrant
+from app.models.plot_monitoring import (
+    PlotMonitoringDesign,
+    PlotMonitoringPlot,
+    PlotMonitoringStratum,
+    PlotObservation,
+    PlotVisit,
+)
 from app.models.privacy import ConsentRecord, DataSubjectRequest, GrievanceTicket
 from app.models.project_member import ProjectMember
 from app.models.project_risk_assessment import ProjectRiskAssessment
@@ -114,6 +121,11 @@ __all__ = [
     "MonitoringJobRun",
     "VerificationItem",
     "VerificationSample",
+    "PlotMonitoringDesign",
+    "PlotMonitoringPlot",
+    "PlotMonitoringStratum",
+    "PlotObservation",
+    "PlotVisit",
     "ProjectBaseline",
     "AdditionalityAssessment",
     "LeakageAccount",
