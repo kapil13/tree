@@ -10,6 +10,7 @@ import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-c
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
 import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
+import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
 import { ProjectVerificationPanel } from "@/components/projects/project-verification-panel";
 import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
@@ -365,6 +366,9 @@ export default function ProjectDetailPage() {
 
       {tab === "credits" && (
         <div className="space-y-4">
+          <div className="card">
+            <ProjectVm0047Panel projectId={project.id} />
+          </div>
           {project.scheme_code === "green_credit_india" && (
             <div className="card">
               <ProjectGreenCreditPanel projectId={project.id} />

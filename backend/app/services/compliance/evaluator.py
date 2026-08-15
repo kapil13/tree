@@ -164,6 +164,13 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["survival_survey_configured"] = "no"
     signals["credit_ledger_synced"] = "yes" if ledger and ledger.last_computed_at else "no"
+    signals["credit_ledger_active"] = "yes" if ledger and float(ledger.gross_credits_tco2e or 0) > 0 else "no"
+
+    from app.services.carbon.risk_ops import latest_risk_assessment
+
+    risk = await latest_risk_assessment(db, project.id)
+    signals["nprt_assessed"] = "yes" if risk is not None else "no"
+    signals["evidence_export"] = "yes" if tree_count > 0 else "no"
 
     if tree_count == 0:
         signals["geo_tagged_majority"] = "no"

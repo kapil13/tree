@@ -33,7 +33,7 @@ from app.services.carbon.biomass_math import (
 )
 from app.services.carbon.species_catalog import by_name
 
-ENGINE_VERSION = "byot-carbon-1.2.0"
+ENGINE_VERSION = "byot-carbon-1.3.0"
 
 # Re-export for ledger / reports (prefer buffer.resolve_buffer_pct at runtime)
 from app.services.carbon.buffer import DEFAULT_BUFFER_POOL as BUFFER_POOL  # noqa: E402, F401
@@ -73,6 +73,12 @@ class CarbonInputs:
     buffer_pct: float | None = None
     nprt_score: float | None = None
     ex_post_verified: bool = False
+    # VM0047 other carbon pools (Sprint 13–14)
+    include_other_pools: bool = False
+    deadwood_ratio: float = 0.08
+    litter_ratio: float = 0.04
+    soc_tco2e_per_ha: float | None = None
+    area_ha: float | None = None
 
 
 @dataclass
@@ -99,6 +105,10 @@ class CarbonResult:
     verified_lifetime_credits_tco2e: float | None = None
     buffer_pct_applied: float | None = None
     effective_annual_mortality_pct: float | None = None
+    deadwood_kg: float | None = None
+    litter_kg: float | None = None
+    soc_carbon_kg: float | None = None
+    total_with_pools_co2e_kg: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +184,35 @@ class CarbonEngine:
         total_biomass = agb + bgb
         carbon = total_biomass * cf
         co2e = carbon * (44.0 / 12.0)
+
+        deadwood_kg: float | None = None
+        litter_kg: float | None = None
+        soc_carbon_kg: float | None = None
+        total_with_pools_co2e: float | None = None
+        if inp.include_other_pools:
+            from app.services.carbon.pools import compute_carbon_pools
+
+            pools = compute_carbon_pools(
+                agb_kg=agb,
+                bgb_kg=bgb,
+                carbon_fraction=cf,
+                deadwood_ratio=inp.deadwood_ratio,
+                litter_ratio=inp.litter_ratio,
+                soc_tco2e_per_ha=inp.soc_tco2e_per_ha,
+                area_ha=inp.area_ha,
+            )
+            deadwood_kg = pools.deadwood_kg
+            litter_kg = pools.litter_kg
+            soc_carbon_kg = pools.soc_carbon_kg
+            total_with_pools_co2e = pools.total_co2e_kg
+            total_biomass = pools.total_biomass_kg
+            carbon = pools.total_carbon_kg
+            co2e = pools.total_co2e_kg
+            notes.append(
+                f"Other pools included: deadwood {inp.deadwood_ratio:.0%}, "
+                f"litter {inp.litter_ratio:.0%}"
+                + (f", SOC {inp.soc_tco2e_per_ha:.2f} tCO₂e/ha" if inp.soc_tco2e_per_ha else "")
+            )
 
         # Annual sequestration: difference vs one year prior on growth curve.
         annual_seq_kg: float | None = None
@@ -331,6 +370,10 @@ class CarbonEngine:
             verified_lifetime_credits_tco2e=verified_lifetime_t,
             buffer_pct_applied=round(buffer_pct, 4),
             effective_annual_mortality_pct=mortality_pct,
+            deadwood_kg=deadwood_kg,
+            litter_kg=litter_kg,
+            soc_carbon_kg=soc_carbon_kg,
+            total_with_pools_co2e_kg=total_with_pools_co2e,
         )
 
 

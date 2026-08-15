@@ -17,6 +17,7 @@ ChecklistCode = Literal[
     "nagar_van_urban",
     "green_credit_india",
     "sahakar_van_coop",
+    "icvcm_ccp",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -543,6 +544,82 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 question="Is a recurring survival / maintenance survey cadence configured?",
                 guidance="Arid-land sites require seasonal survival checks and sapling protection.",
                 auto_key="survival_survey_configured",
+            ),
+        ),
+    ),
+    "icvcm_ccp": ComplianceChecklist(
+        code="icvcm_ccp",
+        title="ICVCM Core Carbon Principles",
+        short_label="ICVCM CCPs",
+        framework_reference="Integrity Council for the Voluntary Carbon Market — CCPs",
+        description=(
+            "Alignment self-assessment against the ten Core Carbon Principles for "
+            "high-integrity voluntary carbon credits."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="effective_governance",
+                category="Governance",
+                question="Does the project demonstrate effective governance and program oversight?",
+                guidance="Document roles, approvals, and conflict-of-interest controls.",
+            ),
+            ChecklistItemDef(
+                id="tracking_registry",
+                category="Tracking",
+                question="Are credits uniquely tracked in a registry or ledger with serial numbers?",
+                guidance="Use project credit ledger and serial retirement workflow.",
+                auto_key="credit_ledger_active",
+            ),
+            ChecklistItemDef(
+                id="transparency",
+                category="Transparency",
+                question="Is project information publicly verifiable or shareable with auditors?",
+                guidance="Public verification links and evidence bundles support transparency.",
+                auto_key="evidence_export",
+            ),
+            ChecklistItemDef(
+                id="third_party_verification",
+                category="Verification",
+                question="Is independent third-party verification planned or completed?",
+                guidance="Verifier sample workflow and attestation hashes.",
+            ),
+            ChecklistItemDef(
+                id="additionality",
+                category="Additionality",
+                question="Is additionality documented beyond regulatory requirements?",
+                guidance="Complete VM0047 additionality assessment on Credits tab.",
+            ),
+            ChecklistItemDef(
+                id="permanence",
+                category="Permanence",
+                question="Are permanence risks assessed with buffer withholding (NPRT)?",
+                guidance="NPRT assessment maps to dynamic buffer 10–30%.",
+                auto_key="nprt_assessed",
+            ),
+            ChecklistItemDef(
+                id="robust_quantification",
+                category="Quantification",
+                question="Is quantification robust with uncertainty and other carbon pools considered?",
+                guidance="Engine supports 90% CI, mortality, deadwood, litter, and SOC pools.",
+            ),
+            ChecklistItemDef(
+                id="no_double_counting",
+                category="Tracking",
+                question="Are double-claim conflicts prevented across scheme families?",
+                guidance="Exclusive claim registry returns 409 on conflicts.",
+            ),
+            ChecklistItemDef(
+                id="sustainable_development",
+                category="Sustainable development",
+                question="Are co-benefits and community impacts documented?",
+                guidance="Biodiversity, survival KPIs, and scheme metadata.",
+            ),
+            ChecklistItemDef(
+                id="net_zero_alignment",
+                category="Transition",
+                question="Is retirement aligned with net-zero or Paris Article 6 claims where applicable?",
+                guidance="Serial retirement supports beneficiary and corresponding adjustment refs.",
             ),
         ),
     ),

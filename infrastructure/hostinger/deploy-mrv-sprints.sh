@@ -28,11 +28,11 @@ echo "==> Running standard deploy..."
 ENV_FILE=".env.production"
 COMPOSE_FILE="docker-compose.prod.yml"
 
-echo "==> Verifying Alembic head (expect 0043_user_locale or later)..."
+echo "==> Verifying Alembic head (expect 0045_vm0047_icvcm or later)..."
 HEAD="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current 2>/dev/null | tail -1 || true)"
 echo "    Current revision: ${HEAD:-unknown}"
 
-for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale; do
+for rev in 0037_tree_measurements 0038_carbon_uncertainty 0039_mortality_dynamic_buffer 0040_dpdp_privacy 0041_audit_evidence_chain 0042_registry_credit_ledger 0043_user_locale 0045_vm0047_icvcm; do
   if echo "$HEAD" | grep -q "$rev"; then
     echo "    ✓ At or past $rev"
   fi
@@ -100,6 +100,11 @@ Sprint 11–12  TNFD + GHG Land Sector + Darwin Core
 Sprint 12–13  Green Credit Rules (MoEFCC)
   ${APP_URL}/projects → [green credit project] → Credits → Green Credit estimate
   ${API_URL}/docs → GET /credits/projects/{id}/green-credit
+
+Sprint 13–14  Full VM0047 + ICVCM
+  ${APP_URL}/projects → [project] → Credits → VM0047 accounting
+  ${APP_URL}/projects → [project] → Compliance → ICVCM CCPs checklist
+  ${API_URL}/docs → GET /planting-projects/{id}/vm0047/summary
 
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head

@@ -1244,6 +1244,70 @@ export const plantingProjects = {
       }>(`/v1/planting-projects/${projectId}/risk-assessments`, payload)
     ).data;
   },
+  async vm0047Summary(projectId: string) {
+    return (await api.get<Vm0047Summary>(`/v1/planting-projects/${projectId}/vm0047/summary`)).data;
+  },
+  async createBaseline(
+    projectId: string,
+    payload: {
+      scenario?: string;
+      land_cover_class?: string;
+      description?: string;
+      baseline_emissions_tco2e?: number;
+      baseline_removals_tco2e?: number;
+    },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/baselines`, payload)).data;
+  },
+  async createAdditionality(
+    projectId: string,
+    payload: { status?: string; score_pct: number; narrative?: string; factors?: Record<string, unknown> },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/additionality`, payload)).data;
+  },
+  async createLeakage(
+    projectId: string,
+    payload: {
+      leakage_type?: string;
+      estimated_leakage_tco2e?: number;
+      mitigation_tco2e?: number;
+      notes?: string;
+    },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/leakage`, payload)).data;
+  },
+  async upsertCarbonPools(
+    projectId: string,
+    payload: {
+      deadwood_ratio?: number;
+      litter_ratio?: number;
+      soc_tco2e_per_ha?: number;
+      area_ha?: number;
+    },
+  ) {
+    return (await api.put(`/v1/planting-projects/${projectId}/carbon-pools`, payload)).data;
+  },
+};
+
+export type Vm0047Summary = {
+  standard: string;
+  project_id: string;
+  project_code: string;
+  methodology: string;
+  ledger: {
+    gross_credits_tco2e: number;
+    buffer_withheld_tco2e: number;
+    net_credits_tco2e: number;
+    status: string;
+  };
+  quantification: {
+    incremental_after_baseline_tco2e: number;
+    creditable_after_leakage_tco2e: number;
+    includes_other_pools: boolean;
+  };
+  readiness_status: string;
+  gaps: string[];
+  disclaimer: string;
 };
 
 export const uploads = {
@@ -2348,6 +2412,7 @@ export type ChecklistCode =
   | "redd_plus"
   | "ngt_campa"
   | "green_credit_india"
+  | "icvcm_ccp"
   | "esg_general";
 
 export type ChecklistAnswer = "yes" | "no" | "partial" | "na";
