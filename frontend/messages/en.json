@@ -91,6 +91,16 @@
     "projectIdPlaceholder": "Required — planting project UUID",
     "formatZip": "Assurance pack (JSON + Excel)",
     "formatJson": "JSON only",
-    "formatXlsx": "Excel only"
+    "formatXlsx": "Excel only",
+    "tnfdTab": "TNFD (LEAP)",
+    "ghgTab": "GHG Land Sector",
+    "darwinTab": "Darwin Core",
+    "tnfdTitle": "TNFD nature disclosure (LEAP)",
+    "tnfdDescription": "Locate, Evaluate, Assess, Prepare — bioacoustic, IUCN checklist, and NDVI fusion for nature-related disclosures.",
+    "ghgTitle": "GHG Protocol Land Sector (2024)",
+    "ghgDescription": "Corporate inventory-aligned land sector CO₂ removals with scope tags and 90% uncertainty bands.",
+    "darwinTitle": "Darwin Core Archive (GBIF)",
+    "darwinDescription": "Species occurrences from bioacoustic detections, IUCN snapshots, and registered trees as DwC-A.",
+    "stacHint": "STAC catalog: GET /api/v1/ogc/stac/catalog · GeoJSON: GET /api/v1/ogc/projects/{id}/features"
   }
 }

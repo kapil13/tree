@@ -160,6 +160,32 @@ const SPRINT_CHECKS = [
       },
     ],
   },
+  {
+    sprint: "Sprint 11–12 · TNFD + GHG Land Sector + Darwin Core",
+    items: [
+      {
+        label: "TNFD LEAP nature disclosure",
+        href: "/reports",
+        hint: "Reports → TNFD (LEAP) tab → Export zip (bioacoustic + IUCN + NDVI)",
+      },
+      {
+        label: "GHG Protocol Land Sector inventory",
+        href: "/reports",
+        hint: "Reports → GHG Land Sector tab → scope-tagged removal lines",
+      },
+      {
+        label: "Darwin Core (GBIF DwC-A)",
+        href: "/reports",
+        hint: "Reports → Darwin Core tab → project UUID → Export DwC-A zip",
+      },
+      {
+        label: "STAC catalog + OGC GeoJSON",
+        href: "http://localhost:8000/docs#/ogc/stac_catalog_api_v1_ogc_stac_catalog_get",
+        external: true,
+        hint: "GET /ogc/stac/catalog and /ogc/projects/{id}/features",
+      },
+    ],
+  },
 ];
 
 export default function SprintVerifyPage() {
@@ -167,7 +193,7 @@ export default function SprintVerifyPage() {
     <div className="space-y-8">
       <SettingsSection
         title="Sprint verification checklist"
-        description="Navigate here to verify MRV sprints 1–2 through 9–10 before starting the next sprint."
+        description="Navigate here to verify MRV sprints 1–2 through 11–12 before starting the next sprint."
       >
         <p className="text-sm text-stone-600">
           Demo login: <code className="rounded bg-stone-100 px-1">demo@byot.earth</code> /{" "}

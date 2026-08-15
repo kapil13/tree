@@ -92,6 +92,11 @@ Sprint 9–10  ISO 14064-2 + Hindi web + WCAG
   ${APP_URL}/settings → Language preference (Hindi)
   ${APP_URL}/auth → Hindi auth strings + language switcher
 
+Sprint 11–12  TNFD + GHG Land Sector + Darwin Core
+  ${APP_URL}/reports → TNFD / GHG / Darwin Core tabs
+  ${API_URL}/docs → POST /reports/tnfd, /reports/ghg-protocol, /reports/darwin-core
+  ${API_URL}/docs → GET /ogc/stac/catalog, /ogc/projects/{id}/features
+
 API docs: ${API_URL}/docs
 Migrations: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE exec backend alembic upgrade head
 

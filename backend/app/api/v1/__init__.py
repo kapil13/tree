@@ -20,6 +20,7 @@ from app.api.v1 import (
     evidence,
     health,
     intelligence,
+    ogc,
     organizations,
     payments,
     plantation_fences,
@@ -76,6 +77,7 @@ api_router.include_router(bioacoustic.router)
 api_router.include_router(bhoonidhi.router)
 api_router.include_router(reports.router)
 api_router.include_router(reporting.router)
+api_router.include_router(ogc.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(verification.router)
 api_router.include_router(verification.public_router)

@@ -4,13 +4,16 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
+import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
 import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
-import { FileText } from "lucide-react";
+import { Bird, Dna, FileText, Leaf } from "lucide-react";
+
+type ReportTab = "standard" | "brsr" | "iso14064" | "tnfd" | "ghg" | "darwin";
 
 const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
   {
@@ -56,7 +59,7 @@ export default function ReportsPage() {
   const { user } = useAuth();
   const tr = useTranslations("reports");
   const canGenerate = canGenerateReports(user);
-  const [tab, setTab] = useState<"standard" | "brsr" | "iso14064">("standard");
+  const [tab, setTab] = useState<ReportTab>("standard");
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
@@ -110,43 +113,59 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="flex gap-2 border-b border-stone-200 pb-2" role="tablist" aria-label={tr("title")}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "standard"}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            tab === "standard" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
-          }`}
-          onClick={() => setTab("standard")}
-        >
-          {tr("standardTab")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "brsr"}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            tab === "brsr" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
-          }`}
-          onClick={() => setTab("brsr")}
-        >
-          {tr("brsrTab")}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "iso14064"}
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            tab === "iso14064" ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
-          }`}
-          onClick={() => setTab("iso14064")}
-        >
-          {tr("iso14064Tab")}
-        </button>
+      <div className="flex flex-wrap gap-2 border-b border-stone-200 pb-2" role="tablist" aria-label={tr("title")}>
+        {(
+          [
+            ["standard", tr("standardTab")],
+            ["brsr", tr("brsrTab")],
+            ["iso14064", tr("iso14064Tab")],
+            ["tnfd", tr("tnfdTab")],
+            ["ghg", tr("ghgTab")],
+            ["darwin", tr("darwinTab")],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+              tab === id ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+            }`}
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {tab === "iso14064" ? (
+      {tab === "darwin" ? (
+        <FrameworkExportPanel
+          title={tr("darwinTitle")}
+          description={tr("darwinDescription")}
+          endpoint="/v1/reports/darwin-core"
+          filenamePrefix="darwin-core"
+          projectRequired
+          formats={["zip", "json"]}
+          icon={<Dna className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "ghg" ? (
+        <FrameworkExportPanel
+          title={tr("ghgTitle")}
+          description={tr("ghgDescription")}
+          endpoint="/v1/reports/ghg-protocol"
+          filenamePrefix="ghg-land-sector"
+          icon={<Leaf className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "tnfd" ? (
+        <FrameworkExportPanel
+          title={tr("tnfdTitle")}
+          description={tr("tnfdDescription")}
+          endpoint="/v1/reports/tnfd"
+          filenamePrefix="tnfd-leap"
+          icon={<Bird className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "iso14064" ? (
         <Iso14064ExportPanel />
       ) : tab === "brsr" ? (
         <BrsrExportPanel />

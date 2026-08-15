@@ -91,6 +91,16 @@
     "projectIdPlaceholder": "आवश्यक — planting project UUID",
     "formatZip": "Assurance pack (JSON + Excel)",
     "formatJson": "केवल JSON",
-    "formatXlsx": "केवल Excel"
+    "formatXlsx": "केवल Excel",
+    "tnfdTab": "TNFD (LEAP)",
+    "ghgTab": "GHG Land Sector",
+    "darwinTab": "Darwin Core",
+    "tnfdTitle": "TNFD प्रकृति प्रकटीकरण (LEAP)",
+    "tnfdDescription": "Locate, Evaluate, Assess, Prepare — जैव ध्वनिक, IUCN और NDVI डेटा।",
+    "ghgTitle": "GHG Protocol Land Sector (2024)",
+    "ghgDescription": "कॉर्पोरेट इन्वेंटरी के अनुरूप land sector CO₂ removals।",
+    "darwinTitle": "Darwin Core Archive (GBIF)",
+    "darwinDescription": "जैव ध्वनिक, IUCN और पेड़ पंजीकरण से प्रजाति अवलोकन DwC-A।",
+    "stacHint": "STAC: GET /api/v1/ogc/stac/catalog · GeoJSON: GET /api/v1/ogc/projects/{id}/features"
   }
 }

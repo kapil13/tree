@@ -16,7 +16,19 @@ from app.models.report import Report
 from app.models.user import User
 from app.schemas.brsr import BrsrExportRequest
 from app.schemas.iso14064 import Iso14064ExportRequest
+from app.schemas.sprint11_reports import DarwinExportRequest, FrameworkExportRequest
 from app.services.audit import record_audit
+from app.services.biodiversity.darwin_core import (
+    build_darwin_occurrences,
+    render_darwin_json,
+    render_darwin_zip,
+)
+from app.services.carbon.ghg_protocol import (
+    build_ghg_protocol_context,
+    render_ghg_protocol_json,
+    render_ghg_protocol_xlsx,
+    render_ghg_protocol_zip,
+)
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.reports.brsr import (
     build_brsr_context,
@@ -30,6 +42,12 @@ from app.services.reports.iso14064 import (
     render_iso14064_json,
     render_iso14064_xlsx,
     render_iso14064_zip,
+)
+from app.services.reports.tnfd import (
+    build_tnfd_context,
+    render_tnfd_json,
+    render_tnfd_xlsx,
+    render_tnfd_zip,
 )
 from app.services.storage import get_storage
 
@@ -297,4 +315,148 @@ async def export_iso14064_report(
         content=data,
         media_type=media,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/tnfd")
+async def export_tnfd_report(
+    payload: FrameworkExportRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """TNFD LEAP nature disclosure — bioacoustic, IUCN, NDVI fusion."""
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    if payload.project_id is not None:
+        from app.services.planting_projects.access import load_project
+
+        if await load_project(payload.project_id, user, db) is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_tnfd_context(db, organization=org, project_id=payload.project_id)
+    slug = (org.slug or "org").replace("/", "-")
+    if payload.format == "json":
+        data, media, filename = render_tnfd_json(ctx), "application/json", f"tnfd-{slug}.json"
+    elif payload.format == "xlsx":
+        data = render_tnfd_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"tnfd-{slug}.xlsx"
+    else:
+        data, media, filename = render_tnfd_zip(ctx), "application/zip", f"tnfd-{slug}-pack.zip"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="report.tnfd.export",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"format": payload.format, "project_id": str(payload.project_id) if payload.project_id else None},
+    )
+    await db.commit()
+    return Response(
+        content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.post("/ghg-protocol")
+async def export_ghg_protocol_report(
+    payload: FrameworkExportRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """GHG Protocol Land Sector (2024) removals inventory lines."""
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    if payload.project_id is not None:
+        from app.services.planting_projects.access import load_project
+
+        if await load_project(payload.project_id, user, db) is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_ghg_protocol_context(db, organization=org, project_id=payload.project_id)
+    slug = (org.slug or "org").replace("/", "-")
+    if payload.format == "json":
+        data, media, filename = render_ghg_protocol_json(ctx), "application/json", f"ghg-{slug}.json"
+    elif payload.format == "xlsx":
+        data = render_ghg_protocol_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"ghg-{slug}.xlsx"
+    else:
+        data, media, filename = render_ghg_protocol_zip(ctx), "application/zip", f"ghg-{slug}-pack.zip"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="report.ghg_protocol.export",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"format": payload.format, "project_id": str(payload.project_id) if payload.project_id else None},
+    )
+    await db.commit()
+    return Response(
+        content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.post("/darwin-core")
+async def export_darwin_core(
+    payload: DarwinExportRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """Darwin Core Archive (DwC-A) for GBIF species observation publish."""
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+
+    from app.services.planting_projects.access import load_project
+
+    project = await load_project(payload.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    occurrences = await build_darwin_occurrences(
+        db, project=project, organization_name=org.name or "BYOT"
+    )
+    code = (project.code or "project").replace("/", "-")
+    if payload.format == "json":
+        data = render_darwin_json(
+            occurrences,
+            {"project_code": project.code, "record_count": len(occurrences)},
+        )
+        media = "application/json"
+        filename = f"darwin-{code}.json"
+    else:
+        data = render_darwin_zip(occurrences, project_code=project.code, org_name=org.name or "BYOT")
+        media = "application/zip"
+        filename = f"darwin-{code}-dwca.zip"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="report.darwin_core.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"format": payload.format, "record_count": len(occurrences)},
+    )
+    await db.commit()
+    return Response(
+        content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
