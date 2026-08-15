@@ -2,17 +2,33 @@
 
 from __future__ import annotations
 
+import inspect
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.services.audit.log import record_audit
 from app.services.dashboard.kpi_uncertainty import portfolio_co2e_uncertainty
 from app.services.plot_monitoring.extrapolation import (
     _stem_biomass_kg,
     compute_plot_monitoring_summary,
 )
 from app.services.verification.samples import create_verification_sample
+
+
+def test_record_audit_does_not_accept_metadata_kwarg():
+    params = inspect.signature(record_audit).parameters
+    assert "metadata" not in params
+    assert "diff" in params
+
+
+def test_plot_monitoring_api_uses_record_audit_diff():
+    from app.api.v1 import plot_monitoring as pm_module
+
+    source = inspect.getsource(pm_module)
+    assert "metadata=" not in source
+    assert "diff=" in source
 
 
 def test_portfolio_co2e_uncertainty():

@@ -77,7 +77,7 @@ async def upsert_plot_monitoring_design(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        metadata={"mode": payload.mode},
+        diff={"mode": payload.mode, "stratification": payload.stratification},
     )
     return PlotMonitoringSummaryOut.model_validate(await design_summary(db, project.id))
 
@@ -112,6 +112,7 @@ async def generate_project_plots(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
+        diff={"project_id": str(project.id)},
     )
     return PlotMonitoringSummaryOut.model_validate(await design_summary(db, project.id))
 
@@ -155,6 +156,6 @@ async def create_plot_visit(
         resource_type="plot_visit",
         resource_id=visit.id,
         request=request,
-        metadata={"observation_count": len(payload.observations)},
+        diff={"observation_count": len(payload.observations)},
     )
     return {"id": str(visit.id), "plot_id": str(visit.plot_id), "status": visit.status}

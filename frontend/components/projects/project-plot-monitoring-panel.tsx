@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Grid3X3, MapPin, RefreshCw } from "lucide-react";
 import { CarbonCo2eRange } from "@/components/carbon-co2e-range";
@@ -32,9 +32,22 @@ export function ProjectPlotMonitoringPanel({ projectId }: { projectId: string })
   });
 
   const data = summaryQ.data;
-  const [mode, setMode] = useState<"full_census" | "plot_based" | "hybrid">("plot_based");
-  const [plotsPerStratum, setPlotsPerStratum] = useState("5");
-  const [plotArea, setPlotArea] = useState("400");
+  const [mode, setMode] = useState<"full_census" | "plot_based" | "hybrid">(
+    (data?.mode as "full_census" | "plot_based" | "hybrid") ?? "plot_based",
+  );
+  const [plotsPerStratum, setPlotsPerStratum] = useState(
+    String(data?.plots_per_stratum ?? 5),
+  );
+  const [plotArea, setPlotArea] = useState(String(data?.plot_area_m2 ?? 400));
+
+  useEffect(() => {
+    if (!data?.has_design) return;
+    if (data.mode === "full_census" || data.mode === "plot_based" || data.mode === "hybrid") {
+      setMode(data.mode);
+    }
+    if (data.plots_per_stratum != null) setPlotsPerStratum(String(data.plots_per_stratum));
+    if (data.plot_area_m2 != null) setPlotArea(String(data.plot_area_m2));
+  }, [data]);
 
   const saveDesign = useMutation({
     mutationFn: () =>
