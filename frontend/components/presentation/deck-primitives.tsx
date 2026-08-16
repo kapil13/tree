@@ -4,9 +4,9 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export function CoverSlide() {
+export function CoverSlide({ total = 20 }: { total?: number }) {
   return (
-    <section className="deck-slide deck-slide--cover" data-slide={1} aria-label="Slide 1 of 26">
+    <section className="deck-slide deck-slide--cover" data-slide={1} aria-label={`Slide 1 of ${total}`}>
       <div className="deck-cover-wash" />
       <div className="deck-cover-top-rule" />
 
@@ -19,7 +19,7 @@ export function CoverSlide() {
         <div className="deck-cover-eyebrow">Intelligence for a thriving planet</div>
         <h1 className="deck-cover-title">Aranyix — Intelligence for a Thriving Planet</h1>
         <p className="deck-cover-subtitle">
-          Audit-ready MRV for plantation, carbon, biodiversity and compliance
+          National MRV platform for plantation programmes, carbon integrity &amp; audit-ready compliance
         </p>
       </main>
 
@@ -56,7 +56,7 @@ export function CoverSlide() {
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
           Aranyix
         </span>
-        <span>1 / 26</span>
+        <span>1 / {total}</span>
       </footer>
     </section>
   );
