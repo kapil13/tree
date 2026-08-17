@@ -4,6 +4,63 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
+function CoverCanopyPanel() {
+  return (
+    <div className="deck-canopy-panel">
+      <div className="deck-geo-label">SATELLITE / CANOPY LAYER</div>
+      <div className="deck-geo-coord">14°38&apos;12.8&quot; N · 75°02&apos;41.3&quot; E</div>
+
+      <svg className="deck-canopy-svg" viewBox="0 0 320 240" aria-hidden>
+        <defs>
+          <linearGradient id="ndviHeat" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#14532d" stopOpacity="0.9" />
+            <stop offset="35%" stopColor="#22c55e" stopOpacity="0.75" />
+            <stop offset="70%" stopColor="#86efac" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#fef08a" stopOpacity="0.35" />
+          </linearGradient>
+          <radialGradient id="canopyGlow" cx="50%" cy="45%" r="45%">
+            <stop offset="0%" stopColor="#4ade80" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect x="20" y="30" width="280" height="170" rx="4" fill="url(#ndviHeat)" opacity="0.85" />
+        <ellipse cx="160" cy="115" rx="90" ry="55" fill="url(#canopyGlow)" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <circle key={i} cx={60 + i * 55} cy={90 + (i % 2) * 30} r="4" fill="#ecfdf5" opacity="0.9" />
+        ))}
+        <path d="M160 55 L160 185 M80 115 L240 115" stroke="rgba(137,218,221,0.45)" strokeWidth="0.75" strokeDasharray="4 3" />
+        <circle cx="160" cy="115" r="28" fill="none" stroke="#86efac" strokeWidth="1" opacity="0.6" />
+        <circle cx="160" cy="115" r="4" fill="#86efac" />
+        <path d="M40 175 Q100 155 160 165 T280 170" fill="none" stroke="#a7f3d0" strokeWidth="1.5" opacity="0.7" />
+        <text x="28" y="218" fill="#b6d8d7" fontSize="8" letterSpacing="1">WORK AREA · NHAI DEMO</text>
+      </svg>
+
+      <div className="deck-canopy-readouts">
+        <div className="deck-canopy-readout">
+          <span className="deck-canopy-readout-val">0.72</span>
+          <span className="deck-canopy-readout-lbl">NDVI</span>
+        </div>
+        <div className="deck-canopy-readout">
+          <span className="deck-canopy-readout-val">83%</span>
+          <span className="deck-canopy-readout-lbl">Canopy</span>
+        </div>
+        <div className="deck-canopy-readout deck-canopy-readout--live">
+          <span className="deck-canopy-readout-dot" />
+          <span className="deck-canopy-readout-lbl">LIVE</span>
+        </div>
+      </div>
+
+      <div className="deck-canopy-footer">
+        <span>Sentinel-2</span>
+        <span className="deck-canopy-footer-sep">·</span>
+        <span>SAR ready</span>
+        <span className="deck-canopy-footer-sep">·</span>
+        <span>18 trees</span>
+      </div>
+    </div>
+  );
+}
+
 export function CoverSlide({ total = 20 }: { total?: number }) {
   return (
     <section className="deck-slide deck-slide--cover" data-slide={1} aria-label={`Slide 1 of ${total}`}>
@@ -28,8 +85,7 @@ export function CoverSlide({ total = 20 }: { total?: number }) {
         <span className="deck-geo-corner deck-geo-corner--tr" />
         <span className="deck-geo-corner deck-geo-corner--bl" />
         <span className="deck-geo-corner deck-geo-corner--br" />
-        <div className="deck-geo-label">SATELLITE / CANOPY LAYER</div>
-        <div className="deck-geo-coord">14°38&apos;12.8&quot; N&nbsp;&nbsp;75°02&apos;41.3&quot; E</div>
+        <CoverCanopyPanel />
       </div>
       <div className="deck-scan-line" aria-hidden />
 

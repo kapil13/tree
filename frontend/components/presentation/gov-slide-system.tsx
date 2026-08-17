@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Check, Leaf } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { SlideFooter } from "./slide-frame";
@@ -15,6 +16,8 @@ export function PptSlide({
   children,
   variant = "light",
   className,
+  hideFooter,
+  compactHeader,
 }: {
   slideNum: number;
   total: number;
@@ -24,6 +27,8 @@ export function PptSlide({
   children: ReactNode;
   variant?: "light" | "dark" | "section";
   className?: string;
+  hideFooter?: boolean;
+  compactHeader?: boolean;
 }) {
   return (
     <section
@@ -32,6 +37,7 @@ export function PptSlide({
         variant === "light" && "ppt-slide--light",
         variant === "dark" && "ppt-slide--dark",
         variant === "section" && "ppt-slide--section",
+        compactHeader && "ppt-slide--compact-header",
         className,
       )}
       data-slide={slideNum}
@@ -45,7 +51,7 @@ export function PptSlide({
           {subtitle ? <p className="ppt-subtitle">{subtitle}</p> : null}
         </header>
         <div className="ppt-body">{children}</div>
-        <SlideFooter slideNum={slideNum} total={total} />
+        {!hideFooter ? <SlideFooter slideNum={slideNum} total={total} /> : null}
       </div>
     </section>
   );
@@ -179,5 +185,50 @@ export function PptTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Final thank-you slide — single footer, no duplicate branding */
+export function ThankYouSlide({ slideNum, total }: { slideNum: number; total: number }) {
+  return (
+    <section
+      className="deck-slide ppt-slide ppt-slide--thankyou"
+      data-slide={slideNum}
+      aria-label={`Slide ${slideNum} of ${total}`}
+    >
+      <div className="ppt-thankyou-bg" aria-hidden />
+      <div className="ppt-thankyou-inner">
+        <div className="ppt-thankyou-emblem">
+          <Leaf className="h-8 w-8 text-emerald-400" aria-hidden />
+        </div>
+        <p className="ppt-thankyou-eyebrow">Thank you</p>
+        <h2 className="ppt-thankyou-title">Evidence you can hand to a regulator, an auditor, or a buyer</h2>
+        <p className="ppt-thankyou-sub">
+          We welcome the opportunity to scope a pilot on your plantation programme — register trees, run a satellite
+          sweep, and deliver a signed evidence bundle mapped to your scheme requirements.
+        </p>
+        <div className="ppt-thankyou-steps">
+          {[
+            "Pilot scoping workshop with programme & forest officers",
+            "Compliance mapping for MoEFCC / PSU scheme profile",
+            "Integration review for GIS, ESG & registry systems",
+          ].map((step) => (
+            <div key={step} className="ppt-thankyou-step">
+              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <span>{step}</span>
+            </div>
+          ))}
+        </div>
+        <div className="ppt-thankyou-contact">
+          <a href="mailto:info@axentis.tech">info@axentis.tech</a>
+          <span className="ppt-thankyou-contact-sep">·</span>
+          <a href="tel:+919929401306">+91 99294 01306</a>
+          <span className="ppt-thankyou-contact-sep">·</span>
+          <span>aranyix.tech</span>
+        </div>
+        <p className="ppt-thankyou-confidential">Confidential — for authorised government and programme stakeholders only</p>
+        <SlideFooter slideNum={slideNum} total={total} />
+      </div>
+    </section>
   );
 }

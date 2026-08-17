@@ -181,8 +181,97 @@
   width: 34%;
   aspect-ratio: 4 / 3;
   border: 1px solid rgba(221, 239, 224, 0.44);
-  background: linear-gradient(135deg, rgba(16, 62, 37, 0.18), rgba(7, 32, 22, 0.05));
+  background: linear-gradient(135deg, rgba(16, 62, 37, 0.35), rgba(7, 32, 22, 0.15));
   z-index: 2;
+  overflow: hidden;
+}
+
+.deck-canopy-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-canopy-svg {
+  flex: 1;
+  width: 100%;
+  padding: 1.4rem 0.6rem 0.2rem;
+}
+
+.deck-canopy-readouts {
+  position: absolute;
+  top: 2.2rem;
+  right: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.deck-canopy-readout {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.45rem;
+  background: rgba(11, 43, 27, 0.72);
+  border: 1px solid rgba(167, 219, 224, 0.35);
+  border-radius: 0.25rem;
+  min-width: 3.5rem;
+}
+
+.deck-canopy-readout-val {
+  font-size: clamp(0.55rem, 0.9vw, 0.72rem);
+  font-weight: 700;
+  color: #86efac;
+  line-height: 1;
+}
+
+.deck-canopy-readout-lbl {
+  font-size: clamp(0.38rem, 0.6vw, 0.48rem);
+  color: #a7dbe0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.deck-canopy-readout--live {
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+.deck-canopy-readout-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+  animation: deck-pulse 2s ease-in-out infinite;
+}
+
+@keyframes deck-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.deck-canopy-footer {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.65rem;
+  right: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.45rem;
+  background: rgba(11, 43, 27, 0.65);
+  border: 1px solid rgba(167, 219, 224, 0.25);
+  border-radius: 0.25rem;
+  font-size: clamp(0.38rem, 0.6vw, 0.48rem);
+  color: #b6d8d7;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.deck-canopy-footer-sep {
+  opacity: 0.45;
 }
 
 .deck-geo-frame::before {
