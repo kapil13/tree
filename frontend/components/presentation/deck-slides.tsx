@@ -1,29 +1,35 @@
 "use client";
 
-import { Leaf } from "lucide-react";
 import { CoverSlide } from "./deck-primitives";
-import { SlideFooter } from "./slide-frame";
 import {
-  AuditChainDiagram,
+  AgendaPitchDeck,
+  PitchAuditChain,
+  PitchDeployTimeline,
+  PitchEvidenceStrip,
+  PitchFieldFlow,
+  PitchFusionDiagram,
+  PitchMapLayers,
+  PitchPipeline,
+  PitchPolicyGrid,
+  PitchSarCompare,
+  PitchSchemeMatrix,
+  PitchStandardsWheel,
+  PitchTransformation,
+  PitchVerifyPyramid,
+} from "./pitch-infographics";
+import {
   CarbonConfidenceDiagram,
-  DeploymentModelDiagram,
-  EoFusionDiagram,
-  MrvPipelineDiagram,
-  NationalMrvContext,
   NdviTrendChart,
   PlatformArchitectureDiagram,
-  ProblemSolutionDiagram,
-  SarOpticalCompare,
 } from "./gov-infographics";
 import {
-  PptAgenda,
   PptBullets,
   PptCallout,
   PptFigure,
   PptKpiRow,
   PptSlide,
-  PptTable,
   PptTwoCol,
+  ThankYouSlide,
 } from "./gov-slide-system";
 
 export const DECK_SLIDE_COUNT = 20;
@@ -63,10 +69,8 @@ export function DeckSlides({ onlySlide }: { onlySlide?: number }) {
 
 function renderAllSlides() {
   return [
-    /* 1 — Cover */
     <CoverSlide key="s1" total={T} />,
 
-    /* 2 — Agenda */
     <PptSlide
       key="s2"
       slideNum={2}
@@ -74,20 +78,11 @@ function renderAllSlides() {
       section="Briefing outline"
       title="Agenda — national plantation MRV & compliance"
       subtitle="Structured for programme directors, forest officers, and audit stakeholders"
+      compactHeader
     >
-      <PptAgenda
-        items={[
-          { num: "01", title: "Policy context", sub: "CAMPA · GIM · Green Credit · Paris NDC" },
-          { num: "02", title: "Platform architecture", sub: "Field → satellite → carbon → evidence" },
-          { num: "03", title: "Field & remote MRV", sub: "GPS registry · NDVI · SAR · Bhoonidhi" },
-          { num: "04", title: "Carbon & compliance", sub: "90% CI · nine schemes · global standards" },
-          { num: "05", title: "Trust & verification", sub: "Hash chain · auditor role · signed bundles" },
-          { num: "06", title: "Pilot deployment", sub: "12-week rollout model for state / PSU pilots" },
-        ]}
-      />
+      <AgendaPitchDeck />
     </PptSlide>,
 
-    /* 3 — National context */
     <PptSlide
       key="s3"
       slideNum={3}
@@ -95,15 +90,15 @@ function renderAllSlides() {
       section="Executive context"
       title="India's plantation programmes demand verifiable MRV"
       subtitle="Central schemes, carbon markets, and disclosure rules now require traceable evidence — not narrative reports"
+      compactHeader
     >
-      <NationalMrvContext />
+      <PitchPolicyGrid />
       <PptCallout title="Policy imperative" tone="amber">
         Regulators and buyers increasingly reject spreadsheet-based claims. Programmes need per-tree GPS evidence,
         continuous remote monitoring, and tamper-evident audit trails aligned to MoEFCC and international standards.
       </PptCallout>
     </PptSlide>,
 
-    /* 4 — Problem / solution */
     <PptSlide
       key="s4"
       slideNum={4}
@@ -111,30 +106,11 @@ function renderAllSlides() {
       section="The challenge"
       title="From fragmented records to audit-ready national MRV"
       subtitle="Aranyix closes the gap between field activity and what regulators, auditors, and carbon buyers accept"
+      compactHeader
     >
-      <PptTwoCol
-        ratio="1fr 1.1fr"
-        left={
-          <>
-            <PptBullets
-              items={[
-                "Current practice: WhatsApp photos, manual registers, and one-off consultant reports",
-                "No continuous canopy monitoring through monsoon cloud cover",
-                "Carbon figures without confidence intervals or mortality adjustment",
-                "Compliance packs assembled manually before each audit cycle",
-              ]}
-            />
-            <PptCallout title="Aranyix response" tone="green">
-              Single platform: geotagged per-tree registry, scheduled satellite + SAR sweeps, Monte Carlo carbon with
-              90% CI, and Ed25519-signed evidence bundles — mapped to nine central schemes and eleven global standards.
-            </PptCallout>
-          </>
-        }
-        right={<ProblemSolutionDiagram />}
-      />
+      <PitchTransformation />
     </PptSlide>,
 
-    /* 5 — Architecture */
     <PptSlide
       key="s5"
       slideNum={5}
@@ -142,6 +118,7 @@ function renderAllSlides() {
       section="Platform overview"
       title="Unified MRV architecture — field to boardroom"
       subtitle="PostGIS evidence core with Indian EO integration, carbon services, and compliance automation"
+      compactHeader
     >
       <PlatformArchitectureDiagram />
       <PptKpiRow
@@ -154,7 +131,6 @@ function renderAllSlides() {
       />
     </PptSlide>,
 
-    /* 6 — Section: Field evidence */
     <PptSlide
       key="s6"
       slideNum={6}
@@ -167,7 +143,6 @@ function renderAllSlides() {
       {null}
     </PptSlide>,
 
-    /* 7 — Field MRV */
     <PptSlide
       key="s7"
       slideNum={7}
@@ -175,41 +150,43 @@ function renderAllSlides() {
       section="Ground MRV"
       title="Field data that survives a third-party audit"
       subtitle="Mobile capture with supervisor workflows, work-area polygons, and offline sync for remote plantations"
+      compactHeader
     >
-      <PptTwoCol
-        ratio="1fr 1.15fr"
-        left={
-          <>
-            <PptBullets
-              items={[
-                "Per-tree GPS registration with timestamped photo evidence",
-                "DBH, height, and survival surveys — append-only, never overwritten",
-                "Work-area and chainage boundaries for NHAI, CAMPA, and Nagar Van programmes",
-                "Bioacoustic biodiversity panels — BirdNET pipeline with Shannon diversity index",
-                "Supervisor queues and stratified sampling for verifier attestation",
-              ]}
+      <div className="ppt-slide-stack">
+        <PitchFieldFlow />
+        <PptTwoCol
+          ratio="1fr 1.1fr"
+          left={
+            <>
+              <PptBullets
+                items={[
+                  "Per-tree GPS registration with timestamped photo evidence",
+                  "DBH, height, survival surveys — append-only, never overwritten",
+                  "Work-area boundaries for NHAI, CAMPA, and Nagar Van programmes",
+                  "Bioacoustic biodiversity — BirdNET pipeline with Shannon diversity index",
+                ]}
+              />
+              <PptKpiRow
+                items={[
+                  { value: "GPS+photo", label: "Capture" },
+                  { value: "Offline", label: "Sync" },
+                  { value: "Tier 4", label: "Plot MRV" },
+                  { value: "Darwin", label: "Export" },
+                ]}
+              />
+            </>
+          }
+          right={
+            <PptFigure
+              src={`${SHOT}/field-ops.png`}
+              alt="Field operations dashboard"
+              caption="Field operations — supervisor queues, work areas, and project health"
             />
-            <PptKpiRow
-              items={[
-                { value: "GPS+photo", label: "Capture" },
-                { value: "Offline", label: "Sync" },
-                { value: "Tier 4", label: "Plot MRV" },
-                { value: "Darwin", label: "Export" },
-              ]}
-            />
-          </>
-        }
-        right={
-          <PptFigure
-            src={`${SHOT}/field-ops.png`}
-            alt="Field operations dashboard"
-            caption="Live portal — field operations queue, work areas, and supervisor sign-off (Demo Program Manager account)"
-          />
-        }
-      />
+          }
+        />
+      </div>
     </PptSlide>,
 
-    /* 8 — MRV pipeline */
     <PptSlide
       key="s8"
       slideNum={8}
@@ -217,31 +194,34 @@ function renderAllSlides() {
       section="End-to-end MRV"
       title="Six-stage pipeline — sapling to signed evidence bundle"
       subtitle="Hash-chained audit log at every transition; no manual re-keying between field, satellite, and compliance"
+      compactHeader
     >
-      <MrvPipelineDiagram />
-      <PptTwoCol
-        ratio="1.2fr 0.8fr"
-        left={
-          <PptKpiRow
-            items={[
-              { value: "12.4k+", label: "Audit events", note: "Per organisation" },
-              { value: "9+", label: "MoEFCC schemes", note: "Built-in templates" },
-              { value: "11", label: "Global standards", note: "Same evidence base" },
-              { value: "90% CI", label: "Carbon range", note: "Not a point estimate" },
-            ]}
-          />
-        }
-        right={
-          <PptFigure
-            src={`${SHOT}/dashboard.png`}
-            alt="Executive dashboard KPIs"
-            caption="Executive command centre — portfolio KPIs, carbon summary, and intelligence brief"
-          />
-        }
-      />
+      <div className="ppt-slide-stack">
+        <PitchPipeline />
+        <PitchEvidenceStrip />
+        <PptTwoCol
+          ratio="0.85fr 1.15fr"
+          left={
+            <PptKpiRow
+              items={[
+                { value: "12.4k+", label: "Audit events", note: "Per organisation" },
+                { value: "9+", label: "MoEFCC schemes", note: "Built-in templates" },
+                { value: "11", label: "Global standards", note: "Same evidence base" },
+                { value: "90% CI", label: "Carbon range", note: "Not a point estimate" },
+              ]}
+            />
+          }
+          right={
+            <PptFigure
+              src={`${SHOT}/dashboard.png`}
+              alt="Executive dashboard KPIs"
+              caption="Executive command centre — portfolio KPIs, carbon summary, and intelligence brief"
+            />
+          }
+        />
+      </div>
     </PptSlide>,
 
-    /* 9 — Section: Remote monitoring */
     <PptSlide
       key="s9"
       slideNum={9}
@@ -254,7 +234,6 @@ function renderAllSlides() {
       {null}
     </PptSlide>,
 
-    /* 10 — Satellite NDVI */
     <PptSlide
       key="s10"
       slideNum={10}
@@ -262,6 +241,7 @@ function renderAllSlides() {
       section="Optical monitoring"
       title="Sentinel-2 NDVI — continuous canopy health at work-area scale"
       subtitle="Automated monthly sweeps with alert thresholds; NDVI decline triggers field inspection workflows"
+      compactHeader
     >
       <PptTwoCol
         ratio="1fr 1fr"
@@ -280,15 +260,14 @@ function renderAllSlides() {
         }
         right={
           <PptFigure
-            src={`${SHOT}/satellite.png`}
-            alt="Satellite monitoring panel"
-            caption="Site satellite scan — NDVI, radar readiness, and Bhoonidhi catalog integration"
+            src={`${SHOT}/portfolio-health.png`}
+            alt="Portfolio canopy health monitoring"
+            caption="Portfolio health — NDVI bands, canopy coverage, and site-level health scores"
           />
         }
       />
     </PptSlide>,
 
-    /* 11 — SAR + Bhoonidhi */
     <PptSlide
       key="s11"
       slideNum={11}
@@ -296,29 +275,26 @@ function renderAllSlides() {
       section="All-weather monitoring"
       title="SAR + ISRO Bhoonidhi — integrity when optical fails"
       subtitle="Sentinel-1 C-band forest integrity through monsoon; fused with optical and ISRO catalog for unified KPIs"
+      compactHeader
     >
       <PptTwoCol
-        ratio="1fr 1fr"
+        ratio="1.05fr 0.95fr"
         left={
           <>
-            <SarOpticalCompare />
-            <EoFusionDiagram />
-            <PptCallout title="Operational cadence" tone="neutral">
-              Monthly optical sweep · weekly SAR watch · daily health roundup · automated compliance escalations
-            </PptCallout>
+            <PitchSarCompare />
+            <PitchFusionDiagram />
           </>
         }
         right={
           <PptFigure
-            src={`${SHOT}/monitoring.png`}
-            alt="Automated monitoring schedule"
-            caption="Monitoring automation — scheduled sweeps, SAR integrity grade, and fusion alerts"
+            src={`${SHOT}/intelligence.png`}
+            alt="Satellite intelligence and fusion alerts"
+            caption="Threat intelligence — composite risk, weather, and satellite fusion alerts"
           />
         }
       />
     </PptSlide>,
 
-    /* 12 — Map */
     <PptSlide
       key="s12"
       slideNum={12}
@@ -326,39 +302,34 @@ function renderAllSlides() {
       section="Geospatial view"
       title="National-scale map — every tree, plot, and work area georeferenced"
       subtitle="Interactive map with species layers, verification status, NDVI overlay, and export to GeoJSON / STAC"
+      compactHeader
     >
       <PptTwoCol
-        ratio="0.95fr 1.05fr"
+        ratio="0.9fr 1.1fr"
         left={
           <>
+            <PitchMapLayers />
             <PptBullets
               items={[
                 "PostGIS-backed registry with sub-metre GPS accuracy",
                 "Filter by programme, species, verification state, and health band",
                 "Polygon boundaries for CAMPA compartments and NHAI chainage",
-                "Threat intelligence overlay — weather, pest corridors, composite risk",
                 "Executive rollup from individual tree to state / PSU portfolio",
               ]}
-            />
-            <PptFigure
-              src={`${SHOT}/bioacoustic.png`}
-              alt="Bioacoustic biodiversity panel"
-              caption="Biodiversity evidence — Shannon index, species detections, IUCN baselines"
             />
           </>
         }
         right={
           <PptFigure
-            src={`${SHOT}/map.png`}
-            alt="Geospatial map view"
-            caption="Map view — georeferenced trees, work areas, and canopy layers"
+            src={`${SHOT}/projects.png`}
+            alt="Geospatial projects and work areas"
+            caption="Projects view — work areas, chainage boundaries, and plantation programme mapping"
             objectPosition="center"
           />
         }
       />
     </PptSlide>,
 
-    /* 13 — Section: Carbon & compliance */
     <PptSlide
       key="s13"
       slideNum={13}
@@ -371,7 +342,6 @@ function renderAllSlides() {
       {null}
     </PptSlide>,
 
-    /* 14 — Carbon MRV */
     <PptSlide
       key="s14"
       slideNum={14}
@@ -379,6 +349,7 @@ function renderAllSlides() {
       section="Carbon MRV"
       title="Carbon with confidence intervals — not marketing numbers"
       subtitle="IPCC AR6 · VM0047 · Gold Standard with Monte Carlo 90% CI, mortality buffer, and registry-grade ledger"
+      compactHeader
     >
       <PptTwoCol
         ratio="1fr 1fr"
@@ -405,7 +376,6 @@ function renderAllSlides() {
       />
     </PptSlide>,
 
-    /* 15 — Indian schemes */
     <PptSlide
       key="s15"
       slideNum={15}
@@ -413,14 +383,14 @@ function renderAllSlides() {
       section="National compliance"
       title="Nine central government schemes — templates built in"
       subtitle="Guided checklists, auto-fill from live MRV data, and signed PDF/JSON exports per scheme profile"
+      compactHeader
     >
-      <PptTable headers={["Scheme / programme", "Ministry", "Platform capability"]} rows={INDIAN_SCHEMES} />
+      <PitchSchemeMatrix rows={INDIAN_SCHEMES} />
       <PptCallout title="Also supported" tone="green">
-        SEBI BRSR Principle 6 disclosure · India DPDP Act 2023 consent &amp; residency · Hindi i18n · WCAG accessibility
+        SEBI BRSR Principle 6 · India DPDP Act 2023 · Hindi i18n · WCAG accessibility
       </PptCallout>
     </PptSlide>,
 
-    /* 16 — International standards */
     <PptSlide
       key="s16"
       slideNum={16}
@@ -428,11 +398,11 @@ function renderAllSlides() {
       section="Global alignment"
       title="International standards — same evidence base"
       subtitle="One plantation registry feeds Verra, Gold Standard, ICVCM, TNFD, ISO, and Paris Article 6 workflows"
+      compactHeader
     >
-      <PptTable headers={["Standard / framework", "Body", "Capability"]} rows={INTL_STANDARDS} />
+      <PitchStandardsWheel rows={INTL_STANDARDS} />
     </PptSlide>,
 
-    /* 17 — Audit chain */
     <PptSlide
       key="s17"
       slideNum={17}
@@ -440,18 +410,19 @@ function renderAllSlides() {
       section="Trust layer"
       title="Tamper-evident by construction — not bolted on"
       subtitle="SHA-256 hash chain, daily root anchor, Ed25519 signed bundles, and RFC 3161 timestamp authority"
+      compactHeader
     >
       <PptTwoCol
-        ratio="1.1fr 0.9fr"
+        ratio="1fr 1fr"
         left={
           <>
-            <AuditChainDiagram />
+            <PitchAuditChain />
             <PptBullets
               items={[
                 "Every field edit, measurement, and export logged immutably",
                 "Verifier role with attest-only permissions — no edit rights",
                 "Chain verification API for third-party auditors",
-                "Compliance portal: twelve guided checklists with auto-signals from live data",
+                "Twelve guided checklists with auto-signals from live data",
               ]}
             />
           </>
@@ -466,7 +437,6 @@ function renderAllSlides() {
       />
     </PptSlide>,
 
-    /* 18 — Verification */
     <PptSlide
       key="s18"
       slideNum={18}
@@ -474,20 +444,13 @@ function renderAllSlides() {
       section="Third-party verification"
       title="Auditors attest — stratified sampling without compromising integrity"
       subtitle="Random plot selection, species strata, Tier 4 extrapolation, and cryptographic attestation per sample item"
+      compactHeader
     >
       <PptTwoCol
-        ratio="1fr 1.05fr"
+        ratio="1fr 1fr"
         left={
           <>
-            <PptBullets
-              items={[
-                "Verifier receives read-only access with attestation workflow",
-                "Stratified random sampling by species, age class, and work area",
-                "Plot-level MRV with confidence-weighted extrapolation to portfolio",
-                "PDF audit report with hash references to underlying evidence",
-                "Executive intelligence brief — pest, weather, and composite risk before site visit",
-              ]}
-            />
+            <PitchVerifyPyramid />
             <PptKpiRow
               items={[
                 { value: "Attest", label: "Verifier role" },
@@ -508,7 +471,6 @@ function renderAllSlides() {
       />
     </PptSlide>,
 
-    /* 19 — Deployment */
     <PptSlide
       key="s19"
       slideNum={19}
@@ -516,55 +478,26 @@ function renderAllSlides() {
       section="Implementation"
       title="12-week pilot model for state, PSU, and corporate programmes"
       subtitle="Low-risk entry: one plantation, one scheme profile, one signed evidence bundle — then scale"
+      compactHeader
     >
       <PptTwoCol
         ratio="1fr 1fr"
-        left={<DeploymentModelDiagram />}
+        left={<PitchDeployTimeline />}
         right={
           <>
-            <PptBullets
-              items={[
-                "Week 1–4: Seed plantation data, configure scheme profile, train field teams",
-                "Week 5–8: First satellite sweep, bioacoustic baseline, compliance checklist setup",
-                "Week 9–12: Evidence bundle walkthrough with auditors, scale plan for additional sites",
-                "Integration review for existing GIS, ERP, and ESG disclosure systems",
-              ]}
+            <PptFigure
+              src={`${SHOT}/settings-team.png`}
+              alt="Enterprise governance and team settings"
+              caption="Enterprise-ready — RBAC, team governance, DPDP compliance, and API access"
             />
             <PptCallout title="Procurement-ready" tone="neutral">
-              DPDP-compliant hosting · RBAC · API &amp; webhooks · Hindi · WCAG · PWA offline · enterprise SSO-ready
+              DPDP-compliant hosting · RBAC · API &amp; webhooks · Hindi · WCAG · PWA offline
             </PptCallout>
           </>
         }
       />
     </PptSlide>,
 
-    /* 20 — Closing */
-    <PptSlide
-      key="s20"
-      slideNum={20}
-      total={T}
-      variant="light"
-      title="Next steps"
-      subtitle="Scoped pilot on your plantation programme — register, monitor, prove"
-    >
-      <div className="ppt-closing">
-        <Leaf className="h-10 w-10 text-emerald-600" aria-hidden />
-        <h2 className="ppt-closing-title">Evidence you can hand to a regulator, an auditor, or a buyer</h2>
-        <p className="ppt-closing-sub">
-          Proposed next step: a scoped pilot on your plantation programme — register trees, run a satellite sweep, and
-          deliver a signed evidence bundle mapped to your scheme and disclosure requirements.
-        </p>
-        <PptBullets
-          items={[
-            "Pilot scoping workshop with programme and forest officers",
-            "Compliance mapping for your MoEFCC / PSU scheme profile",
-            "Integration review for GIS, ESG, and registry systems",
-          ]}
-        />
-        <p className="ppt-closing-contact">manager@byot.earth · demo@byot.earth · aranyix.tech</p>
-        <p className="ppt-confidential">Confidential — for authorised government and programme stakeholders only</p>
-      </div>
-      <SlideFooter slideNum={20} total={T} />
-    </PptSlide>,
+    <ThankYouSlide key="s20" slideNum={20} total={T} />,
   ];
 }

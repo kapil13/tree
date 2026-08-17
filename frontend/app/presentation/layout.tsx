@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./presentation-deck.css";
 import "./gov-ppt.css";
+import "./pitch-deck.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
