@@ -1,32 +1,26 @@
 "use client";
 
-import {
-  Activity,
-  FileCheck,
-  Globe,
-  Leaf,
-  Satellite,
-  ShieldCheck,
-} from "lucide-react";
 import { CoverSlide } from "./deck-primitives";
 import {
-  AgendaRoadmap,
-  AuditChainDiagram,
+  AgendaPitchDeck,
+  PitchAuditChain,
+  PitchDeployTimeline,
+  PitchEvidenceStrip,
+  PitchFieldFlow,
+  PitchFusionDiagram,
+  PitchMapLayers,
+  PitchPipeline,
+  PitchPolicyGrid,
+  PitchSarCompare,
+  PitchSchemeMatrix,
+  PitchStandardsWheel,
+  PitchTransformation,
+  PitchVerifyPyramid,
+} from "./pitch-infographics";
+import {
   CarbonConfidenceDiagram,
-  DeploymentModelDiagram,
-  EoFusionDiagram,
-  FieldWorkflowDiagram,
-  GeospatialLayersDiagram,
-  MrvPipelineDiagram,
-  NationalMrvContext,
   NdviTrendChart,
-  PipelineEvidenceStrip,
   PlatformArchitectureDiagram,
-  SarOpticalCompare,
-  SchemeCardsGrid,
-  StandardsHubDiagram,
-  TransformationInfographic,
-  VerificationSamplingDiagram,
 } from "./gov-infographics";
 import {
   PptBullets,
@@ -67,15 +61,6 @@ const INTL_STANDARDS = [
   ["Paris Art. 6", "UNFCCC", "NDC traceability"],
 ];
 
-const AGENDA_ITEMS = [
-  { num: "01", title: "Policy context", sub: "CAMPA · GIM · Green Credit · Paris NDC", icon: <Globe className="h-4 w-4" /> },
-  { num: "02", title: "Platform architecture", sub: "Field → satellite → carbon → evidence", icon: <Activity className="h-4 w-4" /> },
-  { num: "03", title: "Field & remote MRV", sub: "GPS · NDVI · SAR · Bhoonidhi", icon: <Satellite className="h-4 w-4" /> },
-  { num: "04", title: "Carbon & compliance", sub: "90% CI · nine schemes · global standards", icon: <Leaf className="h-4 w-4" /> },
-  { num: "05", title: "Trust & verification", sub: "Hash chain · auditor role · signed bundles", icon: <ShieldCheck className="h-4 w-4" /> },
-  { num: "06", title: "Pilot deployment", sub: "12-week rollout for state / PSU programmes", icon: <FileCheck className="h-4 w-4" /> },
-];
-
 export function DeckSlides({ onlySlide }: { onlySlide?: number }) {
   const slides = renderAllSlides();
   if (onlySlide != null) return <>{slides[onlySlide - 1]}</>;
@@ -95,7 +80,7 @@ function renderAllSlides() {
       subtitle="Structured for programme directors, forest officers, and audit stakeholders"
       compactHeader
     >
-      <AgendaRoadmap items={AGENDA_ITEMS} />
+      <AgendaPitchDeck />
     </PptSlide>,
 
     <PptSlide
@@ -107,7 +92,7 @@ function renderAllSlides() {
       subtitle="Central schemes, carbon markets, and disclosure rules now require traceable evidence — not narrative reports"
       compactHeader
     >
-      <NationalMrvContext />
+      <PitchPolicyGrid />
       <PptCallout title="Policy imperative" tone="amber">
         Regulators and buyers increasingly reject spreadsheet-based claims. Programmes need per-tree GPS evidence,
         continuous remote monitoring, and tamper-evident audit trails aligned to MoEFCC and international standards.
@@ -123,11 +108,7 @@ function renderAllSlides() {
       subtitle="Aranyix closes the gap between field activity and what regulators, auditors, and carbon buyers accept"
       compactHeader
     >
-      <TransformationInfographic />
-      <PptCallout title="Single platform outcome" tone="green">
-        Geotagged per-tree registry · scheduled satellite + SAR sweeps · Monte Carlo carbon with 90% CI · Ed25519-signed
-        evidence bundles — mapped to nine central schemes and eleven global standards.
-      </PptCallout>
+      <PitchTransformation />
     </PptSlide>,
 
     <PptSlide
@@ -172,7 +153,7 @@ function renderAllSlides() {
       compactHeader
     >
       <div className="ppt-slide-stack">
-        <FieldWorkflowDiagram />
+        <PitchFieldFlow />
         <PptTwoCol
           ratio="1fr 1.1fr"
           left={
@@ -216,8 +197,8 @@ function renderAllSlides() {
       compactHeader
     >
       <div className="ppt-slide-stack">
-        <MrvPipelineDiagram />
-        <PipelineEvidenceStrip />
+        <PitchPipeline />
+        <PitchEvidenceStrip />
         <PptTwoCol
           ratio="0.85fr 1.15fr"
           left={
@@ -300,21 +281,16 @@ function renderAllSlides() {
         ratio="1.05fr 0.95fr"
         left={
           <>
-            <SarOpticalCompare />
-            <EoFusionDiagram />
+            <PitchSarCompare />
+            <PitchFusionDiagram />
           </>
         }
         right={
-          <>
-            <PptFigure
-              src={`${SHOT}/intelligence.png`}
-              alt="Satellite intelligence and fusion alerts"
-              caption="Threat intelligence — composite risk, weather, and satellite fusion alerts"
-            />
-            <PptCallout title="Operational cadence" tone="neutral">
-              Monthly optical sweep · weekly SAR watch · daily health roundup · automated compliance escalations
-            </PptCallout>
-          </>
+          <PptFigure
+            src={`${SHOT}/intelligence.png`}
+            alt="Satellite intelligence and fusion alerts"
+            caption="Threat intelligence — composite risk, weather, and satellite fusion alerts"
+          />
         }
       />
     </PptSlide>,
@@ -332,7 +308,7 @@ function renderAllSlides() {
         ratio="0.9fr 1.1fr"
         left={
           <>
-            <GeospatialLayersDiagram />
+            <PitchMapLayers />
             <PptBullets
               items={[
                 "PostGIS-backed registry with sub-metre GPS accuracy",
@@ -409,7 +385,7 @@ function renderAllSlides() {
       subtitle="Guided checklists, auto-fill from live MRV data, and signed PDF/JSON exports per scheme profile"
       compactHeader
     >
-      <SchemeCardsGrid rows={INDIAN_SCHEMES} />
+      <PitchSchemeMatrix rows={INDIAN_SCHEMES} />
       <PptCallout title="Also supported" tone="green">
         SEBI BRSR Principle 6 · India DPDP Act 2023 · Hindi i18n · WCAG accessibility
       </PptCallout>
@@ -424,7 +400,7 @@ function renderAllSlides() {
       subtitle="One plantation registry feeds Verra, Gold Standard, ICVCM, TNFD, ISO, and Paris Article 6 workflows"
       compactHeader
     >
-      <StandardsHubDiagram rows={INTL_STANDARDS} />
+      <PitchStandardsWheel rows={INTL_STANDARDS} />
     </PptSlide>,
 
     <PptSlide
@@ -440,7 +416,7 @@ function renderAllSlides() {
         ratio="1fr 1fr"
         left={
           <>
-            <AuditChainDiagram />
+            <PitchAuditChain />
             <PptBullets
               items={[
                 "Every field edit, measurement, and export logged immutably",
@@ -474,7 +450,7 @@ function renderAllSlides() {
         ratio="1fr 1fr"
         left={
           <>
-            <VerificationSamplingDiagram />
+            <PitchVerifyPyramid />
             <PptKpiRow
               items={[
                 { value: "Attest", label: "Verifier role" },
@@ -506,7 +482,7 @@ function renderAllSlides() {
     >
       <PptTwoCol
         ratio="1fr 1fr"
-        left={<DeploymentModelDiagram />}
+        left={<PitchDeployTimeline />}
         right={
           <>
             <PptFigure
