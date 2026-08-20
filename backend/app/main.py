@@ -16,6 +16,7 @@ from app import __version__
 from app.api.v1 import api_router
 from app.api.v1.deps import DB, bearer_scheme, get_current_user
 from app.core.config import settings
+from app.core.http_errors import format_http_exception_detail
 from app.core.logging import configure_logging, get_logger
 from app.core.production_guards import validate_runtime_settings
 from app.schemas.common import (
@@ -89,17 +90,8 @@ def _err(code: str, message: str, status_code: int, details=None) -> JSONRespons
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exc(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    detail = exc.detail
-    code = "http_error"
-    if isinstance(detail, str):
-        code = detail
-        msg = detail.replace("_", " ").capitalize()
-    elif isinstance(detail, dict):
-        code = str(detail.get("code", "http_error"))
-        msg = str(detail.get("message", "Error"))
-    else:
-        msg = "Error"
-    return _err(code, msg, exc.status_code, None)
+    code, msg, details = format_http_exception_detail(exc.detail)
+    return _err(code, msg, exc.status_code, details)
 
 
 @app.exception_handler(RequestValidationError)

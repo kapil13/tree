@@ -141,7 +141,24 @@ export function errorMessage(err: unknown): string {
         | { msg: string }[]
         | { compliance_errors?: Array<{ message: string }>; validation_errors?: string[] };
     } | undefined;
-    if (data?.error?.message) return data.error.message;
+    const apiErr = data?.error;
+    if (apiErr) {
+      const details = apiErr.details as
+        | {
+            compliance_errors?: Array<{ message: string }>;
+            validation_errors?: string[];
+          }
+        | undefined;
+      if (details?.compliance_errors?.length) {
+        return details.compliance_errors.map((e) => e.message).join("; ");
+      }
+      if (details?.validation_errors?.length) {
+        return details.validation_errors.join("; ");
+      }
+      if (apiErr.message && apiErr.message !== "Error") {
+        return apiErr.message;
+      }
+    }
     if (typeof data?.detail === "object" && !Array.isArray(data.detail)) {
       const detail = data.detail as {
         code?: string;
