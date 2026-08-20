@@ -1367,9 +1367,19 @@ export const uploads = {
         { filename: file.name, content_type: file.type || "image/jpeg" },
       )
     ).data;
-    await axios.put(presign.upload_url, file, {
-      headers: { "Content-Type": presign.content_type },
-    });
+    try {
+      await axios.put(presign.upload_url, file, {
+        headers: { "Content-Type": presign.content_type },
+      });
+    } catch (err) {
+      if (axios.isAxiosError(err) && !err.response) {
+        throw new Error(
+          `Photo upload failed (cannot reach storage at ${presign.upload_url.split("?")[0]}). ` +
+            "Ask your admin to set S3_PUBLIC_ENDPOINT_URL and redeploy Caddy /media proxy.",
+        );
+      }
+      throw err;
+    }
     return presign.s3_key;
   },
 };
