@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Leaf, ShieldCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
@@ -16,11 +17,13 @@ import { ProjectVerificationPanel } from "@/components/projects/project-verifica
 import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
-import type { PlantingProject, WorkArea } from "@/lib/api";
+import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
 import {
+  PROJECT_FOCUSED_LAYOUT_MARKER,
   type ProjectSecondaryTab,
   PROJECT_SECONDARY_TABS,
 } from "@/lib/project-focused-ui";
+import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
 type SurvivalDue = {
@@ -259,9 +262,76 @@ export function ProjectFocusedDetail({
     workAreas[0] ? `&work_area=${workAreas[0].id}` : ""
   }`;
   const openViolations = project.summary?.open_violations ?? 0;
+  const treeCount = project.summary?.tree_count ?? 0;
+  const workAreaCount = project.summary?.work_area_count ?? 0;
+  const treesDue = survivalDue?.trees_due ?? 0;
+
+  const { data: schemes = [] } = useQuery({
+    queryKey: ["central-schemes"],
+    queryFn: () => centralSchemes.list(),
+  });
+
+  const { data: schemeKpis } = useQuery({
+    queryKey: ["project-scheme-kpis", projectId],
+    queryFn: () => plantingProjects.schemeKpis(projectId),
+    enabled: !!project.scheme_code,
+  });
+
+  const scheme = schemeByCode(schemes, project.scheme_code);
+
+  const nextAction = useMemo(() => {
+    if (openViolations > 0) {
+      return {
+        title: "Resolve open compliance",
+        description: `${openViolations} open violation${openViolations === 1 ? "" : "s"} need attention.`,
+        href: `/projects/${projectId}?tab=compliance`,
+        label: "Open compliance",
+        icon: AlertTriangle,
+      };
+    }
+    if (treesDue > 0) {
+      return {
+        title: "Complete survival surveys",
+        description: `${treesDue} tree${treesDue === 1 ? "" : "s"} due for re-geotag (every ${surveyDays} days).`,
+        href: undefined,
+        label: "See tree list below",
+        icon: MapPin,
+      };
+    }
+    if (workAreaCount === 0) {
+      return {
+        title: "Draw a work area",
+        description: "Add at least one boundary before registering trees.",
+        href: `/projects/${projectId}?tab=settings`,
+        label: "Programme settings",
+        icon: ShieldCheck,
+      };
+    }
+    if (treeCount === 0) {
+      return {
+        title: "Register the first tree",
+        description: "Tag a tree with GPS and photos to start tracking.",
+        href: registerHref,
+        label: "Register tree",
+        icon: Leaf,
+      };
+    }
+    return null;
+  }, [
+    openViolations,
+    treesDue,
+    surveyDays,
+    workAreaCount,
+    treeCount,
+    projectId,
+    registerHref,
+  ]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div
+      className="mx-auto max-w-6xl space-y-6"
+      data-project-layout={PROJECT_FOCUSED_LAYOUT_MARKER}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link href="/projects" className="text-sm text-forest-700 hover:underline">
@@ -278,6 +348,34 @@ export function ProjectFocusedDetail({
           Register tree
         </Link>
       </div>
+
+      {scheme && !secondaryTab && (
+        <p className="inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
+          {scheme.label}
+          <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
+        </p>
+      )}
+
+      {nextAction && !secondaryTab && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold text-amber-950">
+                <nextAction.icon className="h-4 w-4 shrink-0" />
+                Next: {nextAction.title}
+              </p>
+              <p className="mt-1 text-sm text-amber-900/90">{nextAction.description}</p>
+            </div>
+            {nextAction.href ? (
+              <Link href={nextAction.href} className="btn-primary shrink-0 text-xs">
+                {nextAction.label}
+              </Link>
+            ) : (
+              <span className="text-xs font-medium text-amber-900">{nextAction.label}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {secondaryTab ? (
         <SecondaryPanel
@@ -323,6 +421,32 @@ export function ProjectFocusedDetail({
               <p className="kpi-label">Geotag due</p>
               <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
             </div>
+            {schemeKpis && schemeKpis.scheme_code && (
+              <div className="card sm:col-span-2 lg:col-span-4">
+                <p className="kpi-label">Scheme KPI — {schemeKpis.scheme_label}</p>
+                <div className="mt-2 flex flex-wrap gap-4 text-sm">
+                  <span>
+                    Survival: <strong>{schemeKpis.metrics.survival_pct ?? 0}%</strong>
+                  </span>
+                  <span>
+                    Geo-tagged: <strong>{schemeKpis.metrics.geo_tagged_pct ?? 0}%</strong>
+                  </span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+                      schemeKpis.status === "on_track" && "bg-emerald-50 text-emerald-800",
+                      schemeKpis.status === "at_risk" && "bg-amber-50 text-amber-900",
+                      schemeKpis.status === "off_track" && "bg-rose-50 text-rose-800",
+                      (schemeKpis.status === "not_applicable" ||
+                        schemeKpis.status === "not_configured") &&
+                        "bg-stone-100 text-stone-600",
+                    )}
+                  >
+                    {schemeKpis.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
