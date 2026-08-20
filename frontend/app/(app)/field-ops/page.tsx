@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { plantingProjects } from "@/lib/api";
+import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -156,7 +157,7 @@ export default function FieldOpsPage() {
                       <td className="px-4 py-2">
                         {p.open_violations > 0 ? (
                           <Link
-                            href={`/projects/${p.id}?tab=compliance`}
+                            href={projectSecondaryHref(p.id, "compliance")}
                             className="text-amber-700 hover:underline"
                           >
                             {p.open_violations}
@@ -189,7 +190,7 @@ export default function FieldOpsPage() {
                 </div>
                 <p className="text-stone-600">{v.message}</p>
                 <Link
-                  href={`/projects/${v.project_id}?tab=compliance`}
+                  href={projectSecondaryHref(v.project_id, "compliance")}
                   className="mt-1 inline-block text-xs font-medium text-forest-700 hover:underline"
                 >
                   Fix in compliance →
@@ -245,7 +246,7 @@ function ProjectActionCard({
       <div className="mt-3 flex flex-wrap gap-2">
         {p.open_violations > 0 && (
           <Link
-            href={`/projects/${p.id}?tab=compliance`}
+            href={projectSecondaryHref(p.id, "compliance")}
             className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1.5 text-xs font-medium text-amber-950"
           >
             <AlertTriangle className="h-3.5 w-3.5" />
@@ -254,7 +255,7 @@ function ProjectActionCard({
         )}
         {p.survival_due > 0 && (
           <Link
-            href={`/projects/${p.id}?tab=trees`}
+            href={projectOverviewHref(p.id)}
             className="inline-flex items-center gap-1 rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-medium text-sky-950"
           >
             <MapPin className="h-3.5 w-3.5" />
