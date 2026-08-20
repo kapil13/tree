@@ -30,6 +30,11 @@
 	handle /api/v1/* {
 		reverse_proxy backend:8000
 	}
+	# MinIO browser uploads (presigned PUT URLs use https://{$APP_DOMAIN}/media/…)
+	handle /media/* {
+		uri strip_prefix /media
+		reverse_proxy minio:9000
+	}
 	handle {
 		reverse_proxy frontend:3000
 	}

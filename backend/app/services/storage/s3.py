@@ -14,20 +14,29 @@ except Exception:  # pragma: no cover
 from app.core.config import settings
 
 
+def _build_s3_client(endpoint_url: str | None) -> Any | None:
+    if boto3 is None:
+        return None
+    kwargs: dict[str, Any] = {"region_name": settings.aws_region}
+    if endpoint_url:
+        kwargs["endpoint_url"] = endpoint_url
+        kwargs["config"] = Config(signature_version="s3v4")
+    if settings.aws_access_key_id and settings.aws_secret_access_key:
+        kwargs["aws_access_key_id"] = settings.aws_access_key_id
+        kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+    return boto3.client("s3", **kwargs)
+
+
 class S3Storage:
     def __init__(self) -> None:
         self.bucket = settings.s3_bucket_media
         if boto3 is None:
             self._client = None
+            self._presign_client = None
             return
-        kwargs: dict[str, Any] = {"region_name": settings.aws_region}
-        if settings.s3_endpoint_url:
-            kwargs["endpoint_url"] = settings.s3_endpoint_url
-            kwargs["config"] = Config(signature_version="s3v4")
-        if settings.aws_access_key_id and settings.aws_secret_access_key:
-            kwargs["aws_access_key_id"] = settings.aws_access_key_id
-            kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
-        self._client = boto3.client("s3", **kwargs)
+        self._client = _build_s3_client(settings.s3_endpoint_url)
+        public_endpoint = (settings.s3_public_endpoint_url or "").strip() or settings.s3_endpoint_url
+        self._presign_client = _build_s3_client(public_endpoint)
 
     def is_available(self) -> bool:
         return self._client is not None
@@ -35,18 +44,20 @@ class S3Storage:
     def presigned_put(
         self, key: str, *, content_type: str = "image/jpeg", expires_in: int = 900
     ) -> str:
-        if self._client is None:
+        client = self._presign_client or self._client
+        if client is None:
             return f"https://stub.local/upload?key={key}&expires={expires_in}"
-        return self._client.generate_presigned_url(
+        return client.generate_presigned_url(
             "put_object",
             Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
             ExpiresIn=expires_in,
         )
 
     def presigned_get(self, key: str, *, expires_in: int = 900) -> str:
-        if self._client is None:
+        client = self._presign_client or self._client
+        if client is None:
             return f"https://stub.local/download?key={key}&expires={expires_in}"
-        return self._client.generate_presigned_url(
+        return client.generate_presigned_url(
             "get_object",
             Params={"Bucket": self.bucket, "Key": key},
             ExpiresIn=expires_in,

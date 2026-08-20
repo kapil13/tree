@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     aws_region: str = "ap-south-1"
     s3_bucket_media: str = "byot-media-local"
     s3_endpoint_url: str | None = None
+    # Browser-reachable MinIO/S3 host for presigned upload/download URLs (e.g. https://aranyix.tech/media).
+    s3_public_endpoint_url: str | None = None
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
 

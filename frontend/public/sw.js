@@ -1,6 +1,6 @@
 /* BYOT PWA service worker — cache supervisor tree list for offline use */
 
-const CACHE = "byot-pwa-v1";
+const CACHE = "byot-pwa-v2";
 const OFFLINE_TREE_URL = "/api/v1/trees?page_size=50";
 
 self.addEventListener("install", (event) => {
