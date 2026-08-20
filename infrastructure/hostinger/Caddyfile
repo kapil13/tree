@@ -19,10 +19,16 @@
 	import common_security
 	header {
 		X-Frame-Options "SAMEORIGIN"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://challenges.cloudflare.com https://maps.googleapis.com https://*.googleapis.com wss:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://{$API_DOMAIN} https://*.amazonaws.com https://challenges.cloudflare.com https://maps.googleapis.com https://*.googleapis.com wss:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'"
 	}
 	encode gzip zstd
-	reverse_proxy frontend:3000
+	# Same-origin /api — more reliable than Next.js rewrites in standalone mode
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy frontend:3000
+	}
 }
 
 {$API_DOMAIN} {

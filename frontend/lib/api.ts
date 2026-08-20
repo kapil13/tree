@@ -7,8 +7,20 @@ import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messag
 import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
 import { useAuth } from "@/lib/auth-store";
 
-/** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
+/** Browser API base. Prefer same-origin `/api` on production app host (Caddy proxies to backend). */
 function resolveApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
+      return "/api";
+    }
+    if (host === "localhost" || host === "127.0.0.1") {
+      const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+      if (!raw) return "/api";
+      const base = raw.replace(/\/$/, "");
+      return base.endsWith("/api") ? base : `${base}/api`;
+    }
+  }
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!raw) return "/api";
   const base = raw.replace(/\/$/, "");
@@ -20,7 +32,7 @@ function resolveDirectUploadApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host === "aranyix.tech" || host === "www.aranyix.tech") {
-      return "https://api.aranyix.tech/api";
+      return "/api";
     }
     if (host === "localhost" || host === "127.0.0.1") {
       return "http://localhost:8000/api";
@@ -119,7 +131,7 @@ export function errorMessage(err: unknown): string {
         if (host === "localhost" || host === "127.0.0.1") {
           return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
         }
-        return `Cannot reach the API (${API_URL}). Check https://api.aranyix.tech/health in your browser, sign out and sign in again, or ask your admin to rebuild the frontend with NEXT_PUBLIC_API_URL=https://api.aranyix.tech`;
+        return `Cannot reach the API (${API_URL}). The API server at https://api.aranyix.tech/health is up — this is usually a browser or proxy issue. Try: hard refresh (Ctrl+Shift+R), sign out and sign in again, or ask your admin to redeploy Caddy/frontend (see infrastructure/hostinger/Caddyfile /api proxy).`;
       }
       return err.message;
     }
