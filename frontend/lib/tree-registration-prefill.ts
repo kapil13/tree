@@ -20,8 +20,56 @@ export function formatChainageLabel(chainageKm: number): string {
   return `${km}+${String(meters).padStart(3, "0")}`;
 }
 
+/** Parse highway chainage label back to decimal km (e.g. "142+380" → 142.38). */
+export function parseChainageLabel(label: string): number | null {
+  const text = label.trim();
+  if (!text) return null;
+  if (text.includes("+")) {
+    const [wholePart, meterPart] = text.split("+", 2);
+    const whole = Number(wholePart);
+    const meters = Number(meterPart);
+    if (Number.isNaN(whole) || Number.isNaN(meters)) return null;
+    return Math.round((whole + meters / 1000) * 1000) / 1000;
+  }
+  const km = Number(text);
+  return Number.isNaN(km) ? null : km;
+}
+
 export function formatChainageDisplay(chainageKm: number): string {
   return `KM ${formatChainageLabel(chainageKm)}`;
+}
+
+export type SuggestedNextPrefill = {
+  chainage_label: string;
+  chainage_display: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+/** Apply registration-context suggested_next GPS + chainage onto form values. */
+export function applySuggestedNextPrefill(
+  base: PrefillValues,
+  suggested: SuggestedNextPrefill,
+): PrefillValues {
+  const next: PrefillValues = { ...base };
+  next.chainage_km = suggested.chainage_label;
+  if (suggested.latitude != null) next.latitude = String(suggested.latitude);
+  if (suggested.longitude != null) next.longitude = String(suggested.longitude);
+  next.accuracy_m = "";
+  next.altitude_m = "";
+  return next;
+}
+
+/** Estimate the next chainage label after the current form value + spacing. */
+export function nextChainageLabelAfter(
+  currentLabel: string | number | boolean | undefined,
+  spacingM: number | null | undefined,
+): string | null {
+  if (spacingM == null || spacingM <= 0) return null;
+  const label = typeof currentLabel === "string" ? currentLabel : String(currentLabel ?? "");
+  const km = parseChainageLabel(label);
+  if (km == null) return null;
+  return formatChainageLabel(km + spacingM / 1000);
 }
 
 /** Merge scheme references and project context into tree registration form values. */
