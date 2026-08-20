@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { AlertTriangle, CheckCircle2, Leaf, ShieldCheck } from "lucide-react";
 import type { PlantingProject } from "@/lib/api";
 import type { CentralScheme } from "@/lib/schemes";
@@ -64,7 +65,7 @@ export function ProjectTreeSchemeContext({
           )}
         </div>
         <Link
-          href={`/projects/${project.id}?tab=settings`}
+          href={projectSecondaryHref(project.id, "settings")}
           className="text-sm font-medium text-forest-700 hover:underline"
         >
           Scheme references →

@@ -9,6 +9,7 @@ import {
   TreePine,
 } from "lucide-react";
 import { dashboard, plantingProjects } from "@/lib/api";
+import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -117,14 +118,14 @@ export function PortfolioOverviewTab({
                   <td className="px-4 py-2 text-right">
                     {p.open_violations > 0 ? (
                       <Link
-                        href={`/projects/${p.id}?tab=compliance`}
+                        href={projectSecondaryHref(p.id, "compliance")}
                         className="text-xs text-forest-700 hover:underline"
                       >
                         Fix compliance
                       </Link>
                     ) : (
                       <Link
-                        href={`/projects/${p.id}?tab=trees`}
+                        href={projectOverviewHref(p.id)}
                         className="text-xs text-forest-700 hover:underline"
                       >
                         Review trees

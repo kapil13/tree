@@ -7,6 +7,7 @@ import { FolderKanban, Plus, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { centralSchemes, plantingProjects } from "@/lib/api";
+import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { schemeByCode } from "@/lib/schemes";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -177,7 +178,7 @@ export default function ProjectsPage() {
                       <dd className="mt-0.5 font-medium">
                         {violations > 0 ? (
                           <Link
-                            href={`/projects/${project.id}?tab=compliance`}
+                            href={projectSecondaryHref(project.id, "compliance")}
                             className="text-amber-800 hover:underline"
                           >
                             {violations} open
@@ -197,7 +198,7 @@ export default function ProjectsPage() {
                     </Link>
                     {violations > 0 ? (
                       <Link
-                        href={`/projects/${project.id}?tab=compliance`}
+                        href={projectSecondaryHref(project.id, "compliance")}
                         className="btn-secondary flex-1 justify-center text-xs"
                       >
                         Compliance
@@ -253,7 +254,7 @@ export default function ProjectsPage() {
                       <td className="px-4 py-3">
                         {violations > 0 ? (
                           <Link
-                            href={`/projects/${project.id}?tab=compliance`}
+                            href={projectSecondaryHref(project.id, "compliance")}
                             className="font-medium text-amber-800 hover:underline"
                           >
                             {violations}

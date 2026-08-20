@@ -1,3 +1,10 @@
+import {
+  parseProjectSecondaryTab,
+  projectOverviewHref,
+  projectSecondaryHref,
+  type ProjectSecondaryTab,
+} from "@/lib/project-focused-ui";
+
 export type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
 
 export type ComplianceGapAction = {
@@ -10,6 +17,22 @@ export type ComplianceGapAction = {
 type GapContext = {
   projectId: string;
 };
+
+export function projectTabHref(
+  projectId: string,
+  tab: ProjectTab,
+  anchor?: string,
+): string {
+  if (tab === "overview" || tab === "trees") {
+    const base = projectOverviewHref(projectId);
+    return anchor ? `${base}#${anchor}` : base;
+  }
+  if (parseProjectSecondaryTab(tab)) {
+    const base = projectSecondaryHref(projectId, tab as ProjectSecondaryTab);
+    return anchor ? `${base}#${anchor}` : base;
+  }
+  return projectOverviewHref(projectId);
+}
 
 const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { href?: string | ((ctx: GapContext) => string) }> = {
   has_trees: {
@@ -75,21 +98,29 @@ export function resolveComplianceGapAction(
     const action = AUTO_KEY_ACTIONS[gap.auto_key];
     const href =
       typeof action.href === "function" ? action.href(ctx) : action.href;
+    const resolvedHref =
+      href ??
+      (action.tab ? projectTabHref(ctx.projectId, action.tab, action.anchor) : undefined);
     return {
       label: action.label,
       tab: action.tab,
       anchor: action.anchor,
-      href,
+      href: resolvedHref,
     };
   }
 
   if (ITEM_ID_ACTIONS[gap.item_id]) {
-    return ITEM_ID_ACTIONS[gap.item_id];
+    const action = ITEM_ID_ACTIONS[gap.item_id];
+    return {
+      ...action,
+      href: projectTabHref(ctx.projectId, action.tab!, action.anchor),
+    };
   }
 
   return {
     label: "Open checklist",
     tab: "compliance",
     anchor: "checklist",
+    href: projectTabHref(ctx.projectId, "compliance", "checklist"),
   };
 }

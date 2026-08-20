@@ -50,7 +50,7 @@ fi
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${BUILD_FLAGS[@]}" frontend
 
 echo "==> Verifying Sprint A focused project UI in frontend image..."
-FOCUSED_MARKER="project-focused-layout-v1"
+FOCUSED_MARKER="project-focused-layout-v2"
 if docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm --no-deps frontend \
   sh -c "grep -rq '${FOCUSED_MARKER}' .next 2>/dev/null"; then
   echo "OK: focused project layout found in frontend bundle (${FOCUSED_MARKER})"
