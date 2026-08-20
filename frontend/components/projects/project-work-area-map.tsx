@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Undo2 } from "lucide-react";
 import {
   APIProvider,
   Map,
@@ -10,6 +10,8 @@ import {
   Polyline,
   useMap,
 } from "@vis.gl/react-google-maps";
+import { MapLocationSearch } from "@/components/map/map-location-search";
+import { MapViewportController } from "@/components/map/map-viewport-controller";
 import {
   errorMessage,
   plantingProjects,
@@ -18,8 +20,13 @@ import {
   type WorkArea,
 } from "@/lib/api";
 import { estimatePolygonAreaHa, formatAreaHa } from "@/lib/geo";
-
-const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
+import {
+  DEFAULT_MAP_ZOOM,
+  FALLBACK_MAP_CENTER,
+  LOCATION_MAP_ZOOM,
+  type MapLatLng,
+} from "@/lib/map-defaults";
+import { useMapGeolocation } from "@/lib/use-map-geolocation";
 
 function pathsToGeoJson(paths: google.maps.LatLngLiteral[]): GeoJsonPolygon {
   const ring = paths.map((p) => [p.lng, p.lat]);
@@ -72,13 +79,25 @@ type Props = {
   projectId: string;
   workAreas: WorkArea[];
   height?: string;
+  /** Start in draw mode (e.g. after creating a project). */
+  autoDraw?: boolean;
+  /** Default geometry when no work areas exist yet. */
+  defaultGeometryType?: "polygon" | "corridor";
 };
 
-export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Props) {
+export function ProjectWorkAreaMap({
+  projectId,
+  workAreas,
+  height = "55vh",
+  autoDraw = false,
+  defaultGeometryType = "polygon",
+}: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const qc = useQueryClient();
-  const [geometryType, setGeometryType] = useState<"polygon" | "corridor">("polygon");
-  const [drawMode, setDrawMode] = useState(false);
+  const { locate, locating, error: locationError, clearError } = useMapGeolocation();
+
+  const [geometryType, setGeometryType] = useState<"polygon" | "corridor">(defaultGeometryType);
+  const [drawMode, setDrawMode] = useState(autoDraw);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftPaths, setDraftPaths] = useState<google.maps.LatLngLiteral[]>([]);
   const [pendingName, setPendingName] = useState("");
@@ -88,22 +107,64 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
   const [chainageEnd, setChainageEnd] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [mapCenter, setMapCenter] = useState<MapLatLng>(FALLBACK_MAP_CENTER);
+  const [mapZoom, setMapZoom] = useState(DEFAULT_MAP_ZOOM);
+  const [panKey, setPanKey] = useState(0);
+  const [geoInitialized, setGeoInitialized] = useState(false);
 
   const selectedArea = workAreas.find((a) => a.id === selectedId) ?? null;
   const isEditing = Boolean(editingId);
 
-  const center = useMemo(() => {
-    if (workAreas.length) {
-      const all = workAreas.flatMap((w) => geoJsonToPaths(w.boundary));
-      if (all.length) {
-        return {
-          lat: all.reduce((s, p) => s + p.lat, 0) / all.length,
-          lng: all.reduce((s, p) => s + p.lng, 0) / all.length,
-        };
-      }
-    }
-    return DEFAULT_CENTER;
+  const workAreaCenter = useMemo(() => {
+    if (!workAreas.length) return null;
+    const all = workAreas.flatMap((w) => geoJsonToPaths(w.boundary));
+    if (!all.length) return null;
+    return {
+      lat: all.reduce((s, p) => s + p.lat, 0) / all.length,
+      lng: all.reduce((s, p) => s + p.lng, 0) / all.length,
+    };
   }, [workAreas]);
+
+  useEffect(() => {
+    if (workAreaCenter) {
+      setMapCenter(workAreaCenter);
+      setMapZoom(DEFAULT_MAP_ZOOM);
+    }
+  }, [workAreaCenter]);
+
+  useEffect(() => {
+    if (workAreas.length || geoInitialized) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await locate();
+      if (cancelled) return;
+      if (result) {
+        setMapCenter(result.center);
+        setMapZoom(LOCATION_MAP_ZOOM);
+        setPanKey((k) => k + 1);
+      }
+      setGeoInitialized(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workAreas.length, geoInitialized, locate]);
+
+  useEffect(() => {
+    if (autoDraw) setDrawMode(true);
+  }, [autoDraw]);
+
+  const goToLocation = useCallback((center: MapLatLng) => {
+    clearError();
+    setMapCenter(center);
+    setMapZoom(LOCATION_MAP_ZOOM);
+    setPanKey((k) => k + 1);
+  }, [clearError]);
+
+  const handleLocate = useCallback(async () => {
+    const result = await locate();
+    if (result) goToLocation(result.center);
+  }, [locate, goToLocation]);
 
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ["project-work-areas", projectId] });
@@ -121,6 +182,8 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
     setEditingId(null);
     setFormError(null);
   };
+
+  const minPoints = geometryType === "polygon" ? 3 : 2;
 
   const createArea = useMutation({
     mutationFn: () => {
@@ -167,7 +230,7 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
         chainage_start_km: chainageStart ? Number(chainageStart) : undefined,
         chainage_end_km: chainageEnd ? Number(chainageEnd) : undefined,
       };
-      if (draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) {
+      if (draftPaths.length >= minPoints) {
         payload.geometry_type = geometryType;
         if (geometryType === "polygon") {
           payload.boundary = pathsToGeoJson(draftPaths);
@@ -224,6 +287,15 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
     setFormError(null);
   }
 
+  function undoLastPoint() {
+    setDraftPaths((prev) => prev.slice(0, -1));
+  }
+
+  function finishDrawing() {
+    if (draftPaths.length < minPoints) return;
+    setDrawMode(false);
+  }
+
   if (!apiKey) {
     return (
       <div className="rounded-xl border border-stone-200 bg-stone-100 p-6 text-center text-sm text-stone-600">
@@ -238,7 +310,7 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
       : 0;
 
   const showSaveForm =
-    (drawMode && draftPaths.length >= (geometryType === "polygon" ? 3 : 2)) ||
+    (!drawMode && draftPaths.length >= minPoints) ||
     (isEditing && pendingName.trim());
 
   return (
@@ -253,6 +325,7 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
                 setGeometryType(e.target.value as "polygon" | "corridor");
                 setDraftPaths([]);
               }}
+              disabled={drawMode}
             >
               <option value="polygon">Polygon (block / green belt)</option>
               <option value="corridor">Corridor (highway / canal line)</option>
@@ -261,9 +334,15 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
               type="button"
               className={drawMode ? "btn-primary" : "btn-secondary"}
               onClick={() => {
-                setDrawMode((v) => !v);
-                setDraftPaths([]);
-                setEditingId(null);
+                if (drawMode) {
+                  setDrawMode(false);
+                  setDraftPaths([]);
+                  setEditingId(null);
+                } else {
+                  setDrawMode(true);
+                  setDraftPaths([]);
+                  setEditingId(null);
+                }
               }}
             >
               {drawMode ? "Click map to add points" : "Draw work area"}
@@ -275,9 +354,31 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
           </span>
         )}
         {drawMode && (
-          <button type="button" className="btn-secondary" onClick={resetForm}>
-            Cancel
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={draftPaths.length < minPoints}
+              onClick={finishDrawing}
+            >
+              {geometryType === "polygon"
+                ? `Finish polygon (${draftPaths.length} pts)`
+                : `Finish line (${draftPaths.length} pts)`}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={draftPaths.length === 0}
+              onClick={undoLastPoint}
+              title="Undo last point"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              Undo
+            </button>
+            <button type="button" className="btn-secondary" onClick={resetForm}>
+              Cancel
+            </button>
+          </>
         )}
         {geometryType === "polygon" && draftPaths.length >= 2 && (
           <span className="text-xs text-stone-600">
@@ -399,20 +500,33 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
                 Cancel edit
               </button>
             )}
+            {!isEditing && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setDraftPaths([]);
+                  setDrawMode(true);
+                }}
+              >
+                Redraw
+              </button>
+            )}
           </div>
           {formError && <p className="text-sm text-rose-700 md:col-span-2">{formError}</p>}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-stone-200" style={{ height }}>
+      <div className="relative overflow-hidden rounded-xl border border-stone-200" style={{ height }}>
         <APIProvider apiKey={apiKey}>
           <Map
-            defaultCenter={center}
-            defaultZoom={13}
+            defaultCenter={mapCenter}
+            defaultZoom={mapZoom}
             mapTypeId="satellite"
             gestureHandling="greedy"
             style={{ width: "100%", height: "100%" }}
           >
+            <MapViewportController center={mapCenter} zoom={mapZoom} panKey={panKey} />
             <DrawingLayer enabled={drawMode} draftPaths={draftPaths} onAddPoint={handleAddPoint} />
 
             {draftPaths.length > 0 && geometryType === "polygon" && (
@@ -459,6 +573,14 @@ export function ProjectWorkAreaMap({ projectId, workAreas, height = "55vh" }: Pr
               );
             })}
           </Map>
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3">
+            <MapLocationSearch
+              onSelect={goToLocation}
+              onLocate={handleLocate}
+              locating={locating}
+              locationError={locationError}
+            />
+          </div>
         </APIProvider>
       </div>
 

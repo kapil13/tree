@@ -22,6 +22,7 @@ export function ProjectWorkspacePage({
   const searchParams = useSearchParams();
   const projectId = params.id as string;
   const legacyTab = searchParams.get("tab");
+  const autoDraw = searchParams.get("draw") === "1";
 
   const { project, workAreas, survivalDue, registerHref, isLoading } =
     useProjectWorkspace(projectId);
@@ -31,6 +32,13 @@ export function ProjectWorkspacePage({
     const href = resolveLegacyProjectTabHref(projectId, legacyTab);
     if (href) router.replace(href);
   }, [section, legacyTab, projectId, router]);
+
+  useEffect(() => {
+    if (section !== "overview" || typeof window === "undefined") return;
+    if (window.location.hash !== "#work-areas") return;
+    const el = document.getElementById("work-areas");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [section, isLoading]);
 
   if (isLoading || !project) {
     return <p className="text-sm text-stone-500">Loading project workspace…</p>;
@@ -53,6 +61,7 @@ export function ProjectWorkspacePage({
           workAreas={workAreas}
           survivalDue={survivalDue}
           registerHref={registerHref}
+          autoDraw={autoDraw}
         />
       ) : (
         <ProjectSecondarySection

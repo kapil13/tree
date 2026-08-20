@@ -166,7 +166,7 @@ export default function NewProjectPage() {
             : {}),
         },
       });
-      router.push(`/projects/${project.id}`);
+      router.push(`/projects/${project.id}?draw=1#work-areas`);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
