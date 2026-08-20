@@ -51,11 +51,13 @@ type RegistrationWizardProps = {
   onPhotoKeysChange: (keys: string[]) => void;
   onPhotoPreviewsChange: (previews: string[]) => void;
   onUploadPhoto: (file: File) => Promise<string>;
+  onUploadError?: (error: unknown) => void;
   onUseLocation?: () => void;
   locating?: boolean;
   busy?: boolean;
   error?: string | null;
   readOnly?: boolean;
+  uploadDisabled?: boolean;
   onSubmit: () => void;
 };
 
@@ -96,11 +98,13 @@ export function RegistrationWizard({
   onPhotoKeysChange,
   onPhotoPreviewsChange,
   onUploadPhoto,
+  onUploadError,
   onUseLocation,
   locating,
   busy,
   error,
   readOnly = false,
+  uploadDisabled,
   onSubmit,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -110,10 +114,11 @@ export function RegistrationWizard({
   );
   const theme = getProgramTheme(programCode);
   const ThemeIcon = theme.icon;
+  const photosLocked = uploadDisabled ?? readOnly;
 
   useEffect(() => {
     setStepIndex(0);
-  }, [programCode, schema.code, mode]);
+  }, [programCode, schema.code, mode, requirePitPhoto]);
 
   const plantingSection = useMemo(
     () => schema.sections.find((section) => section.id === "planting") ?? null,
@@ -192,20 +197,22 @@ export function RegistrationWizard({
   }, [currentStep, schema, programCode, govCategory]);
 
   async function addPitPhoto(files: FileList) {
-    if (readOnly || !onPitPhotoChange) return;
+    if (photosLocked || !onPitPhotoChange) return;
     const file = files[0];
     if (!file) return;
     setUploading(true);
     try {
       const key = await onUploadPhoto(file);
       onPitPhotoChange(key, URL.createObjectURL(file));
+    } catch (err) {
+      onUploadError?.(err);
     } finally {
       setUploading(false);
     }
   }
 
   async function addPhotos(files: FileList) {
-    if (readOnly) return;
+    if (photosLocked) return;
     setUploading(true);
     try {
       const nextKeys = [...photoKeys];
@@ -217,6 +224,8 @@ export function RegistrationWizard({
       }
       onPhotoKeysChange(nextKeys);
       onPhotoPreviewsChange(nextPreviews);
+    } catch (err) {
+      onUploadError?.(err);
     } finally {
       setUploading(false);
     }
@@ -369,7 +378,7 @@ export function RegistrationWizard({
               busy={busy || uploading}
               onAdd={addPitPhoto}
               onRemove={() => onPitPhotoChange?.(null, null)}
-              disabled={readOnly}
+              disabled={photosLocked}
             />
           )}
 
@@ -381,7 +390,7 @@ export function RegistrationWizard({
               busy={busy || uploading}
               onAdd={addPhotos}
               onRemove={removePhoto}
-              disabled={readOnly}
+              disabled={photosLocked}
             />
           )}
 

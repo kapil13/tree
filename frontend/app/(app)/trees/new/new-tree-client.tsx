@@ -120,7 +120,11 @@ export function NewTreePageClient() {
     [registrationContext, project?.active_standard?.rules],
   );
   const requirePitPhoto =
-    registrationContext?.inherited_standard.require_pit_photo ?? false;
+    registrationContext?.inherited_standard.require_pit_photo ??
+    Boolean(
+      (project?.active_standard?.rules as { require_pit_photo?: boolean } | undefined)
+        ?.require_pit_photo,
+    );
 
   useEffect(() => {
     if (registrationContext?.suggested_next?.work_area_id && !workAreaIdParam) {
@@ -183,10 +187,6 @@ export function NewTreePageClient() {
       }
       return base;
     });
-    setPhotoKeys([]);
-    setPhotoPreviews([]);
-    setPitPhotoKey(null);
-    setPitPhotoPreview(null);
     setError(null);
     setCompliancePreview(null);
   }, [
@@ -194,10 +194,14 @@ export function NewTreePageClient() {
     project?.id,
     project?.scheme_code,
     project?.metadata?.plantation_category,
-    project?.code,
-    project?.metadata,
-    project?.active_standard,
   ]);
+
+  useEffect(() => {
+    setPhotoKeys([]);
+    setPhotoPreviews([]);
+    setPitPhotoKey(null);
+    setPitPhotoPreview(null);
+  }, [activeProgram?.code, project?.id]);
 
   function geo() {
     if (!navigator.geolocation || !activeProgram) return;
@@ -376,11 +380,13 @@ export function NewTreePageClient() {
         onPhotoKeysChange={setPhotoKeys}
         onPhotoPreviewsChange={setPhotoPreviews}
         onUploadPhoto={(file) => uploads.presignImage(file)}
+        onUploadError={(err) => setError(errorMessage(err))}
         onUseLocation={geo}
         locating={locating}
         busy={busy}
         error={error}
         readOnly={!canWrite || (requiresWorkArea && !!project && !workAreaId)}
+        uploadDisabled={!canWrite}
         onSubmit={submit}
       />
     </div>
