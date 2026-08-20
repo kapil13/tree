@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import axios, { AxiosError } from "axios";
+import { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { errorMessage } from "./api";
+
+const mockConfig = { headers: {} } as InternalAxiosRequestConfig;
 
 describe("compliance error messages", () => {
   it("reads compliance_errors from error.details when message is generic", () => {
@@ -9,7 +11,7 @@ describe("compliance error messages", () => {
       status: 422,
       statusText: "Unprocessable Entity",
       headers: {},
-      config: {} as AxiosError["config"],
+      config: mockConfig,
       data: {
         error: {
           code: "http_error",
@@ -39,7 +41,7 @@ describe("compliance error messages", () => {
       status: 422,
       statusText: "Unprocessable Entity",
       headers: {},
-      config: {} as AxiosError["config"],
+      config: mockConfig,
       data: {
         error: {
           code: "compliance_failed",
