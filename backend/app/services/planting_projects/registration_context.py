@@ -20,7 +20,7 @@ from app.services.planting_projects.service import get_active_standard, project_
 def format_chainage_label(chainage_km: float) -> str:
     """Format 142.38 km as highway-style chainage label ``142+380``."""
     whole = int(chainage_km)
-    meters = int(round((chainage_km - whole) * 1000))
+    meters = round((chainage_km - whole) * 1000)
     if meters >= 1000:
         whole += 1
         meters = 0
@@ -81,7 +81,7 @@ def merge_standard_into_tree_metadata(
 def _parse_chainage_km(value: Any) -> float | None:
     if value is None:
         return None
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     if isinstance(value, str):
         text = value.strip()

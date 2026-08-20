@@ -51,8 +51,8 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
-from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.registration_context import merge_standard_into_tree_metadata
+from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
