@@ -1,9 +1,4 @@
-/** Sprint A: focused project page layout (no tab bar; trees on main scroll). */
-export function isProjectFocusedUiEnabled(): boolean {
-  // On by default after Sprint A; set NEXT_PUBLIC_PROJECT_FOCUSED_UI=0 to rollback.
-  return process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI !== "0";
-}
-
+/** Sprint A: focused project page — secondary sections via ?tab= URLs. */
 export const PROJECT_SECONDARY_TABS = [
   "compliance",
   "credits",
@@ -21,3 +16,6 @@ export function parseProjectSecondaryTab(
     ? (value as ProjectSecondaryTab)
     : null;
 }
+
+/** Marker string embedded in the focused layout for deploy verification. */
+export const PROJECT_FOCUSED_LAYOUT_MARKER = "project-focused-layout-v1";

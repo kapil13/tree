@@ -49,6 +49,17 @@ else
 fi
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${BUILD_FLAGS[@]}" frontend
 
+echo "==> Verifying Sprint A focused project UI in frontend image..."
+FOCUSED_MARKER="project-focused-layout-v1"
+if docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" run --rm --no-deps frontend \
+  sh -c "grep -rq '${FOCUSED_MARKER}' .next 2>/dev/null"; then
+  echo "OK: focused project layout found in frontend bundle (${FOCUSED_MARKER})"
+else
+  echo "ERROR: focused project layout NOT found in frontend bundle."
+  echo "       Run: FORCE_FRONTEND_REBUILD=1 ./deploy.sh"
+  exit 1
+fi
+
 echo "==> Building and starting BYOT stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 

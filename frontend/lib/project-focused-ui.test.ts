@@ -1,31 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  isProjectFocusedUiEnabled,
   parseProjectSecondaryTab,
+  PROJECT_FOCUSED_LAYOUT_MARKER,
   PROJECT_SECONDARY_TABS,
 } from "./project-focused-ui";
 
 describe("project-focused-ui", () => {
-  const previous = process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI;
-
-  afterEach(() => {
-    if (previous === undefined) {
-      delete process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI;
-    } else {
-      process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI = previous;
-    }
-  });
-
-  it("enables focused UI by default and disables only when env is 0", () => {
-    delete process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI;
-    expect(isProjectFocusedUiEnabled()).toBe(true);
-    process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI = "1";
-    expect(isProjectFocusedUiEnabled()).toBe(true);
-    process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI = "0";
-    expect(isProjectFocusedUiEnabled()).toBe(false);
-  });
-
-  it("parses secondary tabs and ignores merged legacy tabs", () => {
+  it("parses secondary tabs and ignores legacy overview/trees URLs", () => {
     expect(parseProjectSecondaryTab("compliance")).toBe("compliance");
     expect(parseProjectSecondaryTab("overview")).toBeNull();
     expect(parseProjectSecondaryTab("trees")).toBeNull();
@@ -36,5 +17,9 @@ describe("project-focused-ui", () => {
       "team",
       "settings",
     ]);
+  });
+
+  it("exposes a stable layout marker for deploy checks", () => {
+    expect(PROJECT_FOCUSED_LAYOUT_MARKER).toBe("project-focused-layout-v1");
   });
 });
