@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   applyProjectTreePrefill,
+  applySuggestedNextPrefill,
   formatChainageDisplay,
   formatChainageLabel,
+  nextChainageLabelAfter,
+  parseChainageLabel,
   uniqueSpeciesChips,
 } from "./tree-registration-prefill";
 import type { PlantingProject } from "./api";
@@ -55,10 +58,39 @@ describe("applyProjectTreePrefill", () => {
   });
 });
 
+describe("applySuggestedNextPrefill", () => {
+  it("updates chainage and GPS for the next gap", () => {
+    const result = applySuggestedNextPrefill(
+      { species_text: "Neem", chainage_km: "1+000", latitude: "26.1", longitude: "75.1" },
+      {
+        chainage_label: "1+006",
+        chainage_display: "KM 1+006",
+        latitude: 26.876,
+        longitude: 75.745,
+      },
+    );
+    expect(result.species_text).toBe("Neem");
+    expect(result.chainage_km).toBe("1+006");
+    expect(result.latitude).toBe("26.876");
+    expect(result.longitude).toBe("75.745");
+    expect(result.accuracy_m).toBe("");
+  });
+});
+
 describe("formatChainageLabel", () => {
   it("formats decimal km as chainage label", () => {
     expect(formatChainageLabel(142.38)).toBe("142+380");
     expect(formatChainageDisplay(142.38)).toBe("KM 142+380");
+  });
+
+  it("parses chainage label back to decimal km", () => {
+    expect(parseChainageLabel("142+380")).toBe(142.38);
+    expect(parseChainageLabel("1+000")).toBe(1);
+  });
+
+  it("computes next chainage after spacing", () => {
+    expect(nextChainageLabelAfter("1+000", 6)).toBe("1+006");
+    expect(nextChainageLabelAfter("142+380", 6)).toBe("142+386");
   });
 });
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Settings2 } from "lucide-react";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { ProjectTreeSchemeContext } from "@/components/trees/project-tree-scheme-context";
@@ -28,14 +28,17 @@ import { canWriteInApp } from "@/lib/nav-access";
 import { schemeByCode } from "@/lib/schemes";
 import {
   applyProjectTreePrefill,
+  applySuggestedNextPrefill,
   formatChainageLabel,
   inheritedStandardSummary,
+  nextChainageLabelAfter,
 } from "@/lib/tree-registration-prefill";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
 export function NewTreePageClient() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const canWrite = canWriteInApp(user);
   const searchParams = useSearchParams();
@@ -79,6 +82,9 @@ export function NewTreePageClient() {
   const [compliancePreview, setCompliancePreview] = useState<ComplianceCheck | null>(null);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [wizardResetKey, setWizardResetKey] = useState(0);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [sessionSavedCount, setSessionSavedCount] = useState(0);
 
   const { data: registrationContext } = useQuery({
     queryKey: ["registration-context", projectIdParam, workAreaId],
@@ -136,6 +142,17 @@ export function NewTreePageClient() {
       (project?.active_standard?.rules as { chainage_enabled?: boolean } | undefined)
         ?.chainage_enabled,
     );
+  const spacingMMin =
+    registrationContext?.inherited_standard.spacing_m_min ??
+    ((project?.active_standard?.rules as { spacing_m?: { min?: number } } | undefined)?.spacing_m
+      ?.min ??
+      null);
+  const registerNextHint = useMemo(() => {
+    if (!isProjectMode || !chainageEnabled) return null;
+    const nextLabel = nextChainageLabelAfter(values.chainage_km, spacingMMin);
+    if (!nextLabel) return null;
+    return `After save, register the next tree at KM ${nextLabel}`;
+  }, [isProjectMode, chainageEnabled, values.chainage_km, spacingMMin]);
 
   useEffect(() => {
     if (registrationContext?.suggested_next?.work_area_id && !workAreaIdParam) {
@@ -264,7 +281,7 @@ export function NewTreePageClient() {
     }
   }
 
-  async function submit() {
+  async function submit(action: "exit" | "next" = "exit") {
     if (!activeProgram) return;
     if (project && requiresWorkArea && !workAreaId) {
       setError("Select a work area for this project before registering a tree.");
@@ -272,6 +289,7 @@ export function NewTreePageClient() {
     }
     setBusy(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const allPhotoKeys = [
         ...(requirePitPhoto && pitPhotoKey ? [pitPhotoKey] : []),
@@ -288,7 +306,51 @@ export function NewTreePageClient() {
         } as Record<string, unknown>;
       }
       const tree = await trees.create(payload);
-      router.push(`/trees/${tree.id}`);
+
+      if (action === "exit" || !isProjectMode || !projectIdParam) {
+        router.push(`/trees/${tree.id}`);
+        return;
+      }
+
+      setSessionSavedCount((count) => count + 1);
+      await queryClient.invalidateQueries({
+        queryKey: ["registration-context", projectIdParam, workAreaId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["project-work-areas", projectIdParam],
+      });
+
+      const ctx = await plantingProjects.registrationContext(
+        projectIdParam,
+        workAreaId ?? undefined,
+      );
+      const suggested = ctx.suggested_next;
+      if (!suggested) {
+        router.push(`/trees/${tree.id}`);
+        return;
+      }
+
+      let nextValues: Record<string, string | number | boolean> = {
+        ...buildInitialValues(activeProgram.form_schema),
+      };
+      if (values.species_text) nextValues.species_text = values.species_text;
+      if (values.planted_at) nextValues.planted_at = values.planted_at;
+      if (values.road_side) nextValues.road_side = values.road_side;
+      if (project) {
+        nextValues = applyProjectTreePrefill(nextValues, project);
+      }
+      nextValues = applySuggestedNextPrefill(nextValues, suggested);
+
+      setPhotoKeys([]);
+      setPhotoPreviews([]);
+      setPitPhotoKey(null);
+      setPitPhotoPreview(null);
+      setCompliancePreview(null);
+      setValues(nextValues);
+      setWizardResetKey((key) => key + 1);
+      setSuccessMessage(
+        `Tree saved${tree.public_code ? ` (${tree.public_code})` : ""}. Next gap: ${suggested.chainage_display}.`,
+      );
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -365,6 +427,13 @@ export function NewTreePageClient() {
         </>
       )}
 
+      {project && sessionSavedCount > 0 && (
+        <div className="card mx-auto max-w-3xl border-forest-200 bg-forest-50/70 text-sm text-forest-900">
+          {sessionSavedCount} tree{sessionSavedCount === 1 ? "" : "s"} registered this session.
+          Continue with the next gap below or choose Save & exit when finished.
+        </div>
+      )}
+
       <RegistrationWizard
         programs={enrolledPrograms}
         programCode={programCode}
@@ -400,7 +469,12 @@ export function NewTreePageClient() {
         error={error}
         readOnly={!canWrite || (requiresWorkArea && !!project && !workAreaId)}
         uploadDisabled={!canWrite}
-        onSubmit={submit}
+        onSubmit={() => submit("exit")}
+        onSubmitExit={() => submit("exit")}
+        onSubmitNext={() => submit("next")}
+        registerNextHint={registerNextHint}
+        successMessage={successMessage}
+        wizardResetKey={wizardResetKey}
       />
     </div>
   );

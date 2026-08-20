@@ -61,7 +61,12 @@ type RegistrationWizardProps = {
   error?: string | null;
   readOnly?: boolean;
   uploadDisabled?: boolean;
-  onSubmit: () => void;
+  onSubmit?: () => void;
+  onSubmitExit?: () => void;
+  onSubmitNext?: () => void;
+  registerNextHint?: string | null;
+  successMessage?: string | null;
+  wizardResetKey?: number;
 };
 
 function contentSections(
@@ -111,6 +116,11 @@ export function RegistrationWizard({
   readOnly = false,
   uploadDisabled,
   onSubmit,
+  onSubmitExit,
+  onSubmitNext,
+  registerNextHint,
+  successMessage,
+  wizardResetKey = 0,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -123,7 +133,7 @@ export function RegistrationWizard({
 
   useEffect(() => {
     setStepIndex(0);
-  }, [programCode, schema.code, mode, requirePitPhoto]);
+  }, [programCode, schema.code, mode, requirePitPhoto, wizardResetKey]);
 
   const plantingSection = useMemo(
     () => schema.sections.find((section) => section.id === "planting") ?? null,
@@ -280,7 +290,11 @@ export function RegistrationWizard({
   function goNext() {
     if (readOnly) return;
     if (isLast) {
-      onSubmit();
+      if (mode === "project" && onSubmitNext) {
+        onSubmitNext();
+      } else {
+        onSubmit?.();
+      }
       return;
     }
     setStepIndex((i) => Math.min(i + 1, steps.length - 1));
@@ -478,6 +492,12 @@ export function RegistrationWizard({
           )}
         </div>
 
+        {successMessage && (
+          <div className="mt-6 rounded-2xl border border-forest-200 bg-forest-50 px-4 py-3 text-sm text-forest-800 dark:border-forest-900 dark:bg-forest-950/40 dark:text-forest-200">
+            {successMessage}
+          </div>
+        )}
+
         {error && (
           <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
             {error}
@@ -500,24 +520,49 @@ export function RegistrationWizard({
               Step {stepIndex + 1} of {steps.length}
               {!canContinue() ? " · Complete required fields to continue" : ""}
             </p>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={readOnly || !canContinue() || busy || uploading}
-              className="btn-primary min-w-[180px]"
-            >
-              {isLast ? (
-                <>
+            {isLast && mode === "project" && (onSubmitNext || onSubmitExit) ? (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[320px]">
+                <button
+                  type="button"
+                  onClick={onSubmitNext}
+                  disabled={readOnly || !canContinue() || busy || uploading}
+                  className="btn-primary w-full"
+                >
                   <Sparkles className="h-4 w-4" />
-                  {busy ? "Registering…" : "Create tree passport"}
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
+                  {busy ? "Saving…" : "Save & register next"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onSubmitExit ?? onSubmit}
+                  disabled={readOnly || !canContinue() || busy || uploading}
+                  className="btn-secondary w-full"
+                >
+                  Save & exit
+                </button>
+                {registerNextHint ? (
+                  <p className="text-center text-xs text-stone-500">{registerNextHint}</p>
+                ) : null}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={readOnly || !canContinue() || busy || uploading}
+                className="btn-primary min-w-[180px]"
+              >
+                {isLast ? (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    {busy ? "Registering…" : "Create tree passport"}
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
