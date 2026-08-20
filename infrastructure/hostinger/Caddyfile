@@ -19,16 +19,25 @@
 	import common_security
 	header {
 		X-Frame-Options "SAMEORIGIN"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://{$API_DOMAIN} https://*.amazonaws.com https://challenges.cloudflare.com https://maps.googleapis.com https://*.googleapis.com wss:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://{$API_DOMAIN} https://*.amazonaws.com https://*.cloudfront.net https://challenges.cloudflare.com https://maps.googleapis.com https://*.googleapis.com wss:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'"
 	}
 	encode gzip zstd
-	# Same-origin /api — more reliable than Next.js rewrites in standalone mode
-	handle /api/* {
+	# Next.js session cookie route — must stay on frontend
+	handle /api/auth/* {
+		reverse_proxy frontend:3000
+	}
+	# Optional same-origin REST proxy (browser may also call {$API_DOMAIN} directly)
+	handle /api/v1/* {
 		reverse_proxy backend:8000
 	}
 	handle {
 		reverse_proxy frontend:3000
 	}
+}
+
+# Redirect www → apex (www has no TLS cert on this VPS)
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
 }
 
 {$API_DOMAIN} {

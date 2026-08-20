@@ -7,12 +7,18 @@ import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messag
 import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
 import { useAuth } from "@/lib/auth-store";
 
-/** Browser API base. Prefer same-origin `/api` on production app host (Caddy proxies to backend). */
-function resolveApiBaseUrl(): string {
+const PRODUCTION_API = "https://api.aranyix.tech/api";
+
+function isAranyixHost(host: string): boolean {
+  return host === "aranyix.tech" || host === "www.aranyix.tech" || host.endsWith(".aranyix.tech");
+}
+
+/** Resolve API base URL at call time (never rely on module-load / SSR values in the browser). */
+export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
-      return "/api";
+    if (isAranyixHost(host)) {
+      return PRODUCTION_API;
     }
     if (host === "localhost" || host === "127.0.0.1") {
       const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -27,42 +33,19 @@ function resolveApiBaseUrl(): string {
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
-/** Same-origin JSON API (proxied). File uploads must bypass Next.js — use direct API host. */
+/** @deprecated Use getApiBaseUrl() — kept for logging only. */
+export const API_URL = typeof window !== "undefined" ? getApiBaseUrl() : "/api";
+
 function resolveDirectUploadApiBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host === "aranyix.tech" || host === "www.aranyix.tech") {
-      return "/api";
-    }
-    if (host === "localhost" || host === "127.0.0.1") {
-      return "http://localhost:8000/api";
-    }
-  }
-  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (raw) {
-    try {
-      const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-      if (!url.hostname.startsWith("api.")) {
-        url.hostname = `api.${url.hostname.replace(/^www\./, "")}`;
-      }
-      return url.href.replace(/\/$/, "").endsWith("/api")
-        ? url.href.replace(/\/$/, "")
-        : `${url.origin}/api`;
-    } catch {
-      /* fall through */
-    }
-  }
-  return API_URL;
+  return getApiBaseUrl();
 }
 
-export const API_URL = resolveApiBaseUrl();
-
 export const api: AxiosInstance = axios.create({
-  baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   if (typeof window !== "undefined") {
     const tok = useAuth.getState().getAccessToken();
     if (tok) config.headers.Authorization = `Bearer ${tok}`;
@@ -76,7 +59,7 @@ async function refreshAccessToken(): Promise<string | null> {
   const refresh = useAuth.getState().refresh;
   if (!refresh) return null;
   try {
-    const { data } = await axios.post<Tokens>(`${API_URL}/v1/auth/refresh`, {
+    const { data } = await axios.post<Tokens>(`${getApiBaseUrl()}/v1/auth/refresh`, {
       refresh_token: refresh,
     });
     useAuth.getState().setSession(data);
@@ -131,7 +114,11 @@ export function errorMessage(err: unknown): string {
         if (host === "localhost" || host === "127.0.0.1") {
           return "Cannot reach the API on port 8000. Start the backend: make dev-start (or ./scripts/dev-start.sh), then run make dev-status. Ensure Postgres.app (:5432) and Redis are running.";
         }
-        return `Cannot reach the API (${API_URL}). The API server at https://api.aranyix.tech/health is up — this is usually a browser or proxy issue. Try: hard refresh (Ctrl+Shift+R), sign out and sign in again, or ask your admin to redeploy Caddy/frontend (see infrastructure/hostinger/Caddyfile /api proxy).`;
+        if (host === "www.aranyix.tech") {
+          return "Cannot reach the API on www.aranyix.tech (SSL not configured). Open https://aranyix.tech instead (no www).";
+        }
+        const base = getApiBaseUrl();
+        return `Cannot reach the API (${base}). Open https://api.aranyix.tech/health in a new tab — if that works, hard refresh this page (Ctrl+Shift+R) or run: cd infrastructure/hostinger && FORCE_FRONTEND_REBUILD=1 ./deploy.sh`;
       }
       return err.message;
     }
