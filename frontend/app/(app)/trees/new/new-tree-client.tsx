@@ -379,7 +379,7 @@ export function NewTreePageClient() {
         photoPreviews={photoPreviews}
         onPhotoKeysChange={setPhotoKeys}
         onPhotoPreviewsChange={setPhotoPreviews}
-        onUploadPhoto={(file) => uploads.presignImage(file)}
+        onUploadPhoto={(file) => uploads.uploadImage(file)}
         onUploadError={(err) => setError(errorMessage(err))}
         onUseLocation={geo}
         locating={locating}
