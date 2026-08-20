@@ -66,12 +66,14 @@ export function ProjectFocusedOverview({
   workAreas,
   survivalDue,
   registerHref,
+  autoDraw = false,
 }: {
   project: PlantingProject;
   projectId: string;
   workAreas: WorkArea[];
   survivalDue: SurvivalDue | undefined;
   registerHref: string;
+  autoDraw?: boolean;
 }) {
   const surveyDays =
     (project.metadata?.survey_interval_days as number | undefined) ?? 30;
@@ -136,10 +138,10 @@ export function ProjectFocusedOverview({
     if (workAreaCount === 0) {
       return {
         title: "Draw a work area",
-        description: "Add at least one boundary before registering trees.",
-        href: projectSecondaryHref(projectId, "settings"),
-        label: "Programme settings",
-        icon: ShieldCheck,
+        description: "Search your site, use GPS, then draw a polygon or corridor on the map below.",
+        href: "#work-areas",
+        label: "Go to map",
+        icon: MapPin,
       };
     }
     if (treeCount === 0) {
@@ -283,10 +285,17 @@ export function ProjectFocusedOverview({
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <div id="work-areas" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1fr_300px]">
         <div className="card space-y-4">
           <h2 className="text-sm font-medium">Work areas</h2>
-          <ProjectWorkAreaMap projectId={projectId} workAreas={workAreas} />
+          <ProjectWorkAreaMap
+            projectId={projectId}
+            workAreas={workAreas}
+            autoDraw={autoDraw}
+            defaultGeometryType={
+              project.segment === "nhai_highway" ? "corridor" : "polygon"
+            }
+          />
         </div>
         <ProgrammeStandardAside project={project} surveyDays={surveyDays} />
       </div>
