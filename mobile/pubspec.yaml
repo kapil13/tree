@@ -1,7 +1,7 @@
 name: byot_mobile
 description: BYOT — Bring Your Own Tree (Flutter Android + iOS)
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.2.0+3
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -53,6 +53,7 @@ dependencies:
   app_links: ^6.3.2
   local_auth: ^2.3.0
   package_info_plus: ^8.0.2
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:
@@ -67,3 +68,4 @@ flutter:
   generate: true
   assets:
     - assets/brand/aranyix-logo.png
+    - assets/brand/aranyix-app-icon.png

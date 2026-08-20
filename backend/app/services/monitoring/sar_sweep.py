@@ -1,0 +1,370 @@
+"""Persist SAR scans and raise NISAR-inspired monitoring alerts."""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+from geoalchemy2.shape import to_shape
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.logging import get_logger
+from app.models.plantation_fence import PlantationFence
+from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.models.satellite import SatelliteRecord
+from app.models.tree import Tree
+from app.models.user import User
+from app.services.geo import geography_to_geojson_polygon
+from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.sar_alert_links import enrich_sar_alert_payload
+from app.services.monitoring.sar_field_tasks import maybe_create_sar_field_verification
+from app.services.monitoring.sar_fusion_alerts import fusion_from_metadata, maybe_alert_sar_fusion
+from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
+from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
+from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
+from app.services.satellite.sar_types import SarAnalysisResult
+
+log = get_logger("monitoring.sar")
+
+SCENE_ID_MAX_LEN = 250
+
+
+def _clip_scene_id(scene_id: str) -> str:
+    return (scene_id or "SAR")[:SCENE_ID_MAX_LEN]
+
+
+async def _latest_ndvi_for_tree(db: AsyncSession, tree_id: uuid.UUID) -> float | None:
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(5)
+    )
+    for row in res.scalars().all():
+        if not is_sar_provider_record(row.provider) and row.ndvi_mean is not None:
+            return float(row.ndvi_mean)
+    return None
+
+
+async def _latest_ndvi_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> float | None:
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(5)
+    )
+    for row in res.scalars().all():
+        if not is_sar_provider_record(row.provider) and row.ndvi_mean is not None:
+            return float(row.ndvi_mean)
+    return None
+
+
+async def _latest_optical_context_tree(db: AsyncSession, tree_id: uuid.UUID):
+    from app.services.satellite.sar_fusion import OpticalContext
+
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(8)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            continue
+        return OpticalContext(
+            ndvi_mean=float(row.ndvi_mean) if row.ndvi_mean is not None else None,
+            cloud_cover_pct=float(row.cloud_cover_pct) if row.cloud_cover_pct is not None else None,
+            scene_acquired_at=row.scene_acquired_at,
+            provider=row.provider,
+        )
+    return None
+
+
+async def _latest_optical_context_fence(db: AsyncSession, fence_id: uuid.UUID):
+    from app.services.satellite.sar_fusion import OpticalContext
+
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(8)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            continue
+        return OpticalContext(
+            ndvi_mean=float(row.ndvi_mean) if row.ndvi_mean is not None else None,
+            cloud_cover_pct=float(row.cloud_cover_pct) if row.cloud_cover_pct is not None else None,
+            scene_acquired_at=row.scene_acquired_at,
+            provider=row.provider,
+        )
+    return None
+
+
+def _analysis_to_metadata(analysis: SarAnalysisResult, fusion: dict | None = None) -> dict[str, Any]:
+    out: dict[str, Any] = {"sar_analysis": analysis_to_dict(analysis)}
+    if fusion:
+        out["sar_fusion"] = fusion
+    return out
+
+
+async def maybe_alert_sar_risks(
+    db: AsyncSession,
+    *,
+    user: User | None,
+    analysis: SarAnalysisResult,
+    payload_base: dict[str, Any],
+    title_prefix: str,
+    dedupe_keys: tuple[str, ...],
+) -> None:
+    if user is None or analysis.risk_level == "low":
+        return
+
+    payload_base = enrich_sar_alert_payload(payload_base)
+    alert_map = {
+        "sar_hidden_moisture": (
+            "sar_hidden_moisture",
+            "high",
+            "Hidden ground moisture under canopy",
+        ),
+        "wetland_forest_detected": (
+            "sar_wetland_detected",
+            "high",
+            "Wetland forest detected (L-band SAR)",
+        ),
+        "double_bounce_scattering": (
+            "sar_flood_risk",
+            "high",
+            "Waterlogging / double-bounce signal",
+        ),
+        "elevated_ground_moisture": (
+            "sar_ground_moisture",
+            "moderate",
+            "Elevated ground moisture",
+        ),
+        "low_coherence": (
+            "sar_ground_instability",
+            "moderate",
+            "Ground instability signal",
+        ),
+    }
+
+    for finding in analysis.findings:
+        spec = alert_map.get(finding.name)
+        if spec is None:
+            continue
+        kind, severity, label = spec
+        alert = await create_monitoring_alert(
+            db,
+            user=user,
+            kind=kind,
+            severity=severity,
+            title=f"{label} — {title_prefix}",
+            message=finding.evidence,
+            payload={
+                **payload_base,
+                "finding": finding.name,
+                "confidence": finding.confidence,
+                "ground_status": analysis.ground_status,
+                "wetland_probability": analysis.wetland_probability,
+            },
+            prefs_key="satellite_health",
+            dedupe_hours=168,
+            dedupe_keys=dedupe_keys,
+        )
+        if alert and severity in {"high", "critical"}:
+            await maybe_create_sar_field_verification(
+                db,
+                project_id=payload_base.get("project_id"),
+                work_area_id=payload_base.get("fence_id"),
+                tree_id=payload_base.get("tree_id"),
+                alert_kind=kind,
+                severity=severity,
+                message=finding.evidence,
+                fusion=None,
+            )
+
+
+async def scan_and_persist_tree_sar(
+    db: AsyncSession,
+    tree: Tree,
+    *,
+    notify_user: User | None = None,
+) -> tuple[SatelliteRecord, SarAnalysisResult] | None:
+    try:
+        pt = to_shape(tree.location)
+        lat, lon = pt.y, pt.x
+    except Exception:
+        return None
+
+    sample = await get_sar_service().sample_point(lat, lon)
+    optical = await _latest_optical_context_tree(db, tree.id)
+    prior_rec = await latest_sar_record_for_tree(db, tree.id)
+    prior_fusion = fusion_from_metadata(prior_rec.raw_metadata if prior_rec else None)
+    analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
+    fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
+    meta = sample.to_raw_metadata()
+    meta.update(_analysis_to_metadata(analysis, fusion))
+
+    rec = SatelliteRecord(
+        tree_id=tree.id,
+        provider=sample.provider,
+        scene_id=_clip_scene_id(sample.scene_id),
+        scene_acquired_at=sample.scene_acquired_at,
+        cloud_cover_pct=0.0,
+        raw_metadata=meta,
+    )
+    db.add(rec)
+    await db.flush()
+
+    notify = notify_user
+    if notify is None and tree.owner_user_id:
+        notify = await db.get(User, tree.owner_user_id)
+
+    await maybe_alert_sar_risks(
+        db,
+        user=notify,
+        analysis=analysis,
+        payload_base={"tree_id": str(tree.id), "project_id": str(tree.project_id) if tree.project_id else None},
+        title_prefix=tree.public_code,
+        dedupe_keys=("tree_id", "finding"),
+    )
+    await maybe_alert_sar_fusion(
+        db,
+        user=notify,
+        fusion=fusion,
+        previous_fusion=prior_fusion,
+        payload_base={"tree_id": str(tree.id), "project_id": str(tree.project_id) if tree.project_id else None},
+        title_prefix=tree.public_code,
+    )
+    return rec, analysis
+
+
+async def scan_and_persist_fence_sar(
+    db: AsyncSession,
+    fence: PlantationFence,
+    *,
+    notify_user_id: uuid.UUID | None = None,
+) -> tuple[PlantationSatelliteRecord, SarAnalysisResult] | None:
+    try:
+        boundary = geography_to_geojson_polygon(fence.boundary)
+    except Exception as exc:
+        log.warning("fence_sar_boundary_failed", fence_id=str(fence.id), error=str(exc))
+        return None
+
+    try:
+        sample = await get_sar_service().sample_polygon(boundary)
+    except Exception as exc:
+        log.warning("fence_sar_scan_failed", fence_id=str(fence.id), error=str(exc))
+        return None
+
+    optical = await _latest_optical_context_fence(db, fence.id)
+    prior_rec = await latest_sar_record_for_fence(db, fence.id)
+    prior_fusion = fusion_from_metadata(prior_rec.raw_metadata if prior_rec else None)
+    analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
+    fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
+    meta = sample.to_raw_metadata()
+    meta.update(_analysis_to_metadata(analysis, fusion))
+
+    rec = PlantationSatelliteRecord(
+        fence_id=fence.id,
+        provider=sample.provider,
+        scene_id=_clip_scene_id(sample.scene_id),
+        scene_acquired_at=sample.scene_acquired_at,
+        cloud_cover_pct=0.0,
+        raw_metadata=meta,
+    )
+    db.add(rec)
+    await db.flush()
+
+    owner_id = notify_user_id or fence.owner_user_id
+    owner = await db.get(User, owner_id) if owner_id else None
+    await maybe_alert_sar_risks(
+        db,
+        user=owner,
+        analysis=analysis,
+        payload_base={
+            "fence_id": str(fence.id),
+            "project_id": str(fence.project_id) if fence.project_id else None,
+        },
+        title_prefix=fence.name,
+        dedupe_keys=("fence_id", "finding"),
+    )
+    await maybe_alert_sar_fusion(
+        db,
+        user=owner,
+        fusion=fusion,
+        previous_fusion=prior_fusion,
+        payload_base={
+            "fence_id": str(fence.id),
+            "project_id": str(fence.project_id) if fence.project_id else None,
+        },
+        title_prefix=fence.name,
+    )
+    return rec, analysis
+
+
+async def latest_sar_record_for_tree(db: AsyncSession, tree_id: uuid.UUID) -> SatelliteRecord | None:
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(20)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            return row
+    return None
+
+
+async def latest_sar_record_for_fence(db: AsyncSession, fence_id: uuid.UUID) -> PlantationSatelliteRecord | None:
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(20)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            return row
+    return None
+
+
+def serialize_sar_record(rec: SatelliteRecord | PlantationSatelliteRecord) -> dict[str, Any]:
+    meta = rec.raw_metadata or {}
+    analysis = dict(meta.get("sar_analysis") or {})
+    # Backfill legacy/partial sar_analysis blobs from top-level SAR sample fields.
+    for key in (
+        "wetland_probability",
+        "double_bounce_index",
+        "ground_moisture_index",
+        "canopy_ground_mismatch",
+        "risk_level",
+        "ground_status",
+        "summary",
+        "findings",
+        "pipeline",
+    ):
+        if key not in analysis and meta.get(key) is not None:
+            analysis[key] = meta[key]
+    if "findings" not in analysis:
+        analysis["findings"] = []
+    fusion = meta.get("sar_fusion") or {}
+    return {
+        "id": str(rec.id),
+        "provider": rec.provider,
+        "scene_id": rec.scene_id,
+        "scene_acquired_at": rec.scene_acquired_at,
+        "l_band_hh_db": meta.get("l_band_hh_db"),
+        "s_band_hh_db": meta.get("s_band_hh_db"),
+        "double_bounce_index": meta.get("double_bounce_index"),
+        "wetland_probability": meta.get("wetland_probability"),
+        "ground_moisture_index": meta.get("ground_moisture_index"),
+        "canopy_ground_mismatch": meta.get("canopy_ground_mismatch"),
+        "frequency_bands": meta.get("frequency_bands"),
+        "polarimetric_composite": meta.get("polarimetric_composite"),
+        "coherence": meta.get("coherence"),
+        "analysis": analysis,
+        "fusion": fusion if fusion else None,
+    }

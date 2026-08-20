@@ -16,12 +16,14 @@ from app.services.ai.satellite_health_ops import (
     latest_fence_analysis,
     latest_tree_analysis,
 )
+from app.services.platform.governance import assert_org_feature_enabled
 
 router = APIRouter(prefix="/satellite-health", tags=["satellite-health"])
 
 
 @router.post("/trees/{tree_id}", response_model=SatelliteHealthAnalysisOut)
 async def analyze_tree(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteHealthAnalysisOut:
+    await assert_org_feature_enabled(db, user, "satellite")
     tree = await _load_tree(tree_id, user, db)
     try:
         return await analyze_tree_satellite_health(
@@ -33,6 +35,7 @@ async def analyze_tree(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> S
 
 @router.get("/trees/{tree_id}/latest", response_model=SatelliteHealthAnalysisOut)
 async def get_tree_latest(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteHealthAnalysisOut:
+    await assert_org_feature_enabled(db, user, "satellite")
     await _load_tree(tree_id, user, db)
     out = await latest_tree_analysis(db, tree_id)
     if out is None:
@@ -44,6 +47,7 @@ async def get_tree_latest(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Sate
 async def analyze_fence(
     fence_id: uuid.UUID, user: WriteProfessional, db: DB
 ) -> SatelliteHealthAnalysisOut:
+    await assert_org_feature_enabled(db, user, "satellite")
     fence = await _load_fence(fence_id, user, db)
     try:
         area = float(fence.area_ha) if fence.area_ha is not None else None
@@ -56,6 +60,7 @@ async def analyze_fence(
 async def get_fence_latest(
     fence_id: uuid.UUID, user: CurrentUser, db: DB
 ) -> SatelliteHealthAnalysisOut:
+    await assert_org_feature_enabled(db, user, "satellite")
     await _load_fence(fence_id, user, db)
     out = await latest_fence_analysis(db, fence_id)
     if out is None:

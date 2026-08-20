@@ -62,6 +62,7 @@ async def dispatch_alert_channels(
     *,
     title: str,
     message: str,
+    push_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Send alert through configured channels; external channels may be Celery-queued."""
     from app.services.workers.enqueue import try_enqueue
@@ -75,7 +76,35 @@ async def dispatch_alert_channels(
             delivered["in_app"] = {"delivered": True}
             continue
 
-        task_id = try_enqueue(send_notification, str(user.id), channel, title, message)
+        if channel == "push":
+            task_id = try_enqueue(
+                send_notification,
+                str(user.id),
+                channel,
+                title,
+                message,
+                push_data or {},
+            )
+            if task_id:
+                delivered["push"] = {"delivered": True, "queued": True, "task_id": task_id}
+            else:
+                delivered["push"] = await _dispatch_push_inline(
+                    db=None,
+                    user=user,
+                    title=title,
+                    message=message,
+                    push_data=push_data,
+                )
+            continue
+
+        task_id = try_enqueue(
+            send_notification,
+            str(user.id),
+            channel,
+            title,
+            message,
+            push_data or {},
+        )
         if task_id:
             delivered[channel] = {"delivered": True, "queued": True, "task_id": task_id}
             continue
@@ -91,6 +120,48 @@ async def dispatch_alert_channels(
             log.warning("alert.dispatch_failed", channel=channel, error=str(exc))
             delivered[channel] = {"delivered": False, "info": str(exc)}
     return delivered
+
+
+async def _dispatch_push_inline(
+    db: AsyncSession | None,
+    user: User,
+    *,
+    title: str,
+    message: str,
+    push_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.models.user_device import UserDevice
+    from app.services.notifications.push import send_fcm_push
+
+    async def _send(session: AsyncSession) -> dict[str, Any]:
+        res = await session.execute(select(UserDevice).where(UserDevice.user_id == user.id))
+        devices = list(res.scalars().all())
+        if not devices:
+            return {"delivered": False, "info": "no_devices"}
+        sent = 0
+        errors: list[str] = []
+        for device in devices:
+            result = await send_fcm_push(
+                push_token=device.push_token,
+                title=title,
+                body=message,
+                data=push_data,
+            )
+            if result.delivered:
+                sent += 1
+            elif result.info:
+                errors.append(result.info)
+        if sent:
+            return {"delivered": True, "devices": sent, "errors": errors[:3] or None}
+        return {"delivered": False, "info": errors[0] if errors else "push_failed"}
+
+    if db is not None:
+        return await _send(db)
+    async with AsyncSessionLocal() as session:
+        return await _send(session)
 
 
 def should_alert_satellite_health(

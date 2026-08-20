@@ -378,6 +378,7 @@ class ApiClient {
     List<String> photoKeys = const [],
     Map<String, dynamic> metadata = const {},
     String? workAreaId,
+    Map<String, dynamic>? initialMeasurement,
   }) async {
     final r = await _dio.post('/trees', data: {
       'program_code': programCode,
@@ -393,6 +394,7 @@ class ApiClient {
         'work_area_id': workAreaId,
         'plantation_id': workAreaId,
       },
+      if (initialMeasurement != null) 'initial_measurement': initialMeasurement,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -446,6 +448,11 @@ class ApiClient {
     double? accuracy,
     String? remarks,
     String? survivalStatus,
+    double? dbhCm,
+    double? heightM,
+    double? canopyM,
+    String? method,
+    String? instrument,
   }) async {
     final r = await _dio.post('/trees/$treeId/regeotag', data: {
       'latitude': lat,
@@ -453,6 +460,23 @@ class ApiClient {
       if (accuracy != null) 'accuracy_m': accuracy,
       if (remarks != null) 'remarks': remarks,
       if (survivalStatus != null) 'survival_status': survivalStatus,
+      if (dbhCm != null) 'dbh_cm': dbhCm,
+      if (heightM != null) 'height_m': heightM,
+      if (canopyM != null) 'canopy_m': canopyM,
+      if (method != null) 'method': method,
+      if (instrument != null) 'instrument': instrument,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> listTreeMeasurements(
+    String treeId, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final r = await _dio.get('/trees/$treeId/measurements', queryParameters: {
+      'page': page,
+      'page_size': pageSize,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -756,5 +780,41 @@ class ApiClient {
     await _dio.post('/devices/analytics/events', data: {
       'events': events,
     });
+  }
+
+  Future<Map<String, dynamic>> citizenProfile() async {
+    final r = await _dio.get('/citizen/profile');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenStewardship() async {
+    final r = await _dio.get('/citizen/stewardship');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenSignupStart({
+    required String fullName,
+    required String phone,
+    required String password,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post('/citizen/signup/start', data: {
+      'full_name': fullName,
+      'phone': phone,
+      'password': password,
+      if (captchaToken != null) 'captcha_token': captchaToken,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenSignupComplete({
+    required String signupToken,
+    required String code,
+  }) async {
+    final r = await _dio.post('/citizen/signup/complete', data: {
+      'signup_token': signupToken,
+      'code': code,
+    });
+    return Map<String, dynamic>.from(r.data);
   }
 }

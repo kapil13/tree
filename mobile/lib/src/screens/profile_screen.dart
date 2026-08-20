@@ -9,6 +9,7 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
 import '../services/security_services.dart';
+import '../theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -118,22 +119,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
         data: (user) => ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(user['full_name'] as String? ?? 'BYOT user'),
-              subtitle: Text(user['email'] as String? ?? ''),
-            ),
-            if (user['role'] != null)
-              ListTile(
-                leading: const Icon(Icons.badge_outlined),
-                title: const Text('Role'),
-                subtitle: Text(user['role'] as String),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AranyixRadii.card),
+                border: Border.all(color: AranyixColors.border),
+                boxShadow: AranyixShadows.card,
               ),
-            const Divider(),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AranyixColors.forestLight,
+                    foregroundColor: AranyixColors.forest,
+                    child: Text(
+                      ((user['full_name'] as String?) ?? 'A').trim().isEmpty
+                          ? 'A'
+                          : ((user['full_name'] as String).trim()[0].toUpperCase()),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['full_name'] as String? ?? 'Aranyix user',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: AranyixColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user['email'] as String? ?? '',
+                          style: const TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13.5),
+                        ),
+                        if (user['role'] != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AranyixColors.forestLight,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${user['role']}',
+                              style: const TextStyle(
+                                color: AranyixColors.forestDark,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             const Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Text('Registration programs', style: TextStyle(fontWeight: FontWeight.w600)),
+              padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
+              child: Text(
+                'Registration programs',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: AranyixColors.forestDark,
+                ),
+              ),
             ),
             if (_loadingPrograms)
               const Padding(

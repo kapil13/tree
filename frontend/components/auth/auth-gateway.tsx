@@ -1,24 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Eye,
   EyeOff,
   Loader2,
-  Lock,
   Mail,
   Phone,
   ShieldCheck,
 } from "lucide-react";
 import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
-import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
+import { CitizenSignupWizard } from "@/components/auth/citizen-signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import {
   formatPhoneDisplay,
@@ -32,6 +31,9 @@ import { inviteErrorMessage, inviteLandingPath, storePendingInviteToken } from "
 import { useAuth } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
+import { setLocaleCookie } from "@/lib/locale-actions";
+import type { AppLocale } from "@/i18n/request";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { cn } from "@/lib/cn";
 
 type AuthMode = "signin" | "signup";
@@ -47,6 +49,7 @@ function getSafeNextPath(next: string | null): string | null {
 export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("auth");
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
 
@@ -67,7 +70,10 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [method, setMethod] = useState<AuthMethod>(initialMode === "signin" ? "email" : "phone");
+  const [signupVariant, setSignupVariant] = useState<"citizen" | "professional">(
+    inviteToken ? "professional" : "citizen",
+  );
+  const [method, setMethod] = useState<AuthMethod>("email");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -80,6 +86,23 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
+    if (inviteToken) setSignupVariant("professional");
+  }, [inviteToken]);
+
+  function switchMode(next: AuthMode) {
+    setMode(next);
+    setShowForgotPassword(false);
+    setError(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mode", next);
+    router.replace(`/auth?${params.toString()}`, { scroll: false });
+  }
 
   function requireCaptcha(): boolean {
     if (!captchaEnabled) return true;
@@ -123,8 +146,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     return msg;
   }
 
-  const title = mode === "signin" ? "Welcome back" : "Join Aranyix";
-
   const subtitle =
     method === "phone"
       ? otpSent
@@ -135,6 +156,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   async function finishLogin() {
     const me = await auth.me();
     setUser(me);
+    if (me.locale === "en" || me.locale === "hi") {
+      await setLocaleCookie(me.locale as AppLocale);
+    }
     await syncSessionCookieFromToken();
     if (inviteToken) {
       try {
@@ -223,7 +247,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     } catch (err) {
       const msg = errorMessage(err);
       if (msg === "registration_required") {
-        setMode("signup");
+        switchMode("signup");
         setError("No account found for this number. Create an account below.");
       } else {
         setError(msg);
@@ -272,45 +296,51 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     ) : null;
 
   return (
-    <div className="min-h-screen bg-[#f4faf6]">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-6 p-4 lg:grid-cols-[1.05fr_0.95fr] lg:p-6">
-        <AuthBrandPanel />
+    <div className="mx-auto grid h-full w-full max-w-6xl flex-1 grid-cols-1 content-center gap-5 px-4 py-4 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:items-stretch lg:gap-6 lg:py-5 xl:max-w-7xl">
+      <AuthBrandPanel />
 
-        <div className="flex flex-col justify-center">
-          <div className="mb-6 flex items-center justify-between lg:hidden">
-            <AranyixLogo className="h-12 w-auto" />
-            <Link href="/" className="text-sm font-medium text-emerald-800">
-              Home
-            </Link>
-          </div>
+      <div className="flex min-h-0 flex-col justify-center">
+        <div className="mb-3 space-y-1 lg:hidden">
+          <p className="font-display text-2xl font-semibold tracking-tight text-forest-900">Aranyix</p>
+          <p className="text-sm text-stone-500">Intelligence for a thriving planet</p>
+        </div>
 
-          <div className="rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_-24px_rgba(5,46,31,0.22)] backdrop-blur-xl sm:p-8">
+        <div className="flex max-h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-[0_20px_60px_-28px_rgba(5,46,31,0.28)] backdrop-blur-xl">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
             {invitePreview ? <InviteAuthBanner preview={invitePreview} /> : null}
-            <div className="mb-6 flex rounded-2xl bg-stone-100 p-1">
-              {(["signin", "signup"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => {
-                    setMode(tab);
-                    setShowForgotPassword(false);
-                    resetPhoneFlow();
-                    setError(null);
-                  }}
-                  className={cn(
-                    "flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition",
-                    mode === tab
-                      ? "bg-white text-stone-900 shadow-sm"
-                      : "text-stone-500 hover:text-stone-700",
-                  )}
-                >
-                  {tab === "signin" ? "Sign in" : "Create account"}
-                </button>
-              ))}
+
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">
+                {mode === "signin" ? t("signIn") : t("signUp")}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  switchMode(mode === "signin" ? "signup" : "signin");
+                  resetPhoneFlow();
+                  setSignupVariant("citizen");
+                }}
+                className="shrink-0 text-sm font-medium text-forest-700 hover:text-forest-900"
+              >
+                {mode === "signin" ? t("signUp") : t("signIn")}
+              </button>
+            </div>
+            <div className="mb-4">
+              <LanguageSwitcher />
             </div>
 
             {mode === "signup" ? (
-              <div className="mt-6">
+              signupVariant === "citizen" ? (
+                <CitizenSignupWizard
+                  captchaConfig={captchaConfig}
+                  onComplete={async () => {
+                    const refreshed = await auth.me();
+                    setUser(refreshed);
+                    router.push("/trees/new");
+                  }}
+                  onSwitchToFullSignup={() => setSignupVariant("professional")}
+                />
+              ) : (
                 <SignupWizard
                   captchaConfig={captchaConfig}
                   invitePreview={invitePreview}
@@ -332,247 +362,231 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     setUser(refreshed);
                     router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
                   }}
-                  onSwitchToSignIn={() => setMode("signin")}
+                  onSwitchToSignIn={() => switchMode("signin")}
+                  onSwitchToCitizen={() => setSignupVariant("citizen")}
                 />
-              </div>
+              )
             ) : showForgotPassword ? (
-              <div className="mt-6">
-                <ForgotPasswordForm
-                  captchaConfig={captchaConfig}
-                  initialEmail={email}
-                  onBack={() => {
-                    setShowForgotPassword(false);
-                    setError(null);
-                  }}
-                  onComplete={finishLogin}
-                  onError={setError}
-                  setSession={setSession}
-                />
-              </div>
+              <ForgotPasswordForm
+                captchaConfig={captchaConfig}
+                initialEmail={email}
+                onBack={() => {
+                  setShowForgotPassword(false);
+                  setError(null);
+                }}
+                onComplete={finishLogin}
+                onError={setError}
+                setSession={setSession}
+              />
             ) : (
               <>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
-                Secure access
-              </p>
-              <h2 className="text-2xl font-semibold tracking-tight text-stone-950">{title}</h2>
-              <p className="text-sm leading-relaxed text-stone-600">{subtitle}</p>
-            </div>
+                <p className="mb-3 text-sm text-stone-500">{subtitle}</p>
 
-              <div className="mt-6 space-y-5">
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  disabled={busy}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
-                >
-                  <GoogleMark />
-                  Continue with Google
-                </button>
-
-                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-400">
-                  <div className="h-px flex-1 bg-stone-200" />
-                  or
-                  <div className="h-px flex-1 bg-stone-200" />
-                </div>
-
-                <div className="flex rounded-2xl bg-stone-100 p-1">
-                  <MethodTab
-                    active={method === "phone"}
-                    onClick={() => {
-                      setMethod("phone");
-                      resetPhoneFlow();
-                    }}
-                    icon={Phone}
-                    label="Phone OTP"
-                  />
-                  <MethodTab
-                    active={method === "email"}
-                    onClick={() => setMethod("email")}
-                    icon={Mail}
-                    label="Email"
-                  />
-                </div>
-
-                <div className="flex justify-end">
+                <div className="space-y-3">
                   <button
                     type="button"
-                    className="text-sm font-medium text-emerald-800 hover:text-emerald-900"
-                    onClick={openForgotPassword}
+                    onClick={handleGoogle}
+                    disabled={busy}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
                   >
-                    Forgot password?
+                    <GoogleMark />
+                    {t("continueWithGoogle")}
                   </button>
-                </div>
 
-                {method === "phone" ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="label" htmlFor="auth-phone">
-                        Mobile number
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="phone-prefix" aria-hidden>
-                          +91
-                        </div>
-                        <input
-                          id="auth-phone"
-                          name="phone"
-                          className="field-input-flex"
-                          type="tel"
-                          autoComplete="tel-national"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={formatPhoneDisplay(phone)}
-                          onChange={(e) => setPhone(sanitizePhoneDigits(e.target.value))}
-                          placeholder="98765 43210"
-                          disabled={otpSent || busy}
-                        />
-                      </div>
-                      <p className="mt-1.5 text-xs text-stone-500">
-                        10-digit mobile number. Do not include +91.
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-stone-400">
+                    <div className="h-px flex-1 bg-stone-200" />
+                    or
+                    <div className="h-px flex-1 bg-stone-200" />
+                  </div>
 
-                    {otpSent && (
-                      <div>
-                        <label className="label">One-time password</label>
-                        <input
-                          className="field-input text-center text-lg tracking-[0.5em]"
-                          inputMode="numeric"
-                          maxLength={OTP_LENGTH}
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
-                          placeholder="••••••"
-                        />
-                        {devHint && (
-                          <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                            SMS is not enabled yet. Use OTP:{" "}
-                            <span className="font-mono font-bold">{devHint}</span>
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {!otpSent && captchaWidget}
-
+                  <div className="flex gap-4 border-b border-stone-200 text-sm">
                     <button
                       type="button"
-                      disabled={busy || (otpSent ? otp.length < OTP_LENGTH : !isValidIndianMobile(phone))}
-                      className="btn-primary w-full"
-                      onClick={() => (otpSent ? void verifyOtp() : void sendOtp())}
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : otpSent ? (
-                        "Verify & continue"
-                      ) : (
-                        "Send OTP"
+                      onClick={() => {
+                        setMethod("email");
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-medium transition",
+                        method === "email"
+                          ? "border-forest-700 text-forest-800"
+                          : "border-transparent text-stone-500 hover:text-stone-700",
                       )}
+                    >
+                      <Mail className="h-3.5 w-3.5" aria-hidden />
+                      {t("email")}
                     </button>
-
-                    {otpSent && (
-                      <button type="button" className="btn-ghost w-full text-sm" onClick={resetPhoneFlow}>
-                        Change phone number
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMethod("phone");
+                        resetPhoneFlow();
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 border-b-2 px-0.5 pb-2 font-medium transition",
+                        method === "phone"
+                          ? "border-forest-700 text-forest-800"
+                          : "border-transparent text-stone-500 hover:text-stone-700",
+                      )}
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      Phone OTP
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="label">Email address</label>
-                      <input
-                        className="field-input"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@organization.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Password</label>
-                      <div className="relative">
-                        <input
-                          className="field-input pr-12"
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Your password"
-                        />
+
+                  {method === "phone" ? (
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="label mb-1" htmlFor="auth-phone">
+                          Mobile number
+                        </label>
+                        <div className="flex gap-2">
+                          <div className="phone-prefix !rounded-xl" aria-hidden>
+                            +91
+                          </div>
+                          <input
+                            id="auth-phone"
+                            name="phone"
+                            className="field-input-flex !rounded-xl !py-2.5"
+                            type="tel"
+                            autoComplete="tel-national"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={formatPhoneDisplay(phone)}
+                            onChange={(e) => setPhone(sanitizePhoneDigits(e.target.value))}
+                            placeholder="98765 43210"
+                            disabled={otpSent || busy}
+                          />
+                        </div>
+                      </div>
+
+                      {otpSent && (
+                        <div>
+                          <label className="label mb-1">One-time password</label>
+                          <input
+                            className="field-input !rounded-xl !py-2.5 text-center text-lg tracking-[0.5em]"
+                            inputMode="numeric"
+                            maxLength={OTP_LENGTH}
+                            value={otp}
+                            onChange={(e) =>
+                              setOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))
+                            }
+                            placeholder="••••••"
+                          />
+                          {devHint && (
+                            <p className="mt-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+                              SMS is not enabled yet. Use OTP:{" "}
+                              <span className="font-mono font-bold">{devHint}</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!otpSent && captchaWidget}
+
+                      <button
+                        type="button"
+                        disabled={
+                          busy || (otpSent ? otp.length < OTP_LENGTH : !isValidIndianMobile(phone))
+                        }
+                        className="btn-primary w-full"
+                        onClick={() => (otpSent ? void verifyOtp() : void sendOtp())}
+                      >
+                        {busy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : otpSent ? (
+                          "Verify & continue"
+                        ) : (
+                          "Send OTP"
+                        )}
+                      </button>
+
+                      {otpSent && (
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400"
-                          onClick={() => setShowPassword((v) => !v)}
+                          className="btn-ghost w-full text-sm"
+                          onClick={resetPhoneFlow}
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          Change phone number
                         </button>
-                      </div>
+                      )}
                     </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="label mb-1">{t("email")}</label>
+                        <input
+                          className="field-input !rounded-xl !py-2.5"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@organization.com"
+                        />
+                      </div>
+                      <div>
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <label className="label mb-0">{t("password")}</label>
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-emerald-800 hover:text-emerald-900"
+                            onClick={openForgotPassword}
+                          >
+                            {t("forgotPassword")}
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            className="field-input !rounded-xl !py-2.5 pr-11"
+                            type={showPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Your password"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
 
-                    {captchaWidget}
+                      {captchaWidget}
 
-                    <button
-                      type="button"
-                      disabled={busy}
-                      className="btn-primary w-full"
-                      onClick={() => void emailSignIn()}
-                    >
-                      Sign in
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-
-              </div>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="btn-primary w-full"
+                        onClick={() => void emailSignIn()}
+                      >
+                        {t("signIn")}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 
             {error && (
-              <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {error}
               </div>
             )}
-
-            <div className="mt-6 flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-900">
-              <ShieldCheck className="h-4 w-4 shrink-0" />
-              <span>
-                Encrypted sign-in · Multi-program access · Built for field teams and compliance workflows
-              </span>
-            </div>
           </div>
 
-          <p className="mt-4 text-center text-xs text-stone-500">
-            <Lock className="mr-1 inline h-3.5 w-3.5" />
-            DATA · INTELLIGENCE · NATURE · FUTURE
-          </p>
+          <div className="flex shrink-0 items-center gap-2 border-t border-emerald-100/80 bg-emerald-50/50 px-4 py-2 text-[11px] text-emerald-900/80">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+            <span>Encrypted sign-in · Field teams &amp; compliance workflows</span>
+          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function MethodTab({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Phone;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-        active ? "bg-white text-stone-900 shadow-sm" : "text-stone-500",
-      )}
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-    </button>
   );
 }
 

@@ -26,9 +26,13 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((item) => {
                   const link = linkProps(item);
+                  const href =
+                    link.href === "/dashboard" || link.href.startsWith("/dashboard?")
+                      ? "/auth?mode=signin&next=/dashboard"
+                      : link.href;
                   return (
                     <li key={`${col.title}-${link.label}`}>
-                      <Link href={link.href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
+                      <Link href={href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
                         {link.label}
                       </Link>
                     </li>
@@ -39,11 +43,24 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-emerald-100/55 sm:flex-row">
-          <span>
-            © {year} {footer.copyright}
-          </span>
-          <span className="text-xs uppercase tracking-[0.18em]">{footer.legal_note}</span>
+        <div className="mt-12 border-t border-white/10 pt-6">
+          <div className="flex flex-col items-center justify-between gap-3 text-sm text-emerald-100/55 sm:flex-row">
+            <span>
+              © {year} {footer.copyright}
+            </span>
+            <span className="text-xs uppercase tracking-[0.18em]">{footer.legal_note}</span>
+          </div>
+          <p className="mt-4 text-center text-xs text-emerald-100/50 sm:text-left">
+            A product developed by{" "}
+            <a
+              href="https://www.axentis.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-emerald-100/70 underline decoration-emerald-100/25 underline-offset-2 transition hover:text-lime-300"
+            >
+              Axentis Technologies Pvt Ltd
+            </a>
+          </p>
         </div>
       </div>
     </footer>

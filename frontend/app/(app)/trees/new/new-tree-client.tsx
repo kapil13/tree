@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Settings2 } from "lucide-react";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
+import { ProjectTreeSchemeContext } from "@/components/trees/project-tree-scheme-context";
+import { SchemeProjectRequiredBanner } from "@/components/trees/scheme-project-required-banner";
 import { buildInitialValues, splitPayload } from "@/lib/registration";
 import {
   GOVERNMENT_PROGRAM_CODE,
@@ -13,6 +15,7 @@ import {
   type GovernmentPlantationCategory,
 } from "@/lib/government-plantation-categories";
 import {
+  centralSchemes,
   errorMessage,
   plantingPrograms,
   plantingProjects,
@@ -22,6 +25,10 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp } from "@/lib/nav-access";
+import { schemeByCode } from "@/lib/schemes";
+import { applyProjectTreePrefill } from "@/lib/tree-registration-prefill";
+
+const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
 export function NewTreePageClient() {
   const router = useRouter();
@@ -34,6 +41,12 @@ export function NewTreePageClient() {
   const { data: enrolledPrograms = [], isLoading } = useQuery({
     queryKey: ["planting-programs", "enrolled"],
     queryFn: () => plantingPrograms.enrolled(),
+  });
+
+  const { data: schemes = [] } = useQuery({
+    queryKey: ["central-schemes"],
+    queryFn: () => centralSchemes.list(),
+    enabled: !!projectIdParam,
   });
 
   const { data: project } = useQuery({
@@ -63,6 +76,18 @@ export function NewTreePageClient() {
     [enrolledPrograms, programCode],
   );
 
+  const scheme = useMemo(
+    () => schemeByCode(schemes, project?.scheme_code),
+    [schemes, project?.scheme_code],
+  );
+
+  const hasSchemePrograms = useMemo(
+    () => enrolledPrograms.some((p) => SCHEME_PROGRAM_CODES.has(p.code)),
+    [enrolledPrograms],
+  );
+
+  const showSchemeProjectWarning = !projectIdParam && hasSchemePrograms;
+
   useEffect(() => {
     if (project?.program_code) {
       setProgramCode(project.program_code);
@@ -83,8 +108,11 @@ export function NewTreePageClient() {
         ...buildInitialValues(activeProgram.form_schema),
         ...current,
       };
-      if (activeProgram.code === GOVERNMENT_PROGRAM_CODE && category) {
+      if (activeProgram.code === GOVERNMENT_PROGRAM_CODE && category && !project?.scheme_code) {
         base = applyGovernmentCategoryToValues(base, category);
+      }
+      if (project) {
+        base = applyProjectTreePrefill(base, project);
       }
       return base;
     });
@@ -92,7 +120,15 @@ export function NewTreePageClient() {
     setPhotoPreviews([]);
     setError(null);
     setCompliancePreview(null);
-  }, [activeProgram?.code, project?.metadata?.plantation_category]);
+  }, [
+    activeProgram?.code,
+    project?.id,
+    project?.scheme_code,
+    project?.metadata?.plantation_category,
+    project?.code,
+    project?.metadata,
+    project?.active_standard,
+  ]);
 
   function geo() {
     if (!navigator.geolocation || !activeProgram) return;
@@ -146,6 +182,10 @@ export function NewTreePageClient() {
 
   async function submit() {
     if (!activeProgram) return;
+    if (project && requiresWorkArea && !workAreaId) {
+      setError("Select a work area for this project before registering a tree.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -196,37 +236,28 @@ export function NewTreePageClient() {
 
   return (
     <div className="space-y-4">
-      {(project || workAreas.length > 0) && (
-        <div className="card mx-auto max-w-3xl space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                Project context
-              </p>
-              {project ? (
-                <p className="font-medium">
-                  <Link href={`/projects/${project.id}`} className="text-forest-800 hover:underline">
-                    {project.name}
-                  </Link>{" "}
-                  <span className="text-sm text-stone-500">({project.compliance_mode})</span>
-                </p>
-              ) : (
-                <p className="text-sm text-stone-600">Select a work area for compliant planting.</p>
-              )}
-            </div>
-            {project && (
-              <Link href={`/projects/${project.id}`} className="text-sm text-forest-700 hover:underline">
-                Open project workspace
-              </Link>
-            )}
-          </div>
+      {showSchemeProjectWarning && <SchemeProjectRequiredBanner />}
+
+      {project && (
+        <>
+          <ProjectTreeSchemeContext
+            project={project}
+            scheme={scheme}
+            workAreaId={workAreaId}
+            workAreaCount={workAreas.length}
+            requiresWorkArea={requiresWorkArea}
+            compliancePreview={compliancePreview}
+          />
           {workAreas.length > 0 && (
-            <div>
-              <label className="kpi-label">Work area</label>
+            <div className="card mx-auto max-w-3xl">
+              <label className="kpi-label">Work area *</label>
               <select
                 className="input mt-1"
                 value={workAreaId ?? ""}
-                onChange={(e) => setWorkAreaId(e.target.value || null)}
+                onChange={(e) => {
+                  setWorkAreaId(e.target.value || null);
+                  setCompliancePreview(null);
+                }}
               >
                 <option value="">Select work area…</option>
                 {workAreas.map((area) => (
@@ -237,44 +268,21 @@ export function NewTreePageClient() {
               </select>
             </div>
           )}
-          {requiresWorkArea && !workAreaId && (
-            <p className="text-sm text-amber-800">
-              This project requires planting inside a defined work area.{" "}
-              <Link href={`/projects/${projectIdParam}`} className="underline">
-                Draw one on the map
-              </Link>{" "}
-              first.
-            </p>
-          )}
-          {compliancePreview && (
-            <div
-              className={`rounded-lg border px-3 py-2 text-sm ${
-                compliancePreview.passed
-                  ? "border-green-200 bg-green-50 text-green-900"
-                  : "border-amber-200 bg-amber-50 text-amber-900"
-              }`}
-            >
-              {compliancePreview.passed ? "Location passes compliance checks." : "Compliance notes:"}
-              {compliancePreview.chainage_km != null && (
-                <span className="ml-2 text-xs">Chainage ~{compliancePreview.chainage_km} km</span>
-              )}
-              <ul className="mt-1 list-disc pl-4 text-xs">
-                {compliancePreview.issues.map((issue, idx) => (
-                  <li key={idx}>{issue.message}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        </>
       )}
 
       <RegistrationWizard
         programs={enrolledPrograms}
         programCode={programCode}
         onProgramChange={setProgramCode}
+        lockProgram={!!project}
+        skipGovCategory={!!project?.scheme_code}
         schema={activeProgram.form_schema}
         values={values}
-        onValuesChange={setValues}
+        onValuesChange={(next) => {
+          setValues(next);
+          setCompliancePreview(null);
+        }}
         photoKeys={photoKeys}
         photoPreviews={photoPreviews}
         onPhotoKeysChange={setPhotoKeys}
@@ -284,7 +292,7 @@ export function NewTreePageClient() {
         locating={locating}
         busy={busy}
         error={error}
-        readOnly={!canWrite}
+        readOnly={!canWrite || (requiresWorkArea && !!project && !workAreaId)}
         onSubmit={submit}
       />
     </div>

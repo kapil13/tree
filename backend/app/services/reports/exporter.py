@@ -370,12 +370,16 @@ def render_compliance_mrv_pdf(ctx: dict[str, Any]) -> bytes:
         )
     story.append(Spacer(1, 6 * mm))
 
+    monitoring = ctx.get("monitoring") or {}
     kpi_rows = [
         ["Work areas", summary.get("work_area_count", 0)],
         ["Trees registered", summary.get("tree_count", 0)],
         ["Open violations", summary.get("open_violations", 0)],
         ["Resolved violations", summary.get("resolved_violations", 0)],
         ["Native species %", summary.get("native_species_pct") or "—"],
+        ["SAR work areas scanned", monitoring.get("sar_work_areas_scanned", "—")],
+        ["SAR avg Forest Integrity", monitoring.get("sar_avg_forest_integrity") or "—"],
+        ["SAR ground-risk sites", monitoring.get("sar_ground_risk_sites", "—")],
     ]
     t = Table(kpi_rows, colWidths=[80 * mm, 80 * mm])
     t.setStyle(

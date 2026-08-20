@@ -106,6 +106,7 @@ class Role(str, enum.Enum):
     GOVERNMENT = "government"
     FIELD_WORKER = "field_worker"
     FIELD_SUPERVISOR = "field_supervisor"
+    VERIFIER = "verifier"
     ADMIN = "admin"
 
 
@@ -114,6 +115,9 @@ class Permission(str, enum.Enum):
     TREE_READ = "tree:read"
     TREE_UPDATE = "tree:update"
     TREE_DELETE = "tree:delete"
+    MEASUREMENT_READ = "measurement:read"
+    MEASUREMENT_ATTEST = "measurement:attest"
+    MEASUREMENT_REJECT = "measurement:reject"
     ANALYSIS_TRIGGER = "analysis:trigger"
     SATELLITE_TRIGGER = "satellite:trigger"
     REPORT_GENERATE = "report:generate"
@@ -147,6 +151,14 @@ ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     },
     Role.FIELD_SUPERVISOR: _BASE
     | {Permission.SATELLITE_TRIGGER, Permission.REPORT_GENERATE, Permission.AUDIT_READ},
+    Role.VERIFIER: {
+        Permission.TREE_READ,
+        Permission.MEASUREMENT_READ,
+        Permission.MEASUREMENT_ATTEST,
+        Permission.MEASUREMENT_REJECT,
+        Permission.REPORT_GENERATE,
+        Permission.AUDIT_READ,
+    },
     Role.ADMIN: {Permission.ADMIN_ALL},
 }
 

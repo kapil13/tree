@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
+import { SchemeMetadataForm } from "@/components/projects/scheme-metadata-form";
+import { ProjectRuleOverridePanel } from "@/components/projects/project-rule-override-panel";
 
 export function ProjectSettingsPanel({ project }: { project: PlantingProject }) {
   const qc = useQueryClient();
@@ -136,6 +138,10 @@ export function ProjectSettingsPanel({ project }: { project: PlantingProject }) 
           </button>
         </div>
       </div>
+
+      <SchemeMetadataForm project={project} />
+
+      <ProjectRuleOverridePanel project={project} />
 
       <div className="card space-y-3">
         <h2 className="text-sm font-medium">Active compliance standard</h2>

@@ -21,4 +21,6 @@ class AuditLogOut(BaseModel):
     ip: str | None
     user_agent: str | None
     diff: dict[str, Any] | None
+    prev_hash: str
+    record_hash: str
     created_at: datetime

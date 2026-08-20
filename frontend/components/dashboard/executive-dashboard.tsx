@@ -16,12 +16,17 @@ import {
   Radar,
   Satellite,
   ShieldCheck,
+  ShieldAlert,
   Sparkles,
   Sprout,
   TreePine,
   TrendingUp,
   Wallet,
+  ClipboardList,
+  FolderKanban,
 } from "lucide-react";
+import { ChartDataTable } from "@/components/dashboard/chart-data-table";
+import { useTranslations } from "next-intl";
 import {
   Area,
   AreaChart,
@@ -41,9 +46,14 @@ import {
 import { TreesMap } from "@/components/trees-map";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
+import { EmptyState } from "@/components/ui/empty-state";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
+import {
+  SarIntelligencePanel,
+  SarIntegrityTrendPreview,
+} from "@/components/dashboard/sar-intelligence-panel";
 import {
   CHART_COLORS,
   fmtCompact,
@@ -61,6 +71,7 @@ import {
   intelligence,
   plantationFences,
   plantingPrograms,
+  plantingProjects,
   trees,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
@@ -87,10 +98,11 @@ function DashboardSkeleton() {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
+  const t = useTranslations("dashboard");
   const canWrite = canWriteInApp(user);
   const canReport = canGenerateReports(user);
 
-  const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ] = useQueries({
+  const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ, fieldOpsQ, monitoringQ] = useQueries({
     queries: [
       { queryKey: scopedKey(user, "dashboard"), queryFn: dashboard.get },
       { queryKey: scopedKey(user, "alerts"), queryFn: async () => (await alerts.list()).items },
@@ -98,6 +110,14 @@ export function ExecutiveDashboard() {
       { queryKey: scopedKey(user, "plantation-fences"), queryFn: () => plantationFences.list({ page_size: 20 }) },
       { queryKey: scopedKey(user, "bio-summary"), queryFn: () => bioacoustic.summary() },
       { queryKey: scopedKey(user, "program-memberships"), queryFn: () => plantingPrograms.memberships() },
+      {
+        queryKey: scopedKey(user, "field-ops-summary"),
+        queryFn: () => plantingProjects.fieldOpsSummary(),
+      },
+      {
+        queryKey: scopedKey(user, "monitoring-summary"),
+        queryFn: () => plantingProjects.monitoringSummary(),
+      },
     ],
   });
 
@@ -131,9 +151,12 @@ export function ExecutiveDashboard() {
 
   if (dashQ.error) {
     return (
-      <div className="dash-panel border-rose-200 bg-rose-50 text-rose-800">
-        Failed to load dashboard. Check your session and API connectivity.
-      </div>
+      <EmptyState
+        icon={AlertTriangle}
+        title="Dashboard unavailable"
+        description="Failed to load portfolio data. Check your session and API connectivity."
+        action={{ label: "Retry", onClick: () => dashQ.refetch() }}
+      />
     );
   }
 
@@ -144,6 +167,16 @@ export function ExecutiveDashboard() {
   const criticalAlerts = alertItems.filter(
     (a) => a.severity === "critical" || a.severity === "high",
   );
+  const fieldOps = fieldOpsQ.data;
+  const monitoring = monitoringQ.data;
+  const openViolations = monitoring?.open_violations ?? fieldOps?.open_violations ?? 0;
+  const sitesNeedingScan =
+    monitoring?.stale_satellite_work_areas ??
+    monitoring?.work_area_monitoring?.filter(
+      (wa) => wa.days_since_scan == null || (wa.days_since_scan ?? 0) >= 14,
+    ).length ??
+    0;
+  const sarIntegrity = monitoring?.sar_avg_forest_integrity;
   const fenceItems = fencesQ.data?.items ?? [];
   const bio = bioQ.data;
   const enrolledPrograms = programsQ.data?.enrolled ?? [];
@@ -162,82 +195,211 @@ export function ExecutiveDashboard() {
     .slice(0, 6);
   const healthTotal = data.health_distribution.reduce((sum, d) => sum + d.value, 0);
   const greeting = getGreeting();
+  const firstName = user?.full_name?.split(" ")[0] || "steward";
+
+  type PriorityItem = {
+    id: string;
+    title: string;
+    detail: string;
+    href: string;
+    tone: "critical" | "warn" | "info";
+  };
+  const priorityItems: PriorityItem[] = [];
+  if (openViolations > 0) {
+    priorityItems.push({
+      id: "violations",
+      title: `${openViolations} open compliance item${openViolations === 1 ? "" : "s"}`,
+      detail: "Resolve violations before the next audit window",
+      href: "/field-ops#attention",
+      tone: "critical",
+    });
+  }
+  if (unreadAlerts.length > 0) {
+    priorityItems.push({
+      id: "alerts",
+      title: `${unreadAlerts.length} unread alert${unreadAlerts.length === 1 ? "" : "s"}`,
+      detail: unreadAlerts[0]?.title ?? "Review your alert inbox",
+      href: "/alerts",
+      tone: criticalAlerts.length > 0 ? "critical" : "warn",
+    });
+  }
+  if (sitesNeedingScan > 0) {
+    priorityItems.push({
+      id: "scans",
+      title: `${sitesNeedingScan} site${sitesNeedingScan === 1 ? "" : "s"} need satellite refresh`,
+      detail: "NDVI or SAR monitoring is stale or missing",
+      href: "/satellite",
+      tone: "warn",
+    });
+  }
+  if (brief?.priority_alert && priorityItems.length < 3) {
+    priorityItems.push({
+      id: "brief",
+      title: brief.priority_alert.title,
+      detail: brief.priority_alert.work_area_name || "From executive intelligence brief",
+      href: "/portfolio-health?tab=threats",
+      tone: "info",
+    });
+  }
 
   return (
     <div className="dash-shell space-y-6">
       <section className="dash-hero">
-        <div className="dash-hero-header">
-          <div className="dash-live-pill">
-            <span className="dash-live-dot" />
-            Portfolio overview
-          </div>
-          <h1 className="dash-hero-title mt-4">
-            {greeting}, {user?.full_name?.split(" ")[0] || "steward"}
-          </h1>
-          <p className="dash-hero-copy">
-            Carbon, canopy health, biodiversity, and compliance evidence across your portfolio.
-          </p>
-        </div>
-
-        <div className="dash-hero-kpi-row">
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">{fmtCompact(k.total_trees)}</p>
-            <p className="dash-hero-stat-label">Trees in portfolio</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
-            <p className="dash-hero-stat-label">CO₂e stored (est.)</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">{unreadAlerts.length}</p>
-            <p className="dash-hero-stat-label">Unread alerts</p>
-          </div>
-          <div className="dash-hero-stat">
-            <p className="dash-hero-stat-value">
-              {ecosystem ? ecosystem.ecosystem_health_score : Math.round(k.pct_healthy)}
-            </p>
-            <p className="dash-hero-stat-label">
-              {ecosystem ? "Ecosystem score" : "Health index"}
-            </p>
-          </div>
-        </div>
-
-        {brief && (
-          <div className="dash-hero-insight">
-            <div className="dash-hero-insight-title">
-              <Sparkles className="h-4 w-4 text-lime-300" />
-              {brief.headline}
+        <div className="dash-hero-grid">
+          <div className="dash-hero-header">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="dash-live-pill">
+                <span className="dash-live-dot" />
+                Executive command center
+              </div>
+              {enrolledPrograms.slice(0, 2).map((p) => (
+                <span key={p.code} className="dash-program-chip">
+                  {p.name}
+                </span>
+              ))}
             </div>
-            {brief.lines.length > 0 && (
-              <ul className="dash-hero-insight-lines">
-                {brief.lines.slice(0, 2).map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            )}
-            {brief.priority_alert && (
-              <Link href="/alerts" className="dash-hero-priority">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                {brief.priority_alert.title}
-                <span className="opacity-70">· {brief.priority_alert.work_area_name}</span>
-              </Link>
-            )}
-          </div>
-        )}
+            <h1 className="dash-hero-title mt-4 font-display">
+              {greeting}, {firstName}
+            </h1>
+            <p className="dash-hero-copy">
+              {brief?.headline ||
+                "Carbon, canopy health, SAR integrity, biodiversity, and compliance evidence — unified for your portfolio."}
+            </p>
 
-        {enrolledPrograms.length > 0 && (
-          <div className="relative mt-4 flex flex-wrap gap-2">
-            {enrolledPrograms.map((p) => (
-              <span key={p.code} className="dash-program-chip">
-                {p.name}
-              </span>
-            ))}
+            {brief && (
+              <div className="dash-hero-insight">
+                <div className="dash-hero-insight-title">
+                  <Sparkles className="h-4 w-4 text-lime-300" />
+                  Intelligence brief
+                </div>
+                {brief.lines.length > 0 && (
+                  <ul className="dash-hero-insight-lines">
+                    {brief.lines.slice(0, 3).map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                )}
+                {brief.priority_alert && (
+                  <Link href="/alerts" className="dash-hero-priority">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {brief.priority_alert.title}
+                    <span className="opacity-70">· {brief.priority_alert.work_area_name}</span>
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          <div className="dash-hero-stats">
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtCompact(k.total_trees)}</p>
+              <p className="dash-hero-stat-label">Trees registered</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
+              <p className="dash-hero-stat-label">CO₂e stored (est.)</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">{fmtPct(k.pct_healthy)}</p>
+              <p className="dash-hero-stat-label">Canopy health</p>
+            </div>
+            <div className="dash-hero-stat">
+              <p className="dash-hero-stat-value">
+                {sarIntegrity != null ? Math.round(sarIntegrity) : fmtPct(k.pct_satellite_verified)}
+              </p>
+              <p className="dash-hero-stat-label">
+                {sarIntegrity != null ? "Forest integrity" : "Satellite verified"}
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <div className="dash-command-strip">
+        {[
+          {
+            label: "Active projects",
+            value: fmtNum(fieldOps?.project_count ?? monitoring?.project_count ?? 0),
+            href: "/projects",
+            icon: FolderKanban,
+          },
+          {
+            label: "Open violations",
+            value: fmtNum(openViolations),
+            href: "/field-ops",
+            icon: ShieldAlert,
+            warn: openViolations > 0,
+          },
+          {
+            label: "Unread alerts",
+            value: fmtNum(unreadAlerts.length),
+            href: "/alerts",
+            icon: Bell,
+            warn: unreadAlerts.length > 0,
+          },
+          {
+            label: "Sites monitored",
+            value: fmtNum(fenceItems.length),
+            href: "/satellite",
+            icon: Satellite,
+          },
+          {
+            label: "Survival due",
+            value: fmtNum(fieldOps?.survival_due ?? 0),
+            href: "/field-ops",
+            icon: ClipboardList,
+            warn: (fieldOps?.survival_due ?? 0) > 0,
+          },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={cn("dash-command-item", item.warn && "dash-command-item--warn")}
+          >
+            <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+            <div>
+              <p className="dash-command-value">{item.value}</p>
+              <p className="dash-command-label">{item.label}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       <DataTrustBanner variant="strip" />
       <OrgAdminChecklist compact />
+
+      {priorityItems.length > 0 ? (
+        <section className="dash-panel dash-panel--priority">
+          <div className="dash-panel-head">
+            <div>
+              <h2 className="dash-panel-title">Today&apos;s priorities</h2>
+              <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
+            </div>
+            <Link href="/portfolio-health" className="dash-link">
+              Full monitoring <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <ul className="mt-4 grid gap-2 lg:grid-cols-3">
+            {priorityItems.slice(0, 3).map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "dash-priority-card",
+                    item.tone === "critical" && "dash-priority-card--critical",
+                    item.tone === "warn" && "dash-priority-card--warn",
+                    item.tone === "info" && "dash-priority-card--info",
+                  )}
+                >
+                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
+                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
+                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <MetricCard
@@ -283,6 +445,13 @@ export function ExecutiveDashboard() {
           sub={`${bio?.threatened_species_count ?? 0} threatened species`}
           accent="green"
         />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-12">
+          <SarIntelligencePanel />
+          {primaryFenceId ? <SarIntegrityTrendPreview fenceId={primaryFenceId} /> : null}
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-12">
@@ -365,6 +534,17 @@ export function ExecutiveDashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          <ChartDataTable
+            caption={t("chartDataTable")}
+            columns={[
+              { key: "label", label: t("month") },
+              { key: "value", label: t("value") },
+            ]}
+            rows={data.carbon_growth.map((p) => ({
+              label: p.label,
+              value: +(p.value / 1000).toFixed(2),
+            }))}
+          />
         </div>
 
         <div className="dash-panel xl:col-span-3">

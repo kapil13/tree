@@ -27,6 +27,8 @@ class AuditLog(UUIDPKMixin, Base):
     ip: Mapped[str | None] = mapped_column(INET)
     user_agent: Mapped[str | None] = mapped_column(Text)
     diff: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    prev_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    record_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

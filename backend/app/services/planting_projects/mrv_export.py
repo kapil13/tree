@@ -12,7 +12,10 @@ from app.models.plantation_fence import PlantationFence
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
+from app.services.planting_projects.rule_engine import get_effective_rules
 from app.services.planting_projects.service import get_active_standard
+from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.registry import get_scheme
 
 
 def _segment_report(
@@ -44,6 +47,35 @@ def _segment_report(
             "block_count": len(blocks),
             "tree_count": len(trees),
         }
+    if segment == "nagar_van_urban":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "urban_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "scheme_tree_target": 10000,
+        }
+    if segment == "sahakar_van_coop":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        total_acres = round(total_ha * 2.471, 2) if total_ha else None
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "cooperative_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "total_area_acres": total_acres,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "plantation_methods": ["miyawaki", "conventional", "mixed"],
+            "reference_site_acres": 64,
+        }
     return {"type": "general", "tree_count": len(trees)}
 
 
@@ -51,7 +83,7 @@ async def build_project_mrv_context(
     db: AsyncSession, project: PlantingProject
 ) -> dict[str, Any]:
     standard = await get_active_standard(db, project)
-    rules = standard.rules if standard else {}
+    rules = await get_effective_rules(db, standard, project_id=project.id if project else None)
 
     work_areas_res = await db.execute(
         select(PlantationFence)
@@ -146,6 +178,12 @@ async def build_project_mrv_context(
     total_trees = len(trees)
     native_pct = round((native_count / total_trees) * 100, 1) if total_trees else None
 
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = get_scheme(scheme_code) if scheme_code else None
+    meta = getattr(project, "metadata_", None) or {}
+    scheme_refs = meta.get("scheme_refs") if isinstance(meta.get("scheme_refs"), dict) else {}
+    scheme_kpis = await compute_scheme_kpis(db, project)
+
     return {
         "project": {
             "code": project.code,
@@ -154,8 +192,19 @@ async def build_project_mrv_context(
             "compliance_mode": project.compliance_mode,
             "status": project.status,
             "target_tree_count": project.target_tree_count,
+            "scheme_code": scheme_code,
             "standard_name": standard.name if standard else None,
             "standard_template": standard.template_code if standard else None,
+        },
+        "scheme": {
+            "code": scheme["code"] if scheme else None,
+            "label": scheme["label"] if scheme else None,
+            "ministry": scheme["ministry"] if scheme else None,
+            "refs": scheme_refs,
+            "funding_sources": meta.get("funding_sources") or [],
+            "convergence": meta.get("convergence") or [],
+            "kpi_targets": dict(scheme.get("kpi_targets") or {}) if scheme else {},
+            "kpis": scheme_kpis,
         },
         "rules_summary": {
             "spacing_m": rules.get("spacing_m"),
@@ -167,6 +216,12 @@ async def build_project_mrv_context(
             "min_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("min"),
             "layout_pattern": rules.get("layout_pattern"),
             "chainage_enabled": rules.get("chainage_enabled"),
+            "min_trees_project": rules.get("min_trees_project"),
+            "work_area_geometry": rules.get("work_area_geometry"),
+            "block_types": rules.get("block_types"),
+            "plantation_methods": rules.get("plantation_methods"),
+            "rainwater_harvest_required": rules.get("rainwater_harvest_required"),
+            "site_area_acres_reference": rules.get("site_area_acres_reference"),
         },
         "segment_report": _segment_report(project.segment, work_area_rows, tree_rows, native_pct),
         "summary": {

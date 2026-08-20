@@ -1,18 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
+import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
+import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
+import { Bird, Dna, FileText, Leaf } from "lucide-react";
 
-const KIND_LABELS: Record<string, string> = {
-  carbon: "Carbon stock",
-  tree: "Tree inventory",
-  biodiversity: "Biodiversity",
-  esg: "ESG summary",
-  plantation: "Plantation site",
-};
+type ReportTab = "standard" | "brsr" | "iso14064" | "tnfd" | "ghg" | "darwin";
+
+const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
+  {
+    value: "carbon",
+    label: "Carbon stock",
+    description: "Estimated biomass and CO₂e across your trees.",
+  },
+  {
+    value: "tree",
+    label: "Tree inventory",
+    description: "Species, survival, and geotag status for compliance packs.",
+  },
+  {
+    value: "biodiversity",
+    label: "Biodiversity",
+    description: "Soundscape assessments and species richness for a site.",
+    needsFence: true,
+  },
+  {
+    value: "esg",
+    label: "ESG summary",
+    description: "Combined carbon, biodiversity, and NDVI narrative for stakeholders.",
+    needsFence: true,
+  },
+  {
+    value: "plantation",
+    label: "Plantation site",
+    description: "Fence area, latest greenness, and site-level activity.",
+    needsFence: true,
+  },
+];
 
 type ReportRow = {
   id: string;
@@ -25,7 +57,9 @@ type ReportRow = {
 export default function ReportsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const tr = useTranslations("reports");
   const canGenerate = canGenerateReports(user);
+  const [tab, setTab] = useState<ReportTab>("standard");
   const [kind, setKind] = useState("carbon");
   const [format, setFormat] = useState<"pdf" | "xlsx">("pdf");
   const [fenceId, setFenceId] = useState("");
@@ -48,7 +82,10 @@ export default function ReportsPage() {
     queryFn: async () => (await api.get<ReportRow[]>("/v1/reports")).data,
   });
 
-  const needsFence = kind === "biodiversity" || kind === "plantation" || kind === "esg";
+  const selectedType = REPORT_TYPES.find((t) => t.value === kind) ?? REPORT_TYPES[0]!;
+  const needsFence = Boolean(selectedType.needsFence);
+  const kindLabel = (value: string) =>
+    REPORT_TYPES.find((t) => t.value === value)?.label || value;
 
   async function queue() {
     setBusy(true);
@@ -67,55 +104,124 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Reports</h1>
-      <p className="text-sm text-stone-600">
-        {canGenerate
-          ? "Carbon, biodiversity (bioacoustic + NDVI), and combined ESG reports."
-          : "Download compliance and portfolio reports prepared by your program team."}
-      </p>
-      {canGenerate ? (
-      <div className="card flex flex-wrap items-end gap-3">
-        <div>
-          <label className="label">Kind</label>
-          <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
-            {Object.entries(KIND_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">Format</label>
-          <select
-            className="input"
-            value={format}
-            onChange={(e) => setFormat(e.target.value as "pdf" | "xlsx")}
+      <PageHeader
+        title={tr("title")}
+        description={
+          canGenerate
+            ? "Generate carbon, inventory, biodiversity, and ESG exports for your portfolio."
+            : "Download compliance and portfolio reports prepared by your program team."
+        }
+      />
+
+      <div className="flex flex-wrap gap-2 border-b border-stone-200 pb-2" role="tablist" aria-label={tr("title")}>
+        {(
+          [
+            ["standard", tr("standardTab")],
+            ["brsr", tr("brsrTab")],
+            ["iso14064", tr("iso14064Tab")],
+            ["tnfd", tr("tnfdTab")],
+            ["ghg", tr("ghgTab")],
+            ["darwin", tr("darwinTab")],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+              tab === id ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+            }`}
+            onClick={() => setTab(id)}
           >
-            <option value="pdf">PDF</option>
-            <option value="xlsx">Excel</option>
-          </select>
-        </div>
-        {needsFence && (
-          <div>
-            <label className="label">Plantation site</label>
-            <select className="input" value={fenceId} onChange={(e) => setFenceId(e.target.value)}>
-              <option value="">Select site…</option>
-              {fences?.items.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        <button className="btn-primary" onClick={() => void queue()} disabled={busy || (needsFence && !fenceId)}>
-          {busy ? "Generating…" : "Generate report"}
-        </button>
-        <button className="btn-secondary" onClick={() => void refetch()}>
-          Refresh
-        </button>
+            {label}
+          </button>
+        ))}
       </div>
+
+      {tab === "darwin" ? (
+        <FrameworkExportPanel
+          title={tr("darwinTitle")}
+          description={tr("darwinDescription")}
+          endpoint="/v1/reports/darwin-core"
+          filenamePrefix="darwin-core"
+          projectRequired
+          formats={["zip", "json"]}
+          icon={<Dna className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "ghg" ? (
+        <FrameworkExportPanel
+          title={tr("ghgTitle")}
+          description={tr("ghgDescription")}
+          endpoint="/v1/reports/ghg-protocol"
+          filenamePrefix="ghg-land-sector"
+          icon={<Leaf className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "tnfd" ? (
+        <FrameworkExportPanel
+          title={tr("tnfdTitle")}
+          description={tr("tnfdDescription")}
+          endpoint="/v1/reports/tnfd"
+          filenamePrefix="tnfd-leap"
+          icon={<Bird className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "iso14064" ? (
+        <Iso14064ExportPanel />
+      ) : tab === "brsr" ? (
+        <BrsrExportPanel />
+      ) : (
+        <>
+      {canGenerate ? (
+        <div className="card space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="label">Report type</label>
+              <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
+                {REPORT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Format</label>
+              <select
+                className="input"
+                value={format}
+                onChange={(e) => setFormat(e.target.value as "pdf" | "xlsx")}
+              >
+                <option value="pdf">PDF</option>
+                <option value="xlsx">Excel</option>
+              </select>
+            </div>
+            {needsFence && (
+              <div>
+                <label className="label">Plantation site</label>
+                <select className="input" value={fenceId} onChange={(e) => setFenceId(e.target.value)}>
+                  <option value="">Select site…</option>
+                  {fences?.items.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => void queue()}
+              disabled={busy || (needsFence && !fenceId)}
+            >
+              {busy ? "Generating…" : "Generate report"}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => void refetch()}>
+              Refresh
+            </button>
+          </div>
+          <p className="text-sm text-stone-600">{selectedType.description}</p>
+        </div>
       ) : (
         <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200">
           Your viewer role can download existing reports but cannot generate new ones. Contact your
@@ -132,7 +238,7 @@ export default function ReportsPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-stone-50 text-stone-600">
             <tr>
-              <th className="px-4 py-2 text-left">Kind</th>
+              <th className="px-4 py-2 text-left">Type</th>
               <th className="px-4 py-2 text-left">Format</th>
               <th className="px-4 py-2 text-left">Status</th>
               <th className="px-4 py-2 text-left">Created</th>
@@ -149,14 +255,22 @@ export default function ReportsPage() {
             )}
             {!isLoading && list.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-stone-500">
-                  {canGenerate ? "No reports yet — generate one above." : "No reports available yet."}
+                <td colSpan={5} className="p-6">
+                  <EmptyState
+                    icon={FileText}
+                    title={canGenerate ? "No reports yet" : "No reports available"}
+                    description={
+                      canGenerate
+                        ? "Choose a report type above and generate your first export."
+                        : "Ask your program manager to generate a report for you."
+                    }
+                  />
                 </td>
               </tr>
             )}
             {list.map((r) => (
               <tr key={r.id} className="border-t border-stone-100">
-                <td className="px-4 py-2">{KIND_LABELS[r.kind] || r.kind}</td>
+                <td className="px-4 py-2">{kindLabel(r.kind)}</td>
                 <td className="px-4 py-2 uppercase">{r.format}</td>
                 <td className="px-4 py-2">
                   <span
@@ -193,6 +307,8 @@ export default function ReportsPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }

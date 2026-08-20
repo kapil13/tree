@@ -68,6 +68,9 @@ class Settings(BaseSettings):
         "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
     )
     gee_service_account_json: str | None = None
+    sar_provider: Literal["stub", "gee", "sentinel_hub"] = "stub"
+    sar_fallback_provider: Literal["stub", "gee", "sentinel_hub"] | None = None
+    sar_enabled: bool = True
 
     # Weather (Open-Meteo — free, no API key)
     open_meteo_api_url: str = "https://api.open-meteo.com/v1"
@@ -185,6 +188,15 @@ class Settings(BaseSettings):
     bhoonidhi_api_url: str = "https://bhoonidhi-api.nrsc.gov.in"
     bioacoustic_review_confidence: float = Field(default=0.70, ge=0.05, le=0.99)
     bioacoustic_spl_warning_db: float = Field(default=62.0, ge=40.0, le=90.0)
+
+    # Evidence bundle signing (Ed25519 detached signature)
+    evidence_signing_key: str | None = None  # base64-encoded 32-byte Ed25519 seed
+    evidence_tsa_enabled: bool = True
+    evidence_tsa_url: str | None = None
+    evidence_tsa_stub_label: str = "byot-dev-tsa-stub"
+
+    # MoEFCC Green Credit Programme registry (informational URL)
+    green_credit_registry_url: str = "https://greencredit.moefcc.gov.in"
 
     @property
     def cors_origins_list(self) -> list[str]:

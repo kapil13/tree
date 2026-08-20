@@ -13,10 +13,8 @@ from app.models.credit_ledger import ProjectCreditLedger
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
-from app.services.compliance.checklists import (
-    ComplianceChecklist,
-    get_checklist,
-)
+from app.services.compliance.checklist_engine import get_effective_checklist
+from app.services.compliance.checklists import ComplianceChecklist
 from app.services.planting_projects.service import get_active_standard
 from app.services.planting_projects.survival_survey import survey_interval_days
 
@@ -166,6 +164,13 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["survival_survey_configured"] = "no"
     signals["credit_ledger_synced"] = "yes" if ledger and ledger.last_computed_at else "no"
+    signals["credit_ledger_active"] = "yes" if ledger and float(ledger.gross_credits_tco2e or 0) > 0 else "no"
+
+    from app.services.carbon.risk_ops import latest_risk_assessment
+
+    risk = await latest_risk_assessment(db, project.id)
+    signals["nprt_assessed"] = "yes" if risk is not None else "no"
+    signals["evidence_export"] = "yes" if tree_count > 0 else "no"
 
     if tree_count == 0:
         signals["geo_tagged_majority"] = "no"
@@ -201,22 +206,41 @@ def _item_payload(
     responses: dict[str, Any],
     auto_signals: dict[str, str],
 ) -> dict[str, Any]:
-    saved = responses.get(item.id, {})
-    suggested = auto_signals.get(item.auto_key) if item.auto_key else None
+    item_id = item.id if hasattr(item, "id") else item["id"]
+    auto_key = item.auto_key if hasattr(item, "auto_key") else item.get("auto_key")
+    category = item.category if hasattr(item, "category") else item["category"]
+    question = item.question if hasattr(item, "question") else item["question"]
+    guidance = item.guidance if hasattr(item, "guidance") else item["guidance"]
+    required = item.required if hasattr(item, "required") else item["required"]
+
+    saved = responses.get(item_id, {})
+    suggested = auto_signals.get(auto_key) if auto_key else None
     resolved = saved.get("answer") or suggested
     source = "user" if saved.get("answer") else ("auto" if suggested else None)
     return {
-        "id": item.id,
-        "category": item.category,
-        "question": item.question,
-        "guidance": item.guidance,
-        "required": item.required,
-        "auto_key": item.auto_key,
+        "id": item_id,
+        "category": category,
+        "question": question,
+        "guidance": guidance,
+        "required": required,
+        "auto_key": auto_key,
         "answer": resolved,
         "notes": saved.get("notes"),
         "source": source,
         "suggested_answer": suggested,
     }
+
+
+def _checklist_items_for_scoring(effective: dict[str, Any]):
+    from types import SimpleNamespace
+
+    return [SimpleNamespace(**item) for item in effective["items"]]
+
+
+def _checklist_for_scoring(effective: dict[str, Any]):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(items=_checklist_items_for_scoring(effective))
 
 
 async def get_or_create_response(
@@ -236,27 +260,30 @@ async def build_project_checklist_state(
     project: PlantingProject,
     checklist_code: str,
 ) -> dict[str, Any]:
-    checklist = get_checklist(checklist_code)
-    if checklist is None:
+    effective = await get_effective_checklist(db, checklist_code)
+    if effective is None:
         raise ValueError("unknown_checklist")
 
     stored = await get_or_create_response(db, project, checklist_code)
     responses = dict(stored.responses) if stored else {}
     auto_signals = await build_auto_signals(db, project)
-    metrics = score_checklist(checklist, responses, auto_signals)
+    checklist_for_score = _checklist_for_scoring(effective)
+    metrics = score_checklist(checklist_for_score, responses, auto_signals)
 
     return {
         "checklist": {
-            "code": checklist.code,
-            "title": checklist.title,
-            "short_label": checklist.short_label,
-            "framework_reference": checklist.framework_reference,
-            "description": checklist.description,
-            "disclaimer": checklist.disclaimer,
+            "code": effective["code"],
+            "title": effective["title"],
+            "short_label": effective["short_label"],
+            "framework_reference": effective["framework_reference"],
+            "description": effective["description"],
+            "disclaimer": effective["disclaimer"],
         },
         "project_id": str(project.id),
         "responses": responses,
-        "items": [_item_payload(item, responses, auto_signals) for item in checklist.items],
+        "items": [
+            _item_payload(item, responses, auto_signals) for item in effective["items"]
+        ],
         "auto_signals": auto_signals,
         "completion_pct": metrics["completion_pct"],
         "score_pct": metrics["score_pct"],
@@ -276,11 +303,11 @@ async def save_project_checklist_responses(
     *,
     actor_user_id: uuid.UUID | None,
 ) -> dict[str, Any]:
-    checklist = get_checklist(checklist_code)
-    if checklist is None:
+    effective = await get_effective_checklist(db, checklist_code)
+    if effective is None:
         raise ValueError("unknown_checklist")
 
-    valid_ids = {item.id for item in checklist.items}
+    valid_ids = {item["id"] for item in effective["items"]}
     cleaned: dict[str, Any] = {}
     for item_id, payload in answers.items():
         if item_id not in valid_ids:
@@ -319,10 +346,20 @@ async def save_project_checklist_responses(
         stored.organization_id = project.organization_id
 
     auto_signals = await build_auto_signals(db, project)
-    metrics = score_checklist(checklist, merged, auto_signals)
+    checklist_for_score = _checklist_for_scoring(effective)
+    metrics = score_checklist(checklist_for_score, merged, auto_signals)
     stored.completion_pct = metrics["completion_pct"]
     stored.score_pct = metrics["score_pct"]
     stored.eligibility_status = metrics["eligibility_status"]
+
+    from app.services.schemes.compliance import notify_scheme_compliance_gaps
+
+    await notify_scheme_compliance_gaps(
+        db,
+        project,
+        checklist_code,
+        metrics["eligibility_status"],
+    )
 
     await db.flush()
     return await build_project_checklist_state(db, project, checklist_code)
@@ -340,15 +377,19 @@ async def list_project_checklist_summaries(
     auto_signals = await build_auto_signals(db, project)
     summaries: list[dict[str, Any]] = []
 
-    for code, checklist in CHECKLISTS.items():
+    for code in CHECKLISTS:
+        effective = await get_effective_checklist(db, code)
+        if effective is None:
+            continue
         stored = by_code.get(code)
         responses = dict(stored.responses) if stored else {}
-        metrics = score_checklist(checklist, responses, auto_signals)
+        checklist_for_score = _checklist_for_scoring(effective)
+        metrics = score_checklist(checklist_for_score, responses, auto_signals)
         summaries.append(
             {
                 "code": code,
-                "title": checklist.title,
-                "short_label": checklist.short_label,
+                "title": effective["title"],
+                "short_label": effective["short_label"],
                 "completion_pct": metrics["completion_pct"],
                 "score_pct": metrics["score_pct"],
                 "eligibility_status": metrics["eligibility_status"],

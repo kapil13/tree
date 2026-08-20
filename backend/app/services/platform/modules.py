@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,19 +95,35 @@ async def list_module_rules(db: AsyncSession) -> list[PlatformModuleRule]:
     )
 
 
-async def user_can_access_module(db: AsyncSession, *, role: str, module_key: str) -> bool:
+async def user_can_access_module(
+    db: AsyncSession,
+    *,
+    role: str,
+    module_key: str,
+    user_id: uuid.UUID | None = None,
+) -> bool:
     if role == "admin":
         return True
+    if user_id is not None:
+        from app.services.platform.grants import user_has_module_grant
+
+        if await user_has_module_grant(db, user_id, module_key):
+            return True
     rule = await get_module_rule(db, module_key)
     if rule is None or not rule.enabled:
         return False
     return role in (rule.allowed_roles or [])
 
 
-async def build_platform_access_map(db: AsyncSession, *, role: str) -> dict[str, bool]:
+async def build_platform_access_map(
+    db: AsyncSession,
+    *,
+    role: str,
+    user_id: uuid.UUID | None = None,
+) -> dict[str, bool]:
     await ensure_platform_modules_seeded(db)
     return {
-        key: await user_can_access_module(db, role=role, module_key=key)
+        key: await user_can_access_module(db, role=role, module_key=key, user_id=user_id)
         for key in ALL_PLATFORM_MODULES
     }
 

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Living Corridor — Project UX Concept | Aranyix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: { 400:"#4ade80",500:"#22c55e",600:"#16a34a",700:"#15803d",800:"#166534",900:"#14532d" },
+            ink: { 950:"#020f0a",900:"#041f17",800:"#052e1f",700:"#0c3d28" },
+          },
+          fontFamily: { sans:["Inter","system-ui","sans-serif"], display:["Georgia","serif"] },
+          boxShadow: {
+            glow: "0 0 60px rgba(74,222,128,.25)",
+            panel: "0 24px 80px rgba(0,0,0,.45)",
+          },
+        },
+      },
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,.06); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.1); }
+    .glass-light { background: rgba(255,255,255,.92); backdrop-filter: blur(16px); border: 1px solid rgba(0,0,0,.06); }
+    .corridor-track {
+      background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 45%, #1a1a1a 55%, #2d2d2d 100%);
+      box-shadow: inset 0 0 40px rgba(0,0,0,.5);
+    }
+    .median-strip { background: repeating-linear-gradient(90deg, #166534 0 8px, #14532d 8px 16px); }
+    .lane-mark { background: repeating-linear-gradient(90deg, #fbbf24 0 14px, transparent 14px 28px); height: 3px; opacity: .85; }
+    .tree-milestone { transition: transform .2s, box-shadow .2s; cursor: pointer; }
+    .tree-milestone:hover, .tree-milestone.active { transform: scale(1.35) translateY(-4px); box-shadow: 0 0 20px rgba(74,222,128,.6); }
+    .gap-pulse { animation: pulse-gap 2s ease-in-out infinite; }
+    @keyframes pulse-gap {
+      0%,100% { box-shadow: 0 0 0 0 rgba(250,204,21,.5); }
+      50% { box-shadow: 0 0 0 12px rgba(250,204,21,0); }
+    }
+    .phase-ring { stroke-dasharray: 4 6; animation: spin-slow 60s linear infinite; }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    .heat-bar { background: linear-gradient(90deg, #ef4444 0%, #f59e0b 15%, #22c55e 40%, #22c55e 100%); }
+    .inspector-enter { animation: slide-in .35s cubic-bezier(.16,1,.3,1); }
+    @keyframes slide-in { from { opacity:0; transform: translateX(24px); } to { opacity:1; transform: translateX(0); } }
+    .concept-card:hover { transform: translateY(-2px); }
+    .concept-card { transition: transform .25s ease; }
+  </style>
+</head>
+<body class="bg-stone-100 text-stone-900 antialiased">
+
+  <!-- Hero rationale -->
+  <header class="border-b border-stone-200 bg-white">
+    <div class="mx-auto max-w-6xl px-6 py-10">
+      <p class="text-xs font-bold uppercase tracking-[0.25em] text-forest-700">UX concept · Adobe-grade product thinking</p>
+      <h1 class="mt-2 font-display text-4xl font-bold tracking-tight text-ink-900">The Living Corridor</h1>
+      <p class="mt-3 max-w-3xl text-lg text-stone-600 leading-relaxed">
+        Stop treating a planting project like a folder of tabs. Treat it as a <strong>greening journey along distance</strong> —
+        the same mental model field teams already use: chainage, gaps, evidence, progress.
+      </p>
+      <div class="mt-8 grid gap-4 md:grid-cols-3">
+        <div class="concept-card rounded-2xl border border-red-100 bg-red-50/50 p-5">
+          <p class="text-xs font-bold uppercase text-red-700">❌ Tabs</p>
+          <p class="mt-2 text-sm text-stone-700">Six equal destinations. User must remember where things live.</p>
+        </div>
+        <div class="concept-card rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
+          <p class="text-xs font-bold uppercase text-amber-800">△ Command centre</p>
+          <p class="mt-2 text-sm text-stone-700">Better, but still a generic dashboard with a map widget.</p>
+        </div>
+        <div class="concept-card rounded-2xl border-2 border-forest-500 bg-forest-50 p-5 shadow-glow">
+          <p class="text-xs font-bold uppercase text-forest-800">✓ Living Corridor</p>
+          <p class="mt-2 text-sm text-forest-900"><strong>One canvas.</strong> Distance is navigation. Context replaces tabs.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIGNATURE INTERACTION CALLOUT -->
+  <section class="border-b border-stone-200 bg-stone-50 py-8">
+    <div class="mx-auto max-w-6xl px-6">
+      <h2 class="text-sm font-bold uppercase tracking-widest text-stone-500">Signature interaction</h2>
+      <div class="mt-4 flex flex-wrap items-center gap-6">
+        <div class="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-sm ring-1 ring-stone-200">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-forest-600 text-lg text-white">1</span>
+          <span class="text-sm">Scroll the <strong>corridor ribbon</strong> (like a timeline)</span>
+        </div>
+        <span class="text-stone-300">→</span>
+        <div class="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-sm ring-1 ring-stone-200">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-400 text-lg text-ink-900">2</span>
+          <span class="text-sm">Tap a <strong>gap</strong> (pulsing slot) → Register tree</span>
+        </div>
+        <span class="text-stone-300">→</span>
+        <div class="flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-sm ring-1 ring-stone-200">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-ink-800 text-lg text-lime-300">3</span>
+          <span class="text-sm"><strong>Inspector</strong> morphs — never leave the canvas</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN MOCKUP: IMMERSIVE CANVAS -->
+  <section class="py-10">
+    <div class="mx-auto max-w-[1440px] px-4">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Desktop · immersive programme canvas</h2>
+        <span class="rounded-full bg-forest-100 px-3 py-1 text-xs font-semibold text-forest-800">Recommended direction</span>
+      </div>
+
+      <div class="overflow-hidden rounded-[1.75rem] shadow-panel ring-1 ring-black/10">
+
+        <!-- Dark canvas workspace (Adobe-style) -->
+        <div class="relative bg-ink-950 text-white min-h-[780px]">
+
+          <!-- Subtle grid -->
+          <div class="pointer-events-none absolute inset-0 opacity-[.07]" style="background-image: radial-gradient(circle at 1px 1px, #4ade80 1px, transparent 0); background-size: 32px 32px;"></div>
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-lime-500/5 via-transparent to-forest-900/20"></div>
+
+          <!-- Top chrome -->
+          <div class="relative flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div class="flex items-center gap-4">
+              <button class="text-sm text-white/60 hover:text-white">← Projects</button>
+              <div>
+                <h3 class="text-lg font-semibold tracking-tight">NH-48 Median Plantation · Phase II</h3>
+                <p class="text-xs text-white/50">NHAI · KM 120 → 168 · 847 of 1,200 trees</p>
+              </div>
+            </div>
+            <!-- Phase orbit (replaces tabs) -->
+            <div class="hidden items-center gap-1 rounded-full glass px-2 py-1.5 lg:flex">
+              <button class="rounded-full bg-forest-500 px-4 py-1.5 text-xs font-semibold text-ink-950">Plant</button>
+              <button class="rounded-full px-4 py-1.5 text-xs text-white/60 hover:text-white">Verify</button>
+              <button class="rounded-full px-4 py-1.5 text-xs text-white/60 hover:text-white">Report</button>
+              <span class="mx-1 h-4 w-px bg-white/20"></span>
+              <button class="rounded-full px-3 py-1.5 text-xs text-lime-300 ring-1 ring-lime-400/30">Field mode ↗</button>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="hidden text-right sm:block">
+                <p class="text-2xl font-bold tabular-nums text-lime-300">71%</p>
+                <p class="text-[10px] uppercase tracking-wider text-white/40">Corridor filled</p>
+              </div>
+              <div class="relative h-14 w-14">
+                <svg viewBox="0 0 56 56" class="h-full w-full -rotate-90">
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="#4ade80" stroke-width="4" stroke-dasharray="107 150" stroke-linecap="round"/>
+                </svg>
+                <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold">847</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative flex">
+            <!-- LEFT: Tool rail (like Adobe tools) -->
+            <div class="hidden w-14 shrink-0 flex-col items-center gap-3 border-r border-white/10 py-6 md:flex">
+              <button class="flex h-10 w-10 items-center justify-center rounded-xl bg-forest-500/20 text-forest-400 ring-1 ring-forest-500/40" title="Select">◎</button>
+              <button class="flex h-10 w-10 items-center justify-center rounded-xl text-white/40 hover:bg-white/5" title="Register">+</button>
+              <button class="flex h-10 w-10 items-center justify-center rounded-xl text-white/40 hover:bg-white/5" title="Measure">↔</button>
+              <button class="flex h-10 w-10 items-center justify-center rounded-xl text-white/40 hover:bg-white/5" title="Filter">⧩</button>
+              <div class="mt-auto flex h-10 w-10 items-center justify-center rounded-xl text-white/30">⚙</div>
+            </div>
+
+            <!-- CENTRE: Living Corridor -->
+            <div class="flex-1 p-6 lg:p-8">
+              <!-- Chainage ruler -->
+              <div class="mb-2 flex justify-between px-2 text-[10px] font-medium uppercase tracking-widest text-white/35">
+                <span>KM 120</span><span>KM 130</span><span>KM 140</span><span>KM 150</span><span>KM 160</span><span>KM 168</span>
+              </div>
+
+              <!-- THE CORRIDOR RIBBON -->
+              <div class="relative rounded-2xl border border-white/10 bg-ink-900/80 p-6 shadow-glow">
+                <p class="mb-4 text-center text-xs font-medium uppercase tracking-[0.2em] text-white/40">Cross-section · Median · LHS row</p>
+
+                <!-- Highway cross-section visual -->
+                <div class="relative mx-auto max-w-4xl">
+                  <!-- RHS lane -->
+                  <div class="corridor-track relative h-10 rounded-t-lg">
+                    <div class="absolute inset-x-[15%] top-1/2 -translate-y-1/2 lane-mark"></div>
+                    <span class="absolute right-3 top-2 text-[9px] text-white/30">RHS carriageway</span>
+                  </div>
+                  <!-- Median with trees -->
+                  <div class="median-strip relative flex h-24 items-end justify-around px-[8%] pb-2">
+                    <!-- Tree milestones -->
+                    <div class="tree-milestone flex flex-col items-center gap-1" onclick="selectTree(this,'142+340')">
+                      <div class="h-8 w-8 rounded-full bg-forest-500 ring-2 ring-lime-300/50 flex items-center justify-center text-xs">🌳</div>
+                      <span class="text-[8px] text-lime-200/70">+340</span>
+                    </div>
+                    <div class="tree-milestone flex flex-col items-center gap-1" onclick="selectTree(this,'142+346')">
+                      <div class="h-8 w-8 rounded-full bg-forest-500 ring-2 ring-lime-300/50 flex items-center justify-center text-xs">🌳</div>
+                      <span class="text-[8px] text-lime-200/70">+346</span>
+                    </div>
+                    <div class="tree-milestone flex flex-col items-center gap-1" onclick="selectTree(this,'142+352')">
+                      <div class="h-8 w-8 rounded-full bg-forest-500 ring-2 ring-lime-300/50 flex items-center justify-center text-xs">🌳</div>
+                      <span class="text-[8px] text-lime-200/70">+352</span>
+                    </div>
+                    <!-- GAP - the hero CTA -->
+                    <div class="tree-milestone active flex flex-col items-center gap-1" onclick="selectGap()">
+                      <div class="gap-pulse flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-amber-400 bg-amber-400/20 text-lg font-light text-amber-300">+</div>
+                      <span class="text-[9px] font-bold text-amber-300">+380 · NEXT</span>
+                    </div>
+                    <!-- Empty future slots -->
+                    <div class="flex flex-col items-center gap-1 opacity-30">
+                      <div class="h-6 w-6 rounded-full border border-dashed border-white/30"></div>
+                      <span class="text-[8px] text-white/40">+386</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 opacity-20">
+                      <div class="h-6 w-6 rounded-full border border-dashed border-white/30"></div>
+                      <span class="text-[8px] text-white/40">+392</span>
+                    </div>
+                    <span class="absolute left-3 top-2 text-[9px] font-semibold text-lime-300/80">MEDIAN</span>
+                  </div>
+                  <!-- LHS lane -->
+                  <div class="corridor-track relative h-10 rounded-b-lg">
+                    <div class="absolute inset-x-[15%] top-1/2 -translate-y-1/2 lane-mark"></div>
+                    <span class="absolute right-3 top-2 text-[9px] text-white/30">LHS carriageway</span>
+                  </div>
+                </div>
+
+                <!-- Compliance heat strip (replaces compliance tab) -->
+                <div class="mt-6">
+                  <div class="mb-1 flex justify-between text-[10px] text-white/40">
+                    <span>Compliance heat · KM 142–148</span>
+                    <span class="text-lime-400">94% pass</span>
+                  </div>
+                  <div class="heat-bar h-2 rounded-full opacity-80"></div>
+                  <div class="mt-1 flex justify-between text-[9px] text-white/30">
+                    <span>● 3 gaps</span><span>● 2 warnings</span><span>● 842 compliant</span>
+                  </div>
+                </div>
+
+                <!-- Horizontal scroll hint -->
+                <p class="mt-4 text-center text-[11px] text-white/35">← Drag to scroll entire highway · Pinch to zoom work area →</p>
+              </div>
+
+              <!-- Evidence mosaic (replaces "trees tab" as gallery) -->
+              <div class="mt-6">
+                <div class="mb-3 flex items-center justify-between">
+                  <h4 class="text-sm font-semibold text-white/80">Recent evidence</h4>
+                  <button class="text-xs text-forest-400 hover:text-forest-300">View all 847 →</button>
+                </div>
+                <div class="grid grid-cols-6 gap-2">
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-amber-900/60 to-stone-800 ring-1 ring-white/10 flex items-center justify-center text-[10px] text-white/50">Pit</div>
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-forest-800/60 to-ink-800 ring-1 ring-white/10 flex items-center justify-center text-[10px] text-white/50">Plant</div>
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-lime-900/40 to-ink-800 ring-1 ring-white/10 flex items-center justify-center text-[10px] text-white/50">Tree</div>
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-amber-900/60 to-stone-800 ring-1 ring-white/10"></div>
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-forest-800/60 to-ink-800 ring-1 ring-white/10"></div>
+                  <div class="aspect-square rounded-lg bg-gradient-to-br from-red-900/30 to-ink-800 ring-1 ring-red-500/30 flex items-center justify-center text-[10px] text-red-300">Missing</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Contextual Inspector (morphs — no tabs) -->
+            <div id="inspector" class="inspector-enter w-full max-w-[340px] shrink-0 border-l border-white/10 glass p-5 lg:block">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-amber-400">Next gap · Register here</p>
+              <h4 class="mt-1 text-xl font-bold">KM 142+380</h4>
+              <p class="text-sm text-white/50">Median LHS · continues row from +352</p>
+
+              <div class="mt-4 rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+                <p class="text-[10px] uppercase tracking-wide text-white/40">Inherited from programme</p>
+                <ul class="mt-2 space-y-1 text-sm text-white/80">
+                  <li>Pit <strong class="text-lime-300">60×60×60</strong> cm</li>
+                  <li>Spacing <strong>6 m</strong> · Guard required</li>
+                </ul>
+              </div>
+
+              <div class="mt-4 space-y-2">
+                <p class="text-[10px] uppercase tracking-wide text-white/40">You capture per tree</p>
+                <div class="rounded-lg border border-dashed border-white/20 p-3 text-center text-sm text-white/60">
+                  📍 GPS auto · chainage confirms +380
+                </div>
+                <div class="rounded-lg border border-forest-500/50 bg-forest-500/10 p-3 text-center text-sm">
+                  📷 Pit photo<br/>
+                  <span class="text-xs text-lime-300">Est. ~58×61 cm vs standard ✓</span>
+                </div>
+                <div class="rounded-lg border border-dashed border-white/20 p-3 text-center text-sm text-white/60">📷 Plant + tree photos</div>
+                <div class="rounded-lg border border-dashed border-white/20 p-3 text-center text-sm text-white/60">🌱 Species (if varying)</div>
+              </div>
+
+              <button class="mt-5 w-full rounded-xl bg-gradient-to-r from-lime-400 to-forest-500 py-3.5 text-sm font-bold text-ink-950 shadow-glow">
+                Capture & fill gap
+              </button>
+              <button class="mt-2 w-full rounded-xl py-2 text-xs text-white/50 hover:text-white">Save & advance to +386 →</button>
+            </div>
+          </div>
+
+          <!-- Bottom status bar (like Adobe) -->
+          <div class="flex items-center justify-between border-t border-white/10 px-6 py-2 text-[11px] text-white/40">
+            <span>4 work areas · 12 geotag due · Last sync 2 min ago</span>
+            <span>Team: Rajesh + 3 planters on KM 142–148</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THREE MODES (replaces 6 tabs) -->
+  <section class="border-t border-stone-200 bg-white py-12">
+    <div class="mx-auto max-w-6xl px-6">
+      <h2 class="text-lg font-semibold">Three modes, not six tabs</h2>
+      <p class="mt-1 text-stone-600">Each mode is a full-screen intent — user picks what they're doing today.</p>
+      <div class="mt-8 grid gap-6 md:grid-cols-3">
+        <div class="rounded-2xl border-2 border-forest-500 bg-gradient-to-b from-forest-50 to-white p-6">
+          <div class="text-3xl">🌱</div>
+          <h3 class="mt-3 text-lg font-bold">Plant mode</h3>
+          <p class="mt-2 text-sm text-stone-600">Corridor ribbon + gaps + camera-first inspector. Default for field supervisors.</p>
+          <p class="mt-3 text-xs font-semibold text-forest-700">Replaces: Trees tab + Register flow</p>
+        </div>
+        <div class="rounded-2xl border border-stone-200 p-6">
+          <div class="text-3xl">🔍</div>
+          <h3 class="mt-3 text-lg font-bold">Verify mode</h3>
+          <p class="mt-2 text-sm text-stone-600">Heat map of issues, geotag queue, photo gaps. Fix, don't browse.</p>
+          <p class="mt-3 text-xs font-semibold text-stone-500">Replaces: Compliance tab + survival alerts</p>
+        </div>
+        <div class="rounded-2xl border border-stone-200 p-6">
+          <div class="text-3xl">📊</div>
+          <h3 class="mt-3 text-lg font-bold">Report mode</h3>
+          <p class="mt-2 text-sm text-stone-600">Executive summary, export, credits ledger — for officers and auditors.</p>
+          <p class="mt-3 text-xs font-semibold text-stone-500">Replaces: Credits + settings + share panels</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOBILE FIELD MODE -->
+  <section class="bg-stone-900 py-12">
+    <div class="mx-auto max-w-6xl px-6">
+      <h2 class="text-lg font-semibold text-white">Mobile · Field mode (sunlight-ready)</h2>
+      <p class="text-sm text-white/60">One thumb. Camera first. Corridor as horizontal strip.</p>
+      <div class="mx-auto mt-8 max-w-[390px] overflow-hidden rounded-[2.5rem] border-4 border-stone-700 bg-ink-950 shadow-2xl">
+        <div class="px-6 py-2 text-center text-[10px] text-white/50">9:41 · Field mode</div>
+        <!-- Mini corridor strip -->
+        <div class="mx-4 flex items-end justify-around rounded-xl bg-ink-800 px-2 py-4">
+          <div class="h-6 w-6 rounded-full bg-forest-500 text-center text-[10px] leading-6">🌳</div>
+          <div class="h-6 w-6 rounded-full bg-forest-500 text-center text-[10px] leading-6">🌳</div>
+          <div class="gap-pulse flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-amber-400 text-amber-300">+</div>
+          <div class="h-5 w-5 rounded-full border border-dashed border-white/20"></div>
+        </div>
+        <p class="mt-2 text-center text-xs font-bold text-amber-300">KM 142+380 · Tap to capture</p>
+        <!-- Camera viewport -->
+        <div class="mx-4 mt-4 flex h-64 items-center justify-center rounded-2xl bg-ink-800 ring-1 ring-white/10">
+          <div class="text-center">
+            <div class="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-lime-400/50">
+              <span class="text-sm text-lime-300/80">60×60 cm guide overlay</span>
+            </div>
+            <p class="mt-3 text-xs text-white/50">Pit photo · Step 1 of 3</p>
+          </div>
+        </div>
+        <button class="mx-4 mt-4 mb-6 flex w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-2xl bg-lime-400 py-4 text-sm font-bold text-ink-950">
+          ◉ Capture pit
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Design principles -->
+  <section class="py-12">
+    <div class="mx-auto max-w-6xl px-6">
+      <h2 class="text-lg font-semibold">Why this beats tabs (design principles)</h2>
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-stone-200 p-4"><strong class="text-forest-800">Spatial, not categorical</strong><p class="mt-1 text-sm text-stone-600">Navigation follows chainage — how planters think.</p></div>
+        <div class="rounded-xl border border-stone-200 p-4"><strong class="text-forest-800">Gaps invite action</strong><p class="mt-1 text-sm text-stone-600">Empty slots pulse. Registering feels like filling the corridor.</p></div>
+        <div class="rounded-xl border border-stone-200 p-4"><strong class="text-forest-800">Context morphs</strong><p class="mt-1 text-sm text-stone-600">One inspector panel — tree, gap, or issue — no tab hunting.</p></div>
+        <div class="rounded-xl border border-stone-200 p-4"><strong class="text-forest-800">Progress you feel</strong><p class="mt-1 text-sm text-stone-600">Ring + heat strip make 847/N tangible, not a table row.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function selectTree(el, km) {
+      document.querySelectorAll('.tree-milestone').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('inspector').innerHTML = `
+        <p class="text-[10px] font-bold uppercase tracking-widest text-lime-400">Tree selected</p>
+        <h4 class="mt-1 text-xl font-bold">TR-NH48-00847</h4>
+        <p class="text-sm text-white/50">KM ${km} · Gulmohar · Healthy</p>
+        <div class="mt-4 grid grid-cols-3 gap-2">
+          <div class="aspect-square rounded-lg bg-amber-900/40 ring-1 ring-white/10"></div>
+          <div class="aspect-square rounded-lg bg-forest-900/40 ring-1 ring-white/10"></div>
+          <div class="aspect-square rounded-lg bg-lime-900/30 ring-1 ring-white/10"></div>
+        </div>
+        <dl class="mt-4 space-y-2 text-sm">
+          <div class="flex justify-between"><dt class="text-white/40">Pit standard</dt><dd>60×60×60</dd></div>
+          <div class="flex justify-between"><dt class="text-white/40">Photos</dt><dd class="text-lime-300">3/3</dd></div>
+        </dl>
+        <button class="mt-5 w-full rounded-xl border border-white/20 py-2.5 text-sm text-white/80">Open full record →</button>
+      `;
+    }
+    function selectGap() {
+      location.reload(); // reset to gap state for demo
+    }
+  </script>
+</body>
+</html>

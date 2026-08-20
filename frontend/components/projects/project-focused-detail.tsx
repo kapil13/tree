@@ -5,10 +5,15 @@ import { useMemo, useState } from "react";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
+import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
 import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
+import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
+import { ProjectPlotMonitoringPanel } from "@/components/projects/project-plot-monitoring-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
+import { ProjectVerificationPanel } from "@/components/projects/project-verification-panel";
+import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import type { PlantingProject, WorkArea } from "@/lib/api";
@@ -163,6 +168,7 @@ function SecondaryPanel({
             projectId={projectId}
             projectCode={project.code}
             projectMetadata={project.metadata}
+            schemeCode={project.scheme_code}
             onNavigateTab={(next) => {
               if (PROJECT_SECONDARY_TABS.includes(next as ProjectSecondaryTab)) {
                 onNavigateSecondary(next as ProjectSecondaryTab);
@@ -192,8 +198,27 @@ function SecondaryPanel({
       )}
 
       {tab === "credits" && (
-        <div className="card">
-          <ProjectCreditLedgerPanel projectId={projectId} />
+        <div className="space-y-4">
+          <div className="card">
+            <ProjectVm0047Panel projectId={projectId} />
+          </div>
+          {project.scheme_code === "green_credit_india" && (
+            <div className="card">
+              <ProjectGreenCreditPanel projectId={projectId} />
+            </div>
+          )}
+          <div className="card">
+            <ProjectNprtAssessmentPanel projectId={projectId} />
+          </div>
+          <div className="card">
+            <ProjectCreditLedgerPanel projectId={projectId} />
+          </div>
+          <div className="card">
+            <ProjectPlotMonitoringPanel projectId={projectId} />
+          </div>
+          <div className="card">
+            <ProjectVerificationPanel projectId={projectId} />
+          </div>
         </div>
       )}
 

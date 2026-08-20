@@ -31,5 +31,6 @@ structlog==24.4.0
 tenacity==9.0.0
 google-api-python-client==2.149.0
 google-auth==2.35.0
+earthengine-api>=1.1.0
 scipy>=1.14.0
 soundfile>=0.12.1

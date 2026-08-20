@@ -13,6 +13,11 @@ FrameworkProfileCode = Literal[
     "paris_ndc",
     "ngt_campa",
     "esg_general",
+    "gim",
+    "mishti",
+    "nagar_van",
+    "green_credit_india",
+    "sahakar_van",
 ]
 
 MethodologyCode = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF", "NONE"]
@@ -97,6 +102,54 @@ FRAMEWORK_PROFILES: dict[FrameworkProfileCode, FrameworkProfile] = {
         description="Combined planting, carbon, and compliance metrics for corporate ESG reporting.",
         disclaimer=DISCLAIMER,
         reference="GRI / TCFD / CSRD-aligned evidence (non-certified)",
+    ),
+    "gim": FrameworkProfile(
+        code="gim",
+        title="Green India Mission — Eco Restoration",
+        short_label="GIM",
+        methodology="NONE",
+        description="State annual plan, sub-mission, and JFMC evidence for GIM-funded restoration.",
+        disclaimer=DISCLAIMER,
+        reference="National Mission for a Green India (NAPCC)",
+    ),
+    "mishti": FrameworkProfile(
+        code="mishti",
+        title="MISHTI — Mangrove Restoration",
+        short_label="MISHTI",
+        methodology="NONE",
+        description="Coastal mangrove restoration with CRZ classification and survival monitoring.",
+        disclaimer=DISCLAIMER,
+        reference="MISHTI — MoEFCC coastal restoration programme",
+    ),
+    "nagar_van": FrameworkProfile(
+        code="nagar_van",
+        title="Nagar Van Yojana — Urban Forest",
+        short_label="Nagar Van",
+        methodology="NONE",
+        description="Urban forestry evidence for Nagar Van Yojana city-forest blocks.",
+        disclaimer=DISCLAIMER,
+        reference="Nagar Van Yojana — MoEFCC",
+    ),
+    "green_credit_india": FrameworkProfile(
+        code="green_credit_india",
+        title="MoEFCC Green Credit Programme",
+        short_label="Green Credit",
+        methodology="NONE",
+        description="Land bank registration and verifier-ready planting evidence for GCP credits.",
+        disclaimer=DISCLAIMER,
+        reference="Green Credit Rules 2023 / MoEFCC",
+    ),
+    "sahakar_van": FrameworkProfile(
+        code="sahakar_van",
+        title="Sahakar Van — Cooperative Afforestation",
+        short_label="Sahakar Van",
+        methodology="NONE",
+        description=(
+            "Cooperative forest evidence for NCCF–Amul Sahakar Van projects with "
+            "Miyawaki/conventional planting, arid-land species, and community participation."
+        ),
+        disclaimer=DISCLAIMER,
+        reference="NCCF–Amul Sahakar Van — Ministry of Cooperation",
     ),
 }
 

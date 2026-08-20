@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   APIProvider,
@@ -9,16 +10,28 @@ import {
   Marker,
   useMap,
 } from "@vis.gl/react-google-maps";
-import { FileText, MapPin, Sparkles, X } from "lucide-react";
-import { trees, errorMessage, type Tree } from "@/lib/api";
+import { FileText, MapPin, Sparkles, TreePine, X } from "lucide-react";
+import { plantingProjects, trees, errorMessage, type Tree } from "@/lib/api";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { EmptyState } from "@/components/ui/empty-state";
 import { showToast } from "@/components/toast";
+import { useAuth } from "@/lib/auth-store";
+import { canWriteInApp } from "@/lib/nav-access";
+import { cn } from "@/lib/cn";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
   moderate: "#f59e0b",
   unhealthy: "#dc2626",
 };
+
+const HEALTH_FILTERS = [
+  { value: "all", label: "All health" },
+  { value: "healthy", label: "Healthy" },
+  { value: "moderate", label: "Moderate" },
+  { value: "unhealthy", label: "Unhealthy" },
+  { value: "unknown", label: "Unknown" },
+] as const;
 
 const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
 const CLUSTER_ZOOM_THRESHOLD = 13;
@@ -95,6 +108,7 @@ type TreesMapProps = {
   mapType?: "roadmap" | "satellite" | "hybrid";
   height?: string;
   className?: string;
+  showFilters?: boolean;
 };
 
 function MapViewportSync({
@@ -128,11 +142,17 @@ export function TreesMap({
   mapType = "roadmap",
   height = "70vh",
   className = "",
+  showFilters = false,
 }: TreesMapProps) {
+  const t = useTranslations("trees");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const { user } = useAuth();
+  const canAdd = canWriteInApp(user);
   const [selected, setSelected] = useState<Tree | null>(null);
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [zoom, setZoom] = useState(12);
+  const [projectId, setProjectId] = useState("");
+  const [health, setHealth] = useState("all");
 
   const onBounds = useCallback((next: BBox, nextZoom: number) => {
     setBbox(next);
@@ -143,14 +163,23 @@ export function TreesMap({
     ? `${bbox.minLon.toFixed(3)},${bbox.minLat.toFixed(3)},${bbox.maxLon.toFixed(3)},${bbox.maxLat.toFixed(3)}`
     : "init";
 
+  const { data: projectsData } = useQuery({
+    queryKey: ["planting-projects"],
+    queryFn: () => plantingProjects.list(),
+    enabled: showFilters,
+  });
+  const projects = projectsData?.items ?? [];
+
   const { data, isLoading, error, isFetching } = useQuery({
-    queryKey: ["trees-map", bboxKey],
+    queryKey: ["trees-map", bboxKey, projectId, health],
     queryFn: () =>
       trees.list({
         page_size: 150,
         bbox: bbox
           ? `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`
           : undefined,
+        ...(projectId ? { project_id: projectId } : {}),
+        ...(health !== "all" ? { health } : {}),
       }),
     placeholderData: (prev) => prev,
   });
@@ -158,6 +187,9 @@ export function TreesMap({
   const items = data?.items ?? [];
   const total = data?.total ?? items.length;
   const clusters = useMemo(() => clusterTrees(items, zoom), [items, zoom]);
+  const hasFilters = !!projectId || health !== "all";
+  const showEmptyCta =
+    !isLoading && !error && items.length === 0 && !isFetching;
 
   const center = useMemo(() => {
     if (!items.length) return DEFAULT_CENTER;
@@ -194,73 +226,164 @@ export function TreesMap({
   }
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-xl border border-stone-200 ${className}`}
-      style={{ height }}
-    >
-      <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-stone-200/80 bg-white/95 px-3 py-1.5 text-xs text-stone-700 shadow-sm backdrop-blur">
-        {isLoading && !data ? (
-          "Loading trees…"
-        ) : (
-          <>
-            Showing <span className="font-semibold">{items.length}</span>
-            {total > items.length ? (
-              <>
-                {" "}
-                of <span className="font-semibold">{total}</span> in view
-              </>
-            ) : (
-              <> trees</>
+    <div className={cn("space-y-3", className)}>
+      {showFilters ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="input max-w-xs text-sm"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            aria-label="Filter by project"
+          >
+            <option value="">All projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex flex-wrap gap-1.5">
+            {HEALTH_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                className={cn(
+                  "rounded-md px-2.5 py-1.5 text-xs font-medium",
+                  health === f.value
+                    ? "bg-forest-700 text-white"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+                )}
+                onClick={() => setHealth(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className="relative overflow-hidden rounded-xl border border-stone-200"
+        style={{ height }}
+      >
+        <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-stone-200/80 bg-white/95 px-3 py-1.5 text-xs text-stone-700 shadow-sm backdrop-blur">
+          {isLoading && !data ? (
+            "Loading trees…"
+          ) : (
+            <>
+              Showing <span className="font-semibold">{items.length}</span>
+              {total > items.length ? (
+                <>
+                  {" "}
+                  of <span className="font-semibold">{total}</span> in view
+                </>
+              ) : (
+                <> trees</>
+              )}
+              {zoom < CLUSTER_ZOOM_THRESHOLD && clusters.some((c) => c.count > 1) ? (
+                <span className="text-stone-500"> · clustered</span>
+              ) : null}
+              {isFetching ? <span className="text-stone-400"> · updating</span> : null}
+            </>
+          )}
+        </div>
+
+        <APIProvider apiKey={apiKey}>
+          <Map
+            defaultCenter={center}
+            defaultZoom={items.length ? 12 : 11}
+            mapTypeId={mapType}
+            gestureHandling="greedy"
+            fullscreenControl
+            mapTypeControl={mapType !== "roadmap"}
+            streetViewControl={false}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <MapViewportSync onBounds={onBounds} />
+
+            {clusters.map((cluster) =>
+              cluster.count === 1 ? (
+                <Marker
+                  key={cluster.id}
+                  position={{ lat: cluster.lat, lng: cluster.lng }}
+                  title={cluster.trees[0].species_text || cluster.trees[0].public_code}
+                  icon={markerIcon(treeColor(cluster.trees[0]))}
+                  onClick={() => setSelected(cluster.trees[0])}
+                />
+              ) : (
+                <Marker
+                  key={cluster.id}
+                  position={{ lat: cluster.lat, lng: cluster.lng }}
+                  title={`${cluster.count} trees — zoom in`}
+                  icon={clusterIcon(cluster.count)}
+                  onClick={() => {
+                    setSelected(cluster.trees[0]);
+                    showToast(`${cluster.count} trees here — zoom in for each pin`);
+                  }}
+                />
+              ),
             )}
-            {zoom < CLUSTER_ZOOM_THRESHOLD && clusters.some((c) => c.count > 1) ? (
-              <span className="text-stone-500"> · clustered</span>
-            ) : null}
-            {isFetching ? <span className="text-stone-400"> · updating</span> : null}
-          </>
+          </Map>
+        </APIProvider>
+
+        {showEmptyCta ? (
+          <div
+            className={cn(
+              "absolute z-10 p-3",
+              hasFilters
+                ? "inset-0 flex items-center justify-center bg-white/85 backdrop-blur-[1px]"
+                : "inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-14 sm:w-80",
+            )}
+          >
+            <EmptyState
+              icon={TreePine}
+              title={hasFilters ? "No trees match these filters" : "No trees in this view"}
+              description={
+                hasFilters
+                  ? "Clear project or health filters, or pan to another area."
+                  : "Tag a tree with GPS to pin it here, or pan if your trees are outside this area."
+              }
+              action={
+                hasFilters
+                  ? {
+                      label: "Clear filters",
+                      onClick: () => {
+                        setProjectId("");
+                        setHealth("all");
+                      },
+                    }
+                  : canAdd
+                    ? { label: "Tag first tree", href: "/trees/new" }
+                    : { label: "Browse trees", href: "/trees" }
+              }
+              className="max-w-md bg-white py-8 shadow-sm"
+            />
+          </div>
+        ) : null}
+
+        {selected && (
+          <TreeActionSheet tree={selected} onClose={() => setSelected(null)} />
         )}
       </div>
 
-      <APIProvider apiKey={apiKey}>
-        <Map
-          defaultCenter={center}
-          defaultZoom={items.length ? 12 : 11}
-          mapTypeId={mapType}
-          gestureHandling="greedy"
-          fullscreenControl
-          mapTypeControl={mapType !== "roadmap"}
-          streetViewControl={false}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <MapViewportSync onBounds={onBounds} />
-
-          {clusters.map((cluster) =>
-            cluster.count === 1 ? (
-              <Marker
-                key={cluster.id}
-                position={{ lat: cluster.lat, lng: cluster.lng }}
-                title={cluster.trees[0].species_text || cluster.trees[0].public_code}
-                icon={markerIcon(treeColor(cluster.trees[0]))}
-                onClick={() => setSelected(cluster.trees[0])}
-              />
-            ) : (
-              <Marker
-                key={cluster.id}
-                position={{ lat: cluster.lat, lng: cluster.lng }}
-                title={`${cluster.count} trees — zoom in`}
-                icon={clusterIcon(cluster.count)}
-                onClick={() => {
-                  setSelected(cluster.trees[0]);
-                  showToast(`${cluster.count} trees here — zoom in for each pin`);
-                }}
-              />
-            ),
-          )}
-        </Map>
-      </APIProvider>
-
-      {selected && (
-        <TreeActionSheet tree={selected} onClose={() => setSelected(null)} />
-      )}
+      {items.length > 0 ? (
+        <section aria-label={t("mapListFallback")} className="rounded-xl border border-stone-200 bg-white p-3">
+          <p className="mb-2 text-xs text-stone-500">{t("mapListHint")}</p>
+          <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
+            {items.slice(0, 25).map((tree) => (
+              <li key={tree.id}>
+                <Link
+                  href={`/trees/${tree.id}`}
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                >
+                  <span>{tree.species_text || tree.public_code}</span>
+                  <span className="text-xs text-stone-500">{tree.public_code}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

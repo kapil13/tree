@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
-from app.core.security import Permission
+from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
@@ -32,6 +32,11 @@ from app.schemas.tree import (
     TreeRegeotagOut,
     TreeUpdate,
 )
+from app.schemas.tree_measurement import (
+    TreeInitialMeasurement,
+    TreeMeasurementCreate,
+    TreeMeasurementOut,
+)
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
 from app.services.passport import generate_passport_pdf, generate_qr_png
@@ -46,11 +51,18 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
+from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
+from app.services.trees.measurements import create_measurement, list_measurements
 
 router = APIRouter(prefix="/trees", tags=["trees"])
+
+
+def _require_measurement_write(user: User) -> None:
+    if not has_permission(user.role, Permission.TREE_UPDATE):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="measurement_write_forbidden")
 
 TreeDeleteAccess = Annotated[User, require_write_perm(Permission.TREE_DELETE)]
 
@@ -197,7 +209,13 @@ async def create_tree(
     rules: dict = {}
     if project:
         standard = await get_active_standard(db, project)
-        rules = standard.rules if standard else {}
+        rules = await get_effective_rules(db, standard, project_id=project.id)
+        compliance_mode = await resolve_compliance_mode(
+            db,
+            template_code=standard.template_code if standard else project.standard_template_code,
+            project_compliance_mode=project.compliance_mode,
+            project_id=project.id,
+        )
 
     compliance = await evaluate_tree_placement(
         db,
@@ -244,6 +262,9 @@ async def create_tree(
     if compliance.chainage_km is not None:
         metadata["chainage_km"] = str(compliance.chainage_km)
 
+    if program.code == "byot" and metadata.get("visibility_public") is None:
+        metadata["visibility_public"] = True
+
     wkt = f"POINT({core_values['longitude']} {core_values['latitude']})"
     tree = Tree(
         public_code=_gen_public_code(),
@@ -282,6 +303,26 @@ async def create_tree(
                 uploaded_by=user.id,
             )
         )
+
+    initial = payload.initial_measurement or TreeInitialMeasurement()
+    photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
+    await create_measurement(
+        db,
+        tree=tree,
+        payload=TreeMeasurementCreate(
+            source="registration",
+            method=initial.method,
+            instrument=initial.instrument,
+            dbh_cm=initial.dbh_cm,
+            height_m=initial.height_m,
+            canopy_m=initial.canopy_m,
+            gps_accuracy_m=payload.accuracy_m,
+            photo_key=photo_key,
+            notes=initial.notes,
+        ),
+        measurer_id=user.id,
+    )
+
     await record_audit(
         db,
         actor=user,
@@ -297,6 +338,10 @@ async def create_tree(
             "photo_count": len(payload.photo_keys),
         },
     )
+    if program.code == "byot":
+        from app.services.citizen.gamification import record_tree_created
+
+        await record_tree_created(db, user)
     await db.commit()
     await db.refresh(tree, attribute_names=["planting_program"])
     return _to_out(tree)
@@ -441,8 +486,13 @@ async def regeotag_tree(
     compliance_out = None
     if project:
         standard = await get_active_standard(db, project)
-        rules = standard.rules if standard else {}
-        compliance_mode = project.compliance_mode
+        rules = await get_effective_rules(db, standard, project_id=project.id)
+        compliance_mode = await resolve_compliance_mode(
+            db,
+            template_code=standard.template_code if standard else project.standard_template_code,
+            project_compliance_mode=project.compliance_mode,
+            project_id=project.id,
+        )
         photo_count = len(tree.images) if tree.images else 0
 
         compliance = await evaluate_tree_placement(
@@ -502,6 +552,48 @@ async def regeotag_tree(
         meta["regeotag_remarks"] = payload.remarks
     meta["last_regeotag_at"] = tree.last_geotag_at.isoformat()
     tree.metadata_ = meta
+
+    survey_notes = payload.remarks
+    if payload.survival_status:
+        survey_notes = (
+            f"Survival: {payload.survival_status}"
+            + (f" — {payload.remarks}" if payload.remarks else "")
+        )
+    await create_measurement(
+        db,
+        tree=tree,
+        payload=TreeMeasurementCreate(
+            source="survival_survey",
+            method=payload.method or "tape",
+            instrument=payload.instrument,
+            dbh_cm=payload.dbh_cm,
+            height_m=payload.height_m,
+            canopy_m=payload.canopy_m,
+            gps_accuracy_m=payload.accuracy_m,
+            notes=survey_notes,
+        ),
+        measurer_id=user.id,
+    )
+
+    if payload.survival_status:
+        from app.schemas.tree_survival import TreeSurvivalEventCreate
+        from app.services.trees.survival_events import record_survival_event
+
+        await record_survival_event(
+            db,
+            tree=tree,
+            payload=TreeSurvivalEventCreate(
+                status=payload.survival_status,
+                cause=payload.remarks,
+            ),
+            recorder=user,
+        )
+
+    gamification = None
+    if tree.project_id is None:
+        from app.services.citizen.gamification import record_stewardship_checkin
+
+        gamification = await record_stewardship_checkin(db, user=user, tree=tree)
     await record_audit(
         db,
         actor=user,
@@ -522,6 +614,7 @@ async def regeotag_tree(
     return TreeRegeotagOut(
         **base.model_dump(),
         compliance=RegeotagComplianceOut(**compliance_out) if compliance_out else None,
+        gamification=gamification,
     )
 
 
@@ -664,11 +757,78 @@ async def get_qr_png(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
     return Response(content=png, media_type="image/png")
 
 
+@router.get("/{tree_id}/measurements", response_model=Page[TreeMeasurementOut])
+async def get_tree_measurements(
+    tree_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+) -> Page[TreeMeasurementOut]:
+    tree = await _get_owned_tree(tree_id, user, db)
+    offset = (page - 1) * page_size
+    rows, total = await list_measurements(db, tree.id, limit=page_size, offset=offset)
+    items = [TreeMeasurementOut.model_validate(r) for r in rows]
+    return Page[TreeMeasurementOut](
+        items=items, page=page, page_size=page_size, total=total
+    )
+
+
+@router.post(
+    "/{tree_id}/measurements",
+    response_model=TreeMeasurementOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_tree_measurement(
+    tree_id: uuid.UUID,
+    payload: TreeMeasurementCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> TreeMeasurementOut:
+    _require_measurement_write(user)
+    tree = await _get_owned_tree(tree_id, user, db)
+    if payload.photo_key:
+        try:
+            assert_owned_upload_key(user.id, payload.photo_key, folders=("images",))
+        except ValueError as exc:
+            code = str(exc)
+            if code == "s3_key_forbidden":
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
+
+    row = await create_measurement(
+        db,
+        tree=tree,
+        payload=payload,
+        measurer_id=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="tree.measurement.add",
+        resource_type="tree",
+        resource_id=tree.id,
+        request=request,
+        diff={
+            "measurement_id": str(row.id),
+            "source": row.source,
+            "method": row.method,
+            "dbh_cm": _as_float(row.dbh_cm),
+            "height_m": _as_float(row.height_m),
+        },
+    )
+    await db.commit()
+    await db.refresh(row)
+    return TreeMeasurementOut.model_validate(row)
+
+
 @router.get("/{tree_id}/timeline")
 async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
     tree = await _get_owned_tree(tree_id, user, db)
-    # Return any historical analyses + satellite samples we have. (Synth values
-    # in dev because the tree_metrics_ts hypertable is empty without a worker run.)
+    measurements, _ = await list_measurements(db, tree.id, limit=200, offset=0)
+    from app.services.trees.measurements import measurement_to_dict
+
     return {
         "tree_id": str(tree.id),
         "registered_at": tree.registered_at.isoformat(),
@@ -676,7 +836,11 @@ async def get_timeline(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
             "health": tree.current_health,
             "carbon_kg": float(tree.current_carbon_kg or 0),
             "satellite_verified": tree.satellite_verified,
+            "dbh_cm": _as_float(tree.current_dbh_cm),
+            "height_m": _as_float(tree.current_height_m),
+            "canopy_m": _as_float(tree.current_canopy_m),
         },
+        "measurements": [measurement_to_dict(m) for m in measurements],
     }
 
 

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   BarChart3,
   Bell,
   FileText,
   ClipboardList,
   FolderKanban,
-  Globe2,
-  Leaf,
+  Heart,
   LayoutDashboard,
   Map,
   Mic,
@@ -17,20 +17,18 @@ import {
   Settings,
   Sparkles,
   TreePine,
-  Users,
   Activity,
-  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { useAuth } from "@/lib/auth-store";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
-import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
+import { hasAnyPlatformAccess } from "@/lib/platform-access";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
   audience?: NavAudience | NavAudience[];
   excludeViewers?: boolean;
@@ -39,57 +37,78 @@ export type NavItem = {
 
 type NavGroup = {
   id: string;
-  label: string;
+  labelKey: string;
   items: NavItem[];
 };
 
 const NAV_GROUPS: NavGroup[] = [
   {
     id: "home",
-    label: "Home",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: BarChart3, audience: "all", exact: true }],
+    labelKey: "home",
+    items: [
+      { href: "/dashboard", labelKey: "dashboard", icon: BarChart3, audience: "all", exact: true },
+      { href: "/stewardship", labelKey: "stewardship", icon: Heart, audience: "byot", exact: true },
+    ],
   },
   {
     id: "operate",
-    label: "Operate",
+    labelKey: "operate",
     items: [
       {
         href: "/field-ops",
-        label: "Field ops",
+        labelKey: "fieldOps",
         icon: ClipboardList,
         audience: ["professional", "field_supervisor"],
         excludeViewers: true,
       },
-      { href: "/projects", label: "Projects", icon: FolderKanban, audience: ["professional", "field_supervisor", "field_worker"] },
-      { href: "/trees", label: "Trees", icon: TreePine, audience: "all", exact: true },
-      { href: "/trees/new", label: "Add tree", icon: Leaf, audience: "can_write", exact: true },
-      { href: "/map", label: "Map", icon: Map, audience: "all" },
+      {
+        href: "/projects",
+        labelKey: "projects",
+        icon: FolderKanban,
+        audience: ["professional", "field_supervisor", "field_worker"],
+      },
+      { href: "/trees", labelKey: "trees", icon: TreePine, audience: "all", exact: true },
+      { href: "/map", labelKey: "map", icon: Map, audience: "all" },
     ],
   },
   {
     id: "monitor",
-    label: "Monitor",
+    labelKey: "monitor",
     items: [
       {
         href: "/portfolio-health",
-        label: "Portfolio health",
+        labelKey: "portfolioHealth",
         icon: Activity,
         audience: ["professional", "field_supervisor"],
         exact: true,
       },
-      { href: "/satellite", label: "Satellite", icon: Satellite, audience: ["professional", "field_supervisor"] },
-      { href: "/bioacoustic", label: "Biodiversity", icon: Mic, audience: "professional" },
-      { href: "/alerts", label: "Alerts", icon: Bell, audience: "all" },
+      {
+        href: "/satellite",
+        labelKey: "satellite",
+        icon: Satellite,
+        audience: ["professional", "field_supervisor"],
+      },
+      { href: "/bioacoustic", labelKey: "biodiversity", icon: Mic, audience: "professional" },
+      { href: "/alerts", labelKey: "alerts", icon: Bell, audience: "all" },
     ],
   },
   {
     id: "evidence",
-    label: "Evidence",
+    labelKey: "evidence",
     items: [
-      { href: "/reports", label: "Reports", icon: FileText, audience: ["professional", "field_supervisor"] },
-      { href: "/assistant", label: "AI assistant", icon: Sparkles, audience: "all" },
-      { href: "/settings", label: "Settings", icon: Settings, audience: "all" },
+      {
+        href: "/reports",
+        labelKey: "reports",
+        icon: FileText,
+        audience: ["professional", "field_supervisor"],
+      },
+      { href: "/assistant", labelKey: "aiAssistant", icon: Sparkles, audience: "all" },
     ],
+  },
+  {
+    id: "account",
+    labelKey: "account",
+    items: [{ href: "/settings", labelKey: "settings", icon: Settings, audience: "all" }],
   },
 ];
 
@@ -98,38 +117,26 @@ function isActive(path: string | null, item: NavItem): boolean {
   if (item.exact) return path === item.href;
   if (item.href === "/dashboard") return path === "/dashboard";
   if (item.href === "/portfolio-health") return path === "/portfolio-health";
-  if (item.href === "/trees") return path === "/trees" || (path.startsWith("/trees/") && !path.startsWith("/trees/new"));
+  if (item.href === "/trees") {
+    return path === "/trees" || (path.startsWith("/trees/") && !path.startsWith("/trees/new"));
+  }
   return path === item.href || path.startsWith(`${item.href}/`);
 }
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const { user } = useAuth();
+  const t = useTranslations("nav");
 
   const adminItems: NavItem[] = [];
-  if (canManagePlatformUsers(user)) {
+  if (hasAnyPlatformAccess(user)) {
     adminItems.push({
       href: "/platform",
-      label: "Platform admin",
+      labelKey: "platformAdmin",
       icon: LayoutDashboard,
       audience: "all",
       exact: true,
     });
-    adminItems.push({
-      href: "/platform/users",
-      label: "Users",
-      icon: Users,
-      audience: "all",
-    });
-    adminItems.push({
-      href: "/platform/program-access",
-      label: "Program access",
-      icon: UserCheck,
-      audience: "all",
-    });
-  }
-  if (canAccessWebsiteCms(user)) {
-    adminItems.push({ href: "/platform/cms", label: "Website CMS", icon: Globe2, audience: "all" });
   }
 
   const groups = NAV_GROUPS.map((group) => ({
@@ -140,34 +147,36 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   })).filter((group) => group.items.length > 0);
 
   if (adminItems.length) {
-    groups.push({ id: "admin", label: "Admin", items: adminItems });
+    groups.push({ id: "admin", labelKey: "platformAdmin", items: adminItems });
   }
 
   return (
-    <nav className="space-y-4">
+    <nav className="space-y-4" aria-label={t("home")}>
       {groups.map((group) => (
         <div key={group.id}>
           {group.id !== "home" ? (
             <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
-              {group.label}
+              {t(group.labelKey)}
             </p>
           ) : null}
           <div className="space-y-1">
-            {group.items.map(({ href, label, icon: Icon, exact, audience }) => {
-              const active = isActive(path, { href, label, icon: Icon, exact, audience });
+            {group.items.map(({ href, labelKey, icon: Icon, exact, audience }) => {
+              const active = isActive(path, { href, labelKey, icon: Icon, exact, audience });
+              const label = t(labelKey);
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
                     active
                       ? "bg-forest-100 text-forest-800"
                       : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" aria-hidden />
                   {label}
                 </Link>
               );

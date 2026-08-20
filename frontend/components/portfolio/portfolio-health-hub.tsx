@@ -40,7 +40,7 @@ export function PortfolioHealthHub() {
       <div>
         <h1 className="text-2xl font-semibold text-stone-900">Portfolio health</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Unified view of compliance, satellite monitoring, threats, and biodiversity across your
+          A quick read on compliance, site scans, weather threats, and biodiversity across your
           planting portfolio.
         </p>
       </div>

@@ -34,6 +34,7 @@ from app.services.payments.razorpay_client import (
     public_key_id,
     verify_webhook_signature,
 )
+from app.services.platform.governance import assert_org_feature_enabled
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -54,6 +55,7 @@ async def create_checkout_order(
 ) -> PaymentCheckoutOut:
     if not payments_enabled():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="payments_not_configured")
+    await assert_org_feature_enabled(db, user, "payments")
     try:
         order = await create_payment_order(db, user=user, sku=payload.sku)
         await db.commit()

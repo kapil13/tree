@@ -1,5 +1,5 @@
 .PHONY: help dev-start dev-stop dev-status setup-native migrate-native seed-native test lint
-.PHONY: up down logs migrate seed docker-legacy
+.PHONY: up down logs migrate seed docker-legacy migrate-db
 
 help:
 	@echo "BYOT — Native Mac (no Docker)"
@@ -8,6 +8,7 @@ help:
 	@echo "  make dev-stop         Stop backend + frontend"
 	@echo "  make dev-status       Health check + logs"
 	@echo "  make migrate-native   Run Alembic migrations"
+	@echo "  make migrate-db       Smart migrate (auto-detect Docker vs native)"
 	@echo "  make seed-native      Seed demo user"
 	@echo "  make test             Run backend tests"
 	@echo "  make lint             Lint backend and frontend"
@@ -32,6 +33,11 @@ dev-status:
 
 migrate-native:
 	cd backend && . .venv/bin/activate && alembic upgrade head
+
+migrate-db:
+	./scripts/migrate-db.sh
+
+migrate: migrate-db
 
 seed-native:
 	cd backend && . .venv/bin/activate && python -m app.scripts.seed_demo

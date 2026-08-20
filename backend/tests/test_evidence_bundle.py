@@ -17,6 +17,7 @@ def _mock_project():
     project = MagicMock()
     project.id = uuid.uuid4()
     project.code = "NHAI-DEMO"
+    project.metadata_ = {}
     return project
 
 
@@ -42,13 +43,19 @@ async def test_build_project_evidence_bundle_contains_manifest():
             return_value=b"%PDF-1.4 test",
         ),
         patch("app.services.evidence.bundle.get_storage") as storage_mock,
+        patch(
+            "app.services.evidence.bundle.compute_scheme_kpis",
+            new=AsyncMock(return_value={"kpis": []}),
+        ),
     ):
         storage_mock.return_value.is_available.return_value = False
         db.execute = AsyncMock(
             return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=lambda: [])))
         )
 
-        zip_bytes, summary = await build_project_evidence_bundle(db, project, include_photos=False)
+        zip_bytes, summary, _signature = await build_project_evidence_bundle(
+            db, project, include_photos=False
+        )
 
     assert summary["project_code"] == "NHAI-DEMO"
     assert summary["bundle_sha256"]
@@ -60,5 +67,5 @@ async def test_build_project_evidence_bundle_contains_manifest():
         assert "mrv-compliance.pdf" in names
         assert "carbon-summary.json" in names
         manifest = json.loads(zf.read("manifest.json"))
-        assert manifest["bundle_version"] == "aranyix-evidence-1.0.0"
+        assert manifest["bundle_version"] == "aranyix-evidence-1.1.0"
         assert manifest["file_count"] >= 4

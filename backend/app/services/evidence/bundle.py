@@ -15,8 +15,11 @@ from sqlalchemy.orm import selectinload
 
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
+from app.services.credits.green_credit import build_project_green_credit_summary
+from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
 from app.services.planting_projects.mrv_export import build_project_mrv_context
 from app.services.reports.exporter import render_compliance_mrv_pdf
+from app.services.schemes.kpis import compute_scheme_kpis
 from app.services.storage import get_storage
 
 MAX_PHOTOS = 50
@@ -31,6 +34,8 @@ Contents:
 - mrv-context.json    Structured project, tree, and compliance data
 - mrv-compliance.pdf  Human-readable MRV compliance report
 - carbon-summary.json Aggregated carbon metrics from registered trees
+- scheme-summary.json Central govt scheme refs, convergence, and KPI status
+- green-credit-summary.json MoEFCC Green Credit estimate (when scheme applies)
 - photos/manifest.json Photo metadata (S3 keys, tree linkage)
 - photos/*            Up to 50 primary tree photos when storage is available
 
@@ -59,9 +64,21 @@ async def build_project_evidence_bundle(
     *,
     include_photos: bool = True,
     max_photos: int = MAX_PHOTOS,
-) -> tuple[bytes, dict[str, Any]]:
-    """Build a zip evidence bundle and return (zip_bytes, summary_for_audit)."""
+    sign: bool = True,
+) -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
+    """Build a zip evidence bundle and return (zip_bytes, summary, signature)."""
     ctx = await build_project_mrv_context(db, project)
+    scheme_summary = await compute_scheme_kpis(db, project)
+    meta = project.metadata_ or {}
+    scheme_summary["scheme_refs"] = meta.get("scheme_refs") or {}
+    scheme_summary["funding_sources"] = meta.get("funding_sources") or []
+    scheme_summary["convergence"] = meta.get("convergence") or []
+
+    green_credit_summary: dict[str, Any] | None = None
+    if project.scheme_code == "green_credit_india" or (
+        (meta.get("scheme_refs") or {}).get("green_credit_land_bank_id")
+    ):
+        green_credit_summary = await build_project_green_credit_summary(db, project)
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -108,6 +125,19 @@ async def build_project_evidence_bundle(
             json.dumps(carbon_summary, indent=2).encode("utf-8"),
             manifest_files,
         )
+        _add_file(
+            zf,
+            "scheme-summary.json",
+            json.dumps(scheme_summary, indent=2, default=str).encode("utf-8"),
+            manifest_files,
+        )
+        if green_credit_summary is not None:
+            _add_file(
+                zf,
+                "green-credit-summary.json",
+                json.dumps(green_credit_summary, indent=2, default=str).encode("utf-8"),
+                manifest_files,
+            )
         pdf = render_compliance_mrv_pdf(ctx)
         _add_file(zf, "mrv-compliance.pdf", pdf, manifest_files)
 
@@ -144,15 +174,12 @@ async def build_project_evidence_bundle(
             )
 
         bundle_manifest = {
-            "bundle_version": "aranyix-evidence-1.0.0",
+            "bundle_version": "aranyix-evidence-1.1.0",
             "project_id": str(project.id),
             "project_code": project.code,
             "generated_at": datetime.now(UTC).isoformat(),
             "file_count": len(manifest_files),
             "files": manifest_files,
-            "bundle_sha256": _sha256(
-                json.dumps(manifest_files, sort_keys=True, default=str).encode("utf-8")
-            ),
         }
         _add_file(
             zf,
@@ -162,12 +189,16 @@ async def build_project_evidence_bundle(
         )
 
     zip_bytes = buf.getvalue()
+    bundle_sha256 = zip_content_hash(zip_bytes)
+    signature = sign_evidence_zip(zip_bytes) if sign else None
     summary = {
         "project_id": str(project.id),
         "project_code": project.code,
         "file_count": len(manifest_files),
         "photos_included": photos_included,
-        "bundle_sha256": bundle_manifest["bundle_sha256"],
+        "bundle_sha256": bundle_sha256,
         "zip_size_bytes": len(zip_bytes),
+        "signed": signature is not None,
+        "signature_key_id": signature.key_id if signature else None,
     }
-    return zip_bytes, summary
+    return zip_bytes, summary, signature

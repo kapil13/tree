@@ -68,6 +68,7 @@ from app.services.auth.password_reset import (
     confirm_password_reset,
     request_password_reset,
 )
+from app.services.auth.sessions import token_issued_before_invalidation
 from app.services.auth.signup import (
     SignupError,
     complete_signup,
@@ -90,6 +91,7 @@ from app.services.planting_programs.onboarding import (
     repair_stale_onboarding_requests,
     submit_org_profile,
 )
+from app.services.platform.governance import assert_registration_allowed
 from app.services.platform.modules import build_platform_access_map
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -128,6 +130,7 @@ async def captcha_config() -> CaptchaConfigOut:
     dependencies=[rate_limit(10, 60)],
 )
 async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOut:
+    await assert_registration_allowed(db)
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
@@ -156,6 +159,12 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
     )
     db.add(user)
     await db.flush()
+    from app.services.privacy.consent import record_signup_consents
+
+    ip = request.client.host if request.client else None
+    await record_signup_consents(
+        db, user=user, ip=ip, user_agent=request.headers.get("user-agent")
+    )
     await ensure_default_enrollment(db, user.id)
     await record_audit(
         db,
@@ -274,6 +283,8 @@ async def refresh(payload: RefreshRequest, db: DB) -> TokenResponse:
     user = res.scalar_one_or_none()
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="inactive_user")
+    if token_issued_before_invalidation(user, data.get("iat")):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="session_revoked")
     await assert_user_may_authenticate(db, user)
     # Rotate: revoke the presented refresh token before issuing a new pair.
     exp = data.get("exp")
@@ -317,6 +328,7 @@ def _signup_error(exc: SignupError) -> HTTPException:
 
 @router.post("/signup/start", response_model=SignupStartOut, dependencies=[rate_limit(10, 60)])
 async def signup_start(payload: SignupStartRequest, request: Request, db: DB) -> SignupStartOut:
+    await assert_registration_allowed(db)
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     try:
         token, dev_hint = await start_signup(
@@ -376,6 +388,12 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
         user = await complete_signup(db, payload.signup_token, payload.code)
     except SignupError as exc:
         raise _signup_error(exc) from exc
+    from app.services.privacy.consent import record_signup_consents
+
+    ip = request.client.host if request.client else None
+    await record_signup_consents(
+        db, user=user, ip=ip, user_agent=request.headers.get("user-agent")
+    )
     onboarding = await get_user_onboarding_state(db, user.id)
     await record_audit(
         db,
@@ -588,7 +606,7 @@ async def _user_out_enriched(
     *,
     impersonation: dict[str, str] | None = None,
 ) -> UserOut:
-    platform_access = await build_platform_access_map(db, role=user.role)
+    platform_access = await build_platform_access_map(db, role=user.role, user_id=user.id)
     codes = await user_enrolled_program_codes(db, user.id)
     org_name = None
     if user.organization_id:
@@ -650,6 +668,7 @@ async def me(
                 impersonation = {
                     "admin_user_id": str(imp_by),
                     "admin_email": admin.email if admin else "",
+                    "read_only": payload.get("imp_ro") is True,
                 }
         except ValueError:
             pass
@@ -665,6 +684,11 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
         user.full_name = payload.full_name
     if payload.phone is not None:
         user.phone = payload.phone
+    if payload.locale is not None:
+        allowed = {"en", "hi", "mr", "ta", "te", "bn", "kn", "gu"}
+        if payload.locale not in allowed:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported_locale")
+        user.locale = payload.locale
     await db.commit()
     await db.refresh(user)
     return await _user_out_enriched(db, user)

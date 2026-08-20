@@ -65,6 +65,7 @@ class PlantingProjectCreate(BaseModel):
     segment: str = Field(default="general", max_length=64)
     compliance_mode: Literal["open", "guided", "strict"] = "guided"
     program_code: str | None = Field(default=None, max_length=64)
+    scheme_code: str | None = Field(default=None, max_length=64)
     standard_template_code: str | None = Field(default=None, max_length=64)
     target_tree_count: int | None = Field(default=None, ge=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -90,6 +91,7 @@ class PlantingProjectOut(BaseModel):
     compliance_mode: str
     status: str
     program_code: str | None
+    scheme_code: str | None
     standard_template_code: str | None
     target_tree_count: int | None
     organization_id: uuid.UUID | None
@@ -166,3 +168,19 @@ class ComplianceCheckOut(BaseModel):
     mode: str
     chainage_km: float | None = None
     issues: list[ComplianceIssueOut]
+
+
+class SchemeMetadataUpdate(BaseModel):
+    scheme_refs: dict[str, Any] = Field(default_factory=dict)
+    funding_sources: list[dict[str, Any]] | None = None
+    convergence: list[dict[str, Any]] | None = None
+
+
+class SchemeKpiOut(BaseModel):
+    scheme_code: str | None
+    scheme_label: str | None = None
+    ministry: str | None = None
+    targets: dict[str, Any] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    checks: dict[str, bool] = Field(default_factory=dict)
+    status: str

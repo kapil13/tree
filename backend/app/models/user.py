@@ -31,9 +31,11 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sessions_invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notification_preferences: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=default_notification_preferences
     )
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
 
     organization = relationship(
         "Organization", back_populates="users", foreign_keys=[organization_id]
@@ -42,5 +44,7 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     planting_programs = relationship("UserPlantingProgram", back_populates="user")
     ai_scan_wallet = relationship("UserAiScanWallet", back_populates="user", uselist=False)
     payment_orders = relationship("PaymentOrder", back_populates="user")
+    tree_stewards = relationship("TreeSteward", back_populates="user")
+    citizen_profile = relationship("CitizenProfile", back_populates="user", uselist=False)
 
     __table_args__ = (Index("users_org_idx", "organization_id"),)

@@ -89,6 +89,37 @@ async def test_save_project_checklist_responses_persists(monkeypatch):
         "app.services.compliance.evaluator.build_auto_signals",
         fake_build_auto_signals,
     )
+    async def fake_effective_checklist(db, code):
+        base = get_checklist(code)
+        assert base is not None
+        return {
+            "code": base.code,
+            "title": base.title,
+            "short_label": base.short_label,
+            "framework_reference": base.framework_reference,
+            "description": base.description,
+            "disclaimer": base.disclaimer,
+            "items": [
+                {
+                    "id": item.id,
+                    "category": item.category,
+                    "question": item.question,
+                    "guidance": item.guidance,
+                    "required": item.required,
+                    "auto_key": item.auto_key,
+                }
+                for item in base.items
+            ],
+        }
+
+    monkeypatch.setattr(
+        "app.services.compliance.evaluator.get_effective_checklist",
+        fake_effective_checklist,
+    )
+    monkeypatch.setattr(
+        "app.services.schemes.compliance.notify_scheme_compliance_gaps",
+        AsyncMock(),
+    )
     monkeypatch.setattr(
         "app.services.compliance.evaluator.build_project_checklist_state",
         AsyncMock(return_value={"eligibility_status": "eligible"}),
@@ -120,9 +151,11 @@ async def test_build_auto_signals_no_trees():
     count_zero.scalar_one.return_value = 0
     ledger_none = MagicMock()
     ledger_none.scalar_one_or_none.return_value = None
+    risk_none = MagicMock()
+    risk_none.scalar_one_or_none.return_value = None
 
     db.execute = AsyncMock(
-        side_effect=[empty_trees, empty_violations, count_zero, ledger_none]
+        side_effect=[empty_trees, empty_violations, count_zero, ledger_none, risk_none]
     )
 
     async def fake_standard(db_, proj):
@@ -137,3 +170,4 @@ async def test_build_auto_signals_no_trees():
     monkeypatch.undo()
     assert signals["has_trees"] == "no"
     assert signals["geo_tagged_majority"] == "no"
+    assert signals["nprt_assessed"] == "no"

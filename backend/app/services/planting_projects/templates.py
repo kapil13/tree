@@ -57,6 +57,88 @@ def _industrial_rules() -> dict[str, Any]:
     }
 
 
+def _nagar_van_urban_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 2.5, "warn_below": 2.0},
+        "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+        "max_gps_accuracy_m": 10.0,
+        "min_photos": 2,
+        "guard_type_required": True,
+        "layout_pattern": "cluster",
+        "allowed_species": None,
+        "species_native_pct_min": 80,
+        "planting_density_per_ha": {"min": 800, "max": 5000},
+        "require_pit_photo": False,
+        "chainage_enabled": False,
+        "min_trees_project": 10000,
+        "work_area_geometry": "polygon",
+        "block_types": ["ward_park", "degraded_land", "miyawaki_patch", "avenue_buffer"],
+        "native_species_examples": [
+            "Neem",
+            "Peepal",
+            "Banyan",
+            "Jamun",
+            "Arjun",
+            "Gulmohar",
+            "Kachnar",
+            "Amaltas",
+        ],
+    }
+
+
+def _sahakar_van_coop_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 1.0, "warn_below": 0.8},
+        "spacing_conventional_m": {"min": 3.0, "warn_below": 2.5},
+        "pit_size_cm": {"length": 30, "width": 30, "depth": 30},
+        "pit_size_conventional_cm": {"length": 45, "width": 45, "depth": 45},
+        "max_gps_accuracy_m": 10.0,
+        "min_photos": 2,
+        "guard_type_required": True,
+        "layout_pattern": "miyawaki_cluster",
+        "layout_patterns_allowed": ["miyawaki_cluster", "conventional_row", "mixed"],
+        "allowed_species": [
+            "Khejri",
+            "Prosopis cineraria",
+            "Rohida",
+            "Tecomella undulata",
+            "Neem",
+            "Azadirachta indica",
+            "Ber",
+            "Ziziphus mauritiana",
+            "Babool",
+            "Acacia nilotica",
+            "Palash",
+            "Butea monosperma",
+            "Arjun",
+            "Terminalia arjuna",
+        ],
+        "species_native_pct_min": 100,
+        "planting_density_per_ha": {"min": 2000, "max": 12000},
+        "planting_density_conventional_per_ha": {"min": 400, "max": 1200},
+        "require_pit_photo": True,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "miyawaki_patch",
+            "conventional_block",
+            "rainwater_harvest",
+            "nursery_bed",
+            "community_zone",
+        ],
+        "site_area_acres_min": 1,
+        "site_area_acres_reference": 64,
+        "rainwater_harvest_required": True,
+        "soil_treatment_required": True,
+        "organic_manure_required": True,
+        "community_participation_min_pct": 50,
+        "cooperative_led": True,
+        "arid_land_optimized": True,
+        "native_species_examples": ["Khejri", "Rohida", "Neem", "Ber", "Babool"],
+        "plantation_methods": ["miyawaki", "conventional", "mixed"],
+    }
+
+
 def _township_rules() -> dict[str, Any]:
     return {
         "spacing_m": {"min": 5.0, "warn_below": 4.5},
@@ -146,6 +228,31 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "guided",
         "recommended_program_codes": ["corporate_esg", "government_nhai"],
         "rules": _township_rules(),
+    },
+    "nagar_van_urban_forest_v1": {
+        "code": "nagar_van_urban_forest_v1",
+        "name": "Nagar Van Urban Forest",
+        "segment": "nagar_van_urban",
+        "description": (
+            "MoEFCC Nagar Van Yojana city-forest blocks with ward polygons, dense cluster "
+            "planting, native species emphasis, and 10,000+ tree targets per site."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai"],
+        "rules": _nagar_van_urban_rules(),
+    },
+    "sahakar_van_cooperative_v1": {
+        "code": "sahakar_van_cooperative_v1",
+        "name": "Sahakar Van Cooperative Forest",
+        "segment": "sahakar_van_coop",
+        "description": (
+            "NCCF–Amul cooperative afforestation on arid/degraded land using Miyawaki and "
+            "conventional methods, hardy local species, rainwater harvesting, and "
+            "community-led maintenance."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["ngo_community", "government_nhai"],
+        "rules": _sahakar_van_coop_rules(),
     },
     "ngo_watershed_v1": {
         "code": "ngo_watershed_v1",

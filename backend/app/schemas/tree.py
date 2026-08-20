@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.tree_measurement import MeasurementMethod, TreeInitialMeasurement
+
 
 class TreeCreate(BaseModel):
     program_code: str = Field(default="byot", max_length=64)
@@ -24,6 +26,7 @@ class TreeCreate(BaseModel):
     )
     photo_keys: list[str] = Field(default_factory=list, max_length=10)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    initial_measurement: TreeInitialMeasurement | None = None
 
 
 class TreeUpdate(BaseModel):
@@ -106,6 +109,11 @@ class TreeRegeotag(BaseModel):
         default=None, description="live | stressed | dead | replaced"
     )
     remarks: str | None = None
+    dbh_cm: float | None = Field(default=None, ge=0, le=500)
+    height_m: float | None = Field(default=None, ge=0, le=200)
+    canopy_m: float | None = Field(default=None, ge=0, le=200)
+    method: MeasurementMethod | None = Field(default="tape")
+    instrument: str | None = Field(default=None, max_length=64)
 
 
 class RegeotagComplianceOut(BaseModel):
@@ -117,6 +125,7 @@ class RegeotagComplianceOut(BaseModel):
 
 class TreeRegeotagOut(TreeOut):
     compliance: RegeotagComplianceOut | None = None
+    gamification: dict[str, Any] | None = None
 
 
 class TreePassport(BaseModel):

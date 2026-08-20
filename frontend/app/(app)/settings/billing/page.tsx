@@ -39,14 +39,14 @@ export default function SettingsBillingPage() {
         </SettingsSection>
       ) : (
         <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200">
-          In-app payments are not configured on this server. Ask your administrator to set{" "}
-          <code className="rounded bg-stone-200 px-1 dark:bg-stone-800">RAZORPAY_KEY_ID</code> and{" "}
-          <code className="rounded bg-stone-200 px-1 dark:bg-stone-800">RAZORPAY_KEY_SECRET</code>.
-          You can still{" "}
-          <Link href="/settings/programs" className="font-medium underline">
-            request professional program access
-          </Link>{" "}
-          for unlimited scans.
+          <p className="font-medium text-stone-900 dark:text-stone-100">Payments unavailable</p>
+          <p className="mt-1">
+            In-app checkout is not enabled on this server. You can still{" "}
+            <Link href="/settings/programs" className="font-medium underline">
+              request professional program access
+            </Link>{" "}
+            for unlimited scans, or ask your administrator to enable payments.
+          </p>
         </div>
       )}
 

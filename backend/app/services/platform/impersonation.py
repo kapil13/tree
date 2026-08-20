@@ -19,13 +19,16 @@ class ImpersonationError(Exception):
         super().__init__(code)
 
 
-def impersonation_token_for(*, admin: User, target: User) -> dict:
+def impersonation_token_for(*, admin: User, target: User, read_only: bool = False) -> dict:
+    extra: dict[str, str] = {"imp_by": str(admin.id)}
+    if read_only:
+        extra["imp_ro"] = True
     access_token = create_access_token(
         target.id,
         role=target.role,
         org_id=target.organization_id,
         expires_delta=timedelta(minutes=IMPERSONATION_TTL_MINUTES),
-        extra={"imp_by": str(admin.id)},
+        extra=extra,
     )
     return {
         "access_token": access_token,
@@ -34,6 +37,7 @@ def impersonation_token_for(*, admin: User, target: User) -> dict:
         "expires_in": IMPERSONATION_TTL_MINUTES * 60,
         "impersonated_by_id": admin.id,
         "impersonated_by_email": admin.email,
+        "read_only": read_only,
     }
 
 

@@ -11,6 +11,7 @@ from app.models.tree import Tree
 from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
 from app.schemas.threat_watch import ThreatWatchResponse
 from app.services.dashboard.carbon_series import build_carbon_growth_series
+from app.services.dashboard.kpi_uncertainty import portfolio_co2e_uncertainty
 from app.services.data_scope import apply_owner_org_scope, apply_tree_scope
 from app.services.threats.watch import build_portfolio_threat_watch
 
@@ -43,12 +44,16 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
     annual_seq = total_co2e * 0.07  # ~7% growth per year heuristic
     lifetime_credits = (total_co2e * 5) / 1000.0
     revenue = lifetime_credits * 12.0 * 0.55
+    uncertainty = portfolio_co2e_uncertainty(total_co2e, total_trees)
 
     kpi = KPI(
         total_trees=total_trees,
         total_biomass_kg=round(total_biomass, 2),
         total_carbon_kg=round(total_carbon, 2),
         total_co2e_kg=round(total_co2e, 2),
+        co2e_kg_lower_90=uncertainty.get("co2e_kg_lower_90"),
+        co2e_kg_upper_90=uncertainty.get("co2e_kg_upper_90"),
+        uncertainty_pct=uncertainty.get("uncertainty_pct"),
         annual_sequestration_kg=round(annual_seq, 2),
         lifetime_credits_tco2e=round(lifetime_credits, 3),
         estimated_revenue_usd=round(revenue, 2),

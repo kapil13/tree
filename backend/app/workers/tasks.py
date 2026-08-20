@@ -97,6 +97,215 @@ def run_satellite_scan(tree_id: str) -> dict:
     return _execute_recorded("run_satellite_scan", _run)
 
 
+@celery_app.task(name="app.workers.tasks.run_sar_scan")
+def run_sar_scan(tree_id: str) -> dict:
+    log.info("worker.run_sar_scan", tree_id=tree_id)
+
+    async def _run() -> dict:
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.tree import Tree
+        from app.services.monitoring.sar_sweep import scan_and_persist_tree_sar
+
+        async with AsyncSessionLocal() as db:
+            tree = (
+                await db.execute(select(Tree).where(Tree.id == uuid.UUID(tree_id)))
+            ).scalar_one_or_none()
+            if tree is None:
+                return {"status": "not_found", "tree_id": tree_id}
+            result = await scan_and_persist_tree_sar(db, tree)
+            await db.commit()
+            if result is None:
+                return {"status": "failed", "tree_id": tree_id}
+            _rec, analysis = result
+            return {
+                "tree_id": tree_id,
+                "status": "ok",
+                "ground_status": analysis.ground_status,
+                "risk_level": analysis.risk_level,
+            }
+
+    return _execute_recorded("run_sar_scan", _run)
+
+
+@celery_app.task(name="app.workers.tasks.monthly_sar_sweep")
+def monthly_sar_sweep() -> dict:
+    log.info("worker.monthly_sar_sweep")
+
+    async def _run() -> dict:
+        from datetime import UTC, datetime
+
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.plantation_fence import PlantationFence
+        from app.models.planting_project import PlantingProject
+        from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
+        from app.services.monitoring.sar_sweep_health import (
+            classify_sar_provider,
+            notify_project_owners_sweep_health,
+            summarize_sweep_counts,
+        )
+
+        scanned = failed = skipped = stub_scans = live_scans = 0
+        touched_projects: set = set()
+        async with AsyncSessionLocal() as db:
+            projects_res = await db.execute(
+                select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
+            )
+            project_ids = {p.id for p in projects_res.scalars().all()}
+            fences_res = await db.execute(
+                select(PlantationFence).where(PlantationFence.project_id.isnot(None))
+            )
+            fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+
+            for fence in fences:
+                if fence.last_satellite_at:
+                    age_days = (datetime.now(UTC) - fence.last_satellite_at).days
+                    if age_days < 20:
+                        skipped += 1
+                        continue
+                result = await scan_and_persist_fence_sar(db, fence)
+                if result:
+                    rec, _analysis = result
+                    scanned += 1
+                    if fence.project_id:
+                        touched_projects.add(fence.project_id)
+                    if classify_sar_provider(rec.provider) == "live":
+                        live_scans += 1
+                    elif classify_sar_provider(rec.provider) == "stub":
+                        stub_scans += 1
+                else:
+                    failed += 1
+            outcome = summarize_sweep_counts(
+                scanned=scanned,
+                failed=failed,
+                stub_scans=stub_scans,
+                live_scans=live_scans,
+            )
+            await notify_project_owners_sweep_health(
+                db,
+                project_ids=touched_projects,
+                job_name="monthly_sar_sweep",
+                outcome=outcome,
+            )
+            await db.commit()
+        return {
+            **outcome,
+            "skipped": skipped,
+            "total": len(fences),
+        }
+
+    return _execute_recorded("monthly_sar_sweep", _run)
+
+
+@celery_app.task(name="app.workers.tasks.weekly_sar_integrity_watch")
+def weekly_sar_integrity_watch() -> dict:
+    log.info("worker.weekly_sar_integrity_watch")
+
+    async def _run() -> dict:
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.plantation_fence import PlantationFence
+        from app.models.planting_project import PlantingProject
+        from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
+        from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
+        from app.services.monitoring.sar_sweep_health import (
+            classify_sar_provider,
+            notify_project_owners_sweep_health,
+            summarize_sweep_counts,
+        )
+
+        scanned = failed = stub_scans = live_scans = 0
+        touched_projects: set = set()
+        async with AsyncSessionLocal() as db:
+            projects_res = await db.execute(
+                select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
+            )
+            project_ids = {p.id for p in projects_res.scalars().all()}
+            fences_res = await db.execute(
+                select(PlantationFence).where(PlantationFence.project_id.isnot(None))
+            )
+            fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+            at_risk_ids = await list_at_risk_fence_ids(db, [f.id for f in fences], limit=20)
+            fence_by_id = {f.id: f for f in fences}
+            for fence_id in at_risk_ids:
+                fence = fence_by_id.get(fence_id)
+                if fence is None:
+                    continue
+                result = await scan_and_persist_fence_sar(db, fence)
+                if result:
+                    rec, _analysis = result
+                    scanned += 1
+                    if fence.project_id:
+                        touched_projects.add(fence.project_id)
+                    if classify_sar_provider(rec.provider) == "live":
+                        live_scans += 1
+                    elif classify_sar_provider(rec.provider) == "stub":
+                        stub_scans += 1
+                else:
+                    failed += 1
+            outcome = summarize_sweep_counts(
+                scanned=scanned,
+                failed=failed,
+                stub_scans=stub_scans,
+                live_scans=live_scans,
+            )
+            await notify_project_owners_sweep_health(
+                db,
+                project_ids=touched_projects,
+                job_name="weekly_sar_integrity_watch",
+                outcome=outcome,
+            )
+            await db.commit()
+        return {
+            **outcome,
+            "candidates": len(at_risk_ids),
+        }
+
+    return _execute_recorded("weekly_sar_integrity_watch", _run)
+
+
+@celery_app.task(name="app.workers.tasks.daily_sar_sweep_health")
+def daily_sar_sweep_health() -> dict:
+    log.info("worker.daily_sar_sweep_health")
+
+    async def _run() -> dict:
+        from sqlalchemy import select
+
+        from app.core.database import AsyncSessionLocal
+        from app.models.planting_project import PlantingProject
+        from app.models.user import User
+        from app.services.monitoring.sar_sweep_health import evaluate_recent_sar_jobs
+
+        reviewed = 0
+        async with AsyncSessionLocal() as db:
+            owner_ids = {
+                p.owner_user_id
+                for p in (
+                    await db.execute(
+                        select(PlantingProject).where(
+                            PlantingProject.status.in_(("active", "planning")),
+                            PlantingProject.owner_user_id.isnot(None),
+                        )
+                    )
+                ).scalars().all()
+                if p.owner_user_id
+            }
+            for owner_id in owner_ids:
+                user = await db.get(User, owner_id)
+                if user is None:
+                    continue
+                await evaluate_recent_sar_jobs(db, user)
+                reviewed += 1
+            await db.commit()
+        return {"owners_reviewed": reviewed}
+
+    return _execute_recorded("daily_sar_sweep_health", _run)
+
+
 @celery_app.task(name="app.workers.tasks.recalc_carbon")
 def recalc_carbon(tree_id: str, user_id: str) -> dict:
     log.info("worker.recalc_carbon", tree_id=tree_id, user_id=user_id)
@@ -127,20 +336,33 @@ def recalc_carbon(tree_id: str, user_id: str) -> dict:
 
 
 @celery_app.task(name="app.workers.tasks.send_notification")
-def send_notification(user_id: str, channel: str, title: str, message: str) -> dict:
-    """Async dispatch for email/SMS (decoupled from request path)."""
+def send_notification(
+    user_id: str,
+    channel: str,
+    title: str,
+    message: str,
+    push_data: dict | None = None,
+) -> dict:
+    """Async dispatch for email/SMS/push (decoupled from request path)."""
     log.info("worker.send_notification", user_id=user_id, channel=channel)
 
     async def _run() -> dict:
         from app.core.database import AsyncSessionLocal
         from app.models.user import User
-        from app.services.alerts.service import dispatch_alert_channels
+        from app.services.alerts.service import _dispatch_push_inline, dispatch_alert_channels
 
         async with AsyncSessionLocal() as db:
             user = await db.get(User, uuid.UUID(user_id))
             if user is None:
                 return {"status": "user_not_found"}
-            delivered = await dispatch_alert_channels(user, [channel], title=title, message=message)
+            if channel == "push":
+                delivered = await _dispatch_push_inline(
+                    db, user, title=title, message=message, push_data=push_data
+                )
+                return {"status": "ok", "delivered": {"push": delivered}}
+            delivered = await dispatch_alert_channels(
+                user, [channel], title=title, message=message, push_data=push_data
+            )
             return {"status": "ok", "delivered": delivered}
 
     return run_async(_run())
@@ -191,6 +413,20 @@ def survival_survey_reminders() -> dict:
             return await create_survival_survey_alerts(db)
 
     return _execute_recorded("survival_survey_reminders", _run)
+
+
+@celery_app.task(name="app.workers.tasks.citizen_stewardship_reminders")
+def citizen_stewardship_reminders() -> dict:
+    log.info("worker.citizen_stewardship_reminders")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.citizen.stewardship_alerts import create_citizen_stewardship_alerts
+
+        async with AsyncSessionLocal() as db:
+            return await create_citizen_stewardship_alerts(db)
+
+    return _execute_recorded("citizen_stewardship_reminders", _run)
 
 
 @celery_app.task(name="app.workers.tasks.biodiversity_baseline")
@@ -275,3 +511,17 @@ def deliver_webhook(delivery_id: str) -> dict:
     except Exception as exc:
         log.exception("deliver_webhook_failed", delivery_id=delivery_id)
         return {"delivery_id": delivery_id, "status": "error", "error": str(exc)}
+
+
+@celery_app.task(name="app.workers.tasks.publish_daily_audit_root")
+def publish_daily_audit_root() -> dict:
+    log.info("worker.publish_daily_audit_root")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.audit.chain import run_daily_audit_root_publish
+
+        async with AsyncSessionLocal() as db:
+            return await run_daily_audit_root_publish(db)
+
+    return _execute_recorded("publish_daily_audit_root", _run)

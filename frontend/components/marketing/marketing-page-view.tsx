@@ -16,7 +16,30 @@ export function MarketingPageView({ slug }: { slug: string }) {
   });
 
   if (isLoading) {
-    return <p className="px-6 py-20 text-center text-stone-500">Loading…</p>;
+    return (
+      <div className="marketing-page" aria-busy="true" aria-label="Loading page">
+        <div className="border-b border-stone-200 bg-white">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+            <div className="h-8 w-36 animate-pulse rounded bg-stone-200" />
+            <div className="hidden gap-3 sm:flex">
+              <div className="h-4 w-16 animate-pulse rounded bg-stone-200" />
+              <div className="h-4 w-16 animate-pulse rounded bg-stone-200" />
+              <div className="h-8 w-24 animate-pulse rounded-full bg-stone-200" />
+            </div>
+          </div>
+        </div>
+        <main className="mx-auto max-w-4xl space-y-6 px-6 py-12">
+          <div className="h-9 w-72 max-w-full animate-pulse rounded bg-stone-200" />
+          <div className="h-4 w-full max-w-xl animate-pulse rounded bg-stone-100" />
+          <div className="space-y-3 pt-4">
+            <div className="h-4 w-full animate-pulse rounded bg-stone-100" />
+            <div className="h-4 w-full animate-pulse rounded bg-stone-100" />
+            <div className="h-4 w-11/12 animate-pulse rounded bg-stone-100" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-stone-100" />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (error || !data) {
@@ -36,7 +59,7 @@ export function MarketingPageView({ slug }: { slug: string }) {
       <MarketingHeader header={data.site?.header ?? fallback.site.header} />
       <main className="pt-8">
         <div className="mx-auto max-w-4xl px-6 pb-8">
-          <h1 className="text-3xl font-semibold text-stone-900">{data.page.title}</h1>
+          <h1 className="font-display text-3xl font-semibold text-stone-900">{data.page.title}</h1>
           {data.page.meta_description ? (
             <p className="mt-2 text-stone-600">{data.page.meta_description}</p>
           ) : null}

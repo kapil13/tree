@@ -60,6 +60,9 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
   @override
   Widget build(BuildContext context) {
     final co2e = (_result?['co2e_kg'] as num?)?.toDouble();
+    final lower = (_result?['co2e_kg_lower_90'] as num?)?.toDouble();
+    final upper = (_result?['co2e_kg_upper_90'] as num?)?.toDouble();
+    final uncertainty = (_result?['uncertainty_pct'] as num?)?.toDouble();
     final notes = List<dynamic>.from(_result?['notes'] ?? []);
 
     return Scaffold(
@@ -117,12 +120,23 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                     const Text('Estimate', style: TextStyle(fontWeight: FontWeight.w600, color: AranyixColors.forest)),
                     const SizedBox(height: 8),
                     Text(
-                      co2e != null ? '${co2e.toStringAsFixed(1)} kg CO₂e' : '—',
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                      lower != null && upper != null && upper > lower
+                          ? '${lower.toStringAsFixed(1)}–${upper.toStringAsFixed(1)} kg CO₂e (90% CI)'
+                          : co2e != null
+                              ? '${co2e.toStringAsFixed(1)} kg CO₂e'
+                              : '—',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                     ),
+                    if (uncertainty != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '±${uncertainty.toStringAsFixed(1)}% measurement + model uncertainty',
+                        style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Text('Carbon: ${(_result!['carbon_kg'] as num?)?.toStringAsFixed(1) ?? '—'} kg'),
-                    Text('Confidence: ${(_result!['confidence'] as num?)?.toStringAsFixed(2) ?? '—'}'),
+                    Text('Input completeness: ${(_result!['confidence'] as num?)?.toStringAsFixed(2) ?? '—'}'),
                     Text('Methodology: ${_result!['methodology'] ?? '—'}'),
                     const SizedBox(height: 8),
                     const Text(

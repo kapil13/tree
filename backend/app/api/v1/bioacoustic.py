@@ -21,6 +21,7 @@ from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_a
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
 from app.services.data_scope import apply_owner_org_scope
 from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
@@ -41,6 +42,7 @@ def _scope(stmt, user):
 async def register_recording(
     payload: BioacousticRecordingCreate, user: WriteProfessional, db: DB
 ) -> BioacousticRecordingOut:
+    await assert_org_feature_enabled(db, user, "bioacoustic")
     try:
         return await create_recording(
             db,
@@ -73,6 +75,7 @@ async def upload_recording(
     plantation_fence_id: uuid.UUID | None = Form(None),
 ) -> BioacousticRecordingOut:
     """Direct multipart upload (mobile + web)."""
+    await assert_org_feature_enabled(db, user, "bioacoustic")
     data = await file.read()
     if len(data) < 1000:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="audio_too_short")
@@ -176,6 +179,7 @@ async def analyze_recording(
     force: bool = False,
 ) -> BioacousticAnalyzeResponse:
     """Queue BirdNET analysis on the Celery worker (poll GET /recordings/{id})."""
+    await assert_org_feature_enabled(db, user, "bioacoustic")
     try:
         return await enqueue_bioacoustic_analysis(db, recording_id, user, force=force)
     except ValueError as exc:

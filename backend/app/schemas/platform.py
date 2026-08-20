@@ -26,6 +26,9 @@ class UserAdminOut(BaseModel):
     is_org_admin: bool = False
     is_active: bool
     is_verified: bool
+    phone: str | None = None
+    email_verified_at: datetime | None = None
+    sessions_invalidated_at: datetime | None = None
     created_at: datetime
     last_login_at: datetime | None
     enrolled_program_codes: list[str] = Field(default_factory=list)
@@ -43,6 +46,40 @@ class UserRoleUpdate(BaseModel):
         "admin",
     ]
     is_active: bool | None = None
+    password_confirm: str | None = Field(default=None, min_length=1)
+
+
+class ImpersonateRequest(BaseModel):
+    password: str = Field(min_length=1)
+    reason: str | None = Field(default=None, max_length=500)
+    read_only: bool = False
+
+
+class StepUpPasswordRequest(BaseModel):
+    password: str = Field(min_length=1)
+
+
+class ResendVerificationRequest(BaseModel):
+    password: str = Field(min_length=1)
+    mark_verified: bool = False
+
+
+class SupportActionOut(BaseModel):
+    status: str = "ok"
+    dev_hint: str | None = None
+
+
+class UserPlatformGrantsOut(BaseModel):
+    user_id: uuid.UUID
+    role: str
+    role_modules: dict[str, bool]
+    user_grants: list[str]
+    effective_access: dict[str, bool]
+
+
+class UserPlatformGrantsUpdate(BaseModel):
+    module_keys: list[str] = Field(default_factory=list)
+    password: str = Field(min_length=1)
 
 
 class ModuleRuleOut(BaseModel):
@@ -92,6 +129,31 @@ class OrganizationAdminDetailOut(OrganizationAdminOut):
 class OrganizationAdminUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     is_active: bool | None = None
+    owner_user_id: uuid.UUID | None = None
+    reason: str | None = Field(default=None, max_length=500)
+    revoke_member_sessions: bool = False
+    password_confirm: str | None = Field(default=None, min_length=1)
+
+
+class BulkUserActionRequest(BaseModel):
+    user_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
+    action: Literal["activate", "deactivate", "revoke_sessions"]
+    password: str = Field(min_length=1)
+
+
+class BulkOrgActionRequest(BaseModel):
+    org_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=50)
+    is_active: bool
+    reason: str | None = Field(default=None, max_length=500)
+    revoke_member_sessions: bool = False
+    password: str | None = Field(default=None, min_length=1)
+
+
+class BulkActionResultOut(BaseModel):
+    processed: int
+    skipped: int = 0
+    sessions_revoked: int = 0
+    details: list[dict] = Field(default_factory=list)
 
 
 class PermissionMatrixOut(BaseModel):
@@ -109,8 +171,69 @@ class PaymentOrderAdminOut(BaseModel):
     amount_paise: int
     currency: str
     status: str
+    razorpay_order_id: str | None = None
+    razorpay_payment_id: str | None = None
     paid_at: datetime | None = None
     created_at: datetime
+
+
+class PaymentEventAdminOut(BaseModel):
+    id: str
+    event_type: str
+    event_id: str
+    created_at: datetime
+
+
+class PaymentOrderDetailOut(PaymentOrderAdminOut):
+    user_wallet_balance: int
+    payment_events: list[PaymentEventAdminOut] = Field(default_factory=list)
+
+
+class GrantCreditsRequest(BaseModel):
+    credits: int = Field(..., ge=-1000, le=10000)
+    reason: str = Field(..., min_length=3, max_length=500)
+    password: str = Field(min_length=1)
+
+
+class GrantCreditsOut(BaseModel):
+    user_id: uuid.UUID
+    credits_delta: int
+    new_balance: int
+
+
+class WebhookDeliveryAdminOut(BaseModel):
+    id: uuid.UUID
+    event_type: str
+    status: str
+    attempt_count: int
+    error_message: str | None = None
+    response_status: int | None = None
+    created_at: datetime
+    webhook_id: uuid.UUID
+    webhook_label: str
+    webhook_url: str
+    organization_id: uuid.UUID
+    organization_name: str
+
+
+class PaymentWebhookEventOut(BaseModel):
+    id: str
+    event_id: str
+    event_type: str
+    provider: str
+    created_at: datetime
+    payload_preview: str
+
+
+class TriggerJobRequest(BaseModel):
+    job_name: str = Field(..., min_length=3, max_length=64)
+    password: str = Field(min_length=1)
+
+
+class JobTriggerOut(BaseModel):
+    job_name: str
+    celery_task_id: str | None = None
+    status: str
 
 
 class PlatformBillingSummaryOut(BaseModel):
@@ -126,6 +249,14 @@ class PlatformOpsSummaryOut(BaseModel):
     workers: dict
     integrations: dict
     jobs: dict
+
+
+class PlatformSatelliteHealthOut(BaseModel):
+    generated_at: str
+    status: str
+    providers: dict
+    scans: dict
+    recent_jobs: list[dict]
 
 
 class OrgMemberAdminOut(BaseModel):
@@ -153,6 +284,8 @@ class OrgProjectAdminOut(BaseModel):
 class PlatformAuditLogOut(BaseModel):
     id: uuid.UUID
     actor_user_id: uuid.UUID | None
+    actor_email: str | None = None
+    actor_full_name: str | None = None
     organization_id: uuid.UUID | None
     action: str
     resource_type: str | None
@@ -185,4 +318,76 @@ class ImpersonationOut(BaseModel):
     expires_in: int
     impersonated_by_id: uuid.UUID
     impersonated_by_email: EmailStr
+    read_only: bool = False
     target_user: UserAdminOut
+
+
+class PlatformSchemeRowOut(BaseModel):
+    scheme_code: str
+    scheme_label: str
+    ministry: str | None = None
+    project_count: int
+    tree_count: int
+    kpi_targets: dict[str, float | int] = Field(default_factory=dict)
+
+
+class PlatformSchemeSummaryOut(BaseModel):
+    scheme_count: int
+    tagged_project_count: int
+    untagged_project_count: int
+    by_scheme: list[PlatformSchemeRowOut]
+
+
+class CampaApoImportResultOut(BaseModel):
+    imported: int
+    unmatched: list[str] = Field(default_factory=list)
+    parse_errors: list[str] = Field(default_factory=list)
+    applied: list[dict] = Field(default_factory=list)
+
+
+class CampaApoImportRequest(BaseModel):
+    csv_text: str = Field(..., min_length=10)
+
+
+class PublicGovernanceStatusOut(BaseModel):
+    maintenance_mode: bool
+    maintenance_message: str | None = None
+    registration_enabled: bool
+
+
+class GovernanceSettingsOut(BaseModel):
+    maintenance_mode: bool
+    maintenance_message: str
+    registration_enabled: bool
+    updated_at: datetime | None = None
+    updated_by_user_id: uuid.UUID | None = None
+
+
+class GovernanceSettingsUpdate(BaseModel):
+    maintenance_mode: bool | None = None
+    maintenance_message: str | None = Field(default=None, max_length=1000)
+    registration_enabled: bool | None = None
+    password: str = Field(min_length=1)
+
+
+class OrgFeatureFlagOut(BaseModel):
+    key: str
+    label: str
+    enabled: bool
+
+
+class OrgFeatureFlagsOut(BaseModel):
+    organization_id: uuid.UUID
+    flags: list[OrgFeatureFlagOut]
+
+
+class OrgFeatureFlagsUpdate(BaseModel):
+    flags: dict[str, bool] = Field(default_factory=dict)
+    password_confirm: str = Field(min_length=1)
+
+
+class BulkProgramAccessReviewRequest(BaseModel):
+    request_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=50)
+    action: Literal["approve", "reject"]
+    admin_note: str | None = Field(default=None, max_length=2000)
+    password: str = Field(min_length=1)

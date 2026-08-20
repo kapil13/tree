@@ -140,9 +140,11 @@ class UserOut(BaseModel):
     onboarding_status: str = "active_byot"
     pending_program_code: str | None = None
     pending_access_request_id: uuid.UUID | None = None
-    impersonation: dict[str, str] | None = None
+    impersonation: dict | None = None
+    locale: str = "en"
 
 
 class UpdateProfile(BaseModel):
     full_name: str | None = None
     phone: str | None = None
+    locale: str | None = Field(default=None, min_length=2, max_length=16)

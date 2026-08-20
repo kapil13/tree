@@ -27,12 +27,14 @@ export function SignupWizard({
   inviteToken: _inviteToken,
   onComplete,
   onSwitchToSignIn,
+  onSwitchToCitizen,
 }: {
   captchaConfig?: CaptchaConfig;
   invitePreview?: InvitePreview | null;
   inviteToken?: string | null;
   onComplete: () => void | Promise<void>;
   onSwitchToSignIn: () => void;
+  onSwitchToCitizen?: () => void;
 }) {
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
@@ -207,10 +209,10 @@ export function SignupWizard({
     ) : null;
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h3 className="text-xl font-semibold text-stone-950">{title}</h3>
-        <p className="text-sm text-stone-600">{subtitle}</p>
+    <div className="space-y-3">
+      <div className="space-y-0.5">
+        <h3 className="text-lg font-semibold text-stone-950">{title}</h3>
+        <p className="text-sm text-stone-500">{subtitle}</p>
       </div>
 
       {step === "category" && (
@@ -225,7 +227,7 @@ export function SignupWizard({
                 type="button"
                 onClick={() => setSignupCategory(option.code)}
                 className={cn(
-                  "flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition",
+                  "flex w-full items-start gap-2.5 rounded-xl border p-2.5 text-left transition",
                   selected
                     ? `border-forest-600 bg-forest-50/80 ring-2 ${theme.ring}`
                     : "border-stone-200 hover:border-stone-300",
@@ -233,17 +235,17 @@ export function SignupWizard({
               >
                 <div
                   className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white",
                     theme.gradient,
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                 </div>
-                <div>
-                  <p className="font-semibold text-stone-900">{option.name}</p>
-                  <p className="mt-0.5 text-sm text-stone-600">{option.description}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-stone-900">{option.name}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-stone-500">{option.description}</p>
                   {option.code !== "byot" ? (
-                    <p className="mt-1 text-xs text-amber-800">Requires admin approval</p>
+                    <p className="mt-0.5 text-[11px] text-amber-800">Requires admin approval</p>
                   ) : null}
                 </div>
               </button>
@@ -257,20 +259,24 @@ export function SignupWizard({
       )}
 
       {step === "details" && (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {!invitePreview ? (
-            <button type="button" className="btn-ghost text-sm" onClick={() => setStep("category")}>
+            <button type="button" className="btn-ghost -ml-2 px-2 py-1 text-sm" onClick={() => setStep("category")}>
               ← Change category
             </button>
           ) : null}
           <div>
-            <label className="label">Full name</label>
-            <input className="field-input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <label className="label mb-1">Full name</label>
+            <input
+              className="field-input !rounded-xl !py-2.5"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
           </div>
           <div>
-            <label className="label">Email address</label>
+            <label className="label mb-1">Email address</label>
             <input
-              className="field-input"
+              className="field-input !rounded-xl !py-2.5"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -278,13 +284,13 @@ export function SignupWizard({
             />
           </div>
           <div>
-            <label className="label">Mobile number</label>
+            <label className="label mb-1">Mobile number</label>
             <div className="flex gap-2">
-              <div className="phone-prefix" aria-hidden>
+              <div className="phone-prefix !rounded-xl" aria-hidden>
                 +91
               </div>
               <input
-                className="field-input-flex"
+                className="field-input-flex !rounded-xl !py-2.5"
                 type="tel"
                 inputMode="numeric"
                 value={formatPhoneDisplay(phone)}
@@ -294,9 +300,9 @@ export function SignupWizard({
             </div>
           </div>
           <div>
-            <label className="label">Password</label>
+            <label className="label mb-1">Password</label>
             <input
-              className="field-input"
+              className="field-input !rounded-xl !py-2.5"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -378,12 +384,26 @@ export function SignupWizard({
 
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 
-      <p className="text-center text-sm text-stone-600">
-        Already have an account?{" "}
-        <button type="button" className="font-medium text-forest-700 hover:underline" onClick={onSwitchToSignIn}>
-          Sign in
-        </button>
-      </p>
+      <div className="space-y-2 text-center text-sm text-stone-600">
+        {onSwitchToCitizen ? (
+          <p>
+            Just tagging trees?{" "}
+            <button
+              type="button"
+              className="font-medium text-forest-700 hover:underline"
+              onClick={onSwitchToCitizen}
+            >
+              Quick citizen signup
+            </button>
+          </p>
+        ) : null}
+        <p>
+          Already have an account?{" "}
+          <button type="button" className="font-medium text-forest-700 hover:underline" onClick={onSwitchToSignIn}>
+            Sign in
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

@@ -162,9 +162,15 @@ child without appropriate legal authority.
 
 We may update this Policy and will revise the "Last updated" date when we do.
 
-## 9. Contact
+## 9. Contact & Grievance Officer
 
-Questions about privacy can be sent through the support channel on the website.
+**Data Protection Officer:** privacy@byot.earth
+
+You may file a privacy grievance through **Settings → Privacy** in the app, or
+email the Data Protection Officer directly. We aim to respond within 72 hours
+for data access/export requests under applicable Indian DPDP requirements.
+
+Questions about privacy can also be sent through the support channel on the website.
 
 This document is a platform template and should be reviewed by your counsel
 before production use.

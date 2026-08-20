@@ -39,25 +39,53 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    BulkActionResultOut,
+    BulkOrgActionRequest,
+    BulkProgramAccessReviewRequest,
+    BulkUserActionRequest,
+    CampaApoImportRequest,
+    CampaApoImportResultOut,
+    GovernanceSettingsOut,
+    GovernanceSettingsUpdate,
+    GrantCreditsOut,
+    GrantCreditsRequest,
+    ImpersonateRequest,
     ImpersonationOut,
+    JobTriggerOut,
     ModuleRuleOut,
     ModuleRuleUpdate,
     OrganizationAdminDetailOut,
     OrganizationAdminOut,
     OrganizationAdminUpdate,
+    OrgFeatureFlagOut,
+    OrgFeatureFlagsOut,
+    OrgFeatureFlagsUpdate,
     OrgMemberAdminOut,
     OrgProjectAdminOut,
     PaymentOrderAdminOut,
+    PaymentOrderDetailOut,
+    PaymentWebhookEventOut,
     PermissionMatrixOut,
     PlatformAuditLogOut,
     PlatformBillingSummaryOut,
     PlatformOpsSummaryOut,
     PlatformOverviewOut,
+    PlatformSatelliteHealthOut,
+    PlatformSchemeSummaryOut,
     PlatformSettingsOut,
+    PublicGovernanceStatusOut,
+    ResendVerificationRequest,
+    StepUpPasswordRequest,
+    SupportActionOut,
+    TriggerJobRequest,
     UserAdminOut,
+    UserPlatformGrantsOut,
+    UserPlatformGrantsUpdate,
     UserRoleUpdate,
+    WebhookDeliveryAdminOut,
 )
 from app.services.audit import record_audit
+from app.services.organizations.members import OrgMemberError, transfer_org_ownership
 from app.services.organizations.onboarding import (
     OrgOnboardingError,
     onboard_user_on_program_approval,
@@ -79,7 +107,40 @@ from app.services.platform.admin import (
     query_platform_users,
 )
 from app.services.platform.audit import export_platform_audit_csv, query_platform_audit_logs
-from app.services.platform.billing import build_billing_summary, query_payment_orders
+from app.services.platform.billing import (
+    build_billing_summary,
+    get_payment_order_detail,
+    grant_user_credits,
+    query_payment_orders,
+)
+from app.services.platform.bulk_ops import (
+    BulkOpsError,
+    bulk_update_organizations,
+    bulk_update_users,
+    revoke_org_member_sessions,
+)
+from app.services.platform.bulk_program_access import (
+    BulkProgramAccessError,
+    bulk_review_program_access,
+)
+from app.services.platform.exports import (
+    export_platform_orders_csv,
+    export_platform_org_members_csv,
+    export_platform_organizations_csv,
+    export_platform_users_csv,
+)
+from app.services.platform.governance import (
+    ORG_FEATURE_FLAGS,
+    governance_settings_dict,
+    org_feature_flags,
+    public_governance_status,
+    set_org_feature_flags,
+    update_governance_settings,
+)
+from app.services.platform.grants import (
+    list_user_module_grants,
+    set_user_module_grants,
+)
 from app.services.platform.impersonation import (
     ImpersonationError,
     admin_tokens_for,
@@ -87,15 +148,87 @@ from app.services.platform.impersonation import (
     validate_impersonation_target,
 )
 from app.services.platform.modules import (
+    ALL_PLATFORM_MODULES,
     USERS_ADMIN_MODULE,
     WEBSITE_CMS_MODULE,
+    build_platform_access_map,
     list_module_rules,
     module_rule_dict,
 )
-from app.services.platform.ops import build_ops_summary
+from app.services.platform.ops import (
+    build_ops_summary,
+    ping_integrations,
+    query_failed_webhook_deliveries,
+    query_payment_events,
+    retry_monitoring_job,
+    retry_webhook_delivery,
+    trigger_monitoring_job,
+)
+from app.services.platform.satellite_health import build_satellite_health_panel
 from app.services.platform.settings import build_platform_settings
+from app.services.platform.step_up import verify_admin_step_up
+from app.services.platform.support import (
+    SupportActionError,
+    admin_force_password_reset,
+    admin_resend_verification,
+    admin_revoke_sessions,
+)
+from app.services.schemes.imports.campa_apo_csv import (
+    apply_apo_rows_to_projects,
+    parse_campa_apo_csv,
+)
+from app.services.schemes.summary import build_platform_scheme_summary
 
 router = APIRouter(prefix="/platform", tags=["platform-admin"])
+
+
+@router.get("/governance/status", response_model=PublicGovernanceStatusOut)
+async def platform_governance_public_status(db: DB) -> PublicGovernanceStatusOut:
+    """Public maintenance/registration status for client banners."""
+    return PublicGovernanceStatusOut.model_validate(await public_governance_status(db))
+
+
+@router.get("/governance", response_model=GovernanceSettingsOut)
+async def platform_get_governance(_admin: PlatformAdmin, db: DB) -> GovernanceSettingsOut:
+    return GovernanceSettingsOut.model_validate(await governance_settings_dict(db))
+
+
+@router.patch("/governance", response_model=GovernanceSettingsOut)
+async def platform_update_governance(
+    payload: GovernanceSettingsUpdate,
+    request: Request,
+    admin: PlatformAdmin,
+    db: DB,
+) -> GovernanceSettingsOut:
+    verify_admin_step_up(admin, payload.password)
+    prev = await governance_settings_dict(db)
+    row = await update_governance_settings(
+        db,
+        actor=admin,
+        maintenance_mode=payload.maintenance_mode,
+        maintenance_message=payload.maintenance_message,
+        registration_enabled=payload.registration_enabled,
+    )
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.governance.update",
+        resource_type="platform_governance",
+        resource_id=None,
+        request=request,
+        diff={
+            "from": {
+                "maintenance_mode": prev["maintenance_mode"],
+                "registration_enabled": prev["registration_enabled"],
+            },
+            "to": {
+                "maintenance_mode": row.maintenance_mode,
+                "registration_enabled": row.registration_enabled,
+            },
+        },
+    )
+    await db.commit()
+    return GovernanceSettingsOut.model_validate(await governance_settings_dict(db))
 
 
 @router.get("/overview", response_model=PlatformOverviewOut)
@@ -134,9 +267,176 @@ async def platform_billing_orders(
     )
 
 
+@router.get("/billing/orders/export")
+async def platform_billing_orders_export(
+    _admin: BillingModuleAdmin,
+    db: DB,
+    status: str | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_orders_csv(db, status=status)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-payment-orders.csv"},
+    )
+
+
+@router.get("/billing/orders/{order_id}", response_model=PaymentOrderDetailOut)
+async def platform_billing_order_detail(
+    order_id: uuid.UUID,
+    _admin: BillingModuleAdmin,
+    db: DB,
+) -> PaymentOrderDetailOut:
+    row = await get_payment_order_detail(db, order_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="order_not_found")
+    return PaymentOrderDetailOut.model_validate(row)
+
+
+@router.post("/billing/users/{user_id}/grant-credits", response_model=GrantCreditsOut)
+async def platform_grant_user_credits(
+    user_id: uuid.UUID,
+    payload: GrantCreditsRequest,
+    request: Request,
+    admin: BillingModuleAdmin,
+    db: DB,
+) -> GrantCreditsOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await grant_user_credits(db, user_id=user_id, credits=payload.credits)
+    except ValueError as exc:
+        code = str(exc)
+        status_code = status.HTTP_404_NOT_FOUND if code == "user_not_found" else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(status_code, detail=code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.billing.grant_credits",
+        resource_type="user",
+        resource_id=user_id,
+        request=request,
+        diff={"credits": payload.credits, "reason": payload.reason, "new_balance": result["new_balance"]},
+    )
+    await db.commit()
+    return GrantCreditsOut.model_validate(result)
+
+
 @router.get("/ops/summary", response_model=PlatformOpsSummaryOut)
 async def platform_ops_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformOpsSummaryOut:
     return PlatformOpsSummaryOut.model_validate(await build_ops_summary(db))
+
+
+@router.get("/ops/satellite-health", response_model=PlatformSatelliteHealthOut)
+async def platform_ops_satellite_health(
+    _admin: OpsModuleAdmin,
+    db: DB,
+) -> PlatformSatelliteHealthOut:
+    return PlatformSatelliteHealthOut.model_validate(await build_satellite_health_panel(db))
+
+
+@router.post("/ops/integrations/ping")
+async def platform_ops_ping_integrations(_admin: OpsModuleAdmin, db: DB) -> dict:
+    return await ping_integrations(db)
+
+
+@router.get("/ops/webhook-deliveries", response_model=list[WebhookDeliveryAdminOut])
+async def platform_ops_failed_webhooks(
+    _admin: OpsModuleAdmin,
+    db: DB,
+    limit: int = Query(50, ge=1, le=100),
+) -> list[WebhookDeliveryAdminOut]:
+    rows = await query_failed_webhook_deliveries(db, limit=limit)
+    return [WebhookDeliveryAdminOut.model_validate(r) for r in rows]
+
+
+@router.post("/ops/webhook-deliveries/{delivery_id}/retry")
+async def platform_ops_retry_webhook(
+    delivery_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> dict:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await retry_webhook_delivery(db, delivery_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.webhook_retry",
+        resource_type="webhook_delivery",
+        resource_id=delivery_id,
+        request=request,
+        diff={"status": result["status"]},
+    )
+    await db.commit()
+    return result
+
+
+@router.get("/ops/payment-events", response_model=list[PaymentWebhookEventOut])
+async def platform_ops_payment_events(
+    _admin: OpsModuleAdmin,
+    db: DB,
+    event_type: str | None = None,
+    limit: int = Query(50, ge=1, le=100),
+) -> list[PaymentWebhookEventOut]:
+    rows = await query_payment_events(db, event_type=event_type, limit=limit)
+    return [PaymentWebhookEventOut.model_validate(r) for r in rows]
+
+
+@router.post("/ops/jobs/{run_id}/retry", response_model=JobTriggerOut)
+async def platform_ops_retry_job(
+    run_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> JobTriggerOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await retry_monitoring_job(db, run_id)
+    except ValueError as exc:
+        code = str(exc)
+        status_code = status.HTTP_404_NOT_FOUND if code == "job_run_not_found" else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(status_code, detail=code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.job_retry",
+        resource_type="monitoring_job_run",
+        resource_id=run_id,
+        request=request,
+        diff={"job_name": result["job_name"]},
+    )
+    await db.commit()
+    return JobTriggerOut.model_validate(result)
+
+
+@router.post("/ops/jobs/trigger", response_model=JobTriggerOut)
+async def platform_ops_trigger_job(
+    payload: TriggerJobRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> JobTriggerOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await trigger_monitoring_job(db, payload.job_name)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.ops.job_trigger",
+        resource_type="monitoring_job",
+        resource_id=None,
+        request=request,
+        diff={"job_name": result["job_name"]},
+    )
+    await db.commit()
+    return JobTriggerOut.model_validate(result)
 
 
 @router.get("/settings", response_model=PlatformSettingsOut)
@@ -153,6 +453,7 @@ async def platform_audit_logs(
     action: str | None = None,
     action_prefix: str | None = None,
     resource_type: str | None = None,
+    resource_id: uuid.UUID | None = None,
     organization_id: uuid.UUID | None = None,
     actor_user_id: uuid.UUID | None = None,
     date_from: datetime | None = None,
@@ -166,6 +467,7 @@ async def platform_audit_logs(
         action=action,
         action_prefix=action_prefix,
         resource_type=resource_type,
+        resource_id=resource_id,
         organization_id=organization_id,
         actor_user_id=actor_user_id,
         date_from=date_from,
@@ -185,6 +487,8 @@ async def platform_audit_export(
     _admin: UsersModuleAdmin,
     db: DB,
     action_prefix: str | None = None,
+    resource_type: str | None = None,
+    resource_id: uuid.UUID | None = None,
     organization_id: uuid.UUID | None = None,
     actor_user_id: uuid.UUID | None = None,
     date_from: datetime | None = None,
@@ -194,6 +498,8 @@ async def platform_audit_export(
     csv_text = await export_platform_audit_csv(
         db,
         action_prefix=action_prefix,
+        resource_type=resource_type,
+        resource_id=resource_id,
         organization_id=organization_id,
         actor_user_id=actor_user_id,
         date_from=date_from,
@@ -210,10 +516,12 @@ async def platform_audit_export(
 @router.post("/users/{user_id}/impersonate", response_model=ImpersonationOut)
 async def platform_impersonate_user(
     user_id: uuid.UUID,
+    payload: ImpersonateRequest,
     request: Request,
     admin: PlatformAdmin,
     db: DB,
 ) -> ImpersonationOut:
+    verify_admin_step_up(admin, payload.password)
     target = await db.get(User, user_id)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
@@ -222,7 +530,7 @@ async def platform_impersonate_user(
     except ImpersonationError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
 
-    token_data = impersonation_token_for(admin=admin, target=target)
+    token_data = impersonation_token_for(admin=admin, target=target, read_only=payload.read_only)
     await record_audit(
         db,
         actor=admin,
@@ -230,7 +538,12 @@ async def platform_impersonate_user(
         resource_type="user",
         resource_id=target.id,
         request=request,
-        diff={"email": target.email, "impersonated_by": admin.email},
+        diff={
+            "email": target.email,
+            "impersonated_by": admin.email,
+            "reason": payload.reason,
+            "read_only": payload.read_only,
+        },
     )
     await db.commit()
     row = await get_platform_user(db, target.id)
@@ -307,6 +620,55 @@ async def platform_list_users(
     )
 
 
+@router.get("/users/export")
+async def platform_export_users(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    search: str = "",
+    role: str | None = None,
+    is_active: bool | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_users_csv(
+        db, search=search, role=role, is_active=is_active
+    )
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-users.csv"},
+    )
+
+
+@router.post("/users/bulk-action", response_model=BulkActionResultOut)
+async def platform_bulk_user_action(
+    payload: BulkUserActionRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_update_users(
+            db, actor=admin, user_ids=payload.user_ids, action=payload.action
+        )
+    except BulkOpsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action=f"platform.user.bulk_{payload.action}",
+        resource_type="user",
+        resource_id=None,
+        request=request,
+        diff={
+            "user_ids": [str(uid) for uid in payload.user_ids],
+            "action": payload.action,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
+
+
 @router.get("/users/{user_id}", response_model=UserAdminOut)
 async def platform_get_user(
     user_id: uuid.UUID,
@@ -343,7 +705,14 @@ async def platform_update_user(
     if user.id == admin.id and payload.is_active is False:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="cannot_deactivate_self")
 
+    role_changing = payload.role != user.role
+    active_changing = payload.is_active is not None and payload.is_active != user.is_active
+    sensitive = payload.role == "admin" or user.role == "admin" or payload.is_active is False
+    if (role_changing or active_changing) and sensitive:
+        verify_admin_step_up(admin, payload.password_confirm)
+
     prev_role = user.role
+    prev_active = user.is_active
     user.role = payload.role
     if payload.is_active is not None:
         user.is_active = payload.is_active
@@ -355,12 +724,169 @@ async def platform_update_user(
         resource_type="user",
         resource_id=user.id,
         request=request,
-        diff={"email": user.email, "from_role": prev_role, "to_role": user.role},
+        diff={
+            "email": user.email,
+            "from_role": prev_role,
+            "to_role": user.role,
+            "from_active": prev_active,
+            "to_active": user.is_active,
+        },
     )
     await db.commit()
     await db.refresh(user)
     row = await get_platform_user(db, user.id)
     return UserAdminOut.model_validate(row or user)
+
+
+@router.get("/users/{user_id}/platform-grants", response_model=UserPlatformGrantsOut)
+async def platform_get_user_grants(
+    user_id: uuid.UUID,
+    admin: PlatformAdmin,
+    db: DB,
+) -> UserPlatformGrantsOut:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    user_grants = await list_user_module_grants(db, user.id)
+    role_modules = await build_platform_access_map(db, role=user.role, user_id=None)
+    effective = await build_platform_access_map(db, role=user.role, user_id=user.id)
+    return UserPlatformGrantsOut(
+        user_id=user.id,
+        role=user.role,
+        role_modules=role_modules,
+        user_grants=user_grants,
+        effective_access=effective,
+    )
+
+
+@router.put("/users/{user_id}/platform-grants", response_model=UserPlatformGrantsOut)
+async def platform_update_user_grants(
+    user_id: uuid.UUID,
+    payload: UserPlatformGrantsUpdate,
+    request: Request,
+    admin: PlatformAdmin,
+    db: DB,
+) -> UserPlatformGrantsOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    if user.role == "admin":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="admin_has_full_access")
+
+    prev = await list_user_module_grants(db, user.id)
+    cleaned = [key for key in payload.module_keys if key in ALL_PLATFORM_MODULES]
+    await set_user_module_grants(
+        db, user_id=user.id, module_keys=cleaned, granted_by_user_id=admin.id
+    )
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.grants_update",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "from": prev, "to": cleaned},
+    )
+    await db.commit()
+
+    role_modules = await build_platform_access_map(db, role=user.role, user_id=None)
+    effective = await build_platform_access_map(db, role=user.role, user_id=user.id)
+    return UserPlatformGrantsOut(
+        user_id=user.id,
+        role=user.role,
+        role_modules=role_modules,
+        user_grants=cleaned,
+        effective_access=effective,
+    )
+
+
+@router.post("/users/{user_id}/force-password-reset", response_model=SupportActionOut)
+async def platform_force_password_reset(
+    user_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    try:
+        dev_hint = await admin_force_password_reset(db, user)
+    except SupportActionError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.force_password_reset",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email},
+    )
+    await db.commit()
+    return SupportActionOut(dev_hint=dev_hint)
+
+
+@router.post("/users/{user_id}/resend-verification", response_model=SupportActionOut)
+async def platform_resend_verification(
+    user_id: uuid.UUID,
+    payload: ResendVerificationRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    try:
+        dev_hint = await admin_resend_verification(
+            db, user, mark_verified=payload.mark_verified
+        )
+    except SupportActionError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.mark_verified"
+        if payload.mark_verified
+        else "platform.user.resend_verification",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "mark_verified": payload.mark_verified},
+    )
+    await db.commit()
+    return SupportActionOut(dev_hint=dev_hint)
+
+
+@router.post("/users/{user_id}/revoke-sessions", response_model=SupportActionOut)
+async def platform_revoke_sessions(
+    user_id: uuid.UUID,
+    payload: StepUpPasswordRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> SupportActionOut:
+    verify_admin_step_up(admin, payload.password)
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user_not_found")
+    invalidated_at = admin_revoke_sessions(user)
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.user.revoke_sessions",
+        resource_type="user",
+        resource_id=user.id,
+        request=request,
+        diff={"email": user.email, "invalidated_at": invalidated_at.isoformat()},
+    )
+    await db.commit()
+    return SupportActionOut()
 
 
 @router.get("/modules", response_model=list[ModuleRuleOut])
@@ -444,6 +970,61 @@ async def platform_list_organizations(
     )
 
 
+@router.get("/organizations/export")
+async def platform_export_organizations(
+    _admin: UsersModuleAdmin,
+    db: DB,
+    search: str = "",
+    is_active: bool | None = None,
+) -> PlainTextResponse:
+    csv_text = await export_platform_organizations_csv(
+        db, search=search, is_active=is_active
+    )
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=platform-organizations.csv"},
+    )
+
+
+@router.post("/organizations/bulk-action", response_model=BulkActionResultOut)
+async def platform_bulk_org_action(
+    payload: BulkOrgActionRequest,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    if payload.is_active is False:
+        verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_update_organizations(
+            db,
+            org_ids=payload.org_ids,
+            is_active=payload.is_active,
+            revoke_member_sessions=payload.revoke_member_sessions,
+        )
+    except BulkOpsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.organization.bulk_activate"
+        if payload.is_active
+        else "platform.organization.bulk_suspend",
+        resource_type="organization",
+        resource_id=None,
+        request=request,
+        diff={
+            "org_ids": [str(oid) for oid in payload.org_ids],
+            "reason": payload.reason,
+            "revoke_member_sessions": payload.revoke_member_sessions,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
+
+
 @router.get("/organizations/{org_id}", response_model=OrganizationAdminDetailOut)
 async def platform_get_organization(
     org_id: uuid.UUID,
@@ -472,8 +1053,29 @@ async def platform_update_organization(
         diff["name"] = {"from": org.name, "to": payload.name}
         org.name = payload.name.strip()
     if payload.is_active is not None:
+        if payload.is_active is False and org.is_active:
+            verify_admin_step_up(admin, payload.password_confirm)
         diff["is_active"] = {"from": org.is_active, "to": payload.is_active}
+        if payload.reason:
+            diff["reason"] = payload.reason
         org.is_active = payload.is_active
+        if payload.is_active is False and payload.revoke_member_sessions:
+            revoked = await revoke_org_member_sessions(db, org.id)
+            diff["member_sessions_revoked"] = revoked
+    if payload.owner_user_id is not None and payload.owner_user_id != org.owner_user_id:
+        verify_admin_step_up(admin, payload.password_confirm)
+        prev_owner = org.owner_user_id
+        try:
+            new_owner = await transfer_org_ownership(
+                db, org=org, new_owner_id=payload.owner_user_id
+            )
+        except OrgMemberError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+        diff["owner_user_id"] = {
+            "from": str(prev_owner) if prev_owner else None,
+            "to": str(new_owner.id),
+            "owner_email": new_owner.email,
+        }
     await record_audit(
         db,
         actor=admin,
@@ -486,6 +1088,74 @@ async def platform_update_organization(
     await db.commit()
     row = await get_platform_organization(db, org.id)
     return OrganizationAdminDetailOut.model_validate(row)
+
+
+@router.get("/organizations/{org_id}/feature-flags", response_model=OrgFeatureFlagsOut)
+async def platform_get_org_feature_flags(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+) -> OrgFeatureFlagsOut:
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    flags = org_feature_flags(org)
+    return OrgFeatureFlagsOut(
+        organization_id=org.id,
+        flags=[
+            OrgFeatureFlagOut(key=key, label=ORG_FEATURE_FLAGS[key], enabled=flags[key])
+            for key in ORG_FEATURE_FLAGS
+        ],
+    )
+
+
+@router.patch("/organizations/{org_id}/feature-flags", response_model=OrgFeatureFlagsOut)
+async def platform_update_org_feature_flags(
+    org_id: uuid.UUID,
+    payload: OrgFeatureFlagsUpdate,
+    request: Request,
+    admin: UsersModuleAdmin,
+    db: DB,
+) -> OrgFeatureFlagsOut:
+    verify_admin_step_up(admin, payload.password_confirm)
+    org = await db.get(Organization, org_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    prev = org_feature_flags(org)
+    updated = set_org_feature_flags(org, payload.flags)
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.organization.feature_flags",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"from": prev, "to": updated},
+    )
+    await db.commit()
+    return OrgFeatureFlagsOut(
+        organization_id=org.id,
+        flags=[
+            OrgFeatureFlagOut(key=key, label=ORG_FEATURE_FLAGS[key], enabled=updated[key])
+            for key in ORG_FEATURE_FLAGS
+        ],
+    )
+
+
+@router.get("/organizations/{org_id}/members/export")
+async def platform_export_org_members(
+    org_id: uuid.UUID,
+    _admin: UsersModuleAdmin,
+    db: DB,
+) -> PlainTextResponse:
+    if await get_platform_organization(db, org_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    csv_text = await export_platform_org_members_csv(db, org_id)
+    return PlainTextResponse(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=org-{org_id}-members.csv"},
+    )
 
 
 @router.get("/organizations/{org_id}/members", response_model=Page[OrgMemberAdminOut])
@@ -536,6 +1206,41 @@ async def platform_list_program_access_requests(
     return [_access_request_admin_out(r) for r in requests]
 
 
+@router.post("/program-access-requests/bulk-review", response_model=BulkActionResultOut)
+async def platform_bulk_review_program_access(
+    payload: BulkProgramAccessReviewRequest,
+    request: Request,
+    admin: ProgramAccessModuleAdmin,
+    db: DB,
+) -> BulkActionResultOut:
+    verify_admin_step_up(admin, payload.password)
+    try:
+        result = await bulk_review_program_access(
+            db,
+            request_ids=payload.request_ids,
+            action=payload.action,
+            reviewer=admin,
+            admin_note=payload.admin_note,
+        )
+    except BulkProgramAccessError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code) from exc
+    await record_audit(
+        db,
+        actor=admin,
+        action=f"platform.program_access.bulk_{payload.action}",
+        resource_type="program_access_request",
+        resource_id=None,
+        request=request,
+        diff={
+            "request_ids": [str(rid) for rid in payload.request_ids],
+            "admin_note": payload.admin_note,
+            **result,
+        },
+    )
+    await db.commit()
+    return BulkActionResultOut.model_validate(result)
+
+
 @router.patch(
     "/program-access-requests/{request_id}",
     response_model=ProgramAccessRequestAdminOut,
@@ -547,6 +1252,8 @@ async def platform_review_program_access_request(
     admin: ProgramAccessModuleAdmin,
     db: DB,
 ) -> ProgramAccessRequestAdminOut:
+    if payload.action == "approve":
+        verify_admin_step_up(admin, payload.password)
     try:
         reviewed = await review_access_request(
             db,
@@ -606,3 +1313,54 @@ async def platform_review_program_access_request(
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="request_not_found")
     return _access_request_admin_out(row)
+
+
+@router.get("/schemes/summary", response_model=PlatformSchemeSummaryOut)
+async def platform_scheme_summary(_admin: OpsModuleAdmin, db: DB) -> PlatformSchemeSummaryOut:
+    """Roll up planting projects and trees by central govt scheme."""
+    return PlatformSchemeSummaryOut.model_validate(await build_platform_scheme_summary(db))
+
+
+@router.post("/schemes/apo-import", response_model=CampaApoImportResultOut)
+async def platform_campa_apo_import(
+    payload: CampaApoImportRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> CampaApoImportResultOut:
+    """Import State CAMPA APO rows and link PCA references to planting projects by code."""
+    from sqlalchemy import select
+
+    from app.models.planting_project import PlantingProject
+
+    rows, parse_errors = parse_campa_apo_csv(payload.csv_text)
+    if parse_errors and not rows:
+        return CampaApoImportResultOut(imported=0, parse_errors=parse_errors)
+
+    project_codes = [row["project_code"] for row in rows]
+    projects = list(
+        (
+            await db.execute(
+                select(PlantingProject).where(PlantingProject.code.in_(project_codes))
+            )
+        ).scalars().all()
+    )
+    applied, unmatched = apply_apo_rows_to_projects(projects, rows)
+
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.scheme.apo_import",
+        resource_type="planting_project",
+        resource_id=None,
+        request=request,
+        diff={"imported": len(applied), "unmatched": unmatched},
+    )
+    await db.commit()
+
+    return CampaApoImportResultOut(
+        imported=len(applied),
+        unmatched=unmatched,
+        parse_errors=parse_errors,
+        applied=applied,
+    )

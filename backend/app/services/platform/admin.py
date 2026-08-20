@@ -15,6 +15,30 @@ from app.models.user import User
 from app.services.planting_programs.enrollment import list_user_program_codes
 
 
+async def _serialize_platform_user(
+    db: AsyncSession, user: User, organization_name: str | None
+) -> dict[str, Any]:
+    programs = await list_user_program_codes(db, user.id)
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "organization_id": user.organization_id,
+        "organization_name": organization_name,
+        "org_role": user.org_role,
+        "is_org_admin": user.is_org_admin,
+        "is_active": user.is_active,
+        "is_verified": user.is_verified,
+        "phone": user.phone,
+        "email_verified_at": user.email_verified_at,
+        "sessions_invalidated_at": user.sessions_invalidated_at,
+        "created_at": user.created_at,
+        "last_login_at": user.last_login_at,
+        "enrolled_program_codes": programs,
+    }
+
+
 async def build_platform_overview(db: AsyncSession) -> dict[str, Any]:
     total_users = int((await db.execute(select(func.count()).select_from(User))).scalar_one())
     active_users = int(
@@ -53,6 +77,7 @@ async def query_platform_users(
     is_active: bool | None = None,
     page: int = 1,
     page_size: int = 50,
+    max_page_size: int = 100,
 ) -> tuple[list[dict[str, Any]], int]:
     base = (
         select(User, Organization.name.label("organization_name"))
@@ -70,7 +95,7 @@ async def query_platform_users(
     count_stmt = select(func.count()).select_from(base.subquery())
     total = int((await db.execute(count_stmt)).scalar_one())
 
-    page_size = min(max(page_size, 1), 100)
+    page_size = min(max(page_size, 1), max_page_size)
     page = max(page, 1)
     rows = (
         await db.execute(base.offset((page - 1) * page_size).limit(page_size))
@@ -78,24 +103,7 @@ async def query_platform_users(
 
     items: list[dict[str, Any]] = []
     for user, organization_name in rows:
-        programs = await list_user_program_codes(db, user.id)
-        items.append(
-            {
-                "id": user.id,
-                "email": user.email,
-                "full_name": user.full_name,
-                "role": user.role,
-                "organization_id": user.organization_id,
-                "organization_name": organization_name,
-                "org_role": user.org_role,
-                "is_org_admin": user.is_org_admin,
-                "is_active": user.is_active,
-                "is_verified": user.is_verified,
-                "created_at": user.created_at,
-                "last_login_at": user.last_login_at,
-                "enrolled_program_codes": programs,
-            }
-        )
+        items.append(await _serialize_platform_user(db, user, organization_name))
     return items, total
 
 
@@ -110,22 +118,7 @@ async def get_platform_user(db: AsyncSession, user_id: uuid.UUID) -> dict[str, A
     if row is None:
         return None
     user, organization_name = row
-    programs = await list_user_program_codes(db, user.id)
-    return {
-        "id": user.id,
-        "email": user.email,
-        "full_name": user.full_name,
-        "role": user.role,
-        "organization_id": user.organization_id,
-        "organization_name": organization_name,
-        "org_role": user.org_role,
-        "is_org_admin": user.is_org_admin,
-        "is_active": user.is_active,
-        "is_verified": user.is_verified,
-        "created_at": user.created_at,
-        "last_login_at": user.last_login_at,
-        "enrolled_program_codes": programs,
-    }
+    return await _serialize_platform_user(db, user, organization_name)
 
 
 async def query_platform_organizations(
@@ -210,6 +203,7 @@ async def query_org_members_for_admin(
     *,
     page: int = 1,
     page_size: int = 50,
+    max_page_size: int = 100,
 ) -> tuple[list[dict[str, Any]], int]:
     base = (
         select(User)
@@ -217,7 +211,7 @@ async def query_org_members_for_admin(
         .order_by(User.is_org_admin.desc(), User.full_name.asc())
     )
     total = int((await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one())
-    page_size = min(max(page_size, 1), 100)
+    page_size = min(max(page_size, 1), max_page_size)
     page = max(page, 1)
     users = (await db.execute(base.offset((page - 1) * page_size).limit(page_size))).scalars().all()
     items = [

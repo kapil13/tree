@@ -280,6 +280,103 @@ async def _rebalance_demo_portfolios(
     return stats
 
 
+async def _ensure_demo_scheme_projects(db, *, org: Organization, manager: User) -> dict[str, int]:
+    """Create sample Nagar Van and Sahakar Van projects for scheme onboarding demos."""
+    from app.models.planting_project import PlantingProject
+    from app.services.planting_projects.service import create_standard_from_template
+    from app.services.planting_projects.templates import template_for_segment
+    from app.services.schemes.compliance import seed_project_scheme_checklists
+    from app.services.schemes.registry import get_scheme
+    from app.services.schemes.resolution import apply_scheme_defaults
+
+    specs = [
+        {
+            "code": "DEMO-NAGAR-VAN",
+            "name": "Demo — Indore Urban Forest Block A",
+            "scheme_code": "nagar_van",
+            "program_code": "government_nhai",
+            "target_tree_count": 10000,
+            "scheme_refs": {
+                "nagar_van_project_id": "NV-MP-INDORE-DEMO",
+                "ulb_name": "Indore Municipal Corporation",
+                "urban_forest_name": "Chiman Bagh Urban Forest Block A",
+                "target_trees": 10000,
+            },
+        },
+        {
+            "code": "DEMO-SAHAKAR-VAN",
+            "name": "Demo — Sumel Sahakar Van (Jaipur)",
+            "scheme_code": "sahakar_van",
+            "program_code": "government_nhai",
+            "target_tree_count": None,
+            "scheme_refs": {
+                "sahakar_van_project_id": "SV-NCCF-RAJ-DEMO",
+                "nccf_project_ref": "NCCF/SV/2026/SUMEL",
+                "amul_union_name": "GCMMF — Amul",
+                "cooperative_society_name": "Sumel Mahila Mandal",
+                "village_name": "Sumel",
+                "district": "Jaipur",
+                "state_name": "Rajasthan",
+                "site_area_acres": 64,
+                "plantation_method": "mixed",
+                "target_trees": 50000,
+            },
+        },
+    ]
+
+    created = 0
+    existing = 0
+    for spec in specs:
+        row = (
+            await db.execute(
+                select(PlantingProject).where(
+                    PlantingProject.organization_id == org.id,
+                    PlantingProject.code == spec["code"],
+                )
+            )
+        ).scalar_one_or_none()
+        if row is not None:
+            existing += 1
+            continue
+
+        scheme = get_scheme(spec["scheme_code"])
+        if scheme is None:
+            continue
+
+        segment, compliance, template_code = apply_scheme_defaults(
+            scheme=scheme,
+            segment="general",
+            compliance_mode="guided",
+            program_code=spec["program_code"],
+            standard_template_code=None,
+        )
+        if not template_code:
+            template_code = template_for_segment(segment)["code"]
+
+        project = PlantingProject(
+            code=spec["code"],
+            name=spec["name"],
+            description=f"Demo planting project under {scheme['label']}.",
+            segment=segment,
+            compliance_mode=compliance,
+            status="active",
+            program_code=spec["program_code"],
+            scheme_code=spec["scheme_code"],
+            standard_template_code=template_code,
+            target_tree_count=spec["target_tree_count"],
+            organization_id=org.id,
+            owner_user_id=manager.id,
+            metadata_={"scheme_refs": spec["scheme_refs"], "demo": True},
+        )
+        db.add(project)
+        await db.flush()
+        await create_standard_from_template(db, project=project, template_code=template_code)
+        await seed_project_scheme_checklists(db, project)
+        created += 1
+
+    return {"created": created, "existing": existing}
+
+
 async def seed() -> None:
     async with AsyncSessionLocal() as db:
         existing = {
@@ -319,6 +416,7 @@ async def seed() -> None:
         await _ensure_demo_viewer(db, org)
 
         stats = await _rebalance_demo_portfolios(db, citizen=citizen, manager=manager, org=org)
+        scheme_stats = await _ensure_demo_scheme_projects(db, org=org, manager=manager)
 
         await db.commit()
         print(
@@ -326,6 +424,8 @@ async def seed() -> None:
             f"  Citizen (personal BYOT): {DEMO_EMAIL} -> {stats['citizen_personal']} trees\n"
             f"  Org admin (NHAI portfolio): {DEMO_MANAGER_EMAIL} -> {stats['org_portfolio']} trees\n"
             f"  Viewer (read-only org): {DEMO_VIEWER_EMAIL}\n"
+            f"  Scheme demo projects created: {scheme_stats['created']} "
+            f"(existing {scheme_stats['existing']})\n"
             f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "
             f"created {stats['citizen_created']} citizen + {stats['org_created']} org trees"
         )

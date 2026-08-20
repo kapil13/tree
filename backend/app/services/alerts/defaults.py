@@ -29,11 +29,18 @@ DEFAULT_SURVIVAL_SURVEY_PREFS: dict[str, Any] = {
     "survey_interval_days": 30,
 }
 
+DEFAULT_CITIZEN_STEWARDSHIP_PREFS: dict[str, Any] = {
+    "enabled": True,
+    "channels": ["in_app", "push"],
+    "survey_interval_days": 30,
+}
+
 
 def default_notification_preferences() -> dict[str, Any]:
     return {
         "satellite_health": dict(DEFAULT_SATELLITE_HEALTH_PREFS),
         "threat_watch": dict(DEFAULT_THREAT_WATCH_PREFS),
         "survival_survey": dict(DEFAULT_SURVIVAL_SURVEY_PREFS),
+        "citizen_stewardship": dict(DEFAULT_CITIZEN_STEWARDSHIP_PREFS),
         "compliance": dict(DEFAULT_COMPLIANCE_PREFS),
     }

@@ -11,6 +11,9 @@ export type PlatformUser = {
   is_org_admin?: boolean;
   is_active: boolean;
   is_verified: boolean;
+  phone?: string | null;
+  email_verified_at?: string | null;
+  sessions_invalidated_at?: string | null;
   created_at: string;
   last_login_at: string | null;
   enrolled_program_codes?: string[];
@@ -105,8 +108,44 @@ export type PlatformPaymentOrder = {
   amount_paise: number;
   currency: string;
   status: string;
+  razorpay_order_id?: string | null;
+  razorpay_payment_id?: string | null;
   paid_at: string | null;
   created_at: string;
+};
+
+export type PlatformPaymentOrderDetail = PlatformPaymentOrder & {
+  user_wallet_balance: number;
+  payment_events: Array<{
+    id: string;
+    event_type: string;
+    event_id: string;
+    created_at: string;
+  }>;
+};
+
+export type WebhookDeliveryAdmin = {
+  id: string;
+  event_type: string;
+  status: string;
+  attempt_count: number;
+  error_message: string | null;
+  response_status: number | null;
+  created_at: string;
+  webhook_id: string;
+  webhook_label: string;
+  webhook_url: string;
+  organization_id: string;
+  organization_name: string;
+};
+
+export type PaymentWebhookEvent = {
+  id: string;
+  event_id: string;
+  event_type: string;
+  provider: string;
+  created_at: string;
+  payload_preview: string;
 };
 
 export type PlatformPaymentOrderPage = {
@@ -130,6 +169,7 @@ export type PlatformOpsSummary = {
     recent_count: number;
     recent_by_status: Record<string, number>;
     recent: Array<{
+      id: string;
       job_name: string;
       status: string;
       finished_at: string | null;
@@ -138,9 +178,104 @@ export type PlatformOpsSummary = {
   };
 };
 
+type ScanAggregate = {
+  optical_live: number;
+  optical_stub: number;
+  sar_live: number;
+  sar_stub: number;
+  sar_other: number;
+  total: number;
+  by_provider: Array<{
+    provider: string;
+    count: number;
+    bucket: string;
+    modality: string;
+  }>;
+};
+
+export type PlatformSatelliteHealth = {
+  generated_at: string;
+  status: string;
+  providers: {
+    optical: {
+      label: string;
+      configured: boolean;
+      mode: string;
+      provider_tag: string;
+    };
+    sar: {
+      label: string;
+      enabled: boolean;
+      primary: string;
+      fallback: string | null;
+      service_name: string;
+      live_data_provider: string | null;
+      credentials_ready: boolean;
+      gee_configured: boolean;
+      gee_initialized: boolean;
+      sentinel_hub_sar_configured: boolean;
+      primary_configured: boolean;
+      fallback_configured: boolean;
+    };
+    bhoonidhi: {
+      label: string;
+      configured: boolean;
+      mode: string;
+    };
+  };
+  scans: {
+    window_days: number;
+    since: string;
+    plantation_fences: ScanAggregate;
+    trees: ScanAggregate;
+    combined: {
+      optical_live: number;
+      optical_stub: number;
+      sar_live: number;
+      sar_stub: number;
+      total: number;
+    };
+    latest_plantation_scan: { provider: string; scene_acquired_at: string | null } | null;
+    latest_sar_scan: { provider: string; scene_acquired_at: string | null } | null;
+  };
+  recent_jobs: Array<{
+    job_name: string;
+    status: string;
+    finished_at: string | null;
+    error?: string | null;
+    scanned?: number;
+    failed?: number;
+    stub_scans?: number;
+    live_scans?: number;
+  }>;
+};
+
+export type PlatformSchemeSummary = {
+  scheme_count: number;
+  tagged_project_count: number;
+  untagged_project_count: number;
+  by_scheme: Array<{
+    scheme_code: string;
+    scheme_label: string;
+    ministry: string | null;
+    project_count: number;
+    tree_count: number;
+    kpi_targets: Record<string, number>;
+  }>;
+};
+
+export type CampaApoImportResult = {
+  imported: number;
+  unmatched: string[];
+  parse_errors: string[];
+  applied: Array<{ project_id: string; project_code: string; pca_number?: string }>;
+};
+
 export type PlatformAuditLog = {
   id: string;
   actor_user_id: string | null;
+  actor_email: string | null;
+  actor_full_name: string | null;
   organization_id: string | null;
   action: string;
   resource_type: string | null;
@@ -149,6 +284,14 @@ export type PlatformAuditLog = {
   user_agent: string | null;
   diff: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type UserPlatformGrants = {
+  user_id: string;
+  role: string;
+  role_modules: Record<string, boolean>;
+  user_grants: string[];
+  effective_access: Record<string, boolean>;
 };
 
 export type PlatformAuditPage = {
@@ -214,8 +357,19 @@ export const platformAdmin = {
   async getUser(id: string) {
     return (await api.get<PlatformUser>(`/v1/platform/users/${id}`)).data;
   },
-  async updateUser(id: string, payload: { role: string; is_active?: boolean }) {
+  async updateUser(
+    id: string,
+    payload: { role: string; is_active?: boolean; password_confirm?: string },
+  ) {
     return (await api.patch<PlatformUser>(`/v1/platform/users/${id}`, payload)).data;
+  },
+  async getUserGrants(id: string) {
+    return (await api.get<UserPlatformGrants>(`/v1/platform/users/${id}/platform-grants`)).data;
+  },
+  async updateUserGrants(id: string, payload: { module_keys: string[]; password: string }) {
+    return (
+      await api.put<UserPlatformGrants>(`/v1/platform/users/${id}/platform-grants`, payload)
+    ).data;
   },
   async listModules() {
     return (await api.get<PlatformModuleRule[]>("/v1/platform/modules")).data;
@@ -240,6 +394,7 @@ export const platformAdmin = {
       organization_id?: string;
       platform_role?: "government" | "corporate" | "ngo";
       make_org_admin?: boolean;
+      password?: string;
     },
   ) {
     return (
@@ -260,7 +415,17 @@ export const platformAdmin = {
   async getOrganization(id: string) {
     return (await api.get<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`)).data;
   },
-  async updateOrganization(id: string, payload: { name?: string; is_active?: boolean }) {
+  async updateOrganization(
+    id: string,
+    payload: {
+      name?: string;
+      is_active?: boolean;
+      owner_user_id?: string;
+      reason?: string;
+      revoke_member_sessions?: boolean;
+      password_confirm?: string;
+    },
+  ) {
     return (
       await api.patch<PlatformOrganizationDetail>(`/v1/platform/organizations/${id}`, payload)
     ).data;
@@ -275,8 +440,82 @@ export const platformAdmin = {
     return (await api.get<PlatformPaymentOrderPage>("/v1/platform/billing/orders", { params }))
       .data;
   },
+  async getPaymentOrder(id: string) {
+    return (await api.get<PlatformPaymentOrderDetail>(`/v1/platform/billing/orders/${id}`)).data;
+  },
+  async exportPaymentOrders(params?: { status?: string }) {
+    const response = await api.get("/v1/platform/billing/orders/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async grantCredits(
+    userId: string,
+    payload: { credits: number; reason: string; password: string },
+  ) {
+    return (
+      await api.post<{ user_id: string; credits_delta: number; new_balance: number }>(
+        `/v1/platform/billing/users/${userId}/grant-credits`,
+        payload,
+      )
+    ).data;
+  },
   async opsSummary() {
     return (await api.get<PlatformOpsSummary>("/v1/platform/ops/summary")).data;
+  },
+  async satelliteHealth() {
+    return (await api.get<PlatformSatelliteHealth>("/v1/platform/ops/satellite-health")).data;
+  },
+  async pingIntegrations() {
+    return (await api.post<PlatformOpsSummary["integrations"]>("/v1/platform/ops/integrations/ping")).data;
+  },
+  async listFailedWebhooks(limit = 50) {
+    return (
+      await api.get<WebhookDeliveryAdmin[]>("/v1/platform/ops/webhook-deliveries", {
+        params: { limit },
+      })
+    ).data;
+  },
+  async retryWebhook(deliveryId: string, password: string) {
+    return (
+      await api.post<{ id: string; status: string }>(
+        `/v1/platform/ops/webhook-deliveries/${deliveryId}/retry`,
+        { password },
+      )
+    ).data;
+  },
+  async listPaymentEvents(params?: { event_type?: string; limit?: number }) {
+    return (await api.get<PaymentWebhookEvent[]>("/v1/platform/ops/payment-events", { params }))
+      .data;
+  },
+  async retryJob(runId: string, password: string) {
+    return (
+      await api.post<{ job_name: string; celery_task_id: string | null; status: string }>(
+        `/v1/platform/ops/jobs/${runId}/retry`,
+        { password },
+      )
+    ).data;
+  },
+  async triggerJob(jobName: string, password: string) {
+    return (
+      await api.post<{ job_name: string; celery_task_id: string | null; status: string }>(
+        "/v1/platform/ops/jobs/trigger",
+        { job_name: jobName, password },
+      )
+    ).data;
+  },
+  async schemeSummary() {
+    return (
+      await api.get<PlatformSchemeSummary>("/v1/platform/schemes/summary")
+    ).data;
+  },
+  async importCampaApo(csvText: string) {
+    return (
+      await api.post<CampaApoImportResult>("/v1/platform/schemes/apo-import", {
+        csv_text: csvText,
+      })
+    ).data;
   },
   async settings() {
     return (await api.get<PlatformSettings>("/v1/platform/settings")).data;
@@ -285,6 +524,8 @@ export const platformAdmin = {
     page?: number;
     page_size?: number;
     action_prefix?: string;
+    resource_type?: string;
+    resource_id?: string;
     organization_id?: string;
     actor_user_id?: string;
     date_from?: string;
@@ -295,6 +536,8 @@ export const platformAdmin = {
   },
   async exportAudit(params?: {
     action_prefix?: string;
+    resource_type?: string;
+    resource_id?: string;
     organization_id?: string;
     actor_user_id?: string;
     date_from?: string;
@@ -323,7 +566,10 @@ export const platformAdmin = {
       )
     ).data;
   },
-  async impersonateUser(userId: string) {
+  async impersonateUser(
+    userId: string,
+    payload: { password: string; reason?: string; read_only?: boolean },
+  ) {
     return (
       await api.post<{
         access_token: string;
@@ -331,15 +577,150 @@ export const platformAdmin = {
         expires_in: number;
         impersonated_by_id: string;
         impersonated_by_email: string;
+        read_only: boolean;
         target_user: PlatformUser;
-      }>(`/v1/platform/users/${userId}/impersonate`)
+      }>(`/v1/platform/users/${userId}/impersonate`, payload)
     ).data;
+  },
+  async forcePasswordReset(userId: string, password: string) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>(
+        `/v1/platform/users/${userId}/force-password-reset`,
+        { password },
+      )
+    ).data;
+  },
+  async resendVerification(
+    userId: string,
+    payload: { password: string; mark_verified?: boolean },
+  ) {
+    return (
+      await api.post<{ status: string; dev_hint?: string | null }>(
+        `/v1/platform/users/${userId}/resend-verification`,
+        payload,
+      )
+    ).data;
+  },
+  async revokeSessions(userId: string, password: string) {
+    return (
+      await api.post<{ status: string }>(`/v1/platform/users/${userId}/revoke-sessions`, {
+        password,
+      })
+    ).data;
+  },
+  async bulkUserAction(payload: {
+    user_ids: string[];
+    action: "activate" | "deactivate" | "revoke_sessions";
+    password: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        sessions_revoked?: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/users/bulk-action", payload)
+    ).data;
+  },
+  async bulkOrgAction(payload: {
+    org_ids: string[];
+    is_active: boolean;
+    reason?: string;
+    revoke_member_sessions?: boolean;
+    password?: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        sessions_revoked?: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/organizations/bulk-action", payload)
+    ).data;
+  },
+  async exportUsers(params?: { search?: string; role?: string; is_active?: boolean }) {
+    const response = await api.get("/v1/platform/users/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportOrganizations(params?: { search?: string; is_active?: boolean }) {
+    const response = await api.get("/v1/platform/organizations/export", {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportOrgMembers(orgId: string) {
+    const response = await api.get(`/v1/platform/organizations/${orgId}/members/export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
   async stopImpersonation() {
     return (
       await api.post<{ access_token: string; refresh_token: string; expires_in: number }>(
         "/v1/platform/impersonation/stop",
       )
+    ).data;
+  },
+  async getGovernance() {
+    return (
+      await api.get<{
+        maintenance_mode: boolean;
+        maintenance_message: string;
+        registration_enabled: boolean;
+        updated_at: string | null;
+        updated_by_user_id: string | null;
+      }>("/v1/platform/governance")
+    ).data;
+  },
+  async updateGovernance(payload: {
+    maintenance_mode?: boolean;
+    maintenance_message?: string;
+    registration_enabled?: boolean;
+    password: string;
+  }) {
+    return (
+      await api.patch<{
+        maintenance_mode: boolean;
+        maintenance_message: string;
+        registration_enabled: boolean;
+      }>("/v1/platform/governance", payload)
+    ).data;
+  },
+  async getOrgFeatureFlags(orgId: string) {
+    return (
+      await api.get<{
+        organization_id: string;
+        flags: Array<{ key: string; label: string; enabled: boolean }>;
+      }>(`/v1/platform/organizations/${orgId}/feature-flags`)
+    ).data;
+  },
+  async updateOrgFeatureFlags(
+    orgId: string,
+    payload: { flags: Record<string, boolean>; password_confirm: string },
+  ) {
+    return (
+      await api.patch<{
+        organization_id: string;
+        flags: Array<{ key: string; label: string; enabled: boolean }>;
+      }>(`/v1/platform/organizations/${orgId}/feature-flags`, payload)
+    ).data;
+  },
+  async bulkReviewProgramAccess(payload: {
+    request_ids: string[];
+    action: "approve" | "reject";
+    admin_note?: string;
+    password: string;
+  }) {
+    return (
+      await api.post<{
+        processed: number;
+        skipped: number;
+        details: Array<Record<string, unknown>>;
+      }>("/v1/platform/program-access-requests/bulk-review", payload)
     ).data;
   },
 };

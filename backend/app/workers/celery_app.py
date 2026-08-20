@@ -30,6 +30,10 @@ celery_app.conf.update(
     task_routes={
         "app.workers.tasks.run_ai_analysis": {"queue": "ai"},
         "app.workers.tasks.run_satellite_scan": {"queue": "satellite"},
+        "app.workers.tasks.run_sar_scan": {"queue": "satellite"},
+        "app.workers.tasks.monthly_sar_sweep": {"queue": "satellite"},
+        "app.workers.tasks.weekly_sar_integrity_watch": {"queue": "satellite"},
+        "app.workers.tasks.daily_sar_sweep_health": {"queue": "satellite"},
         "app.workers.tasks.recalc_carbon": {"queue": "carbon"},
         "app.workers.tasks.send_notification": {"queue": "notifications"},
         "app.workers.tasks.deliver_webhook": {"queue": "notifications"},
@@ -40,6 +44,18 @@ celery_app.conf.update(
             "task": "app.workers.tasks.monthly_satellite_sweep",
             "schedule": crontab(day_of_month="1", hour="2", minute="0"),
         },
+        "monthly-sar-sweep": {
+            "task": "app.workers.tasks.monthly_sar_sweep",
+            "schedule": crontab(day_of_month="5", hour="3", minute="0"),
+        },
+        "weekly-sar-integrity-watch": {
+            "task": "app.workers.tasks.weekly_sar_integrity_watch",
+            "schedule": crontab(day_of_week="1", hour="4", minute="0"),
+        },
+        "daily-sar-sweep-health": {
+            "task": "app.workers.tasks.daily_sar_sweep_health",
+            "schedule": crontab(hour="4", minute="30"),
+        },
         "daily-health-roundup": {
             "task": "app.workers.tasks.daily_health_roundup",
             "schedule": crontab(hour="3", minute="0"),
@@ -47,6 +63,10 @@ celery_app.conf.update(
         "survival-survey-reminders": {
             "task": "app.workers.tasks.survival_survey_reminders",
             "schedule": crontab(hour="6", minute="0"),
+        },
+        "citizen-stewardship-reminders": {
+            "task": "app.workers.tasks.citizen_stewardship_reminders",
+            "schedule": crontab(hour="6", minute="15"),
         },
         "threat-watch-scan": {
             "task": "app.workers.tasks.threat_watch_scan",
@@ -63,6 +83,10 @@ celery_app.conf.update(
         "biodiversity-baseline": {
             "task": "app.workers.tasks.biodiversity_baseline",
             "schedule": crontab(hour="4", minute="30", day_of_week="0"),
+        },
+        "daily-audit-root-publish": {
+            "task": "app.workers.tasks.publish_daily_audit_root",
+            "schedule": crontab(hour="0", minute="5"),
         },
     },
 )

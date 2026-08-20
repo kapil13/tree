@@ -1,7 +1,10 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { Noto_Sans_Devanagari, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
+import { PwaRegister } from "@/components/pwa/pwa-register";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -15,17 +18,41 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-indic",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Aranyix — Intelligence for a Thriving Planet",
   description:
     "Register trees, monitor ecosystems, assess biodiversity, and generate verifiable environmental evidence.",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#16a34a",
+  appleWebApp: {
+    capable: true,
+    title: "Aranyix",
+  },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning className={`${sourceSans.variable} ${sourceSerif.variable}`}>
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={`${sourceSans.variable} ${sourceSerif.variable} ${notoDevanagari.variable}`}
+    >
       <body className="min-h-screen font-sans antialiased">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
+            <PwaRegister />
+            {children}
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

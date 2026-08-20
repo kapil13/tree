@@ -23,6 +23,14 @@ const _mineSpecies = [
   'Palash',
 ];
 
+const _measurementMethods = [
+  ('visual_estimate', 'Visual estimate'),
+  ('tape', 'Tape measure (DBH at 1.3 m)'),
+  ('caliper', 'Caliper'),
+  ('clinometer', 'Clinometer (height)'),
+  ('photogrammetry', 'Photogrammetry'),
+];
+
 class AddTreeScreen extends ConsumerStatefulWidget {
   const AddTreeScreen({super.key, this.projectId, this.workAreaId});
 
@@ -35,6 +43,8 @@ class AddTreeScreen extends ConsumerStatefulWidget {
 
 class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   final _species = TextEditingController(text: 'Neem');
+  final _dbh = TextEditingController();
+  final _height = TextEditingController();
   final _extraControllers = <String, TextEditingController>{};
   final _localPhotoPaths = <String>[];
   List<dynamic> _programs = [];
@@ -54,6 +64,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   String? _roadSide;
   String? _guardType;
   String _pitSize = '60x60x60';
+  String _measurementMethod = 'visual_estimate';
 
   @override
   void initState() {
@@ -165,7 +176,10 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (_guardType != null) metadata['guard_type'] = _guardType;
       metadata['pit_size_cm'] = _pitSize;
     }
-    if (_segment == 'township_landscape' && _selectedWorkAreaId != null) {
+    if ((_segment == 'township_landscape' ||
+            _segment == 'nagar_van_urban' ||
+            _segment == 'sahakar_van_coop') &&
+        _selectedWorkAreaId != null) {
       final wa = _workAreas.cast<Map<String, dynamic>?>().firstWhere(
             (w) => w?['id'] == _selectedWorkAreaId,
             orElse: () => null,
@@ -275,6 +289,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     });
 
     final metadata = _buildMetadata();
+    final dbh = double.tryParse(_dbh.text.trim());
+    final height = double.tryParse(_height.text.trim());
+    final initialMeasurement = <String, dynamic>{
+      'method': _measurementMethod,
+      if (dbh != null) 'dbh_cm': dbh,
+      if (height != null) 'height_m': height,
+    };
     final payload = {
       'program_code': _programCode ?? 'byot',
       'species_text': _species.text.trim(),
@@ -284,6 +305,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       'photo_keys': _photoKeys,
       'metadata': metadata,
       if (_selectedWorkAreaId != null) 'work_area_id': _selectedWorkAreaId,
+      if (dbh != null || height != null || _measurementMethod != 'visual_estimate')
+        'initial_measurement': initialMeasurement,
     };
 
     try {
@@ -297,6 +320,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         photoKeys: _photoKeys,
         metadata: metadata,
         workAreaId: _selectedWorkAreaId,
+        initialMeasurement: initialMeasurement,
       );
       ref.invalidate(treesProvider);
       ref.invalidate(dashboardProvider);
@@ -327,6 +351,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   @override
   void dispose() {
     _species.dispose();
+    _dbh.dispose();
+    _height.dispose();
     for (final c in _extraControllers.values) {
       c.dispose();
     }
@@ -458,6 +484,48 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 16),
+          Text('Field measurements (optional)', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            'Measure DBH at 1.3 m above ground. Leave blank if not measured yet.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _measurementMethod,
+            decoration: const InputDecoration(labelText: 'Measurement method'),
+            items: _measurementMethods
+                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
+                .toList(),
+            onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _dbh,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'DBH (cm)',
+                    hintText: 'e.g. 12.5',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _height,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Height (m)',
+                    hintText: 'e.g. 3.2',
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _busy ? null : _useGps,

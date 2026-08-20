@@ -63,6 +63,12 @@ export type InvitePreview = {
   expires_at: string;
 };
 
+export type OrgFeatureFlag = {
+  key: string;
+  label: string;
+  enabled: boolean;
+};
+
 export const organizations = {
   async previewInvite(invite_token: string) {
     return (
@@ -73,6 +79,9 @@ export const organizations = {
   },
   async me() {
     return (await api.get<Organization>("/v1/organizations/me")).data;
+  },
+  async myFeatureFlags() {
+    return (await api.get<{ flags: OrgFeatureFlag[] }>("/v1/organizations/me/feature-flags")).data;
   },
   async members() {
     return (await api.get<OrgMembersResponse>("/v1/organizations/me/members")).data;

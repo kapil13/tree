@@ -12,6 +12,7 @@ from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
+from app.models.planting_project_rule_override import PlantingProjectRuleOverride
 from app.models.planting_standard import PlantingStandard
 from app.models.project_member import ProjectMember
 from app.models.tree import Tree
@@ -28,6 +29,8 @@ from app.schemas.planting_project import (
     PlantingProjectUpdate,
     PlantingStandardOut,
     ProjectSummaryOut,
+    SchemeKpiOut,
+    SchemeMetadataUpdate,
     StandardTemplateOut,
     WorkAreaCreate,
     WorkAreaOut,
@@ -39,7 +42,15 @@ from app.schemas.project_member import (
     ProjectMemberCreate,
     ProjectMemberOut,
 )
+from app.schemas.project_risk import ProjectRiskAssessmentCreate
+from app.schemas.rule_template import ProjectRuleOverrideUpdate
 from app.schemas.tree import TreeListItem
+from app.schemas.vm0047 import (
+    AdditionalityCreate,
+    CarbonPoolsUpsert,
+    LeakageCreate,
+    ProjectBaselineCreate,
+)
 from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
@@ -51,12 +62,18 @@ from app.services.planting_projects.access import (
     project_list_filter,
 )
 from app.services.planting_projects.compliance import evaluate_tree_placement
-from app.services.planting_projects.constants import (
-    PROGRAM_DEFAULT_COMPLIANCE,
-    PROGRAM_DEFAULT_SEGMENT,
-    SEGMENT_LABELS,
-)
+from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
+from app.services.planting_projects.rule_engine import (
+    get_effective_rules,
+    get_effective_template,
+    get_project_override_row,
+    merge_rules,
+    project_rule_override_dict,
+    resolve_template_rules,
+    sanitize_override_rules,
+    validate_rule_override,
+)
 from app.services.planting_projects.service import (
     create_standard_from_template,
     get_active_standard,
@@ -67,6 +84,11 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.platform.governance import assert_org_feature_enabled
+from app.services.schemes.compliance import seed_project_scheme_checklists
+from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
+from app.services.schemes.validation import merge_scheme_metadata, validate_scheme_metadata
 
 router = APIRouter(prefix="/planting-projects", tags=["planting-projects"])
 
@@ -78,7 +100,13 @@ def _project_out(
     *,
     summary: ProjectSummaryOut | None = None,
     standard: PlantingStandard | None = None,
+    effective_rules: dict | None = None,
 ) -> PlantingProjectOut:
+    standard_out = None
+    if standard is not None:
+        standard_out = PlantingStandardOut.model_validate(standard)
+        if effective_rules is not None:
+            standard_out = standard_out.model_copy(update={"rules": effective_rules})
     return PlantingProjectOut(
         id=project.id,
         code=project.code,
@@ -88,6 +116,7 @@ def _project_out(
         compliance_mode=project.compliance_mode,
         status=project.status,
         program_code=project.program_code,
+        scheme_code=project.scheme_code,
         standard_template_code=project.standard_template_code,
         target_tree_count=project.target_tree_count,
         organization_id=project.organization_id,
@@ -96,7 +125,7 @@ def _project_out(
         created_at=project.created_at,
         updated_at=project.updated_at,
         summary=summary,
-        active_standard=PlantingStandardOut.model_validate(standard) if standard else None,
+        active_standard=standard_out,
     )
 
 
@@ -138,6 +167,17 @@ async def _work_area_out(db: DB, fence: PlantationFence) -> WorkAreaOut:
     )
 
 
+async def _project_out_async(
+    db: DB,
+    project: PlantingProject,
+    *,
+    summary: ProjectSummaryOut | None = None,
+    standard: PlantingStandard | None = None,
+) -> PlantingProjectOut:
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
 @router.get("/segments")
 async def list_segments() -> dict:
     return {
@@ -148,13 +188,31 @@ async def list_segments() -> dict:
 
 
 @router.get("/templates", response_model=list[StandardTemplateOut])
-async def list_standard_templates(segment: str | None = None) -> list[StandardTemplateOut]:
-    return [StandardTemplateOut.model_validate(t) for t in list_templates(segment=segment)]
+async def list_standard_templates(segment: str | None = None, *, db: DB) -> list[StandardTemplateOut]:
+    from app.services.planting_projects.rule_engine import (
+        custom_row_to_standard,
+        list_custom_templates,
+    )
+
+    out: list[StandardTemplateOut] = []
+    seen: set[str] = set()
+    for tpl in list_templates(segment=segment):
+        effective = await get_effective_template(db, tpl["code"])
+        out.append(StandardTemplateOut.model_validate(effective or tpl))
+        seen.add(tpl["code"])
+    for row in await list_custom_templates(db, segment=segment):
+        if row.template_code in seen:
+            continue
+        effective = await get_effective_template(db, row.template_code)
+        out.append(StandardTemplateOut.model_validate(effective or custom_row_to_standard(row)))
+    return out
 
 
 @router.get("/templates/{code}", response_model=StandardTemplateOut)
-async def get_standard_template(code: str) -> StandardTemplateOut:
-    tpl = get_template(code)
+async def get_standard_template(code: str, db: DB) -> StandardTemplateOut:
+    tpl = await get_effective_template(db, code)
+    if tpl is None:
+        tpl = get_template(code)
     if tpl is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found")
     return StandardTemplateOut.model_validate(tpl)
@@ -176,6 +234,7 @@ async def trigger_project_satellite_scan(
     user: WriteProfessional,
     db: DB,
 ) -> dict:
+    await assert_org_feature_enabled(db, user, "satellite")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -193,12 +252,15 @@ async def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     segment: str | None = None,
+    scheme_code: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
 ) -> Page[PlantingProjectOut]:
     stmt = select(PlantingProject)
     stmt = project_list_filter(user, stmt)
     if segment:
         stmt = stmt.where(PlantingProject.segment == segment)
+    if scheme_code:
+        stmt = stmt.where(PlantingProject.scheme_code == scheme_code)
     if status_filter:
         stmt = stmt.where(PlantingProject.status == status_filter)
 
@@ -215,7 +277,7 @@ async def list_projects(
     for project in rows:
         summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
         standard = await get_active_standard(db, project)
-        items.append(_project_out(project, summary=summary, standard=standard))
+        items.append(await _project_out_async(db, project, summary=summary, standard=standard))
 
     return Page(items=items, page=page, page_size=page_size, total=total or 0)
 
@@ -224,15 +286,18 @@ async def list_projects(
 async def create_project(
     payload: PlantingProjectCreate, request: Request, user: WriteAccess, db: DB
 ) -> PlantingProjectOut:
-    segment = payload.segment
-    if payload.program_code and segment == "general":
-        segment = PROGRAM_DEFAULT_SEGMENT.get(payload.program_code, segment)
+    scheme = validate_scheme_selection(
+        scheme_code=payload.scheme_code,
+        program_code=payload.program_code,
+    )
+    segment, compliance_mode, template_code = apply_scheme_defaults(
+        scheme=scheme,
+        segment=payload.segment,
+        compliance_mode=payload.compliance_mode,
+        program_code=payload.program_code,
+        standard_template_code=payload.standard_template_code,
+    )
 
-    compliance_mode = payload.compliance_mode
-    if payload.program_code and compliance_mode == "guided":
-        compliance_mode = PROGRAM_DEFAULT_COMPLIANCE.get(payload.program_code, compliance_mode)
-
-    template_code = payload.standard_template_code
     if not template_code:
         from app.services.planting_projects.templates import template_for_segment
 
@@ -247,6 +312,14 @@ async def create_project(
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="project_code_exists")
 
+    metadata = validate_scheme_metadata(
+        payload.scheme_code,
+        dict(payload.metadata),
+        strict=False,
+    )
+    if scheme and scheme.get("legacy_plantation_category"):
+        metadata.setdefault("plantation_category", scheme["legacy_plantation_category"])
+
     project = PlantingProject(
         code=payload.code,
         name=payload.name,
@@ -254,16 +327,18 @@ async def create_project(
         segment=segment,
         compliance_mode=compliance_mode,
         program_code=payload.program_code,
+        scheme_code=payload.scheme_code,
         standard_template_code=template_code,
         target_tree_count=payload.target_tree_count,
         organization_id=user.organization_id,
         owner_user_id=user.id,
-        metadata_=payload.metadata,
+        metadata_=metadata,
         status="planning",
     )
     db.add(project)
     await db.flush()
     await create_standard_from_template(db, project=project, template_code=template_code)
+    await seed_project_scheme_checklists(db, project)
     await record_audit(
         db,
         actor=user,
@@ -271,14 +346,19 @@ async def create_project(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff={"code": project.code, "name": project.name, "segment": segment},
+        diff={
+            "code": project.code,
+            "name": project.name,
+            "segment": segment,
+            "scheme_code": payload.scheme_code,
+        },
     )
     await db.commit()
     await db.refresh(project)
 
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
 @router.get("/{project_id}", response_model=PlantingProjectOut)
@@ -288,7 +368,88 @@ async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> Plant
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
+@router.get("/{project_id}/rule-override")
+async def get_project_rule_override(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    standard = await get_active_standard(db, project)
+    template_code = standard.template_code if standard else project.standard_template_code
+    base_rules = await resolve_template_rules(db, template_code=template_code, project_id=None)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    row = await get_project_override_row(db, project.id)
+    return project_rule_override_dict(
+        project_id=project.id,
+        template_code=template_code,
+        base_rules=base_rules,
+        effective_rules=effective_rules,
+        row=row,
+        project_compliance_mode=project.compliance_mode,
+    )
+
+
+@router.put("/{project_id}/rule-override")
+async def update_project_rule_override(
+    project_id: uuid.UUID,
+    payload: ProjectRuleOverrideUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    standard = await get_active_standard(db, project)
+    template_code = standard.template_code if standard else project.standard_template_code
+    base = get_template(template_code) if template_code else None
+    base_rules = base["rules"] if base else (standard.rules if standard else {})
+
+    errors = validate_rule_override(payload.rules)
+    if errors:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"validation_errors": errors})
+
+    cleaned = sanitize_override_rules(base_rules, payload.rules)
+    row = await get_project_override_row(db, project.id)
+    if row is None:
+        row = PlantingProjectRuleOverride(project_id=project.id, rules={})
+        db.add(row)
+    row.rules = cleaned
+    row.enabled = payload.enabled
+    row.compliance_mode = payload.compliance_mode
+    row.publish_note = payload.publish_note
+    row.updated_by_user_id = user.id
+
+    await record_audit(
+        db,
+        actor=user,
+        action="project.rule_override.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+    await db.refresh(row)
+
+    base_effective = await resolve_template_rules(db, template_code=template_code, project_id=None)
+    effective_rules = merge_rules(base_effective, cleaned) if row.enabled else base_effective
+    return project_rule_override_dict(
+        project_id=project.id,
+        template_code=template_code,
+        base_rules=base_effective,
+        effective_rules=effective_rules,
+        row=row,
+        project_compliance_mode=project.compliance_mode,
+    )
 
 
 @router.patch("/{project_id}", response_model=PlantingProjectOut)
@@ -325,7 +486,61 @@ async def update_project(
     await db.refresh(project)
     summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
     standard = await get_active_standard(db, project)
-    return _project_out(project, summary=summary, standard=standard)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
+
+
+@router.patch("/{project_id}/scheme-metadata", response_model=PlantingProjectOut)
+async def update_scheme_metadata(
+    project_id: uuid.UUID,
+    payload: SchemeMetadataUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> PlantingProjectOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not project.scheme_code:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="scheme_not_set")
+
+    merged = merge_scheme_metadata(
+        project.metadata_ or {},
+        payload.scheme_refs,
+        funding_sources=payload.funding_sources,
+        convergence=payload.convergence,
+    )
+    project.metadata_ = validate_scheme_metadata(
+        project.scheme_code,
+        merged,
+        strict=True,
+    )
+
+    await record_audit(
+        db,
+        actor=user,
+        action="project.scheme_metadata.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"scheme_code": project.scheme_code},
+    )
+    await db.commit()
+    await db.refresh(project)
+    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
+    standard = await get_active_standard(db, project)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
+
+
+@router.get("/{project_id}/scheme-kpis", response_model=SchemeKpiOut)
+async def get_scheme_kpis(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> SchemeKpiOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return SchemeKpiOut.model_validate(await compute_scheme_kpis(db, project))
 
 
 @router.get("/{project_id}/work-areas", response_model=list[WorkAreaOut])
@@ -536,7 +751,7 @@ async def compliance_check(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
 
     standard = await get_active_standard(db, project)
-    rules = standard.rules if standard else {}
+    rules = await get_effective_rules(db, standard, project_id=project.id)
     result = await evaluate_tree_placement(
         db,
         project=project,
@@ -663,6 +878,7 @@ async def export_project_mrv(
     from app.services.planting_projects.mrv_export import build_project_mrv_context
     from app.services.reports.exporter import render_compliance_mrv_pdf, render_compliance_mrv_xlsx
 
+    await assert_org_feature_enabled(db, user, "reports")
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -710,7 +926,7 @@ async def export_evidence_bundle(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
-    zip_bytes, summary = await build_project_evidence_bundle(
+    zip_bytes, summary, signature = await build_project_evidence_bundle(
         db, project, include_photos=include_photos
     )
     safe_code = project.code.replace("/", "-")
@@ -722,16 +938,22 @@ async def export_evidence_bundle(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff=summary,
+        diff={**summary, "signature_key_id": signature.key_id if signature else None},
     )
     await db.commit()
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{safe_code}-evidence-bundle.zip"',
+    }
+    if signature is not None:
+        headers["X-BYOT-Evidence-SHA256"] = signature.zip_sha256
+        headers["X-BYOT-Evidence-Signature"] = signature.signature_b64
+        headers["X-BYOT-Evidence-Key-Id"] = signature.key_id
 
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="{safe_code}-evidence-bundle.zip"'
-        },
+        headers=headers,
     )
 
 
@@ -947,3 +1169,255 @@ async def remove_project_member(
     await db.delete(member)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{project_id}/risk-assessments")
+async def list_project_risk_assessments(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> list[dict]:
+    from app.services.carbon.risk_ops import list_risk_assessments
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    rows = await list_risk_assessments(db, project.id)
+    return [r.model_dump() for r in rows]
+
+
+@router.post("/{project_id}/risk-assessments", status_code=status.HTTP_201_CREATED)
+async def create_project_risk_assessment(
+    project_id: uuid.UUID,
+    payload: ProjectRiskAssessmentCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.risk_ops import create_risk_assessment
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_risk_assessment(db, project=project, payload=payload, assessor=user)
+    await record_audit(
+        db,
+        actor=user,
+        action="project.risk_assessment.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"nprt_score": payload.nprt_score, "buffer_pct": row.buffer_pct},
+    )
+    await db.commit()
+    return row.model_dump()
+
+
+@router.get("/{project_id}/vm0047/summary")
+async def get_project_vm0047_summary(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> dict:
+    from app.services.carbon.vm0047_ops import build_vm0047_summary
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await build_vm0047_summary(db, project)
+
+
+@router.get("/{project_id}/baselines")
+async def list_project_baselines(project_id: uuid.UUID, user: CurrentUser, db: DB) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_baselines
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_baselines(db, project.id)
+
+
+@router.post("/{project_id}/baselines", status_code=status.HTTP_201_CREATED)
+async def create_project_baseline(
+    project_id: uuid.UUID,
+    payload: ProjectBaselineCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_baseline
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_baseline(
+        db,
+        project=project,
+        scenario=payload.scenario,
+        land_cover_class=payload.land_cover_class,
+        description=payload.description,
+        baseline_emissions_tco2e=payload.baseline_emissions_tco2e,
+        baseline_removals_tco2e=payload.baseline_removals_tco2e,
+        created_by=user.id,
+        metadata=payload.metadata,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.baseline.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"scenario": payload.scenario},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/additionality")
+async def list_project_additionality(
+    project_id: uuid.UUID, user: CurrentUser, db: DB
+) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_additionality
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_additionality(db, project.id)
+
+
+@router.post("/{project_id}/additionality", status_code=status.HTTP_201_CREATED)
+async def create_project_additionality(
+    project_id: uuid.UUID,
+    payload: AdditionalityCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_additionality
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_additionality(
+        db,
+        project=project,
+        status=payload.status,
+        score_pct=payload.score_pct,
+        narrative=payload.narrative,
+        factors=payload.factors,
+        assessor_id=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.additionality.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"score_pct": payload.score_pct},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/leakage")
+async def list_project_leakage(project_id: uuid.UUID, user: CurrentUser, db: DB) -> list[dict]:
+    from app.services.carbon.vm0047_ops import list_leakage
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await list_leakage(db, project.id)
+
+
+@router.post("/{project_id}/leakage", status_code=status.HTTP_201_CREATED)
+async def create_project_leakage(
+    project_id: uuid.UUID,
+    payload: LeakageCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import create_leakage
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await create_leakage(
+        db,
+        project=project,
+        leakage_type=payload.leakage_type,
+        estimated_leakage_tco2e=payload.estimated_leakage_tco2e,
+        mitigation_tco2e=payload.mitigation_tco2e,
+        notes=payload.notes,
+        created_by=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.leakage.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"leakage_type": payload.leakage_type},
+    )
+    await db.commit()
+    return row
+
+
+@router.get("/{project_id}/carbon-pools")
+async def get_project_carbon_pools(project_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+    from app.services.carbon.vm0047_ops import _pools_dict, get_carbon_pools
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    row = await get_carbon_pools(db, project.id)
+    return _pools_dict(row)
+
+
+@router.put("/{project_id}/carbon-pools")
+async def upsert_project_carbon_pools(
+    project_id: uuid.UUID,
+    payload: CarbonPoolsUpsert,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.carbon.vm0047_ops import upsert_carbon_pools
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    row = await upsert_carbon_pools(
+        db,
+        project=project,
+        deadwood_ratio=payload.deadwood_ratio,
+        litter_ratio=payload.litter_ratio,
+        soc_tco2e_per_ha=payload.soc_tco2e_per_ha,
+        area_ha=payload.area_ha,
+        updated_by=user.id,
+    )
+    await record_audit(
+        db,
+        actor=user,
+        action="project.carbon_pools.upsert",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"deadwood_ratio": payload.deadwood_ratio, "litter_ratio": payload.litter_ratio},
+    )
+    await db.commit()
+    return row

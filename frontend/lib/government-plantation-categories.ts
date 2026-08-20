@@ -41,7 +41,7 @@ export const GOVERNMENT_PLANTATION_CATEGORIES: GovernmentCategoryOption[] = [
     hint: "ULB parks, smart city, avenue planting",
     legalBasis: "urban_greening",
     landCategory: "urban",
-    segment: "township_landscape",
+    segment: "nagar_van_urban",
   },
   {
     code: "other_government",

@@ -16,6 +16,7 @@ from app.schemas.organization import (
     OrganizationOut,
     OrgBulkInviteCreate,
     OrgBulkInviteResult,
+    OrgFeatureFlagItem,
     OrgInviteAccept,
     OrgInviteDeliveryOut,
     OrgInviteOut,
@@ -25,6 +26,7 @@ from app.schemas.organization import (
     OrgMemberOut,
     OrgMembersOut,
     OrgMemberUpdate,
+    OrgMyFeatureFlagsOut,
     OrgTransferOwnership,
 )
 from app.services.audit import record_audit
@@ -46,6 +48,7 @@ from app.services.organizations.members import (
     user_is_org_admin,
 )
 from app.services.organizations.onboarding import org_program_codes
+from app.services.platform.governance import ORG_FEATURE_FLAGS, org_feature_flags_for_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -125,6 +128,18 @@ async def get_my_organization(user: CurrentUser, db: DB) -> OrganizationOut:
     if org is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
     return await _org_out_with_programs(db, org)
+
+
+@router.get("/me/feature-flags", response_model=OrgMyFeatureFlagsOut)
+async def get_my_org_feature_flags(user: CurrentUser, db: DB) -> OrgMyFeatureFlagsOut:
+    """Feature flags for the signed-in user's organization (all enabled for platform admins)."""
+    flags = await org_feature_flags_for_user(db, user)
+    return OrgMyFeatureFlagsOut(
+        flags=[
+            OrgFeatureFlagItem(key=key, label=ORG_FEATURE_FLAGS[key], enabled=flags[key])
+            for key in ORG_FEATURE_FLAGS
+        ]
+    )
 
 
 @router.get("/me/members", response_model=OrgMembersOut)

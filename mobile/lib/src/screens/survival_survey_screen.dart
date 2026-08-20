@@ -7,6 +7,21 @@ import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
 
+const _survivalStatuses = [
+  ('live', 'Live'),
+  ('stressed', 'Stressed'),
+  ('dead', 'Dead'),
+  ('replaced', 'Replaced'),
+  ('missing', 'Missing / uprooted'),
+];
+
+const _measurementMethods = [
+  ('tape', 'Tape measure (DBH at 1.3 m)'),
+  ('caliper', 'Caliper'),
+  ('clinometer', 'Clinometer (height)'),
+  ('visual_estimate', 'Visual estimate'),
+];
+
 class SurvivalSurveyScreen extends ConsumerStatefulWidget {
   const SurvivalSurveyScreen({super.key, required this.treeId});
 
@@ -18,11 +33,15 @@ class SurvivalSurveyScreen extends ConsumerStatefulWidget {
 
 class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   final _remarks = TextEditingController();
+  final _dbh = TextEditingController();
+  final _height = TextEditingController();
   LocationCaptureResult? _location;
   bool _locating = false;
   bool _submitting = false;
   String? _error;
   String? _locMessage;
+  String _survivalStatus = 'live';
+  String _measurementMethod = 'tape';
 
   @override
   void initState() {
@@ -33,6 +52,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   @override
   void dispose() {
     _remarks.dispose();
+    _dbh.dispose();
+    _height.dispose();
     super.dispose();
   }
 
@@ -79,11 +100,15 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
         lon: loc.longitude,
         accuracy: loc.accuracyMeters,
         remarks: _remarks.text.trim().isEmpty ? null : _remarks.text.trim(),
+        survivalStatus: _survivalStatus,
+        dbhCm: double.tryParse(_dbh.text.trim()),
+        heightM: double.tryParse(_height.text.trim()),
+        method: _measurementMethod,
       );
       ref.invalidate(treesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Survival re-geotag saved')),
+          const SnackBar(content: Text('Survival survey saved with measurement record')),
         );
         context.pop();
       }
@@ -105,7 +130,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Capture current GPS for tree ${widget.treeId} and submit a survival re-geotag.',
+            'Capture GPS and optional remeasurements for tree ${widget.treeId}. '
+            'Each survey creates an auditable measurement record.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AranyixColors.onSurfaceMuted),
           ),
           const SizedBox(height: 16),
@@ -138,6 +164,50 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _survivalStatus,
+            decoration: const InputDecoration(labelText: 'Survival status'),
+            items: _survivalStatuses
+                .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
+                .toList(),
+            onChanged: _submitting ? null : (v) => setState(() => _survivalStatus = v ?? _survivalStatus),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _measurementMethod,
+            decoration: const InputDecoration(labelText: 'Measurement method'),
+            items: _measurementMethods
+                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
+                .toList(),
+            onChanged: _submitting ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _dbh,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'DBH (cm)',
+                    hintText: 'Optional remeasure',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _height,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Height (m)',
+                    hintText: 'Optional',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _remarks,
             decoration: const InputDecoration(
@@ -153,7 +223,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _submitting || loc == null ? null : _submit,
-            child: Text(_submitting ? 'Submitting…' : 'Submit re-geotag'),
+            child: Text(_submitting ? 'Submitting…' : 'Submit survival survey'),
           ),
         ],
       ),

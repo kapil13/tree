@@ -25,7 +25,7 @@ FOOTER_DEFAULT: dict[str, Any] = {
         {
             "title": "Platform",
             "links": [
-                {"label": "Dashboard", "href": "/dashboard"},
+                {"label": "Dashboard", "href": "/auth?mode=signin&next=/dashboard"},
                 {"label": "Register a tree", "href": "/auth?mode=signup"},
                 {"label": "How it works", "href": "/#how-it-works"},
             ],
@@ -65,30 +65,11 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "title": "Intelligence for a",
             "title_highlight": "thriving planet",
             "subtitle": (
-                "Aranyix unifies tree registration, satellite monitoring, biodiversity signals, and "
-                "AI insights into one premium platform — so every planting program can prove impact "
-                "with audit-ready evidence."
+                "Tree registration, satellite monitoring, and audit-ready evidence — "
+                "unified for every planting program."
             ),
             "primary_cta": {"label": "Start free registration", "href": "/auth?mode=signup"},
-            "secondary_cta": {"label": "Explore dashboard", "href": "/dashboard"},
-            "stats": [
-                {"value": "10M+", "label": "Trees at planetary scale"},
-                {"value": "100+", "label": "Species in AI catalog"},
-                {"value": "24/7", "label": "Satellite & alert monitoring"},
-                {"value": "IPCC", "label": "AR6-aligned estimates"},
-            ],
-            "float_cards": [
-                {
-                    "icon": "Satellite",
-                    "title": "Live NDVI scan",
-                    "subtitle": "Sentinel-2 · updated daily",
-                },
-                {
-                    "icon": "Bird",
-                    "title": "Biodiversity index",
-                    "subtitle": "+18 species this season",
-                },
-            ],
+            "secondary_cta": {"label": "See how it works", "href": "#how-it-works"},
         },
     },
     {

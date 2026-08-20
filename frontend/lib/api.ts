@@ -4,6 +4,7 @@
  */
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messages";
+import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
 import { useAuth } from "@/lib/auth-store";
 
 /** Browser calls same-origin `/api/...`; Next.js proxies to the backend. */
@@ -167,6 +168,10 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "viewer_read_only") {
         return "Your viewer role is read-only. Ask your program manager to change your access.";
       }
+      if (data.detail.startsWith("org_feature_disabled:")) {
+        const key = data.detail.slice("org_feature_disabled:".length);
+        return orgFeatureDisabledMessage(key);
+      }
       if (err.response.status === 500 && err.config?.url?.includes("/credits/")) {
         return `${data.detail}. Credit ledger may need migration 0015_credit_ledger — run: alembic upgrade head on the server.`;
       }
@@ -215,7 +220,9 @@ export type User = {
   impersonation?: {
     admin_user_id: string;
     admin_email: string;
+    read_only?: boolean;
   } | null;
+  locale?: string;
 };
 
 export type PlantingProgram = {
@@ -309,6 +316,7 @@ export type TreeImage = {
 export type TreeDetail = {
   id: string;
   public_code: string;
+  owner_user_id: string;
   program_code: string | null;
   species_text: string | null;
   status: string;
@@ -421,6 +429,9 @@ export type Dashboard = {
     total_biomass_kg: number;
     total_carbon_kg: number;
     total_co2e_kg: number;
+    co2e_kg_lower_90?: number | null;
+    co2e_kg_upper_90?: number | null;
+    uncertainty_pct?: number | null;
     annual_sequestration_kg: number;
     lifetime_credits_tco2e: number;
     estimated_revenue_usd: number;
@@ -509,6 +520,9 @@ export const auth = {
   },
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
+  },
+  async updateProfile(payload: { full_name?: string; phone?: string; locale?: string }) {
+    return (await api.patch<User>("/v1/auth/me", payload)).data;
   },
   async onboardingState() {
     return (await api.get<OnboardingState>("/v1/auth/onboarding")).data;
@@ -669,10 +683,47 @@ export type ProjectSegment =
   | "nhai_highway"
   | "industrial_greenbelt"
   | "township_landscape"
+  | "nagar_van_urban"
+  | "sahakar_van_coop"
   | "ngo_watershed"
   | "general";
 
 export type ComplianceMode = "open" | "guided" | "strict";
+
+export type CentralScheme = {
+  code: string;
+  label: string;
+  description: string;
+  ministry: string;
+  group: "central" | "convergence" | "corporate";
+  program_codes: string[];
+  default_segment: ProjectSegment;
+  default_compliance_mode: ComplianceMode;
+  default_template_code: string | null;
+  checklist_codes: string[];
+  framework_profiles: string[];
+  convergence_allowed: string[];
+  legacy_plantation_category: string | null;
+  kpi_targets: {
+    survival_pct_min?: number | null;
+    geo_tagged_pct_min?: number | null;
+    min_trees?: number | null;
+  };
+  metadata_sections: Record<string, unknown>[];
+};
+
+export const centralSchemes = {
+  async list(programCode?: string) {
+    return (
+      await api.get<{ items: CentralScheme[] }>("/v1/schemes", {
+        params: programCode ? { program_code: programCode } : undefined,
+      })
+    ).data.items;
+  },
+  async get(code: string) {
+    return (await api.get<CentralScheme>(`/v1/schemes/${code}`)).data;
+  },
+};
 
 export type StandardTemplate = {
   code: string;
@@ -711,6 +762,7 @@ export type PlantingProject = {
   compliance_mode: ComplianceMode;
   status: "planning" | "active" | "completed" | "archived";
   program_code: string | null;
+  scheme_code: string | null;
   standard_template_code: string | null;
   target_tree_count: number | null;
   organization_id: string | null;
@@ -770,7 +822,7 @@ export const plantingProjects = {
       })
     ).data;
   },
-  async list(params?: { page?: number; segment?: string; status?: string }) {
+  async list(params?: { page?: number; segment?: string; scheme_code?: string; status?: string }) {
     return (
       await api.get<{ items: PlantingProject[]; total: number }>("/v1/planting-projects", {
         params,
@@ -787,6 +839,7 @@ export const plantingProjects = {
     segment: ProjectSegment;
     compliance_mode?: ComplianceMode;
     program_code?: string;
+    scheme_code?: string;
     standard_template_code?: string;
     target_tree_count?: number;
     metadata?: Record<string, unknown>;
@@ -805,6 +858,60 @@ export const plantingProjects = {
     }>,
   ) {
     return (await api.patch<PlantingProject>(`/v1/planting-projects/${id}`, payload)).data;
+  },
+  async updateSchemeMetadata(
+    id: string,
+    payload: {
+      scheme_refs: Record<string, unknown>;
+      funding_sources?: Record<string, unknown>[];
+      convergence?: Record<string, unknown>[];
+    },
+  ) {
+    return (
+      await api.patch<PlantingProject>(`/v1/planting-projects/${id}/scheme-metadata`, payload)
+    ).data;
+  },
+  async getRuleOverride(id: string) {
+    return (await api.get<{
+      project_id: string;
+      template_code: string | null;
+      project_compliance_mode: string;
+      effective_compliance_mode: string;
+      has_project_override: boolean;
+      base_rules: Record<string, unknown>;
+      effective_rules: Record<string, unknown>;
+      override: {
+        enabled: boolean;
+        rules: Record<string, unknown>;
+        compliance_mode?: string | null;
+        publish_note?: string | null;
+        updated_at: string | null;
+      };
+    }>(`/v1/planting-projects/${id}/rule-override`)).data;
+  },
+  async updateRuleOverride(
+    id: string,
+    payload: {
+      enabled: boolean;
+      rules: Record<string, unknown>;
+      compliance_mode?: string | null;
+      publish_note?: string | null;
+    },
+  ) {
+    return (await api.put(`/v1/planting-projects/${id}/rule-override`, payload)).data;
+  },
+  async schemeKpis(id: string) {
+    return (
+      await api.get<{
+        scheme_code: string | null;
+        scheme_label?: string;
+        ministry?: string;
+        targets: Record<string, number>;
+        metrics: Record<string, number>;
+        checks: Record<string, boolean>;
+        status: string;
+      }>(`/v1/planting-projects/${id}/scheme-kpis`)
+    ).data;
   },
   async workAreas(projectId: string) {
     return (
@@ -1020,6 +1127,14 @@ export const plantingProjects = {
           created_at: string | null;
         }>;
         stale_satellite_work_areas: number;
+        stale_sar_work_areas?: number;
+        sar_at_risk_work_areas?: number;
+        sar_aligned_work_areas?: number;
+        sar_divergent_work_areas?: number;
+        sar_gap_fill_work_areas?: number;
+        sar_live_providers?: number;
+        sar_stub_providers?: number;
+        sar_avg_forest_integrity?: number | null;
         work_area_monitoring: Array<{
           id: string;
           name: string;
@@ -1030,8 +1145,33 @@ export const plantingProjects = {
           days_since_scan: number | null;
           latest_ndvi: number | null;
           tree_count: number | null;
+          last_sar_at?: string | null;
+          days_since_sar_scan?: number | null;
+          sar_provider?: string | null;
+          sar_forest_integrity?: number | null;
+          sar_integrity_grade?: string | null;
+          sar_monitoring_mode?: string | null;
+          sar_ground_status?: string | null;
+          sar_stale?: boolean;
+          sar_live?: boolean;
+          sar_at_risk?: boolean;
+          sar_recommended_action?: string | null;
         }>;
         unread_alerts_by_kind: Record<string, number>;
+        unread_sar_alerts_by_kind?: Record<string, number>;
+        open_sar_field_verifications?: Array<{
+          id: string;
+          project_id: string | null;
+          work_area_id: string | null;
+          work_area_name: string | null;
+          severity: string;
+          message: string;
+          alert_kind: string | null;
+          forest_integrity_score: number | null;
+          monitoring_mode: string | null;
+          created_at: string | null;
+          deep_link: string | null;
+        }>;
         recent_jobs: Array<{
           job_name: string;
           status: string;
@@ -1079,6 +1219,98 @@ export const plantingProjects = {
   async removeMember(projectId: string, memberId: string) {
     await api.delete(`/v1/planting-projects/${projectId}/members/${memberId}`);
   },
+  async listRiskAssessments(projectId: string) {
+    return (
+      await api.get<
+        Array<{
+          id: string;
+          project_id: string;
+          nprt_score: number;
+          buffer_pct: number;
+          assessed_at: string;
+          factors: Record<string, unknown>;
+          notes: string | null;
+        }>
+      >(`/v1/planting-projects/${projectId}/risk-assessments`)
+    ).data;
+  },
+  async createRiskAssessment(
+    projectId: string,
+    payload: { nprt_score: number; factors?: Record<string, unknown>; notes?: string },
+  ) {
+    return (
+      await api.post<{
+        id: string;
+        nprt_score: number;
+        buffer_pct: number;
+        assessed_at: string;
+      }>(`/v1/planting-projects/${projectId}/risk-assessments`, payload)
+    ).data;
+  },
+  async vm0047Summary(projectId: string) {
+    return (await api.get<Vm0047Summary>(`/v1/planting-projects/${projectId}/vm0047/summary`)).data;
+  },
+  async createBaseline(
+    projectId: string,
+    payload: {
+      scenario?: string;
+      land_cover_class?: string;
+      description?: string;
+      baseline_emissions_tco2e?: number;
+      baseline_removals_tco2e?: number;
+    },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/baselines`, payload)).data;
+  },
+  async createAdditionality(
+    projectId: string,
+    payload: { status?: string; score_pct: number; narrative?: string; factors?: Record<string, unknown> },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/additionality`, payload)).data;
+  },
+  async createLeakage(
+    projectId: string,
+    payload: {
+      leakage_type?: string;
+      estimated_leakage_tco2e?: number;
+      mitigation_tco2e?: number;
+      notes?: string;
+    },
+  ) {
+    return (await api.post(`/v1/planting-projects/${projectId}/leakage`, payload)).data;
+  },
+  async upsertCarbonPools(
+    projectId: string,
+    payload: {
+      deadwood_ratio?: number;
+      litter_ratio?: number;
+      soc_tco2e_per_ha?: number;
+      area_ha?: number;
+    },
+  ) {
+    return (await api.put(`/v1/planting-projects/${projectId}/carbon-pools`, payload)).data;
+  },
+};
+
+export type Vm0047Summary = {
+  standard: string;
+  project_id: string;
+  project_code: string;
+  methodology: string;
+  ledger: {
+    gross_credits_tco2e: number;
+    buffer_withheld_tco2e: number;
+    net_credits_tco2e: number;
+    status: string;
+  };
+  quantification: {
+    incremental_after_baseline_tco2e: number;
+    creditable_after_leakage_tco2e: number;
+    includes_other_pools: boolean;
+  };
+  readiness_status: string;
+  gaps: string[];
+  disclaimer: string;
 };
 
 export const uploads = {
@@ -1138,9 +1370,22 @@ export const trees = {
       accuracy_m?: number;
       survival_status?: string;
       remarks?: string;
+      dbh_cm?: number;
+      height_m?: number;
+      canopy_m?: number;
+      method?: string;
+      instrument?: string;
     },
   ) {
     return (await api.post<TreeDetail>(`/v1/trees/${id}/regeotag`, payload)).data;
+  },
+  async measurements(id: string, params?: { page?: number; page_size?: number }) {
+    return (await api.get(`/v1/trees/${id}/measurements`, { params })).data as {
+      items: import("@/components/trees/tree-measurements-panel").TreeMeasurement[];
+      page: number;
+      page_size: number;
+      total: number;
+    };
   },
   async timeline(id: string) {
     return (await api.get(`/v1/trees/${id}/timeline`)).data as {
@@ -1236,6 +1481,138 @@ export const bhoonidhi = {
       };
     };
   },
+};
+
+export type SarStatus = {
+  configured: boolean;
+  provider: string;
+  pipeline: string;
+  message: string;
+  gee_available: boolean;
+  sar_enabled?: boolean;
+  sar_provider?: string;
+  sar_fallback_provider?: string | null;
+  live_data_provider?: string;
+  monthly_sweep_schedule?: string;
+  worker_queue?: string;
+};
+
+export const sar = {
+  async status() {
+    return (await api.get<SarStatus>("/v1/sar/status")).data;
+  },
+  async scanFence(fenceId: string) {
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/work-areas/${fenceId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
+  },
+  async fenceMonitoring(fenceId: string) {
+    return (
+      await api.get<{
+        fence_id: string;
+        latest: SarRecord | null;
+        points: SarRecord[];
+        sar_configured: boolean;
+      }>(`/v1/sar/work-areas/${fenceId}/monitoring`)
+    ).data;
+  },
+  async scanTree(treeId: string) {
+    return (
+      await api.post<SarScanResponse>(`/v1/sar/trees/${treeId}/scan`, undefined, {
+        timeout: 120_000,
+      })
+    ).data;
+  },
+  async treeMonitoring(treeId: string) {
+    return (
+      await api.get<{
+        tree_id: string;
+        latest: SarRecord | null;
+        points: SarRecord[];
+        sar_configured: boolean;
+      }>(`/v1/sar/trees/${treeId}/monitoring`)
+    ).data;
+  },
+  async treeFusion(treeId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/trees/${treeId}/fusion`)).data;
+  },
+  async fenceFusion(fenceId: string) {
+    return (await api.get<SarFusion>(`/v1/sar/work-areas/${fenceId}/fusion`)).data;
+  },
+  async portfolioExport() {
+    return (
+      await api.get<string>("/v1/sar/portfolio-export", {
+        responseType: "text",
+      })
+    ).data;
+  },
+  async portfolioReportPdf() {
+    return (
+      await api.get<Blob>("/v1/sar/portfolio-report", {
+        responseType: "blob",
+      })
+    ).data;
+  },
+};
+
+export type SarFinding = {
+  category: string;
+  name: string;
+  confidence: number;
+  severity: string;
+  evidence: string;
+};
+
+export type SarAnalysis = {
+  risk_level: string;
+  ground_status: string;
+  summary: string;
+  findings: SarFinding[];
+  wetland_probability: number;
+  double_bounce_index: number;
+  ground_moisture_index: number;
+  canopy_ground_mismatch: boolean;
+  pipeline: string;
+};
+
+export type SarFusion = {
+  forest_integrity_score: number;
+  integrity_grade: string;
+  monitoring_mode: string;
+  summary: string;
+  optical_ndvi: number | null;
+  optical_stale: boolean;
+  sar_analysis: SarAnalysis;
+  findings: SarFinding[];
+  pipeline: string;
+};
+
+export type SarScanResponse = {
+  tree_id?: string;
+  fence_id?: string;
+  record: SarRecord;
+  analysis: SarAnalysis;
+  fusion?: SarFusion | null;
+};
+
+export type SarRecord = {
+  id: string;
+  provider: string;
+  scene_id: string;
+  scene_acquired_at: string;
+  l_band_hh_db?: number | null;
+  s_band_hh_db?: number | null;
+  double_bounce_index?: number | null;
+  wetland_probability?: number | null;
+  ground_moisture_index?: number | null;
+  canopy_ground_mismatch?: boolean | null;
+  frequency_bands?: string[];
+  polarimetric_composite?: Record<string, number> | null;
+  coherence?: number | null;
+  analysis?: SarAnalysis | null;
+  fusion?: SarFusion | null;
 };
 
 export const plantationFences = {
@@ -1480,6 +1857,10 @@ export type IntelligenceSummary = {
       work_areas_tracked: number;
       stale_sentinel_scans: number;
       aligned_dual_source: number;
+      sar_ground_risk_sites?: number;
+      sar_divergent_sites?: number;
+      sar_avg_forest_integrity?: number | null;
+      sar_provider?: string;
       sentinel_configured: boolean;
       bhoonidhi_configured: boolean;
     };
@@ -1490,6 +1871,11 @@ export type IntelligenceSummary = {
       recommended_action: string;
       sentinel: { latest_ndvi: number | null; days_since_scan: number | null; ndvi_trend: string };
       bhoonidhi: { scenes_available: number; latest_scene_at: string | null };
+      sar?: {
+        forest_integrity_score?: number | null;
+        monitoring_mode?: string | null;
+        ground_status?: string | null;
+      };
     }>;
   };
   highest_risk: string;
@@ -1571,19 +1957,71 @@ export const carbon = {
     age_years?: number;
     methodology?: "IPCC_AR6" | "VERRA_VM0047" | "GOLD_STANDARD_LUF";
     price_usd_per_credit?: number;
+    measurement_method?: string;
+    verification_tier?: string;
+    nprt_score?: number;
+    annual_mortality_pct?: number;
   }) {
     return (await api.post("/v1/carbon/estimate", payload)).data;
   },
 };
 
+export type PrivacyConsent = {
+  id: string;
+  purpose: string;
+  policy_version: string;
+  granted_at: string;
+  withdrawn_at: string | null;
+  active: boolean;
+};
+
+export const privacy = {
+  async summary() {
+    return (
+      await api.get<{
+        policy_version: string;
+        consents: PrivacyConsent[];
+        data_requests: Array<{ id: string; request_type: string; status: string; created_at: string }>;
+        grievances: Array<{ id: string; subject: string; status: string; created_at: string }>;
+      }>("/v1/privacy/summary")
+    ).data;
+  },
+  async officer() {
+    return (await api.get<{ name: string; email: string; policy_version: string }>("/v1/privacy/officer")).data;
+  },
+  async grantConsent(purpose: "essential" | "analytics" | "marketing") {
+    return (await api.post<PrivacyConsent>("/v1/privacy/consent", { purpose })).data;
+  },
+  async withdrawConsent(purpose: string) {
+    return (await api.delete<PrivacyConsent>(`/v1/privacy/consent/${purpose}`)).data;
+  },
+  async submitDataRequest(request_type: "access" | "correction" | "erasure" | "portability", notes?: string) {
+    return (await api.post("/v1/privacy/data-requests", { request_type, notes })).data;
+  },
+  async downloadExport() {
+    const res = await api.get("/v1/privacy/data-export", { responseType: "blob" });
+    return res.data as Blob;
+  },
+  async deleteAccount(confirm_email: string, reason?: string) {
+    return (await api.post("/v1/privacy/delete-account", { confirm_email, reason })).data;
+  },
+  async fileGrievance(subject: string, body: string) {
+    return (await api.post("/v1/privacy/grievances", { subject, body })).data;
+  },
+};
+
+export type AssistantAnswer = {
+  answer: string;
+  calculations: Record<string, unknown>;
+  citations: string[];
+  mode?: "llm" | "rules";
+  provider?: "openai" | "gemini" | "rules" | null;
+  llm_error?: string | null;
+};
+
 export const assistant = {
   async query(prompt: string) {
-    return (
-      await api.post<{ answer: string; calculations: Record<string, number>; citations: string[] }>(
-        "/v1/assistant/query",
-        { prompt }
-      )
-    ).data;
+    return (await api.post<AssistantAnswer>("/v1/assistant/query", { prompt })).data;
   },
 };
 
@@ -1806,6 +2244,8 @@ export type CreditLedger = {
   }>;
   last_computed_at: string;
   disclaimer: string;
+  buffer_from_nprt?: boolean;
+  nprt_score?: number;
   events: Array<{
     id: string;
     from_status: string | null;
@@ -1813,6 +2253,15 @@ export type CreditLedger = {
     notes: string | null;
     registry_reference: string | null;
     created_at: string;
+  }>;
+  serials?: Array<{
+    id: string;
+    serial_number: string;
+    vintage_year: number;
+    tco2e_amount: number;
+    status: string;
+    beneficiary?: string | null;
+    retired_at?: string | null;
   }>;
 };
 
@@ -1852,6 +2301,155 @@ export const credits = {
       await api.post<CreditLedger>(`/v1/credits/projects/${projectId}/transition`, payload)
     ).data;
   },
+  async retireSerial(
+    serialId: string,
+    payload: {
+      beneficiary: string;
+      retirement_reason?: string;
+      paris_article6?: boolean;
+      corresponding_adjustment_ref?: string;
+    },
+  ) {
+    return (await api.post(`/v1/credits/serials/${serialId}/retire`, payload)).data;
+  },
+  async downloadRetirementCertificate(serialId: string) {
+    const response = await api.get(`/v1/credits/serials/${serialId}/certificate.pdf`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async greenCreditEstimate(projectId: string) {
+    return (await api.get<GreenCreditEstimate>(`/v1/credits/projects/${projectId}/green-credit`)).data;
+  },
+};
+
+export type GreenCreditEstimate = {
+  standard: string;
+  activity_type: string;
+  land_bank_id: string | null;
+  tree_count: number;
+  eligible_trees: number;
+  total_area_ha: number;
+  trees_per_ha: number | null;
+  min_trees_per_ha: number;
+  density_eligible: boolean;
+  land_bank_registered: boolean;
+  monitoring_period_years: number;
+  years_elapsed: number;
+  vesting_fraction: number;
+  full_green_credits: number;
+  vested_green_credits: number;
+  provisional_green_credits: number;
+  eligibility_status: "eligible" | "gaps_identified" | "not_eligible";
+  gaps: string[];
+  disclaimer: string;
+  computed_at: string;
+  verifier_reference?: string | null;
+};
+
+export type VerificationSample = {
+  id: string;
+  project_id: string;
+  sample_pct: number;
+  method: string;
+  status: string;
+  item_count: number;
+  by_status: Record<string, number>;
+  created_at: string;
+  items?: Array<{
+    id: string;
+    tree_id: string;
+    tree_public_code: string | null;
+    status: string;
+    attestation_hash: string | null;
+    signed_at: string | null;
+  }>;
+};
+
+export const verificationWorkflow = {
+  async createSample(projectId: string, payload: { sample_pct: number; method?: "random" | "stratified" }) {
+    return (await api.post<VerificationSample>(`/v1/verification/projects/${projectId}/samples`, payload)).data;
+  },
+  async getSample(sampleId: string) {
+    return (await api.get<VerificationSample>(`/v1/verification/samples/${sampleId}`)).data;
+  },
+  async attestItem(sampleId: string, itemId: string, payload: { status: "approved" | "rejected"; notes?: string }) {
+    return (await api.post(`/v1/verification/samples/${sampleId}/items/${itemId}/attest`, payload)).data;
+  },
+  async downloadReport(sampleId: string) {
+    const response = await api.get(`/v1/verification/samples/${sampleId}/report.pdf`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+};
+
+export type PlotMonitoringSummary = {
+  project_id: string;
+  has_design: boolean;
+  mode: string;
+  stratification?: string | null;
+  plot_area_m2?: number | null;
+  plots_per_stratum?: number | null;
+  total_plots?: number;
+  visited_plots?: number;
+  strata?: Array<Record<string, unknown>>;
+  extrapolated_biomass_kg?: number | null;
+  extrapolated_carbon_kg?: number | null;
+  extrapolated_co2e_kg?: number | null;
+  co2e_kg_lower_90?: number | null;
+  co2e_kg_upper_90?: number | null;
+  uncertainty_pct?: number | null;
+  disclosure?: string | null;
+  design_id?: string | null;
+  status?: string | null;
+  layout_seed?: number | null;
+  stratum_count?: number | null;
+};
+
+export type PlotMonitoringPlot = {
+  id: string;
+  stratum_id: string;
+  plot_code: string;
+  status: string;
+  center: { type: "Point"; coordinates: [number, number] };
+};
+
+export const plotMonitoring = {
+  async summary(projectId: string) {
+    return (await api.get<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/summary`)).data;
+  },
+  async upsertDesign(
+    projectId: string,
+    payload: {
+      mode: "full_census" | "plot_based" | "hybrid";
+      stratification?: string;
+      plots_per_stratum?: number;
+      plot_area_m2?: number;
+    },
+  ) {
+    return (await api.put<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/design`, payload)).data;
+  },
+  async generatePlots(projectId: string) {
+    return (await api.post<PlotMonitoringSummary>(`/v1/plot-monitoring/projects/${projectId}/generate-plots`)).data;
+  },
+  async listPlots(projectId: string) {
+    return (await api.get<PlotMonitoringPlot[]>(`/v1/plot-monitoring/projects/${projectId}/plots`)).data;
+  },
+  async createVisit(
+    plotId: string,
+    payload: {
+      observations?: Array<{
+        species_text?: string;
+        dbh_cm?: number;
+        height_m?: number;
+        alive?: boolean;
+      }>;
+      notes?: string;
+    },
+  ) {
+    return (await api.post(`/v1/plot-monitoring/plots/${plotId}/visits`, payload)).data;
+  },
 };
 
 export type FrameworkProfileCode =
@@ -1861,6 +2459,7 @@ export type FrameworkProfileCode =
   | "redd_plus"
   | "paris_ndc"
   | "ngt_campa"
+  | "green_credit_india"
   | "esg_general";
 
 export type FrameworkProfile = {
@@ -1883,6 +2482,8 @@ export type ChecklistCode =
   | "gold_standard_luf"
   | "redd_plus"
   | "ngt_campa"
+  | "green_credit_india"
+  | "icvcm_ccp"
   | "esg_general";
 
 export type ChecklistAnswer = "yes" | "no" | "partial" | "na";

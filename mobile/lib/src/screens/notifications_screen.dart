@@ -219,9 +219,17 @@ class NotificationsScreen extends ConsumerWidget {
                       }
                       if (!context.mounted) return;
                       final payload = a['payload'] as Map<String, dynamic>?;
+                      final mobileDeepLink = payload?['mobile_deep_link'] as String?;
+                      final deepLink = payload?['deep_link'] as String?;
+                      final fenceId = payload?['fence_id'] as String?;
                       final treeId = a['tree_id'] as String? ?? payload?['tree_id'] as String?;
                       final projectId = payload?['project_id'] as String?;
-                      if (treeId != null) {
+                      final target = mobileDeepLink ?? deepLink;
+                      if (target != null && target.startsWith('/')) {
+                        context.push(target);
+                      } else if (fenceId != null) {
+                        context.push('/monitoring?fence=$fenceId');
+                      } else if (treeId != null) {
                         context.push('/trees/$treeId');
                       } else if (projectId != null) {
                         context.push('/projects/$projectId');

@@ -13,6 +13,9 @@ from app.services.audit.log import record_audit
 @pytest.mark.asyncio
 async def test_record_audit_adds_entry_with_actor():
     db = AsyncMock()
+    db.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+    )
     actor = MagicMock()
     actor.id = uuid.uuid4()
     actor.organization_id = uuid.uuid4()
@@ -33,3 +36,5 @@ async def test_record_audit_adds_entry_with_actor():
     assert entry.actor_user_id == actor.id
     assert entry.organization_id == actor.organization_id
     assert entry.diff["public_code"] == "BYOT-TEST-0001"
+    assert len(entry.record_hash) == 64
+    assert len(entry.prev_hash) == 64

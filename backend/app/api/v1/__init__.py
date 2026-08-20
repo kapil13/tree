@@ -11,26 +11,34 @@ from app.api.v1 import (
     bhoonidhi,
     bioacoustic,
     carbon,
+    citizen,
     cms,
     compliance,
     credits,
     dashboard,
     devices,
+    evidence,
     health,
     intelligence,
+    ogc,
     organizations,
     payments,
     plantation_fences,
     planting_programs,
     planting_projects,
     platform,
+    plot_monitoring,
+    privacy,
     reporting,
     reports,
+    sar,
     satellite,
     satellite_health,
+    schemes,
     trees,
     uploads,
     verification,
+    verification_workflow,
     weather,
     webhooks,
 )
@@ -44,18 +52,24 @@ api_router.include_router(analysis.router)
 api_router.include_router(ai_scans.router)
 api_router.include_router(payments.router)
 api_router.include_router(satellite.router)
+api_router.include_router(sar.router)
 api_router.include_router(satellite_health.router)
 api_router.include_router(plantation_fences.router)
 api_router.include_router(planting_programs.router)
+api_router.include_router(schemes.router)
 api_router.include_router(planting_projects.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
+api_router.include_router(evidence.router)
+api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)
+api_router.include_router(plot_monitoring.router)
 api_router.include_router(credits.router)
+api_router.include_router(citizen.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(devices.router)
 api_router.include_router(intelligence.router)
@@ -65,6 +79,8 @@ api_router.include_router(bioacoustic.router)
 api_router.include_router(bhoonidhi.router)
 api_router.include_router(reports.router)
 api_router.include_router(reporting.router)
+api_router.include_router(ogc.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(verification.router)
 api_router.include_router(verification.public_router)
+api_router.include_router(verification_workflow.router)

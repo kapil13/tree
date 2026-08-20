@@ -136,15 +136,41 @@ async def build_intelligence_summary(
 
 
 def intelligence_context_for_assistant(summary: dict[str, Any]) -> dict[str, Any]:
-    """Compact slice for LLM grounding."""
+    """Compact slice for LLM grounding — includes site forecasts, not only alerts."""
+    site_weather = []
+    for site in summary.get("threat_sites", [])[:6]:
+        site_weather.append(
+            {
+                "work_area_name": site.get("work_area_name"),
+                "forecast_summary": site.get("forecast_summary"),
+                "rain_mm_next_48h": site.get("rain_mm_next_48h"),
+                "composite_risk": site.get("composite_risk"),
+                "healthy_pct": site.get("healthy_pct"),
+                "tree_count": site.get("tree_count"),
+                "latitude": site.get("latitude"),
+                "longitude": site.get("longitude"),
+            }
+        )
+
     return {
         "highest_risk": summary.get("highest_risk"),
         "weather_alert_count": summary.get("weather_alert_count"),
         "pest_high_count": summary.get("pest_high_count"),
+        "site_weather": site_weather,
         "pest_hotspots": summary.get("pest_hotspots", [])[:5],
         "weather_alerts": summary.get("weather_alerts", [])[:5],
         "early_warnings": summary.get("early_warnings", [])[:5],
         "biodiversity": summary.get("biodiversity"),
         "integrations_status": summary.get("integrations", {}).get("status"),
         "satellite_fusion": summary.get("satellite_fusion", {}).get("summary"),
+        "sar_ground_risk_sites": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_ground_risk_sites"),
+        "sar_divergent_sites": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_divergent_sites"),
+        "sar_avg_forest_integrity": summary.get("satellite_fusion", {})
+        .get("summary", {})
+        .get("sar_avg_forest_integrity"),
+        "sar_provider": summary.get("satellite_fusion", {}).get("summary", {}).get("sar_provider"),
     }

@@ -79,6 +79,9 @@ class TreeRegistrationSyncService extends ChangeNotifier {
             photoKeys: List<String>.from(payload['photo_keys'] ?? []),
             metadata: Map<String, dynamic>.from(payload['metadata'] ?? {}),
             workAreaId: payload['work_area_id'] as String?,
+            initialMeasurement: payload['initial_measurement'] != null
+                ? Map<String, dynamic>.from(payload['initial_measurement'] as Map)
+                : null,
           );
           await _queue.remove(item.id);
           _syncedThisRun++;
