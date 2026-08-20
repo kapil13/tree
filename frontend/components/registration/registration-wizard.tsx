@@ -42,6 +42,7 @@ type RegistrationWizardProps = {
   requirePitPhoto?: boolean;
   inheritedStandard?: InheritedStandardPrefill;
   allowedSpecies?: string[] | null;
+  chainageEnabled?: boolean;
   pitPhotoKey?: string | null;
   pitPhotoPreview?: string | null;
   onPitPhotoChange?: (key: string | null, preview: string | null) => void;
@@ -90,6 +91,7 @@ export function RegistrationWizard({
   requirePitPhoto = false,
   inheritedStandard,
   allowedSpecies,
+  chainageEnabled = false,
   pitPhotoKey = null,
   pitPhotoPreview = null,
   onPitPhotoChange,
@@ -126,6 +128,14 @@ export function RegistrationWizard({
   const plantingSection = useMemo(
     () => schema.sections.find((section) => section.id === "planting") ?? null,
     [schema.sections],
+  );
+  const highwaySection = useMemo(
+    () => schema.sections.find((section) => section.id === "highway") ?? null,
+    [schema.sections],
+  );
+  const roadSideField = useMemo(
+    () => highwaySection?.fields.find((field) => field.key === "road_side") ?? null,
+    [highwaySection],
   );
 
   const minPlantPhotos = useMemo(() => {
@@ -249,7 +259,11 @@ export function RegistrationWizard({
       return photoKeys.length >= schema.min_photos;
     }
     if (currentStep.id === "species_review") {
-      return Boolean(values.species_text && values.planted_at);
+      const hasSpecies = Boolean(values.species_text && values.planted_at);
+      if (chainageEnabled && roadSideField) {
+        return hasSpecies && Boolean(values.road_side);
+      }
+      return hasSpecies;
     }
     if (currentStep.id === "review") return true;
     if (currentStep.id === "program") return Boolean(programCode);
@@ -407,6 +421,16 @@ export function RegistrationWizard({
                 onChange={onValuesChange}
                 disabled={readOnly}
               />
+              {chainageEnabled && roadSideField ? (
+                <div className="mt-4">
+                  <FormFieldsGrid
+                    fields={[roadSideField]}
+                    values={values}
+                    onChange={onValuesChange}
+                    disabled={readOnly}
+                  />
+                </div>
+              ) : null}
               {allowedSpecies?.length ? (
                 <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-800 dark:bg-stone-950/40">
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
