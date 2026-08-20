@@ -51,6 +51,7 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
+from app.services.planting_projects.registration_context import merge_standard_into_tree_metadata
 from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
@@ -210,6 +211,7 @@ async def create_tree(
     if project:
         standard = await get_active_standard(db, project)
         rules = await get_effective_rules(db, standard, project_id=project.id)
+        metadata = merge_standard_into_tree_metadata(metadata, rules)
         compliance_mode = await resolve_compliance_mode(
             db,
             template_code=standard.template_code if standard else project.standard_template_code,

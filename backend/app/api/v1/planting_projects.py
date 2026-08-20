@@ -29,6 +29,7 @@ from app.schemas.planting_project import (
     PlantingProjectUpdate,
     PlantingStandardOut,
     ProjectSummaryOut,
+    RegistrationContextOut,
     SchemeKpiOut,
     SchemeMetadataUpdate,
     StandardTemplateOut,
@@ -64,6 +65,7 @@ from app.services.planting_projects.access import (
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
+from app.services.planting_projects.registration_context import build_registration_context
 from app.services.planting_projects.rule_engine import (
     get_effective_rules,
     get_effective_template,
@@ -370,6 +372,20 @@ async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> Plant
     standard = await get_active_standard(db, project)
     effective_rules = await get_effective_rules(db, standard, project_id=project.id)
     return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
+@router.get("/{project_id}/registration-context", response_model=RegistrationContextOut)
+async def get_registration_context(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID | None = None,
+) -> RegistrationContextOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    payload = await build_registration_context(db, project, work_area_id=work_area_id)
+    return RegistrationContextOut.model_validate(payload)
 
 
 @router.get("/{project_id}/rule-override")

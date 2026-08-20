@@ -184,3 +184,50 @@ class SchemeKpiOut(BaseModel):
     metrics: dict[str, Any] = Field(default_factory=dict)
     checks: dict[str, bool] = Field(default_factory=dict)
     status: str
+
+
+class InheritedStandardOut(BaseModel):
+    pit_size_cm: dict[str, Any] | None = None
+    pit_size_label: str | None = None
+    spacing_m_min: float | None = None
+    guard_type_required: bool = False
+    require_pit_photo: bool = False
+    chainage_enabled: bool = False
+    min_photos: int | None = None
+    allowed_species: list[str] | None = None
+    species_native_pct_min: float | None = None
+
+
+class RegistrationProgressOut(BaseModel):
+    tree_count: int
+    target_tree_count: int | None = None
+    progress_pct: float | None = None
+    work_area_count: int
+
+
+class SuggestedNextOut(BaseModel):
+    work_area_id: str
+    work_area_name: str
+    chainage_km: float
+    chainage_label: str
+    chainage_display: str
+    latitude: float | None = None
+    longitude: float | None = None
+
+
+class RegistrationWorkAreaOut(BaseModel):
+    id: str
+    name: str
+    geometry_type: str
+    tree_count: int
+
+
+class RegistrationContextOut(BaseModel):
+    project_id: str
+    program_code: str | None = None
+    compliance_mode: str
+    inherited_standard: InheritedStandardOut
+    standard_name: str | None = None
+    progress: RegistrationProgressOut
+    suggested_next: SuggestedNextOut | None = None
+    work_areas: list[RegistrationWorkAreaOut] = Field(default_factory=list)

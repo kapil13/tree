@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyProjectTreePrefill, uniqueSpeciesChips } from "./tree-registration-prefill";
+import {
+  applyProjectTreePrefill,
+  formatChainageDisplay,
+  formatChainageLabel,
+  uniqueSpeciesChips,
+} from "./tree-registration-prefill";
 import type { PlantingProject } from "./api";
 
 describe("applyProjectTreePrefill", () => {
@@ -28,6 +33,32 @@ describe("applyProjectTreePrefill", () => {
     expect(result.panchayat_village).toBe("Sumel");
     expect(result.community_name).toBe("Sumel Mahila Mandal");
     expect(result.species_native).toBe(true);
+  });
+
+  it("prefills pit spacing and guard from active standard", () => {
+    const project = {
+      id: "p2",
+      code: "NH-48",
+      active_standard: {
+        rules: {
+          pit_size_cm: { length: 60, width: 60, depth: 60 },
+          spacing_m: { min: 6 },
+          guard_type_required: true,
+        },
+      },
+    } as unknown as PlantingProject;
+
+    const result = applyProjectTreePrefill({}, project);
+    expect(result.pit_size_cm).toBe("60×60×60");
+    expect(result.spacing_m).toBe(6);
+    expect(result.guard_type).toBe("bamboo");
+  });
+});
+
+describe("formatChainageLabel", () => {
+  it("formats decimal km as chainage label", () => {
+    expect(formatChainageLabel(142.38)).toBe("142+380");
+    expect(formatChainageDisplay(142.38)).toBe("KM 142+380");
   });
 });
 

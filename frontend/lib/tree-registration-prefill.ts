@@ -2,6 +2,28 @@ import type { PlantingProject } from "@/lib/api";
 
 type PrefillValues = Record<string, string | number | boolean>;
 
+export type InheritedStandardPrefill = {
+  pit_size_label?: string | null;
+  spacing_m_min?: number | null;
+  guard_type_required?: boolean;
+};
+
+/** Format decimal chainage km as highway label (e.g. 142.38 → "142+380"). */
+export function formatChainageLabel(chainageKm: number): string {
+  const whole = Math.floor(chainageKm);
+  let meters = Math.round((chainageKm - whole) * 1000);
+  let km = whole;
+  if (meters >= 1000) {
+    km += 1;
+    meters = 0;
+  }
+  return `${km}+${String(meters).padStart(3, "0")}`;
+}
+
+export function formatChainageDisplay(chainageKm: number): string {
+  return `KM ${formatChainageLabel(chainageKm)}`;
+}
+
 /** Merge scheme references and project context into tree registration form values. */
 export function applyProjectTreePrefill(
   base: PrefillValues,
@@ -40,13 +62,51 @@ export function applyProjectTreePrefill(
     setIfEmpty("consent_reference", String(refs.nccf_project_ref ?? ""));
   }
 
-  const nativeMin = (project.active_standard?.rules as { species_native_pct_min?: number } | undefined)
-    ?.species_native_pct_min;
+  const rules = (project.active_standard?.rules ?? {}) as Record<string, unknown>;
+  const nativeMin = rules.species_native_pct_min as number | undefined;
   if (nativeMin != null && nativeMin >= 80) {
     next.species_native = true;
   }
 
+  const pitSize = rules.pit_size_cm as
+    | { length?: number; width?: number; depth?: number }
+    | undefined;
+  if (pitSize?.length != null && pitSize.width != null && pitSize.depth != null) {
+    setIfEmpty(
+      "pit_size_cm",
+      `${pitSize.length}×${pitSize.width}×${pitSize.depth}`,
+    );
+  }
+
+  const spacing = rules.spacing_m as { min?: number } | undefined;
+  if (spacing?.min != null) {
+    setIfEmpty("spacing_m", spacing.min);
+  }
+
+  if (rules.guard_type_required && !next.guard_type) {
+    next.guard_type = "bamboo";
+  }
+
   return next;
+}
+
+export function inheritedStandardSummary(
+  rules: Record<string, unknown> | undefined,
+): InheritedStandardPrefill {
+  if (!rules) return {};
+  const pitSize = rules.pit_size_cm as
+    | { length?: number; width?: number; depth?: number }
+    | undefined;
+  const spacing = rules.spacing_m as { min?: number } | undefined;
+  const pitLabel =
+    pitSize?.length != null && pitSize.width != null && pitSize.depth != null
+      ? `${pitSize.length}×${pitSize.width}×${pitSize.depth}`
+      : null;
+  return {
+    pit_size_label: pitLabel,
+    spacing_m_min: spacing?.min ?? null,
+    guard_type_required: Boolean(rules.guard_type_required),
+  };
 }
 
 export function plantingRulesSummary(rules: Record<string, unknown> | undefined): string[] {

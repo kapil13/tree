@@ -83,15 +83,8 @@ def polygon_coordinates(geojson: dict[str, Any]) -> list[list[float]]:
     return [list(pt) for pt in geom.exterior.coords]
 
 
-def chainage_km_along_line(
-    line_geojson: dict[str, Any],
-    lat: float,
-    lon: float,
-) -> float | None:
-    """Project a point onto a line and return chainage in km from the start."""
-    line: LineString = shape(line_geojson)  # type: ignore[assignment]
-    if line.geom_type != "LineString" or line.is_empty:
-        return None
+def _line_metre_scales(line: LineString) -> tuple[Any, Any, float, float]:
+    lat = line.centroid.y
     lat_scale = 111_320.0
     lon_scale = max(111_320.0 * math.cos(math.radians(lat)), 1e-6)
 
@@ -101,7 +94,36 @@ def chainage_km_along_line(
     def to_degrees(x: float, y: float, z: float | None = None) -> tuple[float, float]:
         return x / lon_scale, y / lat_scale
 
+    return to_metres, to_degrees, lat_scale, lon_scale
+
+
+def chainage_km_along_line(
+    line_geojson: dict[str, Any],
+    lat: float,
+    lon: float,
+) -> float | None:
+    """Project a point onto a line and return chainage in km from the start."""
+    line: LineString = shape(line_geojson)  # type: ignore[assignment]
+    if line.geom_type != "LineString" or line.is_empty:
+        return None
+    to_metres, _, _, _ = _line_metre_scales(line)
     line_m = transform(to_metres, line)
     pt_m = transform(to_metres, shape({"type": "Point", "coordinates": [lon, lat]}))
     dist_m = line_m.project(pt_m)
     return round(dist_m / 1000.0, 3)
+
+
+def point_at_chainage_km(
+    line_geojson: dict[str, Any],
+    chainage_km: float,
+) -> tuple[float, float] | None:
+    """Return ``(lat, lon)`` at ``chainage_km`` from the start of a WGS84 line."""
+    line: LineString = shape(line_geojson)  # type: ignore[assignment]
+    if line.geom_type != "LineString" or line.is_empty:
+        return None
+    to_metres, to_degrees, _, _ = _line_metre_scales(line)
+    line_m = transform(to_metres, line)
+    dist_m = max(0.0, float(chainage_km) * 1000.0)
+    pt_m = line_m.interpolate(dist_m)
+    pt_deg = transform(to_degrees, pt_m)
+    return round(pt_deg.y, 6), round(pt_deg.x, 6)
