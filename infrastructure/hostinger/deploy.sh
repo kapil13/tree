@@ -80,6 +80,15 @@ until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend c
   sleep 3
 done
 
+echo "==> Verifying app /api proxy (same-origin)..."
+APP_API_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "https://${APP_DOMAIN}/api/v1/health/live" 2>/dev/null || echo "000")"
+if [[ "$APP_API_CODE" == "200" ]]; then
+  echo "OK: https://${APP_DOMAIN}/api/v1/health/live → 200"
+else
+  echo "WARN: https://${APP_DOMAIN}/api/v1/health/live returned ${APP_API_CODE} (expected 200)."
+  echo "      Ensure Caddyfile routes /api/* to backend and reload Caddy."
+fi
+
 echo "==> Running database migrations..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic upgrade head
 
