@@ -46,6 +46,14 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   config.baseURL = getApiBaseUrl();
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    // Axios default Content-Type: application/json breaks multipart boundary.
+    const headers = config.headers;
+    if (headers && typeof headers.delete === "function") {
+      headers.delete("Content-Type");
+      headers.delete("content-type");
+    }
+  }
   if (typeof window !== "undefined") {
     const tok = useAuth.getState().getAccessToken();
     if (tok) config.headers.Authorization = `Bearer ${tok}`;
@@ -117,6 +125,10 @@ export function errorMessage(err: unknown): string {
         if (host === "www.aranyix.tech") {
           return "Cannot reach the API on www.aranyix.tech (SSL not configured). Open https://aranyix.tech instead (no www).";
         }
+        const reqUrl = `${err.config?.baseURL ?? ""}${err.config?.url ?? ""}`;
+        if (/minio|:9000|\/media\/|amazonaws|cloudfront|stub\.local/i.test(reqUrl)) {
+          return "Photo storage is not reachable from the browser. Upload through the API instead — rebuild/redeploy the frontend.";
+        }
         const base = getApiBaseUrl();
         return `Cannot reach the API (${base}). Open https://api.aranyix.tech/health in a new tab — if that works, hard refresh this page (Ctrl+Shift+R) or run: cd infrastructure/hostinger && FORCE_FRONTEND_REBUILD=1 ./deploy.sh`;
       }
@@ -152,7 +164,13 @@ export function errorMessage(err: unknown): string {
         return "API route not found (404). Rebuild the frontend: make fix-frontend";
       }
       if (data.detail === "storage_upload_failed") {
-        return "Audio storage failed. Check MinIO/S3 on the server.";
+        return "Photo storage failed. Check MinIO/S3 on the server.";
+      }
+      if (data.detail === "empty_file") {
+        return "That photo file is empty. Choose a JPG or PNG and try again.";
+      }
+      if (data.detail === "image_too_large") {
+        return "Photo is too large (max 12 MB). Compress the JPG and try again.";
       }
       if (data.detail === "recording_create_failed") {
         return "Could not save recording. Run database migration: alembic upgrade head";
@@ -1360,27 +1378,24 @@ export type Vm0047Summary = {
 };
 
 export const uploads = {
+  /** Send the photo to the API; the server writes MinIO. Browser never PUTs to minio:9000. */
+  async uploadImage(file: File) {
+    const form = new FormData();
+    form.append("file", file, file.name || "photo.jpg");
+    const { data } = await api.post<{ s3_key: string; content_type: string }>(
+      "/v1/uploads/image",
+      form,
+      {
+        timeout: 120_000,
+        maxBodyLength: 15 * 1024 * 1024,
+        maxContentLength: 15 * 1024 * 1024,
+      },
+    );
+    return data.s3_key;
+  },
+  /** @deprecated Use uploadImage — kept for callers that have not switched yet. */
   async presignImage(file: File) {
-    const presign = (
-      await api.post<{ upload_url: string; s3_key: string; content_type: string }>(
-        "/v1/uploads/presign",
-        { filename: file.name, content_type: file.type || "image/jpeg" },
-      )
-    ).data;
-    try {
-      await axios.put(presign.upload_url, file, {
-        headers: { "Content-Type": presign.content_type },
-      });
-    } catch (err) {
-      if (axios.isAxiosError(err) && !err.response) {
-        throw new Error(
-          `Photo upload failed (cannot reach storage at ${presign.upload_url.split("?")[0]}). ` +
-            "Ask your admin to set S3_PUBLIC_ENDPOINT_URL and redeploy Caddy /media proxy.",
-        );
-      }
-      throw err;
-    }
-    return presign.s3_key;
+    return this.uploadImage(file);
   },
 };
 
