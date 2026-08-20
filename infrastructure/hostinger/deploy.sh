@@ -63,6 +63,9 @@ fi
 echo "==> Building and starting BYOT stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
+echo "==> Reloading Caddy (applies Caddyfile / CSP changes)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate caddy
+
 echo "==> Pruning dangling Docker images (frees disk from old deploys)..."
 docker image prune -f
 
@@ -86,7 +89,23 @@ if [[ "$APP_API_CODE" == "200" ]]; then
   echo "OK: https://${APP_DOMAIN}/api/v1/health/live → 200"
 else
   echo "WARN: https://${APP_DOMAIN}/api/v1/health/live returned ${APP_API_CODE} (expected 200)."
-  echo "      Ensure Caddyfile routes /api/* to backend and reload Caddy."
+  echo "      Ensure Caddyfile routes /api/v1/* to backend and reload Caddy."
+fi
+
+echo "==> Verifying direct API subdomain + CSP..."
+API_HEALTH_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "https://${API_DOMAIN}/health" 2>/dev/null || echo "000")"
+if [[ "$API_HEALTH_CODE" == "200" ]]; then
+  echo "OK: https://${API_DOMAIN}/health → 200"
+else
+  echo "WARN: https://${API_DOMAIN}/health returned ${API_HEALTH_CODE} (expected 200)."
+fi
+CSP_HEADER="$(curl -sSI "https://${APP_DOMAIN}/" 2>/dev/null | tr -d '\r' | awk 'tolower($1)=="content-security-policy:" {print substr($0,index($0,$2)); exit}')"
+if [[ -n "$CSP_HEADER" ]] && echo "$CSP_HEADER" | grep -Fq "https://${API_DOMAIN}"; then
+  echo "OK: CSP connect-src includes https://${API_DOMAIN}"
+else
+  echo "ERROR: CSP connect-src missing https://${API_DOMAIN} — browser API calls will fail."
+  echo "       Re-run: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE up -d --force-recreate caddy"
+  exit 1
 fi
 
 echo "==> Running database migrations..."
