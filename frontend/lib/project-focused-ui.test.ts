@@ -16,7 +16,9 @@ describe("project-focused-ui", () => {
     }
   });
 
-  it("enables focused UI only when env flag is 1", () => {
+  it("enables focused UI by default and disables only when env is 0", () => {
+    delete process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI;
+    expect(isProjectFocusedUiEnabled()).toBe(true);
     process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI = "1";
     expect(isProjectFocusedUiEnabled()).toBe(true);
     process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI = "0";

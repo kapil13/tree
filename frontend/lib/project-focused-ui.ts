@@ -1,6 +1,7 @@
 /** Sprint A: focused project page layout (no tab bar; trees on main scroll). */
 export function isProjectFocusedUiEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI === "1";
+  // On by default after Sprint A; set NEXT_PUBLIC_PROJECT_FOCUSED_UI=0 to rollback.
+  return process.env.NEXT_PUBLIC_PROJECT_FOCUSED_UI !== "0";
 }
 
 export const PROJECT_SECONDARY_TABS = [
