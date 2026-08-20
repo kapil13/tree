@@ -26,7 +26,11 @@ import {
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp } from "@/lib/nav-access";
 import { schemeByCode } from "@/lib/schemes";
-import { applyProjectTreePrefill } from "@/lib/tree-registration-prefill";
+import {
+  applyProjectTreePrefill,
+  formatChainageLabel,
+  inheritedStandardSummary,
+} from "@/lib/tree-registration-prefill";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -37,6 +41,9 @@ export function NewTreePageClient() {
   const searchParams = useSearchParams();
   const projectIdParam = searchParams.get("project");
   const workAreaIdParam = searchParams.get("work_area");
+  const chainageKmParam = searchParams.get("chainage_km");
+  const latParam = searchParams.get("lat");
+  const lonParam = searchParams.get("lon");
 
   const { data: enrolledPrograms = [], isLoading } = useQuery({
     queryKey: ["planting-programs", "enrolled"],
@@ -66,10 +73,19 @@ export function NewTreePageClient() {
   const [values, setValues] = useState<Record<string, string | number | boolean>>({});
   const [photoKeys, setPhotoKeys] = useState<string[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [pitPhotoKey, setPitPhotoKey] = useState<string | null>(null);
+  const [pitPhotoPreview, setPitPhotoPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [compliancePreview, setCompliancePreview] = useState<ComplianceCheck | null>(null);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
+
+  const { data: registrationContext } = useQuery({
+    queryKey: ["registration-context", projectIdParam, workAreaId],
+    queryFn: () =>
+      plantingProjects.registrationContext(projectIdParam!, workAreaId ?? undefined),
+    enabled: !!projectIdParam,
+  });
 
   const activeProgram = useMemo(
     () => enrolledPrograms.find((program) => program.code === programCode) ?? enrolledPrograms[0],
@@ -87,6 +103,57 @@ export function NewTreePageClient() {
   );
 
   const showSchemeProjectWarning = !projectIdParam && hasSchemePrograms;
+  const isProjectMode = Boolean(projectIdParam && project);
+  const inheritedStandard = useMemo(
+    () =>
+      inheritedStandardSummary(
+        (registrationContext?.inherited_standard
+          ? {
+              pit_size_cm: registrationContext.inherited_standard.pit_size_cm ?? undefined,
+              spacing_m: registrationContext.inherited_standard.spacing_m_min
+                ? { min: registrationContext.inherited_standard.spacing_m_min }
+                : undefined,
+              guard_type_required: registrationContext.inherited_standard.guard_type_required,
+            }
+          : project?.active_standard?.rules) as Record<string, unknown> | undefined,
+      ),
+    [registrationContext, project?.active_standard?.rules],
+  );
+  const requirePitPhoto =
+    registrationContext?.inherited_standard.require_pit_photo ?? false;
+
+  useEffect(() => {
+    if (registrationContext?.suggested_next?.work_area_id && !workAreaIdParam) {
+      setWorkAreaId(registrationContext.suggested_next.work_area_id);
+    }
+  }, [registrationContext?.suggested_next?.work_area_id, workAreaIdParam]);
+
+  useEffect(() => {
+    if (!project || !registrationContext?.suggested_next) return;
+    const suggested = registrationContext.suggested_next;
+    setValues((current) => {
+      const next = { ...current };
+      if (chainageKmParam) {
+        const km = Number(chainageKmParam);
+        if (!Number.isNaN(km)) {
+          next.chainage_km = formatChainageLabel(km);
+        }
+      } else if (suggested.chainage_label && !next.chainage_km) {
+        next.chainage_km = suggested.chainage_label;
+      }
+      const lat = latParam ?? (suggested.latitude != null ? String(suggested.latitude) : null);
+      const lon = lonParam ?? (suggested.longitude != null ? String(suggested.longitude) : null);
+      if (lat && !next.latitude) next.latitude = lat;
+      if (lon && !next.longitude) next.longitude = lon;
+      return next;
+    });
+  }, [
+    project?.id,
+    registrationContext?.suggested_next,
+    chainageKmParam,
+    latParam,
+    lonParam,
+  ]);
 
   useEffect(() => {
     if (project?.program_code) {
@@ -118,6 +185,8 @@ export function NewTreePageClient() {
     });
     setPhotoKeys([]);
     setPhotoPreviews([]);
+    setPitPhotoKey(null);
+    setPitPhotoPreview(null);
     setError(null);
     setCompliancePreview(null);
   }, [
@@ -189,10 +258,20 @@ export function NewTreePageClient() {
     setBusy(true);
     setError(null);
     try {
-      const payload = splitPayload(activeProgram.form_schema, values, photoKeys, {
+      const allPhotoKeys = [
+        ...(requirePitPhoto && pitPhotoKey ? [pitPhotoKey] : []),
+        ...photoKeys,
+      ];
+      const payload = splitPayload(activeProgram.form_schema, values, allPhotoKeys, {
         workAreaId: workAreaId ?? undefined,
         projectId: projectIdParam ?? undefined,
       });
+      if (requirePitPhoto && pitPhotoKey) {
+        payload.metadata = {
+          ...(payload.metadata ?? {}),
+          pit_photo_confirmed: true,
+        } as Record<string, unknown>;
+      }
       const tree = await trees.create(payload);
       router.push(`/trees/${tree.id}`);
     } catch (err) {
@@ -277,6 +356,15 @@ export function NewTreePageClient() {
         onProgramChange={setProgramCode}
         lockProgram={!!project}
         skipGovCategory={!!project?.scheme_code}
+        mode={isProjectMode ? "project" : "default"}
+        requirePitPhoto={requirePitPhoto}
+        inheritedStandard={inheritedStandard}
+        pitPhotoKey={pitPhotoKey}
+        pitPhotoPreview={pitPhotoPreview}
+        onPitPhotoChange={(key, preview) => {
+          setPitPhotoKey(key);
+          setPitPhotoPreview(preview);
+        }}
         schema={activeProgram.form_schema}
         values={values}
         onValuesChange={(next) => {

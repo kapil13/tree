@@ -809,6 +809,45 @@ export type ComplianceCheck = {
   }>;
 };
 
+export type RegistrationContext = {
+  project_id: string;
+  program_code: string | null;
+  compliance_mode: ComplianceMode;
+  inherited_standard: {
+    pit_size_cm: { length?: number; width?: number; depth?: number } | null;
+    pit_size_label: string | null;
+    spacing_m_min: number | null;
+    guard_type_required: boolean;
+    require_pit_photo: boolean;
+    chainage_enabled: boolean;
+    min_photos: number | null;
+    allowed_species: string[] | null;
+    species_native_pct_min: number | null;
+  };
+  standard_name: string | null;
+  progress: {
+    tree_count: number;
+    target_tree_count: number | null;
+    progress_pct: number | null;
+    work_area_count: number;
+  };
+  suggested_next: {
+    work_area_id: string;
+    work_area_name: string;
+    chainage_km: number;
+    chainage_label: string;
+    chainage_display: string;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+  work_areas: Array<{
+    id: string;
+    name: string;
+    geometry_type: string;
+    tree_count: number;
+  }>;
+};
+
 export const plantingProjects = {
   async segments() {
     return (await api.get<{ segments: { code: string; label: string }[] }>(
@@ -985,6 +1024,14 @@ export const plantingProjects = {
         trees_due: number;
         due_tree_ids: string[];
       }>(`/v1/planting-projects/${projectId}/survival-due`)
+    ).data;
+  },
+  async registrationContext(projectId: string, workAreaId?: string) {
+    return (
+      await api.get<RegistrationContext>(
+        `/v1/planting-projects/${projectId}/registration-context`,
+        { params: workAreaId ? { work_area_id: workAreaId } : undefined },
+      )
     ).data;
   },
   async updateWorkArea(

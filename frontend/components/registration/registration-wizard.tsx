@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ShieldCheck,
   Sparkles,
   TreePine,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import type { PlantingProgram } from "@/lib/api";
 import { countFilledRequired } from "@/lib/registration";
 import { viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
+import type { InheritedStandardPrefill } from "@/lib/tree-registration-prefill";
 import { PlantationCategorySelector } from "@/components/government/plantation-category-selector";
 import {
   GOVERNMENT_PROGRAM_CODE,
@@ -35,6 +37,12 @@ type RegistrationWizardProps = {
   onProgramChange: (code: string) => void;
   lockProgram?: boolean;
   skipGovCategory?: boolean;
+  mode?: "default" | "project";
+  requirePitPhoto?: boolean;
+  inheritedStandard?: InheritedStandardPrefill;
+  pitPhotoKey?: string | null;
+  pitPhotoPreview?: string | null;
+  onPitPhotoChange?: (key: string | null, preview: string | null) => void;
   schema: ProgramFormSchema;
   values: ProgramFormValues;
   onValuesChange: (values: ProgramFormValues) => void;
@@ -74,6 +82,12 @@ export function RegistrationWizard({
   onProgramChange,
   lockProgram = false,
   skipGovCategory = false,
+  mode = "default",
+  requirePitPhoto = false,
+  inheritedStandard,
+  pitPhotoKey = null,
+  pitPhotoPreview = null,
+  onPitPhotoChange,
   schema,
   values,
   onValuesChange,
@@ -99,7 +113,21 @@ export function RegistrationWizard({
 
   useEffect(() => {
     setStepIndex(0);
-  }, [programCode, schema.code]);
+  }, [programCode, schema.code, mode]);
+
+  const plantingSection = useMemo(
+    () => schema.sections.find((section) => section.id === "planting") ?? null,
+    [schema.sections],
+  );
+
+  const minPlantPhotos = useMemo(() => {
+    if (mode !== "project") return schema.min_photos;
+    if (requirePitPhoto) return Math.max(1, schema.min_photos - 1);
+    return schema.min_photos;
+  }, [mode, schema.min_photos, requirePitPhoto]);
+
+  const totalPhotoCount =
+    photoKeys.length + (requirePitPhoto && pitPhotoKey ? 1 : 0);
 
   useEffect(() => {
     if (programCode !== GOVERNMENT_PROGRAM_CODE) {
@@ -113,6 +141,18 @@ export function RegistrationWizard({
   const t = useTranslations("trees");
 
   const steps: WizardStep[] = useMemo(() => {
+    if (mode === "project") {
+      const projectSteps: WizardStep[] = [
+        { id: "location", label: t("wizardLocation") },
+      ];
+      if (requirePitPhoto) {
+        projectSteps.push({ id: "pit_photo", label: "Pit photo" });
+      }
+      projectSteps.push({ id: "photos", label: t("wizardPhotos") });
+      projectSteps.push({ id: "species_review", label: "Species & review" });
+      return projectSteps;
+    }
+
     const base: WizardStep[] = [];
     if (programs.length > 1 && !lockProgram) base.push({ id: "program", label: t("wizardProgram") });
     if (programCode === GOVERNMENT_PROGRAM_CODE && !skipGovCategory) {
@@ -126,7 +166,17 @@ export function RegistrationWizard({
     base.push({ id: "photos", label: t("wizardPhotos") });
     base.push({ id: "review", label: t("wizardReview") });
     return base;
-  }, [programs.length, schema, programCode, govCategory, lockProgram, skipGovCategory, t]);
+  }, [
+    mode,
+    requirePitPhoto,
+    programs.length,
+    schema,
+    programCode,
+    govCategory,
+    lockProgram,
+    skipGovCategory,
+    t,
+  ]);
 
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;
@@ -140,6 +190,19 @@ export function RegistrationWizard({
       ) ?? null
     );
   }, [currentStep, schema, programCode, govCategory]);
+
+  async function addPitPhoto(files: FileList) {
+    if (readOnly || !onPitPhotoChange) return;
+    const file = files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const key = await onUploadPhoto(file);
+      onPitPhotoChange(key, URL.createObjectURL(file));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function addPhotos(files: FileList) {
     if (readOnly) return;
@@ -166,7 +229,16 @@ export function RegistrationWizard({
 
   function canContinue() {
     if (!currentStep) return false;
-    if (currentStep.id === "photos") return photoKeys.length >= schema.min_photos;
+    if (currentStep.id === "pit_photo") return Boolean(pitPhotoKey);
+    if (currentStep.id === "photos") {
+      if (mode === "project") {
+        return photoKeys.length >= minPlantPhotos;
+      }
+      return photoKeys.length >= schema.min_photos;
+    }
+    if (currentStep.id === "species_review") {
+      return Boolean(values.species_text && values.planted_at);
+    }
     if (currentStep.id === "review") return true;
     if (currentStep.id === "program") return Boolean(programCode);
     if (currentStep.id === "gov_category") return Boolean(govCategory);
@@ -203,11 +275,12 @@ export function RegistrationWizard({
             </div>
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 md:text-4xl">
-                Register with confidence
+                {mode === "project" ? "Register project tree" : "Register with confidence"}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600 dark:text-stone-300 md:text-base">
-                A guided, compliance-ready flow that adapts to your planting program — from citizen
-                BYOT tagging to government and ESG evidence capture.
+                {mode === "project"
+                  ? "GPS, photos, and species only — pit size, spacing, and guard inherit from the programme standard."
+                  : "A guided, compliance-ready flow that adapts to your planting program — from citizen BYOT tagging to government and ESG evidence capture."}
               </p>
             </div>
           </div>
@@ -240,7 +313,17 @@ export function RegistrationWizard({
           </div>
         )}
 
-        <StepHeader step={currentStep} section={sectionForStep} schema={schema} />
+        {mode === "project" && inheritedStandard && (
+          <InheritedStandardBanner inherited={inheritedStandard} />
+        )}
+
+        <StepHeader
+          step={currentStep}
+          section={sectionForStep}
+          schema={schema}
+          mode={mode}
+          minPlantPhotos={minPlantPhotos}
+        />
 
         <div className="mt-8">
           {currentStep?.id === "program" && (
@@ -278,9 +361,21 @@ export function RegistrationWizard({
             />
           )}
 
+          {currentStep?.id === "pit_photo" && (
+            <PhotoUploadZone
+              minPhotos={1}
+              photoKeys={pitPhotoKey ? [pitPhotoKey] : []}
+              previews={pitPhotoPreview ? [pitPhotoPreview] : []}
+              busy={busy || uploading}
+              onAdd={addPitPhoto}
+              onRemove={() => onPitPhotoChange?.(null, null)}
+              disabled={readOnly}
+            />
+          )}
+
           {currentStep?.id === "photos" && (
             <PhotoUploadZone
-              minPhotos={schema.min_photos}
+              minPhotos={mode === "project" ? minPlantPhotos : schema.min_photos}
               photoKeys={photoKeys}
               previews={photoPreviews}
               busy={busy || uploading}
@@ -288,6 +383,28 @@ export function RegistrationWizard({
               onRemove={removePhoto}
               disabled={readOnly}
             />
+          )}
+
+          {currentStep?.id === "species_review" && plantingSection && (
+            <>
+              <FormFieldsGrid
+                fields={plantingSection.fields.filter((field) =>
+                  ["species_text", "planted_at"].includes(field.key),
+                )}
+                values={values}
+                onChange={onValuesChange}
+                disabled={readOnly}
+              />
+              <div className="mt-8">
+                <ProjectReviewPanel
+                  schema={schema}
+                  values={values}
+                  photoCount={totalPhotoCount}
+                  programCode={programCode}
+                  inheritedStandard={inheritedStandard}
+                />
+              </div>
+            </>
           )}
 
           {currentStep?.id === "review" && (
@@ -347,14 +464,35 @@ export function RegistrationWizard({
   );
 }
 
+function InheritedStandardBanner({ inherited }: { inherited: InheritedStandardPrefill }) {
+  return (
+    <div className="mb-6 rounded-2xl border border-forest-200 bg-forest-50/80 px-4 py-3 dark:border-forest-900 dark:bg-forest-950/30">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-forest-800">
+        <ShieldCheck className="h-4 w-4" />
+        Inherited from programme standard
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-3 text-sm text-stone-700">
+        {inherited.pit_size_label && <li>Pit {inherited.pit_size_label} cm</li>}
+        {inherited.spacing_m_min != null && <li>Spacing {inherited.spacing_m_min} m</li>}
+        {inherited.guard_type_required && <li>Tree guard required</li>}
+      </ul>
+      <p className="mt-2 text-xs text-stone-500">These fields are set once on the project — not re-entered per tree.</p>
+    </div>
+  );
+}
+
 function StepHeader({
   step,
   section,
   schema,
+  mode = "default",
+  minPlantPhotos,
 }: {
   step?: WizardStep;
   section: ProgramSection | null;
   schema: ProgramFormSchema;
+  mode?: "default" | "project";
+  minPlantPhotos?: number;
 }) {
   if (!step) return null;
 
@@ -365,6 +503,10 @@ function StepHeader({
         ? "What type of government planting is this?"
         : step.id === "photos"
         ? "Attach field evidence"
+        : step.id === "pit_photo"
+          ? "Photograph the pit"
+        : step.id === "species_review"
+          ? "Species & review"
         : step.id === "review"
           ? "Review before submission"
           : step.id === "location"
@@ -377,7 +519,13 @@ function StepHeader({
       : step.id === "gov_category"
         ? "Choose the scheme that best matches your work. Legal basis and land category will be pre-filled — you can adjust them in the next step if needed."
         : step.id === "photos"
-        ? `Upload at least ${schema.min_photos} clear images for verification and AI health analysis.`
+        ? mode === "project"
+          ? `Upload at least ${minPlantPhotos ?? schema.min_photos} plant/tree photos (pit photo is separate).`
+          : `Upload at least ${schema.min_photos} clear images for verification and AI health analysis.`
+        : step.id === "pit_photo"
+          ? "Photograph the prepared pit before planting. This is required for highway and strict compliance programmes."
+        : step.id === "species_review"
+          ? "Confirm species and planting date. Pit size, spacing, and guard inherit from the programme."
         : step.id === "review"
           ? "Confirm the details below. A QR passport and satellite baseline scan will be generated automatically."
           : section?.description ??
@@ -398,6 +546,72 @@ function StepHeader({
           {description}
         </p>
       )}
+    </div>
+  );
+}
+
+function ProjectReviewPanel({
+  schema,
+  values,
+  photoCount,
+  programCode,
+  inheritedStandard,
+}: {
+  schema: ProgramFormSchema;
+  values: ProgramFormValues;
+  photoCount: number;
+  programCode: string;
+  inheritedStandard?: InheritedStandardPrefill;
+}) {
+  const rows: { label: string; value: string }[] = [];
+  if (values.latitude && values.longitude) {
+    rows.push({
+      label: "GPS",
+      value: `${values.latitude}, ${values.longitude}`,
+    });
+  }
+  if (values.chainage_km) {
+    rows.push({ label: "Chainage", value: String(values.chainage_km) });
+  }
+  if (inheritedStandard?.pit_size_label) {
+    rows.push({ label: "Pit (inherited)", value: `${inheritedStandard.pit_size_label} cm` });
+  }
+  if (inheritedStandard?.spacing_m_min != null) {
+    rows.push({ label: "Spacing (inherited)", value: `${inheritedStandard.spacing_m_min} m` });
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="rounded-3xl border border-stone-200 bg-stone-50/80 p-5 dark:border-stone-800 dark:bg-stone-950/40">
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
+          Submission summary
+        </h3>
+        <dl className="space-y-3">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="grid gap-1 border-b border-stone-200/80 pb-3 last:border-0 dark:border-stone-800"
+            >
+              <dt className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                {row.label}
+              </dt>
+              <dd className="text-sm font-medium text-stone-900 dark:text-stone-100">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div className="rounded-3xl border border-forest-200 bg-gradient-to-br from-forest-50 to-white p-5 dark:border-forest-900 dark:from-forest-950/40 dark:to-stone-900">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 text-forest-600" />
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-stone-900 dark:text-stone-50">Ready to register</p>
+            <p className="leading-relaxed text-stone-600 dark:text-stone-300">
+              {schema.name} · {photoCount} photos · QR passport on save.
+            </p>
+            <p className="font-mono text-xs text-stone-500">{programCode}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

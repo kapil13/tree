@@ -277,7 +277,28 @@ export function ProjectFocusedDetail({
     enabled: !!project.scheme_code,
   });
 
+  const { data: registrationContext } = useQuery({
+    queryKey: ["registration-context", projectId, workAreas[0]?.id],
+    queryFn: () => plantingProjects.registrationContext(projectId, workAreas[0]?.id),
+    enabled: workAreas.length > 0 && !secondaryTab,
+  });
+
   const scheme = schemeByCode(schemes, project.scheme_code);
+
+  const upNextHref = useMemo(() => {
+    const suggested = registrationContext?.suggested_next;
+    if (!suggested) return registerHref;
+    const params = new URLSearchParams({
+      project: project.id,
+      work_area: suggested.work_area_id,
+      chainage_km: String(suggested.chainage_km),
+    });
+    if (suggested.latitude != null && suggested.longitude != null) {
+      params.set("lat", String(suggested.latitude));
+      params.set("lon", String(suggested.longitude));
+    }
+    return `/trees/new?${params.toString()}`;
+  }, [registrationContext?.suggested_next, project.id, registerHref]);
 
   const nextAction = useMemo(() => {
     if (openViolations > 0) {
@@ -373,6 +394,40 @@ export function ProjectFocusedDetail({
             ) : (
               <span className="text-xs font-medium text-amber-900">{nextAction.label}</span>
             )}
+          </div>
+        </div>
+      )}
+
+      {registrationContext?.suggested_next && !secondaryTab && workAreaCount > 0 && (
+        <div className="rounded-xl border border-forest-200 bg-forest-50/60 px-4 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-forest-800">
+                Up next
+              </p>
+              <p className="mt-1 text-xl font-semibold text-stone-900">
+                {registrationContext.suggested_next.chainage_display}
+              </p>
+              <p className="mt-1 text-sm text-stone-600">
+                {registrationContext.suggested_next.work_area_name}
+                {registrationContext.inherited_standard.pit_size_label
+                  ? ` · Pit ${registrationContext.inherited_standard.pit_size_label} cm inherited`
+                  : ""}
+              </p>
+              {registrationContext.progress.target_tree_count != null && (
+                <p className="mt-2 text-xs text-stone-500">
+                  {registrationContext.progress.tree_count} of{" "}
+                  {registrationContext.progress.target_tree_count.toLocaleString()} trees
+                  {registrationContext.progress.progress_pct != null
+                    ? ` (${registrationContext.progress.progress_pct}%)`
+                    : ""}
+                </p>
+              )}
+            </div>
+            <Link href={upNextHref} className="btn-primary shrink-0">
+              <Leaf className="h-4 w-4" />
+              Register here
+            </Link>
           </div>
         </div>
       )}
