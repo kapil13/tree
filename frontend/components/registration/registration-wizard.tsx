@@ -15,6 +15,7 @@ import { countFilledRequired } from "@/lib/registration";
 import { viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 import type { InheritedStandardPrefill } from "@/lib/tree-registration-prefill";
+import { uniqueSpeciesChips } from "@/lib/tree-registration-prefill";
 import { PlantationCategorySelector } from "@/components/government/plantation-category-selector";
 import {
   GOVERNMENT_PROGRAM_CODE,
@@ -40,6 +41,7 @@ type RegistrationWizardProps = {
   mode?: "default" | "project";
   requirePitPhoto?: boolean;
   inheritedStandard?: InheritedStandardPrefill;
+  allowedSpecies?: string[] | null;
   pitPhotoKey?: string | null;
   pitPhotoPreview?: string | null;
   onPitPhotoChange?: (key: string | null, preview: string | null) => void;
@@ -87,6 +89,7 @@ export function RegistrationWizard({
   mode = "default",
   requirePitPhoto = false,
   inheritedStandard,
+  allowedSpecies,
   pitPhotoKey = null,
   pitPhotoPreview = null,
   onPitPhotoChange,
@@ -404,6 +407,31 @@ export function RegistrationWizard({
                 onChange={onValuesChange}
                 disabled={readOnly}
               />
+              {allowedSpecies?.length ? (
+                <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-800 dark:bg-stone-950/40">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    Approved species for this project
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {uniqueSpeciesChips(allowedSpecies).map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        disabled={readOnly}
+                        onClick={() => onValuesChange({ ...values, species_text: name })}
+                        className={cn(
+                          "rounded-full border px-3 py-1 text-xs font-medium transition",
+                          values.species_text === name
+                            ? "border-forest-600 bg-forest-50 text-forest-800 dark:border-forest-700 dark:bg-forest-950/50 dark:text-forest-200"
+                            : "border-stone-200 bg-white text-stone-700 hover:border-forest-300 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200",
+                        )}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="mt-8">
                 <ProjectReviewPanel
                   schema={schema}

@@ -125,6 +125,11 @@ export function NewTreePageClient() {
       (project?.active_standard?.rules as { require_pit_photo?: boolean } | undefined)
         ?.require_pit_photo,
     );
+  const allowedSpecies =
+    registrationContext?.inherited_standard.allowed_species ??
+    ((project?.active_standard?.rules as { allowed_species?: string[] } | undefined)
+      ?.allowed_species ??
+      null);
 
   useEffect(() => {
     if (registrationContext?.suggested_next?.work_area_id && !workAreaIdParam) {
@@ -363,6 +368,7 @@ export function NewTreePageClient() {
         mode={isProjectMode ? "project" : "default"}
         requirePitPhoto={requirePitPhoto}
         inheritedStandard={inheritedStandard}
+        allowedSpecies={allowedSpecies}
         pitPhotoKey={pitPhotoKey}
         pitPhotoPreview={pitPhotoPreview}
         onPitPhotoChange={(key, preview) => {
