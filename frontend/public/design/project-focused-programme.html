@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focused Programme — Calm Project UX | Aranyix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              50:"#f0fdf4",100:"#dcfce7",600:"#16a34a",700:"#15803d",800:"#166534",
+            },
+          },
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; background: #fafaf9; }
+    .map-placeholder {
+      background: #f5f5f4;
+      background-image: radial-gradient(circle at 1px 1px, #d6d3d1 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+  </style>
+</head>
+<body class="text-stone-900 antialiased">
+
+  <!-- Design note banner -->
+  <div class="border-b border-stone-200 bg-white px-4 py-2.5 text-center text-xs text-stone-500">
+    Design preview · Simple & powerful · Matches existing Aranyix light UI
+  </div>
+
+  <div class="mx-auto max-w-5xl px-4 py-10 space-y-16">
+
+    <!-- UX rationale (for stakeholder review) -->
+    <header class="space-y-4">
+      <p class="text-xs font-medium uppercase tracking-wider text-forest-700">Revised direction · Senior UX</p>
+      <h1 class="text-2xl font-semibold text-stone-900">Focused programme page</h1>
+      <p class="max-w-2xl text-stone-600 leading-relaxed">
+        One calm screen. One obvious next step. Everything else is one click away — not on the same screen fighting for attention.
+      </p>
+
+      <div class="grid gap-3 sm:grid-cols-2 max-w-3xl text-sm">
+        <div class="rounded-xl border border-stone-200 bg-white p-4">
+          <p class="font-medium text-stone-800">We removed</p>
+          <ul class="mt-2 space-y-1 text-stone-600">
+            <li>· Dark canvas & neon accents</li>
+            <li>· 5–6 KPI cards</li>
+            <li>· Tabs, accordions, tool rails</li>
+            <li>· Heat strips, photo mosaics, cross-sections</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-forest-200 bg-forest-50 p-4">
+          <p class="font-medium text-forest-900">We kept</p>
+          <ul class="mt-2 space-y-1 text-stone-700">
+            <li>· Map to see where trees are</li>
+            <li>· Clear “register next” guidance</li>
+            <li>· Programme standards visible once</li>
+            <li>· Searchable tree list for any N</li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- DESKTOP MOCKUP                         -->
+    <!-- ═══════════════════════════════════════ -->
+    <section>
+      <h2 class="mb-4 text-sm font-medium text-stone-500">Desktop</h2>
+
+      <!-- Simulated app shell (minimal) -->
+      <div class="overflow-hidden rounded-xl border border-stone-200 bg-stone-50 shadow-sm">
+
+        <!-- Page content only — matches real app main area -->
+        <div class="bg-stone-50 p-6 md:p-8 space-y-8 max-w-5xl mx-auto">
+
+          <!-- ① HEADER — title + one action -->
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="space-y-1">
+              <a href="#" class="text-sm text-forest-700 hover:underline">← All projects</a>
+              <h1 class="text-2xl font-semibold text-stone-900">NH-48 Median Plantation · Phase II</h1>
+              <p class="text-sm text-stone-500">NHAI highway · KM 120–168 · Pit 60×60×60 cm · Spacing 6 m</p>
+            </div>
+            <button class="inline-flex items-center gap-2 rounded-lg bg-forest-600 px-4 py-2 text-sm font-medium text-white hover:bg-forest-700 shrink-0">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Register tree
+            </button>
+          </div>
+
+          <!-- ② PROGRESS — single line, not 5 cards -->
+          <div class="rounded-xl border border-stone-200 bg-white p-5 space-y-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <p class="text-sm text-stone-700"><span class="font-semibold text-stone-900">847</span> of 1,200 trees planted</p>
+              <p class="text-sm text-stone-500">71%</p>
+            </div>
+            <div class="h-2 rounded-full bg-stone-100">
+              <div class="h-full w-[71%] rounded-full bg-forest-600"></div>
+            </div>
+            <p class="text-sm text-stone-500">
+              <a href="#" class="text-amber-800 underline decoration-amber-300 underline-offset-2">12 trees</a> need re-geotag ·
+              <a href="#" class="text-amber-800 underline decoration-amber-300 underline-offset-2">3 items</a> need your attention
+            </p>
+          </div>
+
+          <!-- ③ MAIN — map + sidebar (only 2 columns, generous space) -->
+          <div class="grid gap-6 lg:grid-cols-5">
+
+            <!-- Map: 3/5 width -->
+            <div class="lg:col-span-3 rounded-xl border border-stone-200 bg-white overflow-hidden">
+              <div class="border-b border-stone-100 px-4 py-3">
+                <p class="text-sm font-medium text-stone-800">Map</p>
+                <p class="text-xs text-stone-500">Tap a pin to see tree details</p>
+              </div>
+              <div class="map-placeholder relative h-64 md:h-72">
+                <!-- Minimal map pins -->
+                <div class="absolute left-[25%] top-[45%] h-2.5 w-2.5 rounded-full bg-forest-600 ring-2 ring-white"></div>
+                <div class="absolute left-[38%] top-[50%] h-2.5 w-2.5 rounded-full bg-forest-600 ring-2 ring-white"></div>
+                <div class="absolute left-[51%] top-[48%] h-2.5 w-2.5 rounded-full bg-forest-600 ring-2 ring-white"></div>
+                <div class="absolute left-[64%] top-[52%] h-3 w-3 rounded-full bg-forest-700 ring-2 ring-white ring-offset-1 ring-offset-forest-100"></div>
+                <p class="absolute bottom-3 left-3 rounded-md bg-white/90 px-2 py-1 text-xs text-stone-600 shadow-sm">KM 142–148 · Median</p>
+              </div>
+            </div>
+
+            <!-- Sidebar: 2/5 width — only what's actionable -->
+            <div class="lg:col-span-2 space-y-4">
+
+              <!-- Up next card — the hero of the sidebar -->
+              <div class="rounded-xl border border-stone-200 bg-white p-5">
+                <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Up next</p>
+                <p class="mt-2 text-lg font-semibold text-stone-900">KM 142+380</p>
+                <p class="mt-1 text-sm text-stone-500">Median · continues from last tree at +352</p>
+                <button class="mt-4 w-full rounded-lg bg-forest-600 py-2.5 text-sm font-medium text-white hover:bg-forest-700">
+                  Register here
+                </button>
+              </div>
+
+              <!-- Programme standard — compact, read-only -->
+              <div class="rounded-xl border border-stone-200 bg-white p-5">
+                <p class="text-xs font-medium uppercase tracking-wide text-stone-500">Programme standard</p>
+                <dl class="mt-3 space-y-2 text-sm">
+                  <div class="flex justify-between"><dt class="text-stone-500">Pit size</dt><dd class="font-medium">60×60×60 cm</dd></div>
+                  <div class="flex justify-between"><dt class="text-stone-500">Spacing</dt><dd class="font-medium">6 m minimum</dd></div>
+                  <div class="flex justify-between"><dt class="text-stone-500">Tree guard</dt><dd class="font-medium">Required</dd></div>
+                  <div class="flex justify-between"><dt class="text-stone-500">Photos</dt><dd class="font-medium">Pit, plant, tree</dd></div>
+                </dl>
+                <p class="mt-3 text-xs text-stone-400">Applied to every tree · not re-entered each time</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ④ TREES — simple searchable table -->
+          <div class="rounded-xl border border-stone-200 bg-white overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-4 py-3">
+              <p class="text-sm font-medium text-stone-800">Trees</p>
+              <input type="search" placeholder="Search chainage or ID…" class="rounded-lg border border-stone-200 px-3 py-1.5 text-sm w-48 focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500" />
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-stone-50 text-left text-xs text-stone-500">
+                <tr>
+                  <th class="px-4 py-2.5 font-medium">ID</th>
+                  <th class="px-4 py-2.5 font-medium">Chainage</th>
+                  <th class="px-4 py-2.5 font-medium">Species</th>
+                  <th class="px-4 py-2.5 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-stone-100">
+                <tr class="hover:bg-stone-50">
+                  <td class="px-4 py-3 font-mono text-xs text-stone-600">TR-00847</td>
+                  <td class="px-4 py-3">KM 142+365</td>
+                  <td class="px-4 py-3 text-stone-600">Gulmohar</td>
+                  <td class="px-4 py-3"><span class="rounded-full bg-forest-100 px-2 py-0.5 text-xs font-medium text-forest-800">Healthy</span></td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="px-4 py-3 font-mono text-xs text-stone-600">TR-00846</td>
+                  <td class="px-4 py-3">KM 142+359</td>
+                  <td class="px-4 py-3 text-stone-600">Neem</td>
+                  <td class="px-4 py-3"><span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">Survey due</span></td>
+                </tr>
+                <tr class="hover:bg-stone-50">
+                  <td class="px-4 py-3 font-mono text-xs text-stone-600">TR-00845</td>
+                  <td class="px-4 py-3">KM 142+353</td>
+                  <td class="px-4 py-3 text-stone-600">Ashoka</td>
+                  <td class="px-4 py-3"><span class="rounded-full bg-forest-100 px-2 py-0.5 text-xs font-medium text-forest-800">Healthy</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="border-t border-stone-100 px-4 py-2.5 text-xs text-stone-500">
+              Showing 3 of 847 · <a href="#" class="text-forest-700 hover:underline">View all</a>
+            </div>
+          </div>
+
+          <!-- ⑤ SECONDARY — quiet footer links (not tabs) -->
+          <div class="flex flex-wrap gap-x-6 gap-y-2 border-t border-stone-200 pt-6 text-sm text-stone-500">
+            <a href="#" class="hover:text-forest-700">Compliance (3 open)</a>
+            <a href="#" class="hover:text-forest-700">Team & work areas</a>
+            <a href="#" class="hover:text-forest-700">Credits & reports</a>
+            <a href="#" class="hover:text-forest-700">Programme settings</a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- REGISTER TREE — separate calm flow -->
+    <section>
+      <h2 class="mb-4 text-sm font-medium text-stone-500">Register tree (opens as focused step flow — not on project page)</h2>
+      <div class="mx-auto max-w-lg rounded-xl border border-stone-200 bg-white p-6 space-y-6 shadow-sm">
+
+        <div>
+          <p class="text-xs text-stone-500">NH-48 · KM 142+380</p>
+          <h3 class="text-lg font-semibold">Register tree</h3>
+        </div>
+
+        <!-- Inherited — subtle, not a whole panel -->
+        <div class="rounded-lg bg-stone-50 px-4 py-3 text-sm text-stone-600">
+          Using programme standard: pit 60×60×60 cm · spacing 6 m · guard required
+        </div>
+
+        <!-- Steps — vertical, one at a time feel -->
+        <ol class="space-y-3">
+          <li class="flex items-center gap-3 rounded-lg border border-forest-200 bg-forest-50 px-4 py-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest-600 text-xs font-medium text-white">1</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Location</p>
+              <p class="text-xs text-stone-500">GPS captured · KM 142+380</p>
+            </div>
+            <span class="text-xs text-forest-700">Done</span>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-3">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600">2</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Pit photo</p>
+              <p class="text-xs text-stone-500">Tap to capture</p>
+            </div>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-3 opacity-50">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600">3</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Plant & tree photos</p>
+            </div>
+          </li>
+          <li class="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-3 opacity-50">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-medium text-stone-600">4</span>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Species & review</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="flex gap-2 pt-2">
+          <button class="flex-1 rounded-lg bg-forest-600 py-2.5 text-sm font-medium text-white">Continue</button>
+          <button class="rounded-lg border border-stone-200 px-4 py-2.5 text-sm text-stone-600">Cancel</button>
+        </div>
+        <p class="text-center text-xs text-stone-400">After save: option to register next tree at +386</p>
+      </div>
+    </section>
+
+    <!-- MOBILE -->
+    <section>
+      <h2 class="mb-4 text-sm font-medium text-stone-500">Mobile · same information, stacked</h2>
+      <div class="mx-auto max-w-[390px] rounded-2xl border border-stone-200 bg-stone-50 overflow-hidden shadow-sm">
+        <div class="bg-white px-4 py-4 space-y-4">
+          <div>
+            <p class="text-xs text-stone-500">NH-48 Phase II</p>
+            <p class="text-lg font-semibold">847 / 1,200 trees</p>
+            <div class="mt-2 h-1.5 rounded-full bg-stone-100"><div class="h-full w-[71%] rounded-full bg-forest-600"></div></div>
+          </div>
+          <div class="map-placeholder h-40 rounded-lg"></div>
+          <div class="rounded-lg border border-stone-200 bg-white p-4">
+            <p class="text-xs text-stone-500">Up next</p>
+            <p class="font-semibold">KM 142+380</p>
+            <button class="mt-3 w-full rounded-lg bg-forest-600 py-3 text-sm font-medium text-white">Register here</button>
+          </div>
+          <p class="text-xs text-stone-500 text-center">Compliance · Team · Settings</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- UX rules card -->
+    <section class="rounded-xl border border-stone-200 bg-white p-6 max-w-3xl">
+      <h2 class="font-semibold text-stone-900">Design rules for implementation</h2>
+      <ol class="mt-4 space-y-3 text-sm text-stone-700 list-decimal list-inside">
+        <li><strong>One primary action</strong> per screen — “Register tree” or “Register here”.</li>
+        <li><strong>Max 4 zones</strong> on project page: header → progress → map+sidebar → tree list.</li>
+        <li><strong>Secondary pages</strong> for compliance, team, settings — linked, not embedded.</li>
+        <li><strong>Colour sparingly</strong> — forest green for actions; amber only for attention items.</li>
+        <li><strong>Register flow is separate</strong> — step list, not an 8-step wizard on first glance.</li>
+        <li><strong>Whitespace</strong> — if it feels crowded, remove a widget; don't shrink text.</li>
+      </ol>
+    </section>
+
+  </div>
+</body>
+</html>

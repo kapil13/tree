@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectComplianceWorkflowWidget } from "@/components/projects/project-compliance-workflow-widget";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
+import { ProjectFocusedDetail } from "@/components/projects/project-focused-detail";
 import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
 import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
 import { ProjectPlotMonitoringPanel } from "@/components/projects/project-plot-monitoring-panel";
@@ -23,8 +24,22 @@ import { PageHeader } from "@/components/ui/page-header";
 import { centralSchemes, plantingProjects } from "@/lib/api";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
+import {
+  isProjectFocusedUiEnabled,
+  parseProjectSecondaryTab,
+  type ProjectSecondaryTab,
+} from "@/lib/project-focused-ui";
 
-const TABS = ["overview", "compliance", "credits", "trees", "team", "settings"] as const;
+const TABS = [
+  "overview",
+  "compliance",
+  "credits",
+  "trees",
+  "team",
+  "settings",
+] as const;
+
+type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Record<(typeof TABS)[number], string> = {
   overview: "Overview",
@@ -37,17 +52,22 @@ const TAB_LABELS: Record<(typeof TABS)[number], string> = {
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = params.id as string;
-  const [tab, setTab] = useState<(typeof TABS)[number]>("overview");
+  const focusedUi = isProjectFocusedUiEnabled();
+  const [tab, setTab] = useState<Tab>("overview");
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
+  const urlTab = searchParams.get("tab");
+  const secondaryTab = focusedUi ? parseProjectSecondaryTab(urlTab) : null;
+
   useEffect(() => {
-    const requested = searchParams.get("tab");
-    if (requested && TABS.includes(requested as (typeof TABS)[number])) {
-      setTab(requested as (typeof TABS)[number]);
+    if (focusedUi) return;
+    if (urlTab && TABS.includes(urlTab as Tab)) {
+      setTab(urlTab as Tab);
     }
-  }, [searchParams]);
+  }, [focusedUi, urlTab]);
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["planting-project", projectId],
@@ -84,8 +104,25 @@ export default function ProjectDetailPage() {
     [selectedAreaId, workAreas],
   );
 
+  function navigateSecondary(next: ProjectSecondaryTab) {
+    router.push(`/projects/${projectId}?tab=${next}`);
+  }
+
   if (isLoading || !project) {
     return <p className="text-sm text-stone-500">Loading project workspace…</p>;
+  }
+
+  if (focusedUi) {
+    return (
+      <ProjectFocusedDetail
+        project={project}
+        projectId={projectId}
+        workAreas={workAreas}
+        survivalDue={survivalDue}
+        secondaryTab={secondaryTab}
+        onNavigateSecondary={navigateSecondary}
+      />
+    );
   }
 
   const rules = project.active_standard?.rules ?? {};
@@ -308,49 +345,49 @@ export default function ProjectDetailPage() {
             onOpenCompliance={() => setTab("compliance")}
           />
           <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-          <div className="card space-y-4">
-            <h2 className="text-sm font-medium">Work areas</h2>
-            <ProjectWorkAreaMap projectId={project.id} workAreas={workAreas} />
-            {workAreas.length > 0 && (
-              <div>
-                <label className="kpi-label">Pest intel for area</label>
-                <select
-                  className="input mt-1 mb-3"
-                  value={pestAreaId ?? ""}
-                  onChange={(e) => setSelectedAreaId(e.target.value || null)}
-                >
-                  {workAreas.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
-                {pestAreaId && <PestIntelPanel kind="work-area" targetId={pestAreaId} />}
-              </div>
-            )}
-          </div>
-          <aside className="card space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="h-4 w-4 text-forest-700" />
-              Planting standard
+            <div className="card space-y-4">
+              <h2 className="text-sm font-medium">Work areas</h2>
+              <ProjectWorkAreaMap projectId={project.id} workAreas={workAreas} />
+              {workAreas.length > 0 && (
+                <div>
+                  <label className="kpi-label">Pest intel for area</label>
+                  <select
+                    className="input mt-1 mb-3"
+                    value={pestAreaId ?? ""}
+                    onChange={(e) => setSelectedAreaId(e.target.value || null)}
+                  >
+                    {workAreas.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  {pestAreaId && <PestIntelPanel kind="work-area" targetId={pestAreaId} />}
+                </div>
+              )}
             </div>
-            {project.active_standard ? (
-              <div className="space-y-2 text-sm text-stone-700">
-                <p className="font-medium">{project.active_standard.name}</p>
-                {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
-                {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
-                {Boolean(rules.guard_type_required) && <p>Tree guard required</p>}
-                {rules.species_native_pct_min != null && (
-                  <p>Native species min: {String(rules.species_native_pct_min)}%</p>
-                )}
-                <p className="text-xs text-stone-500">
-                  Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
-                </p>
+            <aside className="card space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ShieldCheck className="h-4 w-4 text-forest-700" />
+                Planting standard
               </div>
-            ) : (
-              <p className="text-sm text-stone-500">No standard attached.</p>
-            )}
-          </aside>
+              {project.active_standard ? (
+                <div className="space-y-2 text-sm text-stone-700">
+                  <p className="font-medium">{project.active_standard.name}</p>
+                  {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
+                  {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
+                  {Boolean(rules.guard_type_required) && <p>Tree guard required</p>}
+                  {rules.species_native_pct_min != null && (
+                    <p>Native species min: {String(rules.species_native_pct_min)}%</p>
+                  )}
+                  <p className="text-xs text-stone-500">
+                    Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-stone-500">No standard attached.</p>
+              )}
+            </aside>
           </div>
         </div>
       )}
