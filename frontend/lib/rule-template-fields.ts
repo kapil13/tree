@@ -304,6 +304,33 @@ export function fieldsForTemplate(codeDefaults: Record<string, unknown>): RuleFi
   return RULE_FIELD_CATALOG.filter((field) => fieldAppliesToTemplate(field, codeDefaults));
 }
 
+/** High-impact rule paths shown during project setup wizard (step 2). */
+export const WIZARD_SITE_RULE_PATHS = [
+  "spacing_m.min",
+  "pit_size_cm.length",
+  "pit_size_cm.width",
+  "pit_size_cm.depth",
+  "min_photos",
+  "require_pit_photo",
+  "guard_type_required",
+] as const;
+
+export function wizardSiteRuleFields(baseRules: Record<string, unknown>): RuleFieldDef[] {
+  const allowed = new Set<string>(WIZARD_SITE_RULE_PATHS);
+  return fieldsForTemplate(baseRules).filter((field) => allowed.has(field.path));
+}
+
+export function wizardRulesDifferFromBase(
+  baseRules: Record<string, unknown>,
+  editedRules: Record<string, unknown>,
+): boolean {
+  return wizardSiteRuleFields(baseRules).some((field) => {
+    const baseVal = JSON.stringify(getNestedValue(baseRules, field.path) ?? null);
+    const editVal = JSON.stringify(getNestedValue(editedRules, field.path) ?? null);
+    return baseVal !== editVal;
+  });
+}
+
 export function sectionsForTemplate(codeDefaults: Record<string, unknown>): RuleFieldSection[] {
   const fields = fieldsForTemplate(codeDefaults);
   const order: RuleFieldSection[] = [

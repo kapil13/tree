@@ -1,50 +1,39 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildEditableRules,
-  diffOverrideKeys,
-  fieldsForTemplate,
-  setNestedValue,
-  textToSpeciesList,
+  wizardRulesDifferFromBase,
+  wizardSiteRuleFields,
 } from "./rule-template-fields";
 
-const nagarDefaults = {
-  spacing_m: { min: 2.5, warn_below: 2.0 },
+const campaRules = {
+  spacing_m: { min: 3, warn_below: 2.5 },
   pit_size_cm: { length: 45, width: 45, depth: 45 },
-  max_gps_accuracy_m: 10,
-  min_photos: 2,
+  min_photos: 3,
+  require_pit_photo: true,
   guard_type_required: true,
-  layout_pattern: "cluster",
-  allowed_species: null,
-  species_native_pct_min: 80,
-  planting_density_per_ha: { min: 800, max: 5000 },
-  require_pit_photo: false,
-  chainage_enabled: false,
-  min_trees_project: 10000,
 };
 
-describe("rule-template-fields", () => {
-  it("lists fields that exist on the template", () => {
-    const fields = fieldsForTemplate(nagarDefaults);
-    expect(fields.some((f) => f.path === "spacing_m.min")).toBe(true);
-    expect(fields.some((f) => f.path === "chainage_enabled")).toBe(true);
+describe("wizardSiteRuleFields", () => {
+  it("returns only high-impact setup fields present in template", () => {
+    const fields = wizardSiteRuleFields(campaRules);
+    const paths = fields.map((f) => f.path);
+    expect(paths).toContain("spacing_m.min");
+    expect(paths).toContain("pit_size_cm.length");
+    expect(paths).toContain("min_photos");
+    expect(paths).toContain("guard_type_required");
+    expect(paths).not.toContain("allowed_species");
+  });
+});
+
+describe("wizardRulesDifferFromBase", () => {
+  it("detects spacing changes", () => {
+    const edited = {
+      ...campaRules,
+      spacing_m: { min: 4, warn_below: 2.5 },
+    };
+    expect(wizardRulesDifferFromBase(campaRules, edited)).toBe(true);
   });
 
-  it("tracks changed keys against defaults", () => {
-    const edited = setNestedValue(nagarDefaults, "spacing_m.min", 3);
-    const changed = diffOverrideKeys(nagarDefaults, edited);
-    expect(changed).toContain("spacing_m");
-  });
-
-  it("builds editable rules from merged source", () => {
-    const rules = buildEditableRules(nagarDefaults, {
-      ...nagarDefaults,
-      species_native_pct_min: 85,
-    });
-    expect(rules.species_native_pct_min).toBe(85);
-  });
-
-  it("parses species list text", () => {
-    expect(textToSpeciesList("Neem\n\nPeepal")).toEqual(["Neem", "Peepal"]);
-    expect(textToSpeciesList("   ")).toBeNull();
+  it("returns false when rules match template", () => {
+    expect(wizardRulesDifferFromBase(campaRules, campaRules)).toBe(false);
   });
 });
