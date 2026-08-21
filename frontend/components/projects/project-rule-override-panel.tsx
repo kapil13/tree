@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Gauge, Info, Save } from "lucide-react";
+import { RuleFieldInput } from "@/components/platform/rule-engine/rule-field-input";
 import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
-import { buildEditableRules, COMPLIANCE_MODE_STYLES } from "@/lib/rule-template-fields";
+import {
+  buildEditableRules,
+  COMPLIANCE_MODE_STYLES,
+  fieldsForTemplate,
+  getNestedValue,
+  RULE_SECTION_META,
+  sectionsForTemplate,
+  setNestedValue,
+  type RuleFieldSection,
+} from "@/lib/rule-template-fields";
 import { cn } from "@/lib/cn";
 
 const MODE_HINTS: Record<PlantingProject["compliance_mode"], string> = {
@@ -14,13 +24,40 @@ const MODE_HINTS: Record<PlantingProject["compliance_mode"], string> = {
   open: "Advisory only — logs issues without blocking.",
 };
 
+function SectionPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors",
+        active
+          ? "bg-forest-600 text-white ring-forest-600"
+          : "bg-stone-50 text-stone-600 ring-stone-200 hover:bg-stone-100",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 export function ProjectRuleOverridePanel({ project }: { project: PlantingProject }) {
   const qc = useQueryClient();
   const [enabled, setEnabled] = useState(false);
   const [complianceMode, setComplianceMode] = useState(project.compliance_mode);
   const [publishNote, setPublishNote] = useState("");
   const [rules, setRules] = useState<Record<string, unknown>>({});
+  const [baseRules, setBaseRules] = useState<Record<string, unknown>>({});
   const [templateCode, setTemplateCode] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<RuleFieldSection | "all">("all");
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
@@ -30,7 +67,9 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
       .getRuleOverride(project.id)
       .then((data) => {
         if (cancelled) return;
+        const base = data.base_rules as Record<string, unknown>;
         setTemplateCode(data.template_code);
+        setBaseRules(base);
         setEnabled(Boolean(data.override?.enabled));
         setComplianceMode(
           ((data.override?.compliance_mode as PlantingProject["compliance_mode"]) ||
@@ -38,12 +77,11 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
             project.compliance_mode) as PlantingProject["compliance_mode"],
         );
         setPublishNote((data.override?.publish_note as string) || "");
-        setRules(
-          buildEditableRules(
-            data.base_rules as Record<string, unknown>,
-            (data.override?.rules as Record<string, unknown>) || data.base_rules,
-          ),
-        );
+        const source =
+          data.override?.enabled && Object.keys(data.override.rules ?? {}).length
+            ? (data.override.rules as Record<string, unknown>)
+            : base;
+        setRules(buildEditableRules(base, source));
         setLoaded(true);
       })
       .catch((err) => {
@@ -57,6 +95,12 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
     };
   }, [project.id, project.compliance_mode]);
 
+  const sections = useMemo(() => sectionsForTemplate(baseRules), [baseRules]);
+  const visibleSections = useMemo(
+    () => (activeSection === "all" ? sections : sections.filter((s) => s === activeSection)),
+    [activeSection, sections],
+  );
+
   const save = useMutation({
     mutationFn: () =>
       plantingProjects.updateRuleOverride(project.id, {
@@ -66,7 +110,10 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
         publish_note: publishNote || null,
       }),
     onSuccess: () => {
-      setMessage({ type: "ok", text: "Project rules saved. Field teams will see updated limits immediately." });
+      setMessage({
+        type: "ok",
+        text: "Project rules saved. Field teams will see updated limits immediately.",
+      });
       qc.invalidateQueries({ queryKey: ["planting-project", project.id] });
     },
     onError: (err) => setMessage({ type: "err", text: errorMessage(err) }),
@@ -123,7 +170,7 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
 
       <fieldset
         disabled={!enabled}
-        className={cn("space-y-4 transition-opacity", !enabled && "pointer-events-none opacity-50")}
+        className={cn("space-y-5 transition-opacity", !enabled && "pointer-events-none opacity-50")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -140,64 +187,63 @@ export function ProjectRuleOverridePanel({ project }: { project: PlantingProject
               <option value="open">Open — advisory only</option>
             </select>
             <p className="mt-1.5 flex items-center gap-2 text-xs text-stone-500">
-              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", modeStyle)}>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                  modeStyle,
+                )}
+              >
                 {complianceMode}
               </span>
               {MODE_HINTS[complianceMode]}
             </p>
           </div>
-          <div>
-            <label className="kpi-label">Native species min (%)</label>
-            <input
-              className="input mt-1"
-              type="number"
-              min={0}
-              max={100}
-              value={String(rules.species_native_pct_min ?? "")}
-              onChange={(e) =>
-                setRules((r) => ({
-                  ...r,
-                  species_native_pct_min: e.target.value ? Number(e.target.value) : null,
-                }))
-              }
-            />
-          </div>
-          <div>
-            <label className="kpi-label">Min spacing (m)</label>
-            <input
-              className="input mt-1"
-              type="number"
-              min={0}
-              step={0.5}
-              value={String((rules.spacing_m as { min?: number })?.min ?? "")}
-              onChange={(e) =>
-                setRules((r) => ({
-                  ...r,
-                  spacing_m: {
-                    ...((r.spacing_m as object) || {}),
-                    min: e.target.value ? Number(e.target.value) : null,
-                  },
-                }))
-              }
-            />
-          </div>
-          <div>
-            <label className="kpi-label">Min photos per tree</label>
-            <input
-              className="input mt-1"
-              type="number"
-              min={0}
-              max={10}
-              value={String(rules.min_photos ?? "")}
-              onChange={(e) =>
-                setRules((r) => ({
-                  ...r,
-                  min_photos: e.target.value ? Number(e.target.value) : null,
-                }))
-              }
-            />
-          </div>
         </div>
+
+        {sections.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <SectionPill
+              label="All"
+              active={activeSection === "all"}
+              onClick={() => setActiveSection("all")}
+            />
+            {sections.map((section) => (
+              <SectionPill
+                key={section}
+                label={RULE_SECTION_META[section].title}
+                active={activeSection === section}
+                onClick={() => setActiveSection(section)}
+              />
+            ))}
+          </div>
+        )}
+
+        {visibleSections.map((section) => (
+          <section
+            key={section}
+            className="space-y-3 rounded-xl border border-stone-200/80 bg-stone-50/40 p-4"
+          >
+            <div>
+              <h3 className="text-sm font-semibold text-stone-900">
+                {RULE_SECTION_META[section].title}
+              </h3>
+              <p className="text-xs text-stone-500">{RULE_SECTION_META[section].description}</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {fieldsForTemplate(baseRules)
+                .filter((field) => field.section === section)
+                .map((field) => (
+                  <RuleFieldInput
+                    key={field.path}
+                    field={field}
+                    value={getNestedValue(rules, field.path)}
+                    defaultValue={getNestedValue(baseRules, field.path)}
+                    onChange={(value) => setRules((current) => setNestedValue(current, field.path, value))}
+                  />
+                ))}
+            </div>
+          </section>
+        ))}
 
         <div>
           <label className="kpi-label">Change note (optional)</label>
