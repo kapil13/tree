@@ -51,7 +51,7 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.access import load_project, load_work_area
 from app.services.planting_projects.compliance import evaluate_tree_placement, persist_violations
 from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
-from app.services.planting_projects.registration_context import merge_standard_into_tree_metadata
+from app.services.planting_projects.registration_context import merge_project_into_tree_metadata
 from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
 from app.services.storage import get_storage
@@ -194,11 +194,30 @@ async def create_tree(
         "accuracy_m": payload.accuracy_m,
         "plantation_id": work_area_id,
     }
+
+    rules: dict = {}
+    metadata_in = dict(payload.metadata or {})
+    if project:
+        standard = await get_active_standard(db, project)
+        rules = await get_effective_rules(db, standard, project_id=project.id)
+        metadata_in = merge_project_into_tree_metadata(
+            metadata_in,
+            project=project,
+            rules=rules,
+            surveyor_name=user.full_name,
+        )
+        compliance_mode = await resolve_compliance_mode(
+            db,
+            template_code=standard.template_code if standard else project.standard_template_code,
+            project_compliance_mode=project.compliance_mode,
+            project_id=project.id,
+        )
+
     try:
         metadata = validate_program_payload(
             program.code,
             core_values=core_values,
-            metadata=payload.metadata,
+            metadata=metadata_in,
             photo_count=len(payload.photo_keys),
         )
     except ProgramValidationError as exc:
@@ -206,18 +225,6 @@ async def create_tree(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"validation_errors": exc.errors},
         ) from exc
-
-    rules: dict = {}
-    if project:
-        standard = await get_active_standard(db, project)
-        rules = await get_effective_rules(db, standard, project_id=project.id)
-        metadata = merge_standard_into_tree_metadata(metadata, rules)
-        compliance_mode = await resolve_compliance_mode(
-            db,
-            template_code=standard.template_code if standard else project.standard_template_code,
-            project_compliance_mode=project.compliance_mode,
-            project_id=project.id,
-        )
 
     compliance = await evaluate_tree_placement(
         db,

@@ -317,7 +317,7 @@ async def create_project(
     metadata = validate_scheme_metadata(
         payload.scheme_code,
         dict(payload.metadata),
-        strict=False,
+        strict=bool(payload.scheme_code),
     )
     if scheme and scheme.get("legacy_plantation_category"):
         metadata.setdefault("plantation_category", scheme["legacy_plantation_category"])
