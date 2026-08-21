@@ -66,6 +66,7 @@ def test_validate_rule_override_rejects_density_min_above_max() -> None:
         "industrial_greenbelt_v1",
         "nagar_van_urban_forest_v1",
         "sahakar_van_cooperative_v1",
+        "campa_ca_v1",
         "open_byot_v1",
     ],
 )

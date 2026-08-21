@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi import HTTPException
 
+from app.services.planting_projects.templates import get_template
 from app.services.schemes.registry import get_scheme, list_schemes, scheme_codes
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 
@@ -48,6 +49,7 @@ def test_nagar_van_scheme_defaults():
 def test_apply_scheme_defaults_from_scheme():
     scheme = get_scheme("campa_ca")
     assert scheme is not None
+    assert scheme["default_template_code"] == "campa_ca_v1"
     segment, compliance, template = apply_scheme_defaults(
         scheme=scheme,
         segment="general",
@@ -57,7 +59,17 @@ def test_apply_scheme_defaults_from_scheme():
     )
     assert segment == "general"
     assert compliance == "strict"
-    assert template is None
+    assert template == "campa_ca_v1"
+
+
+def test_campa_template_has_ca_planting_rules():
+    tpl = get_template("campa_ca_v1")
+    assert tpl is not None
+    assert tpl["compliance_mode"] == "strict"
+    assert tpl["rules"]["pit_size_cm"]["length"] == 45
+    assert tpl["rules"]["spacing_m"]["min"] == 3.0
+    assert tpl["rules"]["guard_type_required"] is True
+    assert tpl["rules"]["species_native_pct_min"] == 80
 
 
 def test_apply_scheme_defaults_without_scheme_uses_program():
