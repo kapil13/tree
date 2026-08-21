@@ -13,6 +13,10 @@ import {
 import { PlantingStandardPreview } from "@/components/projects/planting-standard-preview";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import {
+  initialSiteRuleAdjustments,
+  SiteRuleAdjustmentsPanel,
+} from "@/components/projects/site-rule-adjustments-panel";
+import {
   SchemeRefsFields,
   validateSchemeRefs,
   type SchemeRefField,
@@ -32,6 +36,7 @@ import {
   type FlexProjectCode,
 } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
+import { wizardRulesDifferFromBase } from "@/lib/rule-template-fields";
 
 const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
   {
@@ -80,7 +85,7 @@ function stepSubtitle(step: ProjectWizardStep, hasSchemeRefsStep: boolean): stri
     return "Link your site to a central government scheme so compliance checklists, govt reference IDs, and audit exports are configured automatically.";
   }
   if (step === 2) {
-    return "Name your project, confirm the planting standard, and set targets. Required scheme IDs come next.";
+    return "Name your project, confirm the planting standard, and optionally adjust site-specific rules. Scheme references come next.";
   }
   if (step === 3 && hasSchemeRefsStep) {
     return "Enter government reference IDs now so tree registration inherits legal context automatically — no surprises later.";
@@ -104,6 +109,9 @@ export default function NewProjectPage() {
   const [surveyIntervalDays, setSurveyIntervalDays] = useState<15 | 30>(30);
   const [templateCode, setTemplateCode] = useState("");
   const [standardConfirmed, setStandardConfirmed] = useState(false);
+  const [siteAdjustments, setSiteAdjustments] = useState(() =>
+    initialSiteRuleAdjustments({}),
+  );
   const [schemeRefs, setSchemeRefs] = useState<Record<string, string>>({});
   const [refErrors, setRefErrors] = useState<Record<string, string>>({});
   const [createdProject, setCreatedProject] = useState<PlantingProject | null>(null);
@@ -173,8 +181,9 @@ export default function NewProjectPage() {
   useEffect(() => {
     if (templates.length > 0 && selectedTemplate) {
       setStandardConfirmed(false);
+      setSiteAdjustments(initialSiteRuleAdjustments(selectedTemplate.rules ?? {}));
     }
-  }, [selectedTemplate?.code, templates.length]);
+  }, [selectedTemplate?.code, templates.length, selectedTemplate]);
 
   const schemesByGroup = useMemo(() => {
     const groups: Record<CentralSchemeGroup, CentralScheme[]> = {
@@ -218,6 +227,14 @@ export default function NewProjectPage() {
       setError("Confirm the planting standard before continuing.");
       return false;
     }
+    if (
+      siteAdjustments.enabled &&
+      selectedTemplate &&
+      !wizardRulesDifferFromBase(selectedTemplate.rules ?? {}, siteAdjustments.rules)
+    ) {
+      setError("Change at least one site rule, or turn off site adjustments.");
+      return false;
+    }
     setError(null);
     return true;
   }
@@ -251,6 +268,22 @@ export default function NewProjectPage() {
         target_tree_count: targetTrees ? Number(targetTrees) : undefined,
         metadata,
       });
+
+      if (
+        siteAdjustments.enabled &&
+        selectedTemplate &&
+        wizardRulesDifferFromBase(selectedTemplate.rules ?? {}, siteAdjustments.rules)
+      ) {
+        await plantingProjects.updateRuleOverride(project.id, {
+          enabled: true,
+          rules: siteAdjustments.rules,
+          compliance_mode: complianceMode,
+          publish_note:
+            siteAdjustments.note.trim() ||
+            "Site-specific rule adjustments during project setup",
+        });
+      }
+
       setCreatedProject(project);
       setStep(4);
     } catch (err) {
@@ -405,6 +438,21 @@ export default function NewProjectPage() {
                 template={selectedTemplate}
                 confirmed={standardConfirmed}
                 onConfirmChange={setStandardConfirmed}
+              />
+              <SiteRuleAdjustmentsPanel
+                baseRules={selectedTemplate.rules ?? {}}
+                enabled={siteAdjustments.enabled}
+                rules={siteAdjustments.rules}
+                note={siteAdjustments.note}
+                onEnabledChange={(enabled) =>
+                  setSiteAdjustments((current) => ({ ...current, enabled }))
+                }
+                onRulesChange={(rules) =>
+                  setSiteAdjustments((current) => ({ ...current, rules }))
+                }
+                onNoteChange={(note) =>
+                  setSiteAdjustments((current) => ({ ...current, note }))
+                }
               />
             </div>
           )}
