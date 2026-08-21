@@ -75,6 +75,84 @@ def merge_standard_into_tree_metadata(
     if rules.get("guard_type_required") and not merged.get("guard_type"):
         merged["guard_type"] = "bamboo"
 
+    native_min = rules.get("species_native_pct_min")
+    if native_min is not None and float(native_min) >= 80 and merged.get("species_native") is None:
+        merged["species_native"] = True
+
+    return merged
+
+
+def _set_if_empty(merged: dict[str, Any], key: str, value: Any) -> None:
+    if value is None or value == "":
+        return
+    current = merged.get(key)
+    if current is None or current == "":
+        merged[key] = value
+
+
+def merge_project_into_tree_metadata(
+    metadata: dict[str, Any],
+    *,
+    project: PlantingProject,
+    rules: dict[str, Any],
+    surveyor_name: str | None = None,
+) -> dict[str, Any]:
+    """Apply planting standard + scheme refs + project defaults for in-project registration."""
+    merged = merge_standard_into_tree_metadata(metadata, rules)
+    refs = (project.metadata_ or {}).get("scheme_refs")
+    refs = refs if isinstance(refs, dict) else {}
+
+    _set_if_empty(merged, "project_code", project.code)
+
+    if project.scheme_code == "campa_ca":
+        _set_if_empty(merged, "legal_basis", "compensatory_afforestation")
+        _set_if_empty(merged, "land_category", "forest")
+        _set_if_empty(
+            merged,
+            "permit_reference",
+            refs.get("pca_number") or refs.get("forest_diversion_id"),
+        )
+        _set_if_empty(
+            merged,
+            "site_zone",
+            refs.get("ca_land_parcel_id") or refs.get("state_name"),
+        )
+        _set_if_empty(
+            merged,
+            "implementing_agency",
+            refs.get("state_campa_account") or refs.get("state_name"),
+        )
+    elif project.scheme_code == "nagar_van":
+        _set_if_empty(merged, "legal_basis", "urban_greening")
+        _set_if_empty(merged, "land_category", "urban")
+    elif project.scheme_code == "sahakar_van":
+        _set_if_empty(merged, "legal_basis", "other")
+        _set_if_empty(merged, "land_category", "govt_land")
+        _set_if_empty(merged, "consent_reference", refs.get("nccf_project_ref"))
+
+    village = refs.get("village_name") or refs.get("ulb_name")
+    _set_if_empty(merged, "site_zone", village)
+    _set_if_empty(merged, "panchayat_village", refs.get("village_name"))
+    _set_if_empty(merged, "community_name", refs.get("cooperative_society_name"))
+    _set_if_empty(
+        merged,
+        "implementing_agency",
+        refs.get("amul_union_name")
+        or refs.get("ulb_name")
+        or refs.get("cooperative_society_name"),
+    )
+    _set_if_empty(
+        merged,
+        "permit_reference",
+        refs.get("nccf_project_ref") or refs.get("nagar_van_project_id"),
+    )
+
+    _set_if_empty(merged, "survival_status", "live")
+    if surveyor_name:
+        _set_if_empty(merged, "surveyor_name", surveyor_name)
+    maintenance = merged.get("implementing_agency") or refs.get("state_name")
+    _set_if_empty(merged, "maintenance_responsible", maintenance)
+
     return merged
 
 

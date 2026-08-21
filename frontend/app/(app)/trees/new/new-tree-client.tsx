@@ -211,7 +211,9 @@ export function NewTreePageClient() {
         base = applyGovernmentCategoryToValues(base, category);
       }
       if (project) {
-        base = applyProjectTreePrefill(base, project);
+        base = applyProjectTreePrefill(base, project, {
+          surveyorName: user?.full_name ?? user?.email,
+        });
       }
       return base;
     });
@@ -337,7 +339,9 @@ export function NewTreePageClient() {
       if (values.planted_at) nextValues.planted_at = values.planted_at;
       if (values.road_side) nextValues.road_side = values.road_side;
       if (project) {
-        nextValues = applyProjectTreePrefill(nextValues, project);
+        nextValues = applyProjectTreePrefill(nextValues, project, {
+          surveyorName: user?.full_name ?? user?.email,
+        });
       }
       nextValues = applySuggestedNextPrefill(nextValues, suggested);
 

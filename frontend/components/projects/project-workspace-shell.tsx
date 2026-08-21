@@ -6,11 +6,14 @@ import type { PlantingProject } from "@/lib/api";
 import { PROJECT_FOCUSED_LAYOUT_MARKER } from "@/lib/project-focused-ui";
 import { ProjectWorkspaceNav } from "@/components/projects/project-workspace-nav";
 import type { ProjectSecondaryTab } from "@/lib/project-focused-ui";
+import { cn } from "@/lib/cn";
 
 type ProjectWorkspaceShellProps = {
   project: PlantingProject;
   projectId: string;
   registerHref: string;
+  canRegisterTree?: boolean;
+  registerBlockReason?: string;
   activeSection: "overview" | ProjectSecondaryTab;
   openViolations?: number;
   children: React.ReactNode;
@@ -20,6 +23,8 @@ export function ProjectWorkspaceShell({
   project,
   projectId,
   registerHref,
+  canRegisterTree = true,
+  registerBlockReason,
   activeSection,
   openViolations = 0,
   children,
@@ -43,10 +48,22 @@ export function ProjectWorkspaceShell({
             {project.compliance_mode} mode · survival survey every {surveyDays} days
           </p>
         </div>
-        <Link href={registerHref} className="btn-primary w-full shrink-0 sm:w-auto">
-          <Leaf className="h-4 w-4" />
-          Register tree
-        </Link>
+        {canRegisterTree ? (
+          <Link href={registerHref} className="btn-primary w-full shrink-0 sm:w-auto">
+            <Leaf className="h-4 w-4" />
+            Register tree
+          </Link>
+        ) : (
+          <span
+            className={cn(
+              "inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-stone-200 px-4 py-2.5 text-sm font-medium text-stone-500 sm:w-auto",
+            )}
+            title={registerBlockReason}
+          >
+            <Leaf className="h-4 w-4" />
+            Register tree
+          </span>
+        )}
       </div>
 
       <ProjectWorkspaceNav

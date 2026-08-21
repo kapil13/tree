@@ -24,7 +24,7 @@ export function ProjectWorkspacePage({
   const legacyTab = searchParams.get("tab");
   const autoDraw = searchParams.get("draw") === "1";
 
-  const { project, workAreas, survivalDue, registerHref, isLoading } =
+  const { project, workAreas, survivalDue, registerHref, setupStatus, isLoading } =
     useProjectWorkspace(projectId);
 
   useEffect(() => {
@@ -51,6 +51,8 @@ export function ProjectWorkspacePage({
       project={project}
       projectId={projectId}
       registerHref={registerHref}
+      canRegisterTree={setupStatus?.canRegisterTree ?? true}
+      registerBlockReason={setupStatus?.blockReason}
       activeSection={section}
       openViolations={openViolations}
     >
@@ -61,6 +63,7 @@ export function ProjectWorkspacePage({
           workAreas={workAreas}
           survivalDue={survivalDue}
           registerHref={registerHref}
+          setupStatus={setupStatus ?? undefined}
           autoDraw={autoDraw}
         />
       ) : (

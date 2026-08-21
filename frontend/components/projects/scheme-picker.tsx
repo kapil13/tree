@@ -169,7 +169,7 @@ function SelectionPreview({ scheme }: { scheme: CentralScheme }) {
         {fieldCount > 0 && (
           <li className="flex gap-2">
             <span className="text-forest-600">✓</span>
-            {fieldCount} govt reference fields in project settings
+            {fieldCount} govt reference fields in step 3 of setup
           </li>
         )}
         <li className="flex gap-2">
@@ -181,35 +181,53 @@ function SelectionPreview({ scheme }: { scheme: CentralScheme }) {
   );
 }
 
-export function ProjectWizardSteps({ step }: { step: 1 | 2 }) {
-  const steps = [
-    { n: 1, label: "Choose scheme" },
-    { n: 2, label: "Project details" },
-    { n: 3, label: "Draw work areas", muted: true },
-  ] as const;
+export type ProjectWizardStep = 1 | 2 | 3 | 4;
+
+export function ProjectWizardSteps({
+  step,
+  hasSchemeRefsStep,
+}: {
+  step: ProjectWizardStep;
+  hasSchemeRefsStep: boolean;
+}) {
+  const steps = hasSchemeRefsStep
+    ? [
+        { n: 1 as const, label: "Choose scheme" },
+        { n: 2 as const, label: "Project details" },
+        { n: 3 as const, label: "Scheme references" },
+        { n: 4 as const, label: "Draw work areas" },
+      ]
+    : [
+        { n: 1 as const, label: "Choose scheme" },
+        { n: 2 as const, label: "Project details" },
+        { n: 4 as const, label: "Draw work areas" },
+      ];
 
   return (
     <ol className="flex items-center gap-2 sm:gap-4">
-      {steps.map((s, i) => (
+      {steps.map((s, i) => {
+        const displayNum = hasSchemeRefsStep ? s.n : i + 1;
+        const completed = step > s.n;
+        const active = step === s.n;
+        return (
         <li key={s.n} className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <span
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                step === s.n
+                active
                   ? "bg-forest-600 text-white shadow-sm"
-                  : step > s.n
+                  : completed
                     ? "bg-forest-100 text-forest-800"
                     : "bg-stone-100 text-stone-400",
-                "muted" in s && s.muted && step < s.n && "opacity-60",
               )}
             >
-              {step > s.n ? <Check className="h-3.5 w-3.5" /> : s.n}
+              {completed ? <Check className="h-3.5 w-3.5" /> : displayNum}
             </span>
             <span
               className={cn(
                 "hidden truncate text-xs font-medium sm:block",
-                step === s.n ? "text-forest-800" : "text-stone-500",
+                active ? "text-forest-800" : "text-stone-500",
               )}
             >
               {s.label}
@@ -219,12 +237,12 @@ export function ProjectWizardSteps({ step }: { step: 1 | 2 }) {
             <div
               className={cn(
                 "hidden h-px flex-1 sm:block",
-                step > s.n ? "bg-forest-300" : "bg-stone-200",
+                completed ? "bg-forest-300" : "bg-stone-200",
               )}
             />
           )}
         </li>
-      ))}
+      );})}
     </ol>
   );
 }

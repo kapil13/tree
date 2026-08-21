@@ -47,6 +47,25 @@ describe("applyProjectTreePrefill", () => {
     expect(result.species_native).toBe(true);
   });
 
+  it("prefills compliance defaults for project mode", () => {
+    const project = {
+      id: "p-campa",
+      code: "CAMPA-TEST",
+      scheme_code: "campa_ca",
+      metadata: {
+        scheme_refs: {
+          state_campa_account: "Rajasthan State CAMPA",
+        },
+      },
+      active_standard: { rules: {} },
+    } as unknown as PlantingProject;
+
+    const result = applyProjectTreePrefill({}, project, { surveyorName: "Field Officer" });
+    expect(result.survival_status).toBe("live");
+    expect(result.surveyor_name).toBe("Field Officer");
+    expect(result.maintenance_responsible).toBe("Rajasthan State CAMPA");
+  });
+
   it("prefills government fields from scheme refs", () => {
     const project = {
       id: "p1",
