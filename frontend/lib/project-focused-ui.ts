@@ -8,6 +8,8 @@ export const PROJECT_SECONDARY_TABS = [
 
 export type ProjectSecondaryTab = (typeof PROJECT_SECONDARY_TABS)[number];
 
+export type ProjectWorkspaceSection = "overview" | ProjectSecondaryTab;
+
 export function parseProjectSecondaryTab(
   value: string | null,
 ): ProjectSecondaryTab | null {
@@ -52,5 +54,41 @@ export const PROJECT_SECONDARY_LABELS: Record<ProjectSecondaryTab, string> = {
   settings: "Programme settings",
 };
 
+/** Short labels for compact sub-nav on small screens. */
+export const PROJECT_SECONDARY_SHORT_LABELS: Record<ProjectSecondaryTab, string> = {
+  compliance: "Compliance",
+  credits: "Credits",
+  team: "Team",
+  settings: "Settings",
+};
+
+export const PROJECT_WORKSPACE_NAV: Array<{
+  id: ProjectWorkspaceSection;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: "overview", label: "Overview", shortLabel: "Overview" },
+  {
+    id: "compliance",
+    label: PROJECT_SECONDARY_LABELS.compliance,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.compliance,
+  },
+  {
+    id: "credits",
+    label: PROJECT_SECONDARY_LABELS.credits,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.credits,
+  },
+  {
+    id: "team",
+    label: PROJECT_SECONDARY_LABELS.team,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.team,
+  },
+  {
+    id: "settings",
+    label: PROJECT_SECONDARY_LABELS.settings,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.settings,
+  },
+];
+
 /** Marker string embedded in the focused layout for deploy verification. */
-export const PROJECT_FOCUSED_LAYOUT_MARKER = "project-focused-layout-v2";
+export const PROJECT_FOCUSED_LAYOUT_MARKER = "project-focused-layout-v3";

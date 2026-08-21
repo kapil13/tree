@@ -53,17 +53,9 @@ export function ProjectWorkspaceShell({
         projectId={projectId}
         active={activeSection}
         openViolations={openViolations}
-        variant="mobile"
       />
 
       {children}
-
-      <ProjectWorkspaceNav
-        projectId={projectId}
-        active={activeSection}
-        openViolations={openViolations}
-        variant="footer"
-      />
     </div>
   );
 }

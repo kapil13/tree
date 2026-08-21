@@ -39,6 +39,6 @@ describe("project-focused-ui", () => {
   });
 
   it("exposes a stable layout marker for deploy checks", () => {
-    expect(PROJECT_FOCUSED_LAYOUT_MARKER).toBe("project-focused-layout-v2");
+    expect(PROJECT_FOCUSED_LAYOUT_MARKER).toBe("project-focused-layout-v3");
   });
 });

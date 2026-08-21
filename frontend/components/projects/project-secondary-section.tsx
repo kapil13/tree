@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
@@ -16,7 +15,6 @@ import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import type { PlantingProject, WorkArea } from "@/lib/api";
 import {
-  PROJECT_SECONDARY_LABELS,
   PROJECT_SECONDARY_TABS,
   projectOverviewHref,
   projectSecondaryHref,
@@ -54,18 +52,6 @@ export function ProjectSecondarySection({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href={projectOverviewHref(projectId)}
-          className="text-sm text-forest-700 hover:underline"
-        >
-          ← Project overview
-        </Link>
-        <h2 className="mt-2 text-lg font-semibold text-stone-900">
-          {PROJECT_SECONDARY_LABELS[tab]}
-        </h2>
-      </div>
-
       {tab === "compliance" && (
         <div className="space-y-6">
           <ProjectComplianceTab
