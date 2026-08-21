@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../app_bootstrap.dart';
-import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
 import '../services/security_services.dart';
 import '../theme.dart';
+import '../widgets/mobile_app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -99,7 +99,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final l10n = AppLocalizations.of(context)!;
     final settings = AppSettings.instance;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profile)),
+      appBar: MobileAppBar(title: l10n.profile),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -300,56 +300,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 dense: true,
                 title: const Text('App version'),
                 subtitle: Text(_appVersion),
-              ),
-            const Divider(),
-            if (canSeeCarbon(user))
-              ListTile(
-                leading: const Icon(Icons.eco_outlined),
-                title: const Text('Carbon calculator'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/carbon'),
-              ),
-            if (canSeeReports(user))
-              ListTile(
-                leading: const Icon(Icons.description_outlined),
-                title: const Text('Reports'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/reports'),
-              ),
-            if (canSeeCredits(user))
-              ListTile(
-                leading: const Icon(Icons.account_balance_outlined),
-                title: const Text('Credits'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/credits'),
-              ),
-            if (canSeeFieldOps(user))
-              ListTile(
-                leading: const Icon(Icons.construction_outlined),
-                title: const Text('Field ops'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/field-ops'),
-              ),
-            if (canSeeMonitoring(user))
-              ListTile(
-                leading: const Icon(Icons.monitor_heart_outlined),
-                title: const Text('Monitoring'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.go('/monitoring'),
-              ),
-            if (canSeeBioacoustic(user))
-              ListTile(
-                leading: const Icon(Icons.graphic_eq),
-                title: const Text('Bioacoustic'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/bioacoustic'),
-              ),
-            if (canSeeAssistant(user))
-              ListTile(
-                leading: const Icon(Icons.auto_awesome),
-                title: const Text('Assistant'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/assistant'),
               ),
             const Divider(),
             ListTile(

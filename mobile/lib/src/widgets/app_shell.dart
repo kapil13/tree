@@ -5,11 +5,22 @@ import 'package:go_router/go_router.dart';
 import '../nav_access.dart';
 import '../session.dart';
 import '../theme.dart';
+import 'app_drawer.dart';
+import 'app_shell_scope.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
   static IconData _iconFor(String path, {required bool selected}) {
     switch (path) {
@@ -21,49 +32,53 @@ class AppShell extends ConsumerWidget {
         return selected ? Icons.map_rounded : Icons.map_outlined;
       case '/notifications':
         return selected ? Icons.notifications_rounded : Icons.notifications_outlined;
-      case '/monitoring':
-        return selected ? Icons.monitor_heart_rounded : Icons.monitor_heart_outlined;
-      case '/projects':
-        return selected ? Icons.assignment_rounded : Icons.assignment_outlined;
-      case '/profile':
-        return selected ? Icons.person_rounded : Icons.person_outline;
+      case '/bioacoustic':
+        return selected ? Icons.graphic_eq_rounded : Icons.graphic_eq_outlined;
+      case kMoreNavPath:
+        return selected ? Icons.apps_rounded : Icons.apps_outlined;
       default:
         return selected ? Icons.circle : Icons.circle_outlined;
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final user = sessionController.user;
     final location = GoRouterState.of(context).matchedLocation;
-
     final destinations = navDestinationsFor(user);
+    final currentIndex = footerSelectedIndex(location, user);
 
-    final selectedIndex = destinations.indexWhere((d) => location.startsWith(d.path));
-    final currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
-
-    return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AranyixColors.surfaceElevated,
-          border: Border(top: BorderSide(color: AranyixColors.border)),
-        ),
-        child: NavigationBar(
-          selectedIndex: currentIndex.clamp(0, destinations.length - 1),
-          onDestinationSelected: (index) {
-            final dest = destinations[index];
-            if (dest.path != location) context.go(dest.path);
-          },
-          destinations: [
-            for (final d in destinations)
-              NavigationDestination(
-                icon: Icon(_iconFor(d.path, selected: false)),
-                selectedIcon: Icon(_iconFor(d.path, selected: true)),
-                label: d.label,
-              ),
-          ],
+    return AppShellScope(
+      openDrawer: _openDrawer,
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: AranyixColors.surface,
+        drawer: AppDrawer(onNavigate: () => Navigator.of(context).pop()),
+        body: widget.child,
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: AranyixColors.surfaceElevated,
+            border: Border(top: BorderSide(color: AranyixColors.border)),
+          ),
+          child: NavigationBar(
+            selectedIndex: currentIndex.clamp(0, destinations.length - 1),
+            onDestinationSelected: (index) {
+              final dest = destinations[index];
+              if (dest.path == kMoreNavPath) {
+                _openDrawer();
+                return;
+              }
+              if (dest.path != location) context.go(dest.path);
+            },
+            destinations: [
+              for (final d in destinations)
+                NavigationDestination(
+                  icon: Icon(_iconFor(d.path, selected: false)),
+                  selectedIcon: Icon(_iconFor(d.path, selected: true)),
+                  label: d.label,
+                ),
+            ],
+          ),
         ),
       ),
     );

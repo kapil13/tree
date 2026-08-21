@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../providers.dart';
+import '../widgets/mobile_app_bar.dart';
 
 import '../widgets/offline_tree_queue_section.dart';
 
@@ -25,7 +26,7 @@ class ProjectsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectsAsync = ref.watch(plantingProjectsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Field projects')),
+      appBar: const MobileAppBar(title: 'Field projects'),
       body: projectsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) {

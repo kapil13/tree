@@ -94,7 +94,31 @@ final plantationFencesProvider = FutureProvider.autoDispose((ref) async {
   return api.listPlantationFences();
 });
 
-/// Weather at first registered tree, or null when no trees exist.
+final intelligenceSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.intelligenceSummary();
+});
+
+final citizenProfileProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.citizenProfile();
+});
+
+final citizenStewardshipProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.citizenStewardship();
+});
+
+final citizenAdoptableProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.citizenAdoptable();
+});
+
+final bioacousticSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.bioacousticSummary();
+});
+
 final weatherProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   final trees = await ref.watch(treesProvider.future);

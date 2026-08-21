@@ -792,6 +792,34 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> citizenAdoptable({int page = 1, int pageSize = 12}) async {
+    final r = await _dio.get(
+      '/citizen/adoptable',
+      queryParameters: {'page': page, 'page_size': pageSize},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> adoptTree(String treeId, {String? nickname}) async {
+    final r = await _dio.post(
+      '/citizen/trees/$treeId/adopt',
+      data: {if (nickname != null && nickname.isNotEmpty) 'nickname': nickname},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> relinquishAdoption(String treeId) async {
+    await _dio.delete('/citizen/trees/$treeId/adopt');
+  }
+
+  Future<Map<String, dynamic>> intelligenceSummary({int siteLimit = 12, bool fast = true}) async {
+    final r = await _dio.get(
+      '/intelligence/summary',
+      queryParameters: {'site_limit': siteLimit, 'fast': fast},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> citizenSignupStart({
     required String fullName,
     required String phone,

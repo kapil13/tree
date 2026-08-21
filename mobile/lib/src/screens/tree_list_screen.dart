@@ -6,6 +6,7 @@ import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../providers.dart';
+import '../widgets/mobile_app_bar.dart';
 
 class TreeListScreen extends ConsumerWidget {
   const TreeListScreen({super.key});
@@ -15,7 +16,7 @@ class TreeListScreen extends ConsumerWidget {
     final user = ref.watch(userProvider).maybeWhen(data: (d) => d, orElse: () => null);
     final canAdd = canAddTrees(user);
     return Scaffold(
-      appBar: AppBar(title: const Text('Trees')),
+      appBar: const MobileAppBar(title: 'Trees'),
       floatingActionButton: canAdd
           ? FloatingActionButton(
               onPressed: () => context.push('/trees/new'),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/mobile_app_bar.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -144,8 +145,8 @@ class NotificationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alertsAsync = ref.watch(alertsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
+      appBar: MobileAppBar(
+        title: 'Alerts',
         actions: [
           IconButton(
             tooltip: 'Preferences',

@@ -10,12 +10,14 @@ class QuickAction {
     required this.icon,
     required this.route,
     this.color,
+    this.push = false,
   });
 
   final String label;
   final IconData icon;
   final String route;
   final Color? color;
+  final bool push;
 }
 
 /// Horizontal quick-action chips for the home dashboard.
@@ -32,22 +34,24 @@ class DashboardQuickActions extends StatelessWidget {
         icon: Icons.add_circle_outline,
         route: '/trees/new',
         color: AranyixColors.forest,
+        push: true,
       ),
       const QuickAction(
         label: 'Map',
         icon: Icons.map_outlined,
         route: '/map',
       ),
-      const QuickAction(
-        label: 'Assistant',
-        icon: Icons.auto_awesome,
-        route: '/assistant',
-      ),
-      if (canSeeFieldProjectsCard(user))
+      if (canSeeStewardship(user))
         const QuickAction(
-          label: 'Projects',
-          icon: Icons.assignment_outlined,
-          route: '/projects',
+          label: 'Stewardship',
+          icon: Icons.favorite_outline,
+          route: '/stewardship',
+        ),
+      if (canSeePortfolioHealth(user))
+        const QuickAction(
+          label: 'Portfolio',
+          icon: Icons.insights_outlined,
+          route: '/portfolio-health',
         ),
       if (canSeeBioacoustic(user))
         const QuickAction(
@@ -72,7 +76,16 @@ class DashboardQuickActions extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) {
               final a = actions[i];
-              return _ActionChip(action: a, onTap: () => context.push(a.route));
+              return _ActionChip(
+                action: a,
+                onTap: () {
+                  if (a.push) {
+                    context.push(a.route);
+                  } else {
+                    context.go(a.route);
+                  }
+                },
+              );
             },
           ),
         ),

@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../api/api_errors.dart';
 import '../nav_access.dart';
 import '../providers.dart';
+import '../widgets/mobile_app_bar.dart';
 import '../session.dart';
 import '../theme.dart';
 
@@ -248,12 +249,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final showFieldOps = canSeeFieldOps(user) && (isSupervisor(user) || canSeeExecutiveHome(user));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_mode == _DrawMode.none
+      appBar: MobileAppBar(
+        title: _mode == _DrawMode.none
             ? 'Map'
             : _mode == _DrawMode.polygon
                 ? 'Draw polygon'
-                : 'Draw corridor'),
+                : 'Draw corridor',
         actions: [
           if (showFieldOps)
             IconButton(
