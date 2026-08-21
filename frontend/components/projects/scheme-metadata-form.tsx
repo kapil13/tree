@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { SchemeRefsFields } from "@/components/projects/scheme-refs-fields";
 import { centralSchemes, plantingProjects, type PlantingProject } from "@/lib/api";
 import { schemeByCode } from "@/lib/schemes";
 import { errorMessage } from "@/lib/api";
@@ -92,43 +93,11 @@ export function SchemeMetadataForm({ project }: { project: PlantingProject }) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {fields.map((field) => (
-          <div key={field.key} className={field.type === "number" ? "" : "sm:col-span-1"}>
-            <label className="kpi-label">
-              {field.label}
-              {field.required ? " *" : ""}
-            </label>
-            {field.type === "select" && field.options ? (
-              <select
-                className="input mt-1"
-                value={refs[field.key] ?? ""}
-                onChange={(e) => setRefs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              >
-                <option value="">Select…</option>
-                {field.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                className="input mt-1"
-                type={field.type === "number" ? "number" : "text"}
-                placeholder={field.placeholder}
-                min={field.min}
-                max={field.max}
-                value={refs[field.key] ?? ""}
-                onChange={(e) => setRefs((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              />
-            )}
-            {field.help_text && (
-              <p className="mt-1 text-xs text-stone-500">{field.help_text}</p>
-            )}
-          </div>
-        ))}
-      </div>
+      <SchemeRefsFields
+        fields={fields}
+        values={refs}
+        onChange={(key, value) => setRefs((prev) => ({ ...prev, [key]: value }))}
+      />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -76,6 +76,7 @@ export function nextChainageLabelAfter(
 export function applyProjectTreePrefill(
   base: PrefillValues,
   project: PlantingProject,
+  options?: { surveyorName?: string | null },
 ): PrefillValues {
   const refs = (project.metadata?.scheme_refs as Record<string, unknown> | undefined) ?? {};
   const next: PrefillValues = { ...base };
@@ -143,6 +144,19 @@ export function applyProjectTreePrefill(
 
   if (rules.guard_type_required && !next.guard_type) {
     next.guard_type = "bamboo";
+  }
+
+  setIfEmpty("survival_status", "live");
+  if (options?.surveyorName) {
+    setIfEmpty("surveyor_name", options.surveyorName);
+  }
+  const maintenance =
+    next.implementing_agency ??
+    refs.state_campa_account ??
+    refs.state_name ??
+    refs.amul_union_name;
+  if (maintenance != null && maintenance !== "") {
+    setIfEmpty("maintenance_responsible", String(maintenance));
   }
 
   return next;

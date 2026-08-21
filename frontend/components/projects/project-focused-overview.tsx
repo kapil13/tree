@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
+import { ProjectSetupChecklist } from "@/components/projects/project-setup-checklist";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
+import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
@@ -66,6 +68,7 @@ export function ProjectFocusedOverview({
   workAreas,
   survivalDue,
   registerHref,
+  setupStatus,
   autoDraw = false,
 }: {
   project: PlantingProject;
@@ -73,6 +76,7 @@ export function ProjectFocusedOverview({
   workAreas: WorkArea[];
   survivalDue: SurvivalDue | undefined;
   registerHref: string;
+  setupStatus?: ProjectSetupStatus;
   autoDraw?: boolean;
 }) {
   const surveyDays =
@@ -117,6 +121,36 @@ export function ProjectFocusedOverview({
   }, [registrationContext?.suggested_next, project.id, registerHref]);
 
   const nextAction = useMemo(() => {
+    if (setupStatus && !setupStatus.setupComplete) {
+      const incomplete = setupStatus.steps.find((s) => s.required && !s.complete);
+      if (incomplete?.id === "scheme_refs") {
+        return {
+          title: "Add scheme references",
+          description: incomplete.description ?? "Government IDs are required before tree registration.",
+          href: projectSecondaryHref(projectId, "settings"),
+          label: "Open settings",
+          icon: ShieldCheck,
+        };
+      }
+      if (incomplete?.id === "work_areas") {
+        return {
+          title: "Draw a work area",
+          description: "Search your site, use GPS, then draw a polygon or corridor on the map below.",
+          href: "#work-areas",
+          label: "Go to map",
+          icon: MapPin,
+        };
+      }
+      if (incomplete?.id === "planting_standard") {
+        return {
+          title: "Attach planting standard",
+          description: "No compliance standard is linked to this project.",
+          href: projectSecondaryHref(projectId, "settings"),
+          label: "Open settings",
+          icon: ShieldCheck,
+        };
+      }
+    }
     if (openViolations > 0) {
       return {
         title: "Resolve open compliance",
@@ -162,6 +196,7 @@ export function ProjectFocusedOverview({
     treeCount,
     projectId,
     registerHref,
+    setupStatus,
   ]);
 
   return (
@@ -171,6 +206,27 @@ export function ProjectFocusedOverview({
           {scheme.label}
           <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
         </p>
+      )}
+
+      {setupStatus && !setupStatus.setupComplete && (
+        <ProjectSetupChecklist status={setupStatus} />
+      )}
+
+      {setupStatus?.setupComplete && treeCount === 0 && workAreaCount > 0 && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-emerald-950">Setup complete — ready to plant</p>
+              <p className="mt-1 text-sm text-emerald-900/90">
+                Scheme references, standard, and work areas are configured. Register your first tree.
+              </p>
+            </div>
+            <Link href={registerHref} className="btn-primary w-full shrink-0 sm:w-auto">
+              <Leaf className="h-4 w-4" />
+              Register first tree
+            </Link>
+          </div>
+        </div>
       )}
 
       {nextAction && (

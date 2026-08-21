@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { plantingProjects } from "@/lib/api";
+import { centralSchemes, plantingProjects } from "@/lib/api";
+import { evaluateProjectSetup } from "@/lib/project-setup-readiness";
+import { schemeByCode } from "@/lib/schemes";
 
 export function useProjectWorkspace(projectId: string) {
   const projectQuery = useQuery({
@@ -22,8 +24,24 @@ export function useProjectWorkspace(projectId: string) {
     enabled: !!projectId,
   });
 
+  const schemesQuery = useQuery({
+    queryKey: ["central-schemes"],
+    queryFn: () => centralSchemes.list(),
+    enabled: !!projectQuery.data?.scheme_code,
+  });
+
   const project = projectQuery.data;
   const workAreas = workAreasQuery.data ?? [];
+  const scheme = schemeByCode(schemesQuery.data ?? [], project?.scheme_code);
+
+  const setupStatus = useMemo(() => {
+    if (!project) return null;
+    return evaluateProjectSetup({
+      project,
+      workAreas,
+      scheme: scheme as import("@/lib/api").CentralScheme | null | undefined,
+    });
+  }, [project, workAreas, scheme]);
 
   const registerHref = useMemo(() => {
     if (!project) return `/trees/new?project=${projectId}`;
@@ -37,6 +55,7 @@ export function useProjectWorkspace(projectId: string) {
     workAreas,
     survivalDue: survivalDueQuery.data,
     registerHref,
+    setupStatus,
     isLoading:
       projectQuery.isLoading ||
       workAreasQuery.isLoading ||
