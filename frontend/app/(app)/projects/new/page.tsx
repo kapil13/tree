@@ -106,10 +106,14 @@ export default function NewProjectPage() {
   );
 
   useEffect(() => {
-    if (templates.length) {
-      setTemplateCode((current) => current || templates[0].code);
+    if (!templates.length) return;
+    const schemeDefault = selectedScheme?.default_template_code;
+    if (schemeDefault && templates.some((t) => t.code === schemeDefault)) {
+      setTemplateCode(schemeDefault);
+      return;
     }
-  }, [templates]);
+    setTemplateCode((current) => current || templates[0].code);
+  }, [templates, selectedScheme?.default_template_code]);
 
   const schemesByGroup = useMemo(() => {
     const groups: Record<CentralSchemeGroup, CentralScheme[]> = {

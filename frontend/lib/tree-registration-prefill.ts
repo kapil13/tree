@@ -100,6 +100,16 @@ export function applyProjectTreePrefill(
   );
   setIfEmpty("permit_reference", String(refs.nccf_project_ref ?? refs.nagar_van_project_id ?? ""));
 
+  if (project.scheme_code === "campa_ca") {
+    setIfEmpty("legal_basis", "compensatory_afforestation");
+    setIfEmpty("land_category", "forest");
+    setIfEmpty(
+      "permit_reference",
+      String(refs.pca_number ?? refs.forest_diversion_id ?? ""),
+    );
+    setIfEmpty("site_zone", String(refs.ca_land_parcel_id ?? refs.state_name ?? ""));
+    setIfEmpty("implementing_agency", String(refs.state_campa_account ?? refs.state_name ?? ""));
+  }
   if (project.scheme_code === "nagar_van") {
     setIfEmpty("legal_basis", "urban_greening");
     setIfEmpty("land_category", "urban");

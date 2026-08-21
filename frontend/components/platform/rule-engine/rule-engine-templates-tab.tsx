@@ -39,6 +39,7 @@ const TEMPLATE_ICONS: Record<string, typeof Leaf> = {
   nagar_van_urban_forest_v1: Trees,
   sahakar_van_cooperative_v1: Users,
   ngo_watershed_v1: Sprout,
+  campa_ca_v1: Trees,
   open_byot_v1: Leaf,
 };
 

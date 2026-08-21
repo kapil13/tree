@@ -22,7 +22,7 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "program_codes": ["government_nhai", "ngo_community"],
         "default_segment": "general",
         "default_compliance_mode": "strict",
-        "default_template_code": None,
+        "default_template_code": "campa_ca_v1",
         "checklist_codes": ["ngt_campa"],
         "framework_profiles": ["ngt_campa"],
         "convergence_allowed": ["mgnrega_convergence", "jal_shakti_riparian"],

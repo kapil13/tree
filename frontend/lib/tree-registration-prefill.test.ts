@@ -11,6 +11,42 @@ import {
 import type { PlantingProject } from "./api";
 
 describe("applyProjectTreePrefill", () => {
+  it("prefills CAMPA legal context from scheme refs", () => {
+    const project = {
+      id: "p-campa",
+      code: "CAMPA-TEST",
+      scheme_code: "campa_ca",
+      metadata: {
+        scheme_refs: {
+          pca_number: "PCA/RAJ/2025/1842",
+          forest_diversion_id: "FC-8821-2024",
+          state_campa_account: "Rajasthan State CAMPA",
+          state_name: "Rajasthan",
+          ca_land_parcel_id: "Block-A",
+        },
+      },
+      active_standard: {
+        rules: {
+          pit_size_cm: { length: 45, width: 45, depth: 45 },
+          spacing_m: { min: 3 },
+          guard_type_required: true,
+          species_native_pct_min: 80,
+        },
+      },
+    } as unknown as PlantingProject;
+
+    const result = applyProjectTreePrefill({}, project);
+    expect(result.legal_basis).toBe("compensatory_afforestation");
+    expect(result.land_category).toBe("forest");
+    expect(result.permit_reference).toBe("PCA/RAJ/2025/1842");
+    expect(result.site_zone).toBe("Block-A");
+    expect(result.implementing_agency).toBe("Rajasthan State CAMPA");
+    expect(result.pit_size_cm).toBe("45×45×45");
+    expect(result.spacing_m).toBe(3);
+    expect(result.guard_type).toBe("bamboo");
+    expect(result.species_native).toBe(true);
+  });
+
   it("prefills government fields from scheme refs", () => {
     const project = {
       id: "p1",

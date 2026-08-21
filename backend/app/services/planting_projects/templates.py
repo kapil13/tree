@@ -171,6 +171,36 @@ def _ngo_rules() -> dict[str, Any]:
     }
 
 
+def _campa_ca_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 3.0, "warn_below": 2.5},
+        "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+        "max_gps_accuracy_m": 10.0,
+        "min_photos": 3,
+        "guard_type_required": True,
+        "layout_pattern": "cluster",
+        "allowed_species": None,
+        "species_native_pct_min": 80,
+        "planting_density_per_ha": {"min": 400, "max": 1600},
+        "require_pit_photo": True,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "block_types": ["ca_compartment", "degraded_forest", "non_forest_ca", "nursery_bed"],
+        "native_species_examples": [
+            "Teak",
+            "Sal",
+            "Bamboo",
+            "Neem",
+            "Jamun",
+            "Arjun",
+            "Mahua",
+            "Palash",
+            "Karanj",
+            "Banyan",
+        ],
+    }
+
+
 def _open_rules() -> dict[str, Any]:
     return {
         "spacing_m": None,
@@ -262,6 +292,18 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "guided",
         "recommended_program_codes": ["ngo_community"],
         "rules": _ngo_rules(),
+    },
+    "campa_ca_v1": {
+        "code": "campa_ca_v1",
+        "name": "CAMPA Compensatory Afforestation",
+        "segment": "general",
+        "description": (
+            "MoEFCC / State CAMPA compensatory afforestation blocks — polygon compartments, "
+            "45×45×45 cm pits, 3 m spacing, native species emphasis, and NGT audit evidence."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _campa_ca_rules(),
     },
     "open_byot_v1": {
         "code": "open_byot_v1",
