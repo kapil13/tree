@@ -131,6 +131,28 @@ export function applyProjectTreePrefill(
     setIfEmpty("land_category", "govt_land");
     setIfEmpty("consent_reference", String(refs.nccf_project_ref ?? ""));
   }
+  if (project.scheme_code === "nhai_highway") {
+    setIfEmpty("legal_basis", "highway_plantation");
+    setIfEmpty("land_category", "highway_row");
+  }
+
+  const category = project.metadata?.plantation_category as string | undefined;
+  if (category === "highway") {
+    setIfEmpty("legal_basis", "highway_plantation");
+    setIfEmpty("land_category", "highway_row");
+  } else if (category === "forest_ca") {
+    setIfEmpty("legal_basis", "compensatory_afforestation");
+    setIfEmpty("land_category", "forest");
+  } else if (category === "municipal") {
+    setIfEmpty("legal_basis", "urban_greening");
+    setIfEmpty("land_category", "urban");
+  } else if (category === "other_government") {
+    setIfEmpty("legal_basis", "other");
+    setIfEmpty("land_category", "govt_land");
+  } else if (project.segment === "nhai_highway") {
+    setIfEmpty("legal_basis", "highway_plantation");
+    setIfEmpty("land_category", "highway_row");
+  }
 
   const rules = (project.active_standard?.rules ?? {}) as Record<string, unknown>;
   const nativeMin = rules.species_native_pct_min as number | undefined;

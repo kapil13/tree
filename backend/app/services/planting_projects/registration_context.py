@@ -90,6 +90,46 @@ def _set_if_empty(merged: dict[str, Any], key: str, value: Any) -> None:
         merged[key] = value
 
 
+_PLANTATION_CATEGORY_LEGAL: dict[str, tuple[str, str]] = {
+    "highway": ("highway_plantation", "highway_row"),
+    "forest_ca": ("compensatory_afforestation", "forest"),
+    "municipal": ("urban_greening", "urban"),
+    "other_government": ("other", "govt_land"),
+}
+
+_SEGMENT_LEGAL: dict[str, tuple[str, str]] = {
+    "nhai_highway": ("highway_plantation", "highway_row"),
+    "nagar_van_urban": ("urban_greening", "urban"),
+    "sahakar_van_coop": ("other", "govt_land"),
+    "township_landscape": ("urban_greening", "urban"),
+    "industrial_greenbelt": ("other", "govt_land"),
+    "ngo_watershed": ("other", "govt_land"),
+    "general": ("other", "govt_land"),
+}
+
+
+def _apply_legal_land_fallbacks(merged: dict[str, Any], project: PlantingProject) -> None:
+    """Fill legal_basis + land_category from plantation category or project segment."""
+    meta = project.metadata_ or {}
+    category = meta.get("plantation_category")
+    if isinstance(category, str):
+        pair = _PLANTATION_CATEGORY_LEGAL.get(category)
+        if pair:
+            _set_if_empty(merged, "legal_basis", pair[0])
+            _set_if_empty(merged, "land_category", pair[1])
+        if category == "highway":
+            _set_if_empty(merged, "implementing_agency", "NHAI / contractor")
+
+    segment = getattr(project, "segment", None)
+    if isinstance(segment, str):
+        pair = _SEGMENT_LEGAL.get(segment)
+        if pair:
+            _set_if_empty(merged, "legal_basis", pair[0])
+            _set_if_empty(merged, "land_category", pair[1])
+        if segment == "nhai_highway":
+            _set_if_empty(merged, "implementing_agency", "NHAI / contractor")
+
+
 def merge_project_into_tree_metadata(
     metadata: dict[str, Any],
     *,
@@ -141,6 +181,18 @@ def merge_project_into_tree_metadata(
         _set_if_empty(merged, "legal_basis", "other")
         _set_if_empty(merged, "land_category", "govt_land")
         _set_if_empty(merged, "consent_reference", refs.get("nccf_project_ref"))
+    elif project.scheme_code == "nhai_highway":
+        _set_if_empty(merged, "legal_basis", "highway_plantation")
+        _set_if_empty(merged, "land_category", "highway_row")
+        _set_if_empty(merged, "implementing_agency", "NHAI / contractor")
+        _set_if_empty(
+            merged,
+            "permit_reference",
+            refs.get("nhai_package_code") or refs.get("package_code"),
+        )
+        highway = refs.get("highway_number")
+        if highway:
+            _set_if_empty(merged, "site_zone", f"NH {highway}")
 
     village = refs.get("village_name") or refs.get("ulb_name")
     _set_if_empty(merged, "site_zone", village)
@@ -176,6 +228,8 @@ def merge_project_into_tree_metadata(
         _set_if_empty(merged, "permit_reference", project.code)
     if not merged.get("site_zone"):
         _set_if_empty(merged, "site_zone", project_name)
+
+    _apply_legal_land_fallbacks(merged, project)
 
     return merged
 
