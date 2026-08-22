@@ -21,8 +21,50 @@ type DeriveInput = {
   schemeRefs?: Record<string, string>;
   projectCode?: string;
   projectName?: string;
+  segment?: string | null;
+  plantationCategory?: string | null;
   existing?: Partial<TreeRegistrationDefaults>;
 };
+
+const PLANTATION_CATEGORY_LEGAL: Record<string, { legal_basis: string; land_category: string }> = {
+  highway: { legal_basis: "highway_plantation", land_category: "highway_row" },
+  forest_ca: { legal_basis: "compensatory_afforestation", land_category: "forest" },
+  municipal: { legal_basis: "urban_greening", land_category: "urban" },
+  other_government: { legal_basis: "other", land_category: "govt_land" },
+};
+
+const SEGMENT_LEGAL: Record<string, { legal_basis: string; land_category: string }> = {
+  nhai_highway: { legal_basis: "highway_plantation", land_category: "highway_row" },
+  nagar_van_urban: { legal_basis: "urban_greening", land_category: "urban" },
+  sahakar_van_coop: { legal_basis: "other", land_category: "govt_land" },
+  township_landscape: { legal_basis: "urban_greening", land_category: "urban" },
+  industrial_greenbelt: { legal_basis: "other", land_category: "govt_land" },
+  ngo_watershed: { legal_basis: "other", land_category: "govt_land" },
+  general: { legal_basis: "other", land_category: "govt_land" },
+};
+
+function applyLegalLandFallbacks(
+  defaults: TreeRegistrationDefaults,
+  input: DeriveInput,
+): TreeRegistrationDefaults {
+  const next = { ...defaults };
+  const category = input.plantationCategory;
+  if (category && PLANTATION_CATEGORY_LEGAL[category]) {
+    const pair = PLANTATION_CATEGORY_LEGAL[category];
+    next.legal_basis = next.legal_basis ?? pair.legal_basis;
+    next.land_category = next.land_category ?? pair.land_category;
+  }
+  const segment = input.segment;
+  if (segment && SEGMENT_LEGAL[segment]) {
+    const pair = SEGMENT_LEGAL[segment];
+    next.legal_basis = next.legal_basis ?? pair.legal_basis;
+    next.land_category = next.land_category ?? pair.land_category;
+    if (segment === "nhai_highway") {
+      next.implementing_agency = next.implementing_agency || "NHAI / contractor";
+    }
+  }
+  return next;
+}
 
 /** Derive tree registration defaults from scheme refs (used in wizard step 3). */
 export function deriveTreeRegistrationDefaults(input: DeriveInput): TreeRegistrationDefaults {
@@ -57,7 +99,7 @@ export function deriveTreeRegistrationDefaults(input: DeriveInput): TreeRegistra
     defaults.site_zone = defaults.site_zone || refs.urban_forest_name || refs.ulb_name || "";
     defaults.implementing_agency = defaults.implementing_agency || refs.ulb_name || "";
   } else if (scheme === "nhai_highway") {
-    defaults.legal_basis = defaults.legal_basis ?? "highway_greening";
+    defaults.legal_basis = defaults.legal_basis ?? "highway_plantation";
     defaults.land_category = defaults.land_category ?? "highway_row";
     defaults.permit_reference =
       defaults.permit_reference || refs.nhai_package_code || "";
@@ -115,7 +157,7 @@ export function deriveTreeRegistrationDefaults(input: DeriveInput): TreeRegistra
     defaults.site_zone = input.projectName;
   }
 
-  return defaults;
+  return applyLegalLandFallbacks(defaults, input);
 }
 
 export function treeRegistrationDefaultsFromProject(
@@ -130,6 +172,9 @@ export function treeRegistrationDefaultsFromProject(
     schemeRefs: refs,
     projectCode: project.code,
     projectName: project.name,
+    segment: project.segment,
+    plantationCategory:
+      (project.metadata?.plantation_category as string | undefined) ?? null,
     existing: stored,
   });
 }

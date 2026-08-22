@@ -107,6 +107,68 @@ def test_merge_project_fills_campa_and_compliance_defaults() -> None:
     assert meta["project_code"] == "CAMPA-DEMO"
 
 
+def test_merge_flex_nhai_highway_segment_fills_legal_basis() -> None:
+    class FakeProject:
+        code = "NH-48"
+        name = "NH-48 Package 3"
+        scheme_code = None
+        segment = "nhai_highway"
+        metadata_ = {"plantation_category": "highway"}
+
+    rules = {
+        "pit_size_cm": {"length": 60, "width": 60, "depth": 60},
+        "spacing_m": {"min": 6},
+        "guard_type_required": True,
+        "species_native_pct_min": 80,
+    }
+    merged = merge_project_into_tree_metadata(
+        {},
+        project=FakeProject(),  # type: ignore[arg-type]
+        rules=rules,
+        surveyor_name="Surveyor",
+    )
+    assert merged["legal_basis"] == "highway_plantation"
+    assert merged["land_category"] == "highway_row"
+    assert merged["project_code"] == "NH-48"
+
+    meta = validate_program_payload(
+        "government_nhai",
+        core_values={
+            "species_text": "Neem",
+            "latitude": 12.9,
+            "longitude": 77.5,
+            "planted_at": "2026-07-01",
+        },
+        metadata=merged,
+        photo_count=3,
+    )
+    assert meta["legal_basis"] == "highway_plantation"
+    assert meta["land_category"] == "highway_row"
+
+
+def test_merge_nhai_highway_scheme_fills_legal_basis() -> None:
+    class FakeProject:
+        code = "NHAI-PKG3"
+        name = "Package 3"
+        scheme_code = "nhai_highway"
+        segment = "nhai_highway"
+        metadata_ = {"scheme_refs": {"nhai_package_code": "PKG-3"}}
+
+    merged = merge_project_into_tree_metadata(
+        {},
+        project=FakeProject(),  # type: ignore[arg-type]
+        rules={
+            "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+            "spacing_m": {"min": 6},
+            "guard_type_required": True,
+            "species_native_pct_min": 80,
+        },
+        surveyor_name="Surveyor",
+    )
+    assert merged["legal_basis"] == "highway_plantation"
+    assert merged["land_category"] == "highway_row"
+
+
 def test_merge_project_without_standard_still_needs_pit_from_rules() -> None:
     class FakeProject:
         code = "NH-48"
@@ -137,3 +199,5 @@ def test_merge_project_without_standard_still_needs_pit_from_rules() -> None:
         )
     assert "missing_required:project_code" not in exc.value.errors
     assert "missing_required:pit_size_cm" not in exc.value.errors
+    assert "missing_required:legal_basis" in exc.value.errors
+    assert "missing_required:land_category" in exc.value.errors

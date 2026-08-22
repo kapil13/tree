@@ -27,6 +27,17 @@ describe("deriveTreeRegistrationDefaults", () => {
     expect(defaults.legal_basis).toBe("compensatory_afforestation");
   });
 
+  it("derives legal_basis from highway segment when no scheme", () => {
+    const defaults = deriveTreeRegistrationDefaults({
+      segment: "nhai_highway",
+      plantationCategory: "highway",
+      projectCode: "NH-48",
+      projectName: "NH-48 Package 3",
+    });
+    expect(defaults.legal_basis).toBe("highway_plantation");
+    expect(defaults.land_category).toBe("highway_row");
+  });
+
   it("validates required defaults", () => {
     const errors = validateTreeRegistrationDefaults({
       permit_reference: "",
@@ -64,5 +75,29 @@ describe("enrichTreePayloadMetadata", () => {
     expect(merged.maintenance_responsible).toBe("RCAMPA");
     expect(merged.surveyor_name).toBe("Asha");
     expect(merged.survival_status).toBe("live");
+  });
+
+  it("injects legal_basis for highway segment projects", () => {
+    const project = {
+      id: "p2",
+      code: "NH-48",
+      name: "NH-48 Package 3",
+      segment: "nhai_highway",
+      scheme_code: null,
+      program_code: "government_nhai",
+      metadata: {
+        plantation_category: "highway",
+        tree_registration_defaults: {
+          permit_reference: "NH-48",
+          site_zone: "Package 3",
+          implementing_agency: "NHAI",
+          maintenance_responsible: "NHAI",
+        },
+      },
+    } as unknown as PlantingProject;
+
+    const merged = enrichTreePayloadMetadata({}, project);
+    expect(merged.legal_basis).toBe("highway_plantation");
+    expect(merged.land_category).toBe("highway_row");
   });
 });
