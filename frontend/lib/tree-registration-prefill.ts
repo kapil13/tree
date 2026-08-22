@@ -1,4 +1,7 @@
 import type { PlantingProject } from "@/lib/api";
+import {
+  treeRegistrationDefaultsFromProject,
+} from "@/lib/tree-registration-defaults";
 
 type PrefillValues = Record<string, string | number | boolean>;
 
@@ -90,6 +93,14 @@ export function applyProjectTreePrefill(
   };
 
   setIfEmpty("project_code", project.code);
+
+  const treeDefaults = treeRegistrationDefaultsFromProject(project);
+  setIfEmpty("permit_reference", treeDefaults.permit_reference);
+  setIfEmpty("site_zone", treeDefaults.site_zone);
+  setIfEmpty("implementing_agency", treeDefaults.implementing_agency);
+  setIfEmpty("maintenance_responsible", treeDefaults.maintenance_responsible);
+  setIfEmpty("legal_basis", treeDefaults.legal_basis);
+  setIfEmpty("land_category", treeDefaults.land_category);
 
   const village = refs.village_name ?? refs.ulb_name;
   setIfEmpty("site_zone", String(village ?? ""));

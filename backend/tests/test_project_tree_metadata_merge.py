@@ -11,6 +11,48 @@ from app.services.planting_programs.validation import (
 from app.services.planting_projects.registration_context import merge_project_into_tree_metadata
 
 
+def test_merge_project_uses_stored_tree_registration_defaults() -> None:
+    class FakeProject:
+        code = "CAMPA-DEMO"
+        name = "Demo Site"
+        scheme_code = "campa_ca"
+        metadata_ = {
+            "scheme_refs": {},
+            "tree_registration_defaults": {
+                "permit_reference": "PCA/STORED/1",
+                "site_zone": "Stored Block",
+                "implementing_agency": "Stored Agency",
+                "maintenance_responsible": "Stored Maintenance",
+                "legal_basis": "compensatory_afforestation",
+                "land_category": "forest",
+            },
+        }
+
+    merged = merge_project_into_tree_metadata(
+        {},
+        project=FakeProject(),  # type: ignore[arg-type]
+        rules={"guard_type_required": True},
+        surveyor_name="Asha Verma",
+    )
+    assert merged["permit_reference"] == "PCA/STORED/1"
+    assert merged["site_zone"] == "Stored Block"
+    assert merged["implementing_agency"] == "Stored Agency"
+    assert merged["maintenance_responsible"] == "Stored Maintenance"
+
+    meta = validate_program_payload(
+        "government_nhai",
+        core_values={
+            "species_text": "Khejri",
+            "latitude": 26.9,
+            "longitude": 75.7,
+            "planted_at": "2026-07-01",
+        },
+        metadata=merged,
+        photo_count=3,
+    )
+    assert meta["permit_reference"] == "PCA/STORED/1"
+
+
 def test_merge_project_fills_campa_and_compliance_defaults() -> None:
     class FakeProject:
         code = "CAMPA-DEMO"

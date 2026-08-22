@@ -16,6 +16,7 @@ import {
   initialSiteRuleAdjustments,
   SiteRuleAdjustmentsPanel,
 } from "@/components/projects/site-rule-adjustments-panel";
+import { TreeRegistrationDefaultsForm } from "@/components/projects/tree-registration-defaults-form";
 import {
   SchemeRefsFields,
   validateSchemeRefs,
@@ -37,6 +38,12 @@ import {
 } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 import { wizardRulesDifferFromBase } from "@/lib/rule-template-fields";
+import {
+  deriveTreeRegistrationDefaults,
+  treeDefaultsToMetadata,
+  validateTreeRegistrationDefaults,
+  type TreeRegistrationDefaults,
+} from "@/lib/tree-registration-defaults";
 
 const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
   {
@@ -114,6 +121,10 @@ export default function NewProjectPage() {
   );
   const [schemeRefs, setSchemeRefs] = useState<Record<string, string>>({});
   const [refErrors, setRefErrors] = useState<Record<string, string>>({});
+  const [treeDefaults, setTreeDefaults] = useState<TreeRegistrationDefaults>(() =>
+    deriveTreeRegistrationDefaults({}),
+  );
+  const [treeDefaultErrors, setTreeDefaultErrors] = useState<Record<string, string>>({});
   const [createdProject, setCreatedProject] = useState<PlantingProject | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +188,18 @@ export default function NewProjectPage() {
     setSchemeRefs(initial);
     setRefErrors({});
   }, [selectedScheme?.code, schemeRefFields]);
+
+  useEffect(() => {
+    if (!selectedScheme && programCode !== "government_nhai") return;
+    setTreeDefaults(
+      deriveTreeRegistrationDefaults({
+        schemeCode: selectedScheme?.code,
+        schemeRefs,
+        projectCode: code.trim(),
+        projectName: name.trim(),
+      }),
+    );
+  }, [selectedScheme?.code, schemeRefs, code, name, programCode]);
 
   useEffect(() => {
     if (templates.length > 0 && selectedTemplate) {
@@ -255,6 +278,9 @@ export default function NewProjectPage() {
           Object.entries(schemeRefs).map(([k, v]) => [k, v.trim() === "" ? null : v.trim()]),
         );
       }
+      if (programCode === "government_nhai" || selectedScheme) {
+        metadata.tree_registration_defaults = treeDefaultsToMetadata(treeDefaults);
+      }
 
       const project = await plantingProjects.create({
         code: code.trim(),
@@ -300,15 +326,25 @@ export default function NewProjectPage() {
       setStep(3);
       return;
     }
+    if (programCode === "government_nhai") {
+      const defaultErrors = validateTreeRegistrationDefaults(treeDefaults);
+      if (Object.keys(defaultErrors).length > 0) {
+        setTreeDefaultErrors(defaultErrors);
+        setError("Complete tree registration defaults before continuing.");
+        return;
+      }
+    }
     await createProject();
   }
 
   async function handleSchemeRefsContinue(e: React.FormEvent) {
     e.preventDefault();
     const errors = validateSchemeRefs(schemeRefFields, schemeRefs);
-    if (Object.keys(errors).length > 0) {
+    const defaultErrors = validateTreeRegistrationDefaults(treeDefaults);
+    if (Object.keys(errors).length > 0 || Object.keys(defaultErrors).length > 0) {
       setRefErrors(errors);
-      setError("Fill all required scheme reference fields.");
+      setTreeDefaultErrors(defaultErrors);
+      setError("Fill all required scheme references and tree registration defaults.");
       return;
     }
     setRefErrors({});
@@ -540,6 +576,19 @@ export default function NewProjectPage() {
             onChange={(key, value) => {
               setSchemeRefs((prev) => ({ ...prev, [key]: value }));
               setRefErrors((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+              });
+            }}
+          />
+
+          <TreeRegistrationDefaultsForm
+            values={treeDefaults}
+            errors={treeDefaultErrors}
+            onChange={(key, value) => {
+              setTreeDefaults((prev) => ({ ...prev, [key]: value }));
+              setTreeDefaultErrors((prev) => {
                 const next = { ...prev };
                 delete next[key];
                 return next;
