@@ -184,6 +184,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edit personal profile'),
+              subtitle: const Text('Name, phone, date of birth, city, state'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/profile/edit'),
+            ),
             const SizedBox(height: 16),
             const Padding(
               padding: EdgeInsets.fromLTRB(4, 8, 4, 0),

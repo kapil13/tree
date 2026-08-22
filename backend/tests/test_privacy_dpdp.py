@@ -62,6 +62,11 @@ async def test_data_export_includes_profile():
         role="user",
         org_role=None,
         organization_id=None,
+        date_of_birth=None,
+        date_of_marriage=None,
+        city=None,
+        state=None,
+        locale="en",
         created_at=None,
         notification_preferences={},
     )

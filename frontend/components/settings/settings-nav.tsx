@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, ClipboardCheck, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, UserCheck, Users, Webhook } from "lucide-react";
+import { Calculator, ClipboardCheck, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, User, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
@@ -22,6 +22,12 @@ function baseItems(showTeam: boolean, showAudit: boolean, showWebhooks: boolean)
       label: "General",
       icon: Settings2,
       match: (path) => path === "/settings",
+    },
+    {
+      href: "/settings/profile",
+      label: "Profile",
+      icon: User,
+      match: (path) => path.startsWith("/settings/profile"),
     },
     {
       href: "/settings/programs",

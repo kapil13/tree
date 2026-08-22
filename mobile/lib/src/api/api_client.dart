@@ -332,6 +332,27 @@ class ApiClient {
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
 
+  Future<Map<String, dynamic>> updateProfile({
+    required String fullName,
+    String? phone,
+    String? locale,
+    String? dateOfBirth,
+    String? dateOfMarriage,
+    String? city,
+    String? state,
+  }) async {
+    final r = await _dio.patch('/auth/me', data: {
+      'full_name': fullName,
+      'phone': phone,
+      if (locale != null) 'locale': locale,
+      'date_of_birth': dateOfBirth,
+      'date_of_marriage': dateOfMarriage,
+      'city': city,
+      'state': state,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> previewOrgInvite(String token) async {
     final r = await _dio.get(
       '/organizations/invites/preview',

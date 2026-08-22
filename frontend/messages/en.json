@@ -98,9 +98,12 @@
   },
   "settings": {
     "account": "Account",
+    "profile": "Personal profile",
+    "profileHint": "Your name, contact details, and location. Age is calculated from your date of birth.",
     "languagePreference": "Language preference",
     "languageHint": "Syncs with the mobile app when signed in with the same account.",
-    "saved": "Language updated"
+    "saved": "Language updated",
+    "profileSaved": "Profile saved"
   },
   "reports": {
     "title": "Reports",

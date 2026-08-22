@@ -258,6 +258,12 @@ export type User = {
     read_only?: boolean;
   } | null;
   locale?: string;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  date_of_marriage?: string | null;
+  city?: string | null;
+  state?: string | null;
+  age?: number | null;
 };
 
 export type PlantingProgram = {
@@ -556,7 +562,7 @@ export const auth = {
   async me() {
     return (await api.get<User>("/v1/auth/me")).data;
   },
-  async updateProfile(payload: { full_name?: string; phone?: string; locale?: string }) {
+  async updateProfile(payload: import("@/lib/user-profile").UserProfilePayload) {
     return (await api.patch<User>("/v1/auth/me", payload)).data;
   },
   async onboardingState() {
