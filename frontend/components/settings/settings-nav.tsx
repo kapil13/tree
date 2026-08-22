@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, ClipboardCheck, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, User, UserCheck, Users, Webhook } from "lucide-react";
+import { Calculator, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, User, UserCheck, Users, Webhook } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
 import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
@@ -62,12 +62,6 @@ function baseItems(showTeam: boolean, showAudit: boolean, showWebhooks: boolean)
       label: "Privacy",
       icon: Shield,
       match: (path) => path.startsWith("/settings/privacy"),
-    },
-    {
-      href: "/settings/sprint-verify",
-      label: "Sprint verify",
-      icon: ClipboardCheck,
-      match: (path) => path.startsWith("/settings/sprint-verify"),
     },
   );
   if (showAudit) {

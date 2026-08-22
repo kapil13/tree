@@ -203,10 +203,6 @@ export function PrivacySettingsPanel() {
         Read our{" "}
         <Link href="/privacy" className="text-forest-700 underline" target="_blank">
           Privacy Policy
-        </Link>{" "}
-        and{" "}
-        <Link href="/settings/sprint-verify" className="text-forest-700 underline">
-          sprint verification checklist
         </Link>
         .
       </p>

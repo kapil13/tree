@@ -148,6 +148,16 @@ class UserOut(BaseModel):
     city: str | None = None
     state: str | None = None
     age: int | None = None
+    has_password: bool = False
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+
+
+class ChangePasswordOut(BaseModel):
+    status: str = "ok"
 
 
 class UpdateProfile(BaseModel):

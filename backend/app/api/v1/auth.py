@@ -26,6 +26,8 @@ from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
     CaptchaConfigOut,
+    ChangePasswordOut,
+    ChangePasswordRequest,
     LoginRequest,
     OTPRequest,
     OTPRequestOut,
@@ -48,6 +50,7 @@ from app.schemas.auth import (
 from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
+from app.services.auth.change_password import ChangePasswordError, change_password
 from app.services.auth.gmail_sender import (
     GmailSendError,
     gmail_otp_configured,
@@ -605,6 +608,7 @@ def _user_out(
         city=user.city,
         state=user.state,
         age=age_from_date_of_birth(user.date_of_birth),
+        has_password=user.hashed_password is not None,
     )
 
 
@@ -709,6 +713,47 @@ async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOu
     await db.commit()
     await db.refresh(user)
     return await _user_out_enriched(db, user)
+
+
+def _change_password_error(exc: ChangePasswordError) -> HTTPException:
+    if exc.code == "invalid_current_password":
+        return HTTPException(status.HTTP_401_UNAUTHORIZED, detail=exc.code)
+    if exc.code in {"password_not_set", "password_unchanged"}:
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code)
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code)
+
+
+@router.post(
+    "/me/password",
+    response_model=ChangePasswordOut,
+    dependencies=[rate_limit(10, 60)],
+)
+async def change_my_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> ChangePasswordOut:
+    try:
+        await change_password(
+            db,
+            user=user,
+            current_password=payload.current_password,
+            new_password=payload.new_password,
+        )
+        await record_audit(
+            db,
+            actor=user,
+            action="auth.password_change",
+            resource_type="user",
+            resource_id=user.id,
+            request=request,
+            diff={},
+        )
+        await db.commit()
+    except ChangePasswordError as exc:
+        raise _change_password_error(exc) from exc
+    return ChangePasswordOut()
 
 
 @router.get("/google/login")

@@ -264,6 +264,7 @@ export type User = {
   city?: string | null;
   state?: string | null;
   age?: number | null;
+  has_password?: boolean;
 };
 
 export type PlantingProgram = {
@@ -564,6 +565,9 @@ export const auth = {
   },
   async updateProfile(payload: import("@/lib/user-profile").UserProfilePayload) {
     return (await api.patch<User>("/v1/auth/me", payload)).data;
+  },
+  async changePassword(payload: { current_password: string; new_password: string }) {
+    return (await api.post<{ status: string }>("/v1/auth/me/password", payload)).data;
   },
   async onboardingState() {
     return (await api.get<OnboardingState>("/v1/auth/onboarding")).data;
