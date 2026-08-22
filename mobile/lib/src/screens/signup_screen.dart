@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
@@ -202,10 +203,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AuthLightScope(
       child: AuthScaffold(
         title: switch (_step) {
-          _SignupStep.account => 'Create account',
+          _SignupStep.account => l10n?.createAccount ?? 'Create account',
           _SignupStep.verifyPhone => 'Verify phone',
           _SignupStep.verifyEmail => 'Verify email',
         },

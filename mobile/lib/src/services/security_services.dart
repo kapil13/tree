@@ -58,14 +58,20 @@ class PushRegistrationService {
     }
   }
 
-  Future<bool> authenticateBiometric({String reason = 'Unlock Aranyix'}) async {
-    if (!AppSettings.instance.biometricUnlock) return true;
+  /// Prompts for biometrics. When [requireEnabled] is true (default), skips if
+  /// the preference is off. Pass `requireEnabled: false` when turning the toggle on.
+  Future<bool> authenticateBiometric({
+    String reason = 'Unlock Aranyix',
+    bool requireEnabled = true,
+  }) async {
+    if (requireEnabled && !AppSettings.instance.biometricUnlock) return true;
     try {
       return await _localAuth.authenticate(
         localizedReason: reason,
         options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
       );
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) debugPrint('Biometric auth failed: $e');
       return false;
     }
   }
@@ -77,12 +83,23 @@ class ScreenshotGuard {
 
   static const _channel = MethodChannel('earth.byot.byot_mobile/security');
 
-  static Future<void> apply(bool enabled) async {
-    if (!Platform.isAndroid) return;
+  /// Applies FLAG_SECURE on Android. Returns false if the platform cannot
+  /// honor the request (e.g. iOS, or channel failure when enabling).
+  static Future<bool> apply(bool enabled) async {
+    if (!Platform.isAndroid) {
+      // iOS has no reliable FLAG_SECURE equivalent for third-party apps.
+      return !enabled;
+    }
     try {
-      await _channel.invokeMethod<void>('setScreenshotBlocked', enabled);
+      await _channel.invokeMethod<dynamic>('setScreenshotBlocked', enabled);
+      if (enabled) {
+        final blocked = await _channel.invokeMethod<bool>('isScreenshotBlocked');
+        return blocked == true;
+      }
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('Screenshot guard unavailable: $e');
+      return false;
     }
   }
 }

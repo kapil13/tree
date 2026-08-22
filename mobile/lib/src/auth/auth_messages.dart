@@ -22,6 +22,16 @@ String humanizeAuthError(String code) {
         'Email OTP is not configured yet. Use password sign-in or contact support.',
     'google_oauth_not_configured': 'Google sign-in is not configured on this server.',
     'registration_required': 'No account for this phone. Create an account first.',
+    'no_satellite_records':
+        'No satellite NDVI yet. Tap Rescan NDVI first (professional accounts).',
+    'professional_access_required':
+        'Satellite rescan needs an approved professional program. Request access in Profile.',
+    'viewer_read_only': 'Your role is view-only. Ask an admin for write access.',
+    'request_already_pending': 'An access request for this program is already pending.',
+    'already_enrolled': 'You already have access to this program.',
+    'default_program_open': 'BYOT Public is already active on every account.',
+    'program_not_found': 'That registration program was not found.',
+    'forbidden': 'You do not have permission for this action.',
   };
   return map[code] ?? code.replaceAll('_', ' ');
 }

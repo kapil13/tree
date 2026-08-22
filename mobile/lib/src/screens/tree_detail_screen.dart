@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
+import '../auth/auth_messages.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../services/analytics_service.dart';
@@ -71,6 +72,17 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
       await _load();
       ref.invalidate(treesProvider);
       ref.invalidate(dashboardProvider);
+      if (!mounted) return;
+      final carbon = (tree?['current_carbon_kg'] as num?)?.toDouble() ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            carbon > 0
+                ? 'AI analysis complete — carbon ~${carbon.toStringAsFixed(1)} kg'
+                : 'AI analysis complete. Carbon updates when growth estimates are available.',
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,12 +94,31 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
     }
   }
 
-  Future<void> _satelliteHealth() async {
+  Future<void> _rescanNdvi() async {
     setState(() => satelliteBusy = true);
     try {
       final api = await ref.read(apiClientProvider.future);
-      final sat = await api.runSatelliteHealth(widget.id);
-      if (mounted) setState(() => satellite = sat);
+      // Fetch live NDVI first (creates satellite records), then refresh health summary.
+      await api.scanTreeSatellite(widget.id);
+      Map<String, dynamic>? sat;
+      try {
+        sat = await api.getSatelliteHealthLatest(widget.id);
+      } catch (_) {
+        try {
+          sat = await api.runSatelliteHealth(widget.id);
+        } catch (_) {}
+      }
+      await _load();
+      if (mounted) {
+        setState(() {
+          if (sat != null) satellite = sat;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Satellite NDVI updated.')),
+        );
+      }
+      ref.invalidate(treesProvider);
+      ref.invalidate(dashboardProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,10 +172,22 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             Text(t!['public_code'], style: const TextStyle(fontFamily: 'monospace')),
                             const SizedBox(height: 8),
                             _row('Health', _str(t['current_health'])),
-                            _row('Carbon', '${t['current_carbon_kg']} kg'),
+                            _row('Carbon', '${t['current_carbon_kg'] ?? 0} kg'),
                             _row('DBH', '${t['current_dbh_cm'] ?? '—'} cm'),
                             _row('Height', '${t['current_height_m'] ?? '—'} m'),
                             _row('Satellite', t['satellite_verified'] == true ? '✓' : '—'),
+                            if (((t['current_carbon_kg'] as num?)?.toDouble() ?? 0) <= 0) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                AppLocalizations.of(context)?.carbonNeedsAnalysis ??
+                                    'Run AI analysis on a tree to estimate carbon credits.',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Colors.black54,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -219,13 +262,42 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                     FilledButton.icon(
                       onPressed: analyzing ? null : _analyze,
                       icon: const Icon(Icons.auto_awesome),
-                      label: Text(analyzing ? 'Analyzing…' : 'Run AI analysis'),
+                      label: Text(
+                        analyzing
+                            ? 'Analyzing…'
+                            : (AppLocalizations.of(context)?.runAiAnalysis ?? 'Run AI analysis'),
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: satelliteBusy ? null : _satelliteHealth,
-                      icon: const Icon(Icons.satellite_alt),
-                      label: Text(satelliteBusy ? 'Checking satellite…' : 'Run satellite health'),
+                    Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        final professional = userHasProfessionalAccess(sessionController.user);
+                        final canWrite = canWriteInApp(sessionController.user);
+                        final enabled = !satelliteBusy && professional && canWrite;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: enabled ? _rescanNdvi : null,
+                              icon: const Icon(Icons.satellite_alt),
+                              label: Text(
+                                satelliteBusy
+                                    ? (l10n?.rescanningNdvi ?? 'Scanning satellite…')
+                                    : (l10n?.rescanNdvi ?? 'Rescan NDVI'),
+                              ),
+                            ),
+                            if (!professional)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  humanizeAuthError('professional_access_required'),
+                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

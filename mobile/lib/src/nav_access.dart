@@ -122,42 +122,68 @@ bool canSeeAssistant(UserMap? user) => user != null;
 /// Bottom-nav path+label descriptors by role shell.
 /// Icons are applied in [AppShell].
 ///
+/// Pass localized labels via [labels] so Hindi/English switch updates the shell.
+///
 /// Role shells:
 /// - Field worker: Home, Trees, Map, Alerts (`/notifications`)
 /// - Supervisor: Home, Map, Alerts, Trees
 /// - Exec/professional: Home, Monitoring (`/monitoring`), Projects, Alerts
 /// - Default/citizen: Home, Trees, Map, Profile
-List<NavDestinationDesc> navDestinationsFor(UserMap? user) {
+List<NavDestinationDesc> navDestinationsFor(
+  UserMap? user, {
+  NavLabels labels = const NavLabels(),
+}) {
   if (isFieldWorkerHome(user)) {
-    return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/trees', 'Trees'),
-      NavDestinationDesc('/map', 'Map'),
-      NavDestinationDesc('/notifications', 'Alerts'),
+    return [
+      NavDestinationDesc('/home', labels.home),
+      NavDestinationDesc('/trees', labels.trees),
+      NavDestinationDesc('/map', labels.map),
+      NavDestinationDesc('/notifications', labels.alerts),
     ];
   }
   if (isSupervisor(user)) {
-    return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/map', 'Map'),
-      NavDestinationDesc('/notifications', 'Alerts'),
-      NavDestinationDesc('/trees', 'Trees'),
+    return [
+      NavDestinationDesc('/home', labels.home),
+      NavDestinationDesc('/map', labels.map),
+      NavDestinationDesc('/notifications', labels.alerts),
+      NavDestinationDesc('/trees', labels.trees),
     ];
   }
   if (canSeeExecutiveHome(user) || userHasProfessionalAccess(user)) {
-    return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/monitoring', 'Monitoring'),
-      NavDestinationDesc('/projects', 'Projects'),
-      NavDestinationDesc('/notifications', 'Alerts'),
+    return [
+      NavDestinationDesc('/home', labels.home),
+      NavDestinationDesc('/monitoring', labels.monitoring),
+      NavDestinationDesc('/projects', labels.projects),
+      NavDestinationDesc('/notifications', labels.alerts),
     ];
   }
-  return const [
-    NavDestinationDesc('/home', 'Home'),
-    NavDestinationDesc('/trees', 'Trees'),
-    NavDestinationDesc('/map', 'Map'),
-    NavDestinationDesc('/profile', 'Profile'),
+  return [
+    NavDestinationDesc('/home', labels.home),
+    NavDestinationDesc('/trees', labels.trees),
+    NavDestinationDesc('/map', labels.map),
+    NavDestinationDesc('/profile', labels.profile),
   ];
+}
+
+/// Localized bottom-nav labels (defaults English for non-UI callers/tests).
+class NavLabels {
+  const NavLabels({
+    this.home = 'Home',
+    this.trees = 'Trees',
+    this.map = 'Map',
+    this.alerts = 'Alerts',
+    this.monitoring = 'Monitoring',
+    this.projects = 'Projects',
+    this.profile = 'Profile',
+  });
+
+  final String home;
+  final String trees;
+  final String map;
+  final String alerts;
+  final String monitoring;
+  final String projects;
+  final String profile;
 }
 
 class NavDestinationDesc {

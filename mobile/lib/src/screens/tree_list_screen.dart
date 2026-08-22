@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
@@ -14,8 +15,9 @@ class TreeListScreen extends ConsumerWidget {
     final trees = ref.watch(treesProvider);
     final user = ref.watch(userProvider).maybeWhen(data: (d) => d, orElse: () => null);
     final canAdd = canAddTrees(user);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Trees')),
+      appBar: AppBar(title: Text(l10n?.trees ?? 'Trees')),
       floatingActionButton: canAdd
           ? FloatingActionButton(
               onPressed: () => context.push('/trees/new'),
