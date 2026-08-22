@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { HeroEmblem } from "@/components/marketing/hero-emblem";
+import { MarketingIntelligenceFlow } from "@/components/marketing/marketing-intelligence-flow";
 import { cmsIcon } from "@/lib/cms-icons";
 import type { CmsSection } from "@/lib/cms-api";
 import { linkProps } from "@/lib/cms-defaults";
@@ -80,40 +81,119 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
     case "hero": {
       const secondary = linkProps(c.secondary_cta as { label: string; href: string } | undefined);
       const secondaryHref = marketingSecondaryHref(secondary.href);
-      const headline = [String(c.title || ""), String(c.title_highlight || "")]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
+      const PillIcon = cmsIcon(String(c.pill_icon || "Sparkles"));
+      const stats = Array.isArray(c.stats) ? (c.stats as Array<Record<string, string>>) : [];
+      const title = String(c.title || "");
+      const highlight = String(c.title_highlight || "");
       return (
         <section className="marketing-hero">
-          <div className="marketing-hero-atmosphere motion-soft-glow" aria-hidden>
-            <HeroEmblem className="marketing-hero-emblem" />
-          </div>
-          <div className="relative z-10 mx-auto flex min-h-[min(88vh,52rem)] max-w-7xl flex-col justify-center px-6 py-20 sm:py-24">
-            <div className="max-w-2xl space-y-7">
-              <p className="marketing-hero-brand motion-fade-up font-display">Aranyix</p>
+          <div className="marketing-hero-grid relative z-10 mx-auto min-h-[min(92vh,54rem)] max-w-7xl px-6 py-16 sm:py-20 lg:py-24">
+            <div className="marketing-hero-copy space-y-7">
+              {c.pill ? (
+                <p className="marketing-pill marketing-pill--hero motion-fade-up">
+                  <PillIcon className="h-3.5 w-3.5" />
+                  {String(c.pill)}
+                </p>
+              ) : null}
               <div className="space-y-4 motion-fade-up-delay">
-                <h1 className="marketing-hero-title font-display">{headline}</h1>
-                <p className="max-w-xl text-base leading-relaxed text-emerald-50/80 sm:text-lg">
+                <h1 className="marketing-hero-headline font-display">
+                  {title}
+                  {highlight ? (
+                    <>
+                      <br />
+                      <span className="marketing-gradient-text">{highlight}</span>
+                    </>
+                  ) : null}
+                </h1>
+                <p className="max-w-xl text-base leading-relaxed text-emerald-50/82 sm:text-lg">
                   {String(c.subtitle || "")}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 motion-fade-up-delay">
+              <div className="flex flex-wrap items-center gap-3 motion-fade-up-delay">
                 <CtaLink
                   cta={c.primary_cta as { label: string; href: string }}
-                  className="btn-primary bg-white px-6 py-3 text-base text-forest-900 hover:bg-emerald-50"
+                  className="btn-primary bg-white px-6 py-3 text-base text-forest-900 shadow-lg shadow-black/20 hover:bg-emerald-50"
                 />
                 <CtaLink
                   cta={c.secondary_cta as { label: string; href: string }}
                   hrefOverride={secondaryHref}
-                  className="text-sm font-semibold text-lime-200/95 underline-offset-4 transition hover:text-white hover:underline"
+                  className="btn-secondary border-white/15 bg-white/5 px-5 py-3 text-base text-white hover:bg-white/10"
                 />
               </div>
+              {stats.length > 0 ? (
+                <dl className="marketing-hero-stats motion-fade-up-delay">
+                  {stats.map((row) => (
+                    <div key={row.label} className="marketing-hero-stat">
+                      <dt className="marketing-hero-stat-value">{row.value}</dt>
+                      <dd className="marketing-hero-stat-label">{row.label}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+            </div>
+            <div className="marketing-hero-visual motion-soft-glow" aria-hidden>
+              <HeroEmblem className="marketing-hero-emblem-inline" />
             </div>
           </div>
+          <div className="marketing-hero-noise" aria-hidden />
         </section>
       );
     }
+
+    case "stats":
+      return (
+        <section className="marketing-stats-band">
+          <div className="mx-auto grid max-w-7xl gap-4 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
+            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => (
+              <article key={item.label} className="marketing-stat-tile">
+                <p className="marketing-stat-value">{item.value}</p>
+                <p className="marketing-stat-label">{item.label}</p>
+                {item.detail ? <p className="marketing-stat-detail">{item.detail}</p> : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      );
+
+    case "intelligence_pipeline":
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-band">
+          <div className="mx-auto max-w-7xl px-6 py-20">
+            <p className="marketing-eyebrow marketing-eyebrow--light text-center">
+              {String(c.eyebrow || "")}
+            </p>
+            <MarketingIntelligenceFlow title={String(c.title || "")} copy={String(c.copy || "")} />
+          </div>
+        </section>
+      );
+
+    case "reports":
+      return (
+        <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
+          <div className="marketing-section-head">
+            <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
+            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
+            <p className="marketing-section-copy">{String(c.copy || "")}</p>
+          </div>
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
+              const Icon = cmsIcon(item.icon);
+              return (
+                <article key={item.title} className="marketing-report-card">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="marketing-report-icon">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    {item.tag ? <span className="marketing-report-tag">{item.tag}</span> : null}
+                  </div>
+                  <h3 className="mt-5 font-display text-lg font-semibold text-stone-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      );
 
     case "features":
       return (
@@ -149,7 +229,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
               <h2 className="marketing-section-title font-display text-white">{String(c.title || "")}</h2>
               <p className="marketing-section-copy text-emerald-100/75">{String(c.copy || "")}</p>
             </div>
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
                 const Icon = cmsIcon(item.icon);
                 return (

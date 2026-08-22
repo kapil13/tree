@@ -27,9 +27,13 @@ const notoDevanagari = Noto_Sans_Devanagari({
 export const metadata: Metadata = {
   title: "Aranyix — Intelligence for a Thriving Planet",
   description:
-    "Register trees, monitor ecosystems, assess biodiversity, and generate verifiable environmental evidence.",
+    "Environmental MRV platform — tree registration, satellite SAR fusion, bioacoustic biodiversity, and audit-ready BRSR, ISO 14064-2, TNFD, and VM0047 exports.",
   manifest: "/manifest.webmanifest",
-  themeColor: "#16a34a",
+  themeColor: "#052e1f",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+  },
   appleWebApp: {
     capable: true,
     title: "Aranyix",

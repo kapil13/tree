@@ -7,7 +7,9 @@ from typing import Any
 HEADER_DEFAULT: dict[str, Any] = {
     "nav": [
         {"label": "Platform", "href": "#platform"},
+        {"label": "Intelligence", "href": "#intelligence"},
         {"label": "Compliance", "href": "#compliance"},
+        {"label": "Reports", "href": "#reports"},
         {"label": "Programs", "href": "#programs"},
         {"label": "How it works", "href": "#how-it-works"},
     ],
@@ -17,26 +19,36 @@ HEADER_DEFAULT: dict[str, Any] = {
 
 FOOTER_DEFAULT: dict[str, Any] = {
     "description": (
-        "Environmental monitoring, reporting, and verification for plantations and biodiversity — "
-        "from satellite pixels to audit-ready evidence packs."
+        "India's environmental MRV platform — from citizen tree tagging to government-grade "
+        "satellite fusion, bioacoustic biodiversity, and audit-ready compliance exports."
     ),
     "badge": "Intelligence for a thriving planet",
     "columns": [
         {
             "title": "Platform",
             "links": [
-                {"label": "Dashboard", "href": "/auth?mode=signin&next=/dashboard"},
+                {"label": "Executive dashboard", "href": "/auth?mode=signin&next=/dashboard"},
                 {"label": "Register a tree", "href": "/auth?mode=signup"},
-                {"label": "How it works", "href": "/#how-it-works"},
+                {"label": "Field operations", "href": "/auth?mode=signin&next=/field-ops"},
+                {"label": "Reports & exports", "href": "/auth?mode=signin&next=/reports"},
             ],
         },
         {
             "title": "Programs",
             "links": [
                 {"label": "BYOT citizen tagging", "href": "/auth?mode=signup"},
-                {"label": "Government & Public Sector", "href": "/auth?mode=signup"},
+                {"label": "Government & NHAI", "href": "/auth?mode=signup"},
                 {"label": "Corporate ESG", "href": "/auth?mode=signup"},
                 {"label": "NGO & community", "href": "/auth?mode=signup"},
+            ],
+        },
+        {
+            "title": "Compliance",
+            "links": [
+                {"label": "DPDP privacy controls", "href": "/privacy"},
+                {"label": "BRSR & ISO exports", "href": "/auth?mode=signin&next=/reports"},
+                {"label": "VM0047 checklists", "href": "/#compliance"},
+                {"label": "Audit evidence chain", "href": "/#compliance"},
             ],
         },
         {
@@ -60,16 +72,37 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "title": "Hero",
         "sort_order": 0,
         "content": {
-            "pill": "Environmental MRV platform",
+            "pill": "MRV · Compliance · Reporting",
             "pill_icon": "Sparkles",
-            "title": "Intelligence for a",
-            "title_highlight": "thriving planet",
+            "title": "Environmental intelligence",
+            "title_highlight": "from field to audit room",
             "subtitle": (
-                "Tree registration, satellite monitoring, and audit-ready evidence — "
-                "unified for every planting program."
+                "Register trees on mobile, fuse NDVI with SAR integrity, score biodiversity "
+                "with bioacoustics, and export BRSR, ISO 14064-2, TNFD, and VM0047 evidence — "
+                "one platform for citizens, corporates, and government programs."
             ),
+            "stats": [
+                {"value": "15+", "label": "Framework mappings"},
+                {"value": "8", "label": "Indian languages"},
+                {"value": "SAR + NDVI", "label": "Satellite fusion"},
+                {"value": "DPDP ready", "label": "Privacy controls"},
+            ],
             "primary_cta": {"label": "Start free registration", "href": "/auth?mode=signup"},
-            "secondary_cta": {"label": "See how it works", "href": "#how-it-works"},
+            "secondary_cta": {"label": "Explore the platform", "href": "#platform"},
+        },
+    },
+    {
+        "section_type": "stats",
+        "anchor_id": None,
+        "title": "Trust metrics",
+        "sort_order": 5,
+        "content": {
+            "items": [
+                {"value": "10M+", "label": "Trees target scale", "detail": "Built for national programs"},
+                {"value": "24/7", "label": "Monitoring", "detail": "Satellite + alert fusion"},
+                {"value": "100%", "label": "Evidence chain", "detail": "Tamper-evident audit trail"},
+                {"value": "PWA", "label": "Field offline", "detail": "Supervisor tree cache"},
+            ],
         },
     },
     {
@@ -78,50 +111,76 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "title": "Platform capabilities",
         "sort_order": 10,
         "content": {
-            "eyebrow": "Platform capabilities",
-            "title": "Everything you need to monitor, understand, and prove environmental impact",
+            "eyebrow": "Platform",
+            "title": "Everything to monitor, prove, and report environmental impact",
             "copy": (
-                "From a single citizen tree to million-tree portfolios, Aranyix delivers the same "
-                "premium monitoring stack — designed for field teams, scientists, and compliance officers."
+                "From a single citizen neem tree to million-tree portfolios — the same premium "
+                "MRV stack for field teams, scientists, compliance officers, and board reviewers."
             ),
             "items": [
                 {
                     "icon": "TreePine",
-                    "title": "Tree monitoring",
-                    "description": "Register every tree with GPS, photos, species, and a unique digital passport — QR code and PDF included.",
+                    "title": "Tree MRV & passports",
+                    "description": "GPS registration, digital passports, QR codes, chainage for highways, and project setup wizards tuned to each scheme.",
                     "accent": "from-emerald-500/20 to-emerald-900/5",
                 },
                 {
-                    "icon": "Bird",
-                    "title": "Biodiversity assessment",
-                    "description": "Bioacoustic listening, species richness scoring, and habitat signals to quantify ecosystem health alongside planting evidence.",
+                    "icon": "Smartphone",
+                    "title": "Mobile field operations",
+                    "description": "Android field app with offline tree cache, photo capture, and register-next flows for high-volume planting drives.",
                     "accent": "from-lime-500/20 to-lime-900/5",
                 },
                 {
-                    "icon": "Brain",
-                    "title": "AI insights & tips",
-                    "description": "Species detection, disease classification, growth recommendations, and executive summaries powered by environmental AI.",
+                    "icon": "Satellite",
+                    "title": "Satellite & SAR fusion",
+                    "description": "Sentinel NDVI health layers plus SAR integrity trends, fence validation, and portfolio threat dashboards.",
                     "accent": "from-sky-500/15 to-sky-900/5",
                 },
                 {
-                    "icon": "Bell",
-                    "title": "Monitoring & alerts",
-                    "description": "NDVI change detection, health drift, fence breaches, and anomaly alerts delivered to teams in real time.",
-                    "accent": "from-amber-500/15 to-amber-900/5",
-                },
-                {
-                    "icon": "Satellite",
-                    "title": "Satellite intelligence",
-                    "description": "Sentinel-2 and Landsat pipelines for NDVI, canopy stress, and plantation boundary validation at scale.",
+                    "icon": "Mic",
+                    "title": "Bioacoustic biodiversity",
+                    "description": "BirdNET-powered species detection, richness scoring, and habitat signals alongside planting evidence.",
                     "accent": "from-teal-500/15 to-teal-900/5",
                 },
                 {
-                    "icon": "FileCheck2",
-                    "title": "Audit-ready reporting",
-                    "description": "Framework-mapped evidence packs and exportable PDF / Excel reports for audit preparation — not credit issuance.",
+                    "icon": "Brain",
+                    "title": "AI intelligence layer",
+                    "description": "Species ID, health classification, executive summaries, and an in-app assistant for field and ops teams.",
                     "accent": "from-violet-500/12 to-violet-900/5",
                 },
+                {
+                    "icon": "BarChart3",
+                    "title": "Executive dashboards",
+                    "description": "Portfolio health, carbon NPRT buffers, plot monitoring designs, and stratified sampling for verifier workflows.",
+                    "accent": "from-amber-500/15 to-amber-900/5",
+                },
+                {
+                    "icon": "Bell",
+                    "title": "Alerts & field actions",
+                    "description": "Canopy stress, mortality drift, fence breaches, and SAR anomalies routed to supervisors with verification loops.",
+                    "accent": "from-rose-500/12 to-rose-900/5",
+                },
+                {
+                    "icon": "ScanLine",
+                    "title": "Rule engine & schemes",
+                    "description": "Central scheme registry with NHAI, CAMPA, Nagar Van, and corporate templates — validation rules per program.",
+                    "accent": "from-indigo-500/12 to-indigo-900/5",
+                },
             ],
+        },
+    },
+    {
+        "section_type": "intelligence_pipeline",
+        "anchor_id": "intelligence",
+        "title": "Intelligence pipeline",
+        "sort_order": 15,
+        "content": {
+            "eyebrow": "Intelligence stack",
+            "title": "Five layers. One audit-ready story.",
+            "copy": (
+                "Field evidence, orbital signals, acoustic biodiversity, and AI fusion converge "
+                "into signed exports your auditors and program officers can actually review."
+            ),
         },
     },
     {
@@ -130,22 +189,47 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "title": "Compliance & frameworks",
         "sort_order": 20,
         "content": {
-            "eyebrow": "Compliance & frameworks",
-            "title": "Built for the standards your auditors already ask about",
+            "eyebrow": "Compliance",
+            "title": "Mapped to the standards your auditors already ask about",
             "copy": (
-                "Aranyix maps field evidence, satellite signals, and AI analytics to the frameworks "
-                "auditors and program officers already ask about — as MRV and audit-preparation tools, "
-                "not as a carbon credit registry or legal certification body."
+                "Aranyix is an MRV and audit-preparation platform — not a carbon credit registry "
+                "or legal certification body. We structure evidence so review conversations move faster."
             ),
             "items": [
-                {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates aligned with IPCC AR6 guidance for inventory support."},
-                {"icon": "Sprout", "code": "REDD+", "title": "Forest carbon MRV prep", "description": "Evidence structures for baseline, leakage, and permanence questionnaires — not FREL computation."},
-                {"icon": "ShieldCheck", "code": "Paris Agreement", "title": "NDC traceability", "description": "Geo-tagged planting ledgers that support transparent reporting conversations."},
-                {"icon": "MapPin", "code": "NHAI / Govt", "title": "Highway & public schemes", "description": "Geo-tagged planting proof for NHAI, forest department, and municipal greening audits."},
-                {"icon": "Radar", "code": "NGT / Courts", "title": "Compensatory afforestation", "description": "Timestamped evidence packs for CAMPA / FCA monitoring — not a substitute for court filings."},
-                {"icon": "FileCheck2", "code": "Verra VM0047", "title": "ARR evidence prep", "description": "Stratification, buffer math, and checklists for VM0047-style audit preparation."},
-                {"icon": "Sparkles", "code": "Gold Standard", "title": "Safeguard checklists", "description": "Guided co-benefit and safeguard questionnaires for LUF readiness — not issuance."},
-                {"icon": "Leaf", "code": "BYOT", "title": "Citizen stewardship", "description": "Bring Your Own Tree — lightweight public registration with complimentary AI health scans."},
+                {"icon": "Lock", "code": "DPDP Act", "title": "India data privacy", "description": "Export, erasure, consent ledger, and grievance workflows built into settings."},
+                {"icon": "FileText", "code": "BRSR / SEBI", "title": "Corporate disclosure", "description": "Principle 6 environment indicators mapped to plantation and carbon evidence."},
+                {"icon": "Scale", "code": "ISO 14064-2", "title": "Project GHG reports", "description": "Structured project reports aligned with ISO 14064-2 methodology sections."},
+                {"icon": "Leaf", "code": "TNFD", "title": "Nature disclosures", "description": "LEAP-style nature reports from bioacoustic richness and NDVI habitat signals."},
+                {"icon": "FileCheck2", "code": "VM0047", "title": "Verra ARR prep", "description": "Stratified sampling, buffer math, uncertainty tiers, and ICVCM alignment checklists."},
+                {"icon": "ShieldCheck", "code": "ICVCM", "title": "Core Carbon Principles", "description": "Integrity checklist mapped to field evidence and monitoring automation."},
+                {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."},
+                {"icon": "MapPin", "code": "NHAI / Govt", "title": "Public planting schemes", "description": "Geo-tagged proof for highways, urban forestry, and departmental green audits."},
+                {"icon": "Radar", "code": "CAMPA / NGT", "title": "Compensatory afforestation", "description": "Timestamped evidence packs for court-ordered and CAMPA monitoring workflows."},
+                {"icon": "Shield", "code": "Audit chain", "title": "Tamper-evident logs", "description": "Signed evidence bundles and Ed25519 verification for audit trail integrity."},
+                {"icon": "Languages", "code": "WCAG + i18n", "title": "Inclusive by design", "description": "Hindi plus seven Indian languages on web; WCAG-tested core routes."},
+                {"icon": "Sparkles", "code": "BYOT", "title": "Citizen stewardship", "description": "Bring Your Own Tree — public registration with complimentary AI health scans."},
+            ],
+        },
+    },
+    {
+        "section_type": "reports",
+        "anchor_id": "reports",
+        "title": "Reports & exports",
+        "sort_order": 25,
+        "content": {
+            "eyebrow": "Reports",
+            "title": "Board-ready exports, not spreadsheet archaeology",
+            "copy": (
+                "Generate framework-mapped PDF and Excel packs from live plantation data — "
+                "designed for assurance conversations, not credit issuance."
+            ),
+            "items": [
+                {"icon": "FileText", "tag": "BRSR", "title": "BRSR assurance pack", "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references."},
+                {"icon": "Scale", "tag": "ISO", "title": "ISO 14064-2 project report", "description": "Project boundary, monitoring plan, and quantification sections pre-structured."},
+                {"icon": "Leaf", "tag": "TNFD", "title": "TNFD nature disclosure", "description": "Locate–Evaluate–Assess–Prepare narrative from satellite and bioacoustic layers."},
+                {"icon": "FileCheck2", "tag": "VM0047", "title": "Carbon credit ledger", "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project."},
+                {"icon": "BarChart3", "tag": "Executive", "title": "Portfolio health digest", "description": "Executive summary with NDVI trends, threats, and compliance completion scores."},
+                {"icon": "Shield", "tag": "Evidence", "title": "Signed evidence bundle", "description": "Tamper-evident ZIP with audit chain verification for third-party review."},
             ],
         },
     },
@@ -155,13 +239,16 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "title": "Planting programs",
         "sort_order": 30,
         "content": {
-            "eyebrow": "Planting programs",
-            "title": "One account. Multiple compliance pathways.",
-            "copy": "Enroll in BYOT, government, corporate ESG, or NGO programs from a single workspace. Each pathway applies the right validation rules without fragmenting your data.",
+            "eyebrow": "Programs",
+            "title": "One workspace. Every compliance pathway.",
+            "copy": (
+                "Enroll in BYOT, government, corporate ESG, or NGO programs from a single account. "
+                "Each pathway applies the right validation rules without fragmenting your data."
+            ),
             "items": [
                 {"icon": "Leaf", "title": "BYOT Public", "description": "Citizens and schools tag trees in minutes with mobile-first registration and QR passports.", "badge": "Most popular"},
-                {"icon": "Building2", "title": "Government & Public Sector", "description": "Audit-grade planting for highways, urban forestry, and departmental compensatory schemes.", "badge": "Govt ready"},
-                {"icon": "ShieldCheck", "title": "Industry & Corporate ESG", "description": "Plantation baselines, supplier traceability, and board-ready sustainability evidence.", "badge": "ESG"},
+                {"icon": "Building2", "title": "Government & Public Sector", "description": "NHAI chainage, CAMPA monitoring, Nagar Van urban templates, and audit-grade field evidence.", "badge": "Govt ready"},
+                {"icon": "ShieldCheck", "title": "Industry & Corporate ESG", "description": "Plantation baselines, BRSR exports, supplier traceability, and board-ready sustainability packs.", "badge": "ESG"},
                 {"icon": "Users", "title": "NGO & Community", "description": "Watershed restoration, farmer groups, and community nurseries with shared dashboards.", "badge": "Community"},
             ],
         },
@@ -177,10 +264,11 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "copy": "A guided flow for field teams, backed by automated monitoring and executive reporting.",
             "cta": {"label": "Create your workspace", "href": "/auth?mode=signup"},
             "items": [
-                {"step": "01", "title": "Register & enroll", "description": "Choose your program — BYOT, government, ESG, or NGO — and onboard your organization in one flow."},
-                {"step": "02", "title": "Capture evidence", "description": "Add trees with GPS, photos, and species. Mobile apps and web wizards guide every required field."},
-                {"step": "03", "title": "Monitor continuously", "description": "Satellite NDVI, AI health scoring, and bioacoustic biodiversity layers watch your sites 24/7."},
-                {"step": "04", "title": "Report with confidence", "description": "Export dashboards, alerts, and framework-mapped evidence packs for auditor review."},
+                {"step": "01", "title": "Enroll & set up", "description": "Pick your program — BYOT, government, ESG, or NGO — and complete the project setup wizard with scheme-specific rules."},
+                {"step": "02", "title": "Register evidence", "description": "Capture trees with GPS, photos, and species on web or mobile. Chainage auto-advances for highway corridors."},
+                {"step": "03", "title": "Monitor continuously", "description": "Satellite NDVI, SAR integrity, bioacoustic richness, and AI health scoring watch your sites around the clock."},
+                {"step": "04", "title": "Act on alerts", "description": "Supervisors receive canopy stress and anomaly alerts with field verification workflows built in."},
+                {"step": "05", "title": "Report with confidence", "description": "Export BRSR, ISO, TNFD, and VM0047 packs — plus signed evidence bundles for auditor review."},
             ],
         },
     },
@@ -190,14 +278,17 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "title": "Platform preview",
         "sort_order": 50,
         "content": {
-            "eyebrow": "Inside the platform",
-            "title": "A command center for plantations and biodiversity",
-            "copy": "Executive dashboards surface tree health, satellite anomalies, species richness, and alert queues — with exports tailored to your enrolled programs.",
+            "eyebrow": "Live command center",
+            "title": "See your plantation portfolio at a glance",
+            "copy": (
+                "Executive dashboards surface tree health, SAR anomalies, species richness, "
+                "compliance completion, and alert queues — with exports tailored to enrolled programs."
+            ),
             "bullets": [
-                "Interactive Google Maps plantation view with health overlays",
-                "Executive dashboards for health, biodiversity, and alerts",
-                "Multi-program enrollment on a single account",
-                "REST API for integrations and GIS exports",
+                "Interactive maps with NDVI and SAR integrity overlays",
+                "Executive dashboard for health, biodiversity, and compliance KPIs",
+                "Multi-program enrollment on a single organization account",
+                "REST API, webhooks, and GIS-friendly exports",
             ],
             "metrics": [
                 ["12,480", "Trees registered"],
@@ -205,8 +296,9 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 ["94%", "Passport complete"],
             ],
             "rows": [
-                ["Satellite canopy stress", "2 sites flagged"],
+                ["SAR canopy integrity", "2 sites flagged"],
                 ["Bioacoustic richness", "Stable this week"],
+                ["Compliance checklists", "87% complete"],
                 ["CO₂e estimate", "1,240 tCO₂e (modelled)"],
             ],
         },
@@ -219,7 +311,10 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "content": {
             "eyebrow": "Ready to begin?",
             "title": "Turn every tree into audit-ready environmental evidence",
-            "copy": "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, and MRV evidence packs — from citizen BYOT to government-grade field programs.",
+            "copy": (
+                "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, "
+                "and compliance exports — from citizen BYOT to government-grade field programs."
+            ),
             "primary_cta": {"label": "Get started free", "href": "/auth?mode=signup"},
             "secondary_cta": {"label": "Sign in to workspace", "href": "/auth?mode=signin"},
         },
@@ -230,8 +325,8 @@ HOME_PAGE_DEFAULT = {
     "slug": "home",
     "title": "Aranyix — Intelligence for a Thriving Planet",
     "meta_description": (
-        "Environmental monitoring, reporting, and verification for plantations and biodiversity — "
-        "audit-prep MRV, not carbon credit issuance."
+        "Environmental MRV platform — satellite SAR fusion, bioacoustic biodiversity, "
+        "DPDP privacy, and BRSR, ISO 14064-2, TNFD, VM0047 audit-ready exports."
     ),
     "published": True,
     "is_home": True,
@@ -239,8 +334,11 @@ HOME_PAGE_DEFAULT = {
 
 SECTION_TYPES = (
     "hero",
+    "stats",
     "features",
+    "intelligence_pipeline",
     "compliance",
+    "reports",
     "programs",
     "steps",
     "platform_preview",

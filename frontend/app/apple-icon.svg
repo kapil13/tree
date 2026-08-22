@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Aranyix">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#4ade80"/>
+    </linearGradient>
+    <radialGradient id="gl" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#86efac" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#052e1f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="#052e1f"/>
+  <circle cx="90" cy="90" r="78" fill="url(#gl)"/>
+  <circle cx="90" cy="90" r="72" fill="none" stroke="#4ade80" stroke-opacity="0.3"/>
+  <ellipse cx="90" cy="132" rx="48" ry="10" fill="#0f766e" opacity="0.35"/>
+  <path d="M90 126 C90 102 68 92 68 68 C68 52 78 40 90 34 C102 40 112 52 112 68 C112 92 90 102 90 126Z" fill="url(#g)"/>
+  <path d="M90 126 L90 148 M76 138 L90 148 L104 138" stroke="#86efac" stroke-width="3" stroke-linecap="round"/>
+  <g stroke="#d9f99d" stroke-width="1.5" opacity="0.85">
+    <line x1="90" y1="58" x2="74" y2="48"/>
+    <line x1="90" y1="58" x2="106" y2="48"/>
+    <line x1="90" y1="58" x2="90" y2="42"/>
+    <circle cx="74" cy="48" r="2.5" fill="#ecfccb"/>
+    <circle cx="106" cy="48" r="2.5" fill="#ecfccb"/>
+    <circle cx="90" cy="42" r="2.5" fill="#ecfccb"/>
+    <circle cx="90" cy="58" r="3" fill="#ffffff"/>
+  </g>
+</svg>

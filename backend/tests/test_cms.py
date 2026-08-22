@@ -29,6 +29,9 @@ def test_ensure_cms_seeded_commits_not_only_flush():
 def test_section_types_include_hero():
     assert "hero" in SECTION_TYPES
     assert "features" in SECTION_TYPES
+    assert "stats" in SECTION_TYPES
+    assert "reports" in SECTION_TYPES
+    assert "intelligence_pipeline" in SECTION_TYPES
 
 
 def test_header_default_has_nav():

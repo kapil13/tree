@@ -1,60 +1,18 @@
-import type { CmsLink, CmsPublicSite, CmsSection } from "@/lib/cms-api";
+import type { CmsPublicSite } from "@/lib/cms-api";
 import { sanitizeCmsHref } from "@/lib/cms-sanitize";
+import { getCmsHomeFallbackSite } from "@/lib/cms-home-fallback";
 
-export const CMS_HEADER_FALLBACK: CmsPublicSite["site"]["header"] = {
-  nav: [
-    { label: "Platform", href: "#platform" },
-    { label: "Compliance", href: "#compliance" },
-    { label: "Programs", href: "#programs" },
-    { label: "How it works", href: "#how-it-works" },
-  ],
-  sign_in: { label: "Sign in", href: "/auth?mode=signin" },
-  get_started: { label: "Get started", href: "/auth?mode=signup" },
-};
+const fallbackSite = getCmsHomeFallbackSite();
 
-export const CMS_FOOTER_FALLBACK: CmsPublicSite["site"]["footer"] = {
-  description:
-    "Environmental monitoring, reporting, and verification for plantations and biodiversity — from satellite pixels to audit-ready evidence packs.",
-  badge: "Intelligence for a thriving planet",
-  columns: [
-    {
-      title: "Platform",
-      links: [
-        { label: "Dashboard", href: "/auth?mode=signin&next=/dashboard" },
-        { label: "Register a tree", href: "/auth?mode=signup" },
-      ],
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Terms of Service", href: "/terms" },
-        { label: "Privacy Policy", href: "/privacy" },
-        { label: "Data Use Policy", href: "/data-use" },
-      ],
-    },
-  ],
-  copyright: "Aranyix. All rights reserved.",
-  legal_note: "MRV & audit-prep platform · Not a carbon credit issuer",
-};
+export const CMS_HEADER_FALLBACK = fallbackSite.site.header;
 
-export const CMS_HOME_FALLBACK: CmsPublicSite = {
-  site: { header: CMS_HEADER_FALLBACK, footer: CMS_FOOTER_FALLBACK },
-  page: {
-    id: "fallback",
-    slug: "home",
-    title: "Aranyix",
-    meta_description: "Environmental MRV platform",
-    published: true,
-    is_home: true,
-    sort_order: 0,
-    updated_at: null,
-    sections: [],
-  },
-};
+export const CMS_FOOTER_FALLBACK = fallbackSite.site.footer;
+
+export const CMS_HOME_FALLBACK: CmsPublicSite = fallbackSite;
 
 export type CmsCta = { label: string; href: string };
 
-export function linkProps(link?: CmsLink) {
+export function linkProps(link?: { label: string; href: string }) {
   const base = link ?? { label: "Learn more", href: "/" };
   return {
     label: base.label,
@@ -62,6 +20,6 @@ export function linkProps(link?: CmsLink) {
   };
 }
 
-export function sectionByAnchor(sections: CmsSection[], anchor: string) {
-  return sections.find((s) => s.anchor_id === anchor);
+export function sectionByAnchor(sections: CmsPublicSite["page"]["sections"], anchor: string) {
+  return sections?.find((s) => s.anchor_id === anchor);
 }
