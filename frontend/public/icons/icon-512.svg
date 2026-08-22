@@ -1,5 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aranyix">
-  <rect width="512" height="512" rx="96" fill="#16a34a"/>
-  <path d="M256 96c-22 74-74 118-74 182a74 74 0 0 0 148 0c0-64-52-108-74-182z" fill="#dcfce7"/>
-  <rect x="234" y="314" width="44" height="102" rx="12" fill="#14532d"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#4ade80"/>
+    </linearGradient>
+    <radialGradient id="gl" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#86efac" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#052e1f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#052e1f"/>
+  <circle cx="256" cy="256" r="224" fill="url(#gl)"/>
+  <circle cx="256" cy="256" r="204" fill="none" stroke="#4ade80" stroke-opacity="0.3" stroke-width="4"/>
+  <ellipse cx="256" cy="378" rx="138" ry="28" fill="#0f766e" opacity="0.35"/>
+  <path d="M256 356 C256 288 192 256 192 186 C192 144 224 106 256 90 C288 106 320 144 320 186 C320 256 256 288 256 356Z" fill="url(#g)"/>
+  <path d="M256 356 L256 420 M214 388 L256 420 L298 388" stroke="#86efac" stroke-width="8" stroke-linecap="round"/>
+  <g stroke="#d9f99d" stroke-width="4" opacity="0.85">
+    <line x1="256" y1="164" x2="210" y2="136"/>
+    <line x1="256" y1="164" x2="302" y2="136"/>
+    <line x1="256" y1="164" x2="256" y2="118"/>
+    <circle cx="210" cy="136" r="7" fill="#ecfccb"/>
+    <circle cx="302" cy="136" r="7" fill="#ecfccb"/>
+    <circle cx="256" cy="118" r="7" fill="#ecfccb"/>
+    <circle cx="256" cy="164" r="8" fill="#ffffff"/>
+  </g>
 </svg>
