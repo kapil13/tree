@@ -274,7 +274,7 @@ function ProjectActionCard({
           Open project
         </Link>
         <Link
-          href={`/trees/new?project_id=${p.id}`}
+          href={`/trees/new?project=${p.id}`}
           className="btn-primary flex-1 justify-center text-xs"
         >
           Add tree

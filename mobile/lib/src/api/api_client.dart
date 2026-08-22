@@ -567,6 +567,17 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> registrationContext(
+    String projectId, {
+    String? workAreaId,
+  }) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/registration-context',
+      queryParameters: workAreaId != null ? {'work_area_id': workAreaId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<List<dynamic>> listEnrolledPlantingPrograms() async {
     final r = await _dio.get('/planting-programs/enrolled');
     return List<dynamic>.from(r.data);

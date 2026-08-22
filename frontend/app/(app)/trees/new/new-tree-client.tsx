@@ -8,6 +8,7 @@ import { Settings2 } from "lucide-react";
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { ProjectTreeSchemeContext } from "@/components/trees/project-tree-scheme-context";
 import { SchemeProjectRequiredBanner } from "@/components/trees/scheme-project-required-banner";
+import { TreeRegistrationSetupGate } from "@/components/trees/tree-registration-setup-gate";
 import { buildInitialValues, splitPayload } from "@/lib/registration";
 import {
   GOVERNMENT_PROGRAM_CODE,
@@ -34,6 +35,8 @@ import {
   nextChainageLabelAfter,
 } from "@/lib/tree-registration-prefill";
 import { enrichTreePayloadMetadata } from "@/lib/tree-registration-defaults";
+import { evaluateProjectSetup } from "@/lib/project-setup-readiness";
+import { formatTreeRegistrationError } from "@/lib/tree-validation-errors";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -103,6 +106,15 @@ export function NewTreePageClient() {
     () => schemeByCode(schemes, project?.scheme_code),
     [schemes, project?.scheme_code],
   );
+
+  const setupStatus = useMemo(() => {
+    if (!project) return null;
+    return evaluateProjectSetup({
+      project,
+      workAreas,
+      scheme: scheme as import("@/lib/api").CentralScheme | null | undefined,
+    });
+  }, [project, workAreas, scheme]);
 
   const hasSchemePrograms = useMemo(
     () => enrolledPrograms.some((p) => SCHEME_PROGRAM_CODES.has(p.code)),
@@ -369,7 +381,12 @@ export function NewTreePageClient() {
         `Tree saved${tree.public_code ? ` (${tree.public_code})` : ""}. Next gap: ${suggested.chainage_display}.`,
       );
     } catch (err) {
-      setError(errorMessage(err));
+      setError(
+        formatTreeRegistrationError(err, {
+          projectId: projectIdParam,
+          projectMode: isProjectMode,
+        }, errorMessage(err)),
+      );
     } finally {
       setBusy(false);
     }
@@ -407,10 +424,32 @@ export function NewTreePageClient() {
     );
   }
 
+  if (showSchemeProjectWarning) {
+    return (
+      <div className="space-y-4">
+        <SchemeProjectRequiredBanner />
+      </div>
+    );
+  }
+
+  if (project && setupStatus && !setupStatus.canRegisterTree) {
+    return (
+      <div className="space-y-4">
+        <ProjectTreeSchemeContext
+          project={project}
+          scheme={scheme}
+          workAreaId={workAreaId}
+          workAreaCount={workAreas.length}
+          requiresWorkArea={requiresWorkArea}
+          compliancePreview={compliancePreview}
+        />
+        <TreeRegistrationSetupGate project={project} status={setupStatus} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {showSchemeProjectWarning && <SchemeProjectRequiredBanner />}
-
       {project && (
         <>
           <ProjectTreeSchemeContext

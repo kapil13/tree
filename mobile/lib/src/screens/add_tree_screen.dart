@@ -8,7 +8,11 @@ import '../location_helper.dart';
 import '../offline/tree_registration_queue.dart';
 import '../providers.dart';
 
-const _roadSides = ['LHS', 'RHS'];
+const _roadSides = [
+  ('lhs', 'LHS (left)'),
+  ('rhs', 'RHS (right)'),
+  ('median', 'Median'),
+];
 const _guardTypes = ['bamboo', 'iron', 'cement'];
 const _mineSpecies = [
   'Neem',
@@ -61,10 +65,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   final List<String> _photoKeys = [];
   final _picker = ImagePicker();
   Map<String, dynamic>? _compliance;
+  Map<String, dynamic>? _registrationContext;
   String? _roadSide;
   String? _guardType;
   String _pitSize = '60x60x60';
   String _measurementMethod = 'visual_estimate';
+  int _sessionSavedCount = 0;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -83,6 +90,14 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         project = await api.getPlantingProject(widget.projectId!);
         workAreas = await api.listWorkAreas(widget.projectId!);
         _programCode = project['program_code'] as String? ?? _programCode;
+        try {
+          _registrationContext = await api.registrationContext(
+            widget.projectId!,
+            workAreaId: _selectedWorkAreaId,
+          );
+        } catch (_) {
+          _registrationContext = null;
+        }
       }
       if (!mounted) return;
       setState(() {
@@ -118,13 +133,49 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return [];
   }
 
+  bool get _isProjectMode => widget.projectId != null && _project != null;
+
+  bool get _chainageEnabled {
+    final inherited = _registrationContext?['inherited_standard'] as Map<String, dynamic>?;
+    if (inherited?['chainage_enabled'] == true) return true;
+    final rules = _project?['active_standard']?['rules'] as Map<String, dynamic>?;
+    return rules?['chainage_enabled'] == true;
+  }
+
+  bool get _projectSetupBlocks {
+    if (!_isProjectMode) return false;
+    if (_project?['active_standard'] == null) return true;
+    if (_complianceMode != 'open' && _workAreas.isEmpty) return true;
+    final schemeCode = _project?['scheme_code'];
+    final programCode = _project?['program_code'];
+    if (schemeCode == null && programCode != 'government_nhai') return false;
+    final defaults =
+        (_project?['metadata']?['tree_registration_defaults'] as Map<String, dynamic>?) ?? {};
+    for (final key in [
+      'permit_reference',
+      'site_zone',
+      'implementing_agency',
+      'maintenance_responsible',
+    ]) {
+      if ((defaults[key]?.toString().trim() ?? '').isEmpty) return true;
+    }
+    return false;
+  }
+
   void _applySegmentDefaults() {
-    if (_segment == 'nhai_highway') {
+    if (!_isProjectMode && _segment == 'nhai_highway') {
       _pitSize = '60x60x60';
       _guardType ??= 'bamboo';
-      _roadSide ??= 'LHS';
+      _roadSide ??= 'lhs';
       final meta = _project?['metadata'] as Map<String, dynamic>?;
       if (meta?['pit_size_cm'] != null) _pitSize = meta!['pit_size_cm'].toString();
+    }
+    if (_isProjectMode && _chainageEnabled) {
+      _roadSide ??= 'lhs';
+      final suggested = _registrationContext?['suggested_next'] as Map<String, dynamic>?;
+      if (suggested?['chainage_label'] != null) {
+        // chainage stored in metadata on submit if needed
+      }
     }
     if (_segment == 'industrial_greenbelt' && _allowedSpecies.isNotEmpty) {
       _species.text = _allowedSpecies.first;
@@ -140,6 +191,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   List<Map<String, dynamic>> get _extraFields {
+    if (_isProjectMode) return [];
     final schema = _activeProgram?['form_schema'] as Map<String, dynamic>?;
     final sections = (schema?['sections'] as List<dynamic>?) ?? [];
     final fields = <Map<String, dynamic>>[];
@@ -171,7 +223,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   Map<String, dynamic> _buildMetadata() {
     final metadata = <String, dynamic>{};
     if (widget.projectId != null) metadata['project_id'] = widget.projectId;
-    if (_segment == 'nhai_highway') {
+    if (_isProjectMode) {
+      if (_chainageEnabled && _roadSide != null) metadata['road_side'] = _roadSide;
+    } else if (_segment == 'nhai_highway') {
       if (_roadSide != null) metadata['road_side'] = _roadSide;
       if (_guardType != null) metadata['guard_type'] = _guardType;
       metadata['pit_size_cm'] = _pitSize;
@@ -263,7 +317,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return _compliance!['passed'] != true;
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool registerNext = false}) async {
     if (_lat == null || _lon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Capture GPS before registering.')),
@@ -329,6 +383,37 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         ref.invalidate(workAreasProvider(widget.projectId!));
       }
       if (!mounted) return;
+      if (registerNext && widget.projectId != null) {
+        setState(() {
+          _sessionSavedCount += 1;
+          _successMessage = 'Tree saved. Ready for the next gap.';
+          _photoKeys.clear();
+          _localPhotoPaths.clear();
+          _lat = null;
+          _lon = null;
+          _acc = null;
+          _compliance = null;
+        });
+        try {
+          _registrationContext = await api.registrationContext(
+            widget.projectId!,
+            workAreaId: _selectedWorkAreaId,
+          );
+          final suggested =
+              _registrationContext?['suggested_next'] as Map<String, dynamic>?;
+          if (suggested?['latitude'] != null && suggested?['longitude'] != null) {
+            setState(() {
+              _lat = (suggested!['latitude'] as num).toDouble();
+              _lon = (suggested['longitude'] as num).toDouble();
+            });
+          }
+        } catch (_) {}
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_successMessage ?? 'Tree saved')),
+        );
+        return;
+      }
       context.go('/trees/${t['id']}');
     } catch (e) {
       final queue = ref.read(treeRegistrationQueueProvider);
@@ -374,15 +459,52 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_project != null ? 'Field registration' : 'Add tree'),
+        title: Text(_isProjectMode ? 'Register project tree' : 'Add tree'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_project != null) ...[
+          if (_isProjectMode) ...[
             Text(_project!['name'] as String, style: Theme.of(context).textTheme.titleMedium),
-            Text('${_project!['code']} · $_complianceMode mode'),
+            Text(
+              'GPS, photos, and species only — pit, spacing, and guard inherit from the project.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             const SizedBox(height: 12),
+          ],
+          if (_projectSetupBlocks) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                border: Border.all(color: Colors.amber.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Finish project setup first',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Complete tree registration defaults (permit, site zone, agency) '
+                    'in the web project setup before registering trees here.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () => context.go('/projects/${widget.projectId}'),
+                    child: const Text('Open project'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_project != null && !_projectSetupBlocks) ...[
             if (_workAreas.isNotEmpty)
               DropdownButtonFormField<String>(
                 value: _selectedWorkAreaId,
@@ -444,12 +566,27 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               decoration: const InputDecoration(labelText: 'Species'),
               onChanged: (_) => _runComplianceCheck(),
             ),
-          if (_segment == 'nhai_highway') ...[
+          if (_isProjectMode && _chainageEnabled) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _roadSide,
+              decoration: const InputDecoration(labelText: 'Road side *'),
+              items: _roadSides
+                  .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
+                  .toList(),
+              onChanged: (v) {
+                setState(() => _roadSide = v);
+                _runComplianceCheck();
+              },
+            ),
+          ] else if (!_isProjectMode && _segment == 'nhai_highway') ...[
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _roadSide,
               decoration: const InputDecoration(labelText: 'Road side (LHS/RHS) *'),
-              items: _roadSides.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              items: _roadSides
+                  .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
+                  .toList(),
               onChanged: (v) {
                 setState(() => _roadSide = v);
                 _runComplianceCheck();
@@ -484,48 +621,50 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          Text('Field measurements (optional)', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
-            'Measure DBH at 1.3 m above ground. Leave blank if not measured yet.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _measurementMethod,
-            decoration: const InputDecoration(labelText: 'Measurement method'),
-            items: _measurementMethods
-                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
-                .toList(),
-            onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _dbh,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'DBH (cm)',
-                    hintText: 'e.g. 12.5',
+          if (!_isProjectMode) ...[
+            const SizedBox(height: 16),
+            Text('Field measurements (optional)', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              'Measure DBH at 1.3 m above ground. Leave blank if not measured yet.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _measurementMethod,
+              decoration: const InputDecoration(labelText: 'Measurement method'),
+              items: _measurementMethods
+                  .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
+                  .toList(),
+              onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _dbh,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'DBH (cm)',
+                      hintText: 'e.g. 12.5',
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _height,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Height (m)',
-                    hintText: 'e.g. 3.2',
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _height,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Height (m)',
+                      hintText: 'e.g. 3.2',
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _busy ? null : _useGps,
@@ -549,15 +688,33 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               label: Text('Add photo ($photoCount/${minPhotos > 0 ? minPhotos : 3})'),
             ),
           ],
+          if (_successMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              '$_successMessage (${_sessionSavedCount} this session)',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
+          ],
           if (_err != null) ...[
             const SizedBox(height: 12),
             Text(_err!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: (_busy || _complianceBlocksSave) ? null : _save,
-            child: Text(_busy ? 'Saving…' : 'Register tree'),
-          ),
+          if (_isProjectMode && !_projectSetupBlocks) ...[
+            FilledButton(
+              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: true),
+              child: Text(_busy ? 'Saving…' : 'Save & register next'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
+              child: const Text('Save & exit'),
+            ),
+          ] else if (!_projectSetupBlocks)
+            FilledButton(
+              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
+              child: Text(_busy ? 'Saving…' : 'Register tree'),
+            ),
         ],
       ),
     );

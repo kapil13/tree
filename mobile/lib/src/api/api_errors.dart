@@ -65,6 +65,10 @@ String apiErrorMessage(Object err) {
               .map((c) => c is Map ? (c['message'] ?? c['violation_type']) : c.toString())
               .join('\n');
         }
+        final validation = detail['validation_errors'];
+        if (validation is List && validation.isNotEmpty) {
+          return _humanizeValidationErrors(validation.map((e) => e.toString()).toList());
+        }
       }
     }
     if (err.response?.statusCode == 401) return 'Session expired. Please sign in again.';
@@ -75,4 +79,34 @@ String apiErrorMessage(Object err) {
     return err.message ?? 'Request failed';
   }
   return err.toString();
+}
+
+const _projectInheritedFields = {
+  'legal_basis',
+  'land_category',
+  'permit_reference',
+  'site_zone',
+  'implementing_agency',
+  'maintenance_responsible',
+};
+
+String _humanizeValidationErrors(List<String> errors) {
+  final inherited = errors.where((code) {
+    final parts = code.split(':');
+    if (parts.length < 2) return false;
+    return _projectInheritedFields.contains(parts[1]);
+  }).toList();
+  if (inherited.isNotEmpty) {
+    return 'Project setup is incomplete. Finish tree registration defaults '
+        '(permit, site zone, agency) in project setup, then try again.';
+  }
+  return errors
+      .map((code) {
+        final parts = code.split(':');
+        if (parts.length == 2 && parts[0] == 'missing_required') {
+          return 'Missing ${parts[1].replaceAll('_', ' ')}.';
+        }
+        return code.replaceAll('_', ' ');
+      })
+      .join('\n');
 }
