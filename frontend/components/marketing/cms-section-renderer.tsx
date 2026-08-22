@@ -2,14 +2,21 @@
 
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { HeroEmblem } from "@/components/marketing/hero-emblem";
-import { MarketingIntelligenceFlow } from "@/components/marketing/marketing-intelligence-flow";
+import {
+  BioacousticVisual,
+  ComplianceOrbit,
+  FieldMapVisual,
+  HeroCommandVisual,
+  IntelligenceRiver,
+  ProgramScene,
+  ReportPaper,
+  SatelliteFusionVisual,
+} from "@/components/marketing/marketing-visuals";
 import { cmsIcon } from "@/lib/cms-icons";
 import type { CmsSection } from "@/lib/cms-api";
 import { linkProps } from "@/lib/cms-defaults";
 import { sanitizeCmsHtml } from "@/lib/cms-sanitize";
 
-/** Lightweight Markdown-ish renderer for CMS legal/plain bodies (`#`, `##`, paragraphs). */
 function LegalPlainBody({ text }: { text: string }) {
   const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/);
   return (
@@ -68,10 +75,22 @@ function CtaLink({
   );
 }
 
-/** Cold-traffic secondary CTAs should not deep-link into /dashboard. */
 function marketingSecondaryHref(href: string): string {
   if (href === "/dashboard" || href.startsWith("/dashboard?")) return "#how-it-works";
   return href;
+}
+
+const REPORT_ACCENTS = ["#14532d", "#0e7490", "#3f6212", "#1e3a5f", "#854d0e", "#4c1d95"];
+
+function complianceGroups(items: Array<Record<string, string>>) {
+  const india = items.filter((i) => /DPDP|NHAI|CAMPA|NGT|WCAG|BYOT/i.test(`${i.code} ${i.title}`));
+  const carbon = items.filter((i) => /VM0047|ICVCM|IPCC|ISO|BRSR|Gold/i.test(`${i.code} ${i.title}`));
+  const nature = items.filter((i) => !india.includes(i) && !carbon.includes(i));
+  return [
+    { title: "India & public programs", items: india },
+    { title: "Carbon & disclosure", items: carbon },
+    { title: "Nature & integrity", items: nature },
+  ].filter((g) => g.items.length > 0);
 }
 
 export function CmsSectionRenderer({ section }: { section: CmsSection }) {
@@ -105,7 +124,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                     </>
                   ) : null}
                 </h1>
-                <p className="max-w-xl text-base leading-relaxed text-emerald-50/82 sm:text-lg">
+                <p className="max-w-xl text-base leading-relaxed text-emerald-50/90 sm:text-lg">
                   {String(c.subtitle || "")}
                 </p>
               </div>
@@ -117,184 +136,232 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                 <CtaLink
                   cta={c.secondary_cta as { label: string; href: string }}
                   hrefOverride={secondaryHref}
-                  className="btn-secondary border-white/15 bg-white/5 px-5 py-3 text-base text-white hover:bg-white/10"
+                  className="btn-secondary border-white/20 bg-white/10 px-5 py-3 text-base text-white hover:bg-white/15"
                 />
               </div>
-              {stats.length > 0 ? (
-                <dl className="marketing-hero-stats motion-fade-up-delay">
-                  {stats.map((row) => (
-                    <div key={row.label} className="marketing-hero-stat">
-                      <dt className="marketing-hero-stat-value">{row.value}</dt>
-                      <dd className="marketing-hero-stat-label">{row.label}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : null}
             </div>
-            <div className="marketing-hero-visual motion-soft-glow" aria-hidden>
-              <HeroEmblem className="marketing-hero-emblem-inline" />
+            <div className="marketing-hero-visual" aria-hidden>
+              <HeroCommandVisual className="marketing-hero-emblem-inline" />
             </div>
           </div>
+          {stats.length > 0 ? (
+            <dl className="marketing-hero-ribbon">
+              {stats.map((row) => (
+                <div key={row.label} className="marketing-hero-ribbon-item">
+                  <dt>{row.value}</dt>
+                  <dd>{row.label}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
           <div className="marketing-hero-noise" aria-hidden />
         </section>
       );
     }
 
-    case "stats":
+    case "stats": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
       return (
-        <section className="marketing-stats-band">
-          <div className="mx-auto grid max-w-7xl gap-4 px-6 py-8 sm:grid-cols-2 lg:grid-cols-4">
-            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => (
-              <article key={item.label} className="marketing-stat-tile">
-                <p className="marketing-stat-value">{item.value}</p>
-                <p className="marketing-stat-label">{item.label}</p>
-                {item.detail ? <p className="marketing-stat-detail">{item.detail}</p> : null}
-              </article>
+        <section className="marketing-stats-ribbon" aria-label="Platform scale">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-8 px-6 py-10">
+            {items.map((item) => (
+              <div key={item.label} className="marketing-stats-metric">
+                <p className="marketing-stats-num">{item.value}</p>
+                <p className="marketing-stats-cap">{item.label}</p>
+                {item.detail ? <p className="marketing-stats-sub">{item.detail}</p> : null}
+              </div>
             ))}
           </div>
         </section>
       );
+    }
 
-    case "intelligence_pipeline":
+    case "features": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      const rest = items.slice(2);
       return (
-        <section id={section.anchor_id || undefined} className="marketing-band">
+        <section id={section.anchor_id || undefined} className="marketing-platform">
           <div className="mx-auto max-w-7xl px-6 py-20">
-            <p className="marketing-eyebrow marketing-eyebrow--light text-center">
-              {String(c.eyebrow || "")}
-            </p>
-            <MarketingIntelligenceFlow title={String(c.title || "")} copy={String(c.copy || "")} />
-          </div>
-        </section>
-      );
-
-    case "reports":
-      return (
-        <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
-          <div className="marketing-section-head">
-            <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
-            <p className="marketing-section-copy">{String(c.copy || "")}</p>
-          </div>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
-              const Icon = cmsIcon(item.icon);
-              return (
-                <article key={item.title} className="marketing-report-card">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="marketing-report-icon">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    {item.tag ? <span className="marketing-report-tag">{item.tag}</span> : null}
-                  </div>
-                  <h3 className="mt-5 font-display text-lg font-semibold text-stone-900">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      );
-
-    case "features":
-      return (
-        <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
-          <div className="marketing-section-head">
-            <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
-            <p className="marketing-section-copy">{String(c.copy || "")}</p>
-          </div>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
-              const Icon = cmsIcon(item.icon);
-              return (
-                <article key={item.title} className={`marketing-feature-card bg-gradient-to-br ${item.accent || ""}`}>
-                  <div className="marketing-feature-icon">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-5 font-display text-lg font-semibold text-stone-900">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      );
-
-    case "compliance":
-      return (
-        <section id={section.anchor_id || undefined} className="marketing-band">
-          <div className="mx-auto max-w-7xl px-6 py-20">
-            <div className="marketing-section-head marketing-section-head--light">
-              <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-              <h2 className="marketing-section-title font-display text-white">{String(c.title || "")}</h2>
-              <p className="marketing-section-copy text-emerald-100/75">{String(c.copy || "")}</p>
-            </div>
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
-                const Icon = cmsIcon(item.icon);
-                return (
-                  <article key={item.code} className="marketing-compliance-tile">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="marketing-compliance-icon">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="marketing-compliance-code">{item.code}</span>
-                    </div>
-                    <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-emerald-100/70">{item.description}</p>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      );
-
-    case "programs":
-      return (
-        <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
-          <div className="marketing-section-head">
-            <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-            <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
-            <p className="marketing-section-copy">{String(c.copy || "")}</p>
-          </div>
-          <div className="mt-12 grid gap-5 lg:grid-cols-2">
-            {(Array.isArray(c.items) ? c.items : []).map((item: Record<string, string>) => {
-              const Icon = cmsIcon(item.icon);
-              return (
-                <article key={item.title} className="marketing-program-card">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="marketing-program-icon">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="marketing-program-badge">{item.badge}</span>
-                  </div>
-                  <h3 className="mt-5 font-display text-xl font-semibold text-stone-900">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600">{item.description}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      );
-
-    case "steps":
-      return (
-        <section id={section.anchor_id || undefined} className="mx-auto max-w-7xl px-6 py-20">
-          <div className="grid items-start gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="marketing-section-head lg:sticky lg:top-28">
+            <div className="marketing-section-head">
               <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
               <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
               <p className="marketing-section-copy">{String(c.copy || "")}</p>
-              <CtaLink cta={c.cta as { label: string; href: string }} className="btn-primary mt-8 inline-flex" />
             </div>
-            <div className="space-y-4">
-              {(Array.isArray(c.items) ? c.items : []).map((step: Record<string, string>) => (
-                <article key={step.step} className="marketing-step-card">
-                  <span className="marketing-step-number">{step.step}</span>
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-stone-900">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-stone-600">{step.description}</p>
+
+            <div className="marketing-platform-mosaic">
+              <article className="marketing-mosaic-map">
+                <FieldMapVisual />
+                {items[0] ? (
+                  <div className="marketing-mosaic-caption">
+                    <h3>{items[0].title}</h3>
+                    <p>{items[0].description}</p>
+                  </div>
+                ) : null}
+              </article>
+              <article className="marketing-mosaic-sat">
+                <SatelliteFusionVisual />
+                {items[1] ? (
+                  <div className="marketing-mosaic-caption marketing-mosaic-caption--on-dark">
+                    <h3>{items[1].title}</h3>
+                    <p>{items[1].description}</p>
+                  </div>
+                ) : null}
+              </article>
+            </div>
+
+            <div className="marketing-bio-strip">
+              <BioacousticVisual />
+            </div>
+
+            {rest.length > 0 ? (
+              <ul className="marketing-capability-list">
+                {rest.map((item) => {
+                  const Icon = cmsIcon(item.icon);
+                  return (
+                    <li key={item.title}>
+                      <Icon className="h-5 w-5 text-forest-700" />
+                      <div>
+                        <h3>{item.title}</h3>
+                        <p>{item.description}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
+        </section>
+      );
+    }
+
+    case "intelligence_pipeline": {
+      const nodes = [
+        { title: "Field capture", copy: "GPS trees, photos, chainage, offline mobile" },
+        { title: "Satellite fusion", copy: "NDVI + Sentinel SAR integrity" },
+        { title: "Bioacoustic", copy: "BirdNET richness & habitat" },
+        { title: "AI intelligence", copy: "Health scores and alerts" },
+        { title: "Audit exports", copy: "BRSR · ISO · TNFD · VM0047" },
+      ];
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-river-section">
+          <div className="mx-auto max-w-7xl px-6 py-20">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
+              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
+              <p className="marketing-section-copy mx-auto">{String(c.copy || "")}</p>
+            </div>
+            <div className="mt-12 hidden md:block">
+              <IntelligenceRiver />
+            </div>
+            <ol className="marketing-river-legend">
+              {nodes.map((node, i) => (
+                <li key={node.title}>
+                  <span>{String(i + 1).padStart(2, "0")}</span>
+                  <strong>{node.title}</strong>
+                  <em>{node.copy}</em>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      );
+    }
+
+    case "compliance": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      const groups = complianceGroups(items);
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-band">
+          <div className="mx-auto max-w-7xl px-6 py-20">
+            <div className="marketing-compliance-layout">
+              <div>
+                <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
+                <h2 className="marketing-title-on-dark font-display">{String(c.title || "")}</h2>
+                <p className="mt-4 max-w-xl text-base leading-relaxed text-emerald-50/85">{String(c.copy || "")}</p>
+              </div>
+              <ComplianceOrbit codes={items.map((item) => String(item.code || item.title))} />
+            </div>
+            <div className="marketing-compliance-groups">
+              {groups.map((group) => (
+                <div key={group.title}>
+                  <p className="marketing-compliance-group-title">{group.title}</p>
+                  <ul>
+                    {group.items.map((item) => (
+                      <li key={item.code || item.title}>
+                        <span>{item.code}</span>
+                        <strong>{item.title}</strong>
+                        <p>{item.description}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    case "reports": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      const featured = items.slice(0, 3);
+      const rest = items.slice(3);
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-reports">
+          <div className="mx-auto max-w-7xl px-6 py-20">
+            <div className="marketing-section-head">
+              <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
+              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
+              <p className="marketing-section-copy">{String(c.copy || "")}</p>
+            </div>
+            <div className="marketing-paper-desk">
+              {featured.map((item, i) => (
+                <ReportPaper
+                  key={item.title}
+                  tag={item.tag || "EXPORT"}
+                  title={item.title}
+                  accent={REPORT_ACCENTS[i] ?? "#14532d"}
+                />
+              ))}
+            </div>
+            {rest.length > 0 ? (
+              <ul className="marketing-report-index">
+                {rest.map((item) => (
+                  <li key={item.title}>
+                    <span>{item.tag}</span>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </section>
+      );
+    }
+
+    case "programs": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-programs">
+          <div className="mx-auto max-w-7xl px-6 py-20">
+            <div className="marketing-section-head">
+              <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
+              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
+              <p className="marketing-section-copy">{String(c.copy || "")}</p>
+            </div>
+            <div className="mt-12 space-y-6">
+              {items.map((item, i) => (
+                <article key={item.title} className={i % 2 === 1 ? "marketing-program-row marketing-program-row--flip" : "marketing-program-row"}>
+                  <div className="marketing-program-art">
+                    <ProgramScene kind={item.title} />
+                  </div>
+                  <div className="marketing-program-copy">
+                    {item.badge ? <span className="marketing-program-badge">{item.badge}</span> : null}
+                    <h3 className="font-display text-2xl font-semibold text-stone-900">{item.title}</h3>
+                    <p className="mt-3 text-base leading-relaxed text-stone-600">{item.description}</p>
                   </div>
                 </article>
               ))}
@@ -302,6 +369,34 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           </div>
         </section>
       );
+    }
+
+    case "steps": {
+      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      return (
+        <section id={section.anchor_id || undefined} className="marketing-timeline-section">
+          <div className="mx-auto max-w-5xl px-6 py-20">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
+              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
+              <p className="marketing-section-copy mx-auto">{String(c.copy || "")}</p>
+              <CtaLink cta={c.cta as { label: string; href: string }} className="btn-primary mt-8 inline-flex" />
+            </div>
+            <ol className="marketing-timeline">
+              {items.map((step) => (
+                <li key={step.step}>
+                  <span className="marketing-timeline-node">{step.step}</span>
+                  <div>
+                    <h3 className="font-display text-xl font-semibold text-stone-900">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-stone-600">{step.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      );
+    }
 
     case "platform_preview":
       return (
@@ -310,8 +405,8 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
             <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
               <div className="space-y-6">
                 <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-                <h2 className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
-                <p className="text-sm leading-relaxed text-emerald-100/75">{String(c.copy || "")}</p>
+                <h2 className="marketing-title-on-dark font-display">{String(c.title || "")}</h2>
+                <p className="text-base leading-relaxed text-emerald-50/85">{String(c.copy || "")}</p>
                 <ul className="space-y-3">
                   {(Array.isArray(c.bullets) ? c.bullets : []).map((point: string) => (
                     <li key={point} className="flex items-start gap-3 text-sm text-emerald-50/90">
@@ -324,24 +419,24 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
               <div className="marketing-preview-panel">
                 <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/60">Live overview</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-100/70">Live overview</p>
                     <p className="mt-1 text-lg font-semibold text-white">Plantation health</p>
                   </div>
-                  <span className="rounded-full bg-lime-400/15 px-3 py-1 text-xs font-medium text-lime-300">Healthy</span>
+                  <span className="rounded-full bg-lime-400/20 px-3 py-1 text-xs font-medium text-lime-200">Healthy</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 p-5">
                   {(Array.isArray(c.metrics) ? c.metrics : []).map((row: string[]) => (
                     <div key={row[1]} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                       <p className="text-xl font-semibold text-white">{row[0]}</p>
-                      <p className="mt-1 text-[11px] text-emerald-100/65">{row[1]}</p>
+                      <p className="mt-1 text-[11px] text-emerald-100/75">{row[1]}</p>
                     </div>
                   ))}
                 </div>
                 <div className="space-y-3 px-5 pb-5">
                   {(Array.isArray(c.rows) ? c.rows : []).map((row: string[]) => (
                     <div key={row[0]} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                      <span className="text-sm text-emerald-50/85">{row[0]}</span>
-                      <span className="text-xs font-medium text-lime-300">{row[1]}</span>
+                      <span className="text-sm text-emerald-50">{row[0]}</span>
+                      <span className="text-xs font-medium text-lime-200">{row[1]}</span>
                     </div>
                   ))}
                 </div>
@@ -357,11 +452,11 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
           <div className="marketing-cta">
             <div className="relative z-10 max-w-2xl">
               <p className="marketing-eyebrow marketing-eyebrow--light">{String(c.eyebrow || "")}</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">{String(c.title || "")}</h2>
-              <p className="mt-4 text-sm leading-relaxed text-emerald-100/75">{String(c.copy || "")}</p>
+              <h2 className="marketing-title-on-dark font-display">{String(c.title || "")}</h2>
+              <p className="mt-4 text-base leading-relaxed text-emerald-50/85">{String(c.copy || "")}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <CtaLink cta={c.primary_cta as { label: string; href: string }} className="btn-primary bg-white px-6 py-3 text-base text-forest-900 hover:bg-emerald-50" />
-                <CtaLink cta={c.secondary_cta as { label: string; href: string }} className="btn-secondary border-white/20 bg-white/5 px-6 py-3 text-base text-white hover:bg-white/10" />
+                <CtaLink cta={c.secondary_cta as { label: string; href: string }} className="btn-secondary border-white/25 bg-white/10 px-6 py-3 text-base text-white hover:bg-white/15" />
               </div>
             </div>
           </div>

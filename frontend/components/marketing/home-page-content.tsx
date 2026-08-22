@@ -17,10 +17,9 @@ export function HomePageContent({ initialData }: { initialData?: CmsPublicSite |
   });
 
   const payload = data ?? CMS_HOME_FALLBACK;
-  const sections =
-    payload.page.sections && payload.page.sections.length > 0
-      ? payload.page.sections
-      : getCmsHomeFallbackSections();
+  const liveSections = payload.page.sections ?? [];
+  const hasRedesign = liveSections.some((section) => section.section_type === "intelligence_pipeline");
+  const sections = hasRedesign && liveSections.length > 0 ? liveSections : getCmsHomeFallbackSections();
 
   return (
     <div className="marketing-page">
