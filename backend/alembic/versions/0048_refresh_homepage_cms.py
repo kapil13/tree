@@ -7,8 +7,8 @@ import uuid
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
-from alembic import op
 
+from alembic import op
 from app.services.cms.defaults import (
     FOOTER_DEFAULT,
     HEADER_DEFAULT,
