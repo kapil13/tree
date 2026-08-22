@@ -3,6 +3,7 @@ import {
   treeRegistrationDefaultsFromProject,
   validateTreeRegistrationDefaults,
 } from "@/lib/tree-registration-defaults";
+import { projectSetupHref } from "@/lib/project-focused-ui";
 
 export type SetupStepId =
   | "scheme_refs"
@@ -84,7 +85,7 @@ export function evaluateProjectSetup({
       label: "Scheme references",
       complete: hasSchemeRefs,
       required: true,
-      href: `/projects/${project.id}/settings`,
+      href: projectSetupHref(project.id, 3),
       description: hasSchemeRefs
         ? "Government IDs saved for audit exports"
         : `${missingRefs.length} required reference${missingRefs.length === 1 ? "" : "s"} missing`,
@@ -97,7 +98,7 @@ export function evaluateProjectSetup({
       label: "Tree registration defaults",
       complete: hasTreeDefaults,
       required: true,
-      href: `/projects/${project.id}/settings`,
+      href: projectSetupHref(project.id, 3),
       description: hasTreeDefaults
         ? "Permit, site zone, and agency defaults saved"
         : `Missing: ${Object.keys(missingTreeDefaults).join(", ")}`,
@@ -119,7 +120,7 @@ export function evaluateProjectSetup({
     label: "Work areas on map",
     complete: hasWorkAreas,
     required: requiresWorkArea,
-    href: `/projects/${project.id}#work-areas`,
+      href: projectSetupHref(project.id, 4),
     description: hasWorkAreas
       ? `${workAreas.length} area${workAreas.length === 1 ? "" : "s"} drawn`
       : "Draw at least one polygon or corridor",

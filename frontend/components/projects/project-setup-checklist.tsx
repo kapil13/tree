@@ -56,7 +56,7 @@ export function ProjectSetupChecklist({
                 )}
                 {!step.complete && step.href && (
                   <Link href={step.href} className="text-xs font-medium text-forest-700 hover:underline">
-                    Complete in settings →
+                    Continue in setup wizard →
                   </Link>
                 )}
               </div>
@@ -64,8 +64,11 @@ export function ProjectSetupChecklist({
           ))}
       </ul>
       {incomplete.some((s) => s.id === "work_areas") && (
-        <Link href="#work-areas" className="mt-3 inline-block text-xs font-medium text-forest-700 hover:underline">
-          Go to work area map ↓
+        <Link
+          href={status.steps.find((s) => s.id === "work_areas")?.href ?? "#work-areas"}
+          className="mt-3 inline-block text-xs font-medium text-forest-700 hover:underline"
+        >
+          Draw work areas in setup wizard →
         </Link>
       )}
     </div>

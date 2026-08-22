@@ -58,7 +58,7 @@ export function PlantingStandardPreview({
 
       <p className="mt-3 text-xs text-stone-500">
         Pit size, spacing, and guard rules inherit to every tree you register in this project.
-        You can adjust site-specific overrides later in Programme settings.
+        You can adjust site-specific overrides later in the project setup wizard (step 2).
       </p>
 
       {onConfirmChange && (

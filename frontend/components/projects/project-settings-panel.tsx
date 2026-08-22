@@ -6,9 +6,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
-import { SchemeMetadataForm } from "@/components/projects/scheme-metadata-form";
 import { ProjectRuleOverridePanel } from "@/components/projects/project-rule-override-panel";
-import { ProjectTreeRegistrationDefaultsForm } from "@/components/projects/project-tree-registration-defaults-form";
+import { projectSetupHref } from "@/lib/project-focused-ui";
 
 export function ProjectSettingsPanel({ project }: { project: PlantingProject }) {
   const qc = useQueryClient();
@@ -50,6 +49,17 @@ export function ProjectSettingsPanel({ project }: { project: PlantingProject }) 
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      <div className="card space-y-4 lg:col-span-2">
+        <h2 className="text-sm font-medium">Programme setup</h2>
+        <p className="text-sm text-stone-600">
+          Scheme references, tree registration defaults, planting standard confirmation, and work
+          areas are configured in the 4-step project setup wizard — not here.
+        </p>
+        <Link href={projectSetupHref(project.id)} className="btn-secondary inline-flex w-fit">
+          Open project setup wizard →
+        </Link>
+      </div>
+
       <div className="card space-y-4">
         <h2 className="text-sm font-medium">Project settings</h2>
         <div className="space-y-3 text-sm">
@@ -139,10 +149,6 @@ export function ProjectSettingsPanel({ project }: { project: PlantingProject }) 
           </button>
         </div>
       </div>
-
-      <SchemeMetadataForm project={project} />
-
-      <ProjectTreeRegistrationDefaultsForm project={project} />
 
       <ProjectRuleOverridePanel project={project} />
 
