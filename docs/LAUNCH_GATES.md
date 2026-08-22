@@ -45,8 +45,6 @@ This document tracks readiness against `docs/IMPLEMENTATION_PLAN.md` Gate A (man
 
 ## Verification
 
-Run internal checklist: **Settings → Sprint verify** (`/settings/sprint-verify`).
-
 Automated gates:
 
 ```bash

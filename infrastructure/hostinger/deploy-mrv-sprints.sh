@@ -71,7 +71,6 @@ Sprint 3–4  Mortality + NPRT buffer
 
 Sprint 4–5  DPDP privacy
   ${APP_URL}/settings/privacy → export / consent / grievance
-  ${APP_URL}/settings/sprint-verify → full checklist
 
 Sprint 5–6  Tamper-evident audit + signed evidence
   ${APP_URL}/projects → [project] → Compliance → evidence bundle (signed)
