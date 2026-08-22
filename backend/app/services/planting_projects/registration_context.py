@@ -162,19 +162,20 @@ def merge_project_into_tree_metadata(
     _set_if_empty(merged, "survival_status", "live")
     if surveyor_name:
         _set_if_empty(merged, "surveyor_name", surveyor_name)
+    project_name = getattr(project, "name", None)
     maintenance = (
         merged.get("implementing_agency")
         or refs.get("state_campa_account")
         or refs.get("state_name")
         or surveyor_name
-        or project.name
+        or project_name
     )
     _set_if_empty(merged, "maintenance_responsible", maintenance)
 
     if not merged.get("permit_reference"):
         _set_if_empty(merged, "permit_reference", project.code)
     if not merged.get("site_zone"):
-        _set_if_empty(merged, "site_zone", project.name)
+        _set_if_empty(merged, "site_zone", project_name)
 
     return merged
 

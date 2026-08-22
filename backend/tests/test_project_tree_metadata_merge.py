@@ -28,10 +28,16 @@ def test_merge_project_uses_stored_tree_registration_defaults() -> None:
             },
         }
 
+    rules = {
+        "pit_size_cm": {"length": 45, "width": 45, "depth": 45},
+        "spacing_m": {"min": 3},
+        "guard_type_required": True,
+        "species_native_pct_min": 80,
+    }
     merged = merge_project_into_tree_metadata(
         {},
         project=FakeProject(),  # type: ignore[arg-type]
-        rules={"guard_type_required": True},
+        rules=rules,
         surveyor_name="Asha Verma",
     )
     assert merged["permit_reference"] == "PCA/STORED/1"
