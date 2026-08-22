@@ -254,7 +254,21 @@ export function ReportPaper({
 }
 
 export function ProgramScene({ kind }: { kind: string }) {
-  if (kind.includes("Government") || kind.includes("Public")) {
+  if (/byot|citizen/i.test(kind)) {
+    return (
+      <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
+        <rect width="360" height="200" fill="#dcfce7" />
+        <rect x="248" y="48" width="72" height="120" rx="12" fill="#052e1f" />
+        <rect x="258" y="62" width="52" height="78" rx="6" fill="#14532d" />
+        <circle cx="284" cy="152" r="5" fill="#86efac" />
+        <path d="M40 160 C70 90 110 120 140 80 C170 50 200 100 240 70" fill="none" stroke="#16a34a" strokeWidth="8" />
+        <text x="20" y="32" fill="#14532d" fontSize="13" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+          Citizen tree passport
+        </text>
+      </svg>
+    );
+  }
+  if (/government|nhai|highway/i.test(kind)) {
     return (
       <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
         <rect width="360" height="200" fill="#f59e0b" />
