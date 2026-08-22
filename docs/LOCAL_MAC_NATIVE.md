@@ -118,6 +118,48 @@ make dev-stop
 
 ---
 
+## Bioacoustic / BirdNET (optional)
+
+Species identification from audio recordings uses **BirdNET** via a dedicated Celery worker. The API enqueues analysis jobs; the worker runs TensorFlow + birdnetlib.
+
+### One-time ML setup
+
+Requires **ffmpeg** (`brew install ffmpeg` on Mac).
+
+```bash
+./scripts/setup-bioacoustic.sh
+```
+
+This installs `requirements-bioacoustic.txt` (~2 GB TensorFlow download). `dev-start.sh` auto-starts the bioacoustic worker when the stack is ready.
+
+### Manual worker control
+
+```bash
+./scripts/dev-bioacoustic-worker.sh   # BirdNET queue only
+curl http://localhost:8000/health/workers | python3 -m json.tool
+```
+
+Expect `"birdnet_available": true` and a Celery worker in `"celery.workers"`.
+
+### Docker dev stack
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d
+COMPOSE_PROFILES=bioacoustic docker compose -f infrastructure/docker-compose.yml up -d bioacoustic-worker
+```
+
+### Production (VPS)
+
+Enable the heavy ML worker during deploy:
+
+```bash
+COMPOSE_PROFILES=bioacoustic ./deploy.sh
+```
+
+See `infrastructure/hostinger/.env.production.example` for `BIOACOUSTIC_*` settings.
+
+---
+
 ## Logs
 
 ```bash

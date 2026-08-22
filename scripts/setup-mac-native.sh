@@ -51,6 +51,10 @@ fi
 source backend/.venv/bin/activate
 pip install -q -r backend/requirements.txt
 
+echo ""
+echo "Optional — BirdNET bioacoustic ML (TensorFlow, ~2 GB download):"
+echo "  ./scripts/setup-bioacoustic.sh"
+
 echo "Migrations..."
 cd backend
 alembic upgrade head
