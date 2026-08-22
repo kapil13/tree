@@ -5,6 +5,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { authErrorMessage, paymentErrorMessage } from "@/lib/auth-payment-messages";
 import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
+import { humanizeValidationErrors } from "@/lib/tree-validation-errors";
 import { useAuth } from "@/lib/auth-store";
 
 const PRODUCTION_API = "https://api.aranyix.tech/api";
@@ -153,7 +154,7 @@ export function errorMessage(err: unknown): string {
         return details.compliance_errors.map((e) => e.message).join("; ");
       }
       if (details?.validation_errors?.length) {
-        return details.validation_errors.join("; ");
+        return humanizeValidationErrors(details.validation_errors);
       }
       if (apiErr.message && apiErr.message !== "Error") {
         return apiErr.message;
@@ -173,7 +174,7 @@ export function errorMessage(err: unknown): string {
         return detail.compliance_errors.map((e) => e.message).join("; ");
       }
       if (detail.validation_errors?.length) {
-        return detail.validation_errors.join("; ");
+        return humanizeValidationErrors(detail.validation_errors);
       }
     }
     if (typeof data?.detail === "string") {

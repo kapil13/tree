@@ -26,6 +26,10 @@ export function SchemeProjectRequiredBanner() {
           <Link href="/projects" className="font-medium text-forest-800 underline">
             open an existing project
           </Link>
+          <p className="mt-3 text-xs text-amber-800">
+            BYOT-only tagging without a project is still available if your org has not enrolled in
+            government or ESG programmes.
+          </p>
         </div>
       </div>
     </div>
