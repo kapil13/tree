@@ -48,6 +48,7 @@ from app.schemas.auth import (
 from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
+from app.services.auth.profile_helpers import age_from_date_of_birth
 from app.services.auth.gmail_sender import (
     GmailSendError,
     gmail_otp_configured,
@@ -597,6 +598,13 @@ def _user_out(
         pending_program_code=pending_program_code,
         pending_access_request_id=pending_access_request_id,
         impersonation=impersonation,
+        locale=user.locale,
+        phone=user.phone,
+        date_of_birth=user.date_of_birth,
+        date_of_marriage=user.date_of_marriage,
+        city=user.city,
+        state=user.state,
+        age=age_from_date_of_birth(user.date_of_birth),
     )
 
 
@@ -680,15 +688,24 @@ async def me(
 
 @router.patch("/me", response_model=UserOut)
 async def update_me(payload: UpdateProfile, user: CurrentUser, db: DB) -> UserOut:
-    if payload.full_name is not None:
-        user.full_name = payload.full_name
-    if payload.phone is not None:
-        user.phone = payload.phone
-    if payload.locale is not None:
+    data = payload.model_dump(exclude_unset=True)
+    if "full_name" in data:
+        user.full_name = data["full_name"]
+    if "phone" in data:
+        user.phone = data["phone"]
+    if "locale" in data:
         allowed = {"en", "hi", "mr", "ta", "te", "bn", "kn", "gu"}
-        if payload.locale not in allowed:
+        if data["locale"] not in allowed:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unsupported_locale")
-        user.locale = payload.locale
+        user.locale = data["locale"]
+    if "date_of_birth" in data:
+        user.date_of_birth = data["date_of_birth"]
+    if "date_of_marriage" in data:
+        user.date_of_marriage = data["date_of_marriage"]
+    if "city" in data:
+        user.city = data["city"]
+    if "state" in data:
+        user.state = data["state"]
     await db.commit()
     await db.refresh(user)
     return await _user_out_enriched(db, user)

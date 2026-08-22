@@ -27,6 +27,7 @@ import 'screens/bioacoustic_screen.dart';
 import 'screens/projects_list_screen.dart';
 import 'screens/project_detail_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/profile_edit_screen.dart';
 import 'screens/field_ops_screen.dart';
 import 'screens/monitoring_screen.dart';
 import 'screens/carbon_screen.dart';
@@ -149,6 +150,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/bioacoustic', builder: (_, __) => const BioacousticScreen()),
+      GoRoute(path: '/profile/edit', builder: (_, __) => const ProfileEditScreen()),
     ],
   );
 });

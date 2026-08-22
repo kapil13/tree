@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 class RegisterRequest(BaseModel):
@@ -142,9 +142,36 @@ class UserOut(BaseModel):
     pending_access_request_id: uuid.UUID | None = None
     impersonation: dict | None = None
     locale: str = "en"
+    phone: str | None = None
+    date_of_birth: date | None = None
+    date_of_marriage: date | None = None
+    city: str | None = None
+    state: str | None = None
+    age: int | None = None
 
 
 class UpdateProfile(BaseModel):
-    full_name: str | None = None
-    phone: str | None = None
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
+    phone: str | None = Field(default=None, min_length=10, max_length=32)
     locale: str | None = Field(default=None, min_length=2, max_length=16)
+    date_of_birth: date | None = None
+    date_of_marriage: date | None = None
+    city: str | None = Field(default=None, max_length=128)
+    state: str | None = Field(default=None, max_length=128)
+
+    @field_validator("date_of_birth", "date_of_marriage")
+    @classmethod
+    def _not_future(cls, value: date | None) -> date | None:
+        if value is not None and value > date.today():
+            raise ValueError("date_cannot_be_in_future")
+        return value
+
+    @model_validator(mode="after")
+    def _marriage_after_birth(self) -> UpdateProfile:
+        if (
+            self.date_of_birth is not None
+            and self.date_of_marriage is not None
+            and self.date_of_marriage < self.date_of_birth
+        ):
+            raise ValueError("marriage_date_before_birth")
+        return self

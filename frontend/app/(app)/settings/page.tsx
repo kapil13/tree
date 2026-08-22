@@ -20,17 +20,34 @@ export default function SettingsGeneralPage() {
   return (
     <div className="space-y-8">
       <SettingsSection title={ts("account")}>
-        <div className="card flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-600 text-lg font-semibold text-white">
-            {(user?.full_name || "U").slice(0, 1).toUpperCase()}
+        <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-600 text-lg font-semibold text-white">
+              {(user?.full_name || "U").slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-stone-900 dark:text-stone-50">{user?.full_name}</p>
+              <p className="truncate text-sm text-stone-500">{user?.email}</p>
+              {(user?.city || user?.state) && (
+                <p className="truncate text-xs text-stone-500">
+                  {[user.city, user.state].filter(Boolean).join(", ")}
+                </p>
+              )}
+            </div>
+            <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+              {roleLabel}
+            </span>
           </div>
-          <div className="min-w-0">
-            <p className="truncate font-medium text-stone-900 dark:text-stone-50">{user?.full_name}</p>
-            <p className="truncate text-sm text-stone-500">{user?.email}</p>
-          </div>
-          <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-            {roleLabel}
-          </span>
+          <Link
+            href="/settings/profile"
+            className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+          >
+            <div>
+              <p className="font-medium text-stone-900 dark:text-stone-50">Edit personal profile</p>
+              <p className="text-sm text-stone-500">Name, phone, date of birth, city, and state</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+          </Link>
         </div>
       </SettingsSection>
 

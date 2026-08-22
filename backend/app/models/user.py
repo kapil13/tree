@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -36,6 +36,10 @@ class User(UUIDPKMixin, TimestampMixin, Base):
         JSONB, nullable=False, default=default_notification_preferences
     )
     locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_of_marriage: Mapped[date | None] = mapped_column(Date, nullable=True)
+    city: Mapped[str | None] = mapped_column(String(128))
+    state: Mapped[str | None] = mapped_column(String(128))
 
     organization = relationship(
         "Organization", back_populates="users", foreign_keys=[organization_id]
