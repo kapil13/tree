@@ -132,6 +132,17 @@ export function ProjectFocusedOverview({
           icon: ShieldCheck,
         };
       }
+      if (incomplete?.id === "tree_defaults") {
+        return {
+          title: "Complete tree registration defaults",
+          description:
+            incomplete.description ??
+            "Permit reference, site zone, and agency must be set before registering trees.",
+          href: projectSecondaryHref(projectId, "settings"),
+          label: "Open settings",
+          icon: ShieldCheck,
+        };
+      }
       if (incomplete?.id === "work_areas") {
         return {
           title: "Draw a work area",

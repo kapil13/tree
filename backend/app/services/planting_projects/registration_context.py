@@ -101,6 +101,18 @@ def merge_project_into_tree_metadata(
     merged = merge_standard_into_tree_metadata(metadata, rules)
     refs = (project.metadata_ or {}).get("scheme_refs")
     refs = refs if isinstance(refs, dict) else {}
+    stored_defaults = (project.metadata_ or {}).get("tree_registration_defaults")
+    stored_defaults = stored_defaults if isinstance(stored_defaults, dict) else {}
+
+    for key in (
+        "permit_reference",
+        "site_zone",
+        "implementing_agency",
+        "maintenance_responsible",
+        "legal_basis",
+        "land_category",
+    ):
+        _set_if_empty(merged, key, stored_defaults.get(key))
 
     _set_if_empty(merged, "project_code", project.code)
 
@@ -150,8 +162,20 @@ def merge_project_into_tree_metadata(
     _set_if_empty(merged, "survival_status", "live")
     if surveyor_name:
         _set_if_empty(merged, "surveyor_name", surveyor_name)
-    maintenance = merged.get("implementing_agency") or refs.get("state_name")
+    project_name = getattr(project, "name", None)
+    maintenance = (
+        merged.get("implementing_agency")
+        or refs.get("state_campa_account")
+        or refs.get("state_name")
+        or surveyor_name
+        or project_name
+    )
     _set_if_empty(merged, "maintenance_responsible", maintenance)
+
+    if not merged.get("permit_reference"):
+        _set_if_empty(merged, "permit_reference", project.code)
+    if not merged.get("site_zone"):
+        _set_if_empty(merged, "site_zone", project_name)
 
     return merged
 

@@ -168,6 +168,7 @@ async def create_tree(
     work_area_id = payload.work_area_id or payload.plantation_id
     work_area: PlantationFence | None = None
     project: PlantingProject | None = None
+    metadata_in = dict(payload.metadata or {})
 
     if work_area_id:
         work_area = await load_work_area(work_area_id, user, db)
@@ -177,6 +178,18 @@ async def create_tree(
             project = await load_project(work_area.project_id, user, db)
             if project is None:
                 raise HTTPException(status.HTTP_403_FORBIDDEN, detail="project_access_denied")
+
+    if project is None:
+        project_id_raw = metadata_in.get("project_id")
+        if project_id_raw:
+            try:
+                project_id = uuid.UUID(str(project_id_raw))
+            except ValueError:
+                project_id = None
+            if project_id is not None:
+                project = await load_project(project_id, user, db)
+                if project is None:
+                    raise HTTPException(status.HTTP_403_FORBIDDEN, detail="project_access_denied")
 
     compliance_mode = (
         project.compliance_mode
@@ -196,7 +209,6 @@ async def create_tree(
     }
 
     rules: dict = {}
-    metadata_in = dict(payload.metadata or {})
     if project:
         standard = await get_active_standard(db, project)
         rules = await get_effective_rules(db, standard, project_id=project.id)

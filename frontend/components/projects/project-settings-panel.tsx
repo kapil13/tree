@@ -8,6 +8,7 @@ import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
 import { SchemeMetadataForm } from "@/components/projects/scheme-metadata-form";
 import { ProjectRuleOverridePanel } from "@/components/projects/project-rule-override-panel";
+import { ProjectTreeRegistrationDefaultsForm } from "@/components/projects/project-tree-registration-defaults-form";
 
 export function ProjectSettingsPanel({ project }: { project: PlantingProject }) {
   const qc = useQueryClient();
@@ -140,6 +141,8 @@ export function ProjectSettingsPanel({ project }: { project: PlantingProject }) 
       </div>
 
       <SchemeMetadataForm project={project} />
+
+      <ProjectTreeRegistrationDefaultsForm project={project} />
 
       <ProjectRuleOverridePanel project={project} />
 

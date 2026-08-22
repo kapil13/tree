@@ -33,6 +33,7 @@ import {
   inheritedStandardSummary,
   nextChainageLabelAfter,
 } from "@/lib/tree-registration-prefill";
+import { enrichTreePayloadMetadata } from "@/lib/tree-registration-defaults";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -224,6 +225,11 @@ export function NewTreePageClient() {
     project?.id,
     project?.scheme_code,
     project?.metadata?.plantation_category,
+    project?.metadata?.scheme_refs,
+    project?.metadata?.tree_registration_defaults,
+    project?.active_standard?.id,
+    user?.full_name,
+    user?.email,
   ]);
 
   useEffect(() => {
@@ -306,6 +312,13 @@ export function NewTreePageClient() {
           ...(payload.metadata ?? {}),
           pit_photo_confirmed: true,
         } as Record<string, unknown>;
+      }
+      if (project) {
+        payload.metadata = enrichTreePayloadMetadata(
+          payload.metadata as Record<string, unknown> | undefined,
+          project,
+          { surveyorName: user?.full_name ?? user?.email },
+        );
       }
       const tree = await trees.create(payload);
 

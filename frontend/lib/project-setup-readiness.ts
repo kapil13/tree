@@ -1,7 +1,12 @@
 import type { CentralScheme, PlantingProject, WorkArea } from "@/lib/api";
+import {
+  treeRegistrationDefaultsFromProject,
+  validateTreeRegistrationDefaults,
+} from "@/lib/tree-registration-defaults";
 
 export type SetupStepId =
   | "scheme_refs"
+  | "tree_defaults"
   | "planting_standard"
   | "work_areas"
   | "ready";
@@ -59,9 +64,13 @@ export function evaluateProjectSetup({
   scheme,
 }: ReadinessInput): ProjectSetupStatus {
   const missingRefs = missingSchemeRefKeys(project, scheme);
-  const hasSchemeRefs = project.scheme_code
-    ? missingRefs.length === 0
-    : true;
+  const hasSchemeRefs = project.scheme_code ? missingRefs.length === 0 : true;
+  const treeDefaults = treeRegistrationDefaultsFromProject(project);
+  const missingTreeDefaults =
+    project.scheme_code || project.program_code === "government_nhai"
+      ? validateTreeRegistrationDefaults(treeDefaults)
+      : {};
+  const hasTreeDefaults = Object.keys(missingTreeDefaults).length === 0;
   const hasStandard = Boolean(project.active_standard);
   const hasWorkAreas = workAreas.length > 0;
   const requiresWorkArea =
@@ -79,6 +88,19 @@ export function evaluateProjectSetup({
       description: hasSchemeRefs
         ? "Government IDs saved for audit exports"
         : `${missingRefs.length} required reference${missingRefs.length === 1 ? "" : "s"} missing`,
+    });
+  }
+
+  if (project.scheme_code || project.program_code === "government_nhai") {
+    steps.push({
+      id: "tree_defaults",
+      label: "Tree registration defaults",
+      complete: hasTreeDefaults,
+      required: true,
+      href: `/projects/${project.id}/settings`,
+      description: hasTreeDefaults
+        ? "Permit, site zone, and agency defaults saved"
+        : `Missing: ${Object.keys(missingTreeDefaults).join(", ")}`,
     });
   }
 
@@ -106,6 +128,7 @@ export function evaluateProjectSetup({
   const setupComplete =
     hasStandard &&
     hasSchemeRefs &&
+    hasTreeDefaults &&
     (!requiresWorkArea || hasWorkAreas);
 
   let canRegisterTree = setupComplete;
@@ -117,6 +140,9 @@ export function evaluateProjectSetup({
   } else if (!hasSchemeRefs) {
     canRegisterTree = false;
     blockReason = "Complete scheme references in project setup.";
+  } else if (!hasTreeDefaults) {
+    canRegisterTree = false;
+    blockReason = "Complete tree registration defaults (permit, site zone, agency) in project setup.";
   } else if (requiresWorkArea && !hasWorkAreas) {
     canRegisterTree = false;
     blockReason = "Draw a work area on the map before registering trees.";
