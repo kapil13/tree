@@ -29,6 +29,11 @@ export function projectOverviewHref(projectId: string): string {
   return `/projects/${projectId}`;
 }
 
+export function projectSetupHref(projectId: string, step?: 1 | 2 | 3 | 4): string {
+  const base = `/projects/${projectId}/setup`;
+  return step ? `${base}?step=${step}` : base;
+}
+
 export function projectSecondaryHref(
   projectId: string,
   tab: ProjectSecondaryTab,
@@ -51,7 +56,7 @@ export const PROJECT_SECONDARY_LABELS: Record<ProjectSecondaryTab, string> = {
   compliance: "Compliance",
   credits: "Credits & reports",
   team: "Team & work areas",
-  settings: "Programme settings",
+  settings: "Project admin",
 };
 
 /** Short labels for compact sub-nav on small screens. */

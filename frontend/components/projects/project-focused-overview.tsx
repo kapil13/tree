@@ -8,7 +8,7 @@ import { ProjectSetupChecklist } from "@/components/projects/project-setup-check
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
-import { projectSecondaryHref } from "@/lib/project-focused-ui";
+import { projectSecondaryHref, projectSetupHref } from "@/lib/project-focused-ui";
 import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
@@ -127,8 +127,8 @@ export function ProjectFocusedOverview({
         return {
           title: "Add scheme references",
           description: incomplete.description ?? "Government IDs are required before tree registration.",
-          href: projectSecondaryHref(projectId, "settings"),
-          label: "Open settings",
+          href: projectSetupHref(projectId, 3),
+          label: "Open setup wizard",
           icon: ShieldCheck,
         };
       }
@@ -138,8 +138,8 @@ export function ProjectFocusedOverview({
           description:
             incomplete.description ??
             "Permit reference, site zone, and agency must be set before registering trees.",
-          href: projectSecondaryHref(projectId, "settings"),
-          label: "Open settings",
+          href: projectSetupHref(projectId, 3),
+          label: "Open setup wizard",
           icon: ShieldCheck,
         };
       }
@@ -147,8 +147,8 @@ export function ProjectFocusedOverview({
         return {
           title: "Draw a work area",
           description: "Search your site, use GPS, then draw a polygon or corridor on the map below.",
-          href: "#work-areas",
-          label: "Go to map",
+          href: projectSetupHref(projectId, 4),
+          label: "Draw work areas",
           icon: MapPin,
         };
       }
@@ -156,8 +156,8 @@ export function ProjectFocusedOverview({
         return {
           title: "Attach planting standard",
           description: "No compliance standard is linked to this project.",
-          href: projectSecondaryHref(projectId, "settings"),
-          label: "Open settings",
+          href: projectSetupHref(projectId, 2),
+          label: "Open setup wizard",
           icon: ShieldCheck,
         };
       }

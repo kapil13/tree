@@ -565,7 +565,7 @@ export default function NewProjectPage() {
             <h2 className="text-sm font-medium text-stone-900">Government reference IDs</h2>
             <p className="mt-1 text-sm text-stone-500">
               {selectedScheme?.label} · {selectedScheme?.ministry}. These flow into tree registration
-              and audit exports — you can edit them later in Programme settings.
+              and audit exports — you can edit them later in the project setup wizard.
             </p>
           </div>
 
