@@ -9,7 +9,7 @@ lsof -i :3000 2>/dev/null || echo "  :3000 nothing listening"
 
 echo ""
 echo "=== PIDs ==="
-for f in backend frontend; do
+for f in backend frontend celery-worker bioacoustic-worker; do
   pf="$RUN_DIR/$f.pid"
   if [ -f "$pf" ]; then
     pid=$(cat "$pf")
@@ -27,6 +27,12 @@ echo ""
 echo "=== Health ==="
 curl -sf http://localhost:8000/health && echo "" || echo "  backend: FAILED"
 curl -sf -o /dev/null -w "  frontend: HTTP %{http_code}\n" http://localhost:3000 2>/dev/null || echo "  frontend: FAILED"
+if curl -sf http://localhost:8000/health/workers >/dev/null 2>&1; then
+  echo ""
+  echo "=== Workers (/health/workers) ==="
+  curl -sf http://localhost:8000/health/workers | python3 -m json.tool 2>/dev/null \
+    | head -40 || curl -sf http://localhost:8000/health/workers
+fi
 
 echo ""
 echo "=== Postgres / Redis ==="

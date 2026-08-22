@@ -12,6 +12,8 @@ BACKEND_LOG="$RUN_DIR/backend.log"
 FRONTEND_LOG="$RUN_DIR/frontend.log"
 BACKEND_PID="$RUN_DIR/backend.pid"
 FRONTEND_PID="$RUN_DIR/frontend.pid"
+CELERY_PID="$RUN_DIR/celery-worker.pid"
+BIO_PID="$RUN_DIR/bioacoustic-worker.pid"
 
 stop_if_running() {
   local pidfile="$1"
@@ -31,6 +33,8 @@ stop_if_running() {
 
 stop_if_running "$BACKEND_PID" "backend"
 stop_if_running "$FRONTEND_PID" "frontend"
+stop_if_running "$CELERY_PID" "celery worker"
+stop_if_running "$BIO_PID" "bioacoustic worker"
 
 # Kill anything else on our ports (stale Docker / crashed processes)
 for port in 8000 3000; do
@@ -101,6 +105,17 @@ echo "Starting frontend on http://localhost:3000 ..."
 ) >>"$FRONTEND_LOG" 2>&1 &
 echo $! >"$FRONTEND_PID"
 
+# --- Celery workers (background jobs + BirdNET when ML stack installed) ---
+echo "Starting Celery worker (default,ai,notifications)..."
+"$ROOT/scripts/dev-celery-worker.sh"
+
+if "$ROOT/scripts/bioacoustic-ready.sh" 2>/dev/null; then
+  echo "BirdNET stack detected — starting bioacoustic worker..."
+  "$ROOT/scripts/dev-bioacoustic-worker.sh"
+else
+  echo "BirdNET not installed (optional). Run: ./scripts/setup-bioacoustic.sh"
+fi
+
 echo ""
 echo "Waiting for services..."
 for i in $(seq 1 30); do
@@ -128,8 +143,9 @@ echo "Logs:"
 echo "  tail -f $BACKEND_LOG"
 echo "  tail -f $FRONTEND_LOG"
 echo ""
-echo "Status: ./scripts/dev-status.sh"
-echo "Stop:   ./scripts/dev-stop.sh"
+echo "Workers: ./scripts/dev-status.sh  (or curl http://localhost:8000/health/workers)"
+echo "Status:  ./scripts/dev-status.sh"
+echo "Stop:    ./scripts/dev-stop.sh"
 echo "Login: demo@byot.earth / byotdemo1234!  (run: cd backend && source .venv/bin/activate && python -m app.scripts.seed_demo)"
 LAN_IP=""
 if command -v ipconfig >/dev/null 2>&1; then

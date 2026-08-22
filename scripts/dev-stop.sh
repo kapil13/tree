@@ -30,9 +30,12 @@ stop_pid() {
 
 stop_pid "$RUN_DIR/backend.pid" "backend"
 stop_pid "$RUN_DIR/frontend.pid" "frontend"
+stop_pid "$RUN_DIR/celery-worker.pid" "celery worker"
+stop_pid "$RUN_DIR/bioacoustic-worker.pid" "bioacoustic worker"
 
-# Clean up child processes (uvicorn --reload, next dev)
+# Clean up child processes (uvicorn --reload, next dev, celery)
 pkill -f "uvicorn app.main:app" 2>/dev/null || true
 pkill -f "next dev --port 3000" 2>/dev/null || true
+pkill -f "celery -A app.workers.celery_app worker" 2>/dev/null || true
 
 echo "Done."

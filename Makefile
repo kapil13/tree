@@ -1,12 +1,14 @@
-.PHONY: help dev-start dev-stop dev-status setup-native migrate-native seed-native test lint
+.PHONY: help dev-start dev-stop dev-status setup-native setup-bioacoustic dev-bioacoustic-worker migrate-native seed-native test lint
 .PHONY: up down logs migrate seed docker-legacy migrate-db
 
 help:
 	@echo "BYOT — Native Mac (no Docker)"
 	@echo "  make setup-native     One-time install (Postgres.app + Redis + deps)"
-	@echo "  make dev-start        Start backend + frontend in background"
-	@echo "  make dev-stop         Stop backend + frontend"
+	@echo "  make dev-start        Start backend + frontend + Celery workers"
+	@echo "  make dev-stop         Stop backend + frontend + workers"
 	@echo "  make dev-status       Health check + logs"
+	@echo "  make setup-bioacoustic  Install BirdNET ML stack (optional, heavy)"
+	@echo "  make dev-bioacoustic-worker  Start BirdNET Celery worker only"
 	@echo "  make migrate-native   Run Alembic migrations"
 	@echo "  make migrate-db       Smart migrate (auto-detect Docker vs native)"
 	@echo "  make seed-native      Seed demo user"
@@ -30,6 +32,12 @@ dev-stop:
 
 dev-status:
 	./scripts/dev-status.sh
+
+setup-bioacoustic:
+	./scripts/setup-bioacoustic.sh
+
+dev-bioacoustic-worker:
+	./scripts/dev-bioacoustic-worker.sh
 
 migrate-native:
 	cd backend && . .venv/bin/activate && alembic upgrade head
