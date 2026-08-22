@@ -149,7 +149,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   initialValue: user['email'] as String? ?? '',
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(
+                    labelText: 'Login email',
+                    helperText: 'Used to sign in. Cannot be changed here.',
+                  ),
                   readOnly: true,
                 ),
                 const SizedBox(height: 12),

@@ -87,10 +87,12 @@ export function UserProfileForm() {
 
         <div>
           <label className="kpi-label" htmlFor="profile-email">
-            Email
+            Login email
           </label>
           <input id="profile-email" className="input mt-1 bg-stone-50" value={user.email} readOnly />
-          <p className="mt-1 text-xs text-stone-500">Email is managed through sign-in and verification.</p>
+          <p className="mt-1 text-xs text-stone-500">
+            Used to sign in. Email cannot be changed here — contact support if you need a different login address.
+          </p>
         </div>
 
         <div>
