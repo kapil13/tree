@@ -48,7 +48,6 @@ from app.schemas.auth import (
 from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
-from app.services.auth.profile_helpers import age_from_date_of_birth
 from app.services.auth.gmail_sender import (
     GmailSendError,
     gmail_otp_configured,
@@ -69,6 +68,7 @@ from app.services.auth.password_reset import (
     confirm_password_reset,
     request_password_reset,
 )
+from app.services.auth.profile_helpers import age_from_date_of_birth
 from app.services.auth.sessions import token_issued_before_invalidation
 from app.services.auth.signup import (
     SignupError,
