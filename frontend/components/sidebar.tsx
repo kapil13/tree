@@ -37,30 +37,27 @@ export type NavItem = {
 
 type NavGroup = {
   id: string;
-  labelKey: string;
+  labelKey?: string;
+  descKey?: string;
+  hideHeader?: boolean;
   items: NavItem[];
 };
 
+/** Plantation lifecycle: overview → field work → intelligence → reports → account */
 const NAV_GROUPS: NavGroup[] = [
   {
-    id: "home",
-    labelKey: "home",
+    id: "overview",
+    hideHeader: true,
     items: [
       { href: "/dashboard", labelKey: "dashboard", icon: BarChart3, audience: "all", exact: true },
       { href: "/stewardship", labelKey: "stewardship", icon: Heart, audience: "byot", exact: true },
     ],
   },
   {
-    id: "operate",
-    labelKey: "operate",
+    id: "plantation",
+    labelKey: "sectionPlantation",
+    descKey: "sectionPlantationDesc",
     items: [
-      {
-        href: "/field-ops",
-        labelKey: "fieldOps",
-        icon: ClipboardList,
-        audience: ["professional", "field_supervisor"],
-        excludeViewers: true,
-      },
       {
         href: "/projects",
         labelKey: "projects",
@@ -69,11 +66,19 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/trees", labelKey: "trees", icon: TreePine, audience: "all", exact: true },
       { href: "/map", labelKey: "map", icon: Map, audience: "all" },
+      {
+        href: "/field-ops",
+        labelKey: "fieldOps",
+        icon: ClipboardList,
+        audience: ["professional", "field_supervisor"],
+        excludeViewers: true,
+      },
     ],
   },
   {
-    id: "monitor",
-    labelKey: "monitor",
+    id: "intelligence",
+    labelKey: "sectionIntelligence",
+    descKey: "sectionIntelligenceDesc",
     items: [
       {
         href: "/portfolio-health",
@@ -93,8 +98,9 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    id: "evidence",
-    labelKey: "evidence",
+    id: "reports",
+    labelKey: "sectionReports",
+    descKey: "sectionReportsDesc",
     items: [
       {
         href: "/reports",
@@ -107,7 +113,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "account",
-    labelKey: "account",
+    hideHeader: true,
     items: [{ href: "/settings", labelKey: "settings", icon: Settings, audience: "all" }],
   },
 ];
@@ -147,19 +153,30 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   })).filter((group) => group.items.length > 0);
 
   if (adminItems.length) {
-    groups.push({ id: "admin", labelKey: "platformAdmin", items: adminItems });
+    groups.push({ id: "admin", labelKey: "platformAdmin", hideHeader: true, items: adminItems });
   }
 
   return (
-    <nav className="space-y-4" aria-label={t("home")}>
-      {groups.map((group) => (
-        <div key={group.id}>
-          {group.id !== "home" ? (
-            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
-              {t(group.labelKey)}
-            </p>
+    <nav className="space-y-1" aria-label={t("home")}>
+      {groups.map((group, groupIndex) => (
+        <div
+          key={group.id}
+          className={cn(
+            groupIndex > 0 && "pt-3",
+            group.id === "account" && "mt-2 border-t border-stone-200 pt-3 dark:border-stone-800",
+          )}
+        >
+          {!group.hideHeader && group.labelKey ? (
+            <div className="mb-2 px-3">
+              <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">
+                {t(group.labelKey)}
+              </p>
+              {group.descKey ? (
+                <p className="mt-0.5 text-[11px] leading-snug text-stone-400">{t(group.descKey)}</p>
+              ) : null}
+            </div>
           ) : null}
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {group.items.map(({ href, labelKey, icon: Icon, exact, audience }) => {
               const active = isActive(path, { href, labelKey, icon: Icon, exact, audience });
               const label = t(labelKey);
@@ -169,14 +186,21 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                   href={href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
+                  title={label}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
                     active
-                      ? "bg-forest-100 text-forest-800"
-                      : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800",
+                      ? "bg-forest-100 text-forest-800 dark:bg-forest-950/50 dark:text-forest-200"
+                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-900 dark:hover:text-stone-50",
                   )}
                 >
-                  <Icon className="h-4 w-4" aria-hidden />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      active ? "text-forest-700 dark:text-forest-300" : "text-stone-400",
+                    )}
+                    aria-hidden
+                  />
                   {label}
                 </Link>
               );
@@ -195,8 +219,8 @@ export function Sidebar() {
         <AranyixMark className="h-8 w-8 shrink-0" />
         <div className="min-w-0">
           <div className="text-base font-bold leading-tight text-forest-900">Aranyix</div>
-          <div className="truncate text-[10px] font-medium uppercase tracking-wider text-stone-500">
-            Nature intelligence
+          <div className="truncate text-[10px] font-medium text-stone-400">
+            Plantation intelligence platform
           </div>
         </div>
       </Link>
