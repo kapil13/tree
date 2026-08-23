@@ -8,8 +8,8 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.project_safeguard_document import ProjectSafeguardDocument
 from app.models.planting_project import PlantingProject
+from app.models.project_safeguard_document import ProjectSafeguardDocument
 
 SafeguardDocType = Literal[
     "gram_sabha_resolution",
