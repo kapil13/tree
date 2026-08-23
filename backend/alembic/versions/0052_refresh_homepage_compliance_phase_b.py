@@ -56,22 +56,23 @@ def upgrade() -> None:
 
     conn.execute(
         sa.text(
-            """
-            UPDATE cms_pages
-            SET title = :title, meta_description = :meta, header_config = CAST(:header AS jsonb),
-                footer_config = CAST(:footer AS jsonb), updated_at = :now
-            WHERE id = :pid
-            """
+            "UPDATE cms_pages SET title = :title, meta_description = :meta, updated_at = :now WHERE id = :id"
         ),
         {
-            "pid": page_id,
             "title": HOME_PAGE_DEFAULT["title"],
             "meta": HOME_PAGE_DEFAULT["meta_description"],
-            "header": json.dumps(HEADER_DEFAULT),
-            "footer": json.dumps(FOOTER_DEFAULT),
+            "id": page_id,
             "now": now,
         },
     )
+
+    for key, data in (("header", HEADER_DEFAULT), ("footer", FOOTER_DEFAULT)):
+        conn.execute(
+            sa.text(
+                "UPDATE cms_site_config SET data = CAST(:data AS jsonb), updated_at = :now WHERE config_key = :key"
+            ),
+            {"key": key, "data": json.dumps(data), "now": now},
+        )
 
 
 def downgrade() -> None:
