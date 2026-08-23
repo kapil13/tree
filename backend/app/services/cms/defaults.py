@@ -204,6 +204,8 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Award", "code": "Gold Standard", "title": "Gold Standard LUF", "description": "Land Use & Forests carbon and co-benefit evidence packs for voluntary verification prep."},
                 {"icon": "Trees", "code": "REDD+", "title": "REDD+ MRV", "description": "Baseline, permanence, and leakage evidence structures aligned to UNFCCC Warsaw Framework."},
                 {"icon": "Globe2", "code": "Paris / NDC", "title": "Paris Agreement traceability", "description": "Geo-tagged planting ledger supporting national commitments and Article 6 transparency."},
+                {"icon": "Globe2", "code": "Article 6", "title": "Article 6 readiness", "description": "Cooperative approaches checklist with corresponding adjustment refs and serial traceability."},
+                {"icon": "Globe2", "code": "ETF / BTR", "title": "National inventory handoff", "description": "IPCC-aligned org roll-up for Enhanced Transparency Framework and BTR preparation."},
                 {"icon": "BadgeCheck", "code": "Green Credit", "title": "MoEFCC Green Credit", "description": "Land bank registration and verifier-ready planting evidence under Green Credit Rules 2023."},
                 {"icon": "ShieldCheck", "code": "ICVCM", "title": "Core Carbon Principles", "description": "Integrity checklist mapped to field evidence and monitoring automation."},
                 {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."},
@@ -225,7 +227,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "title": "Sixteen live exports. One evidence graph.",
             "copy": (
                 "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, "
-                "Paris/NDC, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
+                "Paris/NDC, ETF/BTR handoff, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
                 "and signed evidence — generated from the same plantation record. Assurance packs, "
                 "not credit issuance."
             ),
@@ -239,6 +241,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Award", "tag": "Gold Standard", "title": "Gold Standard LUF report", "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.", "formats": "PDF · XLSX"},
                 {"icon": "Trees", "tag": "REDD+", "title": "REDD+ MRV report", "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.", "formats": "PDF · XLSX"},
                 {"icon": "Globe2", "tag": "Paris / NDC", "title": "Paris Agreement traceability", "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.", "formats": "PDF · XLSX"},
+                {"icon": "Globe2", "tag": "ETF / BTR", "title": "National inventory handoff", "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.", "formats": "CSV · XLSX"},
                 {"icon": "BadgeCheck", "tag": "Green Credit", "title": "Green Credit India pack", "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.", "formats": "PDF · XLSX"},
                 {"icon": "TreePine", "tag": "Inventory", "title": "Tree inventory", "description": "Species, survival, geotag status, and chainage for compliance packs.", "formats": "PDF · XLSX"},
                 {"icon": "BarChart3", "tag": "Carbon", "title": "Carbon stock estimate", "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.", "formats": "PDF · XLSX"},

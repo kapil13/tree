@@ -69,6 +69,30 @@ const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { hre
     label: "Sync credit ledger",
     tab: "credits",
   },
+  leakage_documented: {
+    label: "Add leakage account",
+    tab: "credits",
+  },
+  nprt_assessed: {
+    label: "Run NPRT assessment",
+    tab: "credits",
+  },
+  sar_permanence_risk: {
+    label: "Review satellite integrity",
+    href: "/portfolio-health?tab=monitoring",
+  },
+  ca_ref_documented: {
+    label: "Retire serial with CA ref",
+    tab: "credits",
+  },
+  article6_authorization_ref: {
+    label: "Add authorization ref",
+    tab: "settings",
+  },
+  article6_serials_present: {
+    label: "Open credits ledger",
+    tab: "credits",
+  },
   active_standard_attached: {
     label: "Review planting standard",
     tab: "overview",

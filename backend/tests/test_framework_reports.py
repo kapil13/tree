@@ -74,6 +74,16 @@ def test_build_framework_report_context_verra(monkeypatch):
         "app.services.reports.framework_context.build_project_mrv_context",
         AsyncMock(return_value=mrv_ctx),
     )
+    monkeypatch.setattr(
+        "app.services.reports.framework_context.build_carbon_integrity_envelope",
+        AsyncMock(
+            return_value={
+                "leakage": {"entry_count": 0, "total_net_leakage_tco2e": 0, "entries": []},
+                "permanence": {},
+                "article6": {},
+            }
+        ),
+    )
 
     ctx = asyncio.run(build_framework_report_context(db, project, "verra_vm0047"))
 

@@ -19,6 +19,7 @@ ChecklistCode = Literal[
     "sahakar_van_coop",
     "icvcm_ccp",
     "fra_tenure",
+    "article6_readiness",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -152,6 +153,7 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Safeguards",
                 question="Is a leakage assessment or mitigation plan in place?",
                 guidance="Address activity displacement outside the project boundary.",
+                auto_key="leakage_documented",
             ),
             ChecklistItemDef(
                 id="monitoring_protocol",
@@ -189,12 +191,14 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Safeguards",
                 question="Are permanence and reversal risks identified with mitigation measures?",
                 guidance="Include fire, pest, land-use change, and political risk.",
+                auto_key="sar_permanence_risk",
             ),
             ChecklistItemDef(
                 id="leakage_mitigation",
                 category="Safeguards",
                 question="Is leakage outside the project boundary assessed and mitigated?",
                 guidance="Document displacement of deforestation or degradation.",
+                auto_key="leakage_documented",
             ),
             ChecklistItemDef(
                 id="cancun_safeguards",
@@ -655,6 +659,55 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Transition",
                 question="Is retirement aligned with net-zero or Paris Article 6 claims where applicable?",
                 guidance="Serial retirement supports beneficiary and corresponding adjustment refs.",
+                auto_key="ca_ref_documented",
+            ),
+        ),
+    ),
+    "article6_readiness": ComplianceChecklist(
+        code="article6_readiness",
+        title="Paris Agreement Article 6 — Readiness",
+        short_label="Article 6",
+        framework_reference="Paris Agreement Art. 6 (cooperative approaches)",
+        description=(
+            "Traceability checklist for authorized mitigation outcomes and corresponding "
+            "adjustments — informational only, not registry authorization."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="host_authorization",
+                category="Governance",
+                question="Is host-country authorization for cooperative approaches documented?",
+                guidance="Reference MoEFCC or designated national authority authorization where applicable.",
+                auto_key="article6_authorization_ref",
+            ),
+            ChecklistItemDef(
+                id="corresponding_adjustment",
+                category="Tracking",
+                question="Are corresponding adjustment references recorded for retired ITMO-style serials?",
+                guidance="Link ledger retirement to host-country CA registry entry.",
+                auto_key="ca_ref_documented",
+            ),
+            ChecklistItemDef(
+                id="no_double_counting",
+                category="Integrity",
+                question="Is double counting avoided across NDC and voluntary claims?",
+                guidance="Exclusive claim registry and serial retirement prevent duplicate claims.",
+                auto_key="credit_ledger_active",
+            ),
+            ChecklistItemDef(
+                id="article6_serials",
+                category="Tracking",
+                question="Are Article 6-flagged serials minted and traceable in the credit ledger?",
+                guidance="Mark serials at retirement with Paris Article 6 metadata.",
+                auto_key="article6_serials_present",
+            ),
+            ChecklistItemDef(
+                id="leakage_integrity",
+                category="Quantification",
+                question="Is leakage accounted before Article 6 traceability reporting?",
+                guidance="Shared leakage worksheet supports VM0047, REDD+, and GS prep.",
+                auto_key="leakage_documented",
             ),
         ),
     ),

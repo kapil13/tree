@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Download, FileText, Link2 } from "lucide-react";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import { ProjectComplianceWorkflowPanel } from "@/components/projects/project-compliance-workflow-panel";
+import { ProjectPermanencePanel } from "@/components/projects/project-permanence-panel";
 import { ProjectSafeguardsPanel } from "@/components/projects/project-safeguards-panel";
 import {
   type ChecklistCode,
@@ -199,6 +200,11 @@ export function ProjectComplianceTab({
       </div>
 
       <ProjectSafeguardsPanel projectId={projectId} />
+
+      <ProjectPermanencePanel
+        projectId={projectId}
+        onNavigateCredits={onNavigateTab ? () => onNavigateTab("credits") : undefined}
+      />
 
       {(schemeCode === "green_credit_india" ||
         schemeCode === "campa_ca" ||
