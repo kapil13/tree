@@ -316,6 +316,12 @@ html[lang="hi"] body {
   box-shadow: 0 18px 50px rgba(20, 83, 45, 0.08);
 }
 
+.marketing-mosaic-map svg,
+.marketing-mosaic-sat svg {
+  display: block;
+  min-height: 16rem;
+}
+
 .marketing-mosaic-caption {
   padding: 1.25rem 1.4rem 1.5rem;
 }
@@ -398,6 +404,68 @@ html[lang="hi"] body {
   height: auto;
 }
 
+/* Intelligence pipeline — horizontal stepper */
+.marketing-pipeline {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0;
+  padding: 2rem 0.5rem 0.5rem;
+}
+
+.marketing-pipeline-track {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 3.15rem;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #86efac 0%, #22c55e 50%, #facc15 100%);
+  opacity: 0.55;
+}
+
+.marketing-pipeline-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0 0.25rem;
+}
+
+.marketing-pipeline-node-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  min-width: 3.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(165deg, #052e1f 0%, #14532d 100%);
+  box-shadow:
+    0 0 0 3px rgba(134, 239, 172, 0.35),
+    0 12px 28px rgba(20, 83, 45, 0.22);
+  color: #ecfccb;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.marketing-pipeline-node-detail {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4d7c0f;
+  text-align: center;
+}
+
 .marketing-river-legend {
   display: grid;
   gap: 1rem;
@@ -442,7 +510,7 @@ html[lang="hi"] body {
 
 @media (min-width: 1024px) {
   .marketing-compliance-layout {
-    grid-template-columns: 1fr 22rem;
+    grid-template-columns: 1fr minmax(20rem, 26rem);
   }
 }
 
@@ -450,6 +518,105 @@ html[lang="hi"] body {
   width: min(100%, 22rem);
   height: auto;
   justify-self: center;
+}
+
+/* Compliance orbit — CSS circular layout */
+.marketing-orbit {
+  position: relative;
+  width: min(100%, 24rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  justify-self: center;
+}
+
+.marketing-orbit-ring {
+  position: absolute;
+  inset: 8%;
+  border-radius: 999px;
+  border: 1px solid rgba(134, 239, 172, 0.22);
+}
+
+.marketing-orbit-ring--outer {
+  inset: 4%;
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.marketing-orbit-ring--inner {
+  inset: 22%;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.08), transparent 70%);
+}
+
+.marketing-orbit-core {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transform: translate(-50%, -50%);
+}
+
+.marketing-orbit-core-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 999px;
+  background: linear-gradient(165deg, #052e1f 0%, #14532d 100%);
+  box-shadow:
+    0 0 0 4px rgba(134, 239, 172, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.marketing-orbit-core-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d9f99d;
+}
+
+.marketing-orbit-pill-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transform: rotate(var(--orbit-angle));
+}
+
+.marketing-orbit-pill {
+  display: inline-flex;
+  max-width: 7.5rem;
+  transform: translateY(calc(-50% - 6.75rem)) rotate(calc(-1 * var(--orbit-angle)));
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(134, 239, 172, 0.45);
+  background: rgba(6, 78, 59, 0.92);
+  backdrop-filter: blur(6px);
+  color: #ecfccb;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+}
+
+@media (min-width: 640px) {
+  .marketing-orbit-pill {
+    max-width: 8.5rem;
+    transform: translateY(calc(-50% - 7.5rem)) rotate(calc(-1 * var(--orbit-angle)));
+    font-size: 0.68rem;
+    padding: 0.38rem 0.75rem;
+  }
 }
 
 .marketing-compliance-groups {
@@ -653,44 +820,66 @@ html[lang="hi"] body {
   padding: 1.75rem 1.75rem;
 }
 
+.marketing-timeline-section {
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+}
+
 .marketing-timeline {
   position: relative;
   margin: 3.5rem auto 0;
-  max-width: 40rem;
-  padding-left: 1.5rem;
+  max-width: 42rem;
+  padding-left: 0;
+  list-style: none;
 }
 
 .marketing-timeline::before {
   content: "";
   position: absolute;
   left: 1.35rem;
-  top: 0.4rem;
-  bottom: 0.4rem;
+  top: 0.75rem;
+  bottom: 0.75rem;
   width: 2px;
-  background: linear-gradient(#86efac, #14532d);
+  border-radius: 99px;
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 45%, #14532d 100%);
 }
 
 .marketing-timeline li {
   position: relative;
   display: grid;
-  grid-template-columns: 3.2rem 1fr;
-  gap: 1rem;
-  padding-bottom: 2rem;
+  grid-template-columns: 2.75rem 1fr;
+  gap: 1.25rem;
+  padding: 0 0 1.75rem 0;
+}
+
+.marketing-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.marketing-timeline li > div {
+  padding: 1.15rem 1.35rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(28, 25, 23, 0.07);
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(20, 83, 45, 0.06);
 }
 
 .marketing-timeline-node {
   position: relative;
   z-index: 1;
   display: flex;
-  height: 2.7rem;
-  width: 2.7rem;
+  height: 2.75rem;
+  width: 2.75rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #14532d;
+  background: linear-gradient(165deg, #15803d 0%, #14532d 100%);
+  box-shadow:
+    0 0 0 3px rgba(134, 239, 172, 0.35),
+    0 8px 20px rgba(20, 83, 45, 0.18);
   color: #ecfccb;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .marketing-hero-atmosphere {

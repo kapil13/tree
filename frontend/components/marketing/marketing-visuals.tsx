@@ -1,5 +1,7 @@
 "use client";
 
+import { Leaf } from "lucide-react";
+
 /** Distinct infographics for marketing sections — not generic icon tiles. */
 
 export function HeroCommandVisual({ className = "" }: { className?: string }) {
@@ -74,50 +76,140 @@ export function HeroCommandVisual({ className = "" }: { className?: string }) {
   );
 }
 
-export function FieldMapVisual() {
+function MapTreePin({ x, y }: { x: number; y: number }) {
   return (
-    <svg viewBox="0 0 420 260" className="h-full w-full" aria-hidden>
-      <rect width="420" height="260" rx="24" fill="#ecfdf5" />
-      <path d="M0 160 C70 120 140 190 210 150 C280 110 340 170 420 130 L420 260 L0 260Z" fill="#bbf7d0" />
-      <path d="M0 190 C90 170 160 220 250 180 C320 150 370 200 420 176 L420 260 L0 260Z" fill="#86efac" opacity="0.7" />
-      {[
-        [78, 118],
-        [146, 96],
-        [198, 132],
-        [268, 88],
-        [312, 124],
-        [362, 102],
-      ].map(([x, y], i) => (
-        <g key={i}>
-          <circle cx={x} cy={y} r="7" fill="#14532d" />
-          <circle cx={x} cy={y - 14} r="9" fill="#22c55e" />
-        </g>
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx="0" cy="10" rx="7" ry="2.5" fill="#14532d" opacity="0.18" />
+      <path d="M0 8 L0 14" stroke="#166534" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="0" cy="0" r="8" fill="#22c55e" stroke="#fff" strokeWidth="2" />
+      <circle cx="0" cy="0" r="3" fill="#ecfccb" opacity="0.85" />
+    </g>
+  );
+}
+
+export function FieldMapVisual() {
+  const trees: [number, number][] = [
+    [72, 148],
+    [128, 118],
+    [188, 138],
+    [248, 108],
+    [302, 132],
+    [352, 112],
+  ];
+
+  return (
+    <svg viewBox="0 0 420 280" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="fm-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f0fdf4" />
+          <stop offset="100%" stopColor="#dcfce7" />
+        </linearGradient>
+        <linearGradient id="fm-hill-back" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#bbf7d0" />
+          <stop offset="100%" stopColor="#86efac" />
+        </linearGradient>
+        <linearGradient id="fm-hill-front" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4ade80" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <pattern id="fm-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+          <path d="M28 0 L0 0 0 28" fill="none" stroke="#14532d" strokeOpacity="0.06" strokeWidth="1" />
+        </pattern>
+      </defs>
+
+      <rect width="420" height="280" fill="url(#fm-sky)" />
+      <rect width="420" height="280" fill="url(#fm-grid)" />
+
+      <path d="M0 188 C60 148 120 198 200 162 C270 132 340 178 420 148 L420 280 L0 280Z" fill="url(#fm-hill-back)" opacity="0.85" />
+      <path d="M0 210 C80 188 150 228 230 196 C300 170 360 214 420 192 L420 280 L0 280Z" fill="url(#fm-hill-front)" opacity="0.72" />
+
+      {trees.map(([x, y]) => (
+        <MapTreePin key={`${x}-${y}`} x={x} y={y} />
       ))}
-      <rect x="248" y="28" width="148" height="78" rx="14" fill="#052e1f" />
-      <text x="264" y="52" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui">Corridor 12+340</text>
-      <text x="264" y="74" fill="#fff" fontSize="16" fontFamily="ui-sans-serif, system-ui" fontWeight="700">248 trees</text>
-      <text x="264" y="92" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui">offline cache ready</text>
+
+      <g transform="translate(228 24)">
+        <rect width="172" height="88" rx="16" fill="#052e1f" fillOpacity="0.92" stroke="#86efac" strokeOpacity="0.35" />
+        <rect x="1" y="1" width="170" height="86" rx="15" fill="none" stroke="#fff" strokeOpacity="0.08" />
+        <text x="16" y="28" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="600" letterSpacing="0.08em">
+          CORRIDOR 12+340
+        </text>
+        <text x="16" y="54" fill="#fff" fontSize="22" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+          248 trees
+        </text>
+        <rect x="16" y="64" width="92" height="18" rx="9" fill="#14532d" />
+        <text x="24" y="77" fill="#bbf7d0" fontSize="9" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+          offline cache ready
+        </text>
+      </g>
     </svg>
   );
 }
 
 export function SatelliteFusionVisual() {
+  const ndviPoints = "48,168 96,138 144,150 192,106 240,120 288,84 336,98 372,72";
+  const sarPoints = "48,188 96,176 144,182 192,158 240,164 288,146 336,152 372,138";
+
   return (
-    <svg viewBox="0 0 420 260" className="h-full w-full" aria-hidden>
-      <rect width="420" height="260" rx="24" fill="#0c4a6e" />
-      <g opacity="0.35" stroke="#7dd3fc" strokeWidth="0.6">
-        {Array.from({ length: 8 }, (_, i) => (
-          <line key={`v${i}`} x1={40 + i * 48} y1="20" x2={40 + i * 48} y2="240" />
+    <svg viewBox="0 0 420 280" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sf-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0c4a6e" />
+          <stop offset="100%" stopColor="#082f49" />
+        </linearGradient>
+        <linearGradient id="sf-area" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4ade80" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#4ade80" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="sf-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#86efac" />
+          <stop offset="100%" stopColor="#38bdf8" />
+        </linearGradient>
+      </defs>
+
+      <rect width="420" height="280" rx="0" fill="url(#sf-bg)" />
+
+      <g opacity="0.22" stroke="#7dd3fc" strokeWidth="0.5">
+        {Array.from({ length: 9 }, (_, i) => (
+          <line key={`v${i}`} x1={36 + i * 42} y1="52" x2={36 + i * 42} y2="228" />
         ))}
         {Array.from({ length: 5 }, (_, i) => (
-          <line key={`h${i}`} x1="20" y1={36 + i * 42} x2="400" y2={36 + i * 42} />
+          <line key={`h${i}`} x1="28" y1={68 + i * 40} x2="392" y2={68 + i * 40} />
         ))}
       </g>
-      <path d="M40 180 L90 150 L140 162 L190 118 L240 132 L290 96 L340 110 L380 84" fill="none" stroke="#86efac" strokeWidth="3" />
-      <path d="M40 200 L90 188 L140 194 L190 170 L240 176 L290 158 L340 164 L380 150" fill="none" stroke="#38bdf8" strokeWidth="2.4" strokeDasharray="5 6" />
-      <rect x="24" y="20" width="112" height="36" rx="10" fill="#082f49" />
-      <text x="38" y="43" fill="#7dd3fc" fontSize="11" fontFamily="ui-sans-serif, system-ui">Sentinel · NISAR</text>
-      <text x="24" y="236" fill="#bae6fd" fontSize="12" fontFamily="ui-sans-serif, system-ui">NDVI 0.72   ·   SAR integrity 0.91</text>
+
+      <path d={`M${ndviPoints} L372 228 L48 228 Z`} fill="url(#sf-area)" />
+      <polyline points={ndviPoints} fill="none" stroke="url(#sf-line)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={sarPoints} fill="none" stroke="#7dd3fc" strokeWidth="2" strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+
+      {ndviPoints.split(" ").map((pt, i) => {
+        const [x, y] = pt.split(",").map(Number);
+        return <circle key={i} cx={x} cy={y} r="3.5" fill="#ecfccb" stroke="#22c55e" strokeWidth="1.5" />;
+      })}
+
+      <g transform="translate(20 16)">
+        <rect width="128" height="34" rx="10" fill="rgba(8,47,73,0.85)" stroke="rgba(125,211,252,0.35)" />
+        <circle cx="18" cy="17" r="4" fill="#38bdf8" />
+        <text x="30" y="21" fill="#e0f2fe" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+          Sentinel · NISAR
+        </text>
+      </g>
+
+      <g transform="translate(20 232)">
+        <rect width="118" height="32" rx="8" fill="rgba(255,255,255,0.08)" />
+        <text x="12" y="20" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+          NDVI 0.72
+        </text>
+      </g>
+      <g transform="translate(148 232)">
+        <rect width="148" height="32" rx="8" fill="rgba(255,255,255,0.08)" />
+        <text x="12" y="20" fill="#bae6fd" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+          SAR integrity 0.91
+        </text>
+      </g>
+
+      <text x="392" y="248" textAnchor="end" fill="#64748b" fontSize="9" fontFamily="ui-sans-serif, system-ui">
+        30d trend
+      </text>
     </svg>
   );
 }
@@ -126,7 +218,14 @@ export function BioacousticVisual() {
   const bars = [18, 34, 22, 48, 30, 56, 40, 28, 50, 36, 24, 44, 32, 20, 42];
   return (
     <svg viewBox="0 0 640 120" className="h-full w-full" aria-hidden>
+      <defs>
+        <linearGradient id="bio-bar" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="#15803d" />
+          <stop offset="100%" stopColor="#bbf7d0" />
+        </linearGradient>
+      </defs>
       <rect width="640" height="120" rx="20" fill="#14532d" />
+      <rect width="640" height="120" rx="20" fill="url(#bio-bar)" opacity="0.08" />
       {bars.map((h, i) => (
         <rect
           key={i}
@@ -135,96 +234,73 @@ export function BioacousticVisual() {
           width="16"
           height={h}
           rx="4"
-          fill={i % 3 === 0 ? "#d9f99d" : "#4ade80"}
-          opacity={0.55 + (i % 4) * 0.1}
+          fill="url(#bio-bar)"
+          opacity={0.65 + (i % 3) * 0.1}
         />
       ))}
-      <text x="28" y="28" fill="#ecfccb" fontSize="12" fontFamily="ui-sans-serif, system-ui">
+      <text x="28" y="28" fill="#ecfccb" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
         Dawn chorus · BirdNET detections
       </text>
     </svg>
   );
 }
 
+const PIPELINE_STEPS = [
+  { label: "Field", detail: "Capture" },
+  { label: "Orbit", detail: "Satellite" },
+  { label: "Habitat", detail: "Bioacoustic" },
+  { label: "AI", detail: "Intelligence" },
+  { label: "Audit", detail: "Export" },
+] as const;
+
 export function IntelligenceRiver() {
   return (
-    <svg viewBox="0 0 1100 280" className="marketing-river-svg" role="img" aria-label="Evidence flowing from field capture to audit export">
-      <defs>
-        <linearGradient id="river" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#86efac" />
-          <stop offset="50%" stopColor="#22c55e" />
-          <stop offset="100%" stopColor="#facc15" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M40 150 C180 40 280 240 430 140 C560 60 680 220 830 130 C920 80 1000 160 1060 140"
-        fill="none"
-        stroke="url(#river)"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <circle r="5" fill="#fff">
-        <animateMotion
-          dur="8s"
-          repeatCount="indefinite"
-          path="M40 150 C180 40 280 240 430 140 C560 60 680 220 830 130 C920 80 1000 160 1060 140"
-        />
-      </circle>
-      {[
-        [80, 132, "Field"],
-        [300, 188, "Orbit"],
-        [520, 96, "Habitat"],
-        [740, 168, "AI"],
-        [980, 118, "Audit"],
-      ].map(([x, y, label]) => (
-        <g key={String(label)} transform={`translate(${x} ${y})`}>
-          <circle r="28" fill="#052e1f" stroke="#bbf7d0" strokeWidth="2" />
-          <text y="4" textAnchor="middle" fill="#ecfccb" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
-            {label}
-          </text>
-        </g>
+    <div className="marketing-pipeline" role="img" aria-label="Evidence flowing from field capture to audit export">
+      <div className="marketing-pipeline-track" aria-hidden />
+      {PIPELINE_STEPS.map((step) => (
+        <div key={step.label} className="marketing-pipeline-node">
+          <span className="marketing-pipeline-node-label">{step.label}</span>
+          <span className="marketing-pipeline-node-detail">{step.detail}</span>
+        </div>
       ))}
-    </svg>
+    </div>
   );
 }
 
-const ORBIT_POSITIONS = [
-  [50, 8],
-  [78, 22],
-  [92, 50],
-  [78, 78],
-  [50, 92],
-  [22, 78],
-  [8, 50],
-  [22, 22],
-  [64, 6],
-  [94, 36],
-  [64, 94],
-  [6, 36],
-] as const;
-
 export function ComplianceOrbit({ codes }: { codes: string[] }) {
   const shown = codes.slice(0, 12);
+
   return (
-    <svg viewBox="0 0 100 100" className="marketing-orbit-svg" role="img" aria-label="Compliance frameworks arranged around a living core">
-      <circle cx="50" cy="50" r="34" fill="none" stroke="#86efac" strokeOpacity="0.25" />
-      <circle cx="50" cy="50" r="22" fill="#052e1f" />
-      <path d="M50 62 C50 52 42 48 42 40 C42 34 46 30 50 28 C54 30 58 34 58 40 C58 48 50 52 50 62Z" fill="#4ade80" />
-      <text x="50" y="72" textAnchor="middle" fill="#d9f99d" fontSize="4.2" fontFamily="ui-sans-serif, system-ui">
-        MRV core
-      </text>
+    <div
+      className="marketing-orbit"
+      role="img"
+      aria-label="Compliance frameworks arranged around a living core"
+    >
+      <div className="marketing-orbit-ring marketing-orbit-ring--outer" aria-hidden />
+      <div className="marketing-orbit-ring marketing-orbit-ring--inner" aria-hidden />
+
+      <div className="marketing-orbit-core">
+        <div className="marketing-orbit-core-icon">
+          <Leaf className="h-7 w-7 text-lime-300" strokeWidth={1.75} aria-hidden />
+        </div>
+        <span className="marketing-orbit-core-label">MRV core</span>
+      </div>
+
       {shown.map((code, i) => {
-        const [x, y] = ORBIT_POSITIONS[i] ?? [50, 8];
+        const angle = (360 / shown.length) * i - 90;
         return (
-          <g key={code}>
-            <rect x={x - 10} y={y - 3.4} width="20" height="6.8" rx="1.8" fill="#064e3b" stroke="#86efac" strokeOpacity="0.45" />
-            <text x={x} y={y + 1.1} textAnchor="middle" fill="#ecfccb" fontSize="2.7" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+          <div
+            key={`${code}-${i}`}
+            className="marketing-orbit-pill-wrap"
+            style={{ ["--orbit-angle" as string]: `${angle}deg` }}
+          >
+            <span className="marketing-orbit-pill" title={code}>
               {code}
-            </text>
-          </g>
+            </span>
+          </div>
         );
       })}
-    </svg>
+    </div>
   );
 }
 
