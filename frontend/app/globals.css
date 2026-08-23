@@ -688,7 +688,14 @@ html[lang="hi"] body {
 }
 
 .marketing-reports .marketing-section-copy {
+  position: relative;
+  margin-top: 1rem;
   color: rgba(209, 250, 229, 0.78);
+}
+
+.marketing-reports .marketing-section-title {
+  display: block;
+  margin-bottom: 0.25rem;
 }
 
 .marketing-report-gallery {
