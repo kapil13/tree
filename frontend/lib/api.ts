@@ -1128,6 +1128,48 @@ export const plantingProjects = {
     });
     return response.data as Blob;
   },
+  async listSafeguardDocuments(projectId: string) {
+    return (
+      await api.get<SafeguardDocument[]>(
+        `/v1/planting-projects/${projectId}/safeguards/documents`,
+      )
+    ).data;
+  },
+  async createSafeguardDocument(
+    projectId: string,
+    payload: {
+      doc_type: SafeguardDocType;
+      title: string;
+      s3_key: string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return (
+      await api.post<SafeguardDocument>(
+        `/v1/planting-projects/${projectId}/safeguards/documents`,
+        payload,
+      )
+    ).data;
+  },
+  async deleteSafeguardDocument(projectId: string, documentId: string) {
+    await api.delete(
+      `/v1/planting-projects/${projectId}/safeguards/documents/${documentId}`,
+    );
+  },
+  async exportCampaStatePack(projectId: string) {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/campa-state-export`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
+  async exportGreenCreditPortalPack(projectId: string) {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/green-credit-portal-export`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -2588,7 +2630,26 @@ export type ChecklistCode =
   | "ngt_campa"
   | "green_credit_india"
   | "icvcm_ccp"
-  | "esg_general";
+  | "esg_general"
+  | "fra_tenure";
+
+export type SafeguardDocType =
+  | "gram_sabha_resolution"
+  | "fpic_minutes"
+  | "patta_cfr_reference"
+  | "stakeholder_consultation_log";
+
+export type SafeguardDocument = {
+  id: string;
+  project_id: string;
+  doc_type: SafeguardDocType;
+  doc_type_label: string;
+  title: string;
+  s3_key: string;
+  metadata: Record<string, unknown>;
+  uploaded_by_user_id: string | null;
+  created_at: string | null;
+};
 
 export type ChecklistAnswer = "yes" | "no" | "partial" | "na";
 

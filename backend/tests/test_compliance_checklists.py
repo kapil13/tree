@@ -153,9 +153,18 @@ async def test_build_auto_signals_no_trees():
     ledger_none.scalar_one_or_none.return_value = None
     risk_none = MagicMock()
     risk_none.scalar_one_or_none.return_value = None
+    safeguard_empty = MagicMock()
+    safeguard_empty.scalars.return_value.all.return_value = []
 
     db.execute = AsyncMock(
-        side_effect=[empty_trees, empty_violations, count_zero, ledger_none, risk_none]
+        side_effect=[
+            empty_trees,
+            empty_violations,
+            count_zero,
+            ledger_none,
+            risk_none,
+            safeguard_empty,
+        ]
     )
 
     async def fake_standard(db_, proj):

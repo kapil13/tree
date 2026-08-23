@@ -38,6 +38,7 @@ from app.models.plot_monitoring import (
 )
 from app.models.privacy import ConsentRecord, DataSubjectRequest, GrievanceTicket
 from app.models.project_member import ProjectMember
+from app.models.project_safeguard_document import ProjectSafeguardDocument
 from app.models.project_risk_assessment import ProjectRiskAssessment
 from app.models.public_verification import PublicVerificationLink
 from app.models.report import Report
@@ -117,6 +118,7 @@ __all__ = [
     "User",
     "UserDevice",
     "ProjectMember",
+    "ProjectSafeguardDocument",
     "ProjectRiskAssessment",
     "MonitoringJobRun",
     "VerificationItem",

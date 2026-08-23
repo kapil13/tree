@@ -231,3 +231,27 @@ class RegistrationContextOut(BaseModel):
     progress: RegistrationProgressOut
     suggested_next: SuggestedNextOut | None = None
     work_areas: list[RegistrationWorkAreaOut] = Field(default_factory=list)
+
+
+class SafeguardDocumentCreate(BaseModel):
+    doc_type: Literal[
+        "gram_sabha_resolution",
+        "fpic_minutes",
+        "patta_cfr_reference",
+        "stakeholder_consultation_log",
+    ]
+    title: str = Field(..., min_length=1, max_length=255)
+    s3_key: str = Field(..., min_length=3, max_length=512)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SafeguardDocumentOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    doc_type: str
+    doc_type_label: str
+    title: str
+    s3_key: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    uploaded_by_user_id: uuid.UUID | None = None
+    created_at: datetime | None = None

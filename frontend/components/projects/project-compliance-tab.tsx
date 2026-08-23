@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Download, FileText, Link2 } from "lucide-react";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import { ProjectComplianceWorkflowPanel } from "@/components/projects/project-compliance-workflow-panel";
+import { ProjectSafeguardsPanel } from "@/components/projects/project-safeguards-panel";
 import {
   type ChecklistCode,
   type FrameworkProfileCode,
@@ -144,12 +145,33 @@ export function ProjectComplianceTab({
     onError: (err) => setVerifyError(errorMessage(err)),
   });
 
+  const exportGreenCreditPortal = useMutation({
+    mutationFn: () => plantingProjects.exportGreenCreditPortalPack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-green-credit-handoff.xlsx`);
+    },
+  });
+
+  const exportCampaState = useMutation({
+    mutationFn: () => plantingProjects.exportCampaStatePack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-state-campa-export.xlsx`);
+    },
+  });
+
   function scrollToAnchor(anchor: string) {
     const target = anchor === "violations" ? violationsRef.current : checklistRef.current;
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const busy = exportMrv.isPending || exportBundle.isPending || exportFramework.isPending;
+  const busy =
+    exportMrv.isPending ||
+    exportBundle.isPending ||
+    exportFramework.isPending ||
+    exportGreenCreditPortal.isPending ||
+    exportCampaState.isPending;
   const selectedFramework = frameworks.find((f) => f.code === frameworkProfile);
 
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
@@ -175,6 +197,46 @@ export function ProjectComplianceTab({
           }}
         />
       </div>
+
+      <ProjectSafeguardsPanel projectId={projectId} />
+
+      {(schemeCode === "green_credit_india" ||
+        schemeCode === "campa_ca" ||
+        schemeCode === "nhai_highway") && (
+        <div className="space-y-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+          <p className="text-sm font-medium text-stone-800">India portal exports</p>
+          <p className="text-xs text-stone-600">
+            Pre-shaped spreadsheets for state CAMPA monitoring or MoEFCC Green Credit registrar
+            handoff — manual upload, not official issuance.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(schemeCode === "campa_ca" || schemeCode === "nhai_highway") && (
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                disabled={busy}
+                onClick={() => exportCampaState.mutate()}
+              >
+                <Download className="h-3.5 w-3.5" />
+                {exportCampaState.isPending ? "Exporting…" : "State CAMPA pack (.xlsx)"}
+              </button>
+            )}
+            {schemeCode === "green_credit_india" && (
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                disabled={busy}
+                onClick={() => exportGreenCreditPortal.mutate()}
+              >
+                <Download className="h-3.5 w-3.5" />
+                {exportGreenCreditPortal.isPending
+                  ? "Exporting…"
+                  : "Green Credit handoff (.xlsx)"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-stone-800">
