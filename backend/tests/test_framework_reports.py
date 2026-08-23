@@ -18,7 +18,14 @@ def test_list_framework_profiles():
     codes = {p["code"] for p in profiles}
     assert "verra_vm0047" in codes
     assert "ngt_campa" in codes
-    assert len(profiles) >= 7
+    assert "gold_standard_luf" in codes
+    assert "redd_plus" in codes
+    assert "paris_ndc" in codes
+    assert "green_credit_india" in codes
+    assert len(profiles) >= 12
+    for profile in profiles:
+        assert profile.get("disclaimer")
+        assert profile.get("reference")
 
 
 def test_get_framework_profile_unknown():

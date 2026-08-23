@@ -6,14 +6,25 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
 import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
 import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
+import { ProjectFrameworkExportPanel } from "@/components/reports/project-framework-export-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
-import { Bird, Dna, FileText, Leaf } from "lucide-react";
+import { Award, BadgeCheck, Bird, Dna, FileText, Globe2, Leaf, Trees } from "lucide-react";
 
-type ReportTab = "standard" | "brsr" | "iso14064" | "tnfd" | "ghg" | "darwin";
+type ReportTab =
+  | "standard"
+  | "brsr"
+  | "iso14064"
+  | "tnfd"
+  | "ghg"
+  | "darwin"
+  | "goldStandard"
+  | "reddPlus"
+  | "parisNdc"
+  | "greenCredit";
 
 const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
   {
@@ -113,33 +124,86 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2 border-b border-stone-200 pb-2" role="tablist" aria-label={tr("title")}>
-        {(
-          [
-            ["standard", tr("standardTab")],
-            ["brsr", tr("brsrTab")],
-            ["iso14064", tr("iso14064Tab")],
-            ["tnfd", tr("tnfdTab")],
-            ["ghg", tr("ghgTab")],
-            ["darwin", tr("darwinTab")],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-              tab === id ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
-            }`}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="space-y-2 border-b border-stone-200 pb-2">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={tr("title")}>
+          {(
+            [
+              ["standard", tr("standardTab")],
+              ["brsr", tr("brsrTab")],
+              ["iso14064", tr("iso14064Tab")],
+              ["tnfd", tr("tnfdTab")],
+              ["ghg", tr("ghgTab")],
+              ["darwin", tr("darwinTab")],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                tab === id ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
+              }`}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={tr("frameworkTabsLabel")}>
+          {(
+            [
+              ["goldStandard", tr("goldStandardTab")],
+              ["reddPlus", tr("reddPlusTab")],
+              ["parisNdc", tr("parisNdcTab")],
+              ["greenCredit", tr("greenCreditTab")],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                tab === id ? "bg-emerald-100 text-emerald-900" : "text-stone-600 hover:bg-stone-100"
+              }`}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {tab === "darwin" ? (
+      {tab === "greenCredit" ? (
+        <ProjectFrameworkExportPanel
+          profile="green_credit_india"
+          title={tr("greenCreditTitle")}
+          description={tr("greenCreditDescription")}
+          icon={<BadgeCheck className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "parisNdc" ? (
+        <ProjectFrameworkExportPanel
+          profile="paris_ndc"
+          title={tr("parisNdcTitle")}
+          description={tr("parisNdcDescription")}
+          icon={<Globe2 className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "reddPlus" ? (
+        <ProjectFrameworkExportPanel
+          profile="redd_plus"
+          title={tr("reddPlusTitle")}
+          description={tr("reddPlusDescription")}
+          icon={<Trees className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "goldStandard" ? (
+        <ProjectFrameworkExportPanel
+          profile="gold_standard_luf"
+          title={tr("goldStandardTitle")}
+          description={tr("goldStandardDescription")}
+          icon={<Award className="h-5 w-5 text-forest-700" aria-hidden />}
+        />
+      ) : tab === "darwin" ? (
         <FrameworkExportPanel
           title={tr("darwinTitle")}
           description={tr("darwinDescription")}

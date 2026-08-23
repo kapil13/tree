@@ -132,6 +132,7 @@
       "section_type": "hero",
       "anchor_id": null,
       "title": "Hero",
+      "sort_order": 0,
       "content": {
         "pill": "MRV \u00b7 Compliance \u00b7 Reporting",
         "pill_icon": "Sparkles",
@@ -164,13 +165,13 @@
           "label": "Explore the platform",
           "href": "#platform"
         }
-      },
-      "sort_order": 0
+      }
     },
     {
       "section_type": "stats",
       "anchor_id": null,
       "title": "Trust metrics",
+      "sort_order": 5,
       "content": {
         "items": [
           {
@@ -194,13 +195,13 @@
             "detail": "Supervisor tree cache"
           }
         ]
-      },
-      "sort_order": 5
+      }
     },
     {
       "section_type": "features",
       "anchor_id": "platform",
       "title": "Platform capabilities",
+      "sort_order": 10,
       "content": {
         "eyebrow": "Platform",
         "title": "Everything to monitor, prove, and report environmental impact",
@@ -255,24 +256,24 @@
             "accent": "from-indigo-500/12 to-indigo-900/5"
           }
         ]
-      },
-      "sort_order": 10
+      }
     },
     {
       "section_type": "intelligence_pipeline",
       "anchor_id": "intelligence",
       "title": "Intelligence pipeline",
+      "sort_order": 15,
       "content": {
         "eyebrow": "Intelligence stack",
         "title": "Five layers. One audit-ready story.",
         "copy": "Field evidence, orbital signals, acoustic biodiversity, and AI fusion converge into signed exports your auditors and program officers can actually review."
-      },
-      "sort_order": 15
+      }
     },
     {
       "section_type": "compliance",
       "anchor_id": "compliance",
       "title": "Compliance & frameworks",
+      "sort_order": 20,
       "content": {
         "eyebrow": "Compliance",
         "title": "Mapped to the standards your auditors already ask about",
@@ -307,6 +308,30 @@
             "code": "VM0047",
             "title": "Verra ARR prep",
             "description": "Stratified sampling, buffer math, uncertainty tiers, and ICVCM alignment checklists."
+          },
+          {
+            "icon": "Award",
+            "code": "Gold Standard",
+            "title": "Gold Standard LUF",
+            "description": "Land Use & Forests carbon and co-benefit evidence packs for voluntary verification prep."
+          },
+          {
+            "icon": "Trees",
+            "code": "REDD+",
+            "title": "REDD+ MRV",
+            "description": "Baseline, permanence, and leakage evidence structures aligned to UNFCCC Warsaw Framework."
+          },
+          {
+            "icon": "Globe2",
+            "code": "Paris / NDC",
+            "title": "Paris Agreement traceability",
+            "description": "Geo-tagged planting ledger supporting national commitments and Article 6 transparency."
+          },
+          {
+            "icon": "BadgeCheck",
+            "code": "Green Credit",
+            "title": "MoEFCC Green Credit",
+            "description": "Land bank registration and verifier-ready planting evidence under Green Credit Rules 2023."
           },
           {
             "icon": "ShieldCheck",
@@ -351,87 +376,115 @@
             "description": "Bring Your Own Tree \u2014 public registration with complimentary AI health scans."
           }
         ]
-      },
-      "sort_order": 20
+      }
     },
     {
       "section_type": "reports",
       "anchor_id": "reports",
       "title": "Reports & exports",
+      "sort_order": 25,
       "content": {
         "eyebrow": "Reports",
-        "title": "Twelve live exports. One evidence graph.",
-        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, inventory, carbon, biodiversity, ESG, executive digest, and signed evidence \u2014 generated from the same plantation record. Assurance packs, not credit issuance.",
+        "title": "Sixteen live exports. One evidence graph.",
+        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, Paris/NDC, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, and signed evidence \u2014 generated from the same plantation record. Assurance packs, not credit issuance.",
         "items": [
           {
             "icon": "FileText",
             "tag": "BRSR",
             "title": "BRSR assurance pack",
             "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Scale",
             "tag": "ISO 14064-2",
             "title": "ISO 14064-2 project report",
             "description": "Project boundary, monitoring plan, and quantification sections pre-structured.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Leaf",
             "tag": "TNFD",
             "title": "TNFD LEAP disclosure",
             "description": "Locate\u2013Evaluate\u2013Assess\u2013Prepare narrative from satellite and bioacoustic layers.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Globe2",
             "tag": "GHG Protocol",
             "title": "GHG land-sector inventory",
             "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Bird",
             "tag": "Darwin Core",
             "title": "Darwin Core occurrence pack",
             "description": "Species occurrence archive for biodiversity partners and scientific reuse.",
-            "formats": "ZIP · JSON"
+            "formats": "ZIP \u00b7 JSON"
           },
           {
             "icon": "FileCheck2",
             "tag": "VM0047",
             "title": "Carbon credit ledger",
             "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
+          },
+          {
+            "icon": "Award",
+            "tag": "Gold Standard",
+            "title": "Gold Standard LUF report",
+            "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.",
+            "formats": "PDF \u00b7 XLSX"
+          },
+          {
+            "icon": "Trees",
+            "tag": "REDD+",
+            "title": "REDD+ MRV report",
+            "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.",
+            "formats": "PDF \u00b7 XLSX"
+          },
+          {
+            "icon": "Globe2",
+            "tag": "Paris / NDC",
+            "title": "Paris Agreement traceability",
+            "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.",
+            "formats": "PDF \u00b7 XLSX"
+          },
+          {
+            "icon": "BadgeCheck",
+            "tag": "Green Credit",
+            "title": "Green Credit India pack",
+            "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.",
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "TreePine",
             "tag": "Inventory",
             "title": "Tree inventory",
             "description": "Species, survival, geotag status, and chainage for compliance packs.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "BarChart3",
             "tag": "Carbon",
             "title": "Carbon stock estimate",
-            "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.",
-            "formats": "PDF · XLSX"
+            "description": "Modelled biomass and CO\u2082e with IPCC-aligned defaults \u2014 not a credit issuance.",
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Mic",
             "tag": "Biodiversity",
             "title": "Biodiversity soundscape",
             "description": "BirdNET richness and habitat signals for a fenced plantation site.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "ShieldCheck",
             "tag": "ESG",
             "title": "ESG stakeholder summary",
             "description": "Combined carbon, biodiversity, and NDVI narrative for boards and buyers.",
-            "formats": "PDF · XLSX"
+            "formats": "PDF \u00b7 XLSX"
           },
           {
             "icon": "Radar",
@@ -448,13 +501,13 @@
             "formats": "ZIP"
           }
         ]
-      },
-      "sort_order": 25
+      }
     },
     {
       "section_type": "programs",
       "anchor_id": "programs",
       "title": "Planting programs",
+      "sort_order": 30,
       "content": {
         "eyebrow": "Programs",
         "title": "One workspace. Every compliance pathway.",
@@ -485,13 +538,13 @@
             "badge": "Community"
           }
         ]
-      },
-      "sort_order": 30
+      }
     },
     {
       "section_type": "steps",
       "anchor_id": "how-it-works",
       "title": "How it works",
+      "sort_order": 40,
       "content": {
         "eyebrow": "How it works",
         "title": "From first tree to audit-ready portfolio",
@@ -524,16 +577,16 @@
           {
             "step": "05",
             "title": "Report with confidence",
-            "description": "Export BRSR, ISO, TNFD, and VM0047 packs \u2014 plus signed evidence bundles for auditor review."
+            "description": "Export BRSR, ISO, TNFD, VM0047, Gold Standard, REDD+, Paris/NDC, and Green Credit packs \u2014 plus signed evidence bundles for auditor review."
           }
         ]
-      },
-      "sort_order": 40
+      }
     },
     {
       "section_type": "platform_preview",
       "anchor_id": null,
       "title": "Platform preview",
+      "sort_order": 50,
       "content": {
         "eyebrow": "Live command center",
         "title": "See your plantation portfolio at a glance",
@@ -576,13 +629,13 @@
             "1,240 tCO\u2082e (modelled)"
           ]
         ]
-      },
-      "sort_order": 50
+      }
     },
     {
       "section_type": "cta",
       "anchor_id": null,
       "title": "Call to action",
+      "sort_order": 60,
       "content": {
         "eyebrow": "Ready to begin?",
         "title": "Turn every tree into audit-ready environmental evidence",
@@ -595,8 +648,7 @@
           "label": "Sign in to workspace",
           "href": "/auth?mode=signin"
         }
-      },
-      "sort_order": 60
+      }
     }
   ]
 }

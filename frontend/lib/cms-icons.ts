@@ -1,5 +1,6 @@
 /** Lucide icon resolver for CMS JSON content. */
 import {
+  Award,
   BarChart3,
   Bell,
   Bird,
@@ -23,11 +24,15 @@ import {
   Sparkles,
   Sprout,
   TreePine,
+  Trees,
+  BadgeCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
 
 const ICONS: Record<string, LucideIcon> = {
+  Award,
+  BadgeCheck,
   BarChart3,
   Bell,
   Bird,
@@ -51,6 +56,7 @@ const ICONS: Record<string, LucideIcon> = {
   Sparkles,
   Sprout,
   TreePine,
+  Trees,
   Users,
 };
 

@@ -201,6 +201,10 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Scale", "code": "ISO 14064-2", "title": "Project GHG reports", "description": "Structured project reports aligned with ISO 14064-2 methodology sections."},
                 {"icon": "Leaf", "code": "TNFD", "title": "Nature disclosures", "description": "LEAP-style nature reports from bioacoustic richness and NDVI habitat signals."},
                 {"icon": "FileCheck2", "code": "VM0047", "title": "Verra ARR prep", "description": "Stratified sampling, buffer math, uncertainty tiers, and ICVCM alignment checklists."},
+                {"icon": "Award", "code": "Gold Standard", "title": "Gold Standard LUF", "description": "Land Use & Forests carbon and co-benefit evidence packs for voluntary verification prep."},
+                {"icon": "Trees", "code": "REDD+", "title": "REDD+ MRV", "description": "Baseline, permanence, and leakage evidence structures aligned to UNFCCC Warsaw Framework."},
+                {"icon": "Globe2", "code": "Paris / NDC", "title": "Paris Agreement traceability", "description": "Geo-tagged planting ledger supporting national commitments and Article 6 transparency."},
+                {"icon": "BadgeCheck", "code": "Green Credit", "title": "MoEFCC Green Credit", "description": "Land bank registration and verifier-ready planting evidence under Green Credit Rules 2023."},
                 {"icon": "ShieldCheck", "code": "ICVCM", "title": "Core Carbon Principles", "description": "Integrity checklist mapped to field evidence and monitoring automation."},
                 {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."},
                 {"icon": "MapPin", "code": "NHAI / Govt", "title": "Public planting schemes", "description": "Geo-tagged proof for highways, urban forestry, and departmental green audits."},
@@ -218,11 +222,12 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "sort_order": 25,
         "content": {
             "eyebrow": "Reports",
-            "title": "Twelve live exports. One evidence graph.",
+            "title": "Sixteen live exports. One evidence graph.",
             "copy": (
-                "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, inventory, carbon, "
-                "biodiversity, ESG, executive digest, and signed evidence — generated from the "
-                "same plantation record. Assurance packs, not credit issuance."
+                "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, "
+                "Paris/NDC, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
+                "and signed evidence — generated from the same plantation record. Assurance packs, "
+                "not credit issuance."
             ),
             "items": [
                 {"icon": "FileText", "tag": "BRSR", "title": "BRSR assurance pack", "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.", "formats": "PDF · XLSX"},
@@ -231,6 +236,10 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Globe2", "tag": "GHG Protocol", "title": "GHG land-sector inventory", "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.", "formats": "PDF · XLSX"},
                 {"icon": "Bird", "tag": "Darwin Core", "title": "Darwin Core occurrence pack", "description": "Species occurrence archive for biodiversity partners and scientific reuse.", "formats": "ZIP · JSON"},
                 {"icon": "FileCheck2", "tag": "VM0047", "title": "Carbon credit ledger", "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.", "formats": "PDF · XLSX"},
+                {"icon": "Award", "tag": "Gold Standard", "title": "Gold Standard LUF report", "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.", "formats": "PDF · XLSX"},
+                {"icon": "Trees", "tag": "REDD+", "title": "REDD+ MRV report", "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.", "formats": "PDF · XLSX"},
+                {"icon": "Globe2", "tag": "Paris / NDC", "title": "Paris Agreement traceability", "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.", "formats": "PDF · XLSX"},
+                {"icon": "BadgeCheck", "tag": "Green Credit", "title": "Green Credit India pack", "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.", "formats": "PDF · XLSX"},
                 {"icon": "TreePine", "tag": "Inventory", "title": "Tree inventory", "description": "Species, survival, geotag status, and chainage for compliance packs.", "formats": "PDF · XLSX"},
                 {"icon": "BarChart3", "tag": "Carbon", "title": "Carbon stock estimate", "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.", "formats": "PDF · XLSX"},
                 {"icon": "Mic", "tag": "Biodiversity", "title": "Biodiversity soundscape", "description": "BirdNET richness and habitat signals for a fenced plantation site.", "formats": "PDF · XLSX"},
@@ -275,7 +284,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"step": "02", "title": "Register evidence", "description": "Capture trees with GPS, photos, and species on web or mobile. Chainage auto-advances for highway corridors."},
                 {"step": "03", "title": "Monitor continuously", "description": "Satellite NDVI, SAR integrity, bioacoustic richness, and AI health scoring watch your sites around the clock."},
                 {"step": "04", "title": "Act on alerts", "description": "Supervisors receive canopy stress and anomaly alerts with field verification workflows built in."},
-                {"step": "05", "title": "Report with confidence", "description": "Export BRSR, ISO, TNFD, and VM0047 packs — plus signed evidence bundles for auditor review."},
+                {"step": "05", "title": "Report with confidence", "description": "Export BRSR, ISO, TNFD, VM0047, Gold Standard, REDD+, Paris/NDC, and Green Credit packs — plus signed evidence bundles for auditor review."},
             ],
         },
     },

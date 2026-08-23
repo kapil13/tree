@@ -8,6 +8,8 @@ import { ProjectComplianceWorkflowPanel } from "@/components/projects/project-co
 import {
   type ChecklistCode,
   type FrameworkProfileCode,
+  compliance,
+  centralSchemes,
   errorMessage,
   plantingProjects,
   reporting,
@@ -52,12 +54,34 @@ export function ProjectComplianceTab({
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
+  const { data: workflow } = useQuery({
+    queryKey: ["compliance-workflow", projectId],
+    queryFn: () => compliance.projectWorkflow(projectId),
+  });
+
+  const { data: scheme } = useQuery({
+    queryKey: ["scheme", schemeCode],
+    queryFn: () => centralSchemes.get(schemeCode!),
+    enabled: Boolean(schemeCode),
+  });
+
   useEffect(() => {
+    if (workflow?.recommended_checklist) {
+      setChecklistCode(workflow.recommended_checklist as ChecklistCode);
+    }
+  }, [workflow?.recommended_checklist]);
+
+  useEffect(() => {
+    const profileFromScheme = scheme?.framework_profiles?.[0] as FrameworkProfileCode | undefined;
+    if (profileFromScheme) {
+      setFrameworkProfile(profileFromScheme);
+      return;
+    }
     if (schemeCode === "green_credit_india") {
       setFrameworkProfile("green_credit_india");
       setChecklistCode("green_credit_india");
     }
-  }, [schemeCode]);
+  }, [scheme, schemeCode]);
 
   const { data: frameworks = [] } = useQuery({
     queryKey: ["reporting-frameworks"],
@@ -191,8 +215,8 @@ export function ProjectComplianceTab({
           Framework-mapped report
         </div>
         <p className="text-xs text-stone-600">
-          Export a profile-specific PDF or Excel aligned to VM0047, REDD+, NGT/CAMPA, IPCC, or ESG
-          structures. Prepared for audit — not certification.
+          Export a profile-specific PDF or Excel aligned to VM0047, Gold Standard, REDD+, Paris/NDC,
+          Green Credit, NGT/CAMPA, IPCC, or ESG structures. Prepared for audit — not certification.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[220px]">
@@ -209,9 +233,20 @@ export function ProjectComplianceTab({
               ))}
             </select>
           </div>
-          {selectedFramework && (
-            <p className="max-w-md text-xs text-stone-500">{selectedFramework.description}</p>
-          )}
+        </div>
+        {selectedFramework ? (
+          <div className="space-y-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-xs text-stone-600">
+            <p>{selectedFramework.description}</p>
+            <p>
+              <span className="font-medium text-stone-800">Reference:</span>{" "}
+              {selectedFramework.reference}
+            </p>
+            {selectedFramework.disclaimer ? (
+              <p className="leading-relaxed text-stone-500">{selectedFramework.disclaimer}</p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="btn-primary text-xs"

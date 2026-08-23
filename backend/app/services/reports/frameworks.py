@@ -163,6 +163,7 @@ def list_framework_profiles() -> list[dict]:
             "methodology": p.methodology,
             "description": p.description,
             "reference": p.reference,
+            "disclaimer": p.disclaimer,
         }
         for p in FRAMEWORK_PROFILES.values()
     ]

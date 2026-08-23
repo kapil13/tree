@@ -126,6 +126,19 @@
     "ghgDescription": "Corporate inventory-aligned land sector CO₂ removals with scope tags and 90% uncertainty bands.",
     "darwinTitle": "Darwin Core Archive (GBIF)",
     "darwinDescription": "Species occurrences from bioacoustic detections, IUCN snapshots, and registered trees as DwC-A.",
+    "frameworkTabsLabel": "Framework MRV exports",
+    "goldStandardTab": "Gold Standard LUF",
+    "goldStandardTitle": "Gold Standard — Land Use & Forests",
+    "goldStandardDescription": "Framework-mapped PDF or Excel with carbon and co-benefit evidence structures for Gold Standard LUF verification prep.",
+    "reddPlusTab": "REDD+",
+    "reddPlusTitle": "REDD+ — Forest Carbon MRV",
+    "reddPlusDescription": "Baseline, permanence, and leakage sections structured for REDD+ program and auditor review.",
+    "parisNdcTab": "Paris / NDC",
+    "parisNdcTitle": "Paris Agreement — NDC traceability",
+    "parisNdcDescription": "Geo-tagged planting ledger export supporting national commitments and Article 6 cooperative-approaches context.",
+    "greenCreditTab": "Green Credit",
+    "greenCreditTitle": "MoEFCC Green Credit Programme",
+    "greenCreditDescription": "Verifier-ready planting evidence pack with land bank and survival KPIs under Green Credit Rules 2023.",
     "stacHint": "STAC catalog: GET /api/v1/ogc/stac/catalog · GeoJSON: GET /api/v1/ogc/projects/{id}/features"
   }
 }
