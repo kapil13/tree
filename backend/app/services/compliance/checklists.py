@@ -20,6 +20,8 @@ ChecklistCode = Literal[
     "icvcm_ccp",
     "fra_tenure",
     "article6_readiness",
+    "world_bank_esf",
+    "undp_ses",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -708,6 +710,111 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 question="Is leakage accounted before Article 6 traceability reporting?",
                 guidance="Shared leakage worksheet supports VM0047, REDD+, and GS prep.",
                 auto_key="leakage_documented",
+            ),
+        ),
+    ),
+    "world_bank_esf": ComplianceChecklist(
+        code="world_bank_esf",
+        title="World Bank ESF — Environmental & Social Screening",
+        short_label="World Bank ESF",
+        framework_reference="World Bank Environmental and Social Framework (ESF)",
+        description=(
+            "Performance Standards screening for plantation and green-corridor projects, "
+            "with emphasis on PS5 land/tenure and PS6 biodiversity."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="ps1_esms",
+                category="PS1",
+                question="Is an environmental and social management approach documented?",
+                guidance="ESMS or equivalent management plan for the project lifecycle.",
+            ),
+            ChecklistItemDef(
+                id="ps4_community_safety",
+                category="PS4",
+                question="Are community health and safety risks identified for field works?",
+                guidance="Worker safety, traffic, and community interface along corridors.",
+            ),
+            ChecklistItemDef(
+                id="ps5_land_tenure",
+                category="PS5",
+                question="Is land acquisition / tenure evidence documented (FPIC, Patta, gram sabha)?",
+                guidance="PS5 evidence pack exports safeguards module documents.",
+                auto_key="safeguards_tenure_ref",
+            ),
+            ChecklistItemDef(
+                id="ps5_stakeholder",
+                category="PS5",
+                question="Is stakeholder engagement documented for land and resettlement risks?",
+                guidance="Consultation logs and grievance pathways.",
+                auto_key="safeguards_stakeholder_log",
+            ),
+            ChecklistItemDef(
+                id="ps6_biodiversity",
+                category="PS6",
+                question="Is biodiversity monitored (native mix, NDVI habitat, bioacoustic richness)?",
+                guidance="PS6 evidence pack aggregates satellite and soundscape signals.",
+                auto_key="ps6_biodiversity_evidence",
+            ),
+            ChecklistItemDef(
+                id="ps7_indigenous",
+                category="PS7",
+                question="Are indigenous / forest-dwelling community safeguards addressed?",
+                guidance="FPIC minutes and FRA tenure references where applicable.",
+                auto_key="safeguards_fpic",
+            ),
+            ChecklistItemDef(
+                id="ps8_cultural",
+                category="PS8",
+                question="Are cultural heritage sensitivities screened for the project area?",
+                guidance="Document known sacred sites or archaeological constraints.",
+                required=False,
+            ),
+        ),
+    ),
+    "undp_ses": ComplianceChecklist(
+        code="undp_ses",
+        title="UNDP SES — Social & Environmental Screening",
+        short_label="UNDP SES",
+        framework_reference="UNDP Social and Environmental Standards",
+        description="Risk screening and stakeholder engagement for DFI and UN-partnered green projects.",
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="ses_risk_screening",
+                category="Screening",
+                question="Has a SES risk screening been completed (low / medium / high)?",
+                guidance="Export UNDP SES pack for computed risk tier and mitigations.",
+                auto_key="ses_risk_screened",
+            ),
+            ChecklistItemDef(
+                id="ses_stakeholder_log",
+                category="Engagement",
+                question="Is a stakeholder engagement log maintained and exportable?",
+                guidance="Reuses safeguards module stakeholder consultation log.",
+                auto_key="safeguards_stakeholder_log",
+            ),
+            ChecklistItemDef(
+                id="ses_biodiversity",
+                category="Environment",
+                question="Are biodiversity and habitat indicators monitored?",
+                guidance="NDVI, native species mix, and bioacoustic richness.",
+                auto_key="ps6_biodiversity_evidence",
+            ),
+            ChecklistItemDef(
+                id="ses_grievance",
+                category="Governance",
+                question="Is a grievance redress mechanism documented?",
+                guidance="Link to org DPDP grievance workflow or project-level contact.",
+                required=False,
+            ),
+            ChecklistItemDef(
+                id="ses_gender_social",
+                category="Social",
+                question="Are gender and social inclusion considerations noted in engagement records?",
+                guidance="Document women's groups, SHGs, or vulnerable household participation.",
+                required=False,
             ),
         ),
     ),

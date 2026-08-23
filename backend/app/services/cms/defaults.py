@@ -206,6 +206,8 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Globe2", "code": "Paris / NDC", "title": "Paris Agreement traceability", "description": "Geo-tagged planting ledger supporting national commitments and Article 6 transparency."},
                 {"icon": "Globe2", "code": "Article 6", "title": "Article 6 readiness", "description": "Cooperative approaches checklist with corresponding adjustment refs and serial traceability."},
                 {"icon": "Globe2", "code": "ETF / BTR", "title": "National inventory handoff", "description": "IPCC-aligned org roll-up for Enhanced Transparency Framework and BTR preparation."},
+                {"icon": "Landmark", "code": "World Bank ESF", "title": "ESF safeguard screening", "description": "PS5 land/tenure and PS6 biodiversity evidence packs for DFI-backed corridors."},
+                {"icon": "Handshake", "code": "UNDP SES", "title": "UNDP SES screening", "description": "Social and environmental risk screening with stakeholder engagement exports."},
                 {"icon": "BadgeCheck", "code": "Green Credit", "title": "MoEFCC Green Credit", "description": "Land bank registration and verifier-ready planting evidence under Green Credit Rules 2023."},
                 {"icon": "ShieldCheck", "code": "ICVCM", "title": "Core Carbon Principles", "description": "Integrity checklist mapped to field evidence and monitoring automation."},
                 {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."},

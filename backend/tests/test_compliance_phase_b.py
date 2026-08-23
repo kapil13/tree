@@ -166,6 +166,10 @@ async def test_build_auto_signals_leakage_and_article6(monkeypatch):
             empty = MagicMock()
             empty.scalars.return_value.all.return_value = []
             return empty
+        if "bioacoustic_recordings" in sql.lower():
+            bio = MagicMock()
+            bio.scalar_one.return_value = 0
+            return bio
         return MagicMock()
 
     db.execute = AsyncMock(side_effect=execute_side_effect)

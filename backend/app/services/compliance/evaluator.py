@@ -308,6 +308,40 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["ca_ref_documented"] = "no"
 
+    doc_types = await safeguard_doc_types_present(db, project.id)
+    if len(doc_types) >= 4 and not open_violations:
+        signals["ses_risk_screened"] = "yes"
+    elif doc_types:
+        signals["ses_risk_screened"] = "partial"
+    else:
+        signals["ses_risk_screened"] = "no"
+
+    from app.models.bioacoustic_recording import BioacousticRecording
+
+    bio_count = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(BioacousticRecording)
+                .join(PlantationFence, PlantationFence.id == BioacousticRecording.plantation_fence_id)
+                .where(
+                    PlantationFence.project_id == project.id,
+                    BioacousticRecording.status == "analyzed",
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    has_bio = bio_count > 0
+    sat_ok = signals.get("satellite_coverage") in ("yes", "partial")
+    native_ok = signals.get("native_species_tracked") in ("yes", "partial")
+    if native_ok and sat_ok and has_bio:
+        signals["ps6_biodiversity_evidence"] = "yes"
+    elif native_ok or sat_ok or has_bio:
+        signals["ps6_biodiversity_evidence"] = "partial"
+    else:
+        signals["ps6_biodiversity_evidence"] = "no"
+
     return signals
 
 

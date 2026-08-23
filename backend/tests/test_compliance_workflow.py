@@ -113,6 +113,9 @@ async def test_build_auto_signals_survival_saved():
     async def fake_standard(db_, proj):
         return None
 
+    bio_count = MagicMock()
+    bio_count.scalar_one.return_value = 0
+
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(
         "app.services.compliance.evaluator.get_active_standard",
@@ -127,6 +130,8 @@ async def test_build_auto_signals_survival_saved():
     serial_empty.scalars.return_value.all.return_value = []
     sar_empty = MagicMock()
     sar_empty.scalars.return_value.all.return_value = []
+    doc_types_result = MagicMock()
+    doc_types_result.scalars.return_value.all.return_value = []
 
     db.execute = AsyncMock(
         side_effect=[
@@ -138,6 +143,8 @@ async def test_build_auto_signals_survival_saved():
             safeguard_empty,
             serial_empty,
             sar_empty,
+            doc_types_result,
+            bio_count,
         ]
     )
 

@@ -1201,6 +1201,162 @@ async def export_leakage_worksheet(
     )
 
 
+@router.get("/{project_id}/esf-ps5-export")
+async def export_esf_ps5_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.multilateral_exports import (
+        build_esf_ps5_context,
+        render_esf_ps5_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_esf_ps5_context(db, project)
+    data = render_esf_ps5_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="esf_ps5_export.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{safe_code}-esf-ps5-tenure.xlsx"'},
+    )
+
+
+@router.get("/{project_id}/esf-ps6-export")
+async def export_esf_ps6_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.multilateral_exports import (
+        build_esf_ps6_context,
+        render_esf_ps6_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_esf_ps6_context(db, project)
+    data = render_esf_ps6_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="esf_ps6_export.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-esf-ps6-biodiversity.xlsx"'
+        },
+    )
+
+
+@router.get("/{project_id}/undp-ses-export")
+async def export_undp_ses_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.multilateral_exports import (
+        build_undp_ses_context,
+        render_undp_ses_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_undp_ses_context(db, project)
+    data = render_undp_ses_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="undp_ses_export.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code, "risk_tier": ctx["screening"]["risk_tier"]},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{safe_code}-undp-ses-screening.xlsx"'},
+    )
+
+
+@router.get("/{project_id}/multilateral-audit-pack")
+async def export_multilateral_audit_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.multilateral_exports import build_multilateral_audit_pack
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    zip_bytes, summary = await build_multilateral_audit_pack(db, project)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="multilateral_audit_pack.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff=summary,
+    )
+    await db.commit()
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-multilateral-audit-pack.zip"'
+        },
+    )
+
+
 @router.get("/{project_id}/trees")
 async def list_project_trees(
     project_id: uuid.UUID,
