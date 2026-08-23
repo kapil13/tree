@@ -16,7 +16,11 @@ from app.services.reports.eudr_exports import (
     build_eudr_due_diligence_context,
     render_eudr_due_diligence_xlsx,
 )
-from app.services.reports.gbf_exports import build_gbf_context, build_gbf_tnfd_section, render_gbf_xlsx
+from app.services.reports.gbf_exports import (
+    build_gbf_context,
+    build_gbf_tnfd_section,
+    render_gbf_xlsx,
+)
 from app.services.reports.iso14064_org import build_iso14064_org_context, render_iso14064_org_xlsx
 from app.services.reports.sbti_flag import build_sbti_flag_context, render_sbti_flag_xlsx
 
