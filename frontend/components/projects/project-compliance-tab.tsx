@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, Link2 } from "lucide-react";
+import { Bug, CheckCircle, Link2 } from "lucide-react";
+import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import { ProjectComplianceExportsSection } from "@/components/projects/project-compliance-exports-section";
 import {
@@ -21,6 +22,7 @@ import {
   plantingProjects,
   reporting,
   verification,
+  type WorkArea,
 } from "@/lib/api";
 
 const SEVERITY_CLASS: Record<string, string> = {
@@ -51,16 +53,24 @@ export function ProjectComplianceTab({
   projectCode,
   projectMetadata,
   schemeCode,
+  workAreas = [],
   onNavigateTab,
 }: {
   projectId: string;
   projectCode?: string;
   projectMetadata?: Record<string, unknown>;
   schemeCode?: string | null;
+  workAreas?: WorkArea[];
   onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
   const [section, setSection] = useState<ComplianceSection>("overview");
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  const pestAreaId = useMemo(
+    () => selectedAreaId ?? workAreas[0]?.id ?? null,
+    [selectedAreaId, workAreas],
+  );
+  const showPestIntel = workAreas.length > 0;
   const [checklistCode, setChecklistCode] = useState<ChecklistCode | undefined>();
   const [frameworkProfile, setFrameworkProfile] = useState<FrameworkProfileCode>("verra_vm0047");
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
@@ -82,6 +92,12 @@ export function ProjectComplianceTab({
       setChecklistCode(workflow.recommended_checklist as ChecklistCode);
     }
   }, [workflow?.recommended_checklist]);
+
+  useEffect(() => {
+    if (section === "pest_intel" && !showPestIntel) {
+      setSection("overview");
+    }
+  }, [section, showPestIntel]);
 
   useEffect(() => {
     const profileFromScheme = scheme?.framework_profiles?.[0] as FrameworkProfileCode | undefined;
@@ -258,6 +274,7 @@ export function ProjectComplianceTab({
         active={section}
         onChange={setSection}
         openViolations={violations.length}
+        showPestIntel={showPestIntel}
       />
 
       <div className="min-w-0 space-y-4">
@@ -292,6 +309,33 @@ export function ProjectComplianceTab({
             projectId={projectId}
             onNavigateCredits={onNavigateTab ? () => onNavigateTab("credits") : undefined}
           />
+        )}
+
+        {section === "pest_intel" && showPestIntel && (
+          <div className="card space-y-4">
+            <div className="flex items-center gap-2">
+              <Bug className="h-5 w-5 text-forest-700" />
+              <h2 className="text-lg font-semibold text-stone-900">Pest & disease watch</h2>
+            </div>
+            <p className="text-sm text-stone-600">
+              Weather, locust, and canopy stress signals for field teams — scoped to a work area.
+            </p>
+            <div>
+              <label className="label text-xs">Work area</label>
+              <select
+                className="input text-sm"
+                value={pestAreaId ?? ""}
+                onChange={(e) => setSelectedAreaId(e.target.value || null)}
+              >
+                {workAreas.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {pestAreaId ? <PestIntelPanel kind="work-area" targetId={pestAreaId} /> : null}
+          </div>
         )}
 
         {section === "exports" && (

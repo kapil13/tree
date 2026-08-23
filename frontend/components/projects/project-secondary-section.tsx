@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
@@ -12,7 +11,6 @@ import { ProjectSettingsPanel } from "@/components/projects/project-settings-pan
 import { ProjectTeamPanel } from "@/components/projects/project-team-panel";
 import { ProjectVerificationPanel } from "@/components/projects/project-verification-panel";
 import { ProjectVm0047Panel } from "@/components/projects/project-vm0047-panel";
-import { PestIntelPanel } from "@/components/pest-intel-panel";
 import type { PlantingProject, WorkArea } from "@/lib/api";
 import {
   PROJECT_SECONDARY_TABS,
@@ -34,11 +32,6 @@ export function ProjectSecondarySection({
   workAreas: WorkArea[];
 }) {
   const router = useRouter();
-  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
-  const pestAreaId = useMemo(
-    () => selectedAreaId ?? workAreas[0]?.id ?? null,
-    [selectedAreaId, workAreas],
-  );
 
   function navigateProjectTab(next: ProjectTab) {
     if (next === "overview" || next === "trees") {
@@ -53,32 +46,14 @@ export function ProjectSecondarySection({
   return (
     <div className="space-y-6">
       {tab === "compliance" && (
-        <div className="space-y-6">
-          <ProjectComplianceTab
-            projectId={projectId}
-            projectCode={project.code}
-            projectMetadata={project.metadata}
-            schemeCode={project.scheme_code}
-            onNavigateTab={navigateProjectTab}
-          />
-          {workAreas.length > 0 && (
-            <div className="card space-y-3">
-              <label className="kpi-label">Pest intel for area</label>
-              <select
-                className="input"
-                value={pestAreaId ?? ""}
-                onChange={(e) => setSelectedAreaId(e.target.value || null)}
-              >
-                {workAreas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </select>
-              {pestAreaId && <PestIntelPanel kind="work-area" targetId={pestAreaId} />}
-            </div>
-          )}
-        </div>
+        <ProjectComplianceTab
+          projectId={projectId}
+          projectCode={project.code}
+          projectMetadata={project.metadata}
+          schemeCode={project.scheme_code}
+          workAreas={workAreas}
+          onNavigateTab={navigateProjectTab}
+        />
       )}
 
       {tab === "credits" && (
