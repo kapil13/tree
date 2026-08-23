@@ -103,7 +103,7 @@ def test_sahakar_van_scheme_defaults():
     assert scheme["default_segment"] == "sahakar_van_coop"
     assert scheme["default_template_code"] == "sahakar_van_cooperative_v1"
     assert "ngo_community" in scheme["program_codes"]
-    assert scheme["checklist_codes"] == ["sahakar_van_coop"]
+    assert scheme["checklist_codes"] == ["sahakar_van_coop", "fra_tenure"]
 
 
 def test_risk_from_signals_critical():

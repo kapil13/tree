@@ -241,9 +241,7 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
             nba_flagged += 1
             if meta.get("nba_acknowledgment_at"):
                 nba_acknowledged += 1
-    if nba_flagged == 0:
-        signals["nba_species_reviewed"] = "yes"
-    elif nba_acknowledged >= nba_flagged:
+    if nba_flagged == 0 or nba_acknowledged >= nba_flagged:
         signals["nba_species_reviewed"] = "yes"
     elif nba_acknowledged > 0:
         signals["nba_species_reviewed"] = "partial"
