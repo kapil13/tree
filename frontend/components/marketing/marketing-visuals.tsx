@@ -428,6 +428,116 @@ export function ComplianceOrbit({ codes: _codes }: { codes: string[] }) {
   );
 }
 
+function ReportPreviewArt({ tag }: { tag: string }) {
+  const key = tag.toLowerCase();
+  if (key.includes("brsr")) {
+    return (
+      <div className="marketing-report-art">
+        <span>P6</span>
+        <div className="marketing-report-art-table">
+          <em /><em /><em /><em /><em /><em />
+        </div>
+      </div>
+    );
+  }
+  if (key.includes("iso")) {
+    return (
+      <div className="marketing-report-art">
+        {["01 Boundary", "02 Monitor", "03 Quantify"].map((row) => (
+          <p key={row}>{row}</p>
+        ))}
+      </div>
+    );
+  }
+  if (key.includes("tnfd")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--grid4">
+        {["L", "E", "A", "P"].map((cell) => (
+          <strong key={cell}>{cell}</strong>
+        ))}
+      </div>
+    );
+  }
+  if (key.includes("ghg")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--bars">
+        <i style={{ height: "38%" }} />
+        <i style={{ height: "62%" }} />
+        <i style={{ height: "84%" }} />
+        <i style={{ height: "54%" }} />
+      </div>
+    );
+  }
+  if (key.includes("darwin")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--dots">
+        {Array.from({ length: 12 }, (_, i) => (
+          <i key={i} />
+        ))}
+      </div>
+    );
+  }
+  if (key.includes("vm0047")) {
+    return (
+      <div className="marketing-report-art">
+        <p>SERIAL · BUFFER</p>
+        <p>NPRT 0.82</p>
+        <b />
+      </div>
+    );
+  }
+  if (key.includes("inventory")) {
+    return (
+      <div className="marketing-report-art">
+        <p>● Azadirachta</p>
+        <p>● Tectona</p>
+        <p>● Ficus</p>
+      </div>
+    );
+  }
+  if (key.includes("carbon") && !key.includes("vm")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--kpi">
+        <em>tCO₂e</em>
+        <strong>1,240</strong>
+      </div>
+    );
+  }
+  if (key.includes("bio")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--wave">
+        <svg viewBox="0 0 120 36" aria-hidden>
+          <path d="M2 22 C14 8 22 30 34 16 C46 6 54 28 68 14 C80 4 92 26 118 12" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </div>
+    );
+  }
+  if (key.includes("esg")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--kpis">
+        <em>NDVI</em>
+        <em>CO₂e</em>
+        <em>spp</em>
+      </div>
+    );
+  }
+  if (key.includes("exec")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--wave">
+        <svg viewBox="0 0 120 36" aria-hidden>
+          <polyline points="4,28 24,22 44,24 64,12 84,16 112,6" fill="none" stroke="currentColor" strokeWidth="2.4" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className="marketing-report-art marketing-report-art--lock">
+      <span>SIGNED</span>
+      <strong>ZIP</strong>
+    </div>
+  );
+}
+
 export function ReportPaper({
   tag,
   title,
@@ -446,10 +556,7 @@ export function ReportPaper({
       <div className="marketing-report-preview" style={{ ["--paper-accent" as string]: accent }}>
         <div className="marketing-report-sheet">
           <span>{tag}</span>
-          <i />
-          <i />
-          <i />
-          <b />
+          <ReportPreviewArt tag={tag} />
         </div>
       </div>
       <div className="marketing-report-body">
