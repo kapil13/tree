@@ -166,6 +166,12 @@ function SelectionPreview({ scheme }: { scheme: CentralScheme }) {
           Auto-attaches {scheme.checklist_codes.length} compliance checklist
           {scheme.checklist_codes.length === 1 ? "" : "s"}
         </li>
+        {scheme.framework_profiles.length > 0 && (
+          <li className="flex gap-2">
+            <span className="text-forest-600">✓</span>
+            Framework export profile: {scheme.framework_profiles.join(", ").replace(/_/g, " ")}
+          </li>
+        )}
         {fieldCount > 0 && (
           <li className="flex gap-2">
             <span className="text-forest-600">✓</span>
@@ -300,7 +306,7 @@ export function SchemePickerStep({
         <input
           type="search"
           className="input pl-10"
-          placeholder="Search schemes — CAMPA, NHAI, MISHTI, Sahakar Van…"
+          placeholder="Search schemes — CAMPA, NHAI, Green Credit, GIM, MISHTI, Sahakar Van…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Search central schemes"

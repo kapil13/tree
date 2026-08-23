@@ -84,8 +84,14 @@ function marketingSecondaryHref(href: string): string {
 const REPORT_ACCENTS = ["#14532d", "#0e7490", "#3f6212", "#1e3a5f", "#854d0e", "#4c1d95"];
 
 function complianceGroups(items: Array<Record<string, string>>) {
-  const india = items.filter((i) => /DPDP|NHAI|CAMPA|NGT|WCAG|BYOT/i.test(`${i.code} ${i.title}`));
-  const carbon = items.filter((i) => /VM0047|ICVCM|IPCC|ISO|BRSR|Gold/i.test(`${i.code} ${i.title}`));
+  const india = items.filter((i) =>
+    /DPDP|NHAI|CAMPA|NGT|WCAG|BYOT|Green Credit|GCP|GIM|MISHTI|Nagar Van|Sahakar/i.test(
+      `${i.code} ${i.title}`,
+    ),
+  );
+  const carbon = items.filter((i) =>
+    /VM0047|ICVCM|IPCC|ISO|BRSR|Gold|REDD|Paris|NDC/i.test(`${i.code} ${i.title}`),
+  );
   const nature = items.filter((i) => !india.includes(i) && !carbon.includes(i));
   return [
     { title: "India & public programs", items: india },

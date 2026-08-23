@@ -2559,7 +2559,11 @@ export type FrameworkProfileCode =
   | "paris_ndc"
   | "ngt_campa"
   | "green_credit_india"
-  | "esg_general";
+  | "esg_general"
+  | "gim"
+  | "mishti"
+  | "nagar_van"
+  | "sahakar_van";
 
 export type FrameworkProfile = {
   code: FrameworkProfileCode;
@@ -2568,6 +2572,7 @@ export type FrameworkProfile = {
   methodology: string;
   description: string;
   reference: string;
+  disclaimer: string;
 };
 
 export const reporting = {
