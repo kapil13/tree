@@ -26,6 +26,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { ChartDataTable } from "@/components/dashboard/chart-data-table";
+import { CompliancePortfolioStrip } from "@/components/dashboard/compliance-portfolio-strip";
 import { useTranslations } from "next-intl";
 import {
   Area,
@@ -365,6 +366,8 @@ export function ExecutiveDashboard() {
         ))}
       </div>
 
+      <CompliancePortfolioStrip />
+
       <DataTrustBanner variant="strip" />
       <OrgAdminChecklist compact />
 
@@ -375,7 +378,7 @@ export function ExecutiveDashboard() {
               <h2 className="dash-panel-title">Today&apos;s priorities</h2>
               <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
             </div>
-            <Link href="/portfolio-health" className="dash-link">
+            <Link href="/portfolio-health?tab=compliance" className="dash-link">
               Full monitoring <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -851,6 +854,7 @@ export function ExecutiveDashboard() {
               ...(canWrite
                 ? [{ href: "/trees/new", icon: Sprout, label: "Register tree", sub: "Guided wizard" }]
                 : []),
+              { href: "/portfolio-health?tab=compliance", icon: ShieldCheck, label: "Portfolio compliance", sub: "Readiness & safeguards" },
               { href: "/portfolio-health", icon: Radar, label: "Portfolio health", sub: "Threats & monitoring" },
               { href: "/satellite", icon: Satellite, label: "Satellite scan", sub: "NDVI & health" },
               { href: "/bioacoustic", icon: Bird, label: "Record biodiversity", sub: "Soundscape" },

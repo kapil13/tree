@@ -2796,6 +2796,35 @@ export type ComplianceWorkflow = {
   checklist_summaries: ChecklistSummary[];
 };
 
+export type CompliancePortfolioProjectRow = {
+  id: string;
+  code: string;
+  name: string;
+  segment: string;
+  compliance_mode: string;
+  status: string;
+  readiness_pct: number;
+  open_violations: number;
+  blocking_violations: number;
+  safeguard_gaps: number;
+  recommended_checklist: ChecklistCode;
+  recommended_checklist_label: string;
+  workflow_done: number;
+  workflow_total: number;
+};
+
+export type CompliancePortfolioSummary = {
+  project_count: number;
+  open_violations: number;
+  blocking_violations: number;
+  avg_readiness_pct: number;
+  projects_with_safeguard_gaps: number;
+  safeguard_gap_count: number;
+  projects_below_80_readiness: number;
+  report_links: Array<{ label: string; tab: string }>;
+  projects: CompliancePortfolioProjectRow[];
+};
+
 export const compliance = {
   async checklists() {
     return (
@@ -2820,6 +2849,9 @@ export const compliance = {
     return (
       await api.get<ComplianceWorkflow>(`/v1/compliance/projects/${projectId}/workflow`)
     ).data;
+  },
+  async portfolioSummary() {
+    return (await api.get<CompliancePortfolioSummary>("/v1/compliance/portfolio-summary")).data;
   },
   async projectChecklist(projectId: string, code: ChecklistCode) {
     return (

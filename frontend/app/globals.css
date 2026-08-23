@@ -1236,6 +1236,10 @@ html[lang="hi"] body {
   @apply border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-white dark:from-amber-950/20 dark:via-stone-900 dark:to-stone-900;
 }
 
+.dash-panel--compliance {
+  @apply border-forest-200/50 bg-gradient-to-br from-forest-50/30 via-white to-white dark:from-forest-950/15 dark:via-stone-900 dark:to-stone-900;
+}
+
 .dash-panel-head {
   @apply flex flex-wrap items-start justify-between gap-3;
 }
