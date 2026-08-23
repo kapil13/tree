@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  Bug,
   ClipboardCheck,
   Download,
   Link2,
@@ -17,6 +18,7 @@ export type ComplianceSection =
   | "checklist"
   | "safeguards"
   | "integrity"
+  | "pest_intel"
   | "exports"
   | "share"
   | "issues";
@@ -29,12 +31,25 @@ type SectionDef = {
   badge?: number;
 };
 
-export function complianceSectionDefs(openViolations: number): SectionDef[] {
-  return [
+export function complianceSectionDefs(
+  openViolations: number,
+  showPestIntel = false,
+): SectionDef[] {
+  const sections: SectionDef[] = [
     { id: "overview", label: "Readiness overview", shortLabel: "Overview", icon: ListChecks },
     { id: "checklist", label: "Eligibility checklist", shortLabel: "Checklist", icon: ClipboardCheck },
     { id: "safeguards", label: "Safeguards & tenure", shortLabel: "Safeguards", icon: Shield },
     { id: "integrity", label: "Carbon integrity", shortLabel: "Integrity", icon: TrendingDown },
+  ];
+  if (showPestIntel) {
+    sections.push({
+      id: "pest_intel",
+      label: "Pest & disease watch",
+      shortLabel: "Pest intel",
+      icon: Bug,
+    });
+  }
+  sections.push(
     { id: "exports", label: "Audit exports", shortLabel: "Exports", icon: Download },
     { id: "share", label: "Verification link", shortLabel: "Share", icon: Link2 },
     {
@@ -44,19 +59,22 @@ export function complianceSectionDefs(openViolations: number): SectionDef[] {
       icon: AlertTriangle,
       badge: openViolations > 0 ? openViolations : undefined,
     },
-  ];
+  );
+  return sections;
 }
 
 export function ProjectComplianceSectionNav({
   active,
   onChange,
   openViolations = 0,
+  showPestIntel = false,
 }: {
   active: ComplianceSection;
   onChange: (section: ComplianceSection) => void;
   openViolations?: number;
+  showPestIntel?: boolean;
 }) {
-  const sections = complianceSectionDefs(openViolations);
+  const sections = complianceSectionDefs(openViolations, showPestIntel);
 
   return (
     <nav aria-label="Compliance sections" className="space-y-3">
