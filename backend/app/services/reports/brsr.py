@@ -22,6 +22,10 @@ from app.models.verification_workflow import VerificationItem, VerificationSampl
 from app.services.carbon.engine import ENGINE_VERSION
 from app.services.credits.ledger import org_credit_summary
 from app.services.planting_projects.mrv_export import build_project_mrv_context
+from app.services.reports.brsr_kpi_map import (
+    build_core_kpi_sheet_rows,
+    build_value_chain_annex,
+)
 
 BRSR_CORE_VERSION = "2024"
 PRINCIPLE = 6
@@ -186,6 +190,14 @@ async def build_brsr_context(
 
     credits = await org_credit_summary(db, organization.id)
     assurance = await _assurance_pack(db, organization.id, project_ids)
+    value_chain_annex = build_value_chain_annex(projects)
+    open_violations_total = sum(int(p.get("open_violations") or 0) for p in project_summaries)
+    core_kpi_rows = build_core_kpi_sheet_rows(
+        ghg_inventory=ghg_inventory,
+        project_summaries=project_summaries,
+        open_violations_total=open_violations_total,
+        value_chain_projects=value_chain_annex,
+    )
 
     essential_indicators = [
         {
@@ -234,6 +246,8 @@ async def build_brsr_context(
         "scope": "single_project" if project_id else "organization_portfolio",
         "project_id": str(project_id) if project_id else None,
         "essential_indicators": essential_indicators,
+        "core_kpi_mapping": core_kpi_rows,
+        "value_chain_annex": value_chain_annex,
         "disclaimer": (
             "This export maps BYOT MRV data to BRSR Core Principle 6 structure for assurance "
             "preparation. It is not a filed BRSR submission or statutory assurance opinion."
@@ -297,6 +311,35 @@ def render_brsr_xlsx(ctx: dict[str, Any]) -> bytes:
     indicators.append(["indicator_id", "name", "description"])
     for ind in ctx.get("essential_indicators") or []:
         indicators.append([ind.get("indicator_id"), ind.get("name"), ind.get("description")])
+
+    core = wb.create_sheet("Core KPIs")
+    core.append(["kpi_id", "name", "data_available", "value_summary", "platform_source", "notes"])
+    for row in ctx.get("core_kpi_mapping") or []:
+        core.append(
+            [
+                row.get("kpi_id"),
+                row.get("name"),
+                row.get("data_available"),
+                row.get("value_summary"),
+                row.get("platform_source"),
+                row.get("notes"),
+            ]
+        )
+
+    vc = wb.create_sheet("Value chain")
+    vc.append(["project_code", "project_name", "scheme_code", "segment", "supplier_ref", "state", "role"])
+    for row in ctx.get("value_chain_annex") or []:
+        vc.append(
+            [
+                row.get("project_code"),
+                row.get("project_name"),
+                row.get("scheme_code"),
+                row.get("segment"),
+                row.get("supplier_ref"),
+                row.get("state"),
+                row.get("role"),
+            ]
+        )
 
     assurance = wb.create_sheet("Assurance Pack")
     assurance.append(["key", "value"])

@@ -64,6 +64,13 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             "type": "text",
             "required": False,
         },
+        {
+            "key": "ngt_order_ref",
+            "label": "NGT order reference",
+            "type": "text",
+            "required": False,
+            "help_text": "Court order or monitoring direction reference for CA compliance.",
+        },
     ],
     "gim_restoration": [
         {

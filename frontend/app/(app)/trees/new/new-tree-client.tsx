@@ -326,11 +326,19 @@ export function NewTreePageClient() {
         } as Record<string, unknown>;
       }
       if (project) {
-        payload.metadata = enrichTreePayloadMetadata(
-          payload.metadata as Record<string, unknown> | undefined,
-          project,
-          { surveyorName: user?.full_name ?? user?.email },
-        );
+        const meta = { ...(payload.metadata ?? {}) } as Record<string, unknown>;
+        const category = values.species_category as string | undefined;
+        if (category && category !== "native") {
+          meta.species_category = category;
+          meta.is_exotic = category === "exotic";
+          meta.is_scheduled_species = category === "scheduled";
+          if (values.nba_acknowledged) {
+            meta.nba_acknowledgment_at = new Date().toISOString();
+          }
+        }
+        payload.metadata = enrichTreePayloadMetadata(meta, project, {
+          surveyorName: user?.full_name ?? user?.email,
+        });
       }
       const tree = await trees.create(payload);
 
@@ -531,6 +539,10 @@ export function NewTreePageClient() {
         registerNextHint={registerNextHint}
         successMessage={successMessage}
         wizardResetKey={wizardResetKey}
+        showNbaFields={
+          !!project &&
+          (project.compliance_mode === "strict" || !!project.scheme_code)
+        }
       />
     </div>
   );

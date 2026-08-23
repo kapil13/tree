@@ -198,6 +198,56 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
         else:
             signals["native_species_tracked"] = "partial"
 
+    from app.services.compliance.safeguards import safeguard_doc_types_present
+
+    doc_types = await safeguard_doc_types_present(db, project.id)
+    for doc_type, signal_key in (
+        ("gram_sabha_resolution", "safeguards_gram_sabha"),
+        ("fpic_minutes", "safeguards_fpic"),
+        ("patta_cfr_reference", "safeguards_tenure_ref"),
+        ("stakeholder_consultation_log", "safeguards_stakeholder_log"),
+    ):
+        signals[signal_key] = "yes" if doc_type in doc_types else "no"
+
+    refs = (project.metadata_ or {}).get("scheme_refs") or {}
+    signals["land_bank_registered"] = (
+        "yes" if refs.get("green_credit_land_bank_id") else "no"
+    )
+    signals["verifier_on_file"] = "yes" if refs.get("verifier_reference") else "no"
+    signals["gcp_activity_documented"] = (
+        "yes" if refs.get("gcp_activity_type") else "no"
+    )
+
+    if getattr(project, "scheme_code", None) == "green_credit_india" or refs.get(
+        "green_credit_land_bank_id"
+    ):
+        from app.services.credits.green_credit import build_project_green_credit_summary
+
+        gc = await build_project_green_credit_summary(db, project)
+        signals["density_eligible"] = "yes" if gc.get("density_eligible") else "no"
+    else:
+        signals["density_eligible"] = "na"
+
+    nba_flagged = 0
+    nba_acknowledged = 0
+    for tree in trees:
+        meta = tree.metadata_ or {}
+        flagged = (
+            meta.get("is_exotic") in (True, "true", "yes", 1)
+            or meta.get("species_category") in ("exotic", "medicinal", "scheduled")
+            or meta.get("is_scheduled_species") in (True, "true", "yes", 1)
+        )
+        if flagged:
+            nba_flagged += 1
+            if meta.get("nba_acknowledgment_at"):
+                nba_acknowledged += 1
+    if nba_flagged == 0 or nba_acknowledged >= nba_flagged:
+        signals["nba_species_reviewed"] = "yes"
+    elif nba_acknowledged > 0:
+        signals["nba_species_reviewed"] = "partial"
+    else:
+        signals["nba_species_reviewed"] = "no"
+
     return signals
 
 

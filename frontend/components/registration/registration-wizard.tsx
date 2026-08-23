@@ -67,6 +67,7 @@ type RegistrationWizardProps = {
   registerNextHint?: string | null;
   successMessage?: string | null;
   wizardResetKey?: number;
+  showNbaFields?: boolean;
 };
 
 function contentSections(
@@ -121,6 +122,7 @@ export function RegistrationWizard({
   registerNextHint,
   successMessage,
   wizardResetKey = 0,
+  showNbaFields = false,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -468,6 +470,48 @@ export function RegistrationWizard({
                       </button>
                     ))}
                   </div>
+                </div>
+              ) : null}
+              {showNbaFields ? (
+                <div className="mt-4 space-y-3 rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+                    NBA species review
+                  </p>
+                  <div>
+                    <label className="label text-xs">Species category</label>
+                    <select
+                      className="input text-sm"
+                      value={String(values.species_category ?? "native")}
+                      disabled={readOnly}
+                      onChange={(e) =>
+                        onValuesChange({ ...values, species_category: e.target.value })
+                      }
+                    >
+                      <option value="native">Native (default)</option>
+                      <option value="exotic">Exotic / non-native</option>
+                      <option value="medicinal">Medicinal / aromatic</option>
+                      <option value="scheduled">Scheduled / protected</option>
+                    </select>
+                  </div>
+                  {["exotic", "medicinal", "scheduled"].includes(
+                    String(values.species_category ?? ""),
+                  ) ? (
+                    <label className="flex items-start gap-2 text-sm text-stone-700">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={Boolean(values.nba_acknowledged)}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          onValuesChange({ ...values, nba_acknowledged: e.target.checked })
+                        }
+                      />
+                      <span>
+                        Benefit-sharing / NBA acknowledgment recorded for this registration
+                        (required for strict govt schemes when category is flagged).
+                      </span>
+                    </label>
+                  ) : null}
                 </div>
               ) : null}
               <div className="mt-8">

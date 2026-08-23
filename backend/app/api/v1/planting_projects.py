@@ -30,6 +30,8 @@ from app.schemas.planting_project import (
     PlantingStandardOut,
     ProjectSummaryOut,
     RegistrationContextOut,
+    SafeguardDocumentCreate,
+    SafeguardDocumentOut,
     SchemeKpiOut,
     SchemeMetadataUpdate,
     StandardTemplateOut,
@@ -970,6 +972,177 @@ async def export_evidence_bundle(
         content=zip_bytes,
         media_type="application/zip",
         headers=headers,
+    )
+
+
+@router.get("/{project_id}/safeguards/documents")
+async def list_project_safeguard_documents(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> list[SafeguardDocumentOut]:
+    from app.services.compliance.safeguards import list_safeguard_documents
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    docs = await list_safeguard_documents(db, project)
+    return [SafeguardDocumentOut.model_validate(d) for d in docs]
+
+
+@router.post("/{project_id}/safeguards/documents", response_model=SafeguardDocumentOut)
+async def create_project_safeguard_document(
+    project_id: uuid.UUID,
+    payload: SafeguardDocumentCreate,
+    request: Request,
+    user: WriteProfessional,
+    db: DB,
+) -> SafeguardDocumentOut:
+    from app.services.compliance.safeguards import create_safeguard_document
+    from app.services.storage.key_ownership import assert_owned_upload_key
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        assert_owned_upload_key(user.id, payload.s3_key, folders=("images", "safeguards"))
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    try:
+        doc = await create_safeguard_document(
+            db,
+            project=project,
+            doc_type=payload.doc_type,
+            title=payload.title,
+            s3_key=payload.s3_key,
+            uploaded_by_user_id=user.id,
+            metadata=payload.metadata,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="safeguards.document.upload",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"doc_type": payload.doc_type, "title": payload.title},
+    )
+    await db.commit()
+    return SafeguardDocumentOut.model_validate(doc)
+
+
+@router.delete("/{project_id}/safeguards/documents/{document_id}")
+async def delete_project_safeguard_document(
+    project_id: uuid.UUID,
+    document_id: uuid.UUID,
+    request: Request,
+    user: WriteProfessional,
+    db: DB,
+) -> dict[str, str]:
+    from app.services.compliance.safeguards import delete_safeguard_document
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    deleted = await delete_safeguard_document(db, project, document_id)
+    if not deleted:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="document_not_found")
+    await record_audit(
+        db,
+        actor=user,
+        action="safeguards.document.delete",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"document_id": str(document_id)},
+    )
+    await db.commit()
+    return {"status": "deleted"}
+
+
+@router.get("/{project_id}/campa-state-export")
+async def export_campa_state_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.india_exports import (
+        build_campa_state_export_context,
+        render_campa_state_export_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_campa_state_export_context(db, project)
+    data = render_campa_state_export_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="campa_state_export.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-state-campa-export.xlsx"'
+        },
+    )
+
+
+@router.get("/{project_id}/green-credit-portal-export")
+async def export_green_credit_portal_pack(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.india_exports import (
+        build_green_credit_portal_context,
+        render_green_credit_portal_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_green_credit_portal_context(db, project)
+    data = render_green_credit_portal_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="green_credit_portal_export.generate",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-green-credit-handoff.xlsx"'
+        },
     )
 
 
