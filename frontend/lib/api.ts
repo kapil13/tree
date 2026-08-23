@@ -1184,6 +1184,31 @@ export const plantingProjects = {
     );
     return response.data as Blob;
   },
+  async exportEsfPs5Pack(projectId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/esf-ps5-export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportEsfPs6Pack(projectId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/esf-ps6-export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportUndpSesPack(projectId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/undp-ses-export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
+  async exportMultilateralAuditPack(projectId: string) {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/multilateral-audit-pack`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -2646,7 +2671,9 @@ export type ChecklistCode =
   | "icvcm_ccp"
   | "esg_general"
   | "fra_tenure"
-  | "article6_readiness";
+  | "article6_readiness"
+  | "world_bank_esf"
+  | "undp_ses";
 
 export type SafeguardDocType =
   | "gram_sabha_resolution"

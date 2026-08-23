@@ -166,6 +166,10 @@ async def test_build_auto_signals_no_trees():
     serial_empty.scalars.return_value.all.return_value = []
     sar_empty = MagicMock()
     sar_empty.scalars.return_value.all.return_value = []
+    doc_types_result = MagicMock()
+    doc_types_result.scalars.return_value.all.return_value = []
+    bio_count = MagicMock()
+    bio_count.scalar_one.return_value = 0
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(
@@ -184,6 +188,8 @@ async def test_build_auto_signals_no_trees():
             safeguard_empty,
             serial_empty,
             sar_empty,
+            doc_types_result,
+            bio_count,
         ]
     )
 

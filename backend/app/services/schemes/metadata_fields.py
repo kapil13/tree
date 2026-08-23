@@ -364,6 +364,42 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             "help_text": "Total saplings planned for the cooperative forest site.",
         },
     ],
+    "dfi_green_corridor": [
+        *_COMMON_APO_FIELDS,
+        {
+            "key": "dfi_lender_ref",
+            "label": "DFI / lender reference",
+            "type": "text",
+            "required": True,
+            "placeholder": "WB-IND-GREEN-2025-001",
+            "help_text": "World Bank, ADB, or bilateral DFI project reference.",
+        },
+        {
+            "key": "dfi_project_id",
+            "label": "DFI project ID",
+            "type": "text",
+            "required": False,
+        },
+        {
+            "key": "nhai_package_ref",
+            "label": "NHAI package / corridor ref",
+            "type": "text",
+            "required": False,
+            "placeholder": "NH-44-PKG-3",
+        },
+        {
+            "key": "pca_number",
+            "label": "CAMPA PCA number (if converged)",
+            "type": "text",
+            "required": False,
+        },
+        {
+            "key": "ngt_order_ref",
+            "label": "NGT order reference",
+            "type": "text",
+            "required": False,
+        },
+    ],
 }
 
 

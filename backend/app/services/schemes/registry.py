@@ -197,6 +197,27 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "active": True,
         "metadata_sections": [],
     },
+    "dfi_green_corridor": {
+        "code": "dfi_green_corridor",
+        "label": "DFI Green Corridor — NHAI / CAMPA Convergence",
+        "description": (
+            "Development-finance-backed green corridor with World Bank ESF and UNDP SES "
+            "safeguard expectations alongside NHAI and CAMPA compliance."
+        ),
+        "ministry": "MoRTH / MoEFCC",
+        "group": "central",
+        "program_codes": ["government_nhai", "ngo_community"],
+        "default_segment": "nhai_highway",
+        "default_compliance_mode": "strict",
+        "default_template_code": "dfi_green_corridor_v1",
+        "checklist_codes": ["world_bank_esf", "undp_ses", "ngt_campa", "fra_tenure"],
+        "framework_profiles": ["ngt_campa", "esg_general"],
+        "convergence_allowed": ["campa_ca", "mgnrega_convergence"],
+        "legacy_plantation_category": "highway",
+        "kpi_targets": {"survival_pct_min": 80.0, "geo_tagged_pct_min": 98.0},
+        "active": True,
+        "metadata_sections": [],
+    },
 }
 
 PROGRAMS_REQUIRING_SCHEME = frozenset({"government_nhai", "ngo_community"})

@@ -93,6 +93,14 @@ const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { hre
     label: "Open credits ledger",
     tab: "credits",
   },
+  ps6_biodiversity_evidence: {
+    label: "Run bioacoustic / satellite monitoring",
+    href: "/portfolio-health?tab=monitoring",
+  },
+  ses_risk_screened: {
+    label: "Upload safeguard documents",
+    tab: "compliance",
+  },
   active_standard_attached: {
     label: "Review planting standard",
     tab: "overview",

@@ -83,6 +83,9 @@ export function ProjectComplianceTab({
       setFrameworkProfile("green_credit_india");
       setChecklistCode("green_credit_india");
     }
+    if (schemeCode === "dfi_green_corridor") {
+      setChecklistCode("world_bank_esf");
+    }
   }, [scheme, schemeCode]);
 
   const { data: frameworks = [] } = useQuery({
@@ -162,6 +165,38 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportEsfPs5 = useMutation({
+    mutationFn: () => plantingProjects.exportEsfPs5Pack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-esf-ps5-tenure.xlsx`);
+    },
+  });
+
+  const exportEsfPs6 = useMutation({
+    mutationFn: () => plantingProjects.exportEsfPs6Pack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-esf-ps6-biodiversity.xlsx`);
+    },
+  });
+
+  const exportUndpSes = useMutation({
+    mutationFn: () => plantingProjects.exportUndpSesPack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-undp-ses-screening.xlsx`);
+    },
+  });
+
+  const exportMultilateralPack = useMutation({
+    mutationFn: () => plantingProjects.exportMultilateralAuditPack(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-multilateral-audit-pack.zip`);
+    },
+  });
+
   function scrollToAnchor(anchor: string) {
     const target = anchor === "violations" ? violationsRef.current : checklistRef.current;
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -172,7 +207,16 @@ export function ProjectComplianceTab({
     exportBundle.isPending ||
     exportFramework.isPending ||
     exportGreenCreditPortal.isPending ||
-    exportCampaState.isPending;
+    exportCampaState.isPending ||
+    exportEsfPs5.isPending ||
+    exportEsfPs6.isPending ||
+    exportUndpSes.isPending ||
+    exportMultilateralPack.isPending;
+
+  const showMultilateralExports =
+    schemeCode === "dfi_green_corridor" ||
+    schemeCode === "nhai_highway" ||
+    schemeCode === "campa_ca";
   const selectedFramework = frameworks.find((f) => f.code === frameworkProfile);
 
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
@@ -240,6 +284,54 @@ export function ProjectComplianceTab({
                   : "Green Credit handoff (.xlsx)"}
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {showMultilateralExports && (
+        <div className="space-y-3 rounded-lg border border-indigo-200 bg-indigo-50/40 p-4">
+          <p className="text-sm font-medium text-stone-800">Multilateral & DFI exports</p>
+          <p className="text-xs text-stone-600">
+            World Bank ESF PS5/PS6 evidence, UNDP SES screening, and combined audit pack for
+            lender and development-finance reviews.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              disabled={busy}
+              onClick={() => exportEsfPs5.mutate()}
+            >
+              <Download className="h-3.5 w-3.5" />
+              {exportEsfPs5.isPending ? "Exporting…" : "ESF PS5 tenure (.xlsx)"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              disabled={busy}
+              onClick={() => exportEsfPs6.mutate()}
+            >
+              <Download className="h-3.5 w-3.5" />
+              {exportEsfPs6.isPending ? "Exporting…" : "ESF PS6 biodiversity (.xlsx)"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              disabled={busy}
+              onClick={() => exportUndpSes.mutate()}
+            >
+              <Download className="h-3.5 w-3.5" />
+              {exportUndpSes.isPending ? "Exporting…" : "UNDP SES screening (.xlsx)"}
+            </button>
+            <button
+              type="button"
+              className="btn-primary text-xs"
+              disabled={busy}
+              onClick={() => exportMultilateralPack.mutate()}
+            >
+              <Download className="h-3.5 w-3.5" />
+              {exportMultilateralPack.isPending ? "Building…" : "Multilateral audit pack (.zip)"}
+            </button>
           </div>
         </div>
       )}

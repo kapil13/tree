@@ -41,6 +41,8 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "icvcm_ccp": "ICVCM CCPs",
     "fra_tenure": "FRA / Tenure",
     "article6_readiness": "Article 6",
+    "world_bank_esf": "World Bank ESF",
+    "undp_ses": "UNDP SES",
 }
 
 
