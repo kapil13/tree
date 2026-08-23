@@ -156,6 +156,24 @@ async def test_build_auto_signals_no_trees():
     safeguard_empty = MagicMock()
     safeguard_empty.scalars.return_value.all.return_value = []
 
+    async def fake_standard(db_, proj):
+        return None
+
+    async def fake_leakage(db_, pid):
+        return []
+
+    serial_empty = MagicMock()
+    serial_empty.scalars.return_value.all.return_value = []
+    sar_empty = MagicMock()
+    sar_empty.scalars.return_value.all.return_value = []
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(
+        "app.services.compliance.evaluator.get_active_standard",
+        fake_standard,
+    )
+    monkeypatch.setattr("app.services.carbon.vm0047_ops.list_leakage", fake_leakage)
+
     db.execute = AsyncMock(
         side_effect=[
             empty_trees,
@@ -164,17 +182,11 @@ async def test_build_auto_signals_no_trees():
             ledger_none,
             risk_none,
             safeguard_empty,
+            serial_empty,
+            sar_empty,
         ]
     )
 
-    async def fake_standard(db_, proj):
-        return None
-
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr(
-        "app.services.compliance.evaluator.get_active_standard",
-        fake_standard,
-    )
     signals = await build_auto_signals(db, project)
     monkeypatch.undo()
     assert signals["has_trees"] == "no"

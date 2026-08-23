@@ -10,13 +10,31 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
   const qc = useQueryClient();
   const serials = ledger.serials ?? [];
   const [beneficiary, setBeneficiary] = useState("");
+  const [parisArticle6, setParisArticle6] = useState(false);
+  const [caRef, setCaRef] = useState("");
   const [activeSerial, setActiveSerial] = useState<string | null>(null);
 
   const retire = useMutation({
-    mutationFn: ({ serialId, beneficiary: b }: { serialId: string; beneficiary: string }) =>
-      credits.retireSerial(serialId, { beneficiary: b }),
+    mutationFn: ({
+      serialId,
+      beneficiary: b,
+      paris_article6,
+      corresponding_adjustment_ref,
+    }: {
+      serialId: string;
+      beneficiary: string;
+      paris_article6?: boolean;
+      corresponding_adjustment_ref?: string;
+    }) =>
+      credits.retireSerial(serialId, {
+        beneficiary: b,
+        paris_article6,
+        corresponding_adjustment_ref: corresponding_adjustment_ref || undefined,
+      }),
     onSuccess: () => {
       setBeneficiary("");
+      setParisArticle6(false);
+      setCaRef("");
       setActiveSerial(null);
       qc.invalidateQueries({ queryKey: ["credit-ledger"] });
     },
@@ -64,11 +82,34 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
                       value={beneficiary}
                       onChange={(e) => setBeneficiary(e.target.value)}
                     />
+                    <label className="flex items-center gap-2 text-xs text-stone-600">
+                      <input
+                        type="checkbox"
+                        checked={parisArticle6}
+                        onChange={(e) => setParisArticle6(e.target.checked)}
+                      />
+                      Paris Agreement Article 6 retirement
+                    </label>
+                    {parisArticle6 ? (
+                      <input
+                        className="input text-xs"
+                        placeholder="Corresponding adjustment ref (optional)"
+                        value={caRef}
+                        onChange={(e) => setCaRef(e.target.value)}
+                      />
+                    ) : null}
                     <button
                       type="button"
                       className="btn-primary text-xs"
                       disabled={!beneficiary.trim() || retire.isPending}
-                      onClick={() => retire.mutate({ serialId: serial.id, beneficiary })}
+                      onClick={() =>
+                        retire.mutate({
+                          serialId: serial.id,
+                          beneficiary,
+                          paris_article6: parisArticle6,
+                          corresponding_adjustment_ref: caRef.trim() || undefined,
+                        })
+                      }
                     >
                       Confirm retirement
                     </button>

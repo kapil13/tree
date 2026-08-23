@@ -110,17 +110,6 @@ async def test_build_auto_signals_survival_saved():
     safeguard_empty = MagicMock()
     safeguard_empty.scalars.return_value.all.return_value = []
 
-    db.execute = AsyncMock(
-        side_effect=[
-            empty_trees,
-            empty_violations,
-            count_zero,
-            ledger_none,
-            risk_none,
-            safeguard_empty,
-        ]
-    )
-
     async def fake_standard(db_, proj):
         return None
 
@@ -129,6 +118,29 @@ async def test_build_auto_signals_survival_saved():
         "app.services.compliance.evaluator.get_active_standard",
         fake_standard,
     )
+    async def fake_leakage(db_, pid):
+        return []
+
+    monkeypatch.setattr("app.services.carbon.vm0047_ops.list_leakage", fake_leakage)
+
+    serial_empty = MagicMock()
+    serial_empty.scalars.return_value.all.return_value = []
+    sar_empty = MagicMock()
+    sar_empty.scalars.return_value.all.return_value = []
+
+    db.execute = AsyncMock(
+        side_effect=[
+            empty_trees,
+            empty_violations,
+            count_zero,
+            ledger_none,
+            risk_none,
+            safeguard_empty,
+            serial_empty,
+            sar_empty,
+        ]
+    )
+
     signals = await build_auto_signals(db, project)
     monkeypatch.undo()
     assert signals["survival_survey_configured"] == "yes"

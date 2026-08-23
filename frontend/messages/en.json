@@ -139,6 +139,7 @@
     "greenCreditTab": "Green Credit",
     "greenCreditTitle": "MoEFCC Green Credit Programme",
     "greenCreditDescription": "Verifier-ready planting evidence pack with land bank and survival KPIs under Green Credit Rules 2023.",
+    "etfHandoffTab": "ETF / BTR",
     "stacHint": "STAC catalog: GET /api/v1/ogc/stac/catalog · GeoJSON: GET /api/v1/ogc/projects/{id}/features"
   }
 }

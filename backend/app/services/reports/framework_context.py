@@ -15,6 +15,7 @@ from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.carbon.engine import BUFFER_POOL, ENGINE_VERSION
 from app.services.planting_projects.mrv_export import build_project_mrv_context
+from app.services.reports.carbon_integrity_context import build_carbon_integrity_envelope
 from app.services.reports.frameworks import FrameworkProfile, get_framework_profile
 from app.services.satellite.sar_service import is_sar_provider_record
 
@@ -76,6 +77,8 @@ async def build_framework_report_context(
 
     sar_avg_integrity = round(sum(sar_scores) / len(sar_scores), 1) if sar_scores else None
 
+    integrity = await build_carbon_integrity_envelope(db, project)
+
     carbon_summary = {
         "total_trees": len(trees),
         "total_carbon_kg": round(total_carbon_kg, 3),
@@ -88,15 +91,23 @@ async def build_framework_report_context(
         "methodology": profile.methodology,
     }
 
-    sections = _profile_sections(profile, base, carbon_summary, trees, monitoring={
+    sections = _profile_sections(
+        profile,
+        base,
+        carbon_summary,
+        trees,
+        monitoring={
             "satellite_verified_trees": satellite_verified,
             "sar_avg_forest_integrity": sar_avg_integrity,
             "sar_work_areas_scanned": len(sar_scores),
             "sar_ground_risk_sites": sar_ground_risk,
-        })
+        },
+        integrity=integrity,
+    )
 
     return {
         **base,
+        "carbon_integrity": integrity,
         "framework": {
             "code": profile.code,
             "title": profile.title,
@@ -128,6 +139,7 @@ def _profile_sections(
     carbon: dict[str, Any],
     trees: list[Tree],
     monitoring: dict[str, Any] | None = None,
+    integrity: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     summary = base["summary"]
     project = base["project"]
@@ -188,7 +200,18 @@ def _profile_sections(
             },
         ]
 
+    integrity = integrity or {}
+    leakage = integrity.get("leakage") or {}
+    permanence = integrity.get("permanence") or {}
+    article6 = integrity.get("article6") or {}
+
     if profile.code == "gold_standard_luf":
+        leakage_status = (
+            f"{leakage.get('entry_count', 0)} entries · "
+            f"{leakage.get('total_net_leakage_tco2e', 0):.4f} tCO₂e net"
+            if leakage.get("entry_count")
+            else "No leakage entries — add on Credits tab"
+        )
         return [
             {
                 "title": "Carbon summary",
@@ -206,23 +229,49 @@ def _profile_sections(
                     ["Compliance violations (open)", str(summary["open_violations"])],
                 ],
             },
+            {
+                "title": "Leakage & permanence",
+                "rows": [
+                    ["Leakage worksheet", leakage_status],
+                    ["NPRT buffer %", str(permanence.get("buffer_pct") or "—")],
+                    ["SAR forest integrity", str(permanence.get("sar_avg_forest_integrity") or "—")],
+                ],
+            },
         ]
 
     if profile.code == "redd_plus":
+        leakage_status = (
+            f"Documented — {leakage.get('total_net_leakage_tco2e', 0):.4f} tCO₂e net"
+            if leakage.get("entry_count")
+            else "Not documented — add leakage account"
+        )
+        permanence_status = (
+            f"NPRT {permanence.get('nprt_score')} → buffer {permanence.get('buffer_pct')}%"
+            if permanence.get("nprt_score") is not None
+            else f"{permanence.get('open_violations', summary['open_violations'])} open violations"
+        )
         return [
             {
                 "title": "REDD+ MRV evidence structure",
                 "rows": [
                     ["Reference level / baseline", "Requires national FREL — not computed here"],
                     ["Activity data (planting)", str(summary["tree_count"])],
-                    ["Permanence risk flags", f"{summary['open_violations']} open violations"],
-                    ["Leakage assessment", "Manual questionnaire required"],
+                    ["Permanence risk", permanence_status],
+                    ["Leakage assessment", leakage_status],
+                    ["SAR ground-risk sites", str(permanence.get("sar_ground_risk_sites", "—"))],
                 ],
             },
             {"title": "Carbon stock estimate", "rows": common_carbon},
         ]
 
     if profile.code == "paris_ndc":
+        art6_rows: list[list[str]] = [
+            ["Authorization ref", str(article6.get("authorization_ref") or "—")],
+            ["Article 6 serials", str(article6.get("article6_serial_count", 0))],
+            ["Retired with CA ref", str(article6.get("retired_article6_count", 0))],
+        ]
+        for ref in (article6.get("corresponding_adjustment_refs") or [])[:5]:
+            art6_rows.append(["Corresponding adjustment", str(ref)])
         return [
             {
                 "title": "NDC activity ledger",
@@ -238,7 +287,12 @@ def _profile_sections(
                 "rows": [
                     *common_carbon,
                     ["Estimated removals (tCO₂e)", f"{carbon['gross_credits_tco2e']:.4f}"],
+                    ["Leakage deducted (tCO₂e)", f"{leakage.get('total_net_leakage_tco2e', 0):.4f}"],
                 ],
+            },
+            {
+                "title": "Article 6 traceability (informational)",
+                "rows": art6_rows,
             },
         ]
 

@@ -248,6 +248,66 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["nba_species_reviewed"] = "no"
 
+    from app.services.carbon.vm0047_ops import list_leakage
+
+    leakage_rows = await list_leakage(db, project.id)
+    if leakage_rows:
+        signals["leakage_documented"] = "yes"
+    else:
+        signals["leakage_documented"] = "no"
+
+    from app.models.plantation_fence import PlantationFence as _Fence
+    from app.models.plantation_satellite_record import PlantationSatelliteRecord
+    from app.services.satellite.sar_service import is_sar_provider_record
+
+    sar_res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .join(_Fence, _Fence.id == PlantationSatelliteRecord.fence_id)
+        .where(_Fence.project_id == project.id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+    )
+    sar_at_risk = 0
+    sar_scored = 0
+    seen_fences: set[str] = set()
+    for rec in sar_res.scalars().all():
+        fid = str(rec.fence_id)
+        if fid in seen_fences or not is_sar_provider_record(rec.provider):
+            continue
+        seen_fences.add(fid)
+        fusion = (rec.raw_metadata or {}).get("sar_fusion") or {}
+        if fusion.get("forest_integrity_score") is not None:
+            sar_scored += 1
+        if fusion.get("integrity_grade") in {"at_risk", "critical"}:
+            sar_at_risk += 1
+
+    if sar_at_risk > 0:
+        signals["sar_permanence_risk"] = "partial"
+    elif sar_scored > 0 or risk is not None:
+        signals["sar_permanence_risk"] = "yes"
+    else:
+        signals["sar_permanence_risk"] = "no"
+
+    auth_ref = refs.get("article6_authorization_ref") or (project.metadata_ or {}).get(
+        "article6_authorization_ref"
+    )
+    signals["article6_authorization_ref"] = "yes" if auth_ref else "no"
+
+    from app.models.credit_serial import CreditSerial
+
+    serial_res = await db.execute(
+        select(CreditSerial).where(CreditSerial.project_id == project.id)
+    )
+    serials = list(serial_res.scalars().all())
+    art6_serials = [s for s in serials if s.paris_article6]
+    ca_serials = [s for s in serials if s.corresponding_adjustment_ref]
+    signals["article6_serials_present"] = "yes" if art6_serials else "no"
+    if ca_serials:
+        signals["ca_ref_documented"] = "yes"
+    elif any(s.paris_article6 and s.status == "retired" for s in serials):
+        signals["ca_ref_documented"] = "partial"
+    else:
+        signals["ca_ref_documented"] = "no"
+
     return signals
 
 

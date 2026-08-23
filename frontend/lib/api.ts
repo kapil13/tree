@@ -1170,6 +1170,20 @@ export const plantingProjects = {
     );
     return response.data as Blob;
   },
+  async carbonIntegrity(projectId: string) {
+    return (
+      await api.get<import("@/components/projects/project-permanence-panel").CarbonIntegrityEnvelope>(
+        `/v1/planting-projects/${projectId}/carbon-integrity`,
+      )
+    ).data;
+  },
+  async exportLeakageWorksheet(projectId: string) {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/leakage-worksheet`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -2631,7 +2645,8 @@ export type ChecklistCode =
   | "green_credit_india"
   | "icvcm_ccp"
   | "esg_general"
-  | "fra_tenure";
+  | "fra_tenure"
+  | "article6_readiness";
 
 export type SafeguardDocType =
   | "gram_sabha_resolution"

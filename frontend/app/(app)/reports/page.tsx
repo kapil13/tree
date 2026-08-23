@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
+import { EtfHandoffExportPanel } from "@/components/reports/etf-handoff-export-panel";
 import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
 import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
 import { ProjectFrameworkExportPanel } from "@/components/reports/project-framework-export-panel";
@@ -24,7 +25,8 @@ type ReportTab =
   | "goldStandard"
   | "reddPlus"
   | "parisNdc"
-  | "greenCredit";
+  | "greenCredit"
+  | "etfHandoff";
 
 const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
   {
@@ -157,6 +159,7 @@ export default function ReportsPage() {
               ["reddPlus", tr("reddPlusTab")],
               ["parisNdc", tr("parisNdcTab")],
               ["greenCredit", tr("greenCreditTab")],
+              ["etfHandoff", tr("etfHandoffTab")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -175,7 +178,9 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {tab === "greenCredit" ? (
+      {tab === "etfHandoff" ? (
+        <EtfHandoffExportPanel />
+      ) : tab === "greenCredit" ? (
         <ProjectFrameworkExportPanel
           profile="green_credit_india"
           title={tr("greenCreditTitle")}

@@ -10,6 +10,11 @@ from app.api.v1.deps import DB, CurrentUser
 from app.services.audit import record_audit
 from app.services.planting_projects.access import load_project
 from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.etf_handoff import (
+    build_org_inventory_handoff,
+    render_etf_handoff_csv,
+    render_etf_handoff_xlsx,
+)
 from app.services.reports.framework_context import build_framework_report_context
 from app.services.reports.framework_exporter import (
     render_framework_report_pdf,
@@ -81,5 +86,47 @@ async def export_framework_report(
             "Content-Disposition": (
                 f'attachment; filename="{safe_code}-{profile_code}-framework-report.{ext}"'
             )
+        },
+    )
+
+
+@router.get("/inventory-handoff")
+async def export_inventory_handoff(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("csv", pattern="^(csv|xlsx)$"),
+) -> Response:
+    """Org-level ETF / BTR national inventory handoff export."""
+    await assert_org_feature_enabled(db, user, "reports")
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
+
+    ctx = await build_org_inventory_handoff(db, user.organization_id)
+    if format == "xlsx":
+        data = render_etf_handoff_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ext = "xlsx"
+    else:
+        data = render_etf_handoff_csv(ctx)
+        media = "text/csv"
+        ext = "csv"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="etf_handoff.export",
+        resource_type="organization",
+        resource_id=user.organization_id,
+        request=request,
+        diff={"format": format, "project_count": ctx["totals"]["project_count"]},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={
+            "Content-Disposition": f'attachment; filename="etf-btr-inventory-handoff.{ext}"'
         },
     )

@@ -1146,6 +1146,61 @@ async def export_green_credit_portal_pack(
     )
 
 
+@router.get("/{project_id}/carbon-integrity")
+async def get_project_carbon_integrity(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    from app.services.reports.carbon_integrity_context import build_carbon_integrity_envelope
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await build_carbon_integrity_envelope(db, project)
+
+
+@router.get("/{project_id}/leakage-worksheet")
+async def export_leakage_worksheet(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.carbon_integrity_exports import (
+        build_leakage_worksheet_context,
+        render_leakage_worksheet_xlsx,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_leakage_worksheet_context(db, project)
+    data = render_leakage_worksheet_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="leakage_worksheet.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-leakage-worksheet.xlsx"'
+        },
+    )
+
+
 @router.get("/{project_id}/trees")
 async def list_project_trees(
     project_id: uuid.UUID,
