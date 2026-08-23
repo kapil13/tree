@@ -23,11 +23,10 @@ const SEGMENT_LABEL: Record<string, string> = {
 };
 
 export function PortfolioOverviewTab({
-  onSelectTab: _unusedSelectTab,
+  onSelectTab,
 }: {
-  onSelectTab: (tab: "threats" | "monitoring" | "biodiversity") => void;
+  onSelectTab: (tab: "compliance" | "threats" | "monitoring" | "biodiversity") => void;
 }) {
-  void _unusedSelectTab;
   const [dashQ, monitoringQ, fieldOpsQ] = useQueries({
     queries: [
       { queryKey: ["dashboard-portfolio"], queryFn: dashboard.get, staleTime: 60_000 },

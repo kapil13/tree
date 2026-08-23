@@ -16,6 +16,7 @@ from app.services.compliance.evaluator import (
     list_project_checklist_summaries,
     save_project_checklist_responses,
 )
+from app.services.compliance.portfolio_summary import build_compliance_portfolio_summary
 from app.services.compliance.workflow import build_compliance_workflow
 from app.services.planting_projects.access import can_manage_project, load_project
 
@@ -35,6 +36,17 @@ def _raise_checklist_db_error(exc: Exception) -> None:
 async def get_checklist_catalog() -> list[dict]:
     """List guided eligibility checklist templates."""
     return list_checklists()
+
+
+@router.get("/portfolio-summary")
+async def get_compliance_portfolio_summary(user: CurrentUser, db: DB) -> dict:
+    """Org-level compliance readiness, violations, and safeguards rollup."""
+    try:
+        return await build_compliance_portfolio_summary(db, user)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_checklist_db_error(exc)
+        raise
 
 
 @router.get("/projects/{project_id}/checklists")

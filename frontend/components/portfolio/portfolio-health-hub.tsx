@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Bird, LayoutGrid, ShieldAlert } from "lucide-react";
+import { Activity, Bird, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
+import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
 import { PortfolioOverviewTab } from "./portfolio-overview-tab";
 import { PortfolioThreatsTab } from "./portfolio-threats-tab";
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
+  { id: "compliance", label: "Compliance", icon: ShieldCheck },
   { id: "threats", label: "Threats & weather", icon: ShieldAlert },
   { id: "monitoring", label: "Monitoring", icon: Activity },
   { id: "biodiversity", label: "Biodiversity", icon: Bird },
@@ -69,6 +71,7 @@ export function PortfolioHealthHub() {
       </div>
 
       {tab === "overview" && <PortfolioOverviewTab onSelectTab={selectTab} />}
+      {tab === "compliance" && <PortfolioComplianceTab />}
       {tab === "threats" && <PortfolioThreatsTab />}
       {tab === "monitoring" && <PortfolioMonitoringTab />}
       {tab === "biodiversity" && <PortfolioBiodiversityTab />}
