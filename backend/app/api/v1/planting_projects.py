@@ -1357,6 +1357,92 @@ async def export_multilateral_audit_pack(
     )
 
 
+@router.get("/{project_id}/eudr-due-diligence")
+async def export_eudr_due_diligence(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("xlsx", pattern="^(xlsx|zip)$"),
+) -> Response:
+    from app.services.reports.eudr_exports import (
+        build_eudr_due_diligence_context,
+        render_eudr_due_diligence_xlsx,
+        render_eudr_due_diligence_zip,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_eudr_due_diligence_context(db, project)
+    safe_code = project.code.replace("/", "-")
+    if format == "zip":
+        data = render_eudr_due_diligence_zip(ctx)
+        media = "application/zip"
+        filename = f"{safe_code}-eudr-due-diligence.zip"
+    else:
+        data = render_eudr_due_diligence_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"{safe_code}-eudr-due-diligence.xlsx"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="eudr_due_diligence.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code, "format": format},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{project_id}/sbti-flag")
+async def export_project_sbti_flag(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.services.reports.sbti_flag import build_sbti_flag_context, render_sbti_flag_xlsx
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    ctx = await build_sbti_flag_context(
+        db, project.organization_id, project_id=project.id
+    )
+    data = render_sbti_flag_xlsx(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="sbti_flag.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{safe_code}-sbti-flag.xlsx"'},
+    )
+
+
 @router.get("/{project_id}/trees")
 async def list_project_trees(
     project_id: uuid.UUID,

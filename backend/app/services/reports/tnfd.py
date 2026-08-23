@@ -205,6 +205,11 @@ async def build_tnfd_context(
 
     avg_ndvi = round(sum(total_ndvi) / len(total_ndvi), 4) if total_ndvi else None
 
+    from app.services.reports.gbf_exports import build_gbf_context, build_gbf_tnfd_section
+
+    gbf_ctx = await build_gbf_context(db, organization=organization, project_id=project_id)
+    gbf_section = build_gbf_tnfd_section(gbf_ctx)
+
     return {
         "standard": STANDARD,
         "tnfd_version": TNFD_VERSION,
@@ -238,8 +243,10 @@ async def build_tnfd_context(
                 "portfolio_species_richness_estimate": total_species,
             },
         },
+        "gbf_section": gbf_section,
         "disclaimer": (
             "TNFD-aligned nature disclosure generated from BYOT MRV, bioacoustic, IUCN, and NDVI data. "
+            "Includes Kunming-Montreal GBF Targets 2 & 3 bridge metrics. "
             "Not a substitute for third-party TNFD assurance."
         ),
     }

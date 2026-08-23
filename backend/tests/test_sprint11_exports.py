@@ -59,6 +59,16 @@ async def test_build_tnfd_context_leap_phases():
                 }
             ),
         ),
+        patch(
+            "app.services.reports.gbf_exports.build_gbf_context",
+            new=AsyncMock(
+                return_value={
+                    "target_2_restore": {"portfolio_totals": {"trees_planted": 5, "area_ha": 1.0}},
+                    "target_3_protect": {"portfolio_threatened_signals": 0, "site_rows": []},
+                    "disclaimer": "test",
+                }
+            ),
+        ),
     ):
         # Mock project query
         projects_result = MagicMock()
@@ -74,6 +84,7 @@ async def test_build_tnfd_context_leap_phases():
     assert "evaluate" in ctx["leap"]
     assert "assess" in ctx["leap"]
     assert "prepare" in ctx["leap"]
+    assert "gbf_section" in ctx
 
 
 @pytest.mark.asyncio

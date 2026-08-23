@@ -208,6 +208,10 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Globe2", "code": "ETF / BTR", "title": "National inventory handoff", "description": "IPCC-aligned org roll-up for Enhanced Transparency Framework and BTR preparation."},
                 {"icon": "Landmark", "code": "World Bank ESF", "title": "ESF safeguard screening", "description": "PS5 land/tenure and PS6 biodiversity evidence packs for DFI-backed corridors."},
                 {"icon": "Handshake", "code": "UNDP SES", "title": "UNDP SES screening", "description": "Social and environmental risk screening with stakeholder engagement exports."},
+                {"icon": "Target", "code": "SBTi FLAG", "title": "Land-sector targets", "description": "FLAG removals worksheet linked to VM0047 and GHG Protocol single source of truth."},
+                {"icon": "Globe2", "code": "GBF", "title": "Global Biodiversity Framework", "description": "Targets 2 & 3 indicator mapping bridged to TNFD LEAP disclosures."},
+                {"icon": "MapPin", "code": "EUDR", "title": "Supplier geo MRV", "description": "Geo-coordinate due diligence for corporate buyers and BRSR value-chain linkage."},
+                {"icon": "Scale", "code": "ISO 14064-1", "title": "Org GHG inventory", "description": "Organizational inventory export complementing ISO 14064-2 project reports."},
                 {"icon": "BadgeCheck", "code": "Green Credit", "title": "MoEFCC Green Credit", "description": "Land bank registration and verifier-ready planting evidence under Green Credit Rules 2023."},
                 {"icon": "ShieldCheck", "code": "ICVCM", "title": "Core Carbon Principles", "description": "Integrity checklist mapped to field evidence and monitoring automation."},
                 {"icon": "Globe2", "code": "IPCC AR6", "title": "Science-based estimates", "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."},
@@ -229,7 +233,8 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "title": "Sixteen live exports. One evidence graph.",
             "copy": (
                 "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, "
-                "Paris/NDC, ETF/BTR handoff, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
+                "Paris/NDC, ETF/BTR handoff, SBTi FLAG, GBF, EUDR, ISO 14064-1 org inventory, "
+                "Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
                 "and signed evidence — generated from the same plantation record. Assurance packs, "
                 "not credit issuance."
             ),
@@ -244,6 +249,10 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "Trees", "tag": "REDD+", "title": "REDD+ MRV report", "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.", "formats": "PDF · XLSX"},
                 {"icon": "Globe2", "tag": "Paris / NDC", "title": "Paris Agreement traceability", "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.", "formats": "PDF · XLSX"},
                 {"icon": "Globe2", "tag": "ETF / BTR", "title": "National inventory handoff", "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.", "formats": "CSV · XLSX"},
+                {"icon": "Target", "tag": "SBTi FLAG", "title": "FLAG land-sector worksheet", "description": "Land-related removals vs target boundary linked to VM0047 and GHG exports.", "formats": "XLSX"},
+                {"icon": "Dna", "tag": "GBF", "title": "GBF indicator mapping", "description": "Kunming-Montreal Targets 2 & 3 metrics bridged to TNFD nature disclosures.", "formats": "XLSX"},
+                {"icon": "MapPin", "tag": "EUDR", "title": "Supplier geo due diligence", "description": "WGS84 coordinate pack with BRSR value-chain linkage for corporate buyers.", "formats": "XLSX · ZIP"},
+                {"icon": "Scale", "tag": "ISO 14064-1", "title": "Organizational GHG inventory", "description": "Org-level inventory complementing ISO 14064-2 project quantification reports.", "formats": "JSON · XLSX · ZIP"},
                 {"icon": "BadgeCheck", "tag": "Green Credit", "title": "Green Credit India pack", "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.", "formats": "PDF · XLSX"},
                 {"icon": "TreePine", "tag": "Inventory", "title": "Tree inventory", "description": "Species, survival, geotag status, and chainage for compliance packs.", "formats": "PDF · XLSX"},
                 {"icon": "BarChart3", "tag": "Carbon", "title": "Carbon stock estimate", "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.", "formats": "PDF · XLSX"},

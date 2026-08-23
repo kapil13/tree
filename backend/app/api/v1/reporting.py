@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from app.api.v1.deps import DB, CurrentUser
+from app.models.organization import Organization
 from app.services.audit import record_audit
 from app.services.planting_projects.access import load_project
 from app.services.platform.governance import assert_org_feature_enabled
@@ -21,6 +22,14 @@ from app.services.reports.framework_exporter import (
     render_framework_report_xlsx,
 )
 from app.services.reports.frameworks import list_framework_profiles
+from app.services.reports.gbf_exports import build_gbf_context, render_gbf_xlsx
+from app.services.reports.iso14064_org import (
+    build_iso14064_org_context,
+    render_iso14064_org_json,
+    render_iso14064_org_xlsx,
+    render_iso14064_org_zip,
+)
+from app.services.reports.sbti_flag import build_sbti_flag_context, render_sbti_flag_xlsx
 
 router = APIRouter(prefix="/reporting", tags=["reporting"])
 
@@ -129,4 +138,124 @@ async def export_inventory_handoff(
         headers={
             "Content-Disposition": f'attachment; filename="etf-btr-inventory-handoff.{ext}"'
         },
+    )
+
+
+@router.get("/sbti-flag")
+async def export_sbti_flag_worksheet(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("xlsx", pattern="^(xlsx)$"),
+) -> Response:
+    """Org-level SBTi FLAG land-sector removals worksheet."""
+    await assert_org_feature_enabled(db, user, "reports")
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
+
+    ctx = await build_sbti_flag_context(db, user.organization_id)
+    data = render_sbti_flag_xlsx(ctx)
+
+    await record_audit(
+        db,
+        actor=user,
+        action="sbti_flag.export",
+        resource_type="organization",
+        resource_id=user.organization_id,
+        request=request,
+        diff={"project_count": ctx["totals"]["project_count"]},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="sbti-flag-worksheet.xlsx"'},
+    )
+
+
+@router.get("/iso14064-org")
+async def export_iso14064_org_inventory(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("xlsx", pattern="^(json|xlsx|zip)$"),
+) -> Response:
+    """Org-level ISO 14064-1 GHG inventory export."""
+    await assert_org_feature_enabled(db, user, "reports")
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
+
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+
+    ctx = await build_iso14064_org_context(db, organization=org)
+    slug = (org.slug or "org").replace("/", "-")
+
+    if format == "json":
+        data = render_iso14064_org_json(ctx)
+        media = "application/json"
+        filename = f"iso14064-org-{slug}.json"
+    elif format == "zip":
+        data = render_iso14064_org_zip(ctx)
+        media = "application/zip"
+        filename = f"iso14064-org-{slug}.zip"
+    else:
+        data = render_iso14064_org_xlsx(ctx)
+        media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"iso14064-org-{slug}.xlsx"
+
+    await record_audit(
+        db,
+        actor=user,
+        action="iso14064_org.export",
+        resource_type="organization",
+        resource_id=user.organization_id,
+        request=request,
+        diff={"format": format},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/gbf-indicators")
+async def export_gbf_indicators(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: str = Query("xlsx", pattern="^(xlsx)$"),
+) -> Response:
+    """Org-level Kunming-Montreal GBF indicator mapping."""
+    await assert_org_feature_enabled(db, user, "reports")
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
+
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+
+    ctx = await build_gbf_context(db, organization=org)
+    data = render_gbf_xlsx(ctx)
+
+    await record_audit(
+        db,
+        actor=user,
+        action="gbf_indicators.export",
+        resource_type="organization",
+        resource_id=user.organization_id,
+        request=request,
+        diff={"project_count": ctx["target_2_restore"]["portfolio_totals"]["project_count"]},
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="gbf-indicator-mapping.xlsx"'},
     )

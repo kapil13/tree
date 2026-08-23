@@ -43,6 +43,8 @@ DWC_TERMS = [
     "identifiedBy",
     "identificationVerificationStatus",
     "iucnRedListCategory",
+    "iucnTaxonID",
+    "gbifID",
     "datasetName",
     "institutionCode",
     "collectionCode",
@@ -95,7 +97,8 @@ async def build_darwin_occurrences(
             event_date = rec.recorded_at.date().isoformat() if rec.recorded_at else ""
             for idx, det in enumerate(rec.species_detections or []):
                 sci = det.get("scientific_name") or det.get("species") or "Unknown"
-                iucn = (det.get("iucn") or {}).get("category") or det.get("iucn_category") or ""
+                iucn_meta = det.get("iucn") or {}
+                iucn = iucn_meta.get("category") or det.get("iucn_category") or ""
                 occurrences.append(
                     {
                         "occurrenceID": f"byot-bio-{rec.id}-{idx}",
@@ -111,6 +114,8 @@ async def build_darwin_occurrences(
                         "samplingProtocol": "Bioacoustic automated detection (BirdNET/Perch)",
                         "identificationVerificationStatus": "machine_assisted",
                         "iucnRedListCategory": iucn,
+                        "iucnTaxonID": iucn_meta.get("taxon_id") or det.get("iucn_taxon_id") or "",
+                        "gbifID": det.get("gbif_usage_key") or "",
                         "datasetName": dataset,
                         "institutionCode": inst[:10],
                         "collectionCode": project.code,
@@ -149,6 +154,8 @@ async def build_darwin_occurrences(
                         "samplingProtocol": "Regional fauna checklist (GBIF + IUCN)",
                         "identificationVerificationStatus": "reviewed",
                         "iucnRedListCategory": sp.get("iucn_category") or sp.get("iucn_status") or "",
+                        "iucnTaxonID": sp.get("iucn_taxon_id") or "",
+                        "gbifID": sp.get("gbif_usage_key") or "",
                         "datasetName": dataset,
                         "institutionCode": inst[:10],
                         "collectionCode": project.code,
@@ -233,6 +240,32 @@ def render_darwin_json(occurrences: list[dict[str, Any]], meta: dict[str, Any]) 
     return json.dumps(payload, indent=2, default=str).encode("utf-8")
 
 
+def _gbif_publish_prep(
+    occurrences: list[dict[str, Any]],
+    *,
+    project_code: str,
+    org_name: str,
+) -> dict[str, Any]:
+    with_iucn = sum(1 for o in occurrences if o.get("iucnRedListCategory"))
+    with_gbif = sum(1 for o in occurrences if o.get("gbifID"))
+    return {
+        "workflow": "GBIF IPT publish preparation",
+        "status": "draft",
+        "project_code": project_code,
+        "publisher": org_name,
+        "record_count": len(occurrences),
+        "records_with_iucn_status": with_iucn,
+        "records_with_gbif_id": with_gbif,
+        "recommended_steps": [
+            "Review occurrence.txt for coordinate accuracy",
+            "Validate scientificName against GBIF backbone",
+            "Register dataset on GBIF IPT or publish via partner node",
+            "Include iucnRedListCategory and gbifID where available",
+        ],
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+
+
 def render_darwin_zip(
     occurrences: list[dict[str, Any]],
     *,
@@ -241,12 +274,14 @@ def render_darwin_zip(
 ) -> bytes:
     meta_xml, eml_xml = render_darwin_meta_xml(project_code, org_name, len(occurrences))
     tsv = render_darwin_occurrence_tsv(occurrences)
+    gbif_prep = _gbif_publish_prep(occurrences, project_code=project_code, org_name=org_name)
     buf = io.BytesIO()
     code = project_code.replace("/", "-")
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("meta.xml", meta_xml)
         zf.writestr("eml.xml", eml_xml)
         zf.writestr("occurrence.txt", tsv)
+        zf.writestr("gbif_publish_prep.json", json.dumps(gbif_prep, indent=2).encode("utf-8"))
         zf.writestr(
             f"darwin-core-{code}.json",
             render_darwin_json(
@@ -256,6 +291,8 @@ def render_darwin_zip(
                     "version": DARWIN_CORE_VERSION,
                     "project_code": project_code,
                     "record_count": len(occurrences),
+                    "records_with_iucn_status": gbif_prep["records_with_iucn_status"],
+                    "records_with_gbif_id": gbif_prep["records_with_gbif_id"],
                     "generated_at": datetime.now(UTC).isoformat(),
                 },
             ),

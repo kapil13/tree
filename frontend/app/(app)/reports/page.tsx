@@ -6,14 +6,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
 import { EtfHandoffExportPanel } from "@/components/reports/etf-handoff-export-panel";
 import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
+import { GbfExportPanel } from "@/components/reports/gbf-export-panel";
 import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel";
+import { Iso14064OrgExportPanel } from "@/components/reports/iso14064-org-export-panel";
 import { ProjectFrameworkExportPanel } from "@/components/reports/project-framework-export-panel";
+import { SbtiFlagExportPanel } from "@/components/reports/sbti-flag-export-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
-import { Award, BadgeCheck, Bird, Dna, FileText, Globe2, Leaf, Trees } from "lucide-react";
+import { Award, BadgeCheck, Bird, Dna, FileText, Globe2, Leaf, Scale, Target, Trees } from "lucide-react";
 
 type ReportTab =
   | "standard"
@@ -26,7 +29,10 @@ type ReportTab =
   | "reddPlus"
   | "parisNdc"
   | "greenCredit"
-  | "etfHandoff";
+  | "etfHandoff"
+  | "sbtiFlag"
+  | "gbf"
+  | "iso14064Org";
 
 const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
   {
@@ -160,6 +166,9 @@ export default function ReportsPage() {
               ["parisNdc", tr("parisNdcTab")],
               ["greenCredit", tr("greenCreditTab")],
               ["etfHandoff", tr("etfHandoffTab")],
+              ["sbtiFlag", "SBTi FLAG"],
+              ["gbf", "GBF"],
+              ["iso14064Org", "ISO 14064-1"],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -180,6 +189,12 @@ export default function ReportsPage() {
 
       {tab === "etfHandoff" ? (
         <EtfHandoffExportPanel />
+      ) : tab === "sbtiFlag" ? (
+        <SbtiFlagExportPanel />
+      ) : tab === "gbf" ? (
+        <GbfExportPanel />
+      ) : tab === "iso14064Org" ? (
+        <Iso14064OrgExportPanel />
       ) : tab === "greenCredit" ? (
         <ProjectFrameworkExportPanel
           profile="green_credit_india"

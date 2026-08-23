@@ -22,6 +22,8 @@ ChecklistCode = Literal[
     "article6_readiness",
     "world_bank_esf",
     "undp_ses",
+    "sbti_flag",
+    "eudr_supplier_mrv",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -815,6 +817,88 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 question="Are gender and social inclusion considerations noted in engagement records?",
                 guidance="Document women's groups, SHGs, or vulnerable household participation.",
                 required=False,
+            ),
+        ),
+    ),
+    "sbti_flag": ComplianceChecklist(
+        code="sbti_flag",
+        title="SBTi FLAG — Land Sector Readiness",
+        short_label="SBTi FLAG",
+        framework_reference="SBTi Forest, Land and Agriculture (FLAG) Guidance",
+        description=(
+            "Land-related emissions and removals worksheet readiness for corporate "
+            "FLAG target-setting — preparation only, not SBTi validation."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="flag_boundary",
+                category="Boundary",
+                question="Is the FLAG land-sector boundary defined for plantation projects?",
+                guidance="Include all ARR sites under operational control in the org portfolio.",
+                auto_key="flag_land_boundary",
+            ),
+            ChecklistItemDef(
+                id="flag_removals",
+                category="Quantification",
+                question="Are gross and net land removals quantified from a single MRV source?",
+                guidance="VM0047 / GHG Protocol land-sector lines feed the FLAG worksheet.",
+                auto_key="flag_removals_quantified",
+            ),
+            ChecklistItemDef(
+                id="flag_leakage",
+                category="Integrity",
+                question="Is leakage deducted before reporting net land-sector removals?",
+                guidance="Shared leakage worksheet supports FLAG, VM0047, and REDD+ prep.",
+                auto_key="leakage_documented",
+            ),
+            ChecklistItemDef(
+                id="flag_geo_coverage",
+                category="Monitoring",
+                question="Are plantation sites geo-tagged for spatial FLAG boundary evidence?",
+                guidance="≥80% geo-tagged trees support spatial due diligence.",
+                auto_key="geo_tagged_majority",
+            ),
+        ),
+    ),
+    "eudr_supplier_mrv": ComplianceChecklist(
+        code="eudr_supplier_mrv",
+        title="EU Deforestation Regulation — Supplier MRV",
+        short_label="EUDR supplier MRV",
+        framework_reference="EU Regulation 2023/1115 (EUDR) — due diligence preparation",
+        description=(
+            "Geo-coordinate due diligence and supplier linkage for corporate buyers "
+            "proving plantation legality — not EU conformity assessment."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="eudr_supplier_ref",
+                category="Traceability",
+                question="Is a supplier or value-chain reference recorded on the project?",
+                guidance="Links to BRSR P6.E8 value-chain annex and buyer due diligence.",
+                auto_key="supplier_ref_documented",
+            ),
+            ChecklistItemDef(
+                id="eudr_geo_coords",
+                category="Geolocation",
+                question="Are geo-coordinates available for plantation sites and trees?",
+                guidance="EUDR due diligence pack exports WGS84 centroids and sample tree points.",
+                auto_key="eudr_geo_due_diligence",
+            ),
+            ChecklistItemDef(
+                id="eudr_legality_docs",
+                category="Legality",
+                question="Are tenure / safeguards documents on file for legality evidence?",
+                guidance="FPIC, gram sabha resolution, or Patta/CFR references.",
+                auto_key="safeguards_gram_sabha",
+            ),
+            ChecklistItemDef(
+                id="eudr_no_violations",
+                category="Compliance",
+                question="Are there no open blocking compliance violations?",
+                guidance="Blocking violations must be resolved before buyer due diligence.",
+                auto_key="no_block_violations",
             ),
         ),
     ),
