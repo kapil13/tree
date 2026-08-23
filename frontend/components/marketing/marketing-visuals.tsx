@@ -1,8 +1,16 @@
 "use client";
 
-import { Leaf } from "lucide-react";
+import {
+  Brain,
+  Leaf,
+  MapPin,
+  Mic,
+  Radar,
+  Satellite,
+  ShieldCheck,
+} from "lucide-react";
 
-/** Distinct infographics for marketing sections — not generic icon tiles. */
+/** Distinct, product-grade infographics for marketing sections. */
 
 export function HeroCommandVisual({ className = "" }: { className?: string }) {
   return (
@@ -76,89 +84,159 @@ export function HeroCommandVisual({ className = "" }: { className?: string }) {
   );
 }
 
-function MapTreePin({ x, y }: { x: number; y: number }) {
+function CanopyTree({
+  x,
+  y,
+  scale = 1,
+  tone = 0,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  tone?: number;
+}) {
+  const canopy = [
+    ["#14532d", "#166534", "#4ade80"],
+    ["#3f6212", "#4d7c0f", "#a3e635"],
+    ["#166534", "#15803d", "#86efac"],
+  ][tone % 3];
   return (
-    <g transform={`translate(${x} ${y})`}>
-      <ellipse cx="0" cy="10" rx="7" ry="2.5" fill="#14532d" opacity="0.18" />
-      <path d="M0 8 L0 14" stroke="#166534" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="0" cy="0" r="8" fill="#22c55e" stroke="#fff" strokeWidth="2" />
-      <circle cx="0" cy="0" r="3" fill="#ecfccb" opacity="0.85" />
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <ellipse cx="0" cy="22" rx="11" ry="3.4" fill="#052e1f" opacity="0.2" />
+      <path d="M0 6 L0 24" stroke="#44403c" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M0 16 L-6 12 M0 18 L7 13" stroke="#57534e" strokeWidth="1.2" strokeLinecap="round" />
+      <ellipse cx="-7" cy="0" rx="10" ry="11" fill={canopy[0]} />
+      <ellipse cx="8" cy="1" rx="9" ry="10" fill={canopy[1]} />
+      <ellipse cx="0" cy="-8" rx="11" ry="12" fill={canopy[2]} />
+      <ellipse cx="4" cy="-12" rx="4.5" ry="3.2" fill="#ecfccb" opacity="0.38" />
     </g>
   );
 }
 
 export function FieldMapVisual() {
-  const trees: [number, number][] = [
-    [72, 148],
-    [128, 118],
-    [188, 138],
-    [248, 108],
-    [302, 132],
-    [352, 112],
-  ];
-
   return (
-    <svg viewBox="0 0 420 280" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+    <svg viewBox="0 0 640 360" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id="fm-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f0fdf4" />
-          <stop offset="100%" stopColor="#dcfce7" />
+          <stop offset="0%" stopColor="#e8f5ee" />
+          <stop offset="55%" stopColor="#d1fae5" />
+          <stop offset="100%" stopColor="#bbf7d0" />
         </linearGradient>
-        <linearGradient id="fm-hill-back" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#bbf7d0" />
-          <stop offset="100%" stopColor="#86efac" />
+        <linearGradient id="fm-ridge" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#86efac" />
+          <stop offset="100%" stopColor="#4ade80" />
         </linearGradient>
-        <linearGradient id="fm-hill-front" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4ade80" />
-          <stop offset="100%" stopColor="#22c55e" />
+        <linearGradient id="fm-road" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#57534e" />
+          <stop offset="100%" stopColor="#292524" />
         </linearGradient>
-        <pattern id="fm-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-          <path d="M28 0 L0 0 0 28" fill="none" stroke="#14532d" strokeOpacity="0.06" strokeWidth="1" />
-        </pattern>
+        <radialGradient id="fm-gps" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0" />
+          <stop offset="70%" stopColor="#22c55e" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+        </radialGradient>
+        <filter id="fm-soft" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#14532d" floodOpacity="0.12" />
+        </filter>
       </defs>
 
-      <rect width="420" height="280" fill="url(#fm-sky)" />
-      <rect width="420" height="280" fill="url(#fm-grid)" />
-
-      <path d="M0 188 C60 148 120 198 200 162 C270 132 340 178 420 148 L420 280 L0 280Z" fill="url(#fm-hill-back)" opacity="0.85" />
-      <path d="M0 210 C80 188 150 228 230 196 C300 170 360 214 420 192 L420 280 L0 280Z" fill="url(#fm-hill-front)" opacity="0.72" />
-
-      {trees.map(([x, y]) => (
-        <MapTreePin key={`${x}-${y}`} x={x} y={y} />
+      <rect width="640" height="360" fill="url(#fm-sky)" />
+      {[80, 160, 240, 320, 400, 480, 560].map((x) => (
+        <line key={`v${x}`} x1={x} y1="0" x2={x} y2="360" stroke="#14532d" strokeOpacity="0.05" />
+      ))}
+      {[60, 120, 180, 240, 300].map((y) => (
+        <line key={`h${y}`} x1="0" y1={y} x2="640" y2={y} stroke="#14532d" strokeOpacity="0.05" />
       ))}
 
-      <g transform="translate(228 24)">
-        <rect width="172" height="88" rx="16" fill="#052e1f" fillOpacity="0.92" stroke="#86efac" strokeOpacity="0.35" />
-        <rect x="1" y="1" width="170" height="86" rx="15" fill="none" stroke="#fff" strokeOpacity="0.08" />
-        <text x="16" y="28" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="600" letterSpacing="0.08em">
+      <path d="M0 168 C90 128 170 188 280 150 C390 112 500 168 640 132 L640 360 L0 360Z" fill="url(#fm-ridge)" opacity="0.55" />
+      <path d="M0 214 C120 188 210 236 330 204 C440 176 530 228 640 200 L640 360 L0 360Z" fill="#22c55e" opacity="0.28" />
+
+      <path d="M-10 268 C140 248 250 292 360 262 C470 234 560 274 650 252 L650 318 C560 336 470 300 360 322 C250 346 140 308 -10 328Z" fill="url(#fm-road)" />
+      <path d="M0 290 C140 272 250 310 360 284 C470 260 560 296 640 278" fill="none" stroke="#facc15" strokeWidth="2.2" strokeDasharray="14 12" />
+
+      {[
+        [88, 276, "12+320"],
+        [248, 286, "12+340"],
+        [420, 274, "12+360"],
+        [560, 282, "12+380"],
+      ].map(([x, y, label]) => (
+        <g key={String(label)} transform={`translate(${x} ${y})`}>
+          <rect x="-2" y="-18" width="4" height="18" rx="1" fill="#fef3c7" />
+          <rect x="-22" y="-34" width="44" height="16" rx="4" fill="#1c1917" />
+          <text x="0" y="-23" textAnchor="middle" fill="#fde68a" fontSize="8" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+            {label}
+          </text>
+        </g>
+      ))}
+
+      <CanopyTree x={70} y={198} scale={0.86} tone={0} />
+      <CanopyTree x={118} y={186} scale={1} tone={2} />
+      <CanopyTree x={168} y={204} scale={0.78} tone={1} />
+      <CanopyTree x={232} y={176} scale={1.08} tone={0} />
+      <CanopyTree x={292} y={196} scale={0.9} tone={2} />
+      <CanopyTree x={348} y={168} scale={1.12} tone={1} />
+      <CanopyTree x={410} y={188} scale={0.84} tone={0} />
+      <CanopyTree x={468} y={174} scale={1} tone={2} />
+      <CanopyTree x={528} y={198} scale={0.8} tone={1} />
+      <CanopyTree x={584} y={182} scale={0.94} tone={0} />
+
+      <circle cx="348" cy="168" r="34" fill="url(#fm-gps)" />
+      <circle cx="348" cy="168" r="18" fill="none" stroke="#166534" strokeWidth="1.4" strokeDasharray="3 3" opacity="0.55" />
+
+      <g transform="translate(24 22)" filter="url(#fm-soft)">
+        <rect width="196" height="118" rx="18" fill="#052e1f" />
+        <rect x="1" y="1" width="194" height="116" rx="17" fill="none" stroke="#86efac" strokeOpacity="0.28" />
+        <text x="18" y="28" fill="#86efac" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="700" letterSpacing="1.4">
           CORRIDOR 12+340
         </text>
-        <text x="16" y="54" fill="#fff" fontSize="22" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+        <text x="18" y="58" fill="#fff" fontSize="26" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           248 trees
         </text>
-        <rect x="16" y="64" width="92" height="18" rx="9" fill="#14532d" />
-        <text x="24" y="77" fill="#bbf7d0" fontSize="9" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+        <text x="18" y="80" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui">
+          GPS lock · 4.2 m accuracy
+        </text>
+        <rect x="18" y="90" width="118" height="16" rx="8" fill="#14532d" />
+        <circle cx="30" cy="98" r="3" fill="#4ade80" />
+        <text x="40" y="102" fill="#d9f99d" fontSize="9" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
           offline cache ready
         </text>
+      </g>
+
+      <g transform="translate(454 22)">
+        <rect width="162" height="52" rx="12" fill="rgba(255,255,255,0.78)" />
+        <circle cx="18" cy="18" r="5" fill="#22c55e" />
+        <text x="30" y="22" fill="#14532d" fontSize="10" fontFamily="ui-sans-serif, system-ui">Healthy 214</text>
+        <circle cx="18" cy="36" r="5" fill="#ca8a04" />
+        <text x="30" y="40" fill="#713f12" fontSize="10" fontFamily="ui-sans-serif, system-ui">Watch 34</text>
       </g>
     </svg>
   );
 }
 
+function ndviFill(value: number) {
+  if (value < 0.38) return "#b45309";
+  if (value < 0.5) return "#ca8a04";
+  if (value < 0.64) return "#65a30d";
+  if (value < 0.76) return "#16a34a";
+  return "#14532d";
+}
+
 export function SatelliteFusionVisual() {
-  const ndviPoints = "48,168 96,138 144,150 192,106 240,120 288,84 336,98 372,72";
-  const sarPoints = "48,188 96,176 144,182 192,158 240,164 288,146 336,152 372,138";
+  const mosaic = [
+    [0.32, 0.4, 0.48, 0.55, 0.62, 0.7, 0.66, 0.52],
+    [0.36, 0.46, 0.58, 0.68, 0.74, 0.78, 0.7, 0.5],
+    [0.3, 0.42, 0.6, 0.76, 0.82, 0.8, 0.64, 0.46],
+    [0.34, 0.5, 0.66, 0.8, 0.86, 0.76, 0.58, 0.4],
+    [0.28, 0.38, 0.52, 0.64, 0.72, 0.68, 0.5, 0.36],
+    [0.26, 0.34, 0.44, 0.54, 0.6, 0.56, 0.42, 0.3],
+  ];
 
   return (
-    <svg viewBox="0 0 420 280" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
+    <svg viewBox="0 0 640 360" className="h-full w-full" aria-hidden preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id="sf-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0c4a6e" />
-          <stop offset="100%" stopColor="#082f49" />
-        </linearGradient>
-        <linearGradient id="sf-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4ade80" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#4ade80" stopOpacity="0" />
+          <stop offset="0%" stopColor="#082f49" />
+          <stop offset="100%" stopColor="#0c4a6e" />
         </linearGradient>
         <linearGradient id="sf-line" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#86efac" />
@@ -166,140 +244,186 @@ export function SatelliteFusionVisual() {
         </linearGradient>
       </defs>
 
-      <rect width="420" height="280" rx="0" fill="url(#sf-bg)" />
+      <rect width="640" height="360" fill="url(#sf-bg)" />
 
-      <g opacity="0.22" stroke="#7dd3fc" strokeWidth="0.5">
-        {Array.from({ length: 9 }, (_, i) => (
-          <line key={`v${i}`} x1={36 + i * 42} y1="52" x2={36 + i * 42} y2="228" />
-        ))}
-        {Array.from({ length: 5 }, (_, i) => (
-          <line key={`h${i}`} x1="28" y1={68 + i * 40} x2="392" y2={68 + i * 40} />
-        ))}
-      </g>
+      {mosaic.map((row, y) =>
+        row.map((value, x) => (
+          <rect
+            key={`${x}-${y}`}
+            x={24 + x * 36}
+            y={64 + y * 36}
+            width="32"
+            height="32"
+            rx="6"
+            fill={ndviFill(value)}
+            opacity={0.92}
+          />
+        )),
+      )}
 
-      <path d={`M${ndviPoints} L372 228 L48 228 Z`} fill="url(#sf-area)" />
-      <polyline points={ndviPoints} fill="none" stroke="url(#sf-line)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points={sarPoints} fill="none" stroke="#7dd3fc" strokeWidth="2" strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+      <rect x="132" y="136" width="32" height="32" rx="6" fill="none" stroke="#f8fafc" strokeWidth="2" />
 
-      {ndviPoints.split(" ").map((pt, i) => {
-        const [x, y] = pt.split(",").map(Number);
-        return <circle key={i} cx={x} cy={y} r="3.5" fill="#ecfccb" stroke="#22c55e" strokeWidth="1.5" />;
-      })}
-
-      <g transform="translate(20 16)">
-        <rect width="128" height="34" rx="10" fill="rgba(8,47,73,0.85)" stroke="rgba(125,211,252,0.35)" />
-        <circle cx="18" cy="17" r="4" fill="#38bdf8" />
-        <text x="30" y="21" fill="#e0f2fe" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
-          Sentinel · NISAR
+      <g transform="translate(332 56)">
+        <rect width="284" height="248" rx="20" fill="rgba(8, 47, 73, 0.72)" stroke="rgba(125,211,252,0.22)" />
+        <text x="20" y="32" fill="#7dd3fc" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="700" letterSpacing="1.2">
+          SENTINEL-2 · NISAR
         </text>
-      </g>
-
-      <g transform="translate(20 232)">
-        <rect width="118" height="32" rx="8" fill="rgba(255,255,255,0.08)" />
-        <text x="12" y="20" fill="#bbf7d0" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+        <text x="20" y="56" fill="#f8fafc" fontSize="18" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+          Canopy fusion
+        </text>
+        <path d="M20 168 L20 86 L268 86 L268 168" fill="none" stroke="#38bdf8" strokeOpacity="0.18" />
+        {[0, 1, 2, 3].map((i) => (
+          <line key={i} x1="20" y1={86 + i * 27} x2="268" y2={86 + i * 27} stroke="#38bdf8" strokeOpacity="0.1" />
+        ))}
+        <polyline
+          points="28,150 68,136 108,140 148,112 188,118 228,96 260,102"
+          fill="none"
+          stroke="url(#sf-line)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <polyline
+          points="28,162 68,156 108,158 148,146 188,148 228,140 260,142"
+          fill="none"
+          stroke="#7dd3fc"
+          strokeWidth="2"
+          strokeDasharray="5 5"
+          strokeLinecap="round"
+        />
+        <circle cx="188" cy="118" r="4" fill="#ecfccb" />
+        <text x="20" y="198" fill="#bbf7d0" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           NDVI 0.72
         </text>
-      </g>
-      <g transform="translate(148 232)">
-        <rect width="148" height="32" rx="8" fill="rgba(255,255,255,0.08)" />
-        <text x="12" y="20" fill="#bae6fd" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+        <text x="20" y="220" fill="#bae6fd" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
           SAR integrity 0.91
+        </text>
+        <text x="264" y="220" textAnchor="end" fill="#94a3b8" fontSize="10" fontFamily="ui-sans-serif, system-ui">
+          30-day trend
         </text>
       </g>
 
-      <text x="392" y="248" textAnchor="end" fill="#64748b" fontSize="9" fontFamily="ui-sans-serif, system-ui">
-        30d trend
-      </text>
+      <g transform="translate(24 20)">
+        <rect width="118" height="28" rx="9" fill="rgba(15, 23, 42, 0.55)" />
+        <text x="12" y="18" fill="#e2e8f0" fontSize="10" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
+          NDVI mosaic
+        </text>
+      </g>
+      <g transform="translate(24 292)">
+        {["#b45309", "#ca8a04", "#65a30d", "#16a34a", "#14532d"].map((color, i) => (
+          <rect key={color} x={i * 22} y="8" width="20" height="8" rx="2" fill={color} />
+        ))}
+        <text x="0" y="32" fill="#94a3b8" fontSize="9" fontFamily="ui-sans-serif, system-ui">
+          stressed
+        </text>
+        <text x="86" y="32" fill="#94a3b8" fontSize="9" fontFamily="ui-sans-serif, system-ui">
+          dense
+        </text>
+      </g>
     </svg>
   );
 }
 
 export function BioacousticVisual() {
-  const bars = [18, 34, 22, 48, 30, 56, 40, 28, 50, 36, 24, 44, 32, 20, 42];
+  const cells = [
+    0.2, 0.35, 0.55, 0.8, 0.6, 0.4, 0.7, 0.9, 0.5, 0.3, 0.65, 0.85, 0.45, 0.25, 0.5,
+    0.15, 0.4, 0.7, 0.95, 0.75, 0.5, 0.85, 0.6, 0.35, 0.55, 0.8, 0.4, 0.2, 0.6, 0.3,
+    0.1, 0.25, 0.45, 0.6, 0.5, 0.3, 0.55, 0.4, 0.2, 0.35, 0.5, 0.25, 0.15, 0.4, 0.2,
+  ];
   return (
-    <svg viewBox="0 0 640 120" className="h-full w-full" aria-hidden>
+    <svg viewBox="0 0 1100 168" className="h-full w-full" aria-hidden>
       <defs>
-        <linearGradient id="bio-bar" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stopColor="#15803d" />
-          <stop offset="100%" stopColor="#bbf7d0" />
+        <linearGradient id="bio-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#14532d" />
+          <stop offset="100%" stopColor="#052e1f" />
         </linearGradient>
       </defs>
-      <rect width="640" height="120" rx="20" fill="#14532d" />
-      <rect width="640" height="120" rx="20" fill="url(#bio-bar)" opacity="0.08" />
-      {bars.map((h, i) => (
-        <rect
-          key={i}
-          x={28 + i * 40}
-          y={90 - h}
-          width="16"
-          height={h}
-          rx="4"
-          fill="url(#bio-bar)"
-          opacity={0.65 + (i % 3) * 0.1}
-        />
-      ))}
-      <text x="28" y="28" fill="#ecfccb" fontSize="12" fontFamily="ui-sans-serif, system-ui" fontWeight="600">
-        Dawn chorus · BirdNET detections
+      <rect width="1100" height="168" rx="24" fill="url(#bio-bg)" />
+      {cells.map((value, i) => {
+        const col = i % 15;
+        const row = Math.floor(i / 15);
+        return (
+          <rect
+            key={i}
+            x={28 + col * 46}
+            y={52 + row * 28}
+            width="40"
+            height="22"
+            rx="5"
+            fill={row === 0 ? "#d9f99d" : row === 1 ? "#4ade80" : "#166534"}
+            opacity={0.28 + value * 0.7}
+          />
+        );
+      })}
+      <path
+        d="M28 86 C70 60 110 110 160 78 C210 50 250 104 300 82 C350 58 400 112 450 76 C500 48 550 108 600 80 C650 56 700 118 750 84 C800 54 850 110 900 78 C950 52 1000 96 1072 70"
+        fill="none"
+        stroke="#ecfccb"
+        strokeWidth="2"
+        strokeOpacity="0.7"
+      />
+      <text x="28" y="30" fill="#ecfccb" fontSize="13" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
+        Dawn chorus · BirdNET spectrogram
       </text>
+      <g transform="translate(720 16)">
+        <rect width="118" height="24" rx="12" fill="rgba(236,252,203,0.12)" />
+        <text x="12" y="16" fill="#d9f99d" fontSize="10" fontFamily="ui-sans-serif, system-ui">
+          18 species
+        </text>
+      </g>
+      <g transform="translate(850 16)">
+        <rect width="220" height="24" rx="12" fill="rgba(236,252,203,0.12)" />
+        <text x="12" y="16" fill="#d9f99d" fontSize="10" fontFamily="ui-sans-serif, system-ui">
+          Indian roller · Coppersmith barbet
+        </text>
+      </g>
     </svg>
   );
 }
 
 const PIPELINE_STEPS = [
-  { label: "Field", detail: "Capture" },
-  { label: "Orbit", detail: "Satellite" },
-  { label: "Habitat", detail: "Bioacoustic" },
-  { label: "AI", detail: "Intelligence" },
-  { label: "Audit", detail: "Export" },
+  { icon: MapPin, label: "Field", detail: "GPS · photos · chainage" },
+  { icon: Satellite, label: "Orbit", detail: "NDVI + SAR fusion" },
+  { icon: Mic, label: "Habitat", detail: "BirdNET richness" },
+  { icon: Brain, label: "AI", detail: "Health + alerts" },
+  { icon: ShieldCheck, label: "Audit", detail: "Signed exports" },
 ] as const;
 
 export function IntelligenceRiver() {
   return (
-    <div className="marketing-pipeline" role="img" aria-label="Evidence flowing from field capture to audit export">
-      <div className="marketing-pipeline-track" aria-hidden />
-      {PIPELINE_STEPS.map((step) => (
-        <div key={step.label} className="marketing-pipeline-node">
-          <span className="marketing-pipeline-node-label">{step.label}</span>
-          <span className="marketing-pipeline-node-detail">{step.detail}</span>
-        </div>
-      ))}
-    </div>
+    <ol className="marketing-pipeline" aria-label="Evidence flowing from field capture to audit export">
+      {PIPELINE_STEPS.map((step, i) => {
+        const Icon = step.icon;
+        return (
+          <li key={step.label} className="marketing-pipeline-card">
+            <span className="marketing-pipeline-index">{String(i + 1).padStart(2, "0")}</span>
+            <span className="marketing-pipeline-icon">
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <strong>{step.label}</strong>
+            <em>{step.detail}</em>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
-export function ComplianceOrbit({ codes }: { codes: string[] }) {
-  const shown = codes.slice(0, 12);
-
+export function ComplianceOrbit({ codes: _codes }: { codes: string[] }) {
   return (
-    <div
-      className="marketing-orbit"
-      role="img"
-      aria-label="Compliance frameworks arranged around a living core"
-    >
-      <div className="marketing-orbit-ring marketing-orbit-ring--outer" aria-hidden />
-      <div className="marketing-orbit-ring marketing-orbit-ring--inner" aria-hidden />
-
-      <div className="marketing-orbit-core">
-        <div className="marketing-orbit-core-icon">
-          <Leaf className="h-7 w-7 text-lime-300" strokeWidth={1.75} aria-hidden />
-        </div>
-        <span className="marketing-orbit-core-label">MRV core</span>
+    <div className="marketing-seal" role="img" aria-label="MRV integrity core for India, carbon, nature, and audit">
+      <div className="marketing-seal-ring marketing-seal-ring--outer" />
+      <div className="marketing-seal-ring marketing-seal-ring--mid" />
+      <div className="marketing-seal-ring marketing-seal-ring--inner" />
+      <div className="marketing-seal-core">
+        <Leaf className="h-8 w-8 text-lime-300" strokeWidth={1.6} aria-hidden />
+        <strong>MRV</strong>
+        <span>integrity core</span>
       </div>
-
-      {shown.map((code, i) => {
-        const angle = (360 / shown.length) * i - 90;
-        return (
-          <div
-            key={`${code}-${i}`}
-            className="marketing-orbit-pill-wrap"
-            style={{ ["--orbit-angle" as string]: `${angle}deg` }}
-          >
-            <span className="marketing-orbit-pill" title={code}>
-              {code}
-            </span>
-          </div>
-        );
-      })}
+      <span className="marketing-seal-chip marketing-seal-chip--n">India</span>
+      <span className="marketing-seal-chip marketing-seal-chip--e">Carbon</span>
+      <span className="marketing-seal-chip marketing-seal-chip--s">Nature</span>
+      <span className="marketing-seal-chip marketing-seal-chip--w">Audit</span>
     </div>
   );
 }
@@ -308,24 +432,33 @@ export function ReportPaper({
   tag,
   title,
   accent,
+  description,
+  formats = "PDF · XLSX",
 }: {
   tag: string;
   title: string;
   accent: string;
+  description?: string;
+  formats?: string;
 }) {
   return (
-    <div className="marketing-paper" style={{ ["--paper-accent" as string]: accent }}>
-      <div className="marketing-paper-spine" />
-      <p className="marketing-paper-tag">{tag}</p>
-      <p className="marketing-paper-title">{title}</p>
-      <div className="marketing-paper-lines" aria-hidden>
-        <span />
-        <span />
-        <span />
-        <span />
+    <article className="marketing-report-card">
+      <div className="marketing-report-preview" style={{ ["--paper-accent" as string]: accent }}>
+        <div className="marketing-report-sheet">
+          <span>{tag}</span>
+          <i />
+          <i />
+          <i />
+          <b />
+        </div>
       </div>
-      <p className="marketing-paper-stamp">SIGNED</p>
-    </div>
+      <div className="marketing-report-body">
+        <p className="marketing-report-kicker">{tag}</p>
+        <h3>{title}</h3>
+        {description ? <p>{description}</p> : null}
+        <p className="marketing-report-formats">{formats}</p>
+      </div>
+    </article>
   );
 }
 
@@ -396,8 +529,6 @@ export function ProgramScene({ kind }: { kind: string }) {
     <svg viewBox="0 0 360 200" className="h-full w-full" aria-hidden>
       <rect width="360" height="200" fill="#dcfce7" />
       <rect x="248" y="48" width="72" height="120" rx="12" fill="#052e1f" />
-      <rect x="258" y="62" width="52" height="78" rx="6" fill="#14532d" />
-      <circle cx="284" cy="152" r="5" fill="#86efac" />
       <path d="M40 160 C70 90 110 120 140 80 C170 50 200 100 240 70" fill="none" stroke="#16a34a" strokeWidth="8" />
       <text x="20" y="32" fill="#14532d" fontSize="13" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
         Citizen tree passport
@@ -405,3 +536,10 @@ export function ProgramScene({ kind }: { kind: string }) {
     </svg>
   );
 }
+
+export const PLATFORM_EDGES = [
+  { icon: Satellite, title: "SAR + NDVI fusion", copy: "Sentinel and NISAR integrity — not greenness alone." },
+  { icon: Mic, title: "BirdNET + Darwin Core", copy: "Habitat evidence most tree apps never capture." },
+  { icon: Radar, title: "India scheme rules", copy: "NHAI chainage, CAMPA, Nagar Van, DPDP, 8 languages." },
+  { icon: ShieldCheck, title: "Signed audit chain", copy: "Ed25519 evidence packs. We prepare audits — we do not issue credits." },
+] as const;

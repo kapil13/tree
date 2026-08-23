@@ -8,6 +8,7 @@ import {
   FieldMapVisual,
   HeroCommandVisual,
   IntelligenceRiver,
+  PLATFORM_EDGES,
   ProgramScene,
   ReportPaper,
   SatelliteFusionVisual,
@@ -235,13 +236,6 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
     }
 
     case "intelligence_pipeline": {
-      const nodes = [
-        { title: "Field capture", copy: "GPS trees, photos, chainage, offline mobile" },
-        { title: "Satellite fusion", copy: "NDVI + Sentinel SAR integrity" },
-        { title: "Bioacoustic", copy: "BirdNET richness & habitat" },
-        { title: "AI intelligence", copy: "Health scores and alerts" },
-        { title: "Audit exports", copy: "BRSR · ISO · TNFD · VM0047" },
-      ];
       return (
         <section id={section.anchor_id || undefined} className="marketing-river-section">
           <div className="mx-auto max-w-7xl px-6 py-20">
@@ -250,18 +244,21 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
               <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
               <p className="marketing-section-copy mx-auto">{String(c.copy || "")}</p>
             </div>
-            <div className="mt-12 hidden md:block">
+            <div className="mt-12">
               <IntelligenceRiver />
             </div>
-            <ol className="marketing-river-legend">
-              {nodes.map((node, i) => (
-                <li key={node.title}>
-                  <span>{String(i + 1).padStart(2, "0")}</span>
-                  <strong>{node.title}</strong>
-                  <em>{node.copy}</em>
-                </li>
-              ))}
-            </ol>
+            <ul className="marketing-edge-grid">
+              {PLATFORM_EDGES.map((edge) => {
+                const Icon = edge.icon;
+                return (
+                  <li key={edge.title}>
+                    <Icon className="h-5 w-5" aria-hidden />
+                    <strong>{edge.title}</strong>
+                    <p>{edge.copy}</p>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </section>
       );
@@ -304,8 +301,6 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
 
     case "reports": {
       const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
-      const featured = items.slice(0, 3);
-      const rest = items.slice(3);
       return (
         <section id={section.anchor_id || undefined} className="marketing-reports">
           <div className="mx-auto max-w-7xl px-6 py-20">
@@ -314,29 +309,18 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
               <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
               <p className="marketing-section-copy">{String(c.copy || "")}</p>
             </div>
-            <div className="marketing-paper-desk">
-              {featured.map((item, i) => (
+            <div className="marketing-report-gallery">
+              {items.map((item, i) => (
                 <ReportPaper
                   key={item.title}
                   tag={item.tag || "EXPORT"}
                   title={item.title}
-                  accent={REPORT_ACCENTS[i] ?? "#14532d"}
+                  description={item.description}
+                  formats={item.formats || "PDF · XLSX"}
+                  accent={REPORT_ACCENTS[i % REPORT_ACCENTS.length] ?? "#14532d"}
                 />
               ))}
             </div>
-            {rest.length > 0 ? (
-              <ul className="marketing-report-index">
-                {rest.map((item) => (
-                  <li key={item.title}>
-                    <span>{item.tag}</span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.description}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         </section>
       );

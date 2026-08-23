@@ -360,44 +360,92 @@
       "title": "Reports & exports",
       "content": {
         "eyebrow": "Reports",
-        "title": "Board-ready exports, not spreadsheet archaeology",
-        "copy": "Generate framework-mapped PDF and Excel packs from live plantation data \u2014 designed for assurance conversations, not credit issuance.",
+        "title": "Twelve live exports. One evidence graph.",
+        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, inventory, carbon, biodiversity, ESG, executive digest, and signed evidence \u2014 generated from the same plantation record. Assurance packs, not credit issuance.",
         "items": [
           {
             "icon": "FileText",
             "tag": "BRSR",
             "title": "BRSR assurance pack",
-            "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references."
+            "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.",
+            "formats": "PDF · XLSX"
           },
           {
             "icon": "Scale",
-            "tag": "ISO",
+            "tag": "ISO 14064-2",
             "title": "ISO 14064-2 project report",
-            "description": "Project boundary, monitoring plan, and quantification sections pre-structured."
+            "description": "Project boundary, monitoring plan, and quantification sections pre-structured.",
+            "formats": "PDF · XLSX"
           },
           {
             "icon": "Leaf",
             "tag": "TNFD",
-            "title": "TNFD nature disclosure",
-            "description": "Locate\u2013Evaluate\u2013Assess\u2013Prepare narrative from satellite and bioacoustic layers."
+            "title": "TNFD LEAP disclosure",
+            "description": "Locate\u2013Evaluate\u2013Assess\u2013Prepare narrative from satellite and bioacoustic layers.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Globe2",
+            "tag": "GHG Protocol",
+            "title": "GHG land-sector inventory",
+            "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Bird",
+            "tag": "Darwin Core",
+            "title": "Darwin Core occurrence pack",
+            "description": "Species occurrence archive for biodiversity partners and scientific reuse.",
+            "formats": "ZIP · JSON"
           },
           {
             "icon": "FileCheck2",
             "tag": "VM0047",
             "title": "Carbon credit ledger",
-            "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project."
+            "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "TreePine",
+            "tag": "Inventory",
+            "title": "Tree inventory",
+            "description": "Species, survival, geotag status, and chainage for compliance packs.",
+            "formats": "PDF · XLSX"
           },
           {
             "icon": "BarChart3",
+            "tag": "Carbon",
+            "title": "Carbon stock estimate",
+            "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Mic",
+            "tag": "Biodiversity",
+            "title": "Biodiversity soundscape",
+            "description": "BirdNET richness and habitat signals for a fenced plantation site.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "ShieldCheck",
+            "tag": "ESG",
+            "title": "ESG stakeholder summary",
+            "description": "Combined carbon, biodiversity, and NDVI narrative for boards and buyers.",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Radar",
             "tag": "Executive",
             "title": "Portfolio health digest",
-            "description": "Executive summary with NDVI trends, threats, and compliance completion scores."
+            "description": "NDVI trends, SAR threats, and compliance completion scores for leadership.",
+            "formats": "PDF"
           },
           {
             "icon": "Shield",
             "tag": "Evidence",
             "title": "Signed evidence bundle",
-            "description": "Tamper-evident ZIP with audit chain verification for third-party review."
+            "description": "Tamper-evident ZIP with Ed25519 audit-chain verification for third-party review.",
+            "formats": "ZIP"
           }
         ]
       },
