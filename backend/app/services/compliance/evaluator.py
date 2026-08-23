@@ -342,6 +342,30 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["ps6_biodiversity_evidence"] = "no"
 
+    meta = getattr(project, "metadata_", None) or {}
+    refs = meta.get("scheme_refs") or {}
+    supplier_ref = refs.get("supplier_ref") or refs.get("nccf_project_ref")
+    signals["supplier_ref_documented"] = "yes" if supplier_ref else "no"
+
+    if tree_count == 0:
+        signals["eudr_geo_due_diligence"] = "no"
+    elif geo_tagged >= tree_count * 0.8:
+        signals["eudr_geo_due_diligence"] = "yes"
+    elif geo_tagged > 0:
+        signals["eudr_geo_due_diligence"] = "partial"
+    else:
+        signals["eudr_geo_due_diligence"] = "no"
+
+    if tree_count > 0 and work_areas > 0:
+        signals["flag_land_boundary"] = "yes"
+        signals["flag_removals_quantified"] = "yes"
+    elif tree_count > 0 or work_areas > 0:
+        signals["flag_land_boundary"] = "partial"
+        signals["flag_removals_quantified"] = "partial"
+    else:
+        signals["flag_land_boundary"] = "no"
+        signals["flag_removals_quantified"] = "no"
+
     return signals
 
 

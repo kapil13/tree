@@ -197,6 +197,24 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportEudrDueDiligence = useMutation({
+    mutationFn: (format: "xlsx" | "zip") =>
+      plantingProjects.exportEudrDueDiligence(projectId, format),
+    onSuccess: (blob, format) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      const ext = format === "zip" ? "zip" : "xlsx";
+      downloadBlob(blob, `${code}-eudr-due-diligence.${ext}`);
+    },
+  });
+
+  const exportSbtiFlag = useMutation({
+    mutationFn: () => plantingProjects.exportSbtiFlagProject(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-sbti-flag.xlsx`);
+    },
+  });
+
   function scrollToAnchor(anchor: string) {
     const target = anchor === "violations" ? violationsRef.current : checklistRef.current;
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -211,7 +229,9 @@ export function ProjectComplianceTab({
     exportEsfPs5.isPending ||
     exportEsfPs6.isPending ||
     exportUndpSes.isPending ||
-    exportMultilateralPack.isPending;
+    exportMultilateralPack.isPending ||
+    exportEudrDueDiligence.isPending ||
+    exportSbtiFlag.isPending;
 
   const showMultilateralExports =
     schemeCode === "dfi_green_corridor" ||
@@ -335,6 +355,43 @@ export function ProjectComplianceTab({
           </div>
         </div>
       )}
+
+      <div className="space-y-3 rounded-lg border border-teal-200 bg-teal-50/40 p-4">
+        <p className="text-sm font-medium text-stone-800">Science & buyer exports (Phase E)</p>
+        <p className="text-xs text-stone-600">
+          SBTi FLAG land-sector worksheet, EUDR geo due diligence with BRSR value-chain linkage,
+          and project-scoped FLAG prep — for corporate ESG and export-market buyers.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={busy}
+            onClick={() => exportSbtiFlag.mutate()}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exportSbtiFlag.isPending ? "Exporting…" : "SBTi FLAG worksheet (.xlsx)"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={busy}
+            onClick={() => exportEudrDueDiligence.mutate("xlsx")}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exportEudrDueDiligence.isPending ? "Exporting…" : "EUDR geo due diligence (.xlsx)"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={busy}
+            onClick={() => exportEudrDueDiligence.mutate("zip")}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {exportEudrDueDiligence.isPending ? "Building…" : "EUDR pack (.zip)"}
+          </button>
+        </div>
+      </div>
 
       <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/80 p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-stone-800">

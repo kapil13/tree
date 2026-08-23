@@ -1209,6 +1209,19 @@ export const plantingProjects = {
     );
     return response.data as Blob;
   },
+  async exportEudrDueDiligence(projectId: string, format: "xlsx" | "zip" = "xlsx") {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/eudr-due-diligence`,
+      { params: { format }, responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
+  async exportSbtiFlagProject(projectId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/sbti-flag`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
   async projectTrees(
     projectId: string,
     params?: { work_area_id?: string; page?: number; page_size?: number },
@@ -2673,7 +2686,9 @@ export type ChecklistCode =
   | "fra_tenure"
   | "article6_readiness"
   | "world_bank_esf"
-  | "undp_ses";
+  | "undp_ses"
+  | "sbti_flag"
+  | "eudr_supplier_mrv";
 
 export type SafeguardDocType =
   | "gram_sabha_resolution"
