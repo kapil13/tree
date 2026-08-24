@@ -53,6 +53,12 @@ export function TreeRegistry() {
 
   const projects = projectsData?.items ?? [];
 
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of projects) map.set(p.id, p.name);
+    return map;
+  }, [projects]);
+
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === projectId),
     [projects, projectId],
@@ -87,6 +93,11 @@ export function TreeRegistry() {
         (t.species_text?.toLowerCase().includes(q) ?? false),
     );
   }, [data?.items, search]);
+
+  function projectLabel(tree: (typeof filtered)[number]) {
+    if (!tree.project_id) return "—";
+    return projectNameById.get(tree.project_id) ?? "Unknown project";
+  }
 
   const totalTrees = data?.total ?? 0;
   const hasActiveFilters =
@@ -235,6 +246,14 @@ export function TreeRegistry() {
                           <p className="mt-0.5 font-mono text-xs text-stone-500">
                             {t.public_code}
                           </p>
+                          {t.project_id ? (
+                            <Link
+                              href={`/projects/${t.project_id}`}
+                              className="mt-1 block truncate text-xs text-forest-700 hover:underline"
+                            >
+                              {projectLabel(t)}
+                            </Link>
+                          ) : null}
                         </div>
                         {healthBadge(t.current_health)}
                       </div>
@@ -290,6 +309,7 @@ export function TreeRegistry() {
                   <thead className="bg-stone-50 text-left text-stone-600">
                     <tr>
                       <th className="px-4 py-2.5 font-medium">Code</th>
+                      <th className="px-4 py-2.5 font-medium">Project</th>
                       <th className="px-4 py-2.5 font-medium">Species</th>
                       <th className="px-4 py-2.5 font-medium">Health</th>
                       <th className="px-4 py-2.5 font-medium">Survival</th>
@@ -313,6 +333,19 @@ export function TreeRegistry() {
                         >
                           <td className="px-4 py-2.5 font-mono text-xs">
                             {t.public_code}
+                          </td>
+                          <td className="max-w-[12rem] px-4 py-2.5">
+                            {t.project_id ? (
+                              <Link
+                                href={`/projects/${t.project_id}`}
+                                className="line-clamp-2 text-forest-800 hover:underline"
+                                title={projectLabel(t)}
+                              >
+                                {projectLabel(t)}
+                              </Link>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td className="px-4 py-2.5">{t.species_text || "—"}</td>
                           <td className="px-4 py-2.5">
