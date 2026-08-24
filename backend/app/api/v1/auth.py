@@ -394,7 +394,12 @@ async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
 )
 async def signup_complete(payload: SignupCompleteRequest, request: Request, db: DB) -> TokenResponse:
     try:
-        user = await complete_signup(db, payload.signup_token, payload.code)
+        user = await complete_signup(
+            db,
+            payload.signup_token,
+            payload.code,
+            signup_category=payload.signup_category,
+        )
     except SignupError as exc:
         raise _signup_error(exc) from exc
     from app.services.privacy.consent import record_signup_consents

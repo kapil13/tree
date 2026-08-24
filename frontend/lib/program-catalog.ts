@@ -6,34 +6,48 @@ export type SignupProgramOption = {
   name: string;
   description: string;
   is_default: boolean;
+  /** UI grouping for post-verification intent step */
+  audience: "individual" | "organization";
 };
 
 export const SIGNUP_PROGRAM_OPTIONS: SignupProgramOption[] = [
   {
     code: "byot",
-    name: "BYOT Public",
-    description: "Quick citizen tagging for Bring Your Own Tree.",
+    name: "Tag my own trees",
+    description: "Individual citizen — map trees you plant or care for, with free AI health checks.",
     is_default: true,
+    audience: "individual",
   },
   {
     code: "government_nhai",
-    name: "Government & Public Sector",
-    description: "Audit-ready planting for highways, forest dept, and municipal schemes.",
+    name: "Government & public sector",
+    description: "Highways, forest department, municipal, and public planting programmes.",
     is_default: false,
+    audience: "organization",
   },
   {
     code: "corporate_esg",
-    name: "Industry & Corporate ESG",
-    description: "ESG and sustainability planting with audit baselines.",
+    name: "Industry & corporate ESG",
+    description: "Corporate sustainability, ESG reporting, and audit-ready planting evidence.",
     is_default: false,
+    audience: "organization",
   },
   {
     code: "ngo_community",
-    name: "NGO & Community",
-    description: "Community, farmer, and watershed restoration planting.",
+    name: "NGO & community",
+    description: "Community groups, farmers, and watershed restoration programmes.",
     is_default: false,
+    audience: "organization",
   },
 ];
+
+export const INDIVIDUAL_SIGNUP_OPTIONS = SIGNUP_PROGRAM_OPTIONS.filter(
+  (p) => p.audience === "individual",
+);
+
+export const ORGANIZATION_SIGNUP_OPTIONS = SIGNUP_PROGRAM_OPTIONS.filter(
+  (p) => p.audience === "organization",
+);
 
 export function programThemeForSignup(code: string): { icon: LucideIcon; gradient: string; ring: string } {
   const theme = getProgramTheme(code);

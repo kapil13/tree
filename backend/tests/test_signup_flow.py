@@ -118,6 +118,49 @@ async def test_register_endpoint_disabled_in_production(monkeypatch):
     assert exc.value.detail == "use_signup_otp_flow"
 
 
+@pytest.mark.asyncio
+async def test_complete_signup_applies_signup_category_from_request():
+    from unittest.mock import patch
+
+    from app.services.auth.signup import complete_signup
+
+    token = "category-at-complete-token"
+    await save_signup_session(
+        token,
+        {
+            "full_name": "Gov User",
+            "email": "gov@example.com",
+            "phone": "+919876543211",
+            "password_hash": "hashed",
+            "phone_verified": True,
+            "email_verified": False,
+            "signup_category": None,
+        },
+    )
+    await issue_otp("signup_email", token)
+
+    db = MagicMock()
+    db.add = MagicMock()
+    db.flush = AsyncMock()
+    create_mock = AsyncMock()
+
+    with (
+        patch("app.services.auth.signup.ensure_default_enrollment", new_callable=AsyncMock),
+        patch("app.services.auth.signup.create_draft_access_request", create_mock),
+        patch("app.services.auth.signup.delete_signup_session", new_callable=AsyncMock),
+    ):
+        user = await complete_signup(
+            db,
+            token,
+            "000000",
+            signup_category="government_nhai",
+        )
+
+    assert user.email == "gov@example.com"
+    create_mock.assert_awaited_once()
+    assert create_mock.await_args.kwargs["program_code"] == "government_nhai"
+
+
 def test_self_service_program_filter():
     from app.services.planting_programs.catalog import default_program_code
 

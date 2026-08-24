@@ -17,7 +17,6 @@ import { AuthBrandPanel } from "@/components/brand/auth-brand-panel";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { InviteAuthBanner } from "@/components/auth/invite-accept-flow";
 import { SignupWizard } from "@/components/auth/signup-wizard";
-import { CitizenSignupWizard } from "@/components/auth/citizen-signup-wizard";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import {
   formatPhoneDisplay,
@@ -70,9 +69,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [signupVariant, setSignupVariant] = useState<"citizen" | "professional">(
-    inviteToken ? "professional" : "citizen",
-  );
   const [method, setMethod] = useState<AuthMethod>("email");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -91,9 +87,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     setMode(initialMode);
   }, [initialMode]);
 
-  useEffect(() => {
-    if (inviteToken) setSignupVariant("professional");
-  }, [inviteToken]);
 
   function switchMode(next: AuthMode) {
     setMode(next);
@@ -318,7 +311,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                 onClick={() => {
                   switchMode(mode === "signin" ? "signup" : "signin");
                   resetPhoneFlow();
-                  setSignupVariant("citizen");
                 }}
                 className="shrink-0 text-sm font-medium text-forest-700 hover:text-forest-900"
               >
@@ -330,42 +322,29 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
             </div>
 
             {mode === "signup" ? (
-              signupVariant === "citizen" ? (
-                <CitizenSignupWizard
-                  captchaConfig={captchaConfig}
-                  onComplete={async () => {
-                    const refreshed = await auth.me();
-                    setUser(refreshed);
-                    router.push("/trees/new");
-                  }}
-                  onSwitchToFullSignup={() => setSignupVariant("professional")}
-                />
-              ) : (
-                <SignupWizard
-                  captchaConfig={captchaConfig}
-                  invitePreview={invitePreview}
-                  inviteToken={inviteToken}
-                  onComplete={async () => {
-                    if (inviteToken) {
-                      try {
-                        const member = await organizations.acceptInvite(inviteToken);
-                        const refreshed = await auth.me();
-                        setUser(refreshed);
-                        router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
-                        return;
-                      } catch (err) {
-                        setError(inviteErrorMessage(errorMessage(err)));
-                        return;
-                      }
+              <SignupWizard
+                captchaConfig={captchaConfig}
+                invitePreview={invitePreview}
+                inviteToken={inviteToken}
+                onComplete={async () => {
+                  if (inviteToken) {
+                    try {
+                      const member = await organizations.acceptInvite(inviteToken);
+                      const refreshed = await auth.me();
+                      setUser(refreshed);
+                      router.push(inviteLandingPath(member.org_role ?? refreshed.org_role));
+                      return;
+                    } catch (err) {
+                      setError(inviteErrorMessage(errorMessage(err)));
+                      return;
                     }
-                    const refreshed = await auth.me();
-                    setUser(refreshed);
-                    router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
-                  }}
-                  onSwitchToSignIn={() => switchMode("signin")}
-                  onSwitchToCitizen={() => setSignupVariant("citizen")}
-                />
-              )
+                  }
+                  const refreshed = await auth.me();
+                  setUser(refreshed);
+                  router.push(onboardingRedirectPath(refreshed) ?? "/trees/new");
+                }}
+                onSwitchToSignIn={() => switchMode("signin")}
+              />
             ) : showForgotPassword ? (
               <ForgotPasswordForm
                 captchaConfig={captchaConfig}
