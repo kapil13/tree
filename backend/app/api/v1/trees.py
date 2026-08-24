@@ -404,6 +404,20 @@ async def list_trees(
     stmt = stmt.order_by(Tree.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     rows = (await db.execute(stmt)).scalars().all()
 
+    work_area_ids = {t.plantation_id for t in rows if t.plantation_id}
+    work_area_names: dict[uuid.UUID, str] = {}
+    if work_area_ids:
+        from app.models.plantation_fence import PlantationFence
+
+        fence_rows = (
+            await db.execute(
+                select(PlantationFence.id, PlantationFence.name).where(
+                    PlantationFence.id.in_(work_area_ids)
+                )
+            )
+        ).all()
+        work_area_names = dict(fence_rows)
+
     items: list[TreeListItem] = []
     for t in rows:
         pt = to_shape(t.location)
@@ -422,6 +436,9 @@ async def list_trees(
                 program_code=t.planting_program.code if t.planting_program else None,
                 project_id=t.project_id,
                 work_area_id=t.plantation_id,
+                work_area_name=(
+                    work_area_names.get(t.plantation_id) if t.plantation_id else None
+                ),
                 last_geotag_at=t.last_geotag_at,
                 survival_status=meta.get("survival_status") if isinstance(meta.get("survival_status"), str) else None,
                 chainage_km=meta.get("chainage_km") if meta.get("chainage_km") is not None else None,

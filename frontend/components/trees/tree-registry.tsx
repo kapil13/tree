@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, TreePine } from "lucide-react";
+import { ExternalLink, MapPin, Plus, Satellite, Search, TreePine } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { plantingProjects, trees } from "@/lib/api";
@@ -37,6 +37,41 @@ function daysSince(iso: string | null | undefined) {
   return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
+function mapsUrl(lat: number, lng: number) {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}
+
+function satelliteBadge(verified: boolean) {
+  if (verified) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800"
+        title="Satellite verified"
+      >
+        <Satellite className="h-3 w-3" />
+        Verified
+      </span>
+    );
+  }
+  return <span className="text-xs text-stone-400">—</span>;
+}
+
+function LocationLink({ latitude, longitude }: { latitude: number; longitude: number }) {
+  return (
+    <a
+      href={mapsUrl(latitude, longitude)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 font-mono text-xs text-forest-700 hover:underline"
+      title="Open in Google Maps"
+    >
+      <MapPin className="h-3 w-3 shrink-0" />
+      {latitude.toFixed(4)}, {longitude.toFixed(4)}
+      <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+    </a>
+  );
+}
+
 export function TreeRegistry() {
   const { user } = useAuth();
   const canAdd = canWriteInApp(user);
@@ -52,6 +87,21 @@ export function TreeRegistry() {
   });
 
   const projects = projectsData?.items ?? [];
+
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of projects) map.set(p.id, p.name);
+    return map;
+  }, [projects]);
+
+  const surveyIntervalByProjectId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of projects) {
+      const days = p.metadata?.survey_interval_days;
+      map.set(p.id, typeof days === "number" ? days : 30);
+    }
+    return map;
+  }, [projects]);
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === projectId),
@@ -87,6 +137,29 @@ export function TreeRegistry() {
         (t.species_text?.toLowerCase().includes(q) ?? false),
     );
   }, [data?.items, search]);
+
+  function projectLabel(tree: (typeof filtered)[number]) {
+    if (!tree.project_id) return "—";
+    return projectNameById.get(tree.project_id) ?? "Unknown project";
+  }
+
+  function surveyIntervalFor(tree: (typeof filtered)[number]) {
+    if (tree.project_id) {
+      return surveyIntervalByProjectId.get(tree.project_id) ?? surveyIntervalDays;
+    }
+    return surveyIntervalDays;
+  }
+
+  function isGeotagDue(tree: (typeof filtered)[number]) {
+    const dueDays = daysSince(tree.last_geotag_at);
+    return dueDays != null && dueDays >= surveyIntervalFor(tree);
+  }
+
+  const showWorkAreaColumn = !workAreaId && filtered.some((t) => t.work_area_id);
+  const showSurvivalColumn = filtered.some((t) => t.survival_status);
+  const showGeotagColumn = filtered.some((t) => t.last_geotag_at);
+  const showChainageColumn =
+    showChainage && filtered.some((t) => t.chainage_km);
 
   const totalTrees = data?.total ?? 0;
   const hasActiveFilters =
@@ -217,8 +290,7 @@ export function TreeRegistry() {
               {/* Mobile cards */}
               <section className="space-y-3 md:hidden">
                 {filtered.map((t) => {
-                  const dueDays = daysSince(t.last_geotag_at);
-                  const geotagDue = dueDays != null && dueDays >= surveyIntervalDays;
+                  const geotagDue = isGeotagDue(t);
                   return (
                     <article
                       key={t.id}
@@ -235,41 +307,67 @@ export function TreeRegistry() {
                           <p className="mt-0.5 font-mono text-xs text-stone-500">
                             {t.public_code}
                           </p>
+                          {t.project_id ? (
+                            <Link
+                              href={`/projects/${t.project_id}`}
+                              className="mt-1 block truncate text-xs text-forest-700 hover:underline"
+                            >
+                              {projectLabel(t)}
+                            </Link>
+                          ) : null}
+                          {t.work_area_name ? (
+                            <p className="mt-0.5 truncate text-xs text-stone-500">
+                              {t.work_area_name}
+                            </p>
+                          ) : null}
                         </div>
-                        {healthBadge(t.current_health)}
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          {healthBadge(t.current_health)}
+                          {satelliteBadge(t.satellite_verified)}
+                        </div>
                       </div>
                       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-stone-600">
                         <div>
-                          <dt className="text-stone-400">Survival</dt>
-                          <dd className="mt-0.5 capitalize">
-                            {t.survival_status || "—"}
+                          <dt className="text-stone-400">Registered</dt>
+                          <dd className="mt-0.5">
+                            {new Date(t.created_at).toLocaleDateString()}
                           </dd>
                         </div>
-                        <div>
-                          <dt className="text-stone-400">Last geotag</dt>
-                          <dd
-                            className={cn(
-                              "mt-0.5",
-                              geotagDue && "font-medium text-amber-800",
-                            )}
-                          >
-                            {t.last_geotag_at
-                              ? `${new Date(t.last_geotag_at).toLocaleDateString()}${
-                                  geotagDue ? " · due" : ""
-                                }`
-                              : "—"}
-                          </dd>
-                        </div>
-                        {showChainage ? (
+                        {showSurvivalColumn ? (
+                          <div>
+                            <dt className="text-stone-400">Survival</dt>
+                            <dd className="mt-0.5 capitalize">
+                              {t.survival_status || "—"}
+                            </dd>
+                          </div>
+                        ) : null}
+                        {showGeotagColumn ? (
+                          <div>
+                            <dt className="text-stone-400">Last geotag</dt>
+                            <dd
+                              className={cn(
+                                "mt-0.5",
+                                geotagDue && "font-medium text-amber-800",
+                              )}
+                            >
+                              {t.last_geotag_at
+                                ? `${new Date(t.last_geotag_at).toLocaleDateString()}${
+                                    geotagDue ? " · due" : ""
+                                  }`
+                                : "—"}
+                            </dd>
+                          </div>
+                        ) : null}
+                        {showChainageColumn ? (
                           <div>
                             <dt className="text-stone-400">Chainage</dt>
                             <dd className="mt-0.5">{t.chainage_km || "—"}</dd>
                           </div>
                         ) : null}
-                        <div>
+                        <div className="col-span-2">
                           <dt className="text-stone-400">Location</dt>
-                          <dd className="mt-0.5 font-mono">
-                            {t.latitude.toFixed(4)}, {t.longitude.toFixed(4)}
+                          <dd className="mt-0.5">
+                            <LocationLink latitude={t.latitude} longitude={t.longitude} />
                           </dd>
                         </div>
                       </dl>
@@ -290,11 +388,21 @@ export function TreeRegistry() {
                   <thead className="bg-stone-50 text-left text-stone-600">
                     <tr>
                       <th className="px-4 py-2.5 font-medium">Code</th>
+                      <th className="px-4 py-2.5 font-medium">Project</th>
+                      {showWorkAreaColumn ? (
+                        <th className="px-4 py-2.5 font-medium">Work area</th>
+                      ) : null}
                       <th className="px-4 py-2.5 font-medium">Species</th>
                       <th className="px-4 py-2.5 font-medium">Health</th>
-                      <th className="px-4 py-2.5 font-medium">Survival</th>
-                      <th className="px-4 py-2.5 font-medium">Last geotag</th>
-                      {showChainage ? (
+                      <th className="px-4 py-2.5 font-medium">Satellite</th>
+                      <th className="px-4 py-2.5 font-medium">Registered</th>
+                      {showSurvivalColumn ? (
+                        <th className="px-4 py-2.5 font-medium">Survival</th>
+                      ) : null}
+                      {showGeotagColumn ? (
+                        <th className="px-4 py-2.5 font-medium">Last geotag</th>
+                      ) : null}
+                      {showChainageColumn ? (
                         <th className="px-4 py-2.5 font-medium">Chainage</th>
                       ) : null}
                       <th className="px-4 py-2.5 font-medium">Location</th>
@@ -303,9 +411,7 @@ export function TreeRegistry() {
                   </thead>
                   <tbody>
                     {filtered.map((t) => {
-                      const dueDays = daysSince(t.last_geotag_at);
-                      const geotagDue =
-                        dueDays != null && dueDays >= surveyIntervalDays;
+                      const geotagDue = isGeotagDue(t);
                       return (
                         <tr
                           key={t.id}
@@ -314,36 +420,64 @@ export function TreeRegistry() {
                           <td className="px-4 py-2.5 font-mono text-xs">
                             {t.public_code}
                           </td>
-                          <td className="px-4 py-2.5">{t.species_text || "—"}</td>
-                          <td className="px-4 py-2.5">
-                            {healthBadge(t.current_health)}
-                          </td>
-                          <td className="px-4 py-2.5 capitalize">
-                            {t.survival_status || "—"}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            {t.last_geotag_at ? (
-                              <span
-                                className={
-                                  geotagDue
-                                    ? "font-medium text-amber-800"
-                                    : "text-stone-500"
-                                }
+                          <td className="max-w-[12rem] px-4 py-2.5">
+                            {t.project_id ? (
+                              <Link
+                                href={`/projects/${t.project_id}`}
+                                className="line-clamp-2 text-forest-800 hover:underline"
+                                title={projectLabel(t)}
                               >
-                                {new Date(t.last_geotag_at).toLocaleDateString()}
-                                {geotagDue ? " · due" : ""}
-                              </span>
+                                {projectLabel(t)}
+                              </Link>
                             ) : (
                               "—"
                             )}
                           </td>
-                          {showChainage ? (
+                          {showWorkAreaColumn ? (
+                            <td className="max-w-[10rem] px-4 py-2.5 text-stone-600">
+                              <span className="line-clamp-2" title={t.work_area_name ?? undefined}>
+                                {t.work_area_name || "—"}
+                              </span>
+                            </td>
+                          ) : null}
+                          <td className="px-4 py-2.5">{t.species_text || "—"}</td>
+                          <td className="px-4 py-2.5">
+                            {healthBadge(t.current_health)}
+                          </td>
+                          <td className="px-4 py-2.5">{satelliteBadge(t.satellite_verified)}</td>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-stone-600">
+                            {new Date(t.created_at).toLocaleDateString()}
+                          </td>
+                          {showSurvivalColumn ? (
+                            <td className="px-4 py-2.5 capitalize">
+                              {t.survival_status || "—"}
+                            </td>
+                          ) : null}
+                          {showGeotagColumn ? (
+                            <td className="px-4 py-2.5">
+                              {t.last_geotag_at ? (
+                                <span
+                                  className={
+                                    geotagDue
+                                      ? "font-medium text-amber-800"
+                                      : "text-stone-500"
+                                  }
+                                >
+                                  {new Date(t.last_geotag_at).toLocaleDateString()}
+                                  {geotagDue ? " · due" : ""}
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          ) : null}
+                          {showChainageColumn ? (
                             <td className="px-4 py-2.5 text-stone-500">
                               {t.chainage_km || "—"}
                             </td>
                           ) : null}
-                          <td className="px-4 py-2.5 font-mono text-xs text-stone-500">
-                            {t.latitude.toFixed(4)}, {t.longitude.toFixed(4)}
+                          <td className="px-4 py-2.5">
+                            <LocationLink latitude={t.latitude} longitude={t.longitude} />
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <Link
