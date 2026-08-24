@@ -59,6 +59,12 @@ final treesProvider = FutureProvider.autoDispose((ref) async {
   return api.listTrees();
 });
 
+/// Trees in the current map viewport (bbox + capped page size).
+final mapTreesProvider = FutureProvider.autoDispose.family<List<dynamic>, String>((ref, bbox) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.listTrees(bbox: bbox, pageSize: 150);
+});
+
 final alertsProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.listAlerts();

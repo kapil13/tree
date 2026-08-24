@@ -24,6 +24,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   _DrawMode _mode = _DrawMode.none;
   final List<LatLng> _drawPoints = [];
   bool _saving = false;
+  /// Initial Hyderabad viewport until the map reports visible bounds.
+  String _viewportBbox = '77.2,17.2,78.6,17.6';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncViewportBbox());
+  }
+
+  void _syncViewportBbox() {
+    if (!mounted) return;
+    final bounds = _mapController.camera.visibleBounds;
+    final bbox =
+        '${bounds.west},${bounds.south},${bounds.east},${bounds.north}';
+    if (bbox != _viewportBbox) {
+      setState(() => _viewportBbox = bbox);
+    }
+  }
 
   @override
   void dispose() {
@@ -242,7 +260,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final user = sessionController.user;
-    final treesAsync = ref.watch(treesProvider);
+    final bbox = _viewportBbox;
+    final treesAsync = ref.watch(mapTreesProvider(bbox));
     final fencesAsync = ref.watch(plantationFencesProvider);
     final canDraw = canDrawOnMap(user);
     final showFieldOps = canSeeFieldOps(user) && (isSupervisor(user) || canSeeExecutiveHome(user));
@@ -296,7 +315,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Text(apiErrorMessage(e), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
                 FilledButton(
-                  onPressed: () => ref.invalidate(treesProvider),
+                  onPressed: () => ref.invalidate(mapTreesProvider(bbox)),
                   child: const Text('Retry'),
                 ),
               ],
@@ -382,6 +401,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: points.length == 1 ? 14 : 11,
+                  onMapEvent: (event) {
+                    if (event is MapEventMoveEnd) {
+                      _syncViewportBbox();
+                    }
+                  },
                   onTap: (tap, latLng) {
                     if (_mode == _DrawMode.none) return;
                     setState(() => _drawPoints.add(latLng));
