@@ -134,6 +134,11 @@ async def captcha_config() -> CaptchaConfigOut:
     dependencies=[rate_limit(10, 60)],
 )
 async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOut:
+    if settings.app_env in ("production", "staging"):
+        raise HTTPException(
+            status.HTTP_410_GONE,
+            detail="use_signup_otp_flow",
+        )
     await assert_registration_allowed(db)
     await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
     existing = await db.execute(select(User).where(User.email == payload.email))

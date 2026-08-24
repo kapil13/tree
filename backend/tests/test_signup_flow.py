@@ -72,6 +72,52 @@ async def test_signup_invalid_phone_otp():
     assert exc.value.code == "invalid_otp"
 
 
+@pytest.mark.asyncio
+async def test_complete_signup_requires_phone_verified():
+    from app.services.auth.signup import SignupError, complete_signup
+
+    token = "unverified-phone-token"
+    await save_signup_session(
+        token,
+        {
+            "full_name": "Citizen User",
+            "email": "citizen@example.com",
+            "phone": "+919876543210",
+            "password_hash": "hashed",
+            "phone_verified": False,
+            "email_verified": False,
+            "signup_category": "byot",
+        },
+    )
+    await issue_otp("signup_email", token)
+    db = MagicMock()
+    with pytest.raises(SignupError) as exc:
+        await complete_signup(db, token, "000000")
+    assert exc.value.code == "phone_not_verified"
+
+
+@pytest.mark.asyncio
+async def test_register_endpoint_disabled_in_production(monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.v1.auth import register
+    from app.core.config import settings
+    from app.schemas.auth import RegisterRequest
+
+    monkeypatch.setattr(settings, "app_env", "production")
+    request = MagicMock()
+    db = MagicMock()
+    payload = RegisterRequest(
+        email="new@example.com",
+        password="securepassword12",
+        full_name="New User",
+    )
+    with pytest.raises(HTTPException) as exc:
+        await register(payload, request, db)
+    assert exc.value.status_code == 410
+    assert exc.value.detail == "use_signup_otp_flow"
+
+
 def test_self_service_program_filter():
     from app.services.planting_programs.catalog import default_program_code
 

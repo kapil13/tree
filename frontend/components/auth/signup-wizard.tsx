@@ -53,6 +53,7 @@ export function SignupWizard({
     invitePreview?.phone ? sanitizePhoneDigits(invitePreview.phone.replace(/\D/g, "").slice(-10)) : "",
   );
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
 
@@ -100,6 +101,10 @@ export function SignupWizard({
     }
     if (password.length < 12) {
       setError("Password must be at least 12 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     if (!acceptedTerms) {
@@ -307,6 +312,18 @@ export function SignupWizard({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Minimum 12 characters"
+              autoComplete="new-password"
+            />
+          </div>
+          <div>
+            <label className="label mb-1">Confirm password</label>
+            <input
+              className="field-input !rounded-xl !py-2.5"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
             />
           </div>
           <label className="flex items-start gap-3 text-sm text-stone-600">
