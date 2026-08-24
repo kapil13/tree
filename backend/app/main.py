@@ -131,12 +131,13 @@ async def worker_health(db: DB) -> WorkerHealthResponse:
 
 @app.get("/health/integrations", tags=["meta"])
 async def integrations_health(
+    request: Request,
     db: DB,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ):
     """External data provider reachability. Requires auth in production/staging."""
     if settings.app_env in ("production", "staging"):
-        await get_current_user(creds, db)
+        await get_current_user(request, creds, db)
     from app.services.intelligence.integrations import check_all_integrations
 
     return await check_all_integrations()
