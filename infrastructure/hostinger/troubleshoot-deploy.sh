@@ -30,6 +30,23 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic
   echo "(backend not running — check logs above for alembic/import errors)"
 
 echo ""
+echo "==> Caddy logs (last 40 lines)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs caddy --tail 40 2>&1 || true
+
+echo ""
+echo "==> Internal proxy checks (preferred on VPS — public curl may return 000)"
+# shellcheck disable=SC1090
+set -a
+source "$ENV_FILE"
+set +a
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
+  curl -fsS -H "Host: ${APP_DOMAIN:-aranyix.tech}" "http://caddy/api/v1/health/live" 2>&1 || \
+  echo "(internal app proxy failed)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
+  curl -fsS -H "Host: ${API_DOMAIN:-api.aranyix.tech}" "http://caddy/health" 2>&1 || \
+  echo "(internal API subdomain failed)"
+
+echo ""
 echo "==> Liveness probe (inside container)"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend curl -fsS http://localhost:8000/health/live 2>&1 || \
   echo "(backend not running or curl failed)"
