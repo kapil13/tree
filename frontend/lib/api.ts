@@ -341,6 +341,7 @@ export type Tree = {
   program_code?: string | null;
   project_id?: string | null;
   work_area_id?: string | null;
+  work_area_name?: string | null;
   last_geotag_at?: string | null;
   survival_status?: string | null;
   chainage_km?: string | null;

@@ -95,6 +95,7 @@ class TreeListItem(BaseModel):
     program_code: str | None = None
     project_id: uuid.UUID | None = None
     work_area_id: uuid.UUID | None = None
+    work_area_name: str | None = None
     last_geotag_at: datetime | None = None
     survival_status: str | None = None
     chainage_km: str | None = None
