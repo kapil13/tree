@@ -65,6 +65,7 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
 echo "==> Reloading Caddy (applies Caddyfile / CSP changes)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate caddy
+sleep 5
 
 echo "==> Pruning dangling Docker images (frees disk from old deploys)..."
 docker image prune -f
@@ -83,19 +84,51 @@ until docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend c
   sleep 3
 done
 
+verify_internal_proxy() {
+  # Prefer in-network checks — curling the public domain from the VPS often fails
+  # (hairpin NAT / no loopback to public IP) even when Caddy and TLS are fine.
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
+    curl -fsS -o /dev/null -w "%{http_code}" \
+    -H "Host: ${APP_DOMAIN}" "http://caddy/api/v1/health/live" 2>/dev/null || echo "000"
+}
+
+verify_internal_api_subdomain() {
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
+    curl -fsS -o /dev/null -w "%{http_code}" "http://caddy/health" \
+    -H "Host: ${API_DOMAIN}" 2>/dev/null || echo "000"
+}
+
 echo "==> Verifying app /api proxy (same-origin)..."
-APP_API_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "https://${APP_DOMAIN}/api/v1/health/live" 2>/dev/null || echo "000")"
+APP_API_INTERNAL="$(verify_internal_proxy)"
+if [[ "$APP_API_INTERNAL" == "200" ]]; then
+  echo "OK: Caddy → backend /api/v1/health/live (internal) → 200"
+else
+  echo "WARN: internal app proxy check returned ${APP_API_INTERNAL} (expected 200)."
+  echo "      Check: docker compose -f $COMPOSE_FILE logs caddy backend"
+fi
+APP_API_CODE="$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 8 --max-time 15 "https://${APP_DOMAIN}/api/v1/health/live" 2>/dev/null || echo "000")"
 if [[ "$APP_API_CODE" == "200" ]]; then
-  echo "OK: https://${APP_DOMAIN}/api/v1/health/live → 200"
+  echo "OK: https://${APP_DOMAIN}/api/v1/health/live → 200 (public)"
+elif [[ "$APP_API_INTERNAL" == "200" ]]; then
+  echo "NOTE: public curl returned ${APP_API_CODE} from this VPS (common hairpin NAT issue)."
+  echo "      Internal proxy is OK — verify in a browser: https://${APP_DOMAIN}/api/v1/health/live"
 else
   echo "WARN: https://${APP_DOMAIN}/api/v1/health/live returned ${APP_API_CODE} (expected 200)."
   echo "      Ensure Caddyfile routes /api/v1/* to backend and reload Caddy."
 fi
 
 echo "==> Verifying direct API subdomain + CSP..."
-API_HEALTH_CODE="$(curl -sS -o /dev/null -w "%{http_code}" "https://${API_DOMAIN}/health" 2>/dev/null || echo "000")"
+API_INTERNAL="$(verify_internal_api_subdomain)"
+if [[ "$API_INTERNAL" == "200" ]]; then
+  echo "OK: Caddy → backend /health (internal, Host: ${API_DOMAIN}) → 200"
+else
+  echo "WARN: internal API subdomain check returned ${API_INTERNAL} (expected 200)."
+fi
+API_HEALTH_CODE="$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 8 --max-time 15 "https://${API_DOMAIN}/health" 2>/dev/null || echo "000")"
 if [[ "$API_HEALTH_CODE" == "200" ]]; then
-  echo "OK: https://${API_DOMAIN}/health → 200"
+  echo "OK: https://${API_DOMAIN}/health → 200 (public)"
+elif [[ "$API_INTERNAL" == "200" ]]; then
+  echo "NOTE: public curl returned ${API_HEALTH_CODE} from this VPS — internal API route is OK."
 else
   echo "WARN: https://${API_DOMAIN}/health returned ${API_HEALTH_CODE} (expected 200)."
 fi
