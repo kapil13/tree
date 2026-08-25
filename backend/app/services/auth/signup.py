@@ -56,11 +56,12 @@ async def start_signup(
     """Create a pending signup session and send phone OTP. Returns (signup_token, dev_otp)."""
     normalized_phone = normalize_phone(phone)
     email_lower = email.strip().lower()
-    category = normalize_signup_category(signup_category)
-    try:
-        resolve_signup_program_code(category)
-    except AccessRequestError as exc:
-        raise SignupError(exc.code) from exc
+    if signup_category is not None:
+        category = normalize_signup_category(signup_category)
+        try:
+            resolve_signup_program_code(category)
+        except AccessRequestError as exc:
+            raise SignupError(exc.code) from exc
 
     existing_email = await db.execute(select(User.id).where(User.email == email_lower))
     if existing_email.scalar_one_or_none():
@@ -80,7 +81,9 @@ async def start_signup(
             "password_hash": hash_password(password),
             "phone_verified": False,
             "email_verified": False,
-            "signup_category": category,
+            "signup_category": normalize_signup_category(signup_category)
+            if signup_category is not None
+            else None,
         },
     )
     if not sms_auth_configured() and not settings.allow_dev_otp:
@@ -126,7 +129,13 @@ async def send_signup_email_otp(signup_token: str) -> str | None:
     return otp_dev_hint(code)
 
 
-async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) -> User:
+async def complete_signup(
+    db: AsyncSession,
+    signup_token: str,
+    email_code: str,
+    *,
+    signup_category: str | None = None,
+) -> User:
     session = await load_signup_session(signup_token)
     if session is None:
         raise SignupError("signup_session_expired")
@@ -134,6 +143,14 @@ async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) 
         raise SignupError("phone_not_verified")
     if not await check_otp("signup_email", signup_token, email_code):
         raise SignupError("invalid_otp")
+
+    category = normalize_signup_category(
+        signup_category or session.get("signup_category") or SIGNUP_CATEGORY_BYOT
+    )
+    try:
+        program_code = resolve_signup_program_code(category)
+    except AccessRequestError as exc:
+        raise SignupError(exc.code) from exc
 
     now = datetime.now(UTC)
     user = User(
@@ -151,7 +168,6 @@ async def complete_signup(db: AsyncSession, signup_token: str, email_code: str) 
     await db.flush()
     await ensure_default_enrollment(db, user.id)
 
-    program_code = resolve_signup_program_code(session.get("signup_category", SIGNUP_CATEGORY_BYOT))
     if program_code:
         try:
             await create_draft_access_request(db, user_id=user.id, program_code=program_code)

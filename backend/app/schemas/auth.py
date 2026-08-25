@@ -25,9 +25,9 @@ class SignupStartRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     phone: str = Field(min_length=10, max_length=32)
     captcha_token: str | None = None
-    signup_category: str = Field(
-        default="byot",
-        description="byot | government_nhai | corporate_esg | ngo_community",
+    signup_category: str | None = Field(
+        default=None,
+        description="Optional legacy field — intent is chosen at signup/complete.",
     )
 
 
@@ -49,6 +49,10 @@ class SignupVerifyPhoneRequest(BaseModel):
 class SignupCompleteRequest(BaseModel):
     signup_token: str
     code: str = Field(min_length=4, max_length=8)
+    signup_category: str = Field(
+        default="byot",
+        description="byot | government_nhai | corporate_esg | ngo_community",
+    )
 
 
 class SignupStepOut(BaseModel):

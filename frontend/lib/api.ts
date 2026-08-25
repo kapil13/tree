@@ -539,7 +539,7 @@ export const auth = {
       )
     ).data;
   },
-  async signupComplete(payload: { signup_token: string; code: string }) {
+  async signupComplete(payload: { signup_token: string; code: string; signup_category?: string }) {
     return (await api.post<Tokens>("/v1/auth/signup/complete", payload)).data;
   },
   async login(email: string, password: string, captcha_token?: string) {
