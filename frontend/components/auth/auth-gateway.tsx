@@ -32,7 +32,6 @@ import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 import { syncSessionCookieFromToken } from "@/lib/session-cookie";
 import { setLocaleCookie } from "@/lib/locale-actions";
 import type { AppLocale } from "@/i18n/request";
-import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { cn } from "@/lib/cn";
 
 type AuthMode = "signin" | "signup";
@@ -100,7 +99,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   function requireCaptcha(): boolean {
     if (!captchaEnabled) return true;
     if (!captchaToken) {
-      setError("Please complete the security check.");
+      setError(t("errorCaptcha"));
       return false;
     }
     return true;
@@ -112,39 +111,28 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
   }
 
   function humanizeAuthError(msg: string): string {
-    if (msg === "captcha_required" || msg === "captcha_failed") {
-      return "Security check failed. Please try again.";
-    }
-    if (msg === "captcha_verification_unavailable") {
-      return "Security check is temporarily unavailable. Please try again later.";
-    }
-    if (msg === "sms_not_configured" || msg === "sms_send_failed") {
-      return "Phone OTP is temporarily unavailable. Sign in with email and password, or try again later.";
-    }
-    if (msg === "email_otp_not_configured") {
-      return "Email OTP is temporarily unavailable. Sign in with email and password.";
-    }
-    if (msg === "invalid_credentials") {
-      return "Incorrect email or password.";
-    }
-    if (msg === "inactive_user") {
-      return "This account is inactive. Contact support.";
-    }
-    if (msg === "organization_suspended") {
-      return "Your organization is suspended. Contact your administrator.";
-    }
-    if (msg === "rate_limited" || msg === "rate_limit_unavailable") {
-      return "Too many attempts. Please wait a moment and try again.";
-    }
-    return msg;
+    const map: Record<string, string> = {
+      captcha_required: t("errorCaptchaFailed"),
+      captcha_failed: t("errorCaptchaFailed"),
+      captcha_verification_unavailable: t("errorCaptchaUnavailable"),
+      sms_not_configured: t("errorPhoneOtpUnavailable"),
+      sms_send_failed: t("errorPhoneOtpUnavailable"),
+      email_otp_not_configured: t("errorEmailOtpUnavailable"),
+      invalid_credentials: t("errorInvalidCredentials"),
+      inactive_user: t("errorInactiveUser"),
+      organization_suspended: t("errorOrgSuspended"),
+      rate_limited: t("errorRateLimited"),
+      rate_limit_unavailable: t("errorRateLimited"),
+    };
+    return map[msg] ?? msg;
   }
 
   const subtitle =
     method === "phone"
       ? otpSent
-        ? "Enter the 6-digit code sent to your phone."
-        : "Sign in securely with a one-time password."
-      : "Use your email and password to access the platform.";
+        ? t("signInSubtitlePhoneOtp")
+        : t("signInSubtitlePhone")
+      : t("signInSubtitleEmail");
 
   async function finishLogin() {
     const me = await auth.me();
@@ -185,7 +173,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
     } catch (err) {
       setError(
         errorMessage(err) === "google_oauth_not_configured"
-          ? "Google sign-in is not configured on this server yet."
+          ? t("errorGoogleNotConfigured")
           : errorMessage(err),
       );
     } finally {
@@ -195,7 +183,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
   async function sendOtp() {
     if (!isValidIndianMobile(phone)) {
-      setError("Enter a valid 10-digit Indian mobile number starting with 6–9.");
+      setError(t("errorInvalidPhone"));
       return;
     }
     if (!requireCaptcha()) return;
@@ -214,7 +202,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       const msg = errorMessage(err);
       setError(
         msg === "invalid_phone"
-          ? "Enter a valid 10-digit Indian mobile number starting with 6–9."
+          ? t("errorInvalidPhone")
           : humanizeAuthError(msg),
       );
       resetCaptcha();
@@ -225,7 +213,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
   async function verifyOtp() {
     if (!isValidIndianMobile(phone)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
+      setError(t("errorInvalidPhone"));
       return;
     }
     setBusy(true);
@@ -241,7 +229,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       const msg = errorMessage(err);
       if (msg === "registration_required") {
         switchMode("signup");
-        setError("No account found for this number. Create an account below.");
+        setError(t("errorRegistrationRequired"));
       } else {
         setError(msg);
       }
@@ -295,7 +283,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
       <div className="flex min-h-0 flex-col justify-center">
         <div className="mb-3 space-y-1 lg:hidden">
           <p className="font-display text-2xl font-semibold tracking-tight text-forest-900">Aranyix</p>
-          <p className="text-sm text-stone-500">Intelligence for a thriving planet</p>
+          <p className="text-sm text-stone-500">{t("tagline")}</p>
         </div>
 
         <div className="flex max-h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-[0_20px_60px_-28px_rgba(5,46,31,0.28)] backdrop-blur-xl">
@@ -316,9 +304,6 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
               >
                 {mode === "signin" ? t("signUp") : t("signIn")}
               </button>
-            </div>
-            <div className="mb-4">
-              <LanguageSwitcher />
             </div>
 
             {mode === "signup" ? (
@@ -374,7 +359,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
 
                   <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-stone-400">
                     <div className="h-px flex-1 bg-stone-200" />
-                    or
+                    {t("or")}
                     <div className="h-px flex-1 bg-stone-200" />
                   </div>
 
@@ -408,7 +393,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                       )}
                     >
                       <Phone className="h-3.5 w-3.5" />
-                      Phone OTP
+                      {t("phoneOtp")}
                     </button>
                   </div>
 
@@ -416,7 +401,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                     <div className="space-y-2.5">
                       <div>
                         <label className="label mb-1" htmlFor="auth-phone">
-                          Mobile number
+                          {t("mobileNumber")}
                         </label>
                         <div className="flex gap-2">
                           <div className="phone-prefix !rounded-xl" aria-hidden>
@@ -453,7 +438,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           />
                           {devHint && (
                             <p className="mt-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
-                              SMS is not enabled yet. Use OTP:{" "}
+                              {t("devSmsHint")}{" "}
                               <span className="font-mono font-bold">{devHint}</span>
                             </p>
                           )}
@@ -473,9 +458,9 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                         {busy ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : otpSent ? (
-                          "Verify & continue"
+                          t("verifyAndContinue")
                         ) : (
-                          "Send OTP"
+                          t("sendOtp")
                         )}
                       </button>
 
@@ -485,7 +470,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                           className="btn-ghost w-full text-sm"
                           onClick={resetPhoneFlow}
                         >
-                          Change phone number
+                          {t("changePhoneNumber")}
                         </button>
                       )}
                     </div>
@@ -518,7 +503,7 @@ export function AuthGateway({ initialMode = "signin" }: { initialMode?: AuthMode
                             type={showPassword ? "text" : "password"}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Your password"
+                            placeholder={t("passwordPlaceholder")}
                           />
                           <button
                             type="button"

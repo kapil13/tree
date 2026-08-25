@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NavLinks } from "@/components/sidebar";
 import { clearAppQueryCache } from "@/app/providers";
 import { alerts } from "@/lib/api";
@@ -62,6 +63,7 @@ export function Topbar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="compact" className="hidden sm:inline-flex" />
           {onboardingHref && onboardingChipLabel ? (
             <Link
               href={onboardingHref}

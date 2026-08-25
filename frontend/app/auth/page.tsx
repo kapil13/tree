@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AuthGateway } from "@/components/auth/auth-gateway";
 import { MarketingShell } from "@/components/marketing/marketing-shell";
 import { auth } from "@/lib/api";
@@ -63,29 +64,26 @@ function AlreadySignedInRedirect() {
 
 function AuthPageInner() {
   const params = useSearchParams();
+  const t = useTranslations("auth");
   const mode = params.get("mode") === "signup" ? "signup" : "signin";
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
     const err = params.get("error");
     if (err === "google_denied") {
-      setOauthError("Google sign-in was cancelled.");
+      setOauthError(t("errorGoogleDenied"));
     } else if (err === "google_exchange_failed") {
-      setOauthError(
-        "Google sign-in failed. Add https://aranyix.tech/api/v1/auth/google/callback to Google Cloud Console authorized redirect URIs.",
-      );
+      setOauthError(t("errorGoogleExchange"));
     } else if (err === "google_state_invalid") {
-      setOauthError("Google sign-in expired or was invalid. Please try again.");
+      setOauthError(t("errorGoogleState"));
     } else if (err === "google_email_unverified") {
-      setOauthError("Your Google account email is not verified. Verify it with Google, then try again.");
+      setOauthError(t("errorGoogleUnverified"));
     } else if (err === "google_link_requires_verified") {
-      setOauthError(
-        "An account with this email already exists but is not verified. Sign in with email/password or complete verification, then link Google.",
-      );
+      setOauthError(t("errorGoogleLink"));
     } else if (err === "organization_suspended") {
-      setOauthError("Your organization is suspended. Contact your administrator.");
+      setOauthError(t("errorOrgSuspended"));
     }
-  }, [params]);
+  }, [params, t]);
 
   return (
     <MarketingShell authMode={mode} footerVariant="compact" mainClassName="min-h-0">
@@ -101,11 +99,12 @@ function AuthPageInner() {
 }
 
 export default function AuthPage() {
+  const t = useTranslations("auth");
   return (
     <Suspense
       fallback={
         <div className="marketing-page flex min-h-screen items-center justify-center text-sm text-stone-600">
-          Loading secure sign-in…
+          {t("loadingAuth")}
         </div>
       }
     >

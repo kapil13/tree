@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { useAuth } from "@/lib/auth-store";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
 import { hasAnyPlatformAccess } from "@/lib/platform-access";
@@ -225,6 +226,9 @@ export function Sidebar() {
         </div>
       </Link>
       <NavLinks />
+      <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
+        <LanguageSwitcher variant="compact" />
+      </div>
     </aside>
   );
 }
