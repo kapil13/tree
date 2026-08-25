@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import type { CmsPublicSite } from "@/lib/cms-api";
 import { CMS_HEADER_FALLBACK, linkProps } from "@/lib/cms-defaults";
 import { cn } from "@/lib/cn";
@@ -84,6 +85,7 @@ export function MarketingHeader({
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher variant="compact" className="hidden sm:inline-flex" />
           {onAuth ? (
             <>
               <Link
@@ -175,6 +177,7 @@ export function MarketingHeader({
             </nav>
 
             <div className="space-y-2 border-t border-stone-100 px-4 py-4">
+              <LanguageSwitcher variant="compact" className="w-full justify-center" />
               <Link
                 href={onAuth ? "/auth?mode=signin" : signIn.href}
                 className="btn-secondary w-full"

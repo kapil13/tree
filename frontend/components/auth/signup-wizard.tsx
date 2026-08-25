@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { TurnstileCaptcha, type TurnstileCaptchaHandle } from "@/components/auth/turnstile-captcha";
 import { auth, errorMessage } from "@/lib/api";
 import {
@@ -16,6 +17,8 @@ import {
   programThemeForSignup,
 } from "@/lib/program-catalog";
 import { useAuth } from "@/lib/auth-store";
+import { setLocaleCookie } from "@/lib/locale-actions";
+import type { AppLocale } from "@/i18n/request";
 import { cn } from "@/lib/cn";
 import type { InvitePreview } from "@/lib/organizations-api";
 
@@ -25,24 +28,26 @@ type SignupStep = "details" | "verify-phone" | "verify-email" | "choose-intent";
 
 type CaptchaConfig = { enabled: boolean; site_key?: string | null };
 
-function humanizeSignupError(msg: string): string {
-  const map: Record<string, string> = {
-    email_taken: "This email is already registered. Try signing in.",
-    phone_taken: "This phone number is already registered.",
-    invalid_phone: "Enter a valid 10-digit Indian mobile number starting with 6–9.",
-    invalid_otp: "Invalid code. Please try again.",
-    signup_session_expired: "Your signup session expired. Please start again.",
-    email_send_failed: "Could not send the verification email. Please try again shortly.",
-    gmail_not_configured: "Email verification is not configured yet. Contact support.",
-    sms_not_configured:
-      "Phone verification is temporarily unavailable while SMS delivery is being set up. Please try again later.",
-    sms_send_failed: "Could not send the SMS code. Please try again shortly.",
-    captcha_required: "Please complete the security check.",
-    captcha_failed: "Security check failed. Please try again.",
-    rate_limited: "Too many attempts. Please wait a moment and try again.",
-    rate_limit_unavailable: "Sign-up is temporarily unavailable. Please try again later.",
+function useSignupErrors() {
+  const t = useTranslations("auth");
+  return (msg: string) => {
+    const map: Record<string, string> = {
+      email_taken: t("errorEmailTaken"),
+      phone_taken: t("errorPhoneTaken"),
+      invalid_phone: t("errorInvalidPhone"),
+      invalid_otp: t("errorInvalidOtp"),
+      signup_session_expired: t("errorSignupExpired"),
+      email_send_failed: t("errorEmailSend"),
+      gmail_not_configured: t("errorGmailNotConfigured"),
+      sms_not_configured: t("errorSmsNotConfigured"),
+      sms_send_failed: t("errorSmsSend"),
+      captcha_required: t("errorCaptcha"),
+      captcha_failed: t("errorCaptchaFailed"),
+      rate_limited: t("errorRateLimited"),
+      rate_limit_unavailable: t("errorRateLimited"),
+    };
+    return map[msg] ?? msg;
   };
-  return map[msg] ?? msg;
 }
 
 export function SignupWizard({
@@ -58,6 +63,8 @@ export function SignupWizard({
   onComplete: () => void | Promise<void>;
   onSwitchToSignIn: () => void;
 }) {
+  const t = useTranslations("auth");
+  const humanizeSignupError = useSignupErrors();
   const { setSession, setUser } = useAuth();
   const captchaRef = useRef<TurnstileCaptchaHandle>(null);
   const captchaEnabled = Boolean(captchaConfig?.enabled && captchaConfig.site_key);
@@ -95,31 +102,31 @@ export function SignupWizard({
 
   async function startSignup() {
     if (!fullName.trim()) {
-      setError("Please enter your full name.");
+      setError(t("errorFullName"));
       return;
     }
     if (!email.trim()) {
-      setError("Please enter your email address.");
+      setError(t("errorEmail"));
       return;
     }
     if (!isValidIndianMobile(phone)) {
-      setError("Enter a valid 10-digit Indian mobile number starting with 6–9.");
+      setError(t("errorInvalidPhone"));
       return;
     }
     if (password.length < 12) {
-      setError("Password must be at least 12 characters.");
+      setError(t("errorPasswordLength"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("errorPasswordMatch"));
       return;
     }
     if (!acceptedTerms) {
-      setError("Please accept the terms to create an account.");
+      setError(t("errorTerms"));
       return;
     }
     if (captchaEnabled && !captchaToken) {
-      setError("Please complete the security check.");
+      setError(t("errorCaptcha"));
       return;
     }
 
@@ -147,7 +154,7 @@ export function SignupWizard({
 
   async function verifyPhone() {
     if (phoneOtp.length < 4) {
-      setError("Enter the code sent to your phone.");
+      setError(t("errorPhoneOtp"));
       return;
     }
     setBusy(true);
@@ -167,7 +174,7 @@ export function SignupWizard({
 
   async function afterEmailVerified() {
     if (emailOtp.length < 4) {
-      setError("Enter the code sent to your email.");
+      setError(t("errorEmailOtp"));
       return;
     }
     if (skipIntent) {
@@ -180,7 +187,7 @@ export function SignupWizard({
 
   async function completeSignup(category: string = signupCategory) {
     if (emailOtp.length < 4) {
-      setError("Enter the code sent to your email.");
+      setError(t("errorEmailOtp"));
       return;
     }
     setBusy(true);
@@ -194,6 +201,9 @@ export function SignupWizard({
       setSession(tokens);
       const me = await auth.me();
       setUser(me);
+      if (me.locale === "en" || me.locale === "hi") {
+        await setLocaleCookie(me.locale as AppLocale);
+      }
       await onComplete();
     } catch (err) {
       setError(humanizeSignupError(errorMessage(err)));
@@ -206,23 +216,26 @@ export function SignupWizard({
 
   const title =
     step === "details"
-      ? "Create your account"
+      ? t("signupTitleDetails")
       : step === "verify-phone"
-        ? "Verify your phone"
+        ? t("signupTitlePhone")
         : step === "verify-email"
-          ? "Verify your email"
-          : "How will you use Aranyix?";
+          ? t("signupTitleEmail")
+          : t("signupTitleIntent");
 
   const subtitle =
     step === "details"
       ? invitePreview
-        ? `Join ${invitePreview.organization_name} as ${invitePreview.org_role.replace("_", " ")}. We verify your phone and email before creating your account.`
-        : "Enter your details. Phone and email verification are required before your account is created."
+        ? t("signupSubtitleDetailsInvite", {
+            org: invitePreview.organization_name,
+            role: invitePreview.org_role.replace("_", " "),
+          })
+        : t("signupSubtitleDetails")
       : step === "verify-phone"
-        ? `Enter the 6-digit code sent to ${formatPhoneDisplay(phone)}.`
+        ? t("signupSubtitlePhone", { phone: formatPhoneDisplay(phone) })
         : step === "verify-email"
-          ? `Enter the 6-digit code sent to ${email.trim()}.`
-          : "Choose individual tree tagging or an organization programme. Professional paths require admin approval after you submit organization details.";
+          ? t("signupSubtitleEmail", { email: email.trim() })
+          : t("signupSubtitleIntent");
 
   const captchaWidget =
     captchaEnabled && captchaConfig?.site_key && step === "details" ? (
@@ -262,7 +275,7 @@ export function SignupWizard({
           <p className="text-sm font-semibold text-stone-900">{option.name}</p>
           <p className="mt-0.5 text-xs leading-snug text-stone-500">{option.description}</p>
           {option.audience === "organization" ? (
-            <p className="mt-0.5 text-[11px] text-amber-800">Requires admin approval</p>
+            <p className="mt-0.5 text-[11px] text-amber-800">{t("requiresApproval")}</p>
           ) : null}
         </div>
       </button>
@@ -273,7 +286,7 @@ export function SignupWizard({
     <div className="space-y-3">
       <div className="space-y-0.5">
         <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
-          Step {stepNumber} of {totalSteps}
+          {t("stepOf", { current: stepNumber, total: totalSteps })}
         </p>
         <h3 className="text-lg font-semibold text-stone-950">{title}</h3>
         <p className="text-sm text-stone-500">{subtitle}</p>
@@ -282,7 +295,7 @@ export function SignupWizard({
       {step === "details" && (
         <div className="space-y-2.5">
           <div>
-            <label className="label mb-1">Full name</label>
+            <label className="label mb-1">{t("fullName")}</label>
             <input
               className="field-input !rounded-xl !py-2.5"
               value={fullName}
@@ -291,7 +304,7 @@ export function SignupWizard({
             />
           </div>
           <div>
-            <label className="label mb-1">Email address</label>
+            <label className="label mb-1">{t("emailAddress")}</label>
             <input
               className="field-input !rounded-xl !py-2.5"
               type="email"
@@ -302,7 +315,7 @@ export function SignupWizard({
             />
           </div>
           <div>
-            <label className="label mb-1">Mobile number</label>
+            <label className="label mb-1">{t("mobileNumber")}</label>
             <div className="flex gap-2">
               <div className="phone-prefix !rounded-xl" aria-hidden>
                 +91
@@ -319,7 +332,7 @@ export function SignupWizard({
             </div>
           </div>
           <div>
-            <label className="label mb-1">Password</label>
+            <label className="label mb-1">{t("password")}</label>
             <input
               className="field-input !rounded-xl !py-2.5"
               type="password"
@@ -330,7 +343,7 @@ export function SignupWizard({
             />
           </div>
           <div>
-            <label className="label mb-1">Confirm password</label>
+            <label className="label mb-1">{t("confirmPassword")}</label>
             <input
               className="field-input !rounded-xl !py-2.5"
               type="password"
@@ -366,7 +379,7 @@ export function SignupWizard({
           {captchaWidget}
           <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => void startSignup()}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Continue
+            {t("continue")}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -384,14 +397,14 @@ export function SignupWizard({
           />
           {devHint ? (
             <p className="text-xs text-amber-800">
-              SMS delivery pending API keys. Dev code: <span className="font-mono font-bold">{devHint}</span>
+              {t("devSmsHint")} <span className="font-mono font-bold">{devHint}</span>
             </p>
           ) : null}
           <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => void verifyPhone()}>
-            {busy ? "Verifying…" : "Verify phone"}
+            {busy ? t("loadingAuth") : t("verifyPhone")}
           </button>
           <button type="button" className="btn-ghost w-full text-sm" onClick={() => setStep("details")}>
-            Back
+            {t("back")}
           </button>
         </div>
       )}
@@ -406,17 +419,21 @@ export function SignupWizard({
             onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
             placeholder="000000"
           />
-          {devHint ? <p className="text-xs text-amber-800">Dev code: {devHint}</p> : null}
+          {devHint ? (
+            <p className="text-xs text-amber-800">
+              {t("devEmailHint")} {devHint}
+            </p>
+          ) : null}
           <button
             type="button"
             className="btn-primary w-full"
             disabled={busy}
             onClick={() => void afterEmailVerified()}
           >
-            {busy ? "Please wait…" : skipIntent ? "Create account" : "Continue"}
+            {busy ? t("loadingAuth") : skipIntent ? t("createAccount") : t("continue")}
           </button>
           <button type="button" className="btn-ghost w-full text-sm" onClick={() => setStep("verify-phone")}>
-            Back
+            {t("back")}
           </button>
         </div>
       )}
@@ -424,11 +441,11 @@ export function SignupWizard({
       {step === "choose-intent" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Individual</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t("individual")}</p>
             {INDIVIDUAL_SIGNUP_OPTIONS.map(renderIntentOption)}
           </div>
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Organization</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t("organization")}</p>
             {ORGANIZATION_SIGNUP_OPTIONS.map(renderIntentOption)}
           </div>
           <button
@@ -437,10 +454,14 @@ export function SignupWizard({
             disabled={busy}
             onClick={() => void completeSignup()}
           >
-            {busy ? "Creating account…" : isProfessional ? "Create account & continue to organization details" : "Create account & tag my first tree"}
+            {busy
+              ? t("creatingAccount")
+              : isProfessional
+                ? t("createAccountProfessional")
+                : t("createAccountCitizen")}
           </button>
           <button type="button" className="btn-ghost w-full text-sm" onClick={() => setStep("verify-email")}>
-            Back
+            {t("back")}
           </button>
         </div>
       )}
@@ -448,9 +469,9 @@ export function SignupWizard({
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 
       <p className="text-center text-sm text-stone-600">
-        Already have an account?{" "}
+        {t("alreadyHaveAccount")}{" "}
         <button type="button" className="font-medium text-forest-700 hover:underline" onClick={onSwitchToSignIn}>
-          Sign in
+          {t("signIn")}
         </button>
       </p>
     </div>
