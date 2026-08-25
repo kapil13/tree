@@ -26,10 +26,10 @@ from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.auth import (
     CaptchaConfigOut,
-    OtpConfigOut,
     ChangePasswordOut,
     ChangePasswordRequest,
     LoginRequest,
+    OtpConfigOut,
     OTPRequest,
     OTPRequestOut,
     OTPVerify,
