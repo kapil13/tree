@@ -498,9 +498,23 @@ export type CaptchaConfig = {
   site_key: string | null;
 };
 
+export type OtpConfig = {
+  sms_enabled: boolean;
+  sms_configured: boolean;
+  sms_template_configured: boolean;
+  email_enabled: boolean;
+  email_configured: boolean;
+  invite_sms_enabled: boolean;
+  invite_sms_configured: boolean;
+  dev_otp_allowed: boolean;
+};
+
 export const auth = {
   async captchaConfig() {
     return (await api.get<CaptchaConfig>("/v1/auth/captcha-config")).data;
+  },
+  async otpConfig() {
+    return (await api.get<OtpConfig>("/v1/auth/otp-config")).data;
   },
   async register(payload: {
     email: string;

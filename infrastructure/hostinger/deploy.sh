@@ -167,6 +167,11 @@ if [[ -x ./verify-sar-gee.sh ]] && grep -qE '^SAR_PROVIDER=(gee|sentinel_hub)' "
   ./verify-sar-gee.sh || true
 fi
 
+if [[ -x ./verify-msg91.sh ]] && grep -qE '^AUTH_OTP_SMS_ENABLED=true' "$ENV_FILE" 2>/dev/null; then
+  echo "==> MSG91 OTP verification..."
+  ./verify-msg91.sh || true
+fi
+
 echo ""
 echo "Deploy complete."
 echo "  App:  https://${APP_DOMAIN}"

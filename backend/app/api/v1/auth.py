@@ -29,6 +29,7 @@ from app.schemas.auth import (
     ChangePasswordOut,
     ChangePasswordRequest,
     LoginRequest,
+    OtpConfigOut,
     OTPRequest,
     OTPRequestOut,
     OTPVerify,
@@ -57,7 +58,12 @@ from app.services.auth.gmail_sender import (
     send_auth_otp_email,
 )
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
-from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
+from app.services.auth.msg91_sender import (
+    SmsSendError,
+    msg91_public_config,
+    send_auth_otp_sms,
+    sms_auth_configured,
+)
 from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
 from app.services.auth.org_access import assert_user_may_authenticate
 from app.services.auth.otp import (
@@ -124,6 +130,21 @@ async def captcha_config() -> CaptchaConfigOut:
     return CaptchaConfigOut(
         enabled=settings.captcha_enabled,
         site_key=settings.turnstile_site_key if settings.captcha_enabled else None,
+    )
+
+
+@router.get("/otp-config", response_model=OtpConfigOut)
+async def otp_config() -> OtpConfigOut:
+    msg91 = msg91_public_config()
+    return OtpConfigOut(
+        sms_enabled=msg91["sms_enabled"],
+        sms_configured=msg91["sms_configured"],
+        sms_template_configured=msg91["sms_template_configured"],
+        email_enabled=settings.auth_otp_email_enabled,
+        email_configured=gmail_otp_configured(),
+        invite_sms_enabled=msg91["invite_sms_enabled"],
+        invite_sms_configured=msg91["invite_sms_configured"],
+        dev_otp_allowed=settings.allow_dev_otp,
     )
 
 
@@ -353,7 +374,7 @@ async def signup_start(payload: SignupStartRequest, request: Request, db: DB) ->
     return SignupStartOut(
         signup_token=token,
         dev_hint=dev_hint,
-        sms_enabled=settings.auth_otp_sms_enabled,
+        sms_enabled=sms_auth_configured(),
     )
 
 
