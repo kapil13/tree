@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 
 from app.core.config import settings
@@ -51,6 +53,30 @@ def _normalize_mobile(phone: str) -> str:
     return digits
 
 
+def _validate_msg91_mobile(mobile: str) -> None:
+    """MSG91 expects 91 + 10-digit Indian mobile (12 digits total)."""
+    if len(mobile) == 12 and mobile.startswith("91") and mobile[2] in "6789":
+        return
+    raise SmsSendError("invalid_mobile")
+
+
+def _parse_msg91_otp_response(body: str) -> dict:
+    """Parse MSG91 JSON body; raise when API reports failure despite HTTP 200."""
+    if not body.strip():
+        return {}
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return {"raw": body[:200]}
+    if not isinstance(data, dict):
+        return {"raw": body[:200]}
+    if data.get("type") == "error":
+        message = str(data.get("message") or data.get("msg") or "msg91_error")
+        log.warning("msg91.otp_rejected", message=message[:200], body=body[:200])
+        raise SmsSendError("msg91_otp_rejected")
+    return data
+
+
 async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
     """Send login/signup OTP. Returns True when dispatched, False in dev/stub mode."""
     if not sms_auth_configured():
@@ -58,10 +84,12 @@ async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
         return False
 
     mobile = _normalize_mobile(phone)
+    _validate_msg91_mobile(mobile)
     headers = {"authkey": settings.msg91_auth_key or "", "Content-Type": "application/json"}
     payload: dict = {
         "mobile": mobile,
         "otp": code,
+        "otp_length": len(code),
     }
     if settings.msg91_otp_template_id:
         payload["template_id"] = settings.msg91_otp_template_id
@@ -74,7 +102,15 @@ async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
         if res.status_code >= 400:
             log.warning("msg91.otp_failed", status=res.status_code, body=res.text[:200])
             raise SmsSendError("msg91_otp_failed")
-        log.info("msg91.otp_sent", phone=_redact_phone(phone))
+        parsed = _parse_msg91_otp_response(res.text)
+        request_id = parsed.get("request_id") or parsed.get("requestId")
+        log.info(
+            "msg91.otp_sent",
+            phone=_redact_phone(phone),
+            mobile_suffix=mobile[-4:],
+            request_id=request_id,
+            msg91_type=parsed.get("type"),
+        )
         return True
     except httpx.HTTPError as exc:
         log.warning("msg91.otp_http_error", error=str(exc))

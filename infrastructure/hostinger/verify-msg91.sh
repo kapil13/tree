@@ -9,6 +9,18 @@ ENV_FILE=".env.production"
 COMPOSE_FILE="docker-compose.prod.yml"
 SEND_TEST="${1:-}"
 
+if [[ -n "$SEND_TEST" ]]; then
+  if [[ "$SEND_TEST" == *"DIGIT"* ]] || [[ "$SEND_TEST" == *[Yy][Oo][Uu][Rr]* ]]; then
+    echo "ERROR: Pass a real 10-digit mobile, not a placeholder. Example:"
+    echo "  ./verify-msg91.sh 9876543210"
+    exit 1
+  fi
+  if ! [[ "$SEND_TEST" =~ ^(\+91|91)?[6-9][0-9]{9}$ ]]; then
+    echo "ERROR: Invalid phone '$SEND_TEST'. Use 10 digits starting with 6-9, e.g. 9876543210"
+    exit 1
+  fi
+fi
+
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE — copy from .env.production.example and set MSG91 keys."
   exit 1
@@ -44,6 +56,9 @@ fi
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
   python3 -m app.scripts.verify_msg91 "${VERIFY_ARGS[@]}"
 
+echo ""
+echo "VPS outbound IP (whitelist in MSG91 → Authkey → Recent IPs / Whitelist):"
+curl -4 -fsS --max-time 5 ifconfig.me 2>/dev/null || echo "(could not detect)"
 echo ""
 echo "Done. Signup phone OTP: POST /api/v1/auth/signup/start"
 echo "Login phone OTP: POST /api/v1/auth/otp/request with {\"phone\":\"...\"}"
