@@ -57,6 +57,13 @@ def test_normalize_mobile_india():
     assert _normalize_mobile("919876543210") == "919876543210"
 
 
+def test_validate_msg91_mobile_rejects_placeholders():
+    with pytest.raises(SmsSendError, match="invalid_mobile"):
+        from app.services.auth.msg91_sender import _validate_msg91_mobile
+
+        _validate_msg91_mobile("10")  # from "YOUR_10_DIGIT_PHONE"
+
+
 def test_sms_invites_configured_requires_key_and_flag():
     with patch("app.services.auth.msg91_sender.settings") as mock_settings:
         mock_settings.auth_org_invite_sms_enabled = True
@@ -121,6 +128,35 @@ async def test_send_auth_otp_sms_includes_template_id():
 
     payload = mock_client.post.await_args.kwargs["json"]
     assert payload["template_id"] == "otp-template-99"
+
+
+@pytest.mark.asyncio
+async def test_send_auth_otp_sms_raises_on_msg91_error_body():
+    mock_response = MagicMock(status_code=200, text='{"type":"error","message":"Invalid mobile number"}')
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("app.services.auth.msg91_sender.sms_auth_configured", return_value=True),
+        patch("app.services.auth.msg91_sender.settings") as mock_settings,
+        patch("app.services.auth.msg91_sender.httpx.AsyncClient", return_value=mock_client),
+    ):
+        mock_settings.msg91_auth_key = "key"
+        mock_settings.msg91_otp_template_id = "tpl"
+        mock_settings.msg91_sender_id = "AXTECP"
+        with pytest.raises(SmsSendError, match="msg91_otp_rejected"):
+            await send_auth_otp_sms(phone="9876543210", code="123456")
+
+
+@pytest.mark.asyncio
+async def test_send_auth_otp_sms_rejects_invalid_mobile():
+    with (
+        patch("app.services.auth.msg91_sender.sms_auth_configured", return_value=True),
+        pytest.raises(SmsSendError, match="invalid_mobile"),
+    ):
+        await send_auth_otp_sms(phone="YOUR_10_DIGIT_PHONE", code="123456")
 
 
 @pytest.mark.asyncio

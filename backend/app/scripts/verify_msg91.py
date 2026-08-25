@@ -11,6 +11,8 @@ import sys
 from app.core.config import settings
 from app.services.auth.msg91_sender import (
     SmsSendError,
+    _normalize_mobile,
+    _validate_msg91_mobile,
     msg91_public_config,
     send_auth_otp_sms,
     sms_auth_configured,
@@ -74,12 +76,34 @@ def print_config_report() -> int:
     return 0
 
 
+def _validate_test_phone(phone: str) -> str:
+    lowered = phone.strip().lower()
+    if "digit" in lowered or lowered.startswith("your_"):
+        print(
+            f"ERROR: Replace placeholder {phone!r} with a real 10-digit mobile, e.g. ./verify-msg91.sh 9876543210",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    mobile = _normalize_mobile(phone)
+    try:
+        _validate_msg91_mobile(mobile)
+    except SmsSendError:
+        print(
+            f"ERROR: Invalid phone {phone!r} (normalized to {mobile!r}). "
+            "Use a 10-digit Indian mobile starting with 6/7/8/9.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from None
+    return mobile
+
+
 async def send_test_otp(phone: str) -> int:
     if not sms_auth_configured():
         print("ERROR: SMS not configured — run config report first.", file=sys.stderr)
         return 1
+    mobile = _validate_test_phone(phone)
     code = os.environ.get("MSG91_VERIFY_OTP", "123456")
-    print(f"Sending test OTP to {phone} (code={code})...")
+    print(f"Sending test OTP to {mobile} (code={code})...")
     try:
         sent = await send_auth_otp_sms(phone=phone, code=code)
     except SmsSendError as exc:
