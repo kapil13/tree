@@ -23,8 +23,23 @@ def sms_auth_configured() -> bool:
     return bool(settings.auth_otp_sms_enabled and settings.msg91_auth_key)
 
 
+def sms_auth_template_configured() -> bool:
+    return bool(sms_auth_configured() and settings.msg91_otp_template_id)
+
+
 def sms_invites_configured() -> bool:
     return bool(settings.auth_org_invite_sms_enabled and settings.msg91_auth_key)
+
+
+def msg91_public_config() -> dict[str, bool]:
+    """Non-secret MSG91 readiness flags for diagnostics and /auth/otp-config."""
+    return {
+        "sms_enabled": settings.auth_otp_sms_enabled,
+        "sms_configured": sms_auth_configured(),
+        "sms_template_configured": sms_auth_template_configured(),
+        "invite_sms_enabled": settings.auth_org_invite_sms_enabled,
+        "invite_sms_configured": sms_invites_configured(),
+    }
 
 
 def _normalize_mobile(phone: str) -> str:
