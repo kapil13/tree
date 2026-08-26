@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.models.emission_source import EmissionSatelliteScan
@@ -49,6 +50,22 @@ from app.services.planting_projects.access import can_manage_project, load_proje
 router = APIRouter(prefix="/planting-projects", tags=["emissions"])
 
 
+def _raise_emissions_db_error(exc: Exception) -> None:
+    raw = str(getattr(exc, "orig", exc))
+    if any(
+        token in raw
+        for token in (
+            "emission_sources",
+            "dispersion_simulations",
+            "emission_satellite_scans",
+        )
+    ):
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="emissions_migration_required",
+        ) from exc
+
+
 def _registry_error(exc: EmissionRegistryError) -> HTTPException:
     code = exc.code
     if code == "emission_outside_work_area":
@@ -88,7 +105,12 @@ async def list_project_emission_sources(
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    rows = await list_emission_sources(db, project_id=project_id, work_area_id=work_area_id)
+    try:
+        rows = await list_emission_sources(db, project_id=project_id, work_area_id=work_area_id)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
     return [_to_out(r) for r in rows]
 
 
@@ -193,8 +215,19 @@ async def run_project_dispersion(
         raise _dispersion_error(exc) from exc
     except EmissionRegistryError as exc:
         raise _registry_error(exc) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail="met_fetch_failed") from exc
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
 
-    await db.commit()
+    try:
+        await db.commit()
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
     met = DispersionMetOut.model_validate(sim.met_snapshot)
     return DispersionRunOut(
         simulation_id=sim.id,
@@ -225,7 +258,12 @@ async def get_latest_project_dispersion(
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    sim = await get_latest_dispersion(db, project_id=project_id, work_area_id=work_area_id)
+    try:
+        sim = await get_latest_dispersion(db, project_id=project_id, work_area_id=work_area_id)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
     if sim is None:
         return None
     data = _simulation_to_out(sim, project_id)
@@ -271,9 +309,20 @@ async def run_work_area_satellite_scan(
         )
     except TropomiScanError as exc:
         raise _tropomi_error(exc) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_work_area_geometry") from exc
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
 
-    await db.commit()
-    await db.refresh(row)
+    try:
+        await db.commit()
+        await db.refresh(row)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
     return TropomiScanOut(**scan_to_dict(row))
 
 
@@ -297,14 +346,19 @@ async def list_work_area_satellite_scans(
     if work_area is None or work_area.project_id != project_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
 
-    rows_res = await db.execute(
-        select(EmissionSatelliteScan)
-        .where(
-            EmissionSatelliteScan.project_id == project_id,
-            EmissionSatelliteScan.work_area_id == work_area_id,
+    try:
+        rows_res = await db.execute(
+            select(EmissionSatelliteScan)
+            .where(
+                EmissionSatelliteScan.project_id == project_id,
+                EmissionSatelliteScan.work_area_id == work_area_id,
+            )
+            .order_by(EmissionSatelliteScan.created_at.desc())
+            .limit(min(limit, 50))
         )
-        .order_by(EmissionSatelliteScan.created_at.desc())
-        .limit(min(limit, 50))
-    )
-    rows = rows_res.scalars().all()
+        rows = rows_res.scalars().all()
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
     return [TropomiScanOut(**scan_to_dict(r)) for r in rows]

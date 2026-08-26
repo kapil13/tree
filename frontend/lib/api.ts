@@ -205,6 +205,15 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "credit_ledger_migration_required") {
         return "Credit ledger database migration required. On the server run: alembic upgrade head.";
       }
+      if (data.detail === "emissions_migration_required") {
+        return "GHG emissions tables need migration. On the VPS run: cd infrastructure/hostinger && docker compose -f docker-compose.prod.yml --env-file .env.production exec backend alembic upgrade head";
+      }
+      if (data.detail === "tropomi_fetch_failed") {
+        return "TROPOMI CH₄ scan failed (Copernicus Sentinel Hub). Check SENTINEL_HUB_CLIENT_ID/SECRET on the server and retry.";
+      }
+      if (data.detail === "met_fetch_failed") {
+        return "Wind data for dispersion could not be fetched from Open-Meteo. Retry in a few minutes.";
+      }
       const paymentMsg = paymentErrorMessage(data.detail);
       if (paymentMsg) return paymentMsg;
       const authMsg = authErrorMessage(data.detail);
@@ -221,6 +230,17 @@ export function errorMessage(err: unknown): string {
       }
       if (err.response.status === 503 && err.config?.url?.includes("/credits/")) {
         return "Credit ledger tables need migration. On the server run: alembic upgrade head";
+      }
+      if (
+        err.response.status === 503 &&
+        (err.config?.url?.includes("/dispersion/") ||
+          err.config?.url?.includes("/emission-sources") ||
+          err.config?.url?.includes("/satellite-scan"))
+      ) {
+        return "GHG emissions tables need migration. On the VPS run: cd infrastructure/hostinger && docker compose -f docker-compose.prod.yml --env-file .env.production exec backend alembic upgrade head";
+      }
+      if (err.response.status === 500 && err.config?.url?.includes("/satellite-scan")) {
+        return "TROPOMI scan failed on the server. Run alembic upgrade head, verify Sentinel Hub credentials, then check backend logs.";
       }
       return data.detail;
     }
