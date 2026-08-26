@@ -8,13 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
+from app.services.auth.otp import otp_dev_hint
+from app.services.auth.otp_store import check_otp, issue_otp
 from app.services.auth.ses_email_sender import (
     EmailSendError,
     send_password_reset_otp_email,
     ses_otp_configured,
 )
-from app.services.auth.otp import otp_dev_hint
-from app.services.auth.otp_store import check_otp, issue_otp
 
 
 class PasswordResetError(Exception):

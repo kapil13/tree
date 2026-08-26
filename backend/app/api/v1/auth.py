@@ -52,11 +52,6 @@ from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.change_password import ChangePasswordError, change_password
-from app.services.auth.ses_email_sender import (
-    EmailSendError,
-    send_auth_otp_email,
-    ses_otp_configured,
-)
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.msg91_sender import (
     SmsSendError,
@@ -78,6 +73,11 @@ from app.services.auth.password_reset import (
     request_password_reset,
 )
 from app.services.auth.profile_helpers import age_from_date_of_birth
+from app.services.auth.ses_email_sender import (
+    EmailSendError,
+    send_auth_otp_email,
+    ses_otp_configured,
+)
 from app.services.auth.sessions import token_issued_before_invalidation
 from app.services.auth.signup import (
     SignupError,

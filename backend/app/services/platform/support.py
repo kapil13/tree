@@ -8,14 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.user import User
+from app.services.auth.otp import otp_dev_hint
+from app.services.auth.otp_store import issue_otp
+from app.services.auth.password_reset import PasswordResetError, request_password_reset
 from app.services.auth.ses_email_sender import (
     EmailSendError,
     send_signup_otp_email,
     ses_otp_configured,
 )
-from app.services.auth.otp import otp_dev_hint
-from app.services.auth.otp_store import issue_otp
-from app.services.auth.password_reset import PasswordResetError, request_password_reset
 from app.services.auth.sessions import revoke_all_user_sessions
 
 
