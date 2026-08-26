@@ -52,10 +52,10 @@ from app.schemas.planting_program import OrgProfileSubmit
 from app.services.audit import record_audit
 from app.services.auth.captcha import verify_captcha_token
 from app.services.auth.change_password import ChangePasswordError, change_password
-from app.services.auth.gmail_sender import (
-    GmailSendError,
-    gmail_otp_configured,
+from app.services.auth.ses_email_sender import (
+    EmailSendError,
     send_auth_otp_email,
+    ses_otp_configured,
 )
 from app.services.auth.google_oauth import exchange_google_code, google_authorize_url
 from app.services.auth.msg91_sender import (
@@ -141,7 +141,7 @@ async def otp_config() -> OtpConfigOut:
         sms_configured=msg91["sms_configured"],
         sms_template_configured=msg91["sms_template_configured"],
         email_enabled=settings.auth_otp_email_enabled,
-        email_configured=gmail_otp_configured(),
+        email_configured=ses_otp_configured(),
         invite_sms_enabled=msg91["invite_sms_enabled"],
         invite_sms_configured=msg91["invite_sms_configured"],
         dev_otp_allowed=settings.allow_dev_otp,
@@ -237,9 +237,11 @@ async def login(payload: LoginRequest, request: Request, db: DB) -> TokenRespons
 def _password_reset_error(exc: PasswordResetError) -> HTTPException:
     if exc.code == "invalid_otp":
         return HTTPException(status.HTTP_401_UNAUTHORIZED, detail="invalid_otp")
-    if exc.code == "email_otp_not_configured":
-        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_otp_not_configured")
-    if exc.code in {"gmail_not_configured", "gmail_send_failed", "gmail_dependencies_missing"}:
+    if exc.code in {
+        "email_otp_not_configured",
+        "email_send_failed",
+        "email_dependencies_missing",
+    }:
         return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.code)
     return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.code)
 
@@ -260,7 +262,7 @@ async def password_reset_request(
     return PasswordResetOut(
         status="sent",
         dev_hint=dev_hint,
-        email_enabled=settings.auth_otp_email_enabled and bool(settings.gmail_sender),
+        email_enabled=ses_otp_configured(),
     )
 
 
@@ -346,9 +348,9 @@ def _signup_error(exc: SignupError) -> HTTPException:
     elif exc.code == "invalid_otp":
         status_code = status.HTTP_401_UNAUTHORIZED
     elif exc.code in {
-        "gmail_send_failed",
-        "gmail_not_configured",
-        "gmail_dependencies_missing",
+        "email_send_failed",
+        "email_otp_not_configured",
+        "email_dependencies_missing",
         "sms_not_configured",
         "sms_send_failed",
     }:
@@ -404,7 +406,7 @@ async def signup_send_email_otp(payload: SignupTokenRequest) -> SignupStepOut:
     return SignupStepOut(
         status="email_otp_sent",
         dev_hint=dev_hint,
-        email_enabled=settings.auth_otp_email_enabled and bool(settings.gmail_sender),
+        email_enabled=ses_otp_configured(),
     )
 
 
@@ -499,7 +501,7 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
             sms_enabled=False,
         )
 
-    if gmail_otp_configured():
+    if ses_otp_configured():
         try:
             await send_auth_otp_email(to=identifier, code=code)
             return OTPRequestOut(
@@ -507,10 +509,10 @@ async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
                 dev_hint=None,
                 sms_enabled=False,
             )
-        except GmailSendError as exc:
+        except EmailSendError as exc:
             if not settings.allow_dev_otp:
                 raise HTTPException(
-                    status.HTTP_503_SERVICE_UNAVAILABLE, detail="email_send_failed"
+                    status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.code
                 ) from exc
 
     return OTPRequestOut(

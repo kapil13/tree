@@ -8,7 +8,12 @@ String humanizeAuthError(String code) {
     'invalid_otp': 'Invalid code. Please try again.',
     'signup_session_expired': 'Your signup session expired. Please start again.',
     'email_send_failed': 'Could not send the verification email. Please try again shortly.',
-    'gmail_not_configured': 'Email verification is not configured yet. Contact support.',
+    'email_otp_not_configured':
+        'Email OTP is not configured yet. Use password sign-in or contact support.',
+    'email_dependencies_missing':
+        'Email OTP is not configured yet. Use password sign-in or contact support.',
+    'gmail_not_configured':
+        'Email OTP is not configured yet. Use password sign-in or contact support.',
     'sms_not_configured':
         'SMS is not live yet. Use email sign-in, or try again after SMS is enabled on the server.',
     'sms_send_failed': 'Could not send the SMS code. Please try again shortly.',
@@ -18,8 +23,6 @@ String humanizeAuthError(String code) {
     'rate_limit_unavailable': 'Sign-up is temporarily unavailable. Please try again later.',
     'invalid_credentials': 'Invalid email or password.',
     'user_not_found': 'No account found for this email. Create an account to continue.',
-    'email_otp_not_configured':
-        'Email OTP is not configured yet. Use password sign-in or contact support.',
     'google_oauth_not_configured': 'Google sign-in is not configured on this server.',
     'registration_required': 'No account for this phone. Create an account first.',
   };

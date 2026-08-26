@@ -8,10 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
-from app.services.auth.gmail_sender import (
-    GmailSendError,
-    gmail_otp_configured,
+from app.services.auth.ses_email_sender import (
+    EmailSendError,
     send_password_reset_otp_email,
+    ses_otp_configured,
 )
 from app.services.auth.otp import otp_dev_hint
 from app.services.auth.otp_store import check_otp, issue_otp
@@ -26,7 +26,7 @@ class PasswordResetError(Exception):
 async def request_password_reset(db: AsyncSession, email: str) -> str | None:
     """Send a password-reset OTP when the account exists. Always appears successful."""
     email_lower = email.strip().lower()
-    if not gmail_otp_configured() and not settings.allow_dev_otp:
+    if not ses_otp_configured() and not settings.allow_dev_otp:
         raise PasswordResetError("email_otp_not_configured")
 
     user = (
@@ -36,10 +36,10 @@ async def request_password_reset(db: AsyncSession, email: str) -> str | None:
         return None
 
     code = await issue_otp("password_reset", email_lower)
-    if gmail_otp_configured():
+    if ses_otp_configured():
         try:
             await send_password_reset_otp_email(to=email_lower, code=code)
-        except GmailSendError as exc:
+        except EmailSendError as exc:
             if not settings.allow_dev_otp:
                 raise PasswordResetError(exc.code) from exc
             return otp_dev_hint(code)
