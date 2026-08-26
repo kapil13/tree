@@ -214,6 +214,12 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "met_fetch_failed") {
         return "Wind data for dispersion could not be fetched from Open-Meteo. Retry in a few minutes.";
       }
+      if (data.detail === "fusion_requires_dispersion") {
+        return "Run a dispersion simulation before fusion assessment.";
+      }
+      if (data.detail === "fusion_requires_scan") {
+        return "Run a TROPOMI CH₄ scan before fusion assessment.";
+      }
       const paymentMsg = paymentErrorMessage(data.detail);
       if (paymentMsg) return paymentMsg;
       const authMsg = authErrorMessage(data.detail);
@@ -932,16 +938,57 @@ export type TropomiScanResult = {
   roi_geojson: Record<string, unknown>;
   series: Array<{
     time: string;
-    mean_ppb: number;
-    min_ppb: number;
-    max_ppb: number;
+    mean_ppb: number | null;
+    min_ppb: number | null;
+    max_ppb: number | null;
   }>;
   summary: {
     latest_time: string;
-    latest_mean_ppb: number;
+    latest_mean_ppb: number | null;
     baseline_ppb: number | null;
     anomaly_ppb: number | null;
     months: number;
+  };
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmissionFusionResult = {
+  id: string;
+  project_id: string;
+  work_area_id: string;
+  dispersion_simulation_id: string;
+  satellite_scan_id: string;
+  emission_source_ids: string[];
+  alignment_score: number;
+  verdict: "consistent" | "uncertain" | "misaligned" | "no_signal";
+  result: {
+    alignment_score: number;
+    verdict: "consistent" | "uncertain" | "misaligned" | "no_signal";
+    summary: string;
+    anomaly_ppb: number | null;
+    baseline_ppb: number | null;
+    latest_mean_ppb: number | null;
+    wind_speed_ms: number;
+    wind_direction_deg: number;
+    plume_extends_outside: boolean;
+    downwind_km: number;
+    scan_buffer_km: number;
+    sources: Array<{
+      emission_source_id: string;
+      source_name: string;
+      gas_type: string;
+      emission_rate_g_s: number | null;
+      alignment_score: number;
+      verdict: string;
+      wind_direction_deg: number;
+      downwind_bearing_deg: number | null;
+      bearing_delta_deg: number | null;
+      findings: Array<{ category: string; name: string; severity: string; message: string }>;
+    }>;
+    findings: Array<{ category: string; name: string; severity: string; message: string }>;
+    pipeline: string;
   };
   status: string;
   created_at: string;
@@ -1281,6 +1328,21 @@ export const plantingProjects = {
       await api.get<TropomiScanResult[]>(
         `/v1/planting-projects/${projectId}/work-areas/${workAreaId}/satellite-scans`,
         { params: { limit } },
+      )
+    ).data;
+  },
+  async runEmissionFusion(projectId: string, workAreaId: string) {
+    return (
+      await api.post<EmissionFusionResult>(
+        `/v1/planting-projects/${projectId}/work-areas/${workAreaId}/emission-fusion`,
+        {},
+      )
+    ).data;
+  },
+  async getLatestEmissionFusion(projectId: string, workAreaId: string) {
+    return (
+      await api.get<EmissionFusionResult | null>(
+        `/v1/planting-projects/${projectId}/work-areas/${workAreaId}/emission-fusion/latest`,
       )
     ).data;
   },

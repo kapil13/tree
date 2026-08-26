@@ -10,12 +10,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
-from app.models.emission_source import EmissionSatelliteScan
+from app.models.emission_source import EmissionFusionAssessment, EmissionSatelliteScan
 from app.models.plantation_fence import PlantationFence
 from app.schemas.emissions import (
     DispersionMetOut,
     DispersionRunOut,
     DispersionRunRequest,
+    EmissionFusionOut,
+    EmissionFusionResultOut,
     EmissionSourceCreate,
     EmissionSourceOut,
     EmissionSourceUpdate,
@@ -29,6 +31,12 @@ from app.services.emissions.dispersion.run import (
     get_latest_dispersion,
     load_sources_for_run,
     run_dispersion,
+)
+from app.services.emissions.fusion import (
+    FusionError,
+    assessment_to_dict,
+    get_latest_fusion,
+    run_emission_fusion,
 )
 from app.services.emissions.registry import (
     EmissionRegistryError,
@@ -58,6 +66,7 @@ def _raise_emissions_db_error(exc: Exception) -> None:
             "emission_sources",
             "dispersion_simulations",
             "emission_satellite_scans",
+            "emission_fusion_assessments",
         )
     ):
         raise HTTPException(
@@ -88,6 +97,22 @@ def _tropomi_error(exc: TropomiScanError) -> HTTPException:
     if code == "tropomi_no_data":
         return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code)
     return HTTPException(status.HTTP_502_BAD_GATEWAY, detail=code)
+
+
+def _fusion_error(exc: FusionError) -> HTTPException:
+    code = exc.code
+    if code in {"fusion_requires_dispersion", "fusion_requires_scan"}:
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code)
+    return HTTPException(status.HTTP_400_BAD_REQUEST, detail=code)
+
+
+def _fusion_to_out(row: EmissionFusionAssessment) -> EmissionFusionOut:
+    data = assessment_to_dict(row)
+    result_payload = data.pop("result")
+    return EmissionFusionOut(
+        **data,
+        result=EmissionFusionResultOut.model_validate(result_payload),
+    )
 
 
 def _to_out(row) -> EmissionSourceOut:
@@ -362,3 +387,77 @@ async def list_work_area_satellite_scans(
         _raise_emissions_db_error(exc)
         raise
     return [TropomiScanOut(**scan_to_dict(r)) for r in rows]
+
+
+@router.post(
+    "/{project_id}/work-areas/{work_area_id}/emission-fusion",
+    response_model=EmissionFusionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def run_work_area_emission_fusion(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> EmissionFusionOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(select(PlantationFence).where(PlantationFence.id == work_area_id))
+    work_area = res.scalar_one_or_none()
+    if work_area is None or work_area.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    try:
+        row, _result = await run_emission_fusion(
+            db,
+            project_id=project_id,
+            work_area_id=work_area_id,
+            user=user,
+        )
+    except FusionError as exc:
+        raise _fusion_error(exc) from exc
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
+
+    try:
+        await db.commit()
+        await db.refresh(row)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
+    return _fusion_to_out(row)
+
+
+@router.get(
+    "/{project_id}/work-areas/{work_area_id}/emission-fusion/latest",
+    response_model=EmissionFusionOut | None,
+)
+async def get_latest_work_area_emission_fusion(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> EmissionFusionOut | None:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(select(PlantationFence).where(PlantationFence.id == work_area_id))
+    work_area = res.scalar_one_or_none()
+    if work_area is None or work_area.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    try:
+        row = await get_latest_fusion(db, project_id=project_id, work_area_id=work_area_id)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
+    if row is None:
+        return None
+    return _fusion_to_out(row)

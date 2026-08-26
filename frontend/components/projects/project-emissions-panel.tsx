@@ -2,15 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cloud, Satellite, Wind } from "lucide-react";
+import { Cloud, GitMerge, Satellite, Wind } from "lucide-react";
 import { EmissionsPlumeMap } from "@/components/projects/emissions-plume-map";
 import {
   errorMessage,
   plantingProjects,
   type DispersionRunResult,
+  type EmissionFusionResult,
   type TropomiScanResult,
   type WorkArea,
 } from "@/lib/api";
+
+const VERDICT_LABEL: Record<string, string> = {
+  consistent: "Consistent",
+  uncertain: "Uncertain",
+  misaligned: "Misaligned",
+  no_signal: "No satellite signal",
+};
+
+const VERDICT_STYLE: Record<string, string> = {
+  consistent: "border-emerald-200 bg-emerald-50/60 text-emerald-900",
+  uncertain: "border-amber-200 bg-amber-50/60 text-amber-900",
+  misaligned: "border-rose-200 bg-rose-50/60 text-rose-900",
+  no_signal: "border-stone-200 bg-stone-50 text-stone-800",
+};
 
 function ringCentroid(boundary: WorkArea["boundary"]): [number, number] {
   const ring = boundary.coordinates[0] ?? [];
@@ -38,6 +53,7 @@ export function ProjectEmissionsPanel({
   const [rate, setRate] = useState("10");
   const [plumeResult, setPlumeResult] = useState<DispersionRunResult | null>(null);
   const [tropomiScan, setTropomiScan] = useState<TropomiScanResult | null>(null);
+  const [fusionResult, setFusionResult] = useState<EmissionFusionResult | null>(null);
 
   const selectedArea = useMemo(
     () => workAreas.find((a) => a.id === workAreaId) ?? workAreas[0],
@@ -65,6 +81,12 @@ export function ProjectEmissionsPanel({
     enabled: Boolean(projectId && workAreaId),
   });
 
+  const { data: latestFusion } = useQuery({
+    queryKey: ["emission-fusion-latest", projectId, workAreaId],
+    queryFn: () => plantingProjects.getLatestEmissionFusion(projectId, workAreaId),
+    enabled: Boolean(projectId && workAreaId),
+  });
+
   useEffect(() => {
     if (latestPlume) setPlumeResult(latestPlume);
   }, [latestPlume]);
@@ -72,6 +94,12 @@ export function ProjectEmissionsPanel({
   useEffect(() => {
     if (scanHistory.length > 0) setTropomiScan(scanHistory[0]);
   }, [scanHistory]);
+
+  useEffect(() => {
+    if (latestFusion) setFusionResult(latestFusion);
+  }, [latestFusion]);
+
+  const canRunFusion = Boolean(plumeResult && tropomiScan);
 
   const createMut = useMutation({
     mutationFn: () => {
@@ -123,6 +151,17 @@ export function ProjectEmissionsPanel({
     },
   });
 
+  const fusionMut = useMutation({
+    mutationFn: () => {
+      if (!selectedArea) throw new Error("Select a work area");
+      return plantingProjects.runEmissionFusion(projectId, selectedArea.id);
+    },
+    onSuccess: (data) => {
+      setFusionResult(data);
+      qc.invalidateQueries({ queryKey: ["emission-fusion-latest", projectId, workAreaId] });
+    },
+  });
+
   if (workAreas.length === 0) {
     return (
       <div className="card text-sm text-stone-600">
@@ -140,7 +179,8 @@ export function ProjectEmissionsPanel({
           <p className="mt-1 text-sm text-stone-600">
             Register emission sources inside your work area boundary. Plume modeling uses free
             Open-Meteo wind data and may extend downwind outside the polygon. TROPOMI CH₄ scans
-            use Copernicus Sentinel Hub over a buffered ROI.
+            use Copernicus Sentinel Hub over a buffered ROI. Fusion compares satellite anomaly with
+            declared sources and wind-aligned plumes.
           </p>
         </div>
       </div>
@@ -228,6 +268,20 @@ export function ProjectEmissionsPanel({
           <Satellite className="h-4 w-4" />
           {scanMut.isPending ? "Scanning TROPOMI CH₄…" : "Run TROPOMI CH₄ scan"}
         </button>
+        <button
+          type="button"
+          className="btn-secondary inline-flex items-center gap-2 text-sm"
+          disabled={fusionMut.isPending || !canRunFusion}
+          onClick={() => fusionMut.mutate()}
+          title={
+            canRunFusion
+              ? "Compare TROPOMI anomaly with declared source and plume"
+              : "Run dispersion and TROPOMI scan first"
+          }
+        >
+          <GitMerge className="h-4 w-4" />
+          {fusionMut.isPending ? "Running fusion…" : "Run fusion assessment"}
+        </button>
       </div>
 
       {runMut.error ? (
@@ -235,6 +289,9 @@ export function ProjectEmissionsPanel({
       ) : null}
       {scanMut.error ? (
         <p className="text-sm text-rose-700">{errorMessage(scanMut.error)}</p>
+      ) : null}
+      {fusionMut.error ? (
+        <p className="text-sm text-rose-700">{errorMessage(fusionMut.error)}</p>
       ) : null}
 
       {selectedArea ? (
@@ -267,7 +324,7 @@ export function ProjectEmissionsPanel({
         <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 text-sm text-stone-800">
           <p className="font-semibold text-sky-900">Latest TROPOMI CH₄ scan</p>
           <ul className="mt-2 space-y-1">
-            <li>Latest mean: {tropomiScan.summary.latest_mean_ppb} ppb</li>
+            <li>Latest mean: {tropomiScan.summary.latest_mean_ppb ?? "—"} ppb</li>
             {tropomiScan.summary.baseline_ppb != null ? (
               <li>Baseline (median): {tropomiScan.summary.baseline_ppb} ppb</li>
             ) : null}
@@ -278,6 +335,34 @@ export function ProjectEmissionsPanel({
             <li>ROI buffer: {tropomiScan.buffer_km} km around work area</li>
             <li>Months in series: {tropomiScan.summary.months}</li>
           </ul>
+        </div>
+      ) : null}
+
+      {fusionResult ? (
+        <div
+          className={`rounded-xl border p-4 text-sm ${VERDICT_STYLE[fusionResult.verdict] ?? VERDICT_STYLE.uncertain}`}
+        >
+          <p className="font-semibold">Fusion assessment — {VERDICT_LABEL[fusionResult.verdict] ?? fusionResult.verdict}</p>
+          <p className="mt-2">{fusionResult.result.summary}</p>
+          <ul className="mt-3 space-y-1">
+            <li>Alignment score: {fusionResult.result.alignment_score}/100</li>
+            {fusionResult.result.anomaly_ppb != null ? (
+              <li>TROPOMI anomaly: +{fusionResult.result.anomaly_ppb} ppb</li>
+            ) : null}
+            <li>
+              Wind: {fusionResult.result.wind_speed_ms} m/s from {fusionResult.result.wind_direction_deg}°
+            </li>
+            <li>
+              Plume extends outside work area: {fusionResult.result.plume_extends_outside ? "Yes" : "No"}
+            </li>
+          </ul>
+          {fusionResult.result.findings.length > 0 ? (
+            <ul className="mt-3 space-y-1 text-xs opacity-90">
+              {fusionResult.result.findings.map((f) => (
+                <li key={f.name}>• {f.message}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
     </div>
