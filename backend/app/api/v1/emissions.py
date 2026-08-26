@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.models.emission_source import EmissionSatelliteScan
 from app.models.plantation_fence import PlantationFence
 from app.schemas.emissions import (
     DispersionMetOut,
@@ -18,9 +19,13 @@ from app.schemas.emissions import (
     EmissionSourceOut,
     EmissionSourceUpdate,
     PlumeContourOut,
+    TropomiScanOut,
+    TropomiScanRequest,
 )
 from app.services.emissions.dispersion.run import (
     DispersionError,
+    _simulation_to_out,
+    get_latest_dispersion,
     load_sources_for_run,
     run_dispersion,
 )
@@ -32,6 +37,12 @@ from app.services.emissions.registry import (
     get_emission_source,
     list_emission_sources,
     update_emission_source,
+)
+from app.services.emissions.tropomi import (
+    TropomiScanError,
+    run_tropomi_scan,
+    scan_to_dict,
+    tropomi_configured,
 )
 from app.services.planting_projects.access import can_manage_project, load_project
 
@@ -49,6 +60,17 @@ def _registry_error(exc: EmissionRegistryError) -> HTTPException:
 
 def _dispersion_error(exc: DispersionError) -> HTTPException:
     return HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.code)
+
+
+def _tropomi_error(exc: TropomiScanError) -> HTTPException:
+    code = exc.code
+    if code == "sentinel_hub_not_configured":
+        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
+    if code in {"work_area_not_found", "work_area_project_mismatch"}:
+        return HTTPException(status.HTTP_404_NOT_FOUND, detail=code)
+    if code == "tropomi_no_data":
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code)
+    return HTTPException(status.HTTP_502_BAD_GATEWAY, detail=code)
 
 
 def _to_out(row) -> EmissionSourceOut:
@@ -191,3 +213,98 @@ async def run_project_dispersion(
         contours=[PlumeContourOut(**c) for c in result["contours"]],
         met_snapshot=met,
     )
+
+
+@router.get("/{project_id}/dispersion/latest", response_model=DispersionRunOut | None)
+async def get_latest_project_dispersion(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID,
+) -> DispersionRunOut | None:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    sim = await get_latest_dispersion(db, project_id=project_id, work_area_id=work_area_id)
+    if sim is None:
+        return None
+    data = _simulation_to_out(sim, project_id)
+    return DispersionRunOut(
+        **{
+            **data,
+            "contours": [PlumeContourOut(**c) for c in data["contours"]],
+        }
+    )
+
+
+@router.post(
+    "/{project_id}/work-areas/{work_area_id}/satellite-scan",
+    response_model=TropomiScanOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def run_work_area_satellite_scan(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    payload: TropomiScanRequest,
+    user: CurrentUser,
+    db: DB,
+) -> TropomiScanOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not tropomi_configured():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="sentinel_hub_not_configured")
+
+    res = await db.execute(select(PlantationFence).where(PlantationFence.id == work_area_id))
+    work_area = res.scalar_one_or_none()
+    if work_area is None or work_area.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    try:
+        row = await run_tropomi_scan(
+            db,
+            project_id=project_id,
+            work_area=work_area,
+            user=user,
+            months=payload.months,
+            buffer_km=payload.buffer_km,
+        )
+    except TropomiScanError as exc:
+        raise _tropomi_error(exc) from exc
+
+    await db.commit()
+    await db.refresh(row)
+    return TropomiScanOut(**scan_to_dict(row))
+
+
+@router.get(
+    "/{project_id}/work-areas/{work_area_id}/satellite-scans",
+    response_model=list[TropomiScanOut],
+)
+async def list_work_area_satellite_scans(
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    limit: int = 10,
+) -> list[TropomiScanOut]:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(select(PlantationFence).where(PlantationFence.id == work_area_id))
+    work_area = res.scalar_one_or_none()
+    if work_area is None or work_area.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    rows_res = await db.execute(
+        select(EmissionSatelliteScan)
+        .where(
+            EmissionSatelliteScan.project_id == project_id,
+            EmissionSatelliteScan.work_area_id == work_area_id,
+        )
+        .order_by(EmissionSatelliteScan.created_at.desc())
+        .limit(min(limit, 50))
+    )
+    rows = rows_res.scalars().all()
+    return [TropomiScanOut(**scan_to_dict(r)) for r in rows]

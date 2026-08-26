@@ -108,6 +108,36 @@ def polygon_centroid(geojson: dict[str, Any]) -> tuple[float, float]:
     return c.y, c.x
 
 
+def buffer_polygon_km(geojson: dict[str, Any], buffer_km: float) -> dict[str, Any]:
+    """Buffer a WGS84 polygon outward by ``buffer_km`` and return GeoJSON Polygon."""
+    if buffer_km <= 0:
+        raise ValueError("buffer_km must be positive")
+    poly: Polygon = shape(geojson)  # type: ignore[assignment]
+    if poly.geom_type != "Polygon":
+        raise ValueError("expected Polygon geometry")
+    if poly.is_empty or not poly.is_valid:
+        raise ValueError("invalid polygon geometry")
+
+    lat = poly.centroid.y
+    metres_per_deg_lat = 111_320.0
+    metres_per_deg_lon = max(111_320.0 * math.cos(math.radians(lat)), 1e-6)
+
+    def to_metres(x: float, y: float, z: float | None = None) -> tuple[float, float]:
+        return x * metres_per_deg_lon, y * metres_per_deg_lat
+
+    def to_degrees(x: float, y: float, z: float | None = None) -> tuple[float, float]:
+        return x / metres_per_deg_lon, y / metres_per_deg_lat
+
+    poly_m = transform(to_metres, poly)
+    buffered_m = poly_m.buffer(buffer_km * 1000.0, join_style=2)
+    buffered_deg = transform(to_degrees, buffered_m)
+    if buffered_deg.geom_type == "MultiPolygon":
+        buffered_deg = max(buffered_deg.geoms, key=lambda g: g.area)
+    if buffered_deg.geom_type != "Polygon":
+        raise ValueError("buffer did not produce a polygon")
+    return mapping(buffered_deg)
+
+
 def polygon_coordinates(geojson: dict[str, Any]) -> list[list[float]]:
     """Outer ring as [[lng, lat], ...] (closed)."""
     geom: Polygon = shape(geojson)  # type: ignore[assignment]

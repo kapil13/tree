@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.emission_source import DispersionSimulation, EmissionSource
 from app.models.plantation_fence import PlantationFence
-from app.schemas.emissions import DispersionRunRequest
+from app.schemas.emissions import DispersionMetOut, DispersionRunRequest
 from app.services.emissions.dispersion.gaussian import run_gaussian_plume
 from app.services.emissions.registry import (
     effective_emission_rate_g_s,
@@ -111,3 +111,46 @@ async def load_sources_for_run(
             raise DispersionError("emission_source_not_found")
         rows.append(row)
     return rows
+
+
+def _simulation_to_out(sim: DispersionSimulation, project_id: uuid.UUID) -> dict:
+    result = sim.result or {}
+    met = DispersionMetOut.model_validate(sim.met_snapshot)
+    return {
+        "simulation_id": sim.id,
+        "project_id": project_id,
+        "work_area_id": sim.work_area_id,
+        "gas_type": result.get("gas_type", "CH4"),
+        "emission_rate_g_s": result.get("emission_rate_g_s", 0.0),
+        "wind_speed_ms": result.get("wind_speed_ms", 0.0),
+        "wind_direction_deg": result.get("wind_direction_deg", 0.0),
+        "stability_class": result.get("stability_class", "D"),
+        "max_concentration_ug_m3": result.get("max_concentration_ug_m3", 0.0),
+        "downwind_km": result.get("downwind_km", 0.0),
+        "crosswind_km": result.get("crosswind_km", 0.0),
+        "inside_boundary": result.get("inside_boundary", {}),
+        "downwind_impact": result.get("downwind_impact", {}),
+        "contours": result.get("contours", []),
+        "met_snapshot": met,
+    }
+
+
+async def get_latest_dispersion(
+    db: AsyncSession,
+    *,
+    project_id: uuid.UUID,
+    work_area_id: uuid.UUID,
+) -> DispersionSimulation | None:
+    from sqlalchemy import select
+
+    res = await db.execute(
+        select(DispersionSimulation)
+        .where(
+            DispersionSimulation.project_id == project_id,
+            DispersionSimulation.work_area_id == work_area_id,
+            DispersionSimulation.status == "complete",
+        )
+        .order_by(DispersionSimulation.created_at.desc())
+        .limit(1)
+    )
+    return res.scalar_one_or_none()

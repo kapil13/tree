@@ -137,3 +137,38 @@ class DispersionRunOut(BaseModel):
     downwind_impact: dict[str, Any]
     contours: list[PlumeContourOut]
     met_snapshot: DispersionMetOut
+
+
+class TropomiScanRequest(BaseModel):
+    months: int = Field(default=12, ge=3, le=24)
+    buffer_km: float | None = Field(default=None, ge=5.0, le=50.0)
+
+
+class TropomiSeriesPoint(BaseModel):
+    time: datetime
+    mean_ppb: float
+    min_ppb: float
+    max_ppb: float
+
+
+class TropomiScanSummary(BaseModel):
+    latest_time: datetime
+    latest_mean_ppb: float
+    baseline_ppb: float | None = None
+    anomaly_ppb: float | None = None
+    months: int
+
+
+class TropomiScanOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    work_area_id: uuid.UUID
+    gas_type: str
+    provider: str
+    buffer_km: float
+    roi_geojson: dict[str, Any]
+    series: list[TropomiSeriesPoint]
+    summary: TropomiScanSummary
+    status: str
+    created_at: datetime
+    updated_at: datetime
