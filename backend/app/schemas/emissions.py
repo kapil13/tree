@@ -146,14 +146,14 @@ class TropomiScanRequest(BaseModel):
 
 class TropomiSeriesPoint(BaseModel):
     time: datetime
-    mean_ppb: float
-    min_ppb: float
-    max_ppb: float
+    mean_ppb: float | None = None
+    min_ppb: float | None = None
+    max_ppb: float | None = None
 
 
 class TropomiScanSummary(BaseModel):
     latest_time: datetime
-    latest_mean_ppb: float
+    latest_mean_ppb: float | None = None
     baseline_ppb: float | None = None
     anomaly_ppb: float | None = None
     months: int
