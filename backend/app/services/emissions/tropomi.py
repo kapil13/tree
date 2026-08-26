@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import math
 import statistics
 import uuid
 from datetime import datetime
@@ -26,6 +28,32 @@ class TropomiScanError(Exception):
         super().__init__(code)
 
 
+def _sanitize_ppb(value: float) -> float | None:
+    """Convert non-finite CH₄ ppb values to None for JSON/JSONB storage."""
+    if not math.isfinite(value):
+        return None
+    return round(value, 2)
+
+
+def _json_safe_value(value: Any) -> Any:
+    if isinstance(value, float):
+        return None if not math.isfinite(value) else value
+    if isinstance(value, dict):
+        return {k: _json_safe_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe_value(v) for v in value]
+    return value
+
+
+def json_safe_scan_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Ensure series/summary contain no NaN or Infinity before JSONB insert."""
+    safe = _json_safe_value(payload)
+    assert isinstance(safe, dict)
+    # Fail fast in dev/tests if anything non-finite slipped through.
+    json.dumps(safe, allow_nan=False)
+    return safe
+
+
 def tropomi_configured() -> bool:
     return bool(settings.sentinel_hub_client_id and settings.sentinel_hub_client_secret)
 
@@ -41,14 +69,15 @@ def _client():
     )
 
 
-def _baseline_ppb(values: list[float]) -> float | None:
-    if not values:
+def _baseline_ppb(values: list[float | None]) -> float | None:
+    finite = [v for v in values if v is not None and math.isfinite(v)]
+    if not finite:
         return None
-    if len(values) == 1:
-        return values[0]
+    if len(finite) == 1:
+        return finite[0]
     # Use median of all but the latest month as background.
-    baseline_vals = values[:-1] if len(values) > 1 else values
-    return round(statistics.median(baseline_vals), 2)
+    baseline_vals = finite[:-1] if len(finite) > 1 else finite
+    return _sanitize_ppb(float(statistics.median(baseline_vals)))
 
 
 def _series_payload(
@@ -59,9 +88,9 @@ def _series_payload(
         points.append(
             {
                 "time": ts.isoformat(),
-                "mean_ppb": round(stats["mean"], 2),
-                "min_ppb": round(stats["min"], 2),
-                "max_ppb": round(stats["max"], 2),
+                "mean_ppb": _sanitize_ppb(float(stats["mean"])),
+                "min_ppb": _sanitize_ppb(float(stats["min"])),
+                "max_ppb": _sanitize_ppb(float(stats["max"])),
             }
         )
     if not points:
@@ -71,11 +100,12 @@ def _series_payload(
     latest = points[-1]
     baseline = _baseline_ppb(means)
     anomaly = None
-    if baseline is not None:
-        anomaly = round(latest["mean_ppb"] - baseline, 2)
+    latest_mean = latest["mean_ppb"]
+    if baseline is not None and latest_mean is not None:
+        anomaly = _sanitize_ppb(latest_mean - baseline)
     summary = {
         "latest_time": latest["time"],
-        "latest_mean_ppb": latest["mean_ppb"],
+        "latest_mean_ppb": latest_mean,
         "baseline_ppb": baseline,
         "anomaly_ppb": anomaly,
         "months": len(points),
@@ -111,6 +141,10 @@ async def run_tropomi_scan(
     points, summary = _series_payload(series_raw)
     if not points:
         raise TropomiScanError("tropomi_no_data")
+
+    safe_payload = json_safe_scan_payload({"series": points, "summary": summary})
+    points = safe_payload["series"]
+    summary = safe_payload["summary"]
 
     row = EmissionSatelliteScan(
         project_id=project_id,
