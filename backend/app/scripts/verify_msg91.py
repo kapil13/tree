@@ -17,6 +17,7 @@ from app.services.auth.msg91_sender import (
     send_auth_otp_sms,
     sms_auth_configured,
 )
+from app.services.auth.ses_email_sender import ses_otp_configured
 
 
 def _status_line(label: str, ok: bool, detail: str = "") -> str:
@@ -56,8 +57,9 @@ def print_config_report() -> int:
             settings.auth_otp_email_enabled,
         ),
         _status_line(
-            "GMAIL_SENDER + service account",
-            bool(settings.gmail_sender and settings.google_service_account_json),
+            "SES_SENDER + AWS credentials",
+            ses_otp_configured(),
+            settings.ses_sender or "empty",
         ),
         _status_line("dev_otp_allowed", settings.allow_dev_otp),
     ]
@@ -133,11 +135,7 @@ def main() -> int:
                 {
                     **msg91,
                     "email_enabled": settings.auth_otp_email_enabled,
-                    "email_configured": bool(
-                        settings.auth_otp_email_enabled
-                        and settings.gmail_sender
-                        and settings.google_service_account_json
-                    ),
+                    "email_configured": ses_otp_configured(),
                     "dev_otp_allowed": settings.allow_dev_otp,
                 },
                 indent=2,

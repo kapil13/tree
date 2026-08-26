@@ -1,4 +1,4 @@
-"""Login email OTP request sends via Gmail when configured."""
+"""Login email OTP request sends via Amazon SES when configured."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from app.main import app
 
 
 @pytest.mark.asyncio
-async def test_request_otp_email_sends_gmail():
+async def test_request_otp_email_sends_ses():
     with (
         patch("app.api.v1.auth.verify_captcha_token", new_callable=AsyncMock),
         patch("app.api.v1.auth.issue_otp", new_callable=AsyncMock, return_value="123456"),
-        patch("app.api.v1.auth.gmail_otp_configured", return_value=True),
+        patch("app.api.v1.auth.ses_otp_configured", return_value=True),
         patch("app.api.v1.auth.send_auth_otp_email", new_callable=AsyncMock) as mock_send,
     ):
         transport = ASGITransport(app=app)
@@ -32,11 +32,11 @@ async def test_request_otp_email_sends_gmail():
 
 
 @pytest.mark.asyncio
-async def test_request_otp_email_returns_dev_hint_when_gmail_disabled():
+async def test_request_otp_email_returns_dev_hint_when_ses_disabled():
     with (
         patch("app.api.v1.auth.verify_captcha_token", new_callable=AsyncMock),
         patch("app.api.v1.auth.issue_otp", new_callable=AsyncMock, return_value="654321"),
-        patch("app.api.v1.auth.gmail_otp_configured", return_value=False),
+        patch("app.api.v1.auth.ses_otp_configured", return_value=False),
         patch("app.api.v1.auth.settings") as mock_settings,
     ):
         mock_settings.auth_otp_email_enabled = True

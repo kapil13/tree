@@ -92,8 +92,9 @@ class Settings(BaseSettings):
     expose_metrics: bool | None = None
     # Expose /docs /redoc /openapi.json (default off in staging/production)
     expose_api_docs: bool | None = None
-    # Email OTP — Gmail API + Google Workspace domain delegation
+    # Email OTP — Amazon SES (login, signup, password reset)
     auth_otp_email_enabled: bool = False
+    # Gmail API — org invites and program-access notifications only
     gmail_sender: str | None = None
     google_service_account_json: str | None = None
     # Org invite notifications (independent toggles — enable when keys are ready)

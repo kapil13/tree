@@ -20,7 +20,7 @@ async def test_request_password_reset_unknown_email_returns_none():
     db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
     with (
         patch("app.services.auth.password_reset.settings") as mock_settings,
-        patch("app.services.auth.password_reset.gmail_otp_configured", return_value=True),
+        patch("app.services.auth.password_reset.ses_otp_configured", return_value=True),
         patch("app.services.auth.password_reset.issue_otp") as mock_issue,
         patch("app.services.auth.password_reset.send_password_reset_otp_email") as mock_send,
     ):
@@ -38,7 +38,7 @@ async def test_request_password_reset_sends_email_for_existing_user():
     db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=user)))
     with (
         patch("app.services.auth.password_reset.settings") as mock_settings,
-        patch("app.services.auth.password_reset.gmail_otp_configured", return_value=True),
+        patch("app.services.auth.password_reset.ses_otp_configured", return_value=True),
         patch("app.services.auth.password_reset.issue_otp", AsyncMock(return_value="123456")),
         patch(
             "app.services.auth.password_reset.send_password_reset_otp_email",

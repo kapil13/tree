@@ -8,14 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.user import User
-from app.services.auth.gmail_sender import (
-    GmailSendError,
-    gmail_otp_configured,
-    send_signup_otp_email,
-)
 from app.services.auth.otp import otp_dev_hint
 from app.services.auth.otp_store import issue_otp
 from app.services.auth.password_reset import PasswordResetError, request_password_reset
+from app.services.auth.ses_email_sender import (
+    EmailSendError,
+    send_signup_otp_email,
+    ses_otp_configured,
+)
 from app.services.auth.sessions import revoke_all_user_sessions
 
 
@@ -50,14 +50,14 @@ async def admin_resend_verification(
     if user.is_verified and user.email_verified_at is not None:
         raise SupportActionError("already_verified")
 
-    if not gmail_otp_configured() and not settings.allow_dev_otp:
+    if not ses_otp_configured() and not settings.allow_dev_otp:
         raise SupportActionError("email_otp_not_configured")
 
     code = await issue_otp("signup_email", user.email)
-    if gmail_otp_configured():
+    if ses_otp_configured():
         try:
             await send_signup_otp_email(to=user.email, code=code)
-        except GmailSendError as exc:
+        except EmailSendError as exc:
             if not settings.allow_dev_otp:
                 raise SupportActionError(exc.code) from exc
             return otp_dev_hint(code)
