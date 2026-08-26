@@ -8,10 +8,13 @@ import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
 import { humanizeValidationErrors } from "@/lib/tree-validation-errors";
 import { useAuth } from "@/lib/auth-store";
 
-const PRODUCTION_API = "https://api.aranyix.tech/api";
-
 function isAranyixHost(host: string): boolean {
   return host === "aranyix.tech" || host === "www.aranyix.tech" || host.endsWith(".aranyix.tech");
+}
+
+function normalizeApiBase(raw: string): string {
+  const base = raw.replace(/\/$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
 }
 
 /** Resolve API base URL at call time (never rely on module-load / SSR values in the browser). */
@@ -19,19 +22,21 @@ export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (isAranyixHost(host)) {
-      return PRODUCTION_API;
+      // Production default: same-origin /api via Caddy (see infrastructure/hostinger/Caddyfile).
+      // Override only when NEXT_PUBLIC_API_URL is set at frontend build time.
+      const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+      if (raw) return normalizeApiBase(raw);
+      return "/api";
     }
     if (host === "localhost" || host === "127.0.0.1") {
       const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
       if (!raw) return "/api";
-      const base = raw.replace(/\/$/, "");
-      return base.endsWith("/api") ? base : `${base}/api`;
+      return normalizeApiBase(raw);
     }
   }
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!raw) return "/api";
-  const base = raw.replace(/\/$/, "");
-  return base.endsWith("/api") ? base : `${base}/api`;
+  return normalizeApiBase(raw);
 }
 
 /** @deprecated Use getApiBaseUrl() — kept for logging only. */
@@ -131,7 +136,11 @@ export function errorMessage(err: unknown): string {
           return "Photo storage is not reachable from the browser. Upload through the API instead — rebuild/redeploy the frontend.";
         }
         const base = getApiBaseUrl();
-        return `Cannot reach the API (${base}). Open https://api.aranyix.tech/health in a new tab — if that works, hard refresh this page (Ctrl+Shift+R) or run: cd infrastructure/hostinger && FORCE_FRONTEND_REBUILD=1 ./deploy.sh`;
+        const sameOriginProbe =
+          typeof window !== "undefined"
+            ? `${window.location.origin}/api/v1/health/live`
+            : "https://aranyix.tech/api/v1/health/live";
+        return `Cannot reach the API (${base}). Open ${sameOriginProbe} in a new tab — if that works, hard refresh (Ctrl+Shift+R). If not, on the VPS run: cd infrastructure/hostinger && ./recover-backend.sh`;
       }
       return err.message;
     }
