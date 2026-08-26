@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
@@ -122,7 +123,7 @@ async def delete_project_emission_source(
     source_id: uuid.UUID,
     user: WriteAccess,
     db: DB,
-) -> None:
+) -> Response:
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -133,6 +134,7 @@ async def delete_project_emission_source(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="emission_source_not_found")
     await delete_emission_source(db, row)
     await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{project_id}/dispersion/run", response_model=DispersionRunOut)
