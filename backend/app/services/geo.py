@@ -6,8 +6,39 @@ import math
 from typing import Any
 
 from geoalchemy2.shape import to_shape
-from shapely.geometry import LineString, Polygon, mapping, shape
+from shapely.geometry import LineString, Point, Polygon, mapping, shape
 from shapely.ops import transform
+
+
+def geojson_point_to_wkt(geojson: dict[str, Any]) -> str:
+    geom = shape(geojson)
+    if geom.geom_type != "Point":
+        raise ValueError("expected Point geometry")
+    return geom.wkt
+
+
+def geojson_geometry_to_wkt(geojson: dict[str, Any]) -> str:
+    geom = shape(geojson)
+    if geom.geom_type not in {"Point", "Polygon"}:
+        raise ValueError("expected Point or Polygon geometry")
+    if geom.is_empty or not geom.is_valid:
+        raise ValueError("invalid geometry")
+    return geom.wkt
+
+
+def geography_to_geojson_geometry(boundary: Any) -> dict[str, Any]:
+    geom = to_shape(boundary)
+    if geom.geom_type == "MultiPolygon":
+        geom = max(geom.geoms, key=lambda g: g.area)
+    if geom.geom_type not in {"Point", "Polygon"}:
+        raise ValueError("stored geometry is not a point or polygon")
+    return mapping(geom)
+
+
+def point_lat_lon(geojson: dict[str, Any]) -> tuple[float, float]:
+    """Return (lat, lon) from GeoJSON Point."""
+    geom: Point = shape(geojson)  # type: ignore[assignment]
+    return geom.y, geom.x
 
 
 def geojson_polygon_to_wkt(geojson: dict[str, Any]) -> str:

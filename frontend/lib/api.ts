@@ -857,6 +857,42 @@ export type WorkArea = {
   updated_at: string;
 };
 
+export type EmissionSource = {
+  id: string;
+  project_id: string;
+  work_area_id: string;
+  name: string;
+  source_type: string;
+  gas_type: string;
+  geometry_kind: string;
+  geometry: { type: string; coordinates: unknown };
+  emission_rate_g_s: number | null;
+  annual_emission_tons: number | null;
+  release_height_m: number;
+  status: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DispersionRunResult = {
+  simulation_id: string;
+  project_id: string;
+  work_area_id: string;
+  gas_type: string;
+  emission_rate_g_s: number;
+  wind_speed_ms: number;
+  wind_direction_deg: number;
+  stability_class: string;
+  max_concentration_ug_m3: number;
+  downwind_km: number;
+  crosswind_km: number;
+  inside_boundary: Record<string, unknown>;
+  downwind_impact: Record<string, unknown>;
+  contours: Array<{ threshold_ug_m3: number; geojson: Record<string, unknown> }>;
+  met_snapshot: Record<string, unknown>;
+};
+
 export type ComplianceCheck = {
   passed: boolean;
   mode: ComplianceMode;
@@ -1117,6 +1153,53 @@ export const plantingProjects = {
   },
   async deleteWorkArea(projectId: string, workAreaId: string) {
     await api.delete(`/v1/planting-projects/${projectId}/work-areas/${workAreaId}`);
+  },
+  async listEmissionSources(projectId: string, workAreaId?: string) {
+    return (
+      await api.get<EmissionSource[]>(`/v1/planting-projects/${projectId}/emission-sources`, {
+        params: workAreaId ? { work_area_id: workAreaId } : undefined,
+      })
+    ).data;
+  },
+  async createEmissionSource(
+    projectId: string,
+    payload: {
+      work_area_id: string;
+      name: string;
+      source_type: string;
+      gas_type: string;
+      geometry_kind: "point" | "area";
+      point?: { type: "Point"; coordinates: number[] };
+      area?: GeoJsonPolygon;
+      emission_rate_g_s?: number;
+      annual_emission_tons?: number;
+      release_height_m?: number;
+    },
+  ) {
+    return (
+      await api.post<EmissionSource>(
+        `/v1/planting-projects/${projectId}/emission-sources`,
+        payload,
+      )
+    ).data;
+  },
+  async runDispersion(
+    projectId: string,
+    payload: {
+      work_area_id: string;
+      emission_source_ids: string[];
+      duration_hours?: number;
+      downwind_km?: number;
+      crosswind_km?: number;
+      met_hour_index?: number;
+    },
+  ) {
+    return (
+      await api.post<DispersionRunResult>(
+        `/v1/planting-projects/${projectId}/dispersion/run`,
+        payload,
+      )
+    ).data;
   },
   async exportMrv(projectId: string, format: "pdf" | "xlsx" = "pdf") {
     const response = await api.get(`/v1/planting-projects/${projectId}/mrv-export`, {

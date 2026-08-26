@@ -17,6 +17,7 @@ from app.api.v1 import (
     credits,
     dashboard,
     devices,
+    emissions,
     evidence,
     health,
     intelligence,
@@ -58,6 +59,7 @@ api_router.include_router(plantation_fences.router)
 api_router.include_router(planting_programs.router)
 api_router.include_router(schemes.router)
 api_router.include_router(planting_projects.router)
+api_router.include_router(emissions.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)

@@ -12,6 +12,7 @@ from app.models.compliance_checklist_override import ComplianceChecklistOverride
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.credit_serial import CreditSerial
 from app.models.credit_transfer import CreditTransfer
+from app.models.emission_source import DispersionSimulation, EmissionSource
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.organization import Organization
 from app.models.organization_invite import OrganizationInvite
@@ -83,6 +84,8 @@ __all__ = [
     "CreditSerial",
     "CreditTransfer",
     "CreditLedgerEvent",
+    "DispersionSimulation",
+    "EmissionSource",
     "ProjectChecklistResponse",
     "ProjectCreditLedger",
     "PublicVerificationLink",
