@@ -13,14 +13,14 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-echo "==> Alembic head (expect 0056_emission_satellite_scans or newer)"
+echo "==> Alembic head (expect 0057_emission_fusion_assessments or newer)"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic current
 
 echo ""
 echo "==> Emissions tables present?"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T postgres \
   psql -U "${POSTGRES_USER:-byot}" -d "${POSTGRES_DB:-byot}" -c \
-  "SELECT tablename FROM pg_tables WHERE tablename IN ('emission_sources','dispersion_simulations','emission_satellite_scans') ORDER BY 1;"
+  "SELECT tablename FROM pg_tables WHERE tablename IN ('emission_sources','dispersion_simulations','emission_satellite_scans','emission_fusion_assessments') ORDER BY 1;"
 
 echo ""
 echo "==> Sentinel Hub credentials"

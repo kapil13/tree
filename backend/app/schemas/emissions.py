@@ -172,3 +172,57 @@ class TropomiScanOut(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class EmissionFusionFinding(BaseModel):
+    category: str
+    name: str
+    severity: str
+    message: str
+    confidence: float = 0.7
+
+
+class SourceFusionDetailOut(BaseModel):
+    emission_source_id: uuid.UUID
+    source_name: str
+    gas_type: str
+    emission_rate_g_s: float | None = None
+    alignment_score: float
+    verdict: Literal["consistent", "uncertain", "misaligned", "no_signal"]
+    wind_direction_deg: float
+    downwind_bearing_deg: float | None = None
+    bearing_delta_deg: float | None = None
+    findings: list[EmissionFusionFinding] = Field(default_factory=list)
+
+
+class EmissionFusionResultOut(BaseModel):
+    alignment_score: float
+    verdict: Literal["consistent", "uncertain", "misaligned", "no_signal"]
+    summary: str
+    anomaly_ppb: float | None = None
+    baseline_ppb: float | None = None
+    latest_mean_ppb: float | None = None
+    wind_speed_ms: float
+    wind_direction_deg: float
+    plume_extends_outside: bool
+    downwind_km: float
+    scan_buffer_km: float
+    sources: list[SourceFusionDetailOut] = Field(default_factory=list)
+    findings: list[EmissionFusionFinding] = Field(default_factory=list)
+    pipeline: str
+    raw_signals: dict[str, Any] = Field(default_factory=dict)
+
+
+class EmissionFusionOut(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    work_area_id: uuid.UUID
+    dispersion_simulation_id: uuid.UUID
+    satellite_scan_id: uuid.UUID
+    emission_source_ids: list[str] = Field(default_factory=list)
+    alignment_score: float
+    verdict: Literal["consistent", "uncertain", "misaligned", "no_signal"]
+    result: EmissionFusionResultOut
+    status: str
+    created_at: datetime
+    updated_at: datetime

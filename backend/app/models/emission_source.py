@@ -115,3 +115,38 @@ class EmissionSatelliteScan(UUIDPKMixin, TimestampMixin, Base):
         Index("emission_satellite_scans_project_idx", "project_id"),
         Index("emission_satellite_scans_work_area_idx", "work_area_id"),
     )
+
+
+class EmissionFusionAssessment(UUIDPKMixin, TimestampMixin, Base):
+    """Stored wind-aligned CH₄ fusion of TROPOMI anomaly + dispersion + sources."""
+
+    __tablename__ = "emission_fusion_assessments"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_projects.id", ondelete="CASCADE"), nullable=False
+    )
+    work_area_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plantation_fences.id", ondelete="CASCADE"), nullable=False
+    )
+    dispersion_simulation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("dispersion_simulations.id", ondelete="CASCADE"), nullable=False
+    )
+    satellite_scan_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("emission_satellite_scans.id", ondelete="CASCADE"), nullable=False
+    )
+    emission_source_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    alignment_score: Mapped[float] = mapped_column(Numeric(5, 1), nullable=False, default=0.0)
+    verdict: Mapped[str] = mapped_column(String(16), nullable=False, default="uncertain")
+    result: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="complete")
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+    project = relationship("PlantingProject", foreign_keys=[project_id])
+    work_area = relationship("PlantationFence", foreign_keys=[work_area_id])
+
+    __table_args__ = (
+        Index("emission_fusion_assessments_project_idx", "project_id"),
+        Index("emission_fusion_assessments_work_area_idx", "work_area_id"),
+    )
