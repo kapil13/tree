@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     # Weather (Open-Meteo — free, no API key)
     open_meteo_api_url: str = "https://api.open-meteo.com/v1"
 
+    # Copernicus CDS — free ERA5 reanalysis for GHG dispersion (separate from CDSE Sentinel Hub)
+    cds_api_url: str = "https://cds.climate.copernicus.eu/api"
+    cds_api_key: str | None = None
+    emission_satellite_buffer_km: float = 25.0
+
     # OAuth
     google_client_id: str | None = None
     google_client_secret: str | None = None

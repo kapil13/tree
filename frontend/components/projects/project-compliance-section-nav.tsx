@@ -9,6 +9,7 @@ import {
   ListChecks,
   Shield,
   TrendingDown,
+  Wind,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -18,6 +19,7 @@ export type ComplianceSection =
   | "checklist"
   | "safeguards"
   | "integrity"
+  | "emissions"
   | "pest_intel"
   | "exports"
   | "share"
@@ -40,6 +42,7 @@ export function complianceSectionDefs(
     { id: "checklist", label: "Eligibility checklist", shortLabel: "Checklist", icon: ClipboardCheck },
     { id: "safeguards", label: "Safeguards & tenure", shortLabel: "Safeguards", icon: Shield },
     { id: "integrity", label: "Carbon integrity", shortLabel: "Integrity", icon: TrendingDown },
+    { id: "emissions", label: "GHG & methane", shortLabel: "GHG", icon: Wind },
   ];
   if (showPestIntel) {
     sections.push({

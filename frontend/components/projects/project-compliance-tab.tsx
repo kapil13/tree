@@ -11,6 +11,7 @@ import {
   ProjectComplianceSectionNav,
 } from "@/components/projects/project-compliance-section-nav";
 import { ProjectComplianceWorkflowPanel } from "@/components/projects/project-compliance-workflow-panel";
+import { ProjectEmissionsPanel } from "@/components/projects/project-emissions-panel";
 import { ProjectPermanencePanel } from "@/components/projects/project-permanence-panel";
 import { ProjectSafeguardsPanel } from "@/components/projects/project-safeguards-panel";
 import {
@@ -309,6 +310,10 @@ export function ProjectComplianceTab({
             projectId={projectId}
             onNavigateCredits={onNavigateTab ? () => onNavigateTab("credits") : undefined}
           />
+        )}
+
+        {section === "emissions" && (
+          <ProjectEmissionsPanel projectId={projectId} workAreas={workAreas} />
         )}
 
         {section === "pest_intel" && showPestIntel && (
