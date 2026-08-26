@@ -893,6 +893,32 @@ export type DispersionRunResult = {
   met_snapshot: Record<string, unknown>;
 };
 
+export type TropomiScanResult = {
+  id: string;
+  project_id: string;
+  work_area_id: string;
+  gas_type: string;
+  provider: string;
+  buffer_km: number;
+  roi_geojson: Record<string, unknown>;
+  series: Array<{
+    time: string;
+    mean_ppb: number;
+    min_ppb: number;
+    max_ppb: number;
+  }>;
+  summary: {
+    latest_time: string;
+    latest_mean_ppb: number;
+    baseline_ppb: number | null;
+    anomaly_ppb: number | null;
+    months: number;
+  };
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ComplianceCheck = {
   passed: boolean;
   mode: ComplianceMode;
@@ -1198,6 +1224,34 @@ export const plantingProjects = {
       await api.post<DispersionRunResult>(
         `/v1/planting-projects/${projectId}/dispersion/run`,
         payload,
+      )
+    ).data;
+  },
+  async getLatestDispersion(projectId: string, workAreaId: string) {
+    return (
+      await api.get<DispersionRunResult | null>(
+        `/v1/planting-projects/${projectId}/dispersion/latest`,
+        { params: { work_area_id: workAreaId } },
+      )
+    ).data;
+  },
+  async runTropomiScan(
+    projectId: string,
+    workAreaId: string,
+    payload?: { months?: number; buffer_km?: number },
+  ) {
+    return (
+      await api.post<TropomiScanResult>(
+        `/v1/planting-projects/${projectId}/work-areas/${workAreaId}/satellite-scan`,
+        payload ?? {},
+      )
+    ).data;
+  },
+  async listTropomiScans(projectId: string, workAreaId: string, limit = 5) {
+    return (
+      await api.get<TropomiScanResult[]>(
+        `/v1/planting-projects/${projectId}/work-areas/${workAreaId}/satellite-scans`,
+        { params: { limit } },
       )
     ).data;
   },

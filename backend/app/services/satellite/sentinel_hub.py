@@ -66,6 +66,26 @@ function evaluatePixel(samples) {
 }
 """
 
+S5P_CH4_EVALSCRIPT = """//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["CH4", "dataMask"] }],
+    output: [
+      { id: "data", bands: 1 },
+      { id: "dataMask", bands: 1 }
+    ]
+  };
+}
+function evaluatePixel(samples) {
+  var valid = samples.dataMask;
+  if (samples.CH4 == null || samples.CH4 <= 0) valid = 0;
+  return {
+    data: [samples.CH4],
+    dataMask: [valid]
+  };
+}
+"""
+
 S1_SAR_EVALSCRIPT = """//VERSION=3
 function setup() {
   return {
@@ -469,6 +489,95 @@ class SentinelHubClient:
             return None
         candidates.sort(key=lambda x: x[0])
         return candidates[-1]
+
+    def _build_s5p_statistics_request(
+        self,
+        bounds: dict[str, Any],
+        *,
+        time_from: datetime,
+        time_to: datetime,
+        interval: str,
+    ) -> dict[str, Any]:
+        return {
+            "input": {
+                "bounds": bounds,
+                "data": [
+                    {
+                        "type": "sentinel-5p-l2",
+                        "dataFilter": {
+                            "mosaickingOrder": "mostRecent",
+                        },
+                    }
+                ],
+            },
+            "aggregation": {
+                "timeRange": {
+                    "from": time_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "to": time_to.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                },
+                "aggregationInterval": {"of": interval},
+                "evalscript": S5P_CH4_EVALSCRIPT,
+                "resx": 7000,
+                "resy": 7000,
+            },
+        }
+
+    async def fetch_s5p_ch4_statistics(
+        self,
+        bounds: dict[str, Any],
+        *,
+        time_from: datetime,
+        time_to: datetime,
+        interval: str = "P1M",
+    ) -> list[dict[str, Any]]:
+        token = await self._get_token()
+        body = self._build_s5p_statistics_request(
+            bounds, time_from=time_from, time_to=time_to, interval=interval
+        )
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{self._api_base_url}/api/v1/statistics",
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+            )
+            if resp.status_code >= 400:
+                log.warning(
+                    "sentinel_hub_s5p_statistics_error",
+                    status=resp.status_code,
+                    body=resp.text[:500],
+                )
+            resp.raise_for_status()
+            payload = resp.json()
+
+        if payload.get("status") not in (None, "OK"):
+            raise RuntimeError(f"sentinel_hub_status_{payload.get('status')}")
+        return list(payload.get("data") or [])
+
+    async def fetch_polygon_s5p_ch4_series(
+        self, polygon_coords: list[list[float]], *, months: int = 12
+    ) -> list[tuple[datetime, dict[str, float]]]:
+        now = datetime.now(UTC)
+        time_from = now - timedelta(days=30 * months)
+        bounds = self._bounds_from_polygon(polygon_coords)
+        entries = await self.fetch_s5p_ch4_statistics(
+            bounds, time_from=time_from, time_to=now, interval="P1M"
+        )
+        out: list[tuple[datetime, dict[str, float]]] = []
+        for entry in entries:
+            stats = _stats_from_entry(entry)
+            if not stats:
+                continue
+            interval = entry.get("interval") or {}
+            ts_raw = interval.get("from") or interval.get("to")
+            if not ts_raw:
+                continue
+            out.append((_parse_iso(ts_raw), stats))
+        out.sort(key=lambda x: x[0])
+        return out
 
     async def fetch_monthly_series(
         self, lat: float, lon: float, *, months: int = 12

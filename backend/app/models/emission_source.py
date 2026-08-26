@@ -84,3 +84,34 @@ class DispersionSimulation(UUIDPKMixin, TimestampMixin, Base):
         Index("dispersion_simulations_project_idx", "project_id"),
         Index("dispersion_simulations_work_area_idx", "work_area_id"),
     )
+
+
+class EmissionSatelliteScan(UUIDPKMixin, TimestampMixin, Base):
+    """Stored TROPOMI CH₄ scan over work area + buffer ROI."""
+
+    __tablename__ = "emission_satellite_scans"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_projects.id", ondelete="CASCADE"), nullable=False
+    )
+    work_area_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plantation_fences.id", ondelete="CASCADE"), nullable=False
+    )
+    gas_type: Mapped[str] = mapped_column(String(8), nullable=False, default="CH4")
+    provider: Mapped[str] = mapped_column(String(32), nullable=False, default="sentinel-5p-tropomi")
+    buffer_km: Mapped[float] = mapped_column(Numeric(8, 2), nullable=False, default=25.0)
+    roi_geojson: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    series: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    summary: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="complete")
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+    project = relationship("PlantingProject", foreign_keys=[project_id])
+    work_area = relationship("PlantationFence", foreign_keys=[work_area_id])
+
+    __table_args__ = (
+        Index("emission_satellite_scans_project_idx", "project_id"),
+        Index("emission_satellite_scans_work_area_idx", "work_area_id"),
+    )
