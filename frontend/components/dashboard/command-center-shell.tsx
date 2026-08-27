@@ -173,6 +173,122 @@ export function alertsOperationalStatus(input: {
   };
 }
 
+export function bioacousticOperationalStatus(input: {
+  totalRecordings: number;
+  analyzedRecordings: number;
+  threatenedSpecies: number;
+  avgHealthScore: number;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { totalRecordings, analyzedRecordings, threatenedSpecies, avgHealthScore } = input;
+
+  if (totalRecordings === 0) {
+    return {
+      tone: "neutral",
+      label: "No soundscapes captured",
+      summary: "Record 60–180 seconds of ambient nature sound to detect species and track site health.",
+    };
+  }
+  if (analyzedRecordings < totalRecordings) {
+    return {
+      tone: "watch",
+      label: "Assessments in progress",
+      summary: `${analyzedRecordings} of ${totalRecordings} recordings analyzed. Complete pending assessments for full biodiversity signals.`,
+    };
+  }
+  if (threatenedSpecies > 0) {
+    return {
+      tone: "attention",
+      label: "Threatened species detected",
+      summary: `${threatenedSpecies} threatened taxa in recent assessments · avg health ${Math.round(avgHealthScore)}/100.`,
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "Soundscape monitoring active",
+    summary: `${totalRecordings} recording${totalRecordings === 1 ? "" : "s"} · avg biodiversity health ${Math.round(avgHealthScore)}/100.`,
+  };
+}
+
+export function satelliteOperationalStatus(input: {
+  fenceCount: number;
+  siteSelected: boolean;
+  ndviValue: number | null | undefined;
+  verifiedTrees: number;
+  staleSites: number;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { fenceCount, siteSelected, ndviValue, verifiedTrees, staleSites } = input;
+
+  if (fenceCount === 0) {
+    return {
+      tone: "neutral",
+      label: "No plantation sites yet",
+      summary: "Draw a fence on the map to start NDVI monitoring and satellite verification.",
+    };
+  }
+  if (!siteSelected) {
+    return {
+      tone: "watch",
+      label: "Select a monitoring site",
+      summary: `${fenceCount} plantation site${fenceCount === 1 ? "" : "s"} available — pick one to run scans and view greenness.`,
+    };
+  }
+  if (ndviValue == null) {
+    return {
+      tone: "attention",
+      label: "NDVI scan needed",
+      summary: "Site selected but no greenness reading yet. Run NDVI from the map sidebar.",
+    };
+  }
+  if (staleSites > 0) {
+    return {
+      tone: "watch",
+      label: "Satellite refresh recommended",
+      summary: `Latest NDVI ${ndviValue.toFixed(2)} · ${staleSites} site${staleSites === 1 ? "" : "s"} may need rescan · ${verifiedTrees} trees verified.`,
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "Site monitoring active",
+    summary: `NDVI ${ndviValue.toFixed(2)} on selected site · ${verifiedTrees} satellite-verified trees.`,
+  };
+}
+
+export function reportsOperationalStatus(input: {
+  totalReports: number;
+  pendingCount: number;
+  failedCount: number;
+  canGenerate: boolean;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { totalReports, pendingCount, failedCount, canGenerate } = input;
+
+  if (!canGenerate) {
+    return {
+      tone: "neutral",
+      label: "Read-only report access",
+      summary: `${totalReports} export${totalReports === 1 ? "" : "s"} available for download from your program team.`,
+    };
+  }
+  if (failedCount > 0) {
+    return {
+      tone: "critical",
+      label: "Report generation failures",
+      summary: `${failedCount} failed export${failedCount === 1 ? "" : "s"} need retry · ${pendingCount} pending.`,
+    };
+  }
+  if (pendingCount > 0) {
+    return {
+      tone: "watch",
+      label: "Exports processing",
+      summary: `${pendingCount} report${pendingCount === 1 ? "" : "s"} generating · ${totalReports} total in library.`,
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "Report library ready",
+    summary: `${totalReports} export${totalReports === 1 ? "" : "s"} available · queue carbon, biodiversity, and compliance packs.`,
+  };
+}
+
 export function CommandCenterEvidence({
   title,
   description,
