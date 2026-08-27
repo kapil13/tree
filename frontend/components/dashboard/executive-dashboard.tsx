@@ -9,7 +9,6 @@ import {
   Bell,
   Bird,
   Brain,
-  CloudRain,
   FileText,
   Leaf,
   MapPin,
@@ -21,11 +20,14 @@ import {
   Sprout,
   TreePine,
   TrendingUp,
-  Wallet,
   ClipboardList,
   FolderKanban,
 } from "lucide-react";
 import { ChartDataTable } from "@/components/dashboard/chart-data-table";
+import {
+  CommandCenterEvidence,
+  portfolioOperationalStatus,
+} from "@/components/dashboard/command-center-shell";
 import { CompliancePortfolioStrip } from "@/components/dashboard/compliance-portfolio-strip";
 import { useTranslations } from "next-intl";
 import {
@@ -48,7 +50,7 @@ import { TreesMap } from "@/components/trees-map";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MetricCard } from "@/components/dashboard/metric-card";
+import { InsightPanel, MetricGrid, OperationalStatusBar } from "@/components/ui";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
@@ -82,16 +84,17 @@ import { cn } from "@/lib/cn";
 
 function DashboardSkeleton() {
   return (
-    <div className="dash-shell space-y-6">
-      <div className="dash-hero dash-skeleton h-44" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="dash-skeleton h-32 rounded-2xl" />
+    <div className="space-y-6">
+      <div className="intel-skeleton h-20 rounded-xl" />
+      <div className="intel-skeleton h-28 rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="intel-skeleton h-24 rounded-lg" />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="dash-skeleton h-80 rounded-2xl lg:col-span-2" />
-        <div className="dash-skeleton h-80 rounded-2xl" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="intel-skeleton h-72 rounded-xl" />
+        <div className="intel-skeleton h-72 rounded-xl" />
       </div>
     </div>
   );
@@ -243,78 +246,117 @@ export function ExecutiveDashboard() {
     });
   }
 
+  const portfolioStatus = portfolioOperationalStatus({
+    openViolations,
+    criticalAlerts: criticalAlerts.length,
+    unreadAlerts: unreadAlerts.length,
+    sitesNeedingScan,
+    survivalDue: fieldOps?.survival_due ?? 0,
+  });
+
   return (
-    <div className="dash-shell space-y-6">
-      <section className="dash-hero">
-        <div className="dash-hero-grid">
-          <div className="dash-hero-header">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="dash-live-pill">
-                <span className="dash-live-dot" />
-                Executive command center
-              </div>
-              {enrolledPrograms.slice(0, 2).map((p) => (
-                <span key={p.code} className="dash-program-chip">
-                  {p.name}
-                </span>
-              ))}
-            </div>
-            <h1 className="dash-hero-title mt-4 font-display">
-              {greeting}, {firstName}
-            </h1>
-            <p className="dash-hero-copy">
-              {brief?.headline ||
-                "Carbon, canopy health, SAR integrity, biodiversity, and compliance evidence — unified for your portfolio."}
-            </p>
+    <div className="space-y-6">
+      <OperationalStatusBar
+        tone={portfolioStatus.tone}
+        label={portfolioStatus.label}
+        summary={portfolioStatus.summary}
+        icon={portfolioStatus.tone === "healthy" ? ShieldCheck : AlertTriangle}
+        action={
+          priorityItems[0] ? (
+            <Link href={priorityItems[0].href} className="btn-secondary text-xs">
+              {priorityItems[0].title}
+            </Link>
+          ) : (
+            <Link href="/portfolio-health" className="btn-secondary text-xs">
+              Portfolio intelligence
+            </Link>
+          )
+        }
+      />
 
-            {brief && (
-              <div className="dash-hero-insight">
-                <div className="dash-hero-insight-title">
-                  <Sparkles className="h-4 w-4 text-lime-300" />
-                  Intelligence brief
-                </div>
-                {brief.lines.length > 0 && (
-                  <ul className="dash-hero-insight-lines">
-                    {brief.lines.slice(0, 3).map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                )}
-                {brief.priority_alert && (
-                  <Link href="/alerts" className="dash-hero-priority">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    {brief.priority_alert.title}
-                    <span className="opacity-70">· {brief.priority_alert.work_area_name}</span>
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
+      <InsightPanel
+        title="Command center · Key insight"
+        interpretation={
+          brief?.headline ||
+          `${greeting}, ${firstName} — your portfolio spans carbon, canopy health, compliance, and satellite monitoring. Start with priorities below.`
+        }
+        icon={Sparkles}
+      >
+        {brief?.lines && brief.lines.length > 0 ? (
+          <ul className="space-y-1 text-sm text-stone-600 dark:text-stone-400">
+            {brief.lines.slice(0, 3).map((line) => (
+              <li key={line}>• {line}</li>
+            ))}
+          </ul>
+        ) : null}
+      </InsightPanel>
 
-          <div className="dash-hero-stats">
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtCompact(k.total_trees)}</p>
-              <p className="dash-hero-stat-label">Trees registered</p>
+      <MetricGrid
+        columns={5}
+        metrics={[
+          {
+            label: "Trees registered",
+            value: fmtCompact(k.total_trees),
+            hint: `${fmtPct(k.pct_healthy)} healthy canopy`,
+          },
+          {
+            label: "CO₂e stored (est.)",
+            value: fmtNum(k.total_co2e_kg / 1000, " t"),
+            hint: `+${fmtNum(k.annual_sequestration_kg / 1000, " t/yr")} projected`,
+            tone: "positive",
+          },
+          {
+            label: "Open violations",
+            value: fmtNum(openViolations),
+            hint: "Compliance blockers",
+            tone: openViolations > 0 ? "critical" : "positive",
+          },
+          {
+            label: "Unread alerts",
+            value: fmtNum(unreadAlerts.length),
+            hint: `${criticalAlerts.length} high priority`,
+            tone: criticalAlerts.length > 0 ? "critical" : unreadAlerts.length > 0 ? "warning" : "default",
+          },
+          {
+            label: "Forest integrity",
+            value: sarIntegrity != null ? Math.round(sarIntegrity) : fmtPct(k.pct_satellite_verified),
+            hint: sarIntegrity != null ? "SAR composite" : "Satellite verified",
+          },
+        ]}
+      />
+
+      {priorityItems.length > 0 ? (
+        <section className="dash-panel dash-panel--priority">
+          <div className="dash-panel-head">
+            <div>
+              <h2 className="dash-panel-title">Today&apos;s priorities</h2>
+              <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
             </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtNum(k.total_co2e_kg / 1000, " t")}</p>
-              <p className="dash-hero-stat-label">CO₂e stored (est.)</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtPct(k.pct_healthy)}</p>
-              <p className="dash-hero-stat-label">Canopy health</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">
-                {sarIntegrity != null ? Math.round(sarIntegrity) : fmtPct(k.pct_satellite_verified)}
-              </p>
-              <p className="dash-hero-stat-label">
-                {sarIntegrity != null ? "Forest integrity" : "Satellite verified"}
-              </p>
-            </div>
+            <Link href="/portfolio-health?tab=compliance" className="dash-link">
+              Full monitoring <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-        </div>
-      </section>
+          <ul className="mt-4 grid gap-2 lg:grid-cols-3">
+            {priorityItems.slice(0, 3).map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "dash-priority-card",
+                    item.tone === "critical" && "dash-priority-card--critical",
+                    item.tone === "warn" && "dash-priority-card--warn",
+                    item.tone === "info" && "dash-priority-card--info",
+                  )}
+                >
+                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
+                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
+                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="dash-command-strip">
         {[
@@ -371,93 +413,19 @@ export function ExecutiveDashboard() {
       <DataTrustBanner variant="strip" />
       <OrgAdminChecklist compact />
 
-      {priorityItems.length > 0 ? (
-        <section className="dash-panel dash-panel--priority">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Today&apos;s priorities</h2>
-              <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
-            </div>
-            <Link href="/portfolio-health?tab=compliance" className="dash-link">
-              Full monitoring <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <ul className="mt-4 grid gap-2 lg:grid-cols-3">
-            {priorityItems.slice(0, 3).map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "dash-priority-card",
-                    item.tone === "critical" && "dash-priority-card--critical",
-                    item.tone === "warn" && "dash-priority-card--warn",
-                    item.tone === "info" && "dash-priority-card--info",
-                  )}
-                >
-                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
-                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <CommandCenterEvidence
+        title="SAR & forest integrity"
+        description="Sentinel-1 composite integrity and trend signals across plantation sites"
+      >
+        <SarIntelligencePanel />
+        {primaryFenceId ? <SarIntegrityTrendPreview fenceId={primaryFenceId} /> : null}
+      </CommandCenterEvidence>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <MetricCard
-          icon={TreePine}
-          label="Trees registered"
-          value={fmtNum(k.total_trees)}
-          sub={`${fmtPct(k.pct_healthy)} healthy`}
-          accent="green"
-        />
-        <MetricCard
-          icon={Sprout}
-          label="Biomass"
-          value={fmtNum(k.total_biomass_kg / 1000, " t")}
-          sub="Estimated dry matter"
-          accent="lime"
-        />
-        <MetricCard
-          icon={CloudRain}
-          label="CO₂e sequestered (est.)"
-          value={fmtNum(k.total_co2e_kg / 1000, " t")}
-          sub={`+${fmtNum(k.annual_sequestration_kg / 1000, " t/yr")} projected`}
-          trend={{ label: "Growing", positive: true }}
-          accent="sky"
-        />
-        <MetricCard
-          icon={Wallet}
-          label="Credit potential (est.)"
-          value={fmtNum(k.lifetime_credits_tco2e, " tCO₂e")}
-          sub={`~$${fmtNum(k.estimated_revenue_usd)} est. revenue`}
-          accent="violet"
-        />
-        <MetricCard
-          icon={Satellite}
-          label="Satellite verified"
-          value={fmtPct(k.pct_satellite_verified)}
-          sub={`${fenceItems.length} plantation sites`}
-          accent="amber"
-        />
-        <MetricCard
-          icon={Bird}
-          label="Biodiversity"
-          value={fmtNum(bio?.total_species_detected ?? data.bioacoustic?.total_species_detected ?? 0)}
-          sub={`${bio?.threatened_species_count ?? 0} threatened species`}
-          accent="green"
-        />
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-12">
-        <div className="xl:col-span-12">
-          <SarIntelligencePanel />
-          {primaryFenceId ? <SarIntegrityTrendPreview fenceId={primaryFenceId} /> : null}
-        </div>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-12">
+      <CommandCenterEvidence
+        title="Portfolio analytics"
+        description="Canopy health, carbon trajectory, and verification gauges"
+      >
+        <section className="grid gap-4 xl:grid-cols-12">
         <div className="dash-panel xl:col-span-5">
           <div className="dash-panel-head">
             <div>
@@ -602,7 +570,12 @@ export function ExecutiveDashboard() {
           </div>
         </div>
       </section>
+      </CommandCenterEvidence>
 
+      <CommandCenterEvidence
+        title="Satellite & biodiversity"
+        description="NDVI time series, plantation sites, and bioacoustic richness"
+      >
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="dash-panel">
           <div className="dash-panel-head">
@@ -732,7 +705,12 @@ export function ExecutiveDashboard() {
           )}
         </div>
       </section>
+      </CommandCenterEvidence>
 
+      <CommandCenterEvidence
+        title="Threat & weather watch"
+        description="Forecasts, disease risk, and locust early warning per site"
+      >
       <section className="dash-panel">
         <div className="dash-panel-head">
           <div>
@@ -749,6 +727,7 @@ export function ExecutiveDashboard() {
           <ThreatWatchPanel />
         </div>
       </section>
+      </CommandCenterEvidence>
 
       <section className="grid gap-4 lg:grid-cols-12">
         <div className="dash-panel lg:col-span-5">
@@ -895,6 +874,10 @@ export function ExecutiveDashboard() {
         </div>
       </section>
 
+      <CommandCenterEvidence
+        title="Spatial overview & recent activity"
+        description="Live tree map and latest registrations"
+      >
       <section className="grid gap-4 lg:grid-cols-12">
         <div className="dash-panel lg:col-span-8">
           <div className="dash-panel-head">
@@ -942,6 +925,7 @@ export function ExecutiveDashboard() {
           </div>
         </div>
       </section>
+      </CommandCenterEvidence>
     </div>
   );
 }

@@ -1578,6 +1578,34 @@ html[lang="hi"] body {
   @apply bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200;
 }
 
+.intel-skeleton {
+  @apply animate-pulse bg-stone-200/70 dark:bg-stone-800/60;
+}
+
+.intel-evidence-group {
+  @apply rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900;
+}
+
+.intel-evidence-summary {
+  @apply flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 marker:content-none;
+}
+
+.intel-evidence-summary::-webkit-details-marker {
+  display: none;
+}
+
+.intel-evidence-chevron {
+  @apply transition-transform duration-200;
+}
+
+.intel-evidence-group[open] .intel-evidence-chevron {
+  @apply rotate-180;
+}
+
+.intel-evidence-body {
+  @apply border-t border-stone-100 px-4 py-4 dark:border-stone-800;
+}
+
 .app-main-inner {
   @apply intel-shell;
 }
