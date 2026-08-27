@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, ProgrammingError
@@ -25,6 +25,7 @@ from app.schemas.emissions import (
     TropomiScanOut,
     TropomiScanRequest,
 )
+from app.services.audit import record_audit
 from app.services.emissions.dispersion.run import (
     DispersionError,
     _simulation_to_out,
@@ -32,6 +33,7 @@ from app.services.emissions.dispersion.run import (
     load_sources_for_run,
     run_dispersion,
 )
+from app.services.emissions.export import build_emissions_compliance_context
 from app.services.emissions.fusion import (
     FusionError,
     assessment_to_dict,
@@ -54,6 +56,8 @@ from app.services.emissions.tropomi import (
     tropomi_configured,
 )
 from app.services.planting_projects.access import can_manage_project, load_project
+from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.emissions_compliance_report import render_emissions_compliance_pdf
 
 router = APIRouter(prefix="/planting-projects", tags=["emissions"])
 
@@ -461,3 +465,59 @@ async def get_latest_work_area_emission_fusion(
     if row is None:
         return None
     return _fusion_to_out(row)
+
+
+@router.get("/{project_id}/emissions-export")
+async def export_project_emissions_compliance(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID = Query(...),
+    format: str = Query("pdf", pattern="^(pdf)$"),
+) -> Response:
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    res = await db.execute(select(PlantationFence).where(PlantationFence.id == work_area_id))
+    work_area = res.scalar_one_or_none()
+    if work_area is None or work_area.project_id != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="work_area_not_found")
+
+    try:
+        ctx = await build_emissions_compliance_context(db, project=project, work_area=work_area)
+    except (ProgrammingError, IntegrityError) as exc:
+        await db.rollback()
+        _raise_emissions_db_error(exc)
+        raise
+
+    data = render_emissions_compliance_pdf(ctx)
+    safe_code = project.code.replace("/", "-")
+    wa_slug = (work_area.name or "work-area").replace("/", "-").replace(" ", "-")[:40]
+
+    await record_audit(
+        db,
+        actor=user,
+        action="emissions.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={
+            "format": format,
+            "project_code": project.code,
+            "work_area_id": str(work_area_id),
+        },
+    )
+    await db.commit()
+
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{safe_code}-{wa_slug}-ghg-compliance.pdf"'
+            )
+        },
+    )
