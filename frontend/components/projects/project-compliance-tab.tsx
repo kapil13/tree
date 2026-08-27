@@ -313,7 +313,11 @@ export function ProjectComplianceTab({
         )}
 
         {section === "emissions" && (
-          <ProjectEmissionsPanel projectId={projectId} workAreas={workAreas} />
+          <ProjectEmissionsPanel
+            projectId={projectId}
+            projectCode={projectCode}
+            workAreas={workAreas}
+          />
         )}
 
         {section === "pest_intel" && showPestIntel && (

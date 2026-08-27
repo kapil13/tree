@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cloud, GitMerge, Satellite, Wind } from "lucide-react";
+import { Cloud, Download, GitMerge, Satellite, Wind } from "lucide-react";
+import { downloadBlob } from "@/lib/download-blob";
 import { EmissionsPlumeMap } from "@/components/projects/emissions-plume-map";
 import {
   errorMessage,
@@ -42,9 +43,11 @@ function ringCentroid(boundary: WorkArea["boundary"]): [number, number] {
 
 export function ProjectEmissionsPanel({
   projectId,
+  projectCode,
   workAreas,
 }: {
   projectId: string;
+  projectCode?: string;
   workAreas: WorkArea[];
 }) {
   const qc = useQueryClient();
@@ -159,6 +162,18 @@ export function ProjectEmissionsPanel({
     onSuccess: (data) => {
       setFusionResult(data);
       qc.invalidateQueries({ queryKey: ["emission-fusion-latest", projectId, workAreaId] });
+    },
+  });
+
+  const exportMut = useMutation({
+    mutationFn: () => {
+      if (!selectedArea) throw new Error("Select a work area");
+      return plantingProjects.exportEmissionsCompliance(projectId, selectedArea.id);
+    },
+    onSuccess: (blob) => {
+      const code = (projectCode ?? projectId).replace(/\//g, "-");
+      const area = (selectedArea?.name ?? "work-area").replace(/\//g, "-").replace(/\s+/g, "-");
+      downloadBlob(blob, `${code}-${area}-ghg-compliance.pdf`);
     },
   });
 
@@ -282,6 +297,16 @@ export function ProjectEmissionsPanel({
           <GitMerge className="h-4 w-4" />
           {fusionMut.isPending ? "Running fusion…" : "Run fusion assessment"}
         </button>
+        <button
+          type="button"
+          className="btn-secondary inline-flex items-center gap-2 text-sm"
+          disabled={exportMut.isPending || !selectedArea}
+          onClick={() => exportMut.mutate()}
+          title="Download GHG compliance PDF for auditors"
+        >
+          <Download className="h-4 w-4" />
+          {exportMut.isPending ? "Exporting PDF…" : "Export compliance PDF"}
+        </button>
       </div>
 
       {runMut.error ? (
@@ -292,6 +317,9 @@ export function ProjectEmissionsPanel({
       ) : null}
       {fusionMut.error ? (
         <p className="text-sm text-rose-700">{errorMessage(fusionMut.error)}</p>
+      ) : null}
+      {exportMut.error ? (
+        <p className="text-sm text-rose-700">{errorMessage(exportMut.error)}</p>
       ) : null}
 
       {selectedArea ? (

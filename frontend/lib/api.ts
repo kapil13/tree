@@ -1353,6 +1353,13 @@ export const plantingProjects = {
     });
     return response.data as Blob;
   },
+  async exportEmissionsCompliance(projectId: string, workAreaId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/emissions-export`, {
+      params: { work_area_id: workAreaId, format: "pdf" },
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
   async exportEvidenceBundle(projectId: string, includePhotos = true) {
     const response = await api.get(`/v1/planting-projects/${projectId}/evidence-bundle`, {
       params: { include_photos: includePhotos },
