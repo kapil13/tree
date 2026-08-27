@@ -7,12 +7,14 @@ import { Topbar } from "@/components/topbar";
 import { ImpersonationBanner } from "@/components/platform/impersonation-banner";
 import { OrgFeatureFlagsBanner } from "@/components/org-feature-flags-banner";
 import { MaintenanceBanner } from "@/components/platform/maintenance-banner";
+import { LocaleBootstrap } from "@/components/locale-bootstrap";
 
 export const dynamic = "force-dynamic";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppAuthGuard>
+      <LocaleBootstrap />
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex flex-1 flex-col">

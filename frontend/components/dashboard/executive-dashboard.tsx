@@ -364,33 +364,33 @@ export function ExecutiveDashboard() {
       <div className="dash-command-strip">
         {[
           {
-            label: "Active projects",
+            label: te("activeProjects"),
             value: fmtNum(fieldOps?.project_count ?? monitoring?.project_count ?? 0),
             href: "/projects",
             icon: FolderKanban,
           },
           {
-            label: "Open violations",
+            label: te("openViolations"),
             value: fmtNum(openViolations),
             href: "/field-ops",
             icon: ShieldAlert,
             warn: openViolations > 0,
           },
           {
-            label: "Unread alerts",
+            label: te("unreadAlerts"),
             value: fmtNum(unreadAlerts.length),
             href: "/alerts",
             icon: Bell,
             warn: unreadAlerts.length > 0,
           },
           {
-            label: "Sites monitored",
+            label: te("sitesMonitored"),
             value: fmtNum(fenceItems.length),
             href: "/satellite",
             icon: Satellite,
           },
           {
-            label: "Survival due",
+            label: te("survivalDue"),
             value: fmtNum(fieldOps?.survival_due ?? 0),
             href: "/field-ops",
             icon: ClipboardList,
@@ -416,44 +416,38 @@ export function ExecutiveDashboard() {
       <DataTrustBanner variant="strip" />
       <OrgAdminChecklist compact />
 
-      <CommandCenterEvidence
-        title="SAR & forest integrity"
-        description="Sentinel-1 composite integrity and trend signals across plantation sites"
-      >
+      <CommandCenterEvidence title={te("sarTitle")} description={te("sarDesc")}>
         <SarIntelligencePanel />
         {primaryFenceId ? <SarIntegrityTrendPreview fenceId={primaryFenceId} /> : null}
       </CommandCenterEvidence>
 
-      <CommandCenterEvidence
-        title="Portfolio analytics"
-        description="Canopy health, carbon trajectory, and verification gauges"
-      >
+      <CommandCenterEvidence title={te("portfolioAnalytics")} description={te("portfolioAnalyticsDesc")}>
         <section className="grid gap-4 xl:grid-cols-12">
         <div className="dash-panel xl:col-span-5">
           <div className="dash-panel-head">
             <div>
-              <h2 className="dash-panel-title">Portfolio vitals</h2>
-              <p className="dash-panel-sub">Health coverage and verification posture</p>
+              <h2 className="dash-panel-title">{te("portfolioVitals")}</h2>
+              <p className="dash-panel-sub">{te("portfolioVitalsSub")}</p>
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-around gap-6">
             <RadialGauge
               value={k.pct_healthy}
-              label="Healthy"
-              sublabel="canopy status"
+              label={te("healthy")}
+              sublabel={te("canopyStatus")}
               color="#16a34a"
             />
             <RadialGauge
               value={k.pct_satellite_verified}
-              label="Verified"
-              sublabel="satellite MRV"
+              label={te("verified")}
+              sublabel={te("satelliteMrv")}
               color="#0ea5e9"
             />
             <RadialGauge
               value={ecosystem?.ecosystem_health_score ?? bio?.avg_health_score ?? 0}
               max={100}
-              label="Ecosystem"
-              sublabel={ecosystem ? ecosystem.ndvi_trend ?? "composite" : "bioacoustic"}
+              label={te("ecosystem")}
+              sublabel={ecosystem ? ecosystem.ndvi_trend ?? te("ecosystemScore") : te("soundscape")}
               color="#84cc16"
             />
           </div>
@@ -576,8 +570,8 @@ export function ExecutiveDashboard() {
       </CommandCenterEvidence>
 
       <CommandCenterEvidence
-        title="Satellite & biodiversity"
-        description="NDVI time series, plantation sites, and bioacoustic richness"
+        title={te("satelliteBiodiversity")}
+        description={te("satelliteBiodiversityDesc")}
       >
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="dash-panel">
@@ -646,7 +640,7 @@ export function ExecutiveDashboard() {
                   <div>
                     <p className="font-medium text-stone-800">{fence.name}</p>
                     <p className="text-xs text-stone-500">
-                      {fence.area_ha ? `${fence.area_ha.toFixed(1)} ha` : "Area pending"}
+                      {fence.area_ha ? `${fence.area_ha.toFixed(1)} ha` : te("areaPending")}
                       {fence.last_satellite_at ? ` · ${timeAgo(fence.last_satellite_at)}` : ""}
                     </p>
                   </div>
@@ -672,10 +666,10 @@ export function ExecutiveDashboard() {
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              ["Recordings", bio?.total_recordings ?? data.bioacoustic?.total_recordings ?? 0],
-              ["Analyzed", bio?.analyzed_recordings ?? 0],
-              ["Shannon H′", (bio?.avg_shannon_index ?? data.bioacoustic?.avg_shannon_index ?? 0).toFixed(2)],
-              ["Threatened", bio?.threatened_species_count ?? 0],
+              [te("recordings"), bio?.total_recordings ?? data.bioacoustic?.total_recordings ?? 0],
+              [te("analyzed"), bio?.analyzed_recordings ?? 0],
+              [te("shannon"), (bio?.avg_shannon_index ?? data.bioacoustic?.avg_shannon_index ?? 0).toFixed(2)],
+              [te("threatened"), bio?.threatened_species_count ?? 0],
             ].map(([label, value]) => (
               <div key={label} className="dash-mini-stat">
                 <p className="dash-mini-stat-label">{label}</p>
@@ -711,8 +705,8 @@ export function ExecutiveDashboard() {
       </CommandCenterEvidence>
 
       <CommandCenterEvidence
-        title="Threat & weather watch"
-        description="Forecasts, disease risk, and locust early warning per site"
+        title={te("threatWatch")}
+        description={te("threatWatchDesc")}
       >
       <section className="dash-panel">
         <div className="dash-panel-head">
@@ -834,17 +828,17 @@ export function ExecutiveDashboard() {
           <div className="mt-4 grid gap-2">
             {[
               ...(canWrite
-                ? [{ href: "/trees/new", icon: Sprout, label: "Register tree", sub: "Guided wizard" }]
-                : []),
-              { href: "/portfolio-health?tab=compliance", icon: ShieldCheck, label: "Portfolio compliance", sub: "Readiness & safeguards" },
-              { href: "/portfolio-health", icon: Radar, label: "Portfolio health", sub: "Threats & monitoring" },
-              { href: "/satellite", icon: Satellite, label: "Satellite scan", sub: "NDVI & health" },
-              { href: "/bioacoustic", icon: Bird, label: "Record biodiversity", sub: "Soundscape" },
-              { href: "/assistant", icon: Sparkles, label: "Ask AI analyst", sub: "Carbon & tips" },
+                ? [{ href: "/trees/new", icon: Sprout, label: te("registerTree"), sub: te("guidedWizard") }]
+              : []),
+              { href: "/portfolio-health?tab=compliance", icon: ShieldCheck, label: te("portfolioCompliance"), sub: te("readinessSafeguards") },
+              { href: "/portfolio-health", icon: Radar, label: te("portfolioHealth"), sub: te("threatsMonitoring") },
+              { href: "/satellite", icon: Satellite, label: te("satelliteScan"), sub: te("ndviHealth") },
+              { href: "/bioacoustic", icon: Bird, label: te("recordBiodiversity"), sub: te("soundscape") },
+              { href: "/assistant", icon: Sparkles, label: te("askAiAnalyst"), sub: te("carbonTips") },
               ...(canReport
-                ? [{ href: "/reports", icon: FileText, label: "Generate report", sub: "PDF / Excel" }]
-                : [{ href: "/reports", icon: FileText, label: "View reports", sub: "Download exports" }]),
-              { href: "/map", icon: MapPin, label: "Open map", sub: "Spatial view" },
+                ? [{ href: "/reports", icon: FileText, label: te("generateReport"), sub: te("pdfExcel") }]
+                : [{ href: "/reports", icon: FileText, label: te("viewReports"), sub: te("downloadExports") }]),
+              { href: "/map", icon: MapPin, label: te("openMap"), sub: te("spatialView") },
             ].map((action) => (
               <Link key={action.href} href={action.href} className="dash-action-row">
                 <div className="dash-action-icon">
@@ -878,8 +872,8 @@ export function ExecutiveDashboard() {
       </section>
 
       <CommandCenterEvidence
-        title="Spatial overview & recent activity"
-        description="Live tree map and latest registrations"
+        title={te("spatialOverview")}
+        description={te("spatialOverviewDesc")}
       >
       <section className="grid gap-4 lg:grid-cols-12">
         <div className="dash-panel lg:col-span-8">
@@ -911,7 +905,7 @@ export function ExecutiveDashboard() {
                 <div>
                   <p className="font-medium text-stone-800">{tree.public_code}</p>
                   <p className="text-xs text-stone-500">
-                    {tree.species_text || "Species pending"} · {timeAgo(tree.created_at)}
+                    {tree.species_text || te("speciesPending")} · {timeAgo(tree.created_at)}
                   </p>
                 </div>
                 <span className={cn("dash-health-badge", `dash-health-badge--${tree.current_health}`)}>

@@ -58,6 +58,7 @@ function DashboardSkeleton() {
 
 export function CitizenDashboard() {
   const t = useTranslations("citizenDashboard");
+  const to = useTranslations("opsStatus");
   const { user } = useAuth();
   const theme = getProgramTheme("byot");
   const HeroIcon = theme.icon;
@@ -70,6 +71,7 @@ export function CitizenDashboard() {
       { queryKey: scopedKey(user, "ai-scan-usage"), queryFn: () => aiScans.usage() },
     ],
   });
+
 
   if (dashQ.isLoading || treesQ.isLoading) {
     return <DashboardSkeleton />;
@@ -113,14 +115,13 @@ export function CitizenDashboard() {
   const stepsDone = steps.filter((s) => s.done).length;
   const showChecklist = treeCount < 3 || stepsDone < 3;
   const pctHealthy = kpi?.pct_healthy ?? 0;
-
-  const to = useTranslations("opsStatus");
   const groveStatus = citizenOperationalStatus(to, {
     treeCount,
     pctHealthy,
     stepsDone,
     stepsTotal: steps.length,
   });
+
 
   const carbonValue =
     kpi && kpi.total_co2e_kg > 0 ? (
