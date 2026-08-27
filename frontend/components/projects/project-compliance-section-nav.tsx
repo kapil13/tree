@@ -42,7 +42,7 @@ export function complianceSectionDefs(
     { id: "checklist", label: "Eligibility checklist", shortLabel: "Checklist", icon: ClipboardCheck },
     { id: "safeguards", label: "Safeguards & tenure", shortLabel: "Safeguards", icon: Shield },
     { id: "integrity", label: "Carbon integrity", shortLabel: "Integrity", icon: TrendingDown },
-    { id: "emissions", label: "GHG & methane", shortLabel: "GHG", icon: Wind },
+    { id: "emissions", label: "GHG emissions", shortLabel: "GHG", icon: Wind },
   ];
   if (showPestIntel) {
     sections.push({
