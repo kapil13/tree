@@ -4,15 +4,21 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  ClipboardList,
+  ArrowRight,
   FolderKanban,
   MapPin,
   Plus,
-  TreePine,
+  ShieldCheck,
 } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
+import {
+  CommandCenterEvidence,
+  fieldOperationalStatus,
+} from "@/components/dashboard/command-center-shell";
+import { fmtNum } from "@/components/dashboard/format";
+import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects } from "@/lib/api";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
+import { cn } from "@/lib/cn";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -32,14 +38,14 @@ export default function FieldOpsPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-stone-200" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-6">
+        <div className="intel-skeleton h-20 rounded-xl" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-stone-200" />
+            <div key={i} className="intel-skeleton h-24 rounded-lg" />
           ))}
         </div>
-        <div className="h-40 animate-pulse rounded-xl bg-stone-200" />
+        <div className="intel-skeleton h-48 rounded-xl" />
       </div>
     );
   }
@@ -48,39 +54,66 @@ export default function FieldOpsPage() {
     (p) => p.open_violations > 0 || p.survival_due > 0,
   );
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-stone-900">Field operations</h1>
-          <p className="mt-1 text-sm text-stone-600">
-            Today’s priorities across packages, green belts, and society blocks.
-          </p>
-        </div>
-        <Link href="/projects/new" className="btn-primary inline-flex items-center gap-1.5">
-          <Plus className="h-4 w-4" />
-          New project
-        </Link>
-      </div>
+  const fieldStatus = fieldOperationalStatus({
+    openViolations: data.open_violations,
+    survivalDue: data.survival_due,
+    queueCount: needsAttention.length,
+    geotagDue: 0,
+    unassigned: data.project_count === 0,
+  });
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard icon={FolderKanban} label="Projects" value={String(data.project_count)} />
-        <KpiCard icon={TreePine} label="Trees registered" value={String(data.tree_count)} />
-        <KpiCard
-          icon={AlertTriangle}
-          label="Open violations"
-          value={String(data.open_violations)}
-          warn={data.open_violations > 0}
-          href={data.open_violations > 0 ? "#attention" : undefined}
-        />
-        <KpiCard
-          icon={ClipboardList}
-          label="Survival due"
-          value={String(data.survival_due)}
-          warn={data.survival_due > 0}
-          href={data.survival_due > 0 ? "#attention" : undefined}
-        />
-      </div>
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        purpose="Operate · Field"
+        title="Field operations"
+        description="Today's priorities across packages, green belts, and society blocks."
+        breadcrumbs={[{ label: "Operate" }, { label: "Field ops" }]}
+        actions={
+          <Link href="/projects/new" className="btn-primary inline-flex items-center gap-1.5">
+            <Plus className="h-4 w-4" />
+            New project
+          </Link>
+        }
+      />
+
+      <OperationalStatusBar
+        tone={fieldStatus.tone}
+        label={fieldStatus.label}
+        summary={fieldStatus.summary}
+        icon={fieldStatus.tone === "healthy" ? ShieldCheck : AlertTriangle}
+        action={
+          needsAttention[0] ? (
+            <Link href={`/projects/${needsAttention[0].id}`} className="btn-secondary text-xs">
+              Open {needsAttention[0].name}
+            </Link>
+          ) : (
+            <Link href="/trees/new" className="btn-secondary text-xs">
+              Register tree
+            </Link>
+          )
+        }
+      />
+
+      <MetricGrid
+        columns={4}
+        metrics={[
+          { label: "Projects", value: fmtNum(data.project_count), hint: "Active packages" },
+          { label: "Trees registered", value: fmtNum(data.tree_count), hint: "Across portfolio" },
+          {
+            label: "Open violations",
+            value: fmtNum(data.open_violations),
+            hint: "Compliance blockers",
+            tone: data.open_violations > 0 ? "critical" : "positive",
+          },
+          {
+            label: "Survival due",
+            value: fmtNum(data.survival_due),
+            hint: "Geotag / survival checks",
+            tone: data.survival_due > 0 ? "warning" : "default",
+          },
+        ]}
+      />
 
       {data.project_count === 0 ? (
         <EmptyState
@@ -91,56 +124,59 @@ export default function FieldOpsPage() {
         />
       ) : (
         <>
-          {needsAttention.length > 0 && (
-            <section id="attention" className="space-y-3">
-              <h2 className="text-lg font-medium text-stone-900">Needs attention</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+          {needsAttention.length > 0 ? (
+            <section id="attention" className="dash-panel dash-panel--priority">
+              <div className="dash-panel-head">
+                <div>
+                  <h2 className="dash-panel-title">Needs attention</h2>
+                  <p className="dash-panel-sub">Violations and survival checks by project</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {needsAttention.map((p) => (
                   <ProjectActionCard key={p.id} project={p} highlight />
                 ))}
               </div>
             </section>
-          )}
+          ) : null}
 
-          <section className="card">
-            <h2 className="text-lg font-medium">Projects by segment</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {Object.entries(data.by_segment).map(([seg, count]) => (
-                <span key={seg} className="rounded-full bg-stone-100 px-3 py-1 text-sm">
-                  {SEGMENT_LABEL[seg] ?? seg}: {count}
-                </span>
+          <CommandCenterEvidence
+            title="Project health & segments"
+            description="Segment mix and project-level field metrics"
+          >
+            <section className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 dark:border-stone-800 dark:bg-stone-900/40">
+              <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-50">Projects by segment</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {Object.entries(data.by_segment).map(([seg, count]) => (
+                  <span key={seg} className="rounded-full bg-white px-3 py-1 text-sm dark:bg-stone-900">
+                    {SEGMENT_LABEL[seg] ?? seg}: {count}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-3 md:hidden">
+              <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-50">All projects</h3>
+              {data.projects.map((p) => (
+                <ProjectActionCard key={p.id} project={p} />
               ))}
-            </div>
-          </section>
+            </section>
 
-          {/* Mobile: action cards */}
-          <section className="space-y-3 md:hidden">
-            <h2 className="font-medium text-stone-900">All projects</h2>
-            {data.projects.map((p) => (
-              <ProjectActionCard key={p.id} project={p} />
-            ))}
-          </section>
-
-          {/* Desktop: table */}
-          <section className="card hidden overflow-hidden p-0 md:block">
-            <div className="border-b border-stone-200 px-4 py-3">
-              <h2 className="font-medium">Project health</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[36rem] text-sm">
-                <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+            <div className="intel-data-table-wrap hidden md:block">
+              <table className="intel-data-table min-w-[36rem]">
+                <thead>
                   <tr>
-                    <th className="px-4 py-2">Project</th>
-                    <th className="px-4 py-2">Segment</th>
-                    <th className="px-4 py-2">Trees</th>
-                    <th className="px-4 py-2">Violations</th>
-                    <th className="px-4 py-2">Survival due</th>
+                    <th>Project</th>
+                    <th>Segment</th>
+                    <th>Trees</th>
+                    <th>Violations</th>
+                    <th>Survival due</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.projects.map((p) => (
-                    <tr key={p.id} className="border-t border-stone-100">
-                      <td className="px-4 py-2">
+                    <tr key={p.id}>
+                      <td>
                         <Link
                           href={`/projects/${p.id}`}
                           className="font-medium text-forest-800 hover:underline"
@@ -149,12 +185,12 @@ export default function FieldOpsPage() {
                         </Link>
                         <div className="text-xs text-stone-500">{p.code}</div>
                       </td>
-                      <td className="px-4 py-2">{SEGMENT_LABEL[p.segment] ?? p.segment}</td>
-                      <td className="px-4 py-2">
+                      <td>{SEGMENT_LABEL[p.segment] ?? p.segment}</td>
+                      <td>
                         {p.tree_count}
                         {p.target_tree_count ? ` / ${p.target_tree_count}` : ""}
                       </td>
-                      <td className="px-4 py-2">
+                      <td>
                         {p.open_violations > 0 ? (
                           <Link
                             href={projectSecondaryHref(p.id, "compliance")}
@@ -166,22 +202,24 @@ export default function FieldOpsPage() {
                           "0"
                         )}
                       </td>
-                      <td className="px-4 py-2">{p.survival_due}</td>
+                      <td>{p.survival_due}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </section>
+          </CommandCenterEvidence>
         </>
       )}
 
-      {data.recent_violations.length > 0 && (
-        <section className="card">
-          <h2 className="text-lg font-medium">Recent violations</h2>
-          <ul className="mt-3 space-y-2">
+      {data.recent_violations.length > 0 ? (
+        <CommandCenterEvidence
+          title="Recent violations"
+          description="Latest compliance issues across projects"
+        >
+          <ul className="space-y-2">
             {data.recent_violations.map((v) => (
-              <li key={v.id} className="rounded-lg border border-stone-200 px-3 py-2 text-sm">
+              <li key={v.id} className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-800">
                 <div className="font-medium">
                   <Link href={`/projects/${v.project_id}`} className="text-forest-800 hover:underline">
                     {v.project_name}
@@ -191,15 +229,15 @@ export default function FieldOpsPage() {
                 <p className="text-stone-600">{v.message}</p>
                 <Link
                   href={projectSecondaryHref(v.project_id, "compliance")}
-                  className="mt-1 inline-block text-xs font-medium text-forest-700 hover:underline"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-forest-700 hover:underline"
                 >
-                  Fix in compliance →
+                  Fix in compliance <ArrowRight className="h-3 w-3" />
                 </Link>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        </CommandCenterEvidence>
+      ) : null}
     </div>
   );
 }
@@ -224,9 +262,10 @@ function ProjectActionCard({
 }) {
   return (
     <article
-      className={`rounded-xl border bg-white p-4 shadow-sm ${
-        highlight ? "border-amber-300 bg-amber-50/40" : "border-stone-200"
-      }`}
+      className={cn(
+        "rounded-xl border bg-white p-4 shadow-sm dark:bg-stone-900",
+        highlight ? "border-amber-300 bg-amber-50/40 dark:border-amber-800" : "border-stone-200 dark:border-stone-800",
+      )}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -282,37 +321,4 @@ function ProjectActionCard({
       </div>
     </article>
   );
-}
-
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  warn = false,
-  href,
-}: {
-  icon: typeof FolderKanban;
-  label: string;
-  value: string;
-  warn?: boolean;
-  href?: string;
-}) {
-  const inner = (
-    <>
-      <Icon className="h-8 w-8 shrink-0 text-forest-700" />
-      <div>
-        <div className="text-xs text-stone-500">{label}</div>
-        <div className="text-2xl font-semibold">{value}</div>
-      </div>
-    </>
-  );
-  const cls = `card flex items-center gap-3 ${warn ? "border-amber-300 bg-amber-50" : ""}`;
-  if (href) {
-    return (
-      <a href={href} className={`${cls} transition hover:border-forest-300`}>
-        {inner}
-      </a>
-    );
-  }
-  return <div className={cls}>{inner}</div>;
 }

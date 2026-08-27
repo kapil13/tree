@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Check, ChevronDown, Settings2 } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { Bell, Check, ShieldCheck } from "lucide-react";
+import {
+  alertsOperationalStatus,
+  CommandCenterEvidence,
+} from "@/components/dashboard/command-center-shell";
+import { fmtNum } from "@/components/dashboard/format";
+import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { alerts, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { userHasProfessionalAccess } from "@/lib/nav-access";
@@ -115,6 +119,17 @@ export default function AlertsPage() {
   const tw = prefs?.threat_watch;
   const comp = prefs?.compliance;
 
+  const criticalCount = alertItems.filter((a) => a.severity === "critical").length;
+  const highCount = alertItems.filter((a) => a.severity === "high").length;
+  const sarCount = alertItems.filter((a) => SAR_ALERT_KINDS.has(a.kind)).length;
+
+  const inboxStatus = alertsOperationalStatus({
+    unreadCount,
+    criticalCount,
+    highCount,
+    totalCount: alertItems.length,
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -128,6 +143,48 @@ export default function AlertsPage() {
               : "Updates about your trees, check-ins, and health scans."
         }
         breadcrumbs={[{ label: "Intelligence" }, { label: "Alerts" }]}
+      />
+
+      <OperationalStatusBar
+        tone={inboxStatus.tone}
+        label={inboxStatus.label}
+        summary={inboxStatus.summary}
+        icon={inboxStatus.tone === "healthy" ? ShieldCheck : Bell}
+        action={
+          unreadCount > 0 ? (
+            <Link href="/field-ops" className="btn-secondary text-xs">
+              Open field ops
+            </Link>
+          ) : undefined
+        }
+      />
+
+      <MetricGrid
+        columns={4}
+        metrics={[
+          {
+            label: "Unread",
+            value: fmtNum(unreadCount),
+            hint: "In current filter",
+            tone: unreadCount > 0 ? "warning" : "positive",
+          },
+          {
+            label: "Critical / high",
+            value: fmtNum(criticalCount + highCount),
+            hint: `${criticalCount} critical · ${highCount} high`,
+            tone: criticalCount > 0 ? "critical" : highCount > 0 ? "warning" : "default",
+          },
+          {
+            label: "SAR signals",
+            value: fmtNum(sarCount),
+            hint: "Sentinel / integrity alerts",
+          },
+          {
+            label: "Total in view",
+            value: fmtNum(alertItems.length),
+            hint: sarFilter ? "Filtered inbox" : "All alert kinds",
+          },
+        ]}
       />
 
       {sarKindsInList.length > 0 && (
@@ -255,16 +312,8 @@ export default function AlertsPage() {
         </div>
       </section>
 
-      <details className="card group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium">
-          <span className="inline-flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-forest-700" />
-            Notification preferences
-          </span>
-          <ChevronDown className="h-4 w-4 text-stone-400 transition group-open:rotate-180" />
-        </summary>
-
-        <div className="mt-4 space-y-5 border-t border-stone-100 pt-4 dark:border-stone-800">
+      <CommandCenterEvidence title="Notification preferences" description="Email, SMS, and digest settings">
+        <div className="space-y-5">
           <div className="space-y-3">
             <div className="text-sm font-medium">Satellite health</div>
             {sh ? (
@@ -439,7 +488,7 @@ export default function AlertsPage() {
             <p className="text-sm text-rose-700">{errorMessage(savePrefs.error)}</p>
           )}
         </div>
-      </details>
+      </CommandCenterEvidence>
     </div>
   );
 }
