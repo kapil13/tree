@@ -221,7 +221,7 @@ export function Sidebar() {
         <div className="min-w-0">
           <div className="text-base font-bold leading-tight text-forest-900">Aranyix</div>
           <div className="truncate text-[10px] font-medium text-stone-400">
-            Plantation intelligence platform
+            Environmental intelligence platform
           </div>
         </div>
       </Link>

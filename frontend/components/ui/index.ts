@@ -20,3 +20,4 @@ export { DashboardSkeletonShell, Skeleton } from "./skeleton";
 export { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "./table";
 export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 export { TrustChip, trustToneFromProvider } from "./trust-chip";
+export * from "./intelligence";
