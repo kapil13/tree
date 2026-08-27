@@ -8,11 +8,12 @@ import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summar
 import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useAuth } from "@/lib/auth-store";
-import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
+import { useRoleLabels } from "@/lib/use-role-labels";
 
 export default function SettingsGeneralPage() {
   const { user } = useAuth();
   const ts = useTranslations("settings");
+  const { formatOrgRole, formatPlatformRole } = useRoleLabels();
   const roleLabel = user?.org_role
     ? formatOrgRole(user.org_role)
     : formatPlatformRole(user?.role);
@@ -43,8 +44,8 @@ export default function SettingsGeneralPage() {
             className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
           >
             <div>
-              <p className="font-medium text-stone-900 dark:text-stone-50">Edit personal profile</p>
-              <p className="text-sm text-stone-500">Name, phone, date of birth, city, and state</p>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("editProfile")}</p>
+              <p className="text-sm text-stone-500">{ts("editProfileHint")}</p>
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
           </Link>
@@ -57,10 +58,7 @@ export default function SettingsGeneralPage() {
         </div>
       </SettingsSection>
 
-      <SettingsSection
-        title="AI tree scans & billing"
-        description="Complimentary BYOT scans, purchased packs, and payment history."
-      >
+      <SettingsSection title={ts("aiScansBilling")} description={ts("aiScansBillingHint")}>
         <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
           <div className="px-5 py-4">
             <AiScanUsagePanel />
@@ -70,31 +68,28 @@ export default function SettingsGeneralPage() {
             className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
           >
             <div>
-              <p className="font-medium text-stone-900 dark:text-stone-50">Billing & scan packs</p>
-              <p className="text-sm text-stone-500">Buy credits via Razorpay and view payment history</p>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("billingScanPacks")}</p>
+              <p className="text-sm text-stone-500">{ts("billingScanPacksHint")}</p>
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
           </Link>
         </div>
       </SettingsSection>
 
-      <SettingsSection
-        title="Carbon"
-        description="Estimate sequestration for a tree or review credit totals across your organization."
-      >
+      <SettingsSection title={ts("carbonSection")} description={ts("carbonSectionHint")}>
         <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
           <Link
             href="/settings/carbon"
             className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
           >
             <div>
-              <p className="font-medium text-stone-900 dark:text-stone-50">Carbon calculator</p>
-              <p className="text-sm text-stone-500">Biomass, CO₂e, and credit potential for a single tree</p>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("carbonCalculator")}</p>
+              <p className="text-sm text-stone-500">{ts("carbonCalculatorHint")}</p>
             </div>
             <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
           </Link>
           <div className="px-5 py-4">
-            <p className="mb-3 text-sm font-medium text-stone-800 dark:text-stone-200">Organization credits</p>
+            <p className="mb-3 text-sm font-medium text-stone-800 dark:text-stone-200">{ts("orgCredits")}</p>
             <OrgCreditsSummaryPanel />
           </div>
         </div>

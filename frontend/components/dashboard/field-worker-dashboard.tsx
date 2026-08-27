@@ -50,6 +50,8 @@ function FieldDashboardSkeleton() {
 
 export function FieldWorkerDashboard() {
   const { user } = useAuth();
+  const tf = useTranslations("fieldWorker");
+  const to = useTranslations("opsStatus");
   const [projectsQ, treesQ, fieldOpsQ] = useQueries({
     queries: [
       {
@@ -89,12 +91,12 @@ export function FieldWorkerDashboard() {
 
   for (const p of dueProjects.slice(0, 4)) {
     const bits: string[] = [];
-    if (p.survival_due > 0) bits.push(`${p.survival_due} survival due`);
-    if (p.open_violations > 0) bits.push(`${p.open_violations} open violation${p.open_violations === 1 ? "" : "s"}`);
+    if (p.survival_due > 0) bits.push(tf("survivalDueDetail", { count: p.survival_due }));
+    if (p.open_violations > 0) bits.push(tf("openViolationsDetail", { count: p.open_violations }));
     attention.push({
       id: `project-${p.id}`,
       title: p.name,
-      detail: bits.join(" · ") || "Needs attention",
+      detail: bits.join(" · ") || tf("needsAttention"),
       href: `/projects/${p.id}`,
       tone: p.open_violations > 0 ? "critical" : "warn",
     });
@@ -103,8 +105,8 @@ export function FieldWorkerDashboard() {
   if (attention.length < 3 && geotagDue.length > 0) {
     attention.push({
       id: "geotag",
-      title: `${geotagDue.length} tree${geotagDue.length === 1 ? "" : "s"} need a geotag update`,
-      detail: "Re-tag GPS / survival status in the field",
+      title: tf("geotagTitle", { count: geotagDue.length }),
+      detail: tf("geotagDetail"),
       href: geotagDue[0] ? `/trees/${geotagDue[0].id}` : "/trees",
       tone: "warn",
     });
@@ -118,19 +120,18 @@ export function FieldWorkerDashboard() {
   ) {
     attention.push({
       id: "survival-summary",
-      title: `${fieldOps.survival_due} survival check${fieldOps.survival_due === 1 ? "" : "s"} due`,
-      detail: "Across your assigned packages",
+      title: tf("survivalSummary", { count: fieldOps.survival_due }),
+      detail: tf("survivalSummaryDetail"),
       href: "/field-ops#attention",
       tone: "warn",
     });
   }
 
   const unassigned = projectItems.length === 0;
-  const firstName = user?.full_name?.split(" ")[0] ?? "there";
+  const firstName = user?.full_name?.split(" ")[0] ?? tf("there");
   const openViolations = fieldOps?.open_violations ?? 0;
   const survivalDue = fieldOps?.survival_due ?? 0;
 
-  const to = useTranslations("opsStatus");
   const fieldStatus = fieldOperationalStatus(to, {
     openViolations,
     survivalDue,
@@ -149,17 +150,17 @@ export function FieldWorkerDashboard() {
         action={
           <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2 text-xs">
             <Leaf className="h-3.5 w-3.5" />
-            Register tree
+            {tf("registerTree")}
           </Link>
         }
       />
 
       <InsightPanel
-        title={`Field workspace · ${firstName}`}
+        title={tf("fieldWorkspace", { name: firstName })}
         interpretation={
           user?.organization_name
-            ? `${user.organization_name} — register trees, refresh GPS, and close survival checks in your assigned packages.`
-            : "Register trees, refresh GPS, and close survival checks in your assigned packages."
+            ? tf("fieldInterpretOrg", { org: user.organization_name })
+            : tf("fieldInterpret")
         }
         icon={ClipboardList}
       />
@@ -168,26 +169,26 @@ export function FieldWorkerDashboard() {
         columns={4}
         metrics={[
           {
-            label: "Assigned projects",
+            label: tf("assignedProjects"),
             value: fmtNum(projectItems.length),
-            hint: unassigned ? "Ask supervisor to add you" : "Active packages",
+            hint: unassigned ? tf("askSupervisor") : tf("activePackages"),
           },
           {
-            label: "Open violations",
+            label: tf("openViolations"),
             value: fmtNum(openViolations),
-            hint: "Across your portfolio",
+            hint: tf("acrossPortfolio"),
             tone: openViolations > 0 ? "critical" : "positive",
           },
           {
-            label: "Survival due",
+            label: tf("survivalDue"),
             value: fmtNum(survivalDue),
-            hint: "Geotag / survival checks",
+            hint: tf("geotagRefresh"),
             tone: survivalDue > 0 ? "warning" : "default",
           },
           {
-            label: "Queue items",
+            label: tf("needsAttention"),
             value: fmtNum(attention.length),
-            hint: `${fmtNum(fieldOps?.tree_count ?? recentTrees.length)} trees in scope`,
+            hint: tf("treesRegistered"),
             tone: attention.length > 0 ? "warning" : "positive",
           },
         ]}

@@ -40,6 +40,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
@@ -51,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${sourceSans.variable} ${sourceSerif.variable} ${notoDevanagari.variable}`}
     >
       <body className="min-h-screen font-sans antialiased">
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider key={locale} locale={locale} messages={messages}>
           <Providers>
             <PwaRegister />
             {children}
