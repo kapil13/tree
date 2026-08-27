@@ -12,12 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
+from app.services.alerts.interpreter import build_site_preparedness_brief
 from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.locust import locust_early_warning
 from app.services.weather.alerts import evaluate_weather_alerts, weather_alert_summary
-from app.services.alerts.interpreter import build_site_preparedness_brief
 
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
 
