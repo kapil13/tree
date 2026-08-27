@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
+from app.services.alerts.interpreter import build_site_preparedness_brief
 from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.planting_projects.pest_intel import build_pest_intel
@@ -166,7 +167,7 @@ async def build_site_threat_watch(
         longitude=lon,
     )
 
-    return {
+    site_data = {
         "work_area_id": str(fence.id),
         "work_area_name": fence.name,
         "project_id": str(fence.project_id) if fence.project_id else None,
@@ -185,6 +186,8 @@ async def build_site_threat_watch(
         "forecast_summary": forecast_summary,
         "recommended_actions": intel.get("recommended_actions", []),
     }
+    site_data["preparedness_brief"] = build_site_preparedness_brief(site_data)
+    return site_data
 
 
 async def build_portfolio_threat_watch(

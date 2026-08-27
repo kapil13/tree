@@ -19,6 +19,7 @@ from app.services.alerts.defaults import (
     DEFAULT_THREAT_WATCH_PREFS,
     default_notification_preferences,
 )
+from app.services.alerts.interpreter import attach_interpretation, interpret_alert
 from app.services.alerts.service import dispatch_alert_channels
 
 log = get_logger("monitoring.alerts")
@@ -89,6 +90,8 @@ async def create_monitoring_alert(
         return None
 
     resolved = channels or _resolve_channels(user, prefs_key, severity)
+    brief = interpret_alert(kind=kind, severity=severity, title=title, message=message, payload=payload)
+    enriched_payload = attach_interpretation(payload, brief)
     alert = Alert(
         user_id=user.id,
         tree_id=uuid.UUID(payload["tree_id"]) if payload.get("tree_id") else None,
@@ -98,7 +101,7 @@ async def create_monitoring_alert(
         message=message[:4000],
         channels=resolved,
         delivered={},
-        payload=payload,
+        payload=enriched_payload,
     )
     db.add(alert)
     await db.flush()

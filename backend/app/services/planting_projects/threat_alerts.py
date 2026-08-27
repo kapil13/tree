@@ -14,6 +14,7 @@ from app.models.alert import Alert
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
+from app.services.alerts.interpreter import attach_interpretation, interpret_alert
 from app.services.alerts.service import dispatch_alert_channels, threat_watch_prefs
 from app.services.threats.watch import build_site_threat_watch
 
@@ -78,6 +79,9 @@ async def _create_threat_alert(
     ):
         channels.append("sms")
 
+    brief = interpret_alert(kind=kind, severity=severity, title=title, message=message, payload=payload)
+    enriched_payload = attach_interpretation(payload, brief)
+
     alert = Alert(
         user_id=user.id,
         kind=kind,
@@ -86,7 +90,7 @@ async def _create_threat_alert(
         message=message[:4000],
         channels=channels,
         delivered={},
-        payload=payload,
+        payload=enriched_payload,
     )
     db.add(alert)
     await db.flush()
