@@ -124,12 +124,14 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
+        purpose="Reports · Audit evidence"
         title={tr("title")}
         description={
           canGenerate
-            ? "Generate carbon, inventory, biodiversity, and ESG exports for your portfolio."
+            ? "Generate carbon, inventory, biodiversity, and ESG exports when compliance posture is clear."
             : "Download compliance and portfolio reports prepared by your program team."
         }
+        breadcrumbs={[{ label: "Reports" }, { label: "Exports" }]}
       />
 
       <div className="space-y-2 border-b border-stone-200 pb-2">

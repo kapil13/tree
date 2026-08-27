@@ -22,11 +22,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <OrgFeatureFlagsBanner />
           </div>
           <Topbar />
-          <main className="flex-1 bg-stone-50 p-4 dark:bg-stone-950 md:p-6">
-            <Suspense fallback={null}>
-              <InviteAcceptHandler />
-            </Suspense>
-            <RouteAccessGuard>{children}</RouteAccessGuard>
+          <main className="flex-1 bg-stone-50 dark:bg-stone-950 md:p-6 p-4">
+            <div className="app-main-inner">
+              <Suspense fallback={null}>
+                <InviteAcceptHandler />
+              </Suspense>
+              <RouteAccessGuard>{children}</RouteAccessGuard>
+            </div>
           </main>
         </div>
       </div>

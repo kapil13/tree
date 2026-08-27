@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FolderKanban, Plus, Search } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { AlertTriangle, FolderKanban, Plus, Search, ShieldCheck } from "lucide-react";
+import {
+  EmptyState,
+  FilterBar,
+  FilterField,
+  InsightPanel,
+  MetricGrid,
+  OperationalStatusBar,
+  PageHeader,
+} from "@/components/ui";
 import { centralSchemes, plantingProjects } from "@/lib/api";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { schemeByCode } from "@/lib/schemes";
+import { cn } from "@/lib/cn";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -20,6 +28,39 @@ const SEGMENT_LABEL: Record<string, string> = {
   general: "General",
 };
 
+function projectOperationalStatus(violations: number, count: number) {
+  if (count === 0) {
+    return {
+      tone: "neutral" as const,
+      label: "No projects yet",
+      summary: "Create a project to begin work-area mapping, tree registration, and compliance tracking.",
+    };
+  }
+  if (violations > 0) {
+    return {
+      tone: violations >= 5 ? ("critical" as const) : ("attention" as const),
+      label: `${violations} open compliance issue${violations === 1 ? "" : "s"} across portfolio`,
+      summary: "Review flagged projects before the next audit or reporting cycle. Open violations block clean MRV exports.",
+    };
+  }
+  return {
+    tone: "healthy" as const,
+    label: "Portfolio compliance clear",
+    summary: `${count} active project${count === 1 ? "" : "s"} with no open planting violations. Continue monitoring and satellite scans.`,
+  };
+}
+
+function RowComplianceStatus({ violations }: { violations: number }) {
+  if (violations > 0) {
+    return (
+      <span className={cn("intel-row-status", violations >= 3 ? "intel-row-status--risk" : "intel-row-status--watch")}>
+        {violations} open
+      </span>
+    );
+  }
+  return <span className="intel-row-status intel-row-status--ok">Clear</span>;
+}
+
 export default function ProjectsPage() {
   const [schemeFilter, setSchemeFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -29,7 +70,7 @@ export default function ProjectsPage() {
     queryFn: () => centralSchemes.list(),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["planting-projects", schemeFilter],
     queryFn: () =>
       plantingProjects.list(schemeFilter ? { scheme_code: schemeFilter } : undefined),
@@ -49,25 +90,57 @@ export default function ProjectsPage() {
     const q = search.trim().toLowerCase();
     if (!q) return projects;
     return projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q),
+      (p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q),
     );
   }, [projects, search]);
 
+  const portfolioStats = useMemo(() => {
+    const openViolations = projects.reduce(
+      (sum, p) => sum + (p.summary?.open_violations ?? 0),
+      0,
+    );
+    const flagged = projects.filter((p) => (p.summary?.open_violations ?? 0) > 0).length;
+    const progressValues = projects
+      .map((p) => p.summary?.progress_pct)
+      .filter((v): v is number => v != null);
+    const avgProgress =
+      progressValues.length > 0
+        ? Math.round(progressValues.reduce((a, b) => a + b, 0) / progressValues.length)
+        : null;
+    return { openViolations, flagged, avgProgress };
+  }, [projects]);
+
+  const ops = projectOperationalStatus(portfolioStats.openViolations, projects.length);
+
   function schemeLabel(code: string | null | undefined) {
     if (!code) return "—";
-    return (
-      schemeLabelByCode.get(code) ?? schemeByCode(schemes, code)?.label ?? code
-    );
+    return schemeLabelByCode.get(code) ?? schemeByCode(schemes, code)?.label ?? code;
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
+        purpose="Operate · Planting programs"
         title="Planting projects"
-        description="Tag projects to central schemes, draw work areas, then register trees with audit standards."
+        description="Understand compliance posture first, then open a project to register trees, run monitoring, and export audit evidence."
         breadcrumbs={[{ label: "Operate" }, { label: "Projects" }]}
+        status={
+          !isLoading ? (
+            <OperationalStatusBar
+              tone={ops.tone}
+              label={ops.label}
+              summary={ops.summary}
+              icon={ops.tone === "healthy" ? ShieldCheck : AlertTriangle}
+              action={
+                portfolioStats.flagged > 0 ? (
+                  <Link href="/portfolio-health?tab=compliance" className="btn-secondary text-xs">
+                    Portfolio compliance
+                  </Link>
+                ) : undefined
+              }
+            />
+          ) : undefined
+        }
         actions={
           <Link href="/projects/new" className="btn-primary">
             <Plus className="h-4 w-4" />
@@ -76,12 +149,42 @@ export default function ProjectsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-end gap-3">
-        {schemes.length > 0 && (
-          <div className="min-w-[12rem] flex-1 sm:flex-none">
-            <label htmlFor="scheme-filter" className="mb-1 block text-sm font-medium text-stone-600">
-              Central scheme
-            </label>
+      {!isLoading && projects.length > 0 ? (
+        <MetricGrid
+          columns={4}
+          metrics={[
+            { label: "Projects", value: projects.length },
+            {
+              label: "Avg registration progress",
+              value: portfolioStats.avgProgress != null ? `${portfolioStats.avgProgress}%` : "—",
+              hint: "Trees vs target",
+            },
+            {
+              label: "Flagged projects",
+              value: portfolioStats.flagged,
+              tone: portfolioStats.flagged > 0 ? "warning" : "positive",
+            },
+            {
+              label: "Open violations",
+              value: portfolioStats.openViolations,
+              tone: portfolioStats.openViolations > 0 ? "critical" : "positive",
+            },
+          ]}
+        />
+      ) : null}
+
+      <InsightPanel
+        title="Key insight"
+        interpretation={
+          portfolioStats.openViolations > 0
+            ? "Compliance issues should be resolved before generating framework or MRV exports for affected projects."
+            : "Projects with mapped work areas and active tree registration are ready for satellite monitoring and compliance workflows."
+        }
+      />
+
+      <FilterBar>
+        {schemes.length > 0 ? (
+          <FilterField label="Central scheme" htmlFor="scheme-filter">
             <select
               id="scheme-filter"
               className="input w-full max-w-xs"
@@ -95,25 +198,31 @@ export default function ProjectsPage() {
                 </option>
               ))}
             </select>
+          </FilterField>
+        ) : null}
+        <FilterField label="Search" htmlFor="project-search" className="min-w-[14rem] flex-[2]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              id="project-search"
+              className="input w-full pl-9"
+              placeholder="Name or project code…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        )}
-        <div className="relative min-w-[12rem] flex-1">
-          <label htmlFor="project-search" className="mb-1 block text-sm font-medium text-stone-600">
-            Search
-          </label>
-          <Search className="pointer-events-none absolute bottom-2.5 left-3 h-4 w-4 text-stone-400" />
-          <input
-            id="project-search"
-            className="input w-full pl-9"
-            placeholder="Search by name or code…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+        </FilterField>
+      </FilterBar>
 
       {isLoading ? (
         <p className="text-sm text-stone-500">Loading projects…</p>
+      ) : isError ? (
+        <EmptyState
+          icon={AlertTriangle}
+          title="Could not load projects"
+          description="Check your connection and try again."
+          action={{ label: "Retry", onClick: () => refetch() }}
+        />
       ) : projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
@@ -129,20 +238,17 @@ export default function ProjectsPage() {
         />
       ) : (
         <>
-          {/* Mobile cards */}
           <section className="space-y-3 md:hidden">
             {filtered.map((project) => {
               const violations = project.summary?.open_violations ?? 0;
               return (
-                <article
-                  key={project.id}
-                  className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm"
-                >
+                <article key={project.id} className="intel-panel">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
+                      <RowComplianceStatus violations={violations} />
                       <Link
                         href={`/projects/${project.id}`}
-                        className="font-semibold text-forest-900 hover:underline"
+                        className="mt-2 block font-semibold text-forest-900 hover:underline"
                       >
                         {project.name}
                       </Link>
@@ -160,12 +266,6 @@ export default function ProjectsPage() {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-stone-400">Segment</dt>
-                      <dd className="mt-0.5 font-medium capitalize text-stone-800">
-                        {SEGMENT_LABEL[project.segment] ?? project.segment.replace(/_/g, " ")}
-                      </dd>
-                    </div>
-                    <div>
                       <dt className="text-stone-400">Progress</dt>
                       <dd className="mt-0.5 font-medium text-stone-800">
                         {project.summary?.progress_pct != null
@@ -173,35 +273,20 @@ export default function ProjectsPage() {
                           : "—"}
                       </dd>
                     </div>
-                    <div>
-                      <dt className="text-stone-400">Violations</dt>
-                      <dd className="mt-0.5 font-medium">
-                        {violations > 0 ? (
-                          <Link
-                            href={projectSecondaryHref(project.id, "compliance")}
-                            className="text-amber-800 hover:underline"
-                          >
-                            {violations} open
-                          </Link>
-                        ) : (
-                          <span className="text-stone-800">0</span>
-                        )}
-                      </dd>
-                    </div>
                   </dl>
                   <div className="mt-3 flex gap-2">
                     <Link
                       href={`/projects/${project.id}`}
-                      className="btn-secondary flex-1 justify-center text-xs"
+                      className="btn-primary flex-1 justify-center text-xs"
                     >
-                      Open
+                      Open workspace
                     </Link>
                     {violations > 0 ? (
                       <Link
                         href={projectSecondaryHref(project.id, "compliance")}
                         className="btn-secondary flex-1 justify-center text-xs"
                       >
-                        Compliance
+                        Resolve issues
                       </Link>
                     ) : null}
                   </div>
@@ -210,27 +295,35 @@ export default function ProjectsPage() {
             })}
           </section>
 
-          {/* Desktop table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-stone-200 bg-white md:block">
-            <table className="w-full min-w-[44rem] text-sm">
-              <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+          <div className="intel-data-table-wrap hidden md:block">
+            <table className="intel-data-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3">Project</th>
-                  <th className="px-4 py-3">Central scheme</th>
-                  <th className="px-4 py-3">Segment</th>
-                  <th className="px-4 py-3">Mode</th>
-                  <th className="px-4 py-3">Progress</th>
-                  <th className="px-4 py-3">Violations</th>
-                  <th className="px-4 py-3">Areas</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th>Compliance</th>
+                  <th>Project</th>
+                  <th>Progress</th>
+                  <th>Scheme</th>
+                  <th>Segment</th>
+                  <th>Areas</th>
+                  <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((project) => {
                   const violations = project.summary?.open_violations ?? 0;
                   return (
-                    <tr key={project.id} className="border-t border-stone-100 hover:bg-stone-50">
-                      <td className="px-4 py-3">
+                    <tr key={project.id}>
+                      <td>
+                        {violations > 0 ? (
+                          <Link href={projectSecondaryHref(project.id, "compliance")}>
+                            <RowComplianceStatus violations={violations} />
+                          </Link>
+                        ) : (
+                          <RowComplianceStatus violations={0} />
+                        )}
+                      </td>
+                      <td>
                         <Link
                           href={`/projects/${project.id}`}
                           className="font-medium text-forest-800 hover:underline"
@@ -239,32 +332,22 @@ export default function ProjectsPage() {
                         </Link>
                         <div className="text-xs text-stone-500">{project.code}</div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-stone-700">
-                        {schemeLabel(project.scheme_code)}
-                      </td>
-                      <td className="px-4 py-3 capitalize">
-                        {SEGMENT_LABEL[project.segment] ?? project.segment.replace(/_/g, " ")}
-                      </td>
-                      <td className="px-4 py-3 capitalize">{project.compliance_mode}</td>
-                      <td className="px-4 py-3">
+                      <td className="tabular-nums">
                         {project.summary?.progress_pct != null
                           ? `${project.summary.progress_pct.toFixed(0)}%`
                           : "—"}
                       </td>
-                      <td className="px-4 py-3">
-                        {violations > 0 ? (
-                          <Link
-                            href={projectSecondaryHref(project.id, "compliance")}
-                            className="font-medium text-amber-800 hover:underline"
-                          >
-                            {violations}
-                          </Link>
-                        ) : (
-                          0
-                        )}
+                      <td className="text-xs text-stone-700">{schemeLabel(project.scheme_code)}</td>
+                      <td className="capitalize text-stone-700">
+                        {SEGMENT_LABEL[project.segment] ?? project.segment.replace(/_/g, " ")}
                       </td>
-                      <td className="px-4 py-3">{project.summary?.work_area_count ?? 0}</td>
-                      <td className="px-4 py-3 capitalize">{project.status}</td>
+                      <td className="tabular-nums">{project.summary?.work_area_count ?? 0}</td>
+                      <td className="capitalize">{project.status}</td>
+                      <td>
+                        <Link href={`/projects/${project.id}`} className="btn-secondary px-3 py-1.5 text-xs">
+                          Open
+                        </Link>
+                      </td>
                     </tr>
                   );
                 })}

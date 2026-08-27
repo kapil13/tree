@@ -118,14 +118,16 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Alerts"
+        purpose="Intelligence · Signals"
+        title="Alerts & signals"
         description={
           unreadCount > 0
-            ? `${unreadCount} unread · review and clear your inbox`
+            ? `${unreadCount} unread — review critical items first, then mark resolved signals as read.`
             : isOps
-              ? "Operational notifications for satellite, compliance, and field work"
-              : "Updates about your trees, check-ins, and health scans"
+              ? "Operational notifications for satellite, compliance, SAR, and field work."
+              : "Updates about your trees, check-ins, and health scans."
         }
+        breadcrumbs={[{ label: "Intelligence" }, { label: "Alerts" }]}
       />
 
       {sarKindsInList.length > 0 && (

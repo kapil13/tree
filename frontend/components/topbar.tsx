@@ -2,7 +2,7 @@
 
 import { Bell, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
@@ -12,13 +12,16 @@ import { clearAppQueryCache } from "@/app/providers";
 import { alerts } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
+import { resolveRouteMeta } from "@/lib/route-meta";
 import { scopedKey } from "@/lib/query-keys";
 import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
 
 export function Topbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const routeMeta = resolveRouteMeta(pathname);
 
   const { data: unreadPage } = useQuery({
     queryKey: scopedKey(user, "alerts-unread"),
@@ -45,7 +48,7 @@ export function Topbar() {
   return (
     <>
       <div className="flex h-14 items-center justify-between border-b border-stone-200 bg-white px-4 dark:border-stone-800 dark:bg-stone-950 md:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             className="btn-ghost md:hidden"
@@ -54,12 +57,26 @@ export function Topbar() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="text-sm text-stone-600">
-            {user?.organization_name
-              ? user.organization_name
-              : user?.organization_id
-                ? "Organization workspace"
-                : "Personal workspace"}
+          <div className="min-w-0">
+            {routeMeta?.section ? (
+              <p className="hidden text-[10px] font-semibold uppercase tracking-wide text-stone-400 sm:block">
+                {routeMeta.section}
+              </p>
+            ) : null}
+            <div className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">
+              {routeMeta?.title ?? (
+                user?.organization_name
+                  ? user.organization_name
+                  : user?.organization_id
+                    ? "Organization workspace"
+                    : "Personal workspace"
+              )}
+            </div>
+            {routeMeta ? (
+              <p className="hidden truncate text-xs text-stone-500 sm:block">
+                {user?.organization_name ?? "Workspace"}
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="flex items-center gap-3">

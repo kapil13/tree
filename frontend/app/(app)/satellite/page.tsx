@@ -63,8 +63,10 @@ export default function SatellitePage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Site satellite scan"
-        description="Draw or select a plantation fence, then check greenness (NDVI) for that site. Advanced radar and ISRO catalog tools are available below when you need them."
+        purpose="Intelligence · Earth observation"
+        title="Satellite monitoring"
+        description="Select a work area, interpret canopy health first, then open radar or catalog tools for deeper investigation."
+        breadcrumbs={[{ label: "Intelligence" }, { label: "Satellite" }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <TrustChip tone={ndviTrust.tone} label={`NDVI · ${verified > 0 ? "Active" : "Ready"}`} />
