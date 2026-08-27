@@ -10,6 +10,7 @@ import {
   Leaf,
   Map,
   Satellite,
+  Sparkles,
   TreePine,
 } from "lucide-react";
 import {
@@ -26,12 +27,15 @@ import {
 import { CarbonCo2eRange } from "@/components/carbon-co2e-range";
 import { TreesMap } from "@/components/trees-map";
 import { CitizenStewardshipPanel } from "@/components/dashboard/citizen-stewardship-panel";
+import {
+  citizenOperationalStatus,
+  CommandCenterEvidence,
+} from "@/components/dashboard/command-center-shell";
 import { DataTrustBanner } from "@/components/data-trust-banner";
-import { MetricCard } from "@/components/dashboard/metric-card";
 import { fmtCompact, fmtNum, CHART_COLORS, HEALTH_COLORS, timeAgo } from "@/components/dashboard/format";
 import { Badge, healthBadgeVariant } from "@/components/ui/badge";
-import { DashboardSkeletonShell } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InsightPanel, MetricGrid, OperationalStatusBar } from "@/components/ui";
 import { getProgramTheme } from "@/components/registration/program-theme";
 import { aiScans, dashboard, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
@@ -39,7 +43,17 @@ import { cn } from "@/lib/cn";
 import { scopedKey } from "@/lib/query-keys";
 
 function DashboardSkeleton() {
-  return <DashboardSkeletonShell />;
+  return (
+    <div className="space-y-6">
+      <div className="intel-skeleton h-20 rounded-xl" />
+      <div className="intel-skeleton h-24 rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="intel-skeleton h-24 rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function CitizenDashboard() {
@@ -98,122 +112,87 @@ export function CitizenDashboard() {
   ];
   const stepsDone = steps.filter((s) => s.done).length;
   const showChecklist = treeCount < 3 || stepsDone < 3;
+  const pctHealthy = kpi?.pct_healthy ?? 0;
+
+  const groveStatus = citizenOperationalStatus({
+    treeCount,
+    pctHealthy,
+    stepsDone,
+    stepsTotal: steps.length,
+  });
+
+  const carbonValue =
+    kpi && kpi.total_co2e_kg > 0 ? (
+      <CarbonCo2eRange
+        compact
+        showLabel={false}
+        data={{
+          co2e_kg: kpi.total_co2e_kg,
+          co2e_kg_lower_90: kpi.co2e_kg_lower_90,
+          co2e_kg_upper_90: kpi.co2e_kg_upper_90,
+          uncertainty_pct: kpi.uncertainty_pct,
+        }}
+      />
+    ) : (
+      "—"
+    );
 
   return (
-    <div className="dash-shell space-y-6">
-      <section className="dash-hero">
-        <div className="dash-hero-grid">
-          <div className="dash-hero-header">
-            <div className="dash-live-pill">
-              <span className="dash-live-dot" />
-              {t("groveLabel")}
-            </div>
-            <h1 className="dash-hero-title mt-4 font-display">
-              {treeCount > 0
-                ? t("greetingWithTrees", { name: firstName, count: treeCount })
-                : t("greetingEmpty", { name: firstName })}
-            </h1>
-            <p className="dash-hero-copy">
-              {treeCount > 0 ? t("heroWithTrees") : t("heroEmpty")}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2">
-                <Leaf className="h-4 w-4" />
-                {treeCount > 0 ? t("tagTree") : t("tagFirstTree")}
-              </Link>
-              <Link
-                href="/map"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
-              >
-                <Map className="h-4 w-4" />
-                {t("openMap")}
-              </Link>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <OperationalStatusBar
+        tone={groveStatus.tone}
+        label={groveStatus.label}
+        summary={groveStatus.summary}
+        icon={HeroIcon}
+        action={
+          <Link href="/trees/new" className="btn-primary inline-flex items-center gap-2 text-xs">
+            <Leaf className="h-3.5 w-3.5" />
+            {treeCount > 0 ? t("tagTree") : t("tagFirstTree")}
+          </Link>
+        }
+      />
 
-          <div className="dash-hero-stats">
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{fmtNum(treeCount)}</p>
-              <p className="dash-hero-stat-label">{t("treesTagged")}</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value text-sm">
-                {kpi && kpi.total_co2e_kg > 0 ? (
-                  <CarbonCo2eRange
-                    compact
-                    data={{
-                      co2e_kg: kpi.total_co2e_kg,
-                      co2e_kg_lower_90: kpi.co2e_kg_lower_90,
-                      co2e_kg_upper_90: kpi.co2e_kg_upper_90,
-                      uncertainty_pct: kpi.uncertainty_pct,
-                    }}
-                  />
-                ) : (
-                  "—"
-                )}
-              </p>
-              <p className="dash-hero-stat-label">{t("carbonStored")}</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{kpi ? `${Math.round(kpi.pct_healthy)}%` : "—"}</p>
-              <p className="dash-hero-stat-label">{t("healthyCanopy")}</p>
-            </div>
-            <div className="dash-hero-stat">
-              <p className="dash-hero-stat-value">{scansLeft ?? "∞"}</p>
-              <p className="dash-hero-stat-label">{t("aiScansLeft")}</p>
-            </div>
-          </div>
+      <InsightPanel
+        title={treeCount > 0 ? t("greetingWithTrees", { name: firstName, count: treeCount }) : t("greetingEmpty", { name: firstName })}
+        interpretation={treeCount > 0 ? t("heroWithTrees") : t("heroEmpty")}
+        icon={Sparkles}
+      >
+        <div className="flex flex-wrap gap-3">
+          <Link href="/map" className="btn-secondary inline-flex items-center gap-2 text-xs">
+            <Map className="h-3.5 w-3.5" />
+            {t("openMap")}
+          </Link>
         </div>
-      </section>
-
-      <DataTrustBanner variant="strip" />
+      </InsightPanel>
 
       {treeCount > 0 ? (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            icon={TreePine}
-            label="Trees"
-            value={fmtNum(treeCount)}
-            sub={kpi ? `${Math.round(kpi.pct_healthy)}% healthy` : undefined}
-            accent="green"
-          />
-          <MetricCard
-            icon={Satellite}
-            label="Satellite checked"
-            value={kpi ? `${Math.round(kpi.pct_satellite_verified)}%` : "—"}
-            sub="When scans are available"
-            accent="sky"
-          />
-          <MetricCard
-            icon={HeroIcon}
-            label={t("carbonMetric")}
-            value={
-              kpi && kpi.total_co2e_kg > 0 ? (
-                <CarbonCo2eRange
-                  compact
-                  showLabel={false}
-                  data={{
-                    co2e_kg: kpi.total_co2e_kg,
-                    co2e_kg_lower_90: kpi.co2e_kg_lower_90,
-                    co2e_kg_upper_90: kpi.co2e_kg_upper_90,
-                    uncertainty_pct: kpi.uncertainty_pct,
-                  }}
-                />
-              ) : (
-                "—"
-              )
-            }
-            sub={t("carbonMetricSub")}
-            accent="lime"
-          />
-          <MetricCard
-            icon={Leaf}
-            label="AI scans"
-            value={scansLeft != null ? String(scansLeft) : "Unlimited"}
-            sub="Complimentary + purchased"
-            accent="amber"
-          />
-        </section>
+        <MetricGrid
+          columns={4}
+          metrics={[
+            {
+              label: "Trees tagged",
+              value: fmtNum(treeCount),
+              hint: `${Math.round(pctHealthy)}% healthy`,
+              tone: "positive",
+            },
+            {
+              label: "Satellite checked",
+              value: kpi ? `${Math.round(kpi.pct_satellite_verified)}%` : "—",
+              hint: "When scans are available",
+            },
+            {
+              label: t("carbonMetric"),
+              value: carbonValue,
+              hint: t("carbonMetricSub"),
+              tone: kpi && kpi.total_co2e_kg > 0 ? "positive" : "default",
+            },
+            {
+              label: "AI scans left",
+              value: scansLeft != null ? String(scansLeft) : "∞",
+              hint: "Complimentary + purchased",
+            },
+          ]}
+        />
       ) : null}
 
       <div className="dash-panel">
@@ -229,167 +208,183 @@ export function CitizenDashboard() {
         <CitizenStewardshipPanel compact />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="dash-panel lg:col-span-2">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Carbon over time</h2>
-              <p className="dash-panel-sub">Estimated carbon stored from your tagged trees</p>
-            </div>
-          </div>
-          {carbonSeries.length > 1 ? (
-            <div className="mt-4 h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={carbonSeries}>
-                  <defs>
-                    <linearGradient id="byotCarbon" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#16a34a" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#a8a29e" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="#a8a29e" width={40} />
-                  <Tooltip
-                    formatter={(v: number) => [`${fmtNum(v, " kg")}`, "Carbon stored"]}
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="kg"
-                    stroke="#16a34a"
-                    fill="url(#byotCarbon)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <EmptyState
-              className="mt-4"
-              icon={HeroIcon}
-              title="No trend yet"
-              description="Tag a few trees to see estimated carbon stored over time."
-              action={{ label: "Tag a tree", href: "/trees/new" }}
-            />
-          )}
-        </div>
-
+      {showChecklist ? (
         <div className="dash-panel">
           <div className="dash-panel-head">
             <div>
-              <h2 className="dash-panel-title">Tree health</h2>
-              <p className="dash-panel-sub">From AI and field observations</p>
+              <h2 className="dash-panel-title">Getting started</h2>
+              <p className="dash-panel-sub">
+                {stepsDone} of {steps.length} complete
+              </p>
             </div>
           </div>
-          {healthData.length > 0 ? (
-            <div className="mt-2 h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={healthData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={48}
-                    outerRadius={72}
-                    paddingAngle={2}
-                  >
-                    {healthData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.fill} />
+          <ul className="mt-4 space-y-3">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <Link
+                  href={step.href}
+                  className="flex items-center gap-3 rounded-xl border border-stone-100 px-3 py-2.5 transition hover:border-forest-200 hover:bg-forest-50/50 dark:border-stone-800 dark:hover:bg-stone-900"
+                >
+                  {step.done ? (
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Circle className="h-5 w-5 shrink-0 text-stone-300" />
+                  )}
+                  <span className={cn("text-sm", step.done && "text-stone-500 line-through")}>
+                    {step.label}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <DataTrustBanner variant="strip" />
+
+      {treeCount > 0 ? (
+        <CommandCenterEvidence
+          title="Grove analytics"
+          description="Carbon trajectory, health mix, species, and map"
+        >
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="dash-panel border-0 p-0 shadow-none lg:col-span-2">
+              <div className="dash-panel-head px-0 pt-0">
+                <div>
+                  <h2 className="dash-panel-title">Carbon over time</h2>
+                  <p className="dash-panel-sub">Estimated carbon stored from your tagged trees</p>
+                </div>
+              </div>
+              {carbonSeries.length > 1 ? (
+                <div className="mt-4 h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={carbonSeries}>
+                      <defs>
+                        <linearGradient id="byotCarbon" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#16a34a" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#a8a29e" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="#a8a29e" width={40} />
+                      <Tooltip
+                        formatter={(v: number) => [`${fmtNum(v, " kg")}`, "Carbon stored"]}
+                        contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4" }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="kg"
+                        stroke="#16a34a"
+                        fill="url(#byotCarbon)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <EmptyState
+                  className="mt-4"
+                  icon={HeroIcon}
+                  title="No trend yet"
+                  description="Tag a few trees to see estimated carbon stored over time."
+                  action={{ label: "Tag a tree", href: "/trees/new" }}
+                />
+              )}
+            </div>
+
+            <div className="dash-panel border-0 p-0 shadow-none">
+              <div className="dash-panel-head px-0 pt-0">
+                <div>
+                  <h2 className="dash-panel-title">Tree health</h2>
+                  <p className="dash-panel-sub">From AI and field observations</p>
+                </div>
+              </div>
+              {healthData.length > 0 ? (
+                <div className="mt-2 h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={healthData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={48}
+                        outerRadius={72}
+                        paddingAngle={2}
+                      >
+                        {healthData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <ul className="mt-2 space-y-1 text-xs text-stone-600">
+                    {healthData.map((h) => (
+                      <li key={h.name} className="flex items-center justify-between">
+                        <span className="capitalize">{h.name}</span>
+                        <span className="font-medium">{h.value}</span>
+                      </li>
                     ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <ul className="mt-2 space-y-1 text-xs text-stone-600">
-                {healthData.map((h) => (
-                  <li key={h.name} className="flex items-center justify-between">
-                    <span className="capitalize">{h.name}</span>
-                    <span className="font-medium">{h.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="mt-6 text-sm text-stone-500">
-              Health breakdown appears after your first analysis.
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {showChecklist ? (
-          <div className="dash-panel">
-            <div className="dash-panel-head">
-              <div>
-                <h2 className="dash-panel-title">Getting started</h2>
-                <p className="dash-panel-sub">
-                  {stepsDone} of {steps.length} complete
+                  </ul>
+                </div>
+              ) : (
+                <p className="mt-6 text-sm text-stone-500">
+                  Health breakdown appears after your first analysis.
                 </p>
-              </div>
+              )}
             </div>
-            <ul className="mt-4 space-y-3">
-              {steps.map((step) => (
-                <li key={step.id}>
-                  <Link
-                    href={step.href}
-                    className="flex items-center gap-3 rounded-xl border border-stone-100 px-3 py-2.5 transition hover:border-forest-200 hover:bg-forest-50/50 dark:border-stone-800 dark:hover:bg-stone-900"
-                  >
-                    {step.done ? (
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-                    ) : (
-                      <Circle className="h-5 w-5 shrink-0 text-stone-300" />
-                    )}
-                    <span className={cn("text-sm", step.done && "text-stone-500 line-through")}>
-                      {step.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </div>
-        ) : (
-          <div className="dash-panel">
-            <div className="dash-panel-head">
-              <div>
-                <h2 className="dash-panel-title">Top species</h2>
-                <p className="dash-panel-sub">In your personal grove</p>
-              </div>
-            </div>
-            {speciesData.length > 0 ? (
-              <ul className="mt-4 space-y-2">
-                {speciesData.map((s, i) => (
-                  <li key={s.label} className="flex items-center gap-3 text-sm">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
-                    />
-                    <span className="flex-1 truncate">{s.label}</span>
-                    <span className="font-medium text-stone-700">{s.value}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-4 text-sm text-stone-500">Species mix shows up as you tag more trees.</p>
-            )}
-          </div>
-        )}
 
-        <div className="dash-panel lg:col-span-2">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Your map</h2>
-              <p className="dash-panel-sub">GPS pins for every tagged tree</p>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {!showChecklist ? (
+              <div className="dash-panel border-0 p-0 shadow-none">
+                <div className="dash-panel-head px-0 pt-0">
+                  <div>
+                    <h2 className="dash-panel-title">Top species</h2>
+                    <p className="dash-panel-sub">In your personal grove</p>
+                  </div>
+                </div>
+                {speciesData.length > 0 ? (
+                  <ul className="mt-4 space-y-2">
+                    {speciesData.map((s, i) => (
+                      <li key={s.label} className="flex items-center gap-3 text-sm">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+                        />
+                        <span className="flex-1 truncate">{s.label}</span>
+                        <span className="font-medium text-stone-700">{s.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 text-sm text-stone-500">Species mix shows up as you tag more trees.</p>
+                )}
+              </div>
+            ) : null}
+
+            <div
+              className={cn(
+                "dash-panel border-0 p-0 shadow-none",
+                showChecklist ? "lg:col-span-3" : "lg:col-span-2",
+              )}
+            >
+              <div className="dash-panel-head px-0 pt-0">
+                <div>
+                  <h2 className="dash-panel-title">Your map</h2>
+                  <p className="dash-panel-sub">GPS pins for every tagged tree</p>
+                </div>
+                <Link href="/map" className="dash-link">
+                  Full map <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="mt-3 overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
+                <TreesMap height="220px" mapType="hybrid" />
+              </div>
             </div>
-            <Link href="/map" className="dash-link">
-              Full map <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </div>
-          <div className="mt-3 overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
-            <TreesMap height="220px" mapType="hybrid" />
-          </div>
-        </div>
-      </div>
+        </CommandCenterEvidence>
+      ) : null}
 
       <div className="dash-panel">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
