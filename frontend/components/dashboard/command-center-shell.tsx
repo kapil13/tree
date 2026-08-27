@@ -49,6 +49,89 @@ export function portfolioOperationalStatus(input: {
   };
 }
 
+export function fieldOperationalStatus(input: {
+  openViolations: number;
+  survivalDue: number;
+  queueCount: number;
+  geotagDue: number;
+  unassigned: boolean;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { openViolations, survivalDue, queueCount, geotagDue, unassigned } = input;
+
+  if (unassigned) {
+    return {
+      tone: "neutral",
+      label: "Awaiting project assignment",
+      summary: "No packages assigned yet. Ask your supervisor to add you on a project Team tab.",
+    };
+  }
+  if (openViolations > 0) {
+    return {
+      tone: "critical",
+      label: "Compliance items open",
+      summary: `${openViolations} violation${openViolations === 1 ? "" : "s"} need resolution before the next audit window.`,
+    };
+  }
+  if (survivalDue > 0 || geotagDue > 0) {
+    const parts: string[] = [];
+    if (survivalDue > 0) parts.push(`${survivalDue} survival check${survivalDue === 1 ? "" : "s"} due`);
+    if (geotagDue > 0) parts.push(`${geotagDue} geotag refresh${geotagDue === 1 ? "" : "es"} needed`);
+    return {
+      tone: "attention",
+      label: "Field surveys due",
+      summary: parts.join(" · "),
+    };
+  }
+  if (queueCount > 0) {
+    return {
+      tone: "watch",
+      label: "Queue has follow-ups",
+      summary: `${queueCount} item${queueCount === 1 ? "" : "s"} in your attention queue. Review before end of day.`,
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "Field queue clear",
+    summary: "No survival checks, geotag updates, or open violations in your assigned packages.",
+  };
+}
+
+export function citizenOperationalStatus(input: {
+  treeCount: number;
+  pctHealthy: number;
+  stepsDone: number;
+  stepsTotal: number;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { treeCount, pctHealthy, stepsDone, stepsTotal } = input;
+
+  if (treeCount === 0) {
+    return {
+      tone: "neutral",
+      label: "Start your grove",
+      summary: "Tag your first tree to unlock carbon estimates, health tracking, and your personal map.",
+    };
+  }
+  if (stepsDone < stepsTotal) {
+    return {
+      tone: "watch",
+      label: "Onboarding in progress",
+      summary: `${stepsDone} of ${stepsTotal} getting-started steps complete. Finish setup to unlock full insights.`,
+    };
+  }
+  if (pctHealthy < 60 && treeCount > 0) {
+    return {
+      tone: "attention",
+      label: "Canopy needs care",
+      summary: `${Math.round(pctHealthy)}% of your trees are healthy. Run AI scans or field checks on stressed trees.`,
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "Grove is thriving",
+    summary: `${treeCount} tree${treeCount === 1 ? "" : "s"} tagged · ${Math.round(pctHealthy)}% healthy canopy.`,
+  };
+}
+
 export function CommandCenterEvidence({
   title,
   description,
