@@ -1,10 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Mic, Square } from "lucide-react";
+import { AlertTriangle, Bird, Mic, ShieldCheck, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import {
+  bioacousticOperationalStatus,
+  CommandCenterEvidence,
+} from "@/components/dashboard/command-center-shell";
+import { fmtNum } from "@/components/dashboard/format";
+import { EmptyState, InsightPanel, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import {
   bioacoustic,
   errorMessage,
@@ -94,6 +98,18 @@ export default function BioacousticPage() {
   const { data: recordings, isLoading } = useQuery({
     queryKey: ["bioacoustic-recordings"],
     queryFn: bioacoustic.list,
+  });
+
+  const { data: summary } = useQuery({
+    queryKey: ["bio-summary", fenceId],
+    queryFn: () => bioacoustic.summary(fenceId || undefined),
+  });
+
+  const bioStatus = bioacousticOperationalStatus({
+    totalRecordings: summary?.total_recordings ?? recordings?.length ?? 0,
+    analyzedRecordings: summary?.analyzed_recordings ?? recordings?.filter((r) => r.status === "analyzed").length ?? 0,
+    threatenedSpecies: summary?.threatened_species_count ?? 0,
+    avgHealthScore: summary?.avg_health_score ?? 0,
   });
 
   const analyzeMut = useMutation({
@@ -230,130 +246,162 @@ export default function BioacousticPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Biodiversity"
-        description="Record a short ambient soundscape (not voice) to detect species and track site health."
+        purpose="Intelligence · Biodiversity"
+        title="Bioacoustic monitoring"
+        description="Record ambient soundscapes (not voice) to detect species and track site health."
+        breadcrumbs={[{ label: "Intelligence" }, { label: "Bioacoustic" }]}
       />
 
-      <section className="relative overflow-hidden rounded-3xl border border-forest-200 bg-gradient-to-br from-forest-800 via-forest-700 to-emerald-800 px-6 py-10 text-center text-white shadow-sm sm:px-10">
-        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-200/90">
-          Field recording
-        </p>
-        <div className="mt-4 font-mono text-5xl tabular-nums tracking-tight sm:text-6xl">
-          {elapsed}s
-        </div>
-        <p className="mx-auto mt-2 max-w-md text-sm text-emerald-50/85">
-          Aim for {MIN_SECONDS}–{MAX_SECONDS} seconds ({PREFERRED_SECONDS}s preferred). Hold the phone
-          still and capture ambient nature sound.
-        </p>
+      <OperationalStatusBar
+        tone={bioStatus.tone}
+        label={bioStatus.label}
+        summary={bioStatus.summary}
+        icon={bioStatus.tone === "healthy" ? ShieldCheck : Bird}
+      />
 
-        <div className="mx-auto mt-5 max-w-sm text-left">
-          <label className="mb-1 block text-xs font-medium text-emerald-100/90">
-            Plantation site (optional)
-          </label>
-          <select
-            className="input w-full border-0 bg-white/95 text-stone-900"
-            value={fenceId}
-            onChange={(e) => setFenceId(e.target.value)}
-          >
-            <option value="">No site — GPS only</option>
-            {fences?.items.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {(summary || (recordings && recordings.length > 0)) ? (
+        <MetricGrid
+          columns={4}
+          metrics={[
+            {
+              label: "Recordings",
+              value: fmtNum(summary?.total_recordings ?? recordings?.length ?? 0),
+              hint: `${fmtNum(summary?.analyzed_recordings ?? 0)} analyzed`,
+            },
+            {
+              label: "Species detected",
+              value: fmtNum(summary?.total_species_detected ?? 0),
+              hint: `${fmtNum(summary?.threatened_species_count ?? 0)} threatened`,
+              tone: (summary?.threatened_species_count ?? 0) > 0 ? "warning" : "positive",
+            },
+            {
+              label: "Biodiversity health",
+              value: summary?.avg_health_score ? `${Math.round(summary.avg_health_score)}` : "—",
+              hint: "Avg score /100",
+            },
+            {
+              label: "Shannon H′",
+              value: summary?.avg_shannon_index?.toFixed(2) ?? "—",
+              hint: "Diversity index",
+            },
+          ]}
+        />
+      ) : null}
 
-        {(recording || approxSpl > 0) && (
-          <div className="mt-4 text-center">
-            <p className="text-sm font-medium text-emerald-50">
-              Ambient level ≈ {approxSpl.toFixed(0)} dB
-            </p>
-            {noiseWarning && (
-              <p className="mt-1 flex items-center justify-center gap-1 text-xs text-amber-100">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                High noise — traffic, wind, or machinery may reduce accuracy
+      <InsightPanel
+        title="Field recording"
+        interpretation={`Capture ${MIN_SECONDS}–${MAX_SECONDS} seconds (${PREFERRED_SECONDS}s preferred) of ambient nature sound. Hold the phone still — traffic and machinery reduce accuracy.`}
+        icon={Mic}
+      >
+        <div className="relative overflow-hidden rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-800 via-forest-700 to-emerald-800 px-6 py-8 text-center text-white shadow-sm sm:px-10">
+          <div className="font-mono text-5xl tabular-nums tracking-tight sm:text-6xl">{elapsed}s</div>
+
+          <div className="mx-auto mt-5 max-w-sm text-left">
+            <label className="mb-1 block text-xs font-medium text-emerald-100/90">
+              Plantation site (optional)
+            </label>
+            <select
+              className="input w-full border-0 bg-white/95 text-stone-900"
+              value={fenceId}
+              onChange={(e) => setFenceId(e.target.value)}
+            >
+              <option value="">No site — GPS only</option>
+              {fences?.items.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {(recording || approxSpl > 0) && (
+            <div className="mt-4 text-center">
+              <p className="text-sm font-medium text-emerald-50">
+                Ambient level ≈ {approxSpl.toFixed(0)} dB
               </p>
+              {noiseWarning && (
+                <p className="mt-1 flex items-center justify-center gap-1 text-xs text-amber-100">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  High noise — traffic, wind, or machinery may reduce accuracy
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="mt-8 flex justify-center">
+            {!recording ? (
+              <button
+                type="button"
+                className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white text-forest-800 shadow-lg transition hover:scale-105 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                onClick={() => void startRecording()}
+                aria-label="Start ambient recording"
+              >
+                <Mic className="h-9 w-9" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg transition hover:bg-rose-600 disabled:opacity-50"
+                onClick={stopRecording}
+                disabled={elapsed < MIN_SECONDS}
+                aria-label={elapsed < MIN_SECONDS ? `Stop after ${MIN_SECONDS - elapsed}s` : "Stop and assess"}
+              >
+                <Square className="h-8 w-8 fill-current" />
+              </button>
             )}
           </div>
-        )}
+          <p className="mt-3 text-sm font-medium text-emerald-50">
+            {!recording
+              ? "Tap to record"
+              : elapsed < MIN_SECONDS
+                ? `Recording… ${MIN_SECONDS - elapsed}s until you can stop`
+                : "Tap to stop & assess"}
+          </p>
+          {status && <p className="mt-3 text-sm text-emerald-100">{status}</p>}
+          {error && <p className="mt-3 text-sm text-rose-200">{error}</p>}
 
-        <div className="mt-8 flex justify-center">
-          {!recording ? (
-            <button
-              type="button"
-              className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white text-forest-800 shadow-lg transition hover:scale-105 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              onClick={() => void startRecording()}
-              aria-label="Start ambient recording"
-            >
-              <Mic className="h-9 w-9" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg transition hover:bg-rose-600 disabled:opacity-50"
-              onClick={stopRecording}
-              disabled={elapsed < MIN_SECONDS}
-              aria-label={elapsed < MIN_SECONDS ? `Stop after ${MIN_SECONDS - elapsed}s` : "Stop and assess"}
-            >
-              <Square className="h-8 w-8 fill-current" />
-            </button>
+          {fenceId && (
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium ring-1 ring-white/25 hover:bg-white/20"
+                onClick={() => void downloadReport("biodiversity")}
+              >
+                Biodiversity PDF
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium ring-1 ring-white/25 hover:bg-white/20"
+                onClick={() => void downloadReport("esg")}
+              >
+                ESG PDF
+              </button>
+            </div>
           )}
         </div>
-        <p className="mt-3 text-sm font-medium text-emerald-50">
-          {!recording
-            ? "Tap to record"
-            : elapsed < MIN_SECONDS
-              ? `Recording… ${MIN_SECONDS - elapsed}s until you can stop`
-              : "Tap to stop & assess"}
+      </InsightPanel>
+
+      {ecosystem ? (
+        <MetricGrid
+          columns={4}
+          metrics={[
+            { label: "Ecosystem score", value: `${ecosystem.ecosystem_health_score}`, hint: ecosystem.fence_name },
+            { label: "Biodiversity health", value: `${ecosystem.bioacoustic.avg_health_score}`, hint: "Bioacoustic avg /100" },
+            { label: "NDVI", value: ecosystem.ndvi_mean?.toFixed(2) ?? "—", hint: ecosystem.ndvi_trend ?? "Canopy" },
+            { label: "Correlation", value: ecosystem.correlation_score?.toFixed(2) ?? "—", hint: "Bio × NDVI" },
+          ]}
+        />
+      ) : null}
+      {ecosystem?.interpretation ? (
+        <p className="rounded-xl border border-forest-100 bg-forest-50/80 px-4 py-3 text-sm text-forest-900 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-100">
+          {ecosystem.interpretation}
         </p>
-        {status && <p className="mt-3 text-sm text-emerald-100">{status}</p>}
-        {error && <p className="mt-3 text-sm text-rose-200">{error}</p>}
+      ) : null}
 
-        {fenceId && (
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <button
-              type="button"
-              className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium ring-1 ring-white/25 hover:bg-white/20"
-              onClick={() => void downloadReport("biodiversity")}
-            >
-              Biodiversity PDF
-            </button>
-            <button
-              type="button"
-              className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium ring-1 ring-white/25 hover:bg-white/20"
-              onClick={() => void downloadReport("esg")}
-            >
-              ESG PDF
-            </button>
-          </div>
-        )}
-      </section>
-
-      {ecosystem && (
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">
-            Ecosystem health — {ecosystem.fence_name}
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <Metric label="Ecosystem score" value={`${ecosystem.ecosystem_health_score}/100`} />
-            <Metric label="Biodiversity health" value={`${ecosystem.bioacoustic.avg_health_score}/100`} />
-            <Metric label="NDVI" value={ecosystem.ndvi_mean?.toFixed(2) ?? "—"} />
-            <Metric label="Correlation" value={ecosystem.correlation_score?.toFixed(2) ?? "—"} />
-          </div>
-          <p className="mt-3 text-sm text-stone-600">{ecosystem.interpretation}</p>
-        </div>
-      )}
-
-      <details className="card group">
-        <summary className="cursor-pointer text-sm font-medium text-stone-800">
-          Details — Shannon, Simpson, GBIF & IUCN
-        </summary>
-        <div className="mt-4 space-y-4 border-t border-stone-100 pt-4">
-          <p className="text-xs text-stone-500">
-            Diversity indices and regional fauna context for deeper analysis. Day-to-day field work
-            only needs the Record control above.
-          </p>
+      <CommandCenterEvidence
+        title="Regional fauna & diversity indices"
+        description="GBIF occurrences, IUCN status, Shannon and Simpson context"
+      >
           {regionalFauna ? (
             <div>
               <h3 className="mb-2 text-sm font-medium text-stone-700">
@@ -380,11 +428,9 @@ export default function BioacousticPage() {
           ) : (
             <p className="text-sm text-stone-500">Loading regional fauna…</p>
           )}
-        </div>
-      </details>
+      </CommandCenterEvidence>
 
-      <div className="card">
-        <h2 className="mb-4 text-sm font-medium text-stone-700">Assessment history</h2>
+      <CommandCenterEvidence title="Assessment history" description="Past recordings and species detections">
         {isLoading && <p className="text-stone-500">Loading…</p>}
         {!isLoading && (!recordings || recordings.length === 0) && (
           <EmptyState
@@ -512,7 +558,7 @@ export default function BioacousticPage() {
             );
           })}
         </ul>
-      </div>
+      </CommandCenterEvidence>
     </div>
   );
 }

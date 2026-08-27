@@ -11,8 +11,9 @@ import { Iso14064ExportPanel } from "@/components/reports/iso14064-export-panel"
 import { Iso14064OrgExportPanel } from "@/components/reports/iso14064-org-export-panel";
 import { ProjectFrameworkExportPanel } from "@/components/reports/project-framework-export-panel";
 import { SbtiFlagExportPanel } from "@/components/reports/sbti-flag-export-panel";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { reportsOperationalStatus } from "@/components/dashboard/command-center-shell";
+import { fmtNum } from "@/components/dashboard/format";
+import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
@@ -106,6 +107,17 @@ export default function ReportsPage() {
   const kindLabel = (value: string) =>
     REPORT_TYPES.find((t) => t.value === value)?.label || value;
 
+  const pendingCount = list.filter((r) => r.status === "pending" || r.status === "processing").length;
+  const failedCount = list.filter((r) => r.status === "failed").length;
+  const readyCount = list.filter((r) => r.status === "ready" || r.status === "completed").length;
+
+  const reportsStatus = reportsOperationalStatus({
+    totalReports: list.length,
+    pendingCount,
+    failedCount,
+    canGenerate,
+  });
+
   async function queue() {
     setBusy(true);
     setError(null);
@@ -132,6 +144,37 @@ export default function ReportsPage() {
             : "Download compliance and portfolio reports prepared by your program team."
         }
         breadcrumbs={[{ label: "Reports" }, { label: "Exports" }]}
+      />
+
+      <OperationalStatusBar
+        tone={reportsStatus.tone}
+        label={reportsStatus.label}
+        summary={reportsStatus.summary}
+      />
+
+      <MetricGrid
+        columns={4}
+        metrics={[
+          { label: "Total exports", value: fmtNum(list.length), hint: "Report library" },
+          {
+            label: "Ready",
+            value: fmtNum(readyCount),
+            hint: "Available to download",
+            tone: readyCount > 0 ? "positive" : "default",
+          },
+          {
+            label: "Processing",
+            value: fmtNum(pendingCount),
+            hint: "Queued or running",
+            tone: pendingCount > 0 ? "warning" : "default",
+          },
+          {
+            label: "Failed",
+            value: fmtNum(failedCount),
+            hint: "Need retry",
+            tone: failedCount > 0 ? "critical" : "default",
+          },
+        ]}
       />
 
       <div className="space-y-2 border-b border-stone-200 pb-2">

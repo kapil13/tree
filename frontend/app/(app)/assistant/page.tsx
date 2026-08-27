@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Sparkles, Send, Lightbulb, AlertTriangle } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
+import { Sparkles, Send, Lightbulb, AlertTriangle, Brain } from "lucide-react";
+import { InsightPanel, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { assistant, errorMessage, type AssistantAnswer } from "@/lib/api";
 
 type Msg = {
@@ -133,10 +133,50 @@ export default function AssistantPage() {
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col">
       <PageHeader
         className="mb-4"
+        purpose="Intelligence · Analyst"
         title="AI assistant"
         description="Ask about your live portfolio — carbon, health, satellite, biodiversity, weather, and alerts."
-        actions={<Sparkles className="h-6 w-6 text-forest-700" aria-hidden />}
+        breadcrumbs={[{ label: "Intelligence" }, { label: "Assistant" }]}
       />
+
+      <OperationalStatusBar
+        tone={lastMode === "rules" && lastLlmError ? "attention" : lastMode === "llm" ? "healthy" : "neutral"}
+        label={
+          lastMode === "llm"
+            ? "Live LLM connected"
+            : lastMode === "rules" && lastLlmError
+              ? "Rules engine fallback"
+              : "Portfolio analyst ready"
+        }
+        summary={
+          lastMode === "llm"
+            ? "Answers use your configured LLM with live portfolio context."
+            : lastMode === "rules" && lastLlmError
+              ? lastLlmError
+              : "Pick a suggestion or ask about trees, carbon, compliance, and monitoring."
+        }
+        icon={Brain}
+      />
+
+      <InsightPanel
+        title="Suggested questions"
+        interpretation="Tap a prompt to pre-fill the analyst, or type your own question about plantation data."
+        icon={Sparkles}
+      >
+        <div className="flex flex-wrap gap-2">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="rounded-full border border-forest-200 bg-forest-50 px-3 py-1.5 text-xs font-medium text-forest-800 transition hover:bg-forest-100 disabled:opacity-50 dark:border-forest-800 dark:bg-forest-950/40 dark:text-forest-100"
+              onClick={() => void ask(undefined, s)}
+              disabled={busy}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </InsightPanel>
 
       {lastMode === "rules" && lastLlmError ? (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
@@ -147,20 +187,6 @@ export default function AssistantPage() {
           </div>
         </div>
       ) : null}
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {SUGGESTIONS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className="rounded-full border border-forest-200 bg-forest-50 px-3 py-1.5 text-xs font-medium text-forest-800 transition hover:bg-forest-100 disabled:opacity-50"
-            onClick={() => void ask(undefined, s)}
-            disabled={busy}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
 
       <div className="card min-h-0 flex-1 space-y-3 overflow-y-auto pb-28">
         {history.length === 0 && (
