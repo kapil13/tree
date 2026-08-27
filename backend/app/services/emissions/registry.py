@@ -97,10 +97,13 @@ async def list_emission_sources(
     *,
     project_id: uuid.UUID,
     work_area_id: uuid.UUID | None = None,
+    gas_type: str | None = None,
 ) -> list[EmissionSource]:
     stmt = select(EmissionSource).where(EmissionSource.project_id == project_id)
     if work_area_id is not None:
         stmt = stmt.where(EmissionSource.work_area_id == work_area_id)
+    if gas_type is not None:
+        stmt = stmt.where(EmissionSource.gas_type == gas_type)
     stmt = stmt.order_by(EmissionSource.created_at.desc())
     res = await db.execute(stmt)
     return list(res.scalars().all())

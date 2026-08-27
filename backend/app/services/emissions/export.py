@@ -38,6 +38,19 @@ async def build_emissions_compliance_context(
         for s in sources
         if s.status == "active" and s.emission_rate_g_s is not None
     )
+    by_gas: dict[str, dict[str, int | float | None]] = {}
+    for s in sources:
+        bucket = by_gas.setdefault(
+            s.gas_type,
+            {"total": 0, "active": 0, "active_rate_g_s": 0.0},
+        )
+        bucket["total"] = int(bucket["total"]) + 1
+        if s.status == "active":
+            bucket["active"] = int(bucket["active"]) + 1
+            if s.emission_rate_g_s is not None:
+                bucket["active_rate_g_s"] = float(bucket["active_rate_g_s"]) + float(
+                    s.emission_rate_g_s
+                )
 
     dispersion_row = (
         await db.execute(
@@ -168,6 +181,7 @@ async def build_emissions_compliance_context(
             "has_fusion": fusion is not None,
             "fusion_verdict": fusion.get("verdict") if fusion else None,
             "fusion_alignment_score": fusion.get("alignment_score") if fusion else None,
+            "by_gas": by_gas,
         },
         "sources": [
             {
@@ -190,8 +204,9 @@ async def build_emissions_compliance_context(
             "Aranyix BYOT emission fusion pipeline v1",
         ],
         "disclaimer": (
-            "Operational monitoring report for declared methane sources and satellite "
-            "anomaly screening. Not a regulatory compliance certificate, carbon credit "
-            "issuance, or legal attestation of emissions."
+            "Operational monitoring report for declared GHG sources and satellite "
+            "anomaly screening (CH₄ fusion where available). Not a regulatory "
+            "compliance certificate, carbon credit issuance, or legal attestation "
+            "of emissions."
         ),
     }

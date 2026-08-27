@@ -220,6 +220,9 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "fusion_requires_scan") {
         return "Run a TROPOMI CH₄ scan before fusion assessment.";
       }
+      if (data.detail === "mixed_gas_types") {
+        return "Dispersion runs must use sources of the same gas. Select one gas for the plume simulation.";
+      }
       const paymentMsg = paymentErrorMessage(data.detail);
       if (paymentMsg) return paymentMsg;
       const authMsg = authErrorMessage(data.detail);
@@ -910,6 +913,28 @@ export type EmissionSource = {
   updated_at: string;
 };
 
+export type EmissionGasCatalogItem = {
+  code: string;
+  label: string;
+  symbol: string;
+  unit_rate: string;
+  unit_annual: string;
+  satellite_supported: boolean;
+  fusion_supported: boolean;
+  suggested_source_types: string[];
+};
+
+export type EmissionSourceCatalogItem = {
+  code: string;
+  label: string;
+  description: string;
+};
+
+export type EmissionCatalog = {
+  gases: EmissionGasCatalogItem[];
+  source_types: EmissionSourceCatalogItem[];
+};
+
 export type DispersionRunResult = {
   simulation_id: string;
   project_id: string;
@@ -1256,12 +1281,18 @@ export const plantingProjects = {
   async deleteWorkArea(projectId: string, workAreaId: string) {
     await api.delete(`/v1/planting-projects/${projectId}/work-areas/${workAreaId}`);
   },
-  async listEmissionSources(projectId: string, workAreaId?: string) {
+  async listEmissionSources(projectId: string, workAreaId?: string, gasType?: string) {
     return (
       await api.get<EmissionSource[]>(`/v1/planting-projects/${projectId}/emission-sources`, {
-        params: workAreaId ? { work_area_id: workAreaId } : undefined,
+        params: {
+          ...(workAreaId ? { work_area_id: workAreaId } : {}),
+          ...(gasType ? { gas_type: gasType } : {}),
+        },
       })
     ).data;
+  },
+  async getEmissionCatalog() {
+    return (await api.get<EmissionCatalog>(`/v1/planting-projects/emissions-catalog`)).data;
   },
   async createEmissionSource(
     projectId: string,
@@ -1284,6 +1315,29 @@ export const plantingProjects = {
         payload,
       )
     ).data;
+  },
+  async updateEmissionSource(
+    projectId: string,
+    sourceId: string,
+    payload: {
+      name?: string;
+      source_type?: string;
+      gas_type?: string;
+      emission_rate_g_s?: number;
+      annual_emission_tons?: number;
+      release_height_m?: number;
+      status?: "active" | "inactive";
+    },
+  ) {
+    return (
+      await api.patch<EmissionSource>(
+        `/v1/planting-projects/${projectId}/emission-sources/${sourceId}`,
+        payload,
+      )
+    ).data;
+  },
+  async deleteEmissionSource(projectId: string, sourceId: string) {
+    await api.delete(`/v1/planting-projects/${projectId}/emission-sources/${sourceId}`);
   },
   async runDispersion(
     projectId: string,

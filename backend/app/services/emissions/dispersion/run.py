@@ -54,6 +54,9 @@ async def run_dispersion(
         raise DispersionError("no_emission_sources")
 
     primary = sources[0]
+    gas_types = {s.gas_type for s in sources}
+    if len(gas_types) > 1:
+        raise DispersionError("mixed_gas_types")
     for src in sources:
         if src.work_area_id != payload.work_area_id:
             raise DispersionError("source_work_area_mismatch")

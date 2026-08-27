@@ -226,3 +226,25 @@ class EmissionFusionOut(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class EmissionGasCatalogItem(BaseModel):
+    code: str
+    label: str
+    symbol: str
+    unit_rate: str
+    unit_annual: str
+    satellite_supported: bool
+    fusion_supported: bool
+    suggested_source_types: list[str] = Field(default_factory=list)
+
+
+class EmissionSourceCatalogItem(BaseModel):
+    code: str
+    label: str
+    description: str
+
+
+class EmissionCatalogOut(BaseModel):
+    gases: list[EmissionGasCatalogItem]
+    source_types: list[EmissionSourceCatalogItem]
