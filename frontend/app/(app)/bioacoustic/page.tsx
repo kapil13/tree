@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bird, Mic, ShieldCheck, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   bioacousticOperationalStatus,
   CommandCenterEvidence,
@@ -55,6 +56,9 @@ function speciesRichness(rec: BioacousticRecording) {
 }
 
 export default function BioacousticPage() {
+  const tb = useTranslations("bioacoustic");
+  const to = useTranslations("opsStatus");
+  const tc = useTranslations("chrome");
   const qc = useQueryClient();
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -105,7 +109,7 @@ export default function BioacousticPage() {
     queryFn: () => bioacoustic.summary(fenceId || undefined),
   });
 
-  const bioStatus = bioacousticOperationalStatus({
+  const bioStatus = bioacousticOperationalStatus(to, {
     totalRecordings: summary?.total_recordings ?? recordings?.length ?? 0,
     analyzedRecordings: summary?.analyzed_recordings ?? recordings?.filter((r) => r.status === "analyzed").length ?? 0,
     threatenedSpecies: summary?.threatened_species_count ?? 0,
@@ -246,10 +250,10 @@ export default function BioacousticPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Intelligence · Biodiversity"
-        title="Bioacoustic monitoring"
-        description="Record ambient soundscapes (not voice) to detect species and track site health."
-        breadcrumbs={[{ label: "Intelligence" }, { label: "Bioacoustic" }]}
+        purpose={tb("purpose")}
+        title={tb("title")}
+        description={tb("description")}
+        breadcrumbs={[{ label: tc("sectionIntelligence") }, { label: tc("breadcrumbBiodiversity") }]}
       />
 
       <OperationalStatusBar
@@ -430,7 +434,7 @@ export default function BioacousticPage() {
           )}
       </CommandCenterEvidence>
 
-      <CommandCenterEvidence title="Assessment history" description="Past recordings and species detections">
+      <CommandCenterEvidence title={tb("assessmentHistory")} description={tb("assessmentHistoryDesc")}>
         {isLoading && <p className="text-stone-500">Loading…</p>}
         {!isLoading && (!recordings || recordings.length === 0) && (
           <EmptyState

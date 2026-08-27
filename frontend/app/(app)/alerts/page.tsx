@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   AlertPreparednessBlock,
   getAlertInterpretation,
@@ -32,34 +33,38 @@ const SAR_ALERT_KINDS = new Set([
   "sar_sweep_health",
 ]);
 
-const KIND_LABEL: Record<string, string> = {
-  ndvi_degradation: "Canopy decline",
-  health_roundup: "Health roundup",
-  compliance_open: "Open compliance",
-  threat_watch: "Weather & pest watch",
-  survival_survey: "Survival check-in",
-  satellite_health: "Satellite health",
-  satellite_health_digest: "Daily satellite digest",
-  compliance_deadline_approaching: "Compliance deadline",
-  compliance_deadline_overdue: "Compliance overdue",
-  sar_integrity_drop: "Integrity drop",
-  sar_optical_divergent: "Optical mismatch",
-  sar_integrity_at_risk: "At risk",
-  sar_monsoon_gap_fill: "Monsoon gap-fill",
-  sar_hidden_moisture: "Hidden moisture",
-  sar_wetland_detected: "Wetland",
-  sar_flood_risk: "Waterlogging",
-  sar_ground_moisture: "Ground moisture",
-  sar_ground_instability: "Ground instability",
-  locust_watch: "Locust watch",
-  pest_intel_high: "Pest risk",
-  pest_intel_critical: "Pest risk",
-  emission_anomaly_detected: "Methane signal",
-  emission_fusion_misaligned: "Methane check",
-};
+const ALERT_KIND_KEYS = new Set([
+  "ndvi_degradation",
+  "health_roundup",
+  "compliance_open",
+  "threat_watch",
+  "survival_survey",
+  "satellite_health",
+  "satellite_health_digest",
+  "compliance_deadline_approaching",
+  "compliance_deadline_overdue",
+  "sar_integrity_drop",
+  "sar_optical_divergent",
+  "sar_integrity_at_risk",
+  "sar_monsoon_gap_fill",
+  "sar_hidden_moisture",
+  "sar_wetland_detected",
+  "sar_flood_risk",
+  "sar_ground_moisture",
+  "sar_ground_instability",
+  "locust_watch",
+  "pest_intel_high",
+  "pest_intel_critical",
+  "emission_anomaly_detected",
+  "emission_fusion_misaligned",
+]);
 
-function humanizeKind(kind: string): string {
-  if (KIND_LABEL[kind]) return KIND_LABEL[kind];
+function humanizeKind(
+  kind: string,
+  ta: ReturnType<typeof useTranslations<"alerts">>,
+): string {
+  const key = `kind_${kind}` as `kind_${string}`;
+  if (ALERT_KIND_KEYS.has(kind)) return ta(key);
   return kind
     .replace(/^sar_/, "")
     .replace(/_/g, " ")
@@ -77,6 +82,9 @@ function severityClass(severity: string): string {
 }
 
 export default function AlertsPage() {
+  const ta = useTranslations("alerts");
+  const to = useTranslations("opsStatus");
+  const tc = useTranslations("chrome");
   const qc = useQueryClient();
   const { user } = useAuth();
   const isOps = userHasProfessionalAccess(user);
@@ -131,7 +139,7 @@ export default function AlertsPage() {
   const highCount = alertItems.filter((a) => a.severity === "high").length;
   const sarCount = alertItems.filter((a) => SAR_ALERT_KINDS.has(a.kind)).length;
 
-  const inboxStatus = alertsOperationalStatus({
+  const inboxStatus = alertsOperationalStatus(to, {
     unreadCount,
     criticalCount,
     highCount,
@@ -141,16 +149,10 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Intelligence · Signals"
-        title="Alerts & signals"
-        description={
-          unreadCount > 0
-            ? `${unreadCount} unread — review critical items first, then mark resolved signals as read.`
-            : isOps
-              ? "Operational notifications for satellite, compliance, SAR, and field work."
-              : "Updates about your trees, check-ins, and health scans."
-        }
-        breadcrumbs={[{ label: "Intelligence" }, { label: "Alerts" }]}
+        purpose={ta("purpose")}
+        title={ta("title")}
+        description={ta("description")}
+        breadcrumbs={[{ label: tc("sectionIntelligence") }, { label: tc("breadcrumbAlerts") }]}
       />
 
       <OperationalStatusBar
@@ -221,7 +223,7 @@ export default function AlertsPage() {
                 sarFilter === kind ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
               }`}
             >
-              {humanizeKind(kind)}
+              {humanizeKind(kind, ta)}
             </Link>
           ))}
         </div>
@@ -246,7 +248,7 @@ export default function AlertsPage() {
             <EmptyState
               className="my-2 border-0 bg-transparent"
               icon={Bell}
-              title={isOps ? "Inbox clear" : "No alerts right now"}
+              title={isOps ? ta("inboxClear") : ta("noAlerts")}
               description={
                 isOps
                   ? "No satellite, compliance, or field alerts match this filter. You're caught up."
@@ -289,7 +291,7 @@ export default function AlertsPage() {
                   )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-stone-500">
                     <span className="font-medium text-stone-700 dark:text-stone-300">
-                      {humanizeKind(a.kind)}
+                      {humanizeKind(a.kind, ta)}
                     </span>
                     <span
                       className={cn(
@@ -319,7 +321,7 @@ export default function AlertsPage() {
                       onClick={() => markRead.mutate(a.id)}
                     >
                       <Check className="h-3 w-3" />
-                      Mark read
+                      {ta("markRead")}
                     </button>
                   )}
                 </div>
@@ -329,7 +331,7 @@ export default function AlertsPage() {
         </div>
       </section>
 
-      <CommandCenterEvidence title="Notification preferences" description="Email, SMS, and digest settings">
+      <CommandCenterEvidence title={ta("notificationPrefs")} description={ta("notificationPrefsDesc")}>
         <div className="space-y-5">
           <div className="space-y-3">
             <div className="text-sm font-medium">Satellite health</div>

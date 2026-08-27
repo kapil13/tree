@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Satellite as SatelliteIcon, ShieldCheck } from "lucide-react";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { PlantationFenceMap } from "@/components/plantation-fence-map";
@@ -18,6 +19,9 @@ import { TrustChip, trustToneFromProvider } from "@/components/ui/trust-chip";
 import { bhoonidhi, plantationFences, sar, trees } from "@/lib/api";
 
 export default function SatellitePage() {
+  const ts = useTranslations("satellite");
+  const to = useTranslations("opsStatus");
+  const tc = useTranslations("chrome");
   const searchParams = useSearchParams();
   const fenceFromUrl = searchParams.get("fence");
   const [selectedFenceId, setSelectedFenceId] = useState<string | null>(fenceFromUrl);
@@ -50,8 +54,8 @@ export default function SatellitePage() {
   );
   const sarTrust = trustToneFromProvider(sarStatus?.live_data_provider ?? sarStatus?.sar_provider);
   const bhoonidhiTrust = bhoonidhiStatus?.configured
-    ? { tone: "live" as const, label: "Catalog live" }
-    : { tone: "stub" as const, label: "Optional" };
+    ? { tone: "live" as const, label: ts("catalogLive") }
+    : { tone: "stub" as const, label: ts("optional") };
 
   useEffect(() => {
     if (fenceFromUrl) {
@@ -75,7 +79,7 @@ export default function SatellitePage() {
     [fences],
   );
 
-  const satStatus = satelliteOperationalStatus({
+  const satStatus = satelliteOperationalStatus(to, {
     fenceCount: fences.length,
     siteSelected: Boolean(selectedFence),
     ndviValue: selectedFence?.latest_ndvi_mean,
@@ -86,15 +90,15 @@ export default function SatellitePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Intelligence · Earth observation"
-        title="Satellite monitoring"
-        description="Select a work area, interpret canopy health first, then open radar or catalog tools for deeper investigation."
-        breadcrumbs={[{ label: "Intelligence" }, { label: "Satellite" }]}
+        purpose={ts("purpose")}
+        title={ts("title")}
+        description={ts("description")}
+        breadcrumbs={[{ label: tc("sectionIntelligence") }, { label: tc("breadcrumbSatellite") }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <TrustChip tone={ndviTrust.tone} label={`NDVI · ${verified > 0 ? "Active" : "Ready"}`} />
-            <TrustChip tone={sarTrust.tone} label={`Radar · ${sarTrust.label}`} />
-            <TrustChip tone={bhoonidhiTrust.tone} label={`ISRO · ${bhoonidhiTrust.label}`} />
+            <TrustChip tone={ndviTrust.tone} label={verified > 0 ? ts("ndviActive") : ts("ndviReady")} />
+            <TrustChip tone={sarTrust.tone} label={ts("radarLabel", { label: sarTrust.label })} />
+            <TrustChip tone={bhoonidhiTrust.tone} label={ts("isroLabel", { label: bhoonidhiTrust.label })} />
           </div>
         }
       />

@@ -4,288 +4,364 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { OperationalTone } from "@/components/ui/intelligence/operational-status";
 
-export function portfolioOperationalStatus(input: {
-  openViolations: number;
-  criticalAlerts: number;
-  unreadAlerts: number;
-  sitesNeedingScan: number;
-  survivalDue: number;
-}): { tone: OperationalTone; label: string; summary: string } {
+export type StatusTranslator = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+export function portfolioOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    openViolations: number;
+    criticalAlerts: number;
+    unreadAlerts: number;
+    sitesNeedingScan: number;
+    survivalDue: number;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { openViolations, criticalAlerts, unreadAlerts, sitesNeedingScan, survivalDue } = input;
 
   if (openViolations > 0 || criticalAlerts > 0) {
     const parts: string[] = [];
-    if (openViolations > 0) parts.push(`${openViolations} compliance issue${openViolations === 1 ? "" : "s"}`);
-    if (criticalAlerts > 0) parts.push(`${criticalAlerts} critical alert${criticalAlerts === 1 ? "" : "s"}`);
+    if (openViolations > 0) {
+      parts.push(t("complianceIssues", { count: openViolations }));
+    }
+    if (criticalAlerts > 0) {
+      parts.push(t("criticalAlerts", { count: criticalAlerts }));
+    }
     return {
       tone: "critical",
-      label: "Immediate attention required",
-      summary: `${parts.join(" · ")}. Resolve before audit exports and reporting cycles.`,
+      label: t("portfolioCriticalLabel"),
+      summary: t("portfolioCriticalSummary", { issues: parts.join(" · ") }),
     };
   }
   if (unreadAlerts > 0 || sitesNeedingScan > 0) {
     return {
       tone: "attention",
-      label: "Monitoring follow-up needed",
-      summary: [
-        unreadAlerts > 0 ? `${unreadAlerts} unread alert${unreadAlerts === 1 ? "" : "s"}` : null,
-        sitesNeedingScan > 0 ? `${sitesNeedingScan} site${sitesNeedingScan === 1 ? "" : "s"} need satellite refresh` : null,
-      ]
-        .filter(Boolean)
-        .join(" · "),
+      label: t("portfolioAttentionLabel"),
+      summary: t("portfolioAttentionSummary", {
+        details: [
+          unreadAlerts > 0 ? t("unreadAlerts", { count: unreadAlerts }) : null,
+          sitesNeedingScan > 0 ? t("sitesNeedScan", { count: sitesNeedingScan }) : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      }),
     };
   }
   if (survivalDue > 0) {
     return {
       tone: "watch",
-      label: "Field surveys due",
-      summary: `${survivalDue} tree${survivalDue === 1 ? "" : "s"} need survival re-check. Schedule field verification this week.`,
+      label: t("portfolioWatchLabel"),
+      summary: t("portfolioWatchSummary", { count: survivalDue }),
     };
   }
   return {
     tone: "healthy",
-    label: "Portfolio operational",
-    summary: "No open compliance violations or critical alerts. Continue monitoring and registration.",
+    label: t("portfolioHealthyLabel"),
+    summary: t("portfolioHealthySummary"),
   };
 }
 
-export function fieldOperationalStatus(input: {
-  openViolations: number;
-  survivalDue: number;
-  queueCount: number;
-  geotagDue: number;
-  unassigned: boolean;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function fieldOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    openViolations: number;
+    survivalDue: number;
+    queueCount: number;
+    geotagDue: number;
+    unassigned: boolean;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { openViolations, survivalDue, queueCount, geotagDue, unassigned } = input;
 
   if (unassigned) {
     return {
       tone: "neutral",
-      label: "Awaiting project assignment",
-      summary: "No packages assigned yet. Ask your supervisor to add you on a project Team tab.",
+      label: t("fieldNeutralLabel"),
+      summary: t("fieldNeutralSummary"),
     };
   }
   if (openViolations > 0) {
     return {
       tone: "critical",
-      label: "Compliance items open",
-      summary: `${openViolations} violation${openViolations === 1 ? "" : "s"} need resolution before the next audit window.`,
+      label: t("fieldCriticalLabel"),
+      summary: t("fieldCriticalSummary", { count: openViolations }),
     };
   }
   if (survivalDue > 0 || geotagDue > 0) {
     const parts: string[] = [];
-    if (survivalDue > 0) parts.push(`${survivalDue} survival check${survivalDue === 1 ? "" : "s"} due`);
-    if (geotagDue > 0) parts.push(`${geotagDue} geotag refresh${geotagDue === 1 ? "" : "es"} needed`);
+    if (survivalDue > 0) parts.push(t("survivalChecks", { count: survivalDue }));
+    if (geotagDue > 0) parts.push(t("geotagRefresh", { count: geotagDue }));
     return {
       tone: "attention",
-      label: "Field surveys due",
-      summary: parts.join(" · "),
+      label: t("fieldAttentionLabel"),
+      summary: t("fieldAttentionSummary", { details: parts.join(" · ") }),
     };
   }
   if (queueCount > 0) {
     return {
       tone: "watch",
-      label: "Queue has follow-ups",
-      summary: `${queueCount} item${queueCount === 1 ? "" : "s"} in your attention queue. Review before end of day.`,
+      label: t("fieldWatchLabel"),
+      summary: t("fieldWatchSummary", { count: queueCount }),
     };
   }
   return {
     tone: "healthy",
-    label: "Field queue clear",
-    summary: "No survival checks, geotag updates, or open violations in your assigned packages.",
+    label: t("fieldHealthyLabel"),
+    summary: t("fieldHealthySummary"),
   };
 }
 
-export function citizenOperationalStatus(input: {
-  treeCount: number;
-  pctHealthy: number;
-  stepsDone: number;
-  stepsTotal: number;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function citizenOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    treeCount: number;
+    pctHealthy: number;
+    stepsDone: number;
+    stepsTotal: number;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { treeCount, pctHealthy, stepsDone, stepsTotal } = input;
 
   if (treeCount === 0) {
     return {
       tone: "neutral",
-      label: "Start your grove",
-      summary: "Tag your first tree to unlock carbon estimates, health tracking, and your personal map.",
+      label: t("citizenNeutralLabel"),
+      summary: t("citizenNeutralSummary"),
     };
   }
   if (stepsDone < stepsTotal) {
     return {
       tone: "watch",
-      label: "Onboarding in progress",
-      summary: `${stepsDone} of ${stepsTotal} getting-started steps complete. Finish setup to unlock full insights.`,
+      label: t("citizenWatchLabel"),
+      summary: t("citizenWatchSummary", { done: stepsDone, total: stepsTotal }),
     };
   }
   if (pctHealthy < 60 && treeCount > 0) {
     return {
       tone: "attention",
-      label: "Canopy needs care",
-      summary: `${Math.round(pctHealthy)}% of your trees are healthy. Run AI scans or field checks on stressed trees.`,
+      label: t("citizenAttentionLabel"),
+      summary: t("citizenAttentionSummary", { pct: Math.round(pctHealthy) }),
     };
   }
   return {
     tone: "healthy",
-    label: "Grove is thriving",
-    summary: `${treeCount} tree${treeCount === 1 ? "" : "s"} tagged · ${Math.round(pctHealthy)}% healthy canopy.`,
+    label: t("citizenHealthyLabel"),
+    summary: t("citizenHealthySummary", {
+      count: treeCount,
+      pct: Math.round(pctHealthy),
+    }),
   };
 }
 
-export function alertsOperationalStatus(input: {
-  unreadCount: number;
-  criticalCount: number;
-  highCount: number;
-  totalCount: number;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function alertsOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    unreadCount: number;
+    criticalCount: number;
+    highCount: number;
+    totalCount: number;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { unreadCount, criticalCount, highCount, totalCount } = input;
 
   if (totalCount === 0) {
     return {
       tone: "healthy",
-      label: "Inbox clear",
-      summary: "No satellite, compliance, or field alerts match this filter.",
+      label: t("alertsHealthyLabel"),
+      summary: t("alertsHealthySummary"),
     };
   }
   if (criticalCount > 0) {
     return {
       tone: "critical",
-      label: "Critical signals require review",
-      summary: `${criticalCount} critical alert${criticalCount === 1 ? "" : "s"} · ${unreadCount} unread in inbox.`,
+      label: t("alertsCriticalLabel"),
+      summary: t("alertsCriticalSummary", { critical: criticalCount, unread: unreadCount }),
     };
   }
   if (highCount > 0 || unreadCount > 0) {
     return {
       tone: "attention",
-      label: "Unread signals in inbox",
-      summary: [
-        unreadCount > 0 ? `${unreadCount} unread` : null,
-        highCount > 0 ? `${highCount} high priority` : null,
-      ]
-        .filter(Boolean)
-        .join(" · "),
+      label: t("alertsAttentionLabel"),
+      summary: t("alertsAttentionSummary", {
+        details: [
+          unreadCount > 0 ? t("unread", { count: unreadCount }) : null,
+          highCount > 0 ? t("highPriority", { count: highCount }) : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      }),
     };
   }
   return {
     tone: "healthy",
-    label: "All signals reviewed",
-    summary: `${totalCount} alert${totalCount === 1 ? "" : "s"} in inbox — none unread.`,
+    label: t("alertsReviewedLabel"),
+    summary: t("alertsReviewedSummary", { count: totalCount }),
   };
 }
 
-export function bioacousticOperationalStatus(input: {
-  totalRecordings: number;
-  analyzedRecordings: number;
-  threatenedSpecies: number;
-  avgHealthScore: number;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function bioacousticOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    totalRecordings: number;
+    analyzedRecordings: number;
+    threatenedSpecies: number;
+    avgHealthScore: number;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { totalRecordings, analyzedRecordings, threatenedSpecies, avgHealthScore } = input;
 
   if (totalRecordings === 0) {
     return {
       tone: "neutral",
-      label: "No soundscapes captured",
-      summary: "Record 60–180 seconds of ambient nature sound to detect species and track site health.",
+      label: t("bioNeutralLabel"),
+      summary: t("bioNeutralSummary"),
     };
   }
   if (analyzedRecordings < totalRecordings) {
     return {
       tone: "watch",
-      label: "Assessments in progress",
-      summary: `${analyzedRecordings} of ${totalRecordings} recordings analyzed. Complete pending assessments for full biodiversity signals.`,
+      label: t("bioWatchLabel"),
+      summary: t("bioWatchSummary", { analyzed: analyzedRecordings, total: totalRecordings }),
     };
   }
   if (threatenedSpecies > 0) {
     return {
       tone: "attention",
-      label: "Threatened species detected",
-      summary: `${threatenedSpecies} threatened taxa in recent assessments · avg health ${Math.round(avgHealthScore)}/100.`,
+      label: t("bioAttentionLabel"),
+      summary: t("bioAttentionSummary", {
+        count: threatenedSpecies,
+        score: Math.round(avgHealthScore),
+      }),
     };
   }
   return {
     tone: "healthy",
-    label: "Soundscape monitoring active",
-    summary: `${totalRecordings} recording${totalRecordings === 1 ? "" : "s"} · avg biodiversity health ${Math.round(avgHealthScore)}/100.`,
+    label: t("bioHealthyLabel"),
+    summary: t("bioHealthySummary", {
+      count: totalRecordings,
+      score: Math.round(avgHealthScore),
+    }),
   };
 }
 
-export function satelliteOperationalStatus(input: {
-  fenceCount: number;
-  siteSelected: boolean;
-  ndviValue: number | null | undefined;
-  verifiedTrees: number;
-  staleSites: number;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function satelliteOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    fenceCount: number;
+    siteSelected: boolean;
+    ndviValue: number | null | undefined;
+    verifiedTrees: number;
+    staleSites: number;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { fenceCount, siteSelected, ndviValue, verifiedTrees, staleSites } = input;
 
   if (fenceCount === 0) {
     return {
       tone: "neutral",
-      label: "No plantation sites yet",
-      summary: "Draw a fence on the map to start NDVI monitoring and satellite verification.",
+      label: t("satNeutralLabel"),
+      summary: t("satNeutralSummary"),
     };
   }
   if (!siteSelected) {
     return {
       tone: "watch",
-      label: "Select a monitoring site",
-      summary: `${fenceCount} plantation site${fenceCount === 1 ? "" : "s"} available — pick one to run scans and view greenness.`,
+      label: t("satWatchSelectLabel"),
+      summary: t("satWatchSelectSummary", { count: fenceCount }),
     };
   }
   if (ndviValue == null) {
     return {
       tone: "attention",
-      label: "NDVI scan needed",
-      summary: "Site selected but no greenness reading yet. Run NDVI from the map sidebar.",
+      label: t("satAttentionLabel"),
+      summary: t("satAttentionSummary"),
     };
   }
   if (staleSites > 0) {
     return {
       tone: "watch",
-      label: "Satellite refresh recommended",
-      summary: `Latest NDVI ${ndviValue.toFixed(2)} · ${staleSites} site${staleSites === 1 ? "" : "s"} may need rescan · ${verifiedTrees} trees verified.`,
+      label: t("satWatchStaleLabel"),
+      summary: t("satWatchStaleSummary", {
+        ndvi: ndviValue.toFixed(2),
+        stale: staleSites,
+        verified: verifiedTrees,
+      }),
     };
   }
   return {
     tone: "healthy",
-    label: "Site monitoring active",
-    summary: `NDVI ${ndviValue.toFixed(2)} on selected site · ${verifiedTrees} satellite-verified trees.`,
+    label: t("satHealthyLabel"),
+    summary: t("satHealthySummary", {
+      ndvi: ndviValue.toFixed(2),
+      verified: verifiedTrees,
+    }),
   };
 }
 
-export function reportsOperationalStatus(input: {
-  totalReports: number;
-  pendingCount: number;
-  failedCount: number;
-  canGenerate: boolean;
-}): { tone: OperationalTone; label: string; summary: string } {
+export function reportsOperationalStatus(
+  t: StatusTranslator,
+  input: {
+    totalReports: number;
+    pendingCount: number;
+    failedCount: number;
+    canGenerate: boolean;
+  },
+): { tone: OperationalTone; label: string; summary: string } {
   const { totalReports, pendingCount, failedCount, canGenerate } = input;
 
   if (!canGenerate) {
     return {
       tone: "neutral",
-      label: "Read-only report access",
-      summary: `${totalReports} export${totalReports === 1 ? "" : "s"} available for download from your program team.`,
+      label: t("reportsNeutralLabel"),
+      summary: t("reportsNeutralSummary", { count: totalReports }),
     };
   }
   if (failedCount > 0) {
     return {
       tone: "critical",
-      label: "Report generation failures",
-      summary: `${failedCount} failed export${failedCount === 1 ? "" : "s"} need retry · ${pendingCount} pending.`,
+      label: t("reportsCriticalLabel"),
+      summary: t("reportsCriticalSummary", { failed: failedCount, pending: pendingCount }),
     };
   }
   if (pendingCount > 0) {
     return {
       tone: "watch",
-      label: "Exports processing",
-      summary: `${pendingCount} report${pendingCount === 1 ? "" : "s"} generating · ${totalReports} total in library.`,
+      label: t("reportsWatchLabel"),
+      summary: t("reportsWatchSummary", { pending: pendingCount, total: totalReports }),
     };
   }
   return {
     tone: "healthy",
-    label: "Report library ready",
-    summary: `${totalReports} export${totalReports === 1 ? "" : "s"} available · queue carbon, biodiversity, and compliance packs.`,
+    label: t("reportsHealthyLabel"),
+    summary: t("reportsHealthySummary", { count: totalReports }),
+  };
+}
+
+// projectsOperationalStatus uses the projects.* translation namespace
+export function projectsOperationalStatus(
+  t: StatusTranslator,
+  violations: number,
+  count: number,
+): { tone: OperationalTone; label: string; summary: string } {
+  if (count === 0) {
+    return {
+      tone: "neutral",
+      label: t("opsNoProjects"),
+      summary: t("opsNoProjectsSummary"),
+    };
+  }
+  if (violations > 0) {
+    return {
+      tone: violations >= 5 ? "critical" : "attention",
+      label: t("opsViolationsLabel", { count: violations }),
+      summary: t("opsViolationsSummary"),
+    };
+  }
+  return {
+    tone: "healthy",
+    label: t("opsHealthyLabel"),
+    summary: t("opsHealthySummary", { count }),
   };
 }
 

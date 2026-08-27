@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowRight,
@@ -129,7 +130,8 @@ export function FieldWorkerDashboard() {
   const openViolations = fieldOps?.open_violations ?? 0;
   const survivalDue = fieldOps?.survival_due ?? 0;
 
-  const fieldStatus = fieldOperationalStatus({
+  const to = useTranslations("opsStatus");
+  const fieldStatus = fieldOperationalStatus(to, {
     openViolations,
     survivalDue,
     queueCount: attention.length,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } from "lucide-react";
 import { EmptyState, FilterBar, FilterField, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects, trees } from "@/lib/api";
@@ -72,6 +73,8 @@ function LocationLink({ latitude, longitude }: { latitude: number; longitude: nu
 }
 
 export function TreeRegistry() {
+  const tt = useTranslations("treesPage");
+  const tc = useTranslations("chrome");
   const { user } = useAuth();
   const canAdd = canWriteInApp(user);
   const showChainage = userHasProfessionalAccess(user);
@@ -209,20 +212,14 @@ export function TreeRegistry() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Operate · Registry"
-        title="Trees"
-        description={
-          isLoading
-            ? "Loading registry…"
-            : `${filtered.length} of ${data?.total ?? filtered.length} trees${
-                projectId ? " in selected project" : ""
-              }`
-        }
-        breadcrumbs={[{ label: "Operate" }, { label: "Trees" }]}
+        purpose={tt("purpose")}
+        title={tt("title")}
+        description={tt("description")}
+        breadcrumbs={[{ label: tc("sectionOperate") }, { label: tc("breadcrumbTree") }]}
         actions={
           canAdd ? (
             <Link href={addHref} className="btn-primary">
-              <Plus className="h-4 w-4" /> Add tree
+              <Plus className="h-4 w-4" /> {tt("registerTree")}
             </Link>
           ) : null
         }

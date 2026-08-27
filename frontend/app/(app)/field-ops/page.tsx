@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   ArrowRight,
@@ -20,17 +21,24 @@ import { plantingProjects } from "@/lib/api";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 import { cn } from "@/lib/cn";
 
-const SEGMENT_LABEL: Record<string, string> = {
-  nhai_highway: "NHAI / Highway",
-  industrial_greenbelt: "Mine / Green belt",
-  township_landscape: "Township / Society",
-  nagar_van_urban: "Nagar Van / Urban forest",
-  sahakar_van_coop: "Sahakar Van / Cooperative forest",
-  ngo_watershed: "NGO / Watershed",
-  general: "General",
-};
-
 export default function FieldOpsPage() {
+  const tf = useTranslations("fieldOps");
+  const ts = useTranslations("segments");
+  const to = useTranslations("opsStatus");
+  const tc = useTranslations("chrome");
+
+  function segmentLabel(seg: string) {
+    const codes = [
+      "nhai_highway",
+      "industrial_greenbelt",
+      "township_landscape",
+      "nagar_van_urban",
+      "sahakar_van_coop",
+      "ngo_watershed",
+      "general",
+    ] as const;
+    return (codes as readonly string[]).includes(seg) ? ts(seg as (typeof codes)[number]) : seg;
+  }
   const { data, isLoading } = useQuery({
     queryKey: ["field-ops-summary"],
     queryFn: () => plantingProjects.fieldOpsSummary(),
@@ -54,7 +62,7 @@ export default function FieldOpsPage() {
     (p) => p.open_violations > 0 || p.survival_due > 0,
   );
 
-  const fieldStatus = fieldOperationalStatus({
+  const fieldStatus = fieldOperationalStatus(to, {
     openViolations: data.open_violations,
     survivalDue: data.survival_due,
     queueCount: needsAttention.length,
@@ -65,14 +73,14 @@ export default function FieldOpsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Operate · Field"
-        title="Field operations"
-        description="Today's priorities across packages, green belts, and society blocks."
-        breadcrumbs={[{ label: "Operate" }, { label: "Field ops" }]}
+        purpose={tf("purpose")}
+        title={tf("title")}
+        description={tf("description")}
+        breadcrumbs={[{ label: tc("sectionOperate") }, { label: tc("breadcrumbFieldOps") }]}
         actions={
           <Link href="/projects/new" className="btn-primary inline-flex items-center gap-1.5">
             <Plus className="h-4 w-4" />
-            New project
+            {tf("newProject")}
           </Link>
         }
       />
@@ -85,11 +93,11 @@ export default function FieldOpsPage() {
         action={
           needsAttention[0] ? (
             <Link href={`/projects/${needsAttention[0].id}`} className="btn-secondary text-xs">
-              Open {needsAttention[0].name}
+              {tf("openProject", { name: needsAttention[0].name })}
             </Link>
           ) : (
             <Link href="/trees/new" className="btn-secondary text-xs">
-              Register tree
+              {tf("registerTree")}
             </Link>
           )
         }
@@ -118,8 +126,8 @@ export default function FieldOpsPage() {
       {data.project_count === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="No field projects yet"
-          description="Create a project, draw work areas, then register trees with spacing standards."
+          title={tf("noProjectsTitle")}
+          description={tf("noProjectsDesc")}
           action={{ label: "Create first project", href: "/projects/new" }}
         />
       ) : (
@@ -141,7 +149,7 @@ export default function FieldOpsPage() {
           ) : null}
 
           <CommandCenterEvidence
-            title="Project health & segments"
+            title={tf("projectHealthTitle")}
             description="Segment mix and project-level field metrics"
           >
             <section className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 dark:border-stone-800 dark:bg-stone-900/40">
@@ -149,7 +157,7 @@ export default function FieldOpsPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 {Object.entries(data.by_segment).map(([seg, count]) => (
                   <span key={seg} className="rounded-full bg-white px-3 py-1 text-sm dark:bg-stone-900">
-                    {SEGMENT_LABEL[seg] ?? seg}: {count}
+                    {segmentLabel(seg)}: {count}
                   </span>
                 ))}
               </div>
@@ -185,7 +193,7 @@ export default function FieldOpsPage() {
                         </Link>
                         <div className="text-xs text-stone-500">{p.code}</div>
                       </td>
-                      <td>{SEGMENT_LABEL[p.segment] ?? p.segment}</td>
+                      <td>{segmentLabel(p.segment)}</td>
                       <td>
                         {p.tree_count}
                         {p.target_tree_count ? ` / ${p.target_tree_count}` : ""}
@@ -260,6 +268,19 @@ function ProjectActionCard({
   project: FieldProject;
   highlight?: boolean;
 }) {
+  const ts = useTranslations("segments");
+  const segmentCodes = [
+    "nhai_highway",
+    "industrial_greenbelt",
+    "township_landscape",
+    "nagar_van_urban",
+    "sahakar_van_coop",
+    "ngo_watershed",
+    "general",
+  ] as const;
+  const segmentLabel = (seg: string) =>
+    (segmentCodes as readonly string[]).includes(seg) ? ts(seg as (typeof segmentCodes)[number]) : seg;
+
   return (
     <article
       className={cn(
@@ -273,7 +294,7 @@ function ProjectActionCard({
             {p.name}
           </Link>
           <p className="mt-0.5 text-xs text-stone-500">
-            {SEGMENT_LABEL[p.segment] ?? p.segment} · {p.code}
+            {segmentLabel(p.segment)} · {p.code}
           </p>
         </div>
         <span className="text-xs text-stone-500">
