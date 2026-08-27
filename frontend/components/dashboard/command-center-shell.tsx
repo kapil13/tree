@@ -132,6 +132,47 @@ export function citizenOperationalStatus(input: {
   };
 }
 
+export function alertsOperationalStatus(input: {
+  unreadCount: number;
+  criticalCount: number;
+  highCount: number;
+  totalCount: number;
+}): { tone: OperationalTone; label: string; summary: string } {
+  const { unreadCount, criticalCount, highCount, totalCount } = input;
+
+  if (totalCount === 0) {
+    return {
+      tone: "healthy",
+      label: "Inbox clear",
+      summary: "No satellite, compliance, or field alerts match this filter.",
+    };
+  }
+  if (criticalCount > 0) {
+    return {
+      tone: "critical",
+      label: "Critical signals require review",
+      summary: `${criticalCount} critical alert${criticalCount === 1 ? "" : "s"} · ${unreadCount} unread in inbox.`,
+    };
+  }
+  if (highCount > 0 || unreadCount > 0) {
+    return {
+      tone: "attention",
+      label: "Unread signals in inbox",
+      summary: [
+        unreadCount > 0 ? `${unreadCount} unread` : null,
+        highCount > 0 ? `${highCount} high priority` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    };
+  }
+  return {
+    tone: "healthy",
+    label: "All signals reviewed",
+    summary: `${totalCount} alert${totalCount === 1 ? "" : "s"} in inbox — none unread.`,
+  };
+}
+
 export function CommandCenterEvidence({
   title,
   description,

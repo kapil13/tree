@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, MapPin, Plus, Satellite, Search, TreePine } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
+import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } from "lucide-react";
+import { EmptyState, FilterBar, FilterField, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
@@ -169,9 +168,48 @@ export function TreeRegistry() {
     ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
     : "/trees/new";
 
+  const registryStats = useMemo(() => {
+    const items = filtered;
+    const healthy = items.filter((t) => t.current_health === "healthy").length;
+    const geotagDueCount = items.filter((t) => isGeotagDue(t)).length;
+    const satelliteVerified = items.filter((t) => t.satellite_verified).length;
+    const pctHealthy = items.length ? Math.round((healthy / items.length) * 100) : 0;
+    return { healthy, geotagDueCount, satelliteVerified, pctHealthy };
+  }, [filtered]);
+
+  const registryStatus = useMemo(() => {
+    if (isOrgEmpty) {
+      return {
+        tone: "neutral" as const,
+        label: "Registry empty",
+        summary: "Tag your first tree with GPS and a photo to start survival tracking and satellite health.",
+      };
+    }
+    if (registryStats.geotagDueCount > 0) {
+      return {
+        tone: "attention" as const,
+        label: "Geotag refresh needed",
+        summary: `${registryStats.geotagDueCount} tree${registryStats.geotagDueCount === 1 ? "" : "s"} in view need a geotag or survival update.`,
+      };
+    }
+    if (registryStats.pctHealthy < 60 && filtered.length > 0) {
+      return {
+        tone: "watch" as const,
+        label: "Canopy stress in view",
+        summary: `${registryStats.pctHealthy}% healthy in current filter — review stressed trees.`,
+      };
+    }
+    return {
+      tone: "healthy" as const,
+      label: "Registry operational",
+      summary: `${filtered.length} tree${filtered.length === 1 ? "" : "s"} in view · ${registryStats.pctHealthy}% healthy.`,
+    };
+  }, [filtered.length, isOrgEmpty, registryStats.geotagDueCount, registryStats.pctHealthy]);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
+        purpose="Operate · Registry"
         title="Trees"
         description={
           isLoading
@@ -190,6 +228,45 @@ export function TreeRegistry() {
         }
       />
 
+      {!isOrgEmpty ? (
+        <>
+          <OperationalStatusBar
+            tone={registryStatus.tone}
+            label={registryStatus.label}
+            summary={registryStatus.summary}
+            icon={registryStatus.tone === "healthy" ? ShieldCheck : TreePine}
+          />
+
+          <MetricGrid
+            columns={4}
+            metrics={[
+              {
+                label: "In view",
+                value: String(filtered.length),
+                hint: `${totalTrees} total in org`,
+              },
+              {
+                label: "Healthy",
+                value: `${registryStats.pctHealthy}%`,
+                hint: `${registryStats.healthy} trees`,
+                tone: registryStats.pctHealthy >= 70 ? "positive" : "warning",
+              },
+              {
+                label: "Geotag due",
+                value: String(registryStats.geotagDueCount),
+                hint: "Needs field refresh",
+                tone: registryStats.geotagDueCount > 0 ? "warning" : "positive",
+              },
+              {
+                label: "Satellite verified",
+                value: String(registryStats.satelliteVerified),
+                hint: "In current filter",
+              },
+            ]}
+          />
+        </>
+      ) : null}
+
       {isOrgEmpty ? (
         <EmptyState
           icon={TreePine}
@@ -202,46 +279,55 @@ export function TreeRegistry() {
           }
         />
       ) : (
-        <div className="card space-y-4">
-          <div className="grid gap-3 lg:grid-cols-4">
-            <div className="relative lg:col-span-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-              <input
-                className="input w-full pl-9"
-                placeholder="Search code or species…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <select
-              className="input"
-              value={projectId}
-              onChange={(e) => {
-                setProjectId(e.target.value);
-                setWorkAreaId("");
-              }}
-            >
-              <option value="">All projects</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="input"
-              value={workAreaId}
-              onChange={(e) => setWorkAreaId(e.target.value)}
-              disabled={!projectId}
-            >
-              <option value="">All work areas</option>
-              {workAreas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="space-y-4">
+          <FilterBar>
+            <FilterField label="Search" htmlFor="tree-search" className="lg:col-span-2 min-w-[14rem] flex-[2]">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <input
+                  id="tree-search"
+                  className="input w-full pl-9"
+                  placeholder="Search code or species…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </FilterField>
+            <FilterField label="Project" htmlFor="tree-project">
+              <select
+                id="tree-project"
+                className="input w-full"
+                value={projectId}
+                onChange={(e) => {
+                  setProjectId(e.target.value);
+                  setWorkAreaId("");
+                }}
+              >
+                <option value="">All projects</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+            <FilterField label="Work area" htmlFor="tree-work-area">
+              <select
+                id="tree-work-area"
+                className="input w-full"
+                value={workAreaId}
+                onChange={(e) => setWorkAreaId(e.target.value)}
+                disabled={!projectId}
+              >
+                <option value="">All work areas</option>
+                {workAreas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+          </FilterBar>
 
           <div className="flex flex-wrap gap-2">
             {HEALTH_FILTERS.map((f) => (
@@ -383,44 +469,31 @@ export function TreeRegistry() {
               </section>
 
               {/* Desktop table */}
-              <div className="hidden overflow-x-auto rounded-lg border border-stone-200 md:block">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-stone-50 text-left text-stone-600">
+              <div className="intel-data-table-wrap hidden md:block">
+                <table className="intel-data-table">
+                  <thead>
                     <tr>
-                      <th className="px-4 py-2.5 font-medium">Code</th>
-                      <th className="px-4 py-2.5 font-medium">Project</th>
-                      {showWorkAreaColumn ? (
-                        <th className="px-4 py-2.5 font-medium">Work area</th>
-                      ) : null}
-                      <th className="px-4 py-2.5 font-medium">Species</th>
-                      <th className="px-4 py-2.5 font-medium">Health</th>
-                      <th className="px-4 py-2.5 font-medium">Satellite</th>
-                      <th className="px-4 py-2.5 font-medium">Registered</th>
-                      {showSurvivalColumn ? (
-                        <th className="px-4 py-2.5 font-medium">Survival</th>
-                      ) : null}
-                      {showGeotagColumn ? (
-                        <th className="px-4 py-2.5 font-medium">Last geotag</th>
-                      ) : null}
-                      {showChainageColumn ? (
-                        <th className="px-4 py-2.5 font-medium">Chainage</th>
-                      ) : null}
-                      <th className="px-4 py-2.5 font-medium">Location</th>
-                      <th className="px-4 py-2.5 font-medium" />
+                      <th>Code</th>
+                      <th>Project</th>
+                      {showWorkAreaColumn ? <th>Work area</th> : null}
+                      <th>Species</th>
+                      <th>Health</th>
+                      <th>Satellite</th>
+                      <th>Registered</th>
+                      {showSurvivalColumn ? <th>Survival</th> : null}
+                      {showGeotagColumn ? <th>Last geotag</th> : null}
+                      {showChainageColumn ? <th>Chainage</th> : null}
+                      <th>Location</th>
+                      <th />
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((t) => {
                       const geotagDue = isGeotagDue(t);
                       return (
-                        <tr
-                          key={t.id}
-                          className="border-t border-stone-100 hover:bg-stone-50/80"
-                        >
-                          <td className="px-4 py-2.5 font-mono text-xs">
-                            {t.public_code}
-                          </td>
-                          <td className="max-w-[12rem] px-4 py-2.5">
+                        <tr key={t.id}>
+                          <td className="font-mono text-xs">{t.public_code}</td>
+                          <td className="max-w-[12rem]">
                             {t.project_id ? (
                               <Link
                                 href={`/projects/${t.project_id}`}
@@ -434,27 +507,23 @@ export function TreeRegistry() {
                             )}
                           </td>
                           {showWorkAreaColumn ? (
-                            <td className="max-w-[10rem] px-4 py-2.5 text-stone-600">
+                            <td className="max-w-[10rem] text-stone-600">
                               <span className="line-clamp-2" title={t.work_area_name ?? undefined}>
                                 {t.work_area_name || "—"}
                               </span>
                             </td>
                           ) : null}
-                          <td className="px-4 py-2.5">{t.species_text || "—"}</td>
-                          <td className="px-4 py-2.5">
-                            {healthBadge(t.current_health)}
-                          </td>
-                          <td className="px-4 py-2.5">{satelliteBadge(t.satellite_verified)}</td>
-                          <td className="whitespace-nowrap px-4 py-2.5 text-stone-600">
+                          <td>{t.species_text || "—"}</td>
+                          <td>{healthBadge(t.current_health)}</td>
+                          <td>{satelliteBadge(t.satellite_verified)}</td>
+                          <td className="whitespace-nowrap text-stone-600">
                             {new Date(t.created_at).toLocaleDateString()}
                           </td>
                           {showSurvivalColumn ? (
-                            <td className="px-4 py-2.5 capitalize">
-                              {t.survival_status || "—"}
-                            </td>
+                            <td className="capitalize">{t.survival_status || "—"}</td>
                           ) : null}
                           {showGeotagColumn ? (
-                            <td className="px-4 py-2.5">
+                            <td>
                               {t.last_geotag_at ? (
                                 <span
                                   className={
@@ -472,14 +541,12 @@ export function TreeRegistry() {
                             </td>
                           ) : null}
                           {showChainageColumn ? (
-                            <td className="px-4 py-2.5 text-stone-500">
-                              {t.chainage_km || "—"}
-                            </td>
+                            <td className="text-stone-500">{t.chainage_km || "—"}</td>
                           ) : null}
-                          <td className="px-4 py-2.5">
+                          <td>
                             <LocationLink latitude={t.latitude} longitude={t.longitude} />
                           </td>
-                          <td className="px-4 py-2.5 text-right">
+                          <td className="text-right">
                             <Link
                               href={`/trees/${t.id}`}
                               className="text-forest-700 hover:underline"
