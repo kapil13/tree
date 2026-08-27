@@ -16,6 +16,7 @@ from app.schemas.emissions import (
     DispersionMetOut,
     DispersionRunOut,
     DispersionRunRequest,
+    EmissionCatalogOut,
     EmissionFusionOut,
     EmissionFusionResultOut,
     EmissionSourceCreate,
@@ -26,6 +27,7 @@ from app.schemas.emissions import (
     TropomiScanRequest,
 )
 from app.services.audit import record_audit
+from app.services.emissions.constants import emission_catalog
 from app.services.emissions.dispersion.run import (
     DispersionError,
     _simulation_to_out,
@@ -62,6 +64,11 @@ from app.services.reports.emissions_compliance_report import render_emissions_co
 router = APIRouter(prefix="/planting-projects", tags=["emissions"])
 
 
+@router.get("/emissions-catalog", response_model=EmissionCatalogOut)
+async def get_emissions_catalog(user: CurrentUser) -> EmissionCatalogOut:
+    return EmissionCatalogOut.model_validate(emission_catalog())
+
+
 def _raise_emissions_db_error(exc: Exception) -> None:
     raw = str(getattr(exc, "orig", exc))
     if any(
@@ -89,7 +96,10 @@ def _registry_error(exc: EmissionRegistryError) -> HTTPException:
 
 
 def _dispersion_error(exc: DispersionError) -> HTTPException:
-    return HTTPException(status.HTTP_400_BAD_REQUEST, detail=exc.code)
+    code = exc.code
+    if code == "mixed_gas_types":
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code)
+    return HTTPException(status.HTTP_400_BAD_REQUEST, detail=code)
 
 
 def _tropomi_error(exc: TropomiScanError) -> HTTPException:
@@ -130,12 +140,15 @@ async def list_project_emission_sources(
     user: CurrentUser,
     db: DB,
     work_area_id: uuid.UUID | None = None,
+    gas_type: str | None = None,
 ) -> list[EmissionSourceOut]:
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     try:
-        rows = await list_emission_sources(db, project_id=project_id, work_area_id=work_area_id)
+        rows = await list_emission_sources(
+            db, project_id=project_id, work_area_id=work_area_id, gas_type=gas_type
+        )
     except (ProgrammingError, IntegrityError) as exc:
         await db.rollback()
         _raise_emissions_db_error(exc)

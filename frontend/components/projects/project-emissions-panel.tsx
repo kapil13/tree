@@ -9,7 +9,10 @@ import {
   errorMessage,
   plantingProjects,
   type DispersionRunResult,
+  type EmissionCatalog,
   type EmissionFusionResult,
+  type EmissionGasCatalogItem,
+  type EmissionSource,
   type TropomiScanResult,
   type WorkArea,
 } from "@/lib/api";
@@ -28,6 +31,79 @@ const VERDICT_STYLE: Record<string, string> = {
   no_signal: "border-stone-200 bg-stone-50 text-stone-800",
 };
 
+const GAS_BADGE: Record<string, string> = {
+  CH4: "bg-emerald-100 text-emerald-900",
+  CO2: "bg-stone-200 text-stone-800",
+  N2O: "bg-violet-100 text-violet-900",
+  NO2: "bg-amber-100 text-amber-900",
+  SO2: "bg-rose-100 text-rose-900",
+};
+
+const FALLBACK_CATALOG: EmissionCatalog = {
+  gases: [
+    {
+      code: "CH4",
+      label: "Methane",
+      symbol: "CH₄",
+      unit_rate: "g/s",
+      unit_annual: "t/yr",
+      satellite_supported: true,
+      fusion_supported: true,
+      suggested_source_types: ["landfill", "rice_paddy", "pipeline", "livestock", "compost"],
+    },
+    {
+      code: "CO2",
+      label: "Carbon dioxide",
+      symbol: "CO₂",
+      unit_rate: "g/s",
+      unit_annual: "t/yr",
+      satellite_supported: false,
+      fusion_supported: false,
+      suggested_source_types: ["flare", "mine", "other"],
+    },
+    {
+      code: "N2O",
+      label: "Nitrous oxide",
+      symbol: "N₂O",
+      unit_rate: "g/s",
+      unit_annual: "t/yr",
+      satellite_supported: false,
+      fusion_supported: false,
+      suggested_source_types: ["rice_paddy", "compost", "livestock", "other"],
+    },
+    {
+      code: "NO2",
+      label: "Nitrogen dioxide",
+      symbol: "NO₂",
+      unit_rate: "g/s",
+      unit_annual: "t/yr",
+      satellite_supported: false,
+      fusion_supported: false,
+      suggested_source_types: ["flare", "mine", "pipeline", "other"],
+    },
+    {
+      code: "SO2",
+      label: "Sulfur dioxide",
+      symbol: "SO₂",
+      unit_rate: "g/s",
+      unit_annual: "t/yr",
+      satellite_supported: false,
+      fusion_supported: false,
+      suggested_source_types: ["mine", "flare", "other"],
+    },
+  ],
+  source_types: [
+    { code: "landfill", label: "Landfill / waste", description: "" },
+    { code: "flare", label: "Flare / combustion", description: "" },
+    { code: "rice_paddy", label: "Rice paddy", description: "" },
+    { code: "pipeline", label: "Pipeline / leak", description: "" },
+    { code: "mine", label: "Mine / industrial", description: "" },
+    { code: "livestock", label: "Livestock", description: "" },
+    { code: "compost", label: "Compost / organics", description: "" },
+    { code: "other", label: "Other", description: "" },
+  ],
+};
+
 function ringCentroid(boundary: WorkArea["boundary"]): [number, number] {
   const ring = boundary.coordinates[0] ?? [];
   if (ring.length === 0) return [0, 0];
@@ -41,6 +117,20 @@ function ringCentroid(boundary: WorkArea["boundary"]): [number, number] {
   return [lng / n, lat / n];
 }
 
+function gasMeta(catalog: EmissionCatalog, code: string): EmissionGasCatalogItem {
+  return catalog.gases.find((g) => g.code === code) ?? catalog.gases[0];
+}
+
+function sourceLabel(catalog: EmissionCatalog, code: string): string {
+  return catalog.source_types.find((s) => s.code === code)?.label ?? code;
+}
+
+function formatRate(source: EmissionSource): string {
+  if (source.emission_rate_g_s != null) return `${source.emission_rate_g_s} g/s`;
+  if (source.annual_emission_tons != null) return `${source.annual_emission_tons} t/yr`;
+  return "—";
+}
+
 export function ProjectEmissionsPanel({
   projectId,
   projectCode,
@@ -52,11 +142,26 @@ export function ProjectEmissionsPanel({
 }) {
   const qc = useQueryClient();
   const [workAreaId, setWorkAreaId] = useState(workAreas[0]?.id ?? "");
-  const [name, setName] = useState("Methane source");
+  const [gasType, setGasType] = useState("CH4");
+  const [sourceType, setSourceType] = useState("landfill");
+  const [name, setName] = useState("");
+  const [rateMode, setRateMode] = useState<"g_s" | "t_yr">("g_s");
   const [rate, setRate] = useState("10");
+  const [releaseHeight, setReleaseHeight] = useState("2");
+  const [plumeGas, setPlumeGas] = useState("CH4");
+  const [registryFilter, setRegistryFilter] = useState<string>("all");
   const [plumeResult, setPlumeResult] = useState<DispersionRunResult | null>(null);
   const [tropomiScan, setTropomiScan] = useState<TropomiScanResult | null>(null);
   const [fusionResult, setFusionResult] = useState<EmissionFusionResult | null>(null);
+
+  const { data: catalog = FALLBACK_CATALOG } = useQuery({
+    queryKey: ["emissions-catalog"],
+    queryFn: () => plantingProjects.getEmissionCatalog(),
+    staleTime: 60_000 * 60,
+  });
+
+  const selectedGas = useMemo(() => gasMeta(catalog, gasType), [catalog, gasType]);
+  const plumeGasMeta = useMemo(() => gasMeta(catalog, plumeGas), [catalog, plumeGas]);
 
   const selectedArea = useMemo(
     () => workAreas.find((a) => a.id === workAreaId) ?? workAreas[0],
@@ -71,6 +176,35 @@ export function ProjectEmissionsPanel({
       plantingProjects.listEmissionSources(projectId, workAreaId || undefined),
     enabled: Boolean(projectId),
   });
+
+  const filteredSources = useMemo(() => {
+    if (registryFilter === "all") return sources;
+    return sources.filter((s) => s.gas_type === registryFilter);
+  }, [registryFilter, sources]);
+
+  const gasesInRegistry = useMemo(
+    () => [...new Set(sources.map((s) => s.gas_type))].sort(),
+    [sources],
+  );
+
+  const plumeSources = useMemo(
+    () =>
+      sources.filter((s) => s.status === "active" && s.gas_type === plumeGas),
+    [plumeGas, sources],
+  );
+
+  useEffect(() => {
+    const suggested = selectedGas.suggested_source_types[0];
+    if (suggested) setSourceType(suggested);
+    setName(`${selectedGas.label} source`);
+  }, [gasType, selectedGas]);
+
+  useEffect(() => {
+    if (gasesInRegistry.length === 0) return;
+    if (!gasesInRegistry.includes(plumeGas)) {
+      setPlumeGas(gasesInRegistry.includes("CH4") ? "CH4" : gasesInRegistry[0]);
+    }
+  }, [gasesInRegistry, plumeGas]);
 
   const { data: latestPlume } = useQuery({
     queryKey: ["dispersion-latest", projectId, workAreaId],
@@ -102,22 +236,43 @@ export function ProjectEmissionsPanel({
     if (latestFusion) setFusionResult(latestFusion);
   }, [latestFusion]);
 
-  const canRunFusion = Boolean(plumeResult && tropomiScan);
+  const canRunFusion = Boolean(plumeResult && tropomiScan && plumeGas === "CH4");
 
   const createMut = useMutation({
     mutationFn: () => {
       if (!selectedArea) throw new Error("Select a work area");
-      return plantingProjects.createEmissionSource(projectId, {
+      const payload = {
         work_area_id: selectedArea.id,
-        name,
-        source_type: "landfill",
-        gas_type: "CH4",
-        geometry_kind: "point",
-        point: { type: "Point", coordinates: centroid },
-        emission_rate_g_s: Number(rate),
-        release_height_m: 2,
-      });
+        name: name.trim() || `${selectedGas.label} source`,
+        source_type: sourceType,
+        gas_type: gasType,
+        geometry_kind: "point" as const,
+        point: { type: "Point" as const, coordinates: centroid },
+        release_height_m: Number(releaseHeight) || 2,
+        ...(rateMode === "g_s"
+          ? { emission_rate_g_s: Number(rate) }
+          : { annual_emission_tons: Number(rate) }),
+      };
+      return plantingProjects.createEmissionSource(projectId, payload);
     },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["emission-sources", projectId] });
+    },
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: (source: EmissionSource) =>
+      plantingProjects.updateEmissionSource(projectId, source.id, {
+        status: source.status === "active" ? "inactive" : "active",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["emission-sources", projectId] });
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (sourceId: string) =>
+      plantingProjects.deleteEmissionSource(projectId, sourceId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["emission-sources", projectId] });
     },
@@ -125,13 +280,12 @@ export function ProjectEmissionsPanel({
 
   const runMut = useMutation({
     mutationFn: () => {
-      const active = sources.filter((s) => s.status === "active");
-      if (!selectedArea || active.length === 0) {
-        throw new Error("Add an active emission source first");
+      if (!selectedArea || plumeSources.length === 0) {
+        throw new Error(`Add an active ${plumeGasMeta.symbol} source first`);
       }
       return plantingProjects.runDispersion(projectId, {
         work_area_id: selectedArea.id,
-        emission_source_ids: active.map((s) => s.id),
+        emission_source_ids: plumeSources.map((s) => s.id),
         duration_hours: 24,
         downwind_km: 10,
         crosswind_km: 2,
@@ -180,7 +334,7 @@ export function ProjectEmissionsPanel({
   if (workAreas.length === 0) {
     return (
       <div className="card text-sm text-stone-600">
-        Draw a work area on the project map before registering GHG / methane sources.
+        Draw a work area on the project map before registering GHG emission sources.
       </div>
     );
   }
@@ -190,17 +344,16 @@ export function ProjectEmissionsPanel({
       <div className="flex items-start gap-3">
         <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-forest-700" />
         <div>
-          <h2 className="text-lg font-semibold text-stone-900">GHG & methane dispersion</h2>
+          <h2 className="text-lg font-semibold text-stone-900">Multi-gas emission registry</h2>
           <p className="mt-1 text-sm text-stone-600">
-            Register emission sources inside your work area boundary. Plume modeling uses free
-            Open-Meteo wind data and may extend downwind outside the polygon. TROPOMI CH₄ scans
-            use Copernicus Sentinel Hub over a buffered ROI. Fusion compares satellite anomaly with
-            declared sources and wind-aligned plumes.
+            Register CH₄, CO₂, N₂O, NO₂, and SO₂ sources inside your work area. Gaussian plume
+            modeling runs per gas. TROPOMI CH₄ satellite scans and fusion apply to methane only
+            today.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <label className="label text-xs">Work area</label>
           <select
@@ -216,63 +369,189 @@ export function ProjectEmissionsPanel({
           </select>
         </div>
         <div>
+          <label className="label text-xs">Gas</label>
+          <select
+            className="input text-sm"
+            value={gasType}
+            onChange={(e) => setGasType(e.target.value)}
+          >
+            {catalog.gases.map((g) => (
+              <option key={g.code} value={g.code}>
+                {g.symbol} — {g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label text-xs">Source type</label>
+          <select
+            className="input text-sm"
+            value={sourceType}
+            onChange={(e) => setSourceType(e.target.value)}
+          >
+            {catalog.source_types.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="label text-xs">Source name</label>
           <input className="input text-sm" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label className="label text-xs">CH₄ emission rate (g/s)</label>
+          <label className="label text-xs">Rate unit</label>
+          <select
+            className="input text-sm"
+            value={rateMode}
+            onChange={(e) => setRateMode(e.target.value as "g_s" | "t_yr")}
+          >
+            <option value="g_s">{selectedGas.unit_rate}</option>
+            <option value="t_yr">{selectedGas.unit_annual}</option>
+          </select>
+        </div>
+        <div>
+          <label className="label text-xs">
+            Emission rate ({rateMode === "g_s" ? selectedGas.unit_rate : selectedGas.unit_annual})
+          </label>
           <input
             className="input text-sm"
             type="number"
             min={0.001}
-            step={0.1}
+            step={rateMode === "g_s" ? 0.1 : 1}
             value={rate}
             onChange={(e) => setRate(e.target.value)}
           />
         </div>
-        <div className="flex items-end">
+        <div>
+          <label className="label text-xs">Release height (m)</label>
+          <input
+            className="input text-sm"
+            type="number"
+            min={0}
+            step={0.5}
+            value={releaseHeight}
+            onChange={(e) => setReleaseHeight(e.target.value)}
+          />
+        </div>
+        <div className="flex items-end sm:col-span-2 lg:col-span-1">
           <button
             type="button"
             className="btn-primary w-full text-sm"
             disabled={createMut.isPending}
             onClick={() => createMut.mutate()}
           >
-            {createMut.isPending ? "Saving…" : "Add point source (centroid)"}
+            {createMut.isPending ? "Saving…" : `Add ${selectedGas.symbol} point source`}
           </button>
         </div>
       </div>
+
+      {selectedGas.satellite_supported ? (
+        <p className="text-xs text-emerald-800">
+          {selectedGas.symbol} supports TROPOMI satellite screening and wind-aligned fusion.
+        </p>
+      ) : (
+        <p className="text-xs text-stone-500">
+          {selectedGas.symbol} is registry + plume only for now — no satellite fusion yet.
+        </p>
+      )}
 
       {createMut.error ? (
         <p className="text-sm text-rose-700">{errorMessage(createMut.error)}</p>
       ) : null}
 
       <div>
-        <h3 className="text-sm font-semibold text-stone-800">Registered sources</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-stone-800">Registered sources</h3>
+          <select
+            className="input w-auto text-xs"
+            value={registryFilter}
+            onChange={(e) => setRegistryFilter(e.target.value)}
+          >
+            <option value="all">All gases</option>
+            {catalog.gases.map((g) => (
+              <option key={g.code} value={g.code}>
+                {g.symbol} only
+              </option>
+            ))}
+          </select>
+        </div>
         {isLoading ? (
           <p className="mt-2 text-sm text-stone-500">Loading…</p>
-        ) : sources.length === 0 ? (
+        ) : filteredSources.length === 0 ? (
           <p className="mt-2 text-sm text-stone-500">No emission sources yet.</p>
         ) : (
-          <ul className="mt-2 space-y-1 text-sm text-stone-700">
-            {sources.map((s) => (
-              <li key={s.id} className="rounded-lg border border-stone-200 px-3 py-2">
-                <span className="font-medium">{s.name}</span> — {s.gas_type}{" "}
-                {s.emission_rate_g_s != null ? `(${s.emission_rate_g_s} g/s)` : ""}
+          <ul className="mt-2 space-y-2 text-sm text-stone-700">
+            {filteredSources.map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium">{s.name}</span>
+                  <span
+                    className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${GAS_BADGE[s.gas_type] ?? "bg-stone-100"}`}
+                  >
+                    {gasMeta(catalog, s.gas_type).symbol}
+                  </span>
+                  <span className="ml-2 text-stone-500">{sourceLabel(catalog, s.source_type)}</span>
+                  <span className="ml-2 text-stone-600">{formatRate(s)}</span>
+                  {s.status !== "active" ? (
+                    <span className="ml-2 text-xs uppercase text-stone-400">inactive</span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    className="btn-secondary px-2 py-1 text-xs"
+                    disabled={toggleMut.isPending}
+                    onClick={() => toggleMut.mutate(s)}
+                  >
+                    {s.status === "active" ? "Deactivate" : "Activate"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary px-2 py-1 text-xs text-rose-800"
+                    disabled={deleteMut.isPending}
+                    onClick={() => deleteMut.mutate(s.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="label text-xs">Plume simulation gas</label>
+          <select
+            className="input w-auto text-sm"
+            value={plumeGas}
+            onChange={(e) => setPlumeGas(e.target.value)}
+          >
+            {(gasesInRegistry.length > 0 ? gasesInRegistry : catalog.gases.map((g) => g.code)).map(
+              (code) => (
+                <option key={code} value={code}>
+                  {gasMeta(catalog, code).symbol}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
         <button
           type="button"
           className="btn-secondary inline-flex items-center gap-2 text-sm"
-          disabled={runMut.isPending || sources.length === 0}
+          disabled={runMut.isPending || plumeSources.length === 0}
           onClick={() => runMut.mutate()}
         >
           <Wind className="h-4 w-4" />
-          {runMut.isPending ? "Running plume model…" : "Run dispersion simulation"}
+          {runMut.isPending
+            ? "Running plume model…"
+            : `Run ${plumeGasMeta.symbol} dispersion (${plumeSources.length} source${plumeSources.length === 1 ? "" : "s"})`}
         </button>
         <button
           type="button"
@@ -290,19 +569,21 @@ export function ProjectEmissionsPanel({
           onClick={() => fusionMut.mutate()}
           title={
             canRunFusion
-              ? "Compare TROPOMI anomaly with declared source and plume"
-              : "Run dispersion and TROPOMI scan first"
+              ? "Compare TROPOMI CH₄ anomaly with declared sources and plume"
+              : plumeGas !== "CH4"
+                ? "Fusion is CH₄ only — run CH₄ dispersion and TROPOMI scan"
+                : "Run CH₄ dispersion and TROPOMI scan first"
           }
         >
           <GitMerge className="h-4 w-4" />
-          {fusionMut.isPending ? "Running fusion…" : "Run fusion assessment"}
+          {fusionMut.isPending ? "Running fusion…" : "Run CH₄ fusion"}
         </button>
         <button
           type="button"
           className="btn-secondary inline-flex items-center gap-2 text-sm"
           disabled={exportMut.isPending || !selectedArea}
           onClick={() => exportMut.mutate()}
-          title="Download GHG compliance PDF for auditors"
+          title="Download multi-gas compliance PDF for auditors"
         >
           <Download className="h-4 w-4" />
           {exportMut.isPending ? "Exporting PDF…" : "Export compliance PDF"}
@@ -321,11 +602,14 @@ export function ProjectEmissionsPanel({
       {exportMut.error ? (
         <p className="text-sm text-rose-700">{errorMessage(exportMut.error)}</p>
       ) : null}
+      {deleteMut.error ? (
+        <p className="text-sm text-rose-700">{errorMessage(deleteMut.error)}</p>
+      ) : null}
 
       {selectedArea ? (
         <EmissionsPlumeMap
           workArea={selectedArea}
-          sources={sources}
+          sources={plumeSources.length > 0 ? plumeSources : sources}
           plume={plumeResult}
           roiGeojson={tropomiScan?.roi_geojson ?? null}
         />
