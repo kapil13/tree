@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Activity, Bird, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
 import { PageHeader, SectionNav } from "@/components/ui";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
@@ -10,24 +11,27 @@ import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
 import { PortfolioOverviewTab } from "./portfolio-overview-tab";
 import { PortfolioThreatsTab } from "./portfolio-threats-tab";
 
-const TABS = [
-  { id: "overview", label: "Overview", shortLabel: "Overview", icon: LayoutGrid },
-  { id: "compliance", label: "Compliance", shortLabel: "Compliance", icon: ShieldCheck },
-  { id: "threats", label: "Threats & weather", shortLabel: "Threats", icon: ShieldAlert },
-  { id: "monitoring", label: "Monitoring", shortLabel: "Monitor", icon: Activity },
-  { id: "biodiversity", label: "Biodiversity", shortLabel: "Bio", icon: Bird },
-] as const;
-
-export type PortfolioHealthTab = (typeof TABS)[number]["id"];
+const TAB_IDS = ["overview", "compliance", "threats", "monitoring", "biodiversity"] as const;
+export type PortfolioHealthTab = (typeof TAB_IDS)[number];
 
 export function PortfolioHealthHub() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tp = useTranslations("portfolio");
+  const tc = useTranslations("chrome");
   const [tab, setTab] = useState<PortfolioHealthTab>("overview");
+
+  const TABS = [
+    { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },
+    { id: "compliance" as const, label: tp("tabCompliance"), shortLabel: tp("tabCompliance"), icon: ShieldCheck },
+    { id: "threats" as const, label: tp("tabThreats"), shortLabel: tp("tabThreatsShort"), icon: ShieldAlert },
+    { id: "monitoring" as const, label: tp("tabMonitoring"), shortLabel: tp("tabMonitorShort"), icon: Activity },
+    { id: "biodiversity" as const, label: tp("tabBiodiversity"), shortLabel: tp("tabBioShort"), icon: Bird },
+  ];
 
   useEffect(() => {
     const requested = searchParams.get("tab");
-    if (requested && TABS.some((t) => t.id === requested)) {
+    if (requested && TAB_IDS.includes(requested as PortfolioHealthTab)) {
       setTab(requested as PortfolioHealthTab);
     }
   }, [searchParams]);
@@ -40,14 +44,14 @@ export function PortfolioHealthHub() {
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Intelligence · Portfolio"
-        title="Portfolio intelligence"
-        description="Start with overall posture, then drill into compliance risk, threats, satellite monitoring, and biodiversity signals across all projects."
-        breadcrumbs={[{ label: "Intelligence" }, { label: "Portfolio" }]}
+        purpose={tp("purpose")}
+        title={tp("title")}
+        description={tp("description")}
+        breadcrumbs={[{ label: tc("sectionIntelligence") }, { label: tc("breadcrumbPortfolio") }]}
       />
 
       <SectionNav
-        ariaLabel="Portfolio intelligence sections"
+        ariaLabel={tp("ariaSections")}
         items={TABS.map((t) => ({
           id: t.id,
           label: t.label,

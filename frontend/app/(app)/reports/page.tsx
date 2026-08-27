@@ -78,6 +78,8 @@ export default function ReportsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const tr = useTranslations("reports");
+  const to = useTranslations("opsStatus");
+  const tc = useTranslations("chrome");
   const canGenerate = canGenerateReports(user);
   const [tab, setTab] = useState<ReportTab>("standard");
   const [kind, setKind] = useState("carbon");
@@ -111,7 +113,7 @@ export default function ReportsPage() {
   const failedCount = list.filter((r) => r.status === "failed").length;
   const readyCount = list.filter((r) => r.status === "ready" || r.status === "completed").length;
 
-  const reportsStatus = reportsOperationalStatus({
+  const reportsStatus = reportsOperationalStatus(to, {
     totalReports: list.length,
     pendingCount,
     failedCount,
@@ -136,14 +138,10 @@ export default function ReportsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        purpose="Reports · Audit evidence"
+        purpose={tr("purpose")}
         title={tr("title")}
-        description={
-          canGenerate
-            ? "Generate carbon, inventory, biodiversity, and ESG exports when compliance posture is clear."
-            : "Download compliance and portfolio reports prepared by your program team."
-        }
-        breadcrumbs={[{ label: "Reports" }, { label: "Exports" }]}
+        description={canGenerate ? tr("description") : tr("descriptionReadOnly")}
+        breadcrumbs={[{ label: tc("sectionReports") }, { label: tc("breadcrumbExports") }]}
       />
 
       <OperationalStatusBar
@@ -387,7 +385,7 @@ export default function ReportsPage() {
                 <td colSpan={5} className="p-6">
                   <EmptyState
                     icon={FileText}
-                    title={canGenerate ? "No reports yet" : "No reports available"}
+                    title={canGenerate ? tr("noReportsYet") : tr("noReportsAvailable")}
                     description={
                       canGenerate
                         ? "Choose a report type above and generate your first export."

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Sparkles, Send, Lightbulb, AlertTriangle, Brain } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { InsightPanel, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { assistant, errorMessage, type AssistantAnswer } from "@/lib/api";
 
@@ -11,14 +12,14 @@ type Msg = {
   data?: AssistantAnswer;
 };
 
-const SUGGESTIONS = [
-  "Give me a portfolio summary",
-  "What is the health status of my trees?",
-  "How much CO₂ are my trees storing?",
-  "What is the current weather at my sites?",
-  "What satellite verification coverage do I have?",
-  "Any unread alerts I should know about?",
-];
+const SUGGESTION_KEYS = [
+  "suggestion1",
+  "suggestion2",
+  "suggestion3",
+  "suggestion4",
+  "suggestion5",
+  "suggestion6",
+] as const;
 
 const HIDDEN_CALC_KEYS = new Set(["intent", "mode", "portfolio", "provider", "llm_error"]);
 
@@ -81,14 +82,16 @@ function renderAnswerText(text: string) {
   return <div className="space-y-0.5">{blocks}</div>;
 }
 
-function providerLabel(data?: AssistantAnswer) {
+function providerLabel(data: AssistantAnswer | undefined, ta: ReturnType<typeof useTranslations<"assistant">>) {
   if (!data) return null;
-  if (data.mode === "llm" && data.provider === "openai") return "Answered by OpenAI";
-  if (data.mode === "llm" && data.provider === "gemini") return "Answered by Gemini";
-  return "Portfolio analyst (rules)";
+  if (data.mode === "llm" && data.provider === "openai") return ta("providerOpenai");
+  if (data.mode === "llm" && data.provider === "gemini") return ta("providerGemini");
+  return ta("providerRules");
 }
 
 export default function AssistantPage() {
+  const ta = useTranslations("assistant");
+  const tc = useTranslations("chrome");
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<Msg[]>([]);
@@ -133,46 +136,34 @@ export default function AssistantPage() {
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col">
       <PageHeader
         className="mb-4"
-        purpose="Intelligence · Analyst"
-        title="AI assistant"
-        description="Ask about your live portfolio — carbon, health, satellite, biodiversity, weather, and alerts."
-        breadcrumbs={[{ label: "Intelligence" }, { label: "Assistant" }]}
+        purpose={ta("purpose")}
+        title={ta("title")}
+        description={ta("description")}
+        breadcrumbs={[{ label: tc("sectionIntelligence") }, { label: tc("breadcrumbAssistant") }]}
       />
 
       <OperationalStatusBar
         tone={lastMode === "rules" && lastLlmError ? "attention" : lastMode === "llm" ? "healthy" : "neutral"}
-        label={
-          lastMode === "llm"
-            ? "Live LLM connected"
-            : lastMode === "rules" && lastLlmError
-              ? "Rules engine fallback"
-              : "Portfolio analyst ready"
-        }
-        summary={
-          lastMode === "llm"
-            ? "Answers use your configured LLM with live portfolio context."
-            : lastMode === "rules" && lastLlmError
-              ? lastLlmError
-              : "Pick a suggestion or ask about trees, carbon, compliance, and monitoring."
-        }
+        label={lastLlmError ? ta("opsLlmError") : ta("opsReady")}
+        summary={lastLlmError ? ta("opsLlmErrorSummary") : ta("opsReadySummary")}
         icon={Brain}
       />
 
       <InsightPanel
-        title="Suggested questions"
-        interpretation="Tap a prompt to pre-fill the analyst, or type your own question about plantation data."
+        title={ta("suggestedQuestions")}
+        interpretation={ta("welcome")}
         icon={Sparkles}
       >
         <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTION_KEYS.map((key) => (
             <button
-              key={s}
+              key={key}
               type="button"
               className="rounded-full border border-forest-200 bg-forest-50 px-3 py-1.5 text-xs font-medium text-forest-800 transition hover:bg-forest-100 disabled:opacity-50 dark:border-forest-800 dark:bg-forest-950/40 dark:text-forest-100"
-              onClick={() => void ask(undefined, s)}
+              onClick={() => void ask(undefined, ta(key))}
               disabled={busy}
             >
-              {s}
+              {ta(key)}
             </button>
           ))}
         </div>
@@ -192,13 +183,13 @@ export default function AssistantPage() {
         {history.length === 0 && (
           <div className="flex items-start gap-2 text-sm text-stone-500">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <span>Pick a suggestion above or ask your own question about your plantation data.</span>
+            <span>{ta("welcome")}</span>
           </div>
         )}
         {history.map((m, i) => {
           const metrics = m.role === "assistant" ? visibleCalculations(m.data?.calculations) : null;
           const citations = m.data?.citations?.filter((c) => c.toLowerCase() !== "aranyix assistant");
-          const source = m.role === "assistant" ? providerLabel(m.data) : null;
+          const source = m.role === "assistant" ? providerLabel(m.data, ta) : null;
 
           return (
             <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
@@ -235,7 +226,7 @@ export default function AssistantPage() {
         {busy && (
           <div className="text-left">
             <div className="inline-block rounded-2xl bg-stone-100 px-4 py-2 text-sm text-stone-500 dark:bg-stone-800">
-              Thinking…
+              {ta("thinking")}
             </div>
           </div>
         )}
@@ -251,7 +242,7 @@ export default function AssistantPage() {
             className="input flex-1"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask about your trees, carbon, health, weather, satellite…"
+            placeholder={ta("placeholder")}
             disabled={busy}
           />
           <button
@@ -259,7 +250,7 @@ export default function AssistantPage() {
             className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={busy}
           >
-            <Send className="h-4 w-4" /> {busy ? "Thinking…" : "Ask"}
+            <Send className="h-4 w-4" /> {busy ? ta("thinking") : ta("send")}
           </button>
         </div>
       </form>

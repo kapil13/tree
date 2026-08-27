@@ -1,120 +1,148 @@
-/** Route titles and breadcrumbs for consistent app chrome (topbar + page headers). */
+/** Route title/section/breadcrumb translation keys for app chrome. */
 
+export type RouteKeyMeta = {
+  titleKey: string;
+  sectionKey?: string;
+  breadcrumbs?: Array<{ labelKey: string; href?: string }>;
+};
+
+const ROUTE_KEYS: Record<string, RouteKeyMeta> = {
+  "/dashboard": {
+    titleKey: "routeCommandCenter",
+    sectionKey: "sectionOverview",
+    breadcrumbs: [{ labelKey: "sectionOverview" }, { labelKey: "routeCommandCenter" }],
+  },
+  "/stewardship": {
+    titleKey: "routeStewardship",
+    sectionKey: "sectionOverview",
+    breadcrumbs: [{ labelKey: "sectionOverview" }, { labelKey: "routeStewardship" }],
+  },
+  "/projects": {
+    titleKey: "routePlantingProjects",
+    sectionKey: "sectionOperate",
+    breadcrumbs: [{ labelKey: "sectionOperate" }, { labelKey: "breadcrumbProjects" }],
+  },
+  "/trees": {
+    titleKey: "routeTreeRegistry",
+    sectionKey: "sectionOperate",
+    breadcrumbs: [{ labelKey: "sectionOperate" }, { labelKey: "routeTreeRegistry" }],
+  },
+  "/map": {
+    titleKey: "routeGeospatialMap",
+    sectionKey: "sectionOperate",
+    breadcrumbs: [{ labelKey: "sectionOperate" }, { labelKey: "breadcrumbMap" }],
+  },
+  "/field-ops": {
+    titleKey: "routeFieldOperations",
+    sectionKey: "sectionOperate",
+    breadcrumbs: [{ labelKey: "sectionOperate" }, { labelKey: "breadcrumbFieldOps" }],
+  },
+  "/portfolio-health": {
+    titleKey: "routePortfolioIntelligence",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbPortfolio" }],
+  },
+  "/satellite": {
+    titleKey: "routeSatelliteMonitoring",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbSatellite" }],
+  },
+  "/bioacoustic": {
+    titleKey: "routeBioacoustic",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbBiodiversity" }],
+  },
+  "/monitoring": {
+    titleKey: "routeMonitoring",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbMonitoring" }],
+  },
+  "/intelligence": {
+    titleKey: "routeIntelligenceSummary",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbSummary" }],
+  },
+  "/alerts": {
+    titleKey: "routeAlertsSignals",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbAlerts" }],
+  },
+  "/reports": {
+    titleKey: "routeReportsExports",
+    sectionKey: "sectionReports",
+    breadcrumbs: [{ labelKey: "sectionReports" }, { labelKey: "breadcrumbExports" }],
+  },
+  "/assistant": {
+    titleKey: "routeAiAssistant",
+    sectionKey: "sectionReports",
+    breadcrumbs: [{ labelKey: "sectionReports" }, { labelKey: "breadcrumbAssistant" }],
+  },
+  "/settings": {
+    titleKey: "routeSettings",
+    sectionKey: "sectionAccount",
+    breadcrumbs: [{ labelKey: "sectionAccount" }, { labelKey: "routeSettings" }],
+  },
+};
+
+export function resolveRouteKeys(pathname: string | null): RouteKeyMeta | null {
+  if (!pathname) return null;
+  if (ROUTE_KEYS[pathname]) return ROUTE_KEYS[pathname];
+
+  if (pathname.startsWith("/projects/") && pathname.includes("/compliance")) {
+    return {
+      titleKey: "routeCompliance",
+      sectionKey: "sectionOperate",
+      breadcrumbs: [
+        { labelKey: "sectionOperate", href: "/projects" },
+        { labelKey: "breadcrumbProject" },
+        { labelKey: "routeCompliance" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/projects/")) {
+    return {
+      titleKey: "routeProjectWorkspace",
+      sectionKey: "sectionOperate",
+      breadcrumbs: [
+        { labelKey: "sectionOperate", href: "/projects" },
+        { labelKey: "breadcrumbProject" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/trees/")) {
+    return {
+      titleKey: "routeTreeDetail",
+      sectionKey: "sectionOperate",
+      breadcrumbs: [
+        { labelKey: "sectionOperate", href: "/trees" },
+        { labelKey: "breadcrumbTree" },
+      ],
+    };
+  }
+  if (pathname.startsWith("/platform")) {
+    return {
+      titleKey: "routePlatformAdmin",
+      sectionKey: "sectionAdministration",
+      breadcrumbs: [{ labelKey: "sectionAdministration" }, { labelKey: "breadcrumbPlatform" }],
+    };
+  }
+  return null;
+}
+
+/** @deprecated Use useRouteMeta hook in client components */
 export type RouteMeta = {
   title: string;
   section?: string;
   breadcrumbs?: Array<{ label: string; href?: string }>;
 };
 
-const ROUTE_META: Record<string, RouteMeta> = {
-  "/dashboard": {
-    title: "Command center",
-    section: "Overview",
-    breadcrumbs: [{ label: "Overview" }, { label: "Command center" }],
-  },
-  "/stewardship": {
-    title: "Stewardship",
-    section: "Overview",
-    breadcrumbs: [{ label: "Overview" }, { label: "Stewardship" }],
-  },
-  "/projects": {
-    title: "Planting projects",
-    section: "Operate",
-    breadcrumbs: [{ label: "Operate" }, { label: "Projects" }],
-  },
-  "/trees": {
-    title: "Tree registry",
-    section: "Operate",
-    breadcrumbs: [{ label: "Operate" }, { label: "Tree registry" }],
-  },
-  "/map": {
-    title: "Geospatial map",
-    section: "Operate",
-    breadcrumbs: [{ label: "Operate" }, { label: "Map" }],
-  },
-  "/field-ops": {
-    title: "Field operations",
-    section: "Operate",
-    breadcrumbs: [{ label: "Operate" }, { label: "Field ops" }],
-  },
-  "/portfolio-health": {
-    title: "Portfolio intelligence",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Portfolio" }],
-  },
-  "/satellite": {
-    title: "Satellite monitoring",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Satellite" }],
-  },
-  "/bioacoustic": {
-    title: "Biodiversity acoustics",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Biodiversity" }],
-  },
-  "/monitoring": {
-    title: "Monitoring",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Monitoring" }],
-  },
-  "/intelligence": {
-    title: "Intelligence summary",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Summary" }],
-  },
-  "/alerts": {
-    title: "Alerts & signals",
-    section: "Intelligence",
-    breadcrumbs: [{ label: "Intelligence" }, { label: "Alerts" }],
-  },
-  "/reports": {
-    title: "Reports & exports",
-    section: "Reports",
-    breadcrumbs: [{ label: "Reports" }, { label: "Exports" }],
-  },
-  "/assistant": {
-    title: "AI assistant",
-    section: "Reports",
-    breadcrumbs: [{ label: "Reports" }, { label: "Assistant" }],
-  },
-  "/settings": {
-    title: "Settings",
-    section: "Account",
-    breadcrumbs: [{ label: "Account" }, { label: "Settings" }],
-  },
-};
-
+/** @deprecated Use useRouteMeta hook in client components */
 export function resolveRouteMeta(pathname: string | null): RouteMeta | null {
-  if (!pathname) return null;
-  if (ROUTE_META[pathname]) return ROUTE_META[pathname];
-
-  if (pathname.startsWith("/projects/") && pathname.includes("/compliance")) {
-    return {
-      title: "Compliance",
-      section: "Operate",
-      breadcrumbs: [{ label: "Operate", href: "/projects" }, { label: "Project" }, { label: "Compliance" }],
-    };
-  }
-  if (pathname.startsWith("/projects/")) {
-    return {
-      title: "Project workspace",
-      section: "Operate",
-      breadcrumbs: [{ label: "Operate", href: "/projects" }, { label: "Project" }],
-    };
-  }
-  if (pathname.startsWith("/trees/")) {
-    return {
-      title: "Tree detail",
-      section: "Operate",
-      breadcrumbs: [{ label: "Operate", href: "/trees" }, { label: "Tree" }],
-    };
-  }
-  if (pathname.startsWith("/platform")) {
-    return {
-      title: "Platform administration",
-      section: "Administration",
-      breadcrumbs: [{ label: "Administration" }, { label: "Platform" }],
-    };
-  }
-  return null;
+  const keys = resolveRouteKeys(pathname);
+  if (!keys) return null;
+  return {
+    title: keys.titleKey,
+    section: keys.sectionKey,
+    breadcrumbs: keys.breadcrumbs?.map((c) => ({ label: c.labelKey, href: c.href })),
+  };
 }

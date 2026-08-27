@@ -103,6 +103,9 @@ function DashboardSkeleton() {
 export function ExecutiveDashboard() {
   const { user } = useAuth();
   const t = useTranslations("dashboard");
+  const te = useTranslations("executive");
+  const to = useTranslations("opsStatus");
+  const tChrome = useTranslations("chrome");
   const canWrite = canWriteInApp(user);
   const canReport = canGenerateReports(user);
 
@@ -157,9 +160,9 @@ export function ExecutiveDashboard() {
     return (
       <EmptyState
         icon={AlertTriangle}
-        title="Dashboard unavailable"
-        description="Failed to load portfolio data. Check your session and API connectivity."
-        action={{ label: "Retry", onClick: () => dashQ.refetch() }}
+        title={te("unavailable")}
+        description={te("unavailableDesc")}
+        action={{ label: tChrome("retry"), onClick: () => dashQ.refetch() }}
       />
     );
   }
@@ -198,8 +201,8 @@ export function ExecutiveDashboard() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
   const healthTotal = data.health_distribution.reduce((sum, d) => sum + d.value, 0);
-  const greeting = getGreeting();
-  const firstName = user?.full_name?.split(" ")[0] || "steward";
+  const greeting = getGreeting(te);
+  const firstName = user?.full_name?.split(" ")[0] || te("steward");
 
   type PriorityItem = {
     id: string;
@@ -212,8 +215,8 @@ export function ExecutiveDashboard() {
   if (openViolations > 0) {
     priorityItems.push({
       id: "violations",
-      title: `${openViolations} open compliance item${openViolations === 1 ? "" : "s"}`,
-      detail: "Resolve violations before the next audit window",
+      title: te("openComplianceItems", { count: openViolations }),
+      detail: te("resolveViolations"),
       href: "/field-ops#attention",
       tone: "critical",
     });
@@ -221,8 +224,8 @@ export function ExecutiveDashboard() {
   if (unreadAlerts.length > 0) {
     priorityItems.push({
       id: "alerts",
-      title: `${unreadAlerts.length} unread alert${unreadAlerts.length === 1 ? "" : "s"}`,
-      detail: unreadAlerts[0]?.title ?? "Review your alert inbox",
+      title: te("unreadAlertItems", { count: unreadAlerts.length }),
+      detail: unreadAlerts[0]?.title ?? te("reviewInbox"),
       href: "/alerts",
       tone: criticalAlerts.length > 0 ? "critical" : "warn",
     });
@@ -230,8 +233,8 @@ export function ExecutiveDashboard() {
   if (sitesNeedingScan > 0) {
     priorityItems.push({
       id: "scans",
-      title: `${sitesNeedingScan} site${sitesNeedingScan === 1 ? "" : "s"} need satellite refresh`,
-      detail: "NDVI or SAR monitoring is stale or missing",
+      title: te("sitesNeedRefresh", { count: sitesNeedingScan }),
+      detail: te("ndviStale"),
       href: "/satellite",
       tone: "warn",
     });
@@ -240,13 +243,13 @@ export function ExecutiveDashboard() {
     priorityItems.push({
       id: "brief",
       title: brief.priority_alert.title,
-      detail: brief.priority_alert.work_area_name || "From executive intelligence brief",
+      detail: brief.priority_alert.work_area_name || te("fromBrief"),
       href: "/portfolio-health?tab=threats",
       tone: "info",
     });
   }
 
-  const portfolioStatus = portfolioOperationalStatus({
+  const portfolioStatus = portfolioOperationalStatus(to, {
     openViolations,
     criticalAlerts: criticalAlerts.length,
     unreadAlerts: unreadAlerts.length,
@@ -268,17 +271,17 @@ export function ExecutiveDashboard() {
             </Link>
           ) : (
             <Link href="/portfolio-health" className="btn-secondary text-xs">
-              Portfolio intelligence
+              {te("portfolioIntelligence")}
             </Link>
           )
         }
       />
 
       <InsightPanel
-        title="Command center · Key insight"
+        title={te("keyInsight")}
         interpretation={
           brief?.headline ||
-          `${greeting}, ${firstName} — your portfolio spans carbon, canopy health, compliance, and satellite monitoring. Start with priorities below.`
+          te("greetingFallback", { greeting, name: firstName })
         }
         icon={Sparkles}
       >
@@ -295,32 +298,32 @@ export function ExecutiveDashboard() {
         columns={5}
         metrics={[
           {
-            label: "Trees registered",
+            label: te("treesRegistered"),
             value: fmtCompact(k.total_trees),
-            hint: `${fmtPct(k.pct_healthy)} healthy canopy`,
+            hint: te("healthyCanopy", { pct: fmtPct(k.pct_healthy) }),
           },
           {
-            label: "CO₂e stored (est.)",
+            label: te("co2Stored"),
             value: fmtNum(k.total_co2e_kg / 1000, " t"),
-            hint: `+${fmtNum(k.annual_sequestration_kg / 1000, " t/yr")} projected`,
+            hint: te("projected", { value: fmtNum(k.annual_sequestration_kg / 1000, " t/yr") }),
             tone: "positive",
           },
           {
-            label: "Open violations",
+            label: te("openViolations"),
             value: fmtNum(openViolations),
-            hint: "Compliance blockers",
+            hint: te("complianceBlockers"),
             tone: openViolations > 0 ? "critical" : "positive",
           },
           {
-            label: "Unread alerts",
+            label: te("unreadAlerts"),
             value: fmtNum(unreadAlerts.length),
-            hint: `${criticalAlerts.length} high priority`,
+            hint: te("highPriority", { count: criticalAlerts.length }),
             tone: criticalAlerts.length > 0 ? "critical" : unreadAlerts.length > 0 ? "warning" : "default",
           },
           {
-            label: "Forest integrity",
+            label: te("forestIntegrity"),
             value: sarIntegrity != null ? Math.round(sarIntegrity) : fmtPct(k.pct_satellite_verified),
-            hint: sarIntegrity != null ? "SAR composite" : "Satellite verified",
+            hint: sarIntegrity != null ? te("sarComposite") : te("satelliteVerified"),
           },
         ]}
       />
@@ -930,9 +933,9 @@ export function ExecutiveDashboard() {
   );
 }
 
-function getGreeting() {
+function getGreeting(te: ReturnType<typeof useTranslations<"executive">>) {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return te("goodMorning");
+  if (hour < 17) return te("goodAfternoon");
+  return te("goodEvening");
 }

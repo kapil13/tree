@@ -114,7 +114,8 @@ export function CitizenDashboard() {
   const showChecklist = treeCount < 3 || stepsDone < 3;
   const pctHealthy = kpi?.pct_healthy ?? 0;
 
-  const groveStatus = citizenOperationalStatus({
+  const to = useTranslations("opsStatus");
+  const groveStatus = citizenOperationalStatus(to, {
     treeCount,
     pctHealthy,
     stepsDone,

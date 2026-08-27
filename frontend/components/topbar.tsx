@@ -12,16 +12,19 @@ import { clearAppQueryCache } from "@/app/providers";
 import { alerts } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
-import { resolveRouteMeta } from "@/lib/route-meta";
+import { useRouteMeta } from "@/lib/use-route-meta";
 import { scopedKey } from "@/lib/query-keys";
-import { formatOrgRole, formatPlatformRole } from "@/lib/role-labels";
+import { useRoleLabels } from "@/lib/use-role-labels";
+import { useTranslations } from "next-intl";
 
 export function Topbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const routeMeta = resolveRouteMeta(pathname);
+  const routeMeta = useRouteMeta(pathname);
+  const tc = useTranslations("chrome");
+  const { formatOrgRole, formatPlatformRole } = useRoleLabels();
 
   const { data: unreadPage } = useQuery({
     queryKey: scopedKey(user, "alerts-unread"),
@@ -34,11 +37,11 @@ export function Topbar() {
   const onboardingHref = onboardingRedirectPath(user);
   const onboardingChipLabel =
     user?.onboarding_status === "profile_required"
-      ? "Complete profile"
+      ? tc("completeProfile")
       : user?.onboarding_status === "pending_approval"
-        ? "Pending approval"
+        ? tc("pendingApproval")
         : user?.onboarding_status === "rejected"
-          ? "Request update"
+          ? tc("requestUpdate")
           : null;
 
   const roleLine = user?.org_role
@@ -52,7 +55,7 @@ export function Topbar() {
           <button
             type="button"
             className="btn-ghost md:hidden"
-            aria-label="Open menu"
+            aria-label={tc("openMenu")}
             onClick={() => setMenuOpen(true)}
           >
             <Menu className="h-5 w-5" />
@@ -68,13 +71,13 @@ export function Topbar() {
                 user?.organization_name
                   ? user.organization_name
                   : user?.organization_id
-                    ? "Organization workspace"
-                    : "Personal workspace"
+                    ? tc("orgWorkspace")
+                    : tc("personalWorkspace")
               )}
             </div>
             {routeMeta ? (
               <p className="hidden truncate text-xs text-stone-500 sm:block">
-                {user?.organization_name ?? "Workspace"}
+                {user?.organization_name ?? tc("workspace")}
               </p>
             ) : null}
           </div>
@@ -92,7 +95,7 @@ export function Topbar() {
           <Link
             href="/alerts"
             className="btn-ghost relative"
-            aria-label={unreadCount ? `${unreadCount} unread alerts` : "Alerts"}
+            aria-label={unreadCount ? tc("unreadAlerts", { count: unreadCount }) : tc("alerts")}
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 ? (
@@ -107,7 +110,7 @@ export function Topbar() {
           </div>
           <button
             className="btn-ghost"
-            aria-label="Sign out"
+            aria-label={tc("signOut")}
             onClick={() => {
               logout();
               clearAppQueryCache();
@@ -124,7 +127,7 @@ export function Topbar() {
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label="Close menu"
+            aria-label={tc("closeMenu")}
             onClick={() => setMenuOpen(false)}
           />
           <div className="absolute left-0 top-0 flex h-full w-72 flex-col overflow-y-auto bg-white p-4 shadow-xl dark:bg-stone-950">

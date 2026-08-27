@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, FolderKanban, Plus, Search, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   EmptyState,
   FilterBar,
@@ -13,55 +14,37 @@ import {
   OperationalStatusBar,
   PageHeader,
 } from "@/components/ui";
+import { projectsOperationalStatus } from "@/components/dashboard/command-center-shell";
 import { centralSchemes, plantingProjects } from "@/lib/api";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
-const SEGMENT_LABEL: Record<string, string> = {
-  nhai_highway: "NHAI / Highway",
-  industrial_greenbelt: "Industrial / Mine",
-  township_landscape: "Township / Society",
-  nagar_van_urban: "Nagar Van / Urban forest",
-  sahakar_van_coop: "Sahakar Van / Cooperative forest",
-  ngo_watershed: "NGO / Watershed",
-  general: "General",
-};
+const SEGMENT_CODES = [
+  "nhai_highway",
+  "industrial_greenbelt",
+  "township_landscape",
+  "nagar_van_urban",
+  "sahakar_van_coop",
+  "ngo_watershed",
+  "general",
+] as const;
 
-function projectOperationalStatus(violations: number, count: number) {
-  if (count === 0) {
-    return {
-      tone: "neutral" as const,
-      label: "No projects yet",
-      summary: "Create a project to begin work-area mapping, tree registration, and compliance tracking.",
-    };
-  }
-  if (violations > 0) {
-    return {
-      tone: violations >= 5 ? ("critical" as const) : ("attention" as const),
-      label: `${violations} open compliance issue${violations === 1 ? "" : "s"} across portfolio`,
-      summary: "Review flagged projects before the next audit or reporting cycle. Open violations block clean MRV exports.",
-    };
-  }
-  return {
-    tone: "healthy" as const,
-    label: "Portfolio compliance clear",
-    summary: `${count} active project${count === 1 ? "" : "s"} with no open planting violations. Continue monitoring and satellite scans.`,
-  };
-}
-
-function RowComplianceStatus({ violations }: { violations: number }) {
+function RowComplianceStatus({ violations, t }: { violations: number; t: ReturnType<typeof useTranslations<"projects">> }) {
   if (violations > 0) {
     return (
       <span className={cn("intel-row-status", violations >= 3 ? "intel-row-status--risk" : "intel-row-status--watch")}>
-        {violations} open
+        {t("openViolations", { count: violations })}
       </span>
     );
   }
-  return <span className="intel-row-status intel-row-status--ok">Clear</span>;
+  return <span className="intel-row-status intel-row-status--ok">{t("clear")}</span>;
 }
 
 export default function ProjectsPage() {
+  const tp = useTranslations("projects");
+  const ts = useTranslations("segments");
+  const tc = useTranslations("chrome");
   const [schemeFilter, setSchemeFilter] = useState("");
   const [search, setSearch] = useState("");
 
@@ -110,20 +93,26 @@ export default function ProjectsPage() {
     return { openViolations, flagged, avgProgress };
   }, [projects]);
 
-  const ops = projectOperationalStatus(portfolioStats.openViolations, projects.length);
+  const ops = projectsOperationalStatus(tp, portfolioStats.openViolations, projects.length);
 
   function schemeLabel(code: string | null | undefined) {
     if (!code) return "—";
     return schemeLabelByCode.get(code) ?? schemeByCode(schemes, code)?.label ?? code;
   }
 
+  function segmentLabel(seg: string) {
+    return (SEGMENT_CODES as readonly string[]).includes(seg)
+      ? ts(seg as (typeof SEGMENT_CODES)[number])
+      : seg.replace(/_/g, " ");
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
-        purpose="Operate · Planting programs"
-        title="Planting projects"
-        description="Understand compliance posture first, then open a project to register trees, run monitoring, and export audit evidence."
-        breadcrumbs={[{ label: "Operate" }, { label: "Projects" }]}
+        purpose={tp("purpose")}
+        title={tp("title")}
+        description={tp("description")}
+        breadcrumbs={[{ label: tc("sectionOperate") }, { label: tc("breadcrumbProjects") }]}
         status={
           !isLoading ? (
             <OperationalStatusBar
@@ -134,7 +123,7 @@ export default function ProjectsPage() {
               action={
                 portfolioStats.flagged > 0 ? (
                   <Link href="/portfolio-health?tab=compliance" className="btn-secondary text-xs">
-                    Portfolio compliance
+                    {tp("portfolioCompliance")}
                   </Link>
                 ) : undefined
               }
@@ -144,7 +133,7 @@ export default function ProjectsPage() {
         actions={
           <Link href="/projects/new" className="btn-primary">
             <Plus className="h-4 w-4" />
-            New project
+            {tp("newProject")}
           </Link>
         }
       />
@@ -153,19 +142,19 @@ export default function ProjectsPage() {
         <MetricGrid
           columns={4}
           metrics={[
-            { label: "Projects", value: projects.length },
+            { label: tp("title"), value: projects.length },
             {
-              label: "Avg registration progress",
+              label: tp("avgProgress"),
               value: portfolioStats.avgProgress != null ? `${portfolioStats.avgProgress}%` : "—",
-              hint: "Trees vs target",
+              hint: tp("treesVsTarget"),
             },
             {
-              label: "Flagged projects",
+              label: tp("flaggedProjects"),
               value: portfolioStats.flagged,
               tone: portfolioStats.flagged > 0 ? "warning" : "positive",
             },
             {
-              label: "Open violations",
+              label: tp("violations"),
               value: portfolioStats.openViolations,
               tone: portfolioStats.openViolations > 0 ? "critical" : "positive",
             },
@@ -174,24 +163,22 @@ export default function ProjectsPage() {
       ) : null}
 
       <InsightPanel
-        title="Key insight"
+        title={tp("keyInsight")}
         interpretation={
-          portfolioStats.openViolations > 0
-            ? "Compliance issues should be resolved before generating framework or MRV exports for affected projects."
-            : "Projects with mapped work areas and active tree registration are ready for satellite monitoring and compliance workflows."
+          portfolioStats.openViolations > 0 ? tp("insightViolations") : tp("insightHealthy")
         }
       />
 
       <FilterBar>
         {schemes.length > 0 ? (
-          <FilterField label="Central scheme" htmlFor="scheme-filter">
+          <FilterField label={tp("centralScheme")} htmlFor="scheme-filter">
             <select
               id="scheme-filter"
               className="input w-full max-w-xs"
               value={schemeFilter}
               onChange={(e) => setSchemeFilter(e.target.value)}
             >
-              <option value="">All schemes</option>
+              <option value="">{tp("allSchemes")}</option>
               {schemes.map((scheme) => (
                 <option key={scheme.code} value={scheme.code}>
                   {scheme.label}
@@ -200,13 +187,13 @@ export default function ProjectsPage() {
             </select>
           </FilterField>
         ) : null}
-        <FilterField label="Search" htmlFor="project-search" className="min-w-[14rem] flex-[2]">
+        <FilterField label={tp("search")} htmlFor="project-search" className="min-w-[14rem] flex-[2]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               id="project-search"
               className="input w-full pl-9"
-              placeholder="Name or project code…"
+              placeholder={tp("searchCodePlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -215,26 +202,26 @@ export default function ProjectsPage() {
       </FilterBar>
 
       {isLoading ? (
-        <p className="text-sm text-stone-500">Loading projects…</p>
+        <p className="text-sm text-stone-500">{tp("loading")}</p>
       ) : isError ? (
         <EmptyState
           icon={AlertTriangle}
-          title="Could not load projects"
-          description="Check your connection and try again."
-          action={{ label: "Retry", onClick: () => refetch() }}
+          title={tp("loadError")}
+          description={tp("loadErrorDesc")}
+          action={{ label: tc("retry"), onClick: () => refetch() }}
         />
       ) : projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="No projects yet"
-          description="Create a CAMPA, NHAI, MISHTI, or Nagar Van project to draw boundaries and enforce planting standards."
-          action={{ label: "Create first project", href: "/projects/new" }}
+          title={tp("emptyTitle")}
+          description={tp("emptyDesc")}
+          action={{ label: tp("createFirst"), href: "/projects/new" }}
         />
       ) : filtered.length === 0 ? (
         <EmptyState
-          title="No matching projects"
-          description="Try a different name, code, or clear the scheme filter."
-          action={{ label: "Clear search", onClick: () => setSearch("") }}
+          title={tp("noMatchTitle")}
+          description={tp("noMatchDesc")}
+          action={{ label: tp("clearSearch"), onClick: () => setSearch("") }}
         />
       ) : (
         <>
@@ -245,7 +232,7 @@ export default function ProjectsPage() {
                 <article key={project.id} className="intel-panel">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <RowComplianceStatus violations={violations} />
+                      <RowComplianceStatus violations={violations} t={tp} />
                       <Link
                         href={`/projects/${project.id}`}
                         className="mt-2 block font-semibold text-forest-900 hover:underline"
@@ -317,10 +304,10 @@ export default function ProjectsPage() {
                       <td>
                         {violations > 0 ? (
                           <Link href={projectSecondaryHref(project.id, "compliance")}>
-                            <RowComplianceStatus violations={violations} />
+                            <RowComplianceStatus violations={violations} t={tp} />
                           </Link>
                         ) : (
-                          <RowComplianceStatus violations={0} />
+                          <RowComplianceStatus violations={0} t={tp} />
                         )}
                       </td>
                       <td>
@@ -339,13 +326,13 @@ export default function ProjectsPage() {
                       </td>
                       <td className="text-xs text-stone-700">{schemeLabel(project.scheme_code)}</td>
                       <td className="capitalize text-stone-700">
-                        {SEGMENT_LABEL[project.segment] ?? project.segment.replace(/_/g, " ")}
+                        {segmentLabel(project.segment)}
                       </td>
                       <td className="tabular-nums">{project.summary?.work_area_count ?? 0}</td>
                       <td className="capitalize">{project.status}</td>
                       <td>
                         <Link href={`/projects/${project.id}`} className="btn-secondary px-3 py-1.5 text-xs">
-                          Open
+                          {tp("openProject")}
                         </Link>
                       </td>
                     </tr>
