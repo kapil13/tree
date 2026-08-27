@@ -13,7 +13,7 @@ export function AuthCompactFooter({
 }) {
   const year = new Date().getFullYear();
   const legalLinks =
-    footer.columns.find((c) => c.title.toLowerCase() === "legal")?.links ??
+    footer.columns.find((c) => /legal|कानूनी/i.test(c.title))?.links ??
     footer.columns.flatMap((c) => c.links).slice(0, 3);
 
   return (

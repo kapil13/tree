@@ -37,6 +37,17 @@ export function canAccessPath(user: User | null | undefined, pathname: string): 
   return true;
 }
 
+export type RouteAccessMessageKey = "teamAdmin" | "fieldOps" | "platform" | "default" | "treesNew";
+
+export function routeAccessDeniedKey(pathname: string): RouteAccessMessageKey {
+  if (pathname.startsWith("/settings/team")) return "teamAdmin";
+  if (pathname.startsWith("/trees/new")) return "treesNew";
+  if (pathname.startsWith("/field-ops")) return "fieldOps";
+  if (pathname.startsWith("/platform")) return "platform";
+  return "default";
+}
+
+/** @deprecated Use routeAccessDeniedKey with useTranslations("access") in UI */
 export function routeAccessDeniedMessage(pathname: string): string {
   if (pathname.startsWith("/settings/team")) {
     return "Organization admin access is required to manage your team.";

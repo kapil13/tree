@@ -2,11 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { useLocale } from "next-intl";
 import { AuthCompactFooter } from "@/components/marketing/auth-compact-footer";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { cmsPublic } from "@/lib/cms-api";
-import { CMS_HOME_FALLBACK } from "@/lib/cms-defaults";
+import { useLocalizedCmsSite } from "@/lib/use-localized-cms";
+import type { AppLocale } from "@/i18n/request";
 import { cn } from "@/lib/cn";
 
 type MarketingShellProps = {
@@ -29,13 +31,15 @@ export function MarketingShell({
   authMode,
   footerVariant = "full",
 }: MarketingShellProps) {
+  const locale = useLocale() as AppLocale;
   const { data } = useQuery({
-    queryKey: ["cms-public-site"],
+    queryKey: ["cms-public-site", locale],
     queryFn: () => cmsPublic.site(),
     staleTime: 60_000,
   });
 
-  const site = data?.site ?? CMS_HOME_FALLBACK.site;
+  const localized = useLocalizedCmsSite(data);
+  const site = localized.site;
   const isAuth = footerVariant === "compact" || authMode != null;
 
   return (
