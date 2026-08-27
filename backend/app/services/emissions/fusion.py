@@ -485,6 +485,25 @@ async def run_emission_fusion(
     )
     db.add(row)
     await db.flush()
+
+    from app.models.plantation_fence import PlantationFence
+
+    fence_res = await db.execute(
+        select(PlantationFence).where(PlantationFence.id == work_area_id)
+    )
+    fence = fence_res.scalar_one_or_none()
+    if fence is not None:
+        from app.services.emissions.fusion_alerts import maybe_alert_emission_fusion
+
+        await maybe_alert_emission_fusion(
+            db,
+            user=user,
+            project_id=project_id,
+            work_area_id=work_area_id,
+            work_area_name=fence.name,
+            result=result,
+        )
+
     return row, result
 
 

@@ -5,6 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ShieldCheck } from "lucide-react";
 import {
+  AlertPreparednessBlock,
+  getAlertInterpretation,
+} from "@/components/alerts/alert-preparedness-block";
+import {
   alertsOperationalStatus,
   CommandCenterEvidence,
 } from "@/components/dashboard/command-center-shell";
@@ -47,7 +51,11 @@ const KIND_LABEL: Record<string, string> = {
   sar_flood_risk: "Waterlogging",
   sar_ground_moisture: "Ground moisture",
   sar_ground_instability: "Ground instability",
-  sar_sweep_health: "Sweep health",
+  locust_watch: "Locust watch",
+  pest_intel_high: "Pest risk",
+  pest_intel_critical: "Pest risk",
+  emission_anomaly_detected: "Methane signal",
+  emission_fusion_misaligned: "Methane check",
 };
 
 function humanizeKind(kind: string): string {
@@ -254,6 +262,7 @@ export default function AlertsPage() {
           {sortedItems.map((a) => {
             const payload = a.payload as Record<string, string> | undefined;
             const deepLink = payload?.deep_link;
+            const interpretation = getAlertInterpretation(a.payload as Record<string, unknown>);
             return (
               <div
                 key={a.id}
@@ -267,9 +276,17 @@ export default function AlertsPage() {
                     {!a.is_read ? (
                       <span className="h-2 w-2 shrink-0 rounded-full bg-forest-600" aria-hidden />
                     ) : null}
-                    <div className={cn("font-medium", !a.is_read && "text-stone-950")}>{a.title}</div>
+                    <div className={cn("font-medium", !a.is_read && "text-stone-950")}>
+                      {interpretation?.headline ?? a.title}
+                    </div>
                   </div>
-                  <div className="mt-0.5 text-sm text-stone-600 dark:text-stone-300">{a.message}</div>
+                  {interpretation ? (
+                    <div className="mt-2">
+                      <AlertPreparednessBlock brief={interpretation} compact />
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-stone-600 dark:text-stone-300">{a.message}</div>
+                  )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-stone-500">
                     <span className="font-medium text-stone-700 dark:text-stone-300">
                       {humanizeKind(a.kind)}

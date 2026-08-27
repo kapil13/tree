@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cloud, Download, GitMerge, Satellite, Wind } from "lucide-react";
 import { downloadBlob } from "@/lib/download-blob";
 import { EmissionsPlumeMap } from "@/components/projects/emissions-plume-map";
+import { AlertPreparednessBlock } from "@/components/alerts/alert-preparedness-block";
+import { interpretEmissionFusionClient } from "@/lib/alert-preparedness";
 import {
   errorMessage,
   plantingProjects,
@@ -651,30 +653,39 @@ export function ProjectEmissionsPanel({
       ) : null}
 
       {fusionResult ? (
-        <div
-          className={`rounded-xl border p-4 text-sm ${VERDICT_STYLE[fusionResult.verdict] ?? VERDICT_STYLE.uncertain}`}
-        >
-          <p className="font-semibold">Fusion assessment — {VERDICT_LABEL[fusionResult.verdict] ?? fusionResult.verdict}</p>
-          <p className="mt-2">{fusionResult.result.summary}</p>
-          <ul className="mt-3 space-y-1">
-            <li>Alignment score: {fusionResult.result.alignment_score}/100</li>
-            {fusionResult.result.anomaly_ppb != null ? (
-              <li>TROPOMI anomaly: +{fusionResult.result.anomaly_ppb} ppb</li>
-            ) : null}
-            <li>
-              Wind: {fusionResult.result.wind_speed_ms} m/s from {fusionResult.result.wind_direction_deg}°
-            </li>
-            <li>
-              Plume extends outside work area: {fusionResult.result.plume_extends_outside ? "Yes" : "No"}
-            </li>
-          </ul>
-          {fusionResult.result.findings.length > 0 ? (
-            <ul className="mt-3 space-y-1 text-xs opacity-90">
-              {fusionResult.result.findings.map((f) => (
-                <li key={f.name}>• {f.message}</li>
-              ))}
+        <div className="space-y-3">
+          <div
+            className={`rounded-xl border p-4 text-sm ${VERDICT_STYLE[fusionResult.verdict] ?? VERDICT_STYLE.uncertain}`}
+          >
+            <p className="font-semibold">Fusion assessment — {VERDICT_LABEL[fusionResult.verdict] ?? fusionResult.verdict}</p>
+            <p className="mt-2">{fusionResult.result.summary}</p>
+            <ul className="mt-3 space-y-1">
+              <li>Alignment score: {fusionResult.result.alignment_score}/100</li>
+              {fusionResult.result.anomaly_ppb != null ? (
+                <li>TROPOMI anomaly: +{fusionResult.result.anomaly_ppb} ppb</li>
+              ) : null}
+              <li>
+                Wind: {fusionResult.result.wind_speed_ms} m/s from {fusionResult.result.wind_direction_deg}°
+              </li>
+              <li>
+                Plume extends outside work area: {fusionResult.result.plume_extends_outside ? "Yes" : "No"}
+              </li>
             </ul>
-          ) : null}
+            {fusionResult.result.findings.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-xs opacity-90">
+                {fusionResult.result.findings.map((f) => (
+                  <li key={f.name}>• {f.message}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+          <AlertPreparednessBlock
+            brief={interpretEmissionFusionClient({
+              verdict: fusionResult.verdict,
+              anomalyPpb: fusionResult.result.anomaly_ppb,
+              alignmentScore: fusionResult.result.alignment_score,
+            })}
+          />
         </div>
       ) : null}
     </div>

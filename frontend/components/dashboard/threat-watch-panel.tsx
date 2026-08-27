@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Wind,
 } from "lucide-react";
+import { AlertPreparednessBlock, type PreparednessBrief } from "@/components/alerts/alert-preparedness-block";
 import { dashboard } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { SEVERITY_STYLES, timeAgo } from "@/components/dashboard/format";
@@ -43,6 +44,7 @@ export type ThreatWatchSite = {
   }>;
   forecast_summary: string;
   recommended_actions: string[];
+  preparedness_brief?: PreparednessBrief | null;
 };
 
 export type ThreatWatchData = {
@@ -188,7 +190,13 @@ export function ThreatWatchPanel() {
                   </span>
                 </div>
 
-                <p className="mt-2 text-xs text-stone-600">{site.forecast_summary}</p>
+                {site.preparedness_brief ? (
+                  <div className="mt-3">
+                    <AlertPreparednessBlock brief={site.preparedness_brief} />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-stone-600">{site.forecast_summary}</p>
+                )}
 
                 {(site.pest_control_needed || site.disease_control_needed) && (
                   <div className="mt-2 flex flex-wrap gap-1.5">

@@ -22,6 +22,14 @@ class EarlyWarningOut(BaseModel):
     distance_km: float | None = None
 
 
+class PreparednessBriefOut(BaseModel):
+    headline: str
+    meaning: str
+    prepare: list[str] = Field(default_factory=list)
+    urgency: str = "monitor"
+    category: str = "general"
+
+
 class SiteThreatWatchOut(BaseModel):
     work_area_id: str
     work_area_name: str
@@ -40,6 +48,7 @@ class SiteThreatWatchOut(BaseModel):
     early_warnings: list[EarlyWarningOut] = Field(default_factory=list)
     forecast_summary: str = ""
     recommended_actions: list[str] = Field(default_factory=list)
+    preparedness_brief: PreparednessBriefOut | None = None
 
 
 class ThreatWatchSummaryOut(BaseModel):
