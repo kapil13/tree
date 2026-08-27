@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Info } from "lucide-react";
 import { intelligence } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -25,6 +26,7 @@ export function DataTrustBanner({
   compact?: boolean;
   variant?: "card" | "strip";
 }) {
+  const t = useTranslations("dataTrust");
   const { data } = useQuery({
     queryKey: ["integrations-health"],
     queryFn: () => intelligence.integrations(),
@@ -32,22 +34,22 @@ export function DataTrustBanner({
   });
 
   const integrations = (data?.integrations || {}) as Record<string, unknown>;
-  const ai = modeLabel(integrations.ai_analysis, "AI tree analysis");
-  const sat = modeLabel(integrations.tree_satellite_ndvi, "Tree NDVI");
-  const sentinel = modeLabel(integrations.sentinel_hub, "Sentinel Hub");
+  const ai = modeLabel(integrations.ai_analysis, t("aiAnalysis"));
+  const sat = modeLabel(integrations.tree_satellite_ndvi, t("treeNdvi"));
+  const sentinel = modeLabel(integrations.sentinel_hub, t("sentinelHub"));
 
   const anyEstimate = ai.mode === "estimate" || sat.mode === "estimate";
 
   if (variant === "strip") {
     return (
       <div className="dash-trust-strip">
-        <span className="font-medium text-stone-700">Data sources</span>
-        <TrustPill mode={ai.mode} label={`AI · ${ai.label}`} />
-        <TrustPill mode={sat.mode} label={`NDVI · ${sat.label}`} />
+        <span className="font-medium text-stone-700">{t("title")}</span>
+        <TrustPill mode={ai.mode} label={`AI · ${ai.label}`} liveLabel={t("live")} estimateLabel={t("estimate")} />
+        <TrustPill mode={sat.mode} label={`NDVI · ${sat.label}`} liveLabel={t("live")} estimateLabel={t("estimate")} />
         {sentinel.mode === "live" || sentinel.mode === "configured" ? (
-          <TrustPill mode="live" label="Sentinel · configured" />
+          <TrustPill mode="live" label={t("sentinelConfigured")} liveLabel={t("live")} estimateLabel={t("estimate")} />
         ) : (
-          <TrustPill mode="estimate" label="Sentinel · not configured" />
+          <TrustPill mode="estimate" label={t("sentinelNotConfigured")} liveLabel={t("live")} estimateLabel={t("estimate")} />
         )}
       </div>
     );
@@ -65,30 +67,30 @@ export function DataTrustBanner({
       <div className="flex items-start gap-2">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <div className="min-w-0 space-y-1">
-          <p className="font-medium">Data sources</p>
+          <p className="font-medium">{t("title")}</p>
           {compact ? (
             <p className="text-xs opacity-90">
               AI: {ai.label} · Tree NDVI: {sat.label}
-              {sentinel.mode === "live" || sentinel.mode === "configured"
-                ? " · Site Sentinel: live when configured"
-                : ""}
+              {sentinel.mode === "live" || sentinel.mode === "configured" ? t("sentinelCompactLive") : ""}
             </p>
           ) : (
             <ul className="space-y-0.5 text-xs opacity-90">
               <li>
-                <TrustPill mode={ai.mode} label={ai.label} />
+                <TrustPill mode={ai.mode} label={ai.label} liveLabel={t("live")} estimateLabel={t("estimate")} />
               </li>
               <li>
-                <TrustPill mode={sat.mode} label={sat.label} />
+                <TrustPill mode={sat.mode} label={sat.label} liveLabel={t("live")} estimateLabel={t("estimate")} />
               </li>
               <li>
                 <TrustPill
                   mode={sentinel.mode === "configured" ? "live" : sentinel.mode}
                   label={
                     sentinel.mode === "configured" || sentinel.mode === "live"
-                      ? "Site monitoring (Sentinel Hub): credentials configured"
-                      : "Site monitoring (Sentinel Hub): not configured — simulated where needed"
+                      ? t("sentinelLiveDetail")
+                      : t("sentinelSimulatedDetail")
                   }
+                  liveLabel={t("live")}
+                  estimateLabel={t("estimate")}
                 />
               </li>
             </ul>
@@ -99,7 +101,17 @@ export function DataTrustBanner({
   );
 }
 
-function TrustPill({ mode, label }: { mode: string; label: string }) {
+function TrustPill({
+  mode,
+  label,
+  liveLabel,
+  estimateLabel,
+}: {
+  mode: string;
+  label: string;
+  liveLabel: string;
+  estimateLabel: string;
+}) {
   const live = mode === "live" || mode === "configured" || mode === "ok";
   return (
     <span
@@ -109,7 +121,7 @@ function TrustPill({ mode, label }: { mode: string; label: string }) {
       )}
     >
       <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
-        {live ? "Live" : "Estimate"}
+        {live ? liveLabel : estimateLabel}
       </span>
       {label}
     </span>

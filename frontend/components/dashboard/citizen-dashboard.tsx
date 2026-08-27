@@ -172,15 +172,15 @@ export function CitizenDashboard() {
           columns={4}
           metrics={[
             {
-              label: "Trees tagged",
+              label: t("treesTagged"),
               value: fmtNum(treeCount),
-              hint: `${Math.round(pctHealthy)}% healthy`,
+              hint: t("healthyPct", { pct: Math.round(pctHealthy) }),
               tone: "positive",
             },
             {
-              label: "Satellite checked",
+              label: t("satelliteChecked"),
               value: kpi ? `${Math.round(kpi.pct_satellite_verified)}%` : "—",
-              hint: "When scans are available",
+              hint: t("satelliteCheckedHint"),
             },
             {
               label: t("carbonMetric"),
@@ -189,9 +189,9 @@ export function CitizenDashboard() {
               tone: kpi && kpi.total_co2e_kg > 0 ? "positive" : "default",
             },
             {
-              label: "AI scans left",
+              label: t("aiScansLeft"),
               value: scansLeft != null ? String(scansLeft) : "∞",
-              hint: "Complimentary + purchased",
+              hint: t("aiScansHint"),
             },
           ]}
         />
@@ -200,11 +200,11 @@ export function CitizenDashboard() {
       <div className="dash-panel">
         <div className="dash-panel-head">
           <div>
-            <h2 className="dash-panel-title">Stewardship & rewards</h2>
-            <p className="dash-panel-sub">Adopt trees, complete check-ins, and earn badges</p>
+            <h2 className="dash-panel-title">{t("stewardshipTitle")}</h2>
+            <p className="dash-panel-sub">{t("stewardshipSub")}</p>
           </div>
           <Link href="/stewardship" className="dash-link">
-            Open stewardship hub
+            {t("openStewardshipHub")}
           </Link>
         </div>
         <CitizenStewardshipPanel compact />
@@ -214,9 +214,9 @@ export function CitizenDashboard() {
         <div className="dash-panel">
           <div className="dash-panel-head">
             <div>
-              <h2 className="dash-panel-title">Getting started</h2>
+              <h2 className="dash-panel-title">{t("gettingStarted")}</h2>
               <p className="dash-panel-sub">
-                {stepsDone} of {steps.length} complete
+                {t("stepsComplete", { done: stepsDone, total: steps.length })}
               </p>
             </div>
           </div>
@@ -246,15 +246,15 @@ export function CitizenDashboard() {
 
       {treeCount > 0 ? (
         <CommandCenterEvidence
-          title="Grove analytics"
-          description="Carbon trajectory, health mix, species, and map"
+          title={t("groveAnalytics")}
+          description={t("groveAnalyticsSub")}
         >
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="dash-panel border-0 p-0 shadow-none lg:col-span-2">
               <div className="dash-panel-head px-0 pt-0">
                 <div>
-                  <h2 className="dash-panel-title">Carbon over time</h2>
-                  <p className="dash-panel-sub">Estimated carbon stored from your tagged trees</p>
+                  <h2 className="dash-panel-title">{t("carbonOverTime")}</h2>
+                  <p className="dash-panel-sub">{t("carbonOverTimeSub")}</p>
                 </div>
               </div>
               {carbonSeries.length > 1 ? (
@@ -270,7 +270,7 @@ export function CitizenDashboard() {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#a8a29e" />
                       <YAxis tick={{ fontSize: 11 }} stroke="#a8a29e" width={40} />
                       <Tooltip
-                        formatter={(v: number) => [`${fmtNum(v, " kg")}`, "Carbon stored"]}
+                        formatter={(v: number) => [`${fmtNum(v, " kg")}`, t("carbonStoredLabel")]}
                         contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4" }}
                       />
                       <Area
@@ -287,9 +287,9 @@ export function CitizenDashboard() {
                 <EmptyState
                   className="mt-4"
                   icon={HeroIcon}
-                  title="No trend yet"
-                  description="Tag a few trees to see estimated carbon stored over time."
-                  action={{ label: "Tag a tree", href: "/trees/new" }}
+                  title={t("noTrendTitle")}
+                  description={t("noTrendDesc")}
+                  action={{ label: t("tagTree"), href: "/trees/new" }}
                 />
               )}
             </div>
@@ -297,8 +297,8 @@ export function CitizenDashboard() {
             <div className="dash-panel border-0 p-0 shadow-none">
               <div className="dash-panel-head px-0 pt-0">
                 <div>
-                  <h2 className="dash-panel-title">Tree health</h2>
-                  <p className="dash-panel-sub">From AI and field observations</p>
+                  <h2 className="dash-panel-title">{t("treeHealth")}</h2>
+                  <p className="dash-panel-sub">{t("treeHealthSub")}</p>
                 </div>
               </div>
               {healthData.length > 0 ? (
@@ -330,9 +330,7 @@ export function CitizenDashboard() {
                   </ul>
                 </div>
               ) : (
-                <p className="mt-6 text-sm text-stone-500">
-                  Health breakdown appears after your first analysis.
-                </p>
+                <p className="mt-6 text-sm text-stone-500">{t("healthBreakdownHint")}</p>
               )}
             </div>
           </div>
@@ -342,8 +340,8 @@ export function CitizenDashboard() {
               <div className="dash-panel border-0 p-0 shadow-none">
                 <div className="dash-panel-head px-0 pt-0">
                   <div>
-                    <h2 className="dash-panel-title">Top species</h2>
-                    <p className="dash-panel-sub">In your personal grove</p>
+                    <h2 className="dash-panel-title">{t("topSpecies")}</h2>
+                    <p className="dash-panel-sub">{t("topSpeciesSub")}</p>
                   </div>
                 </div>
                 {speciesData.length > 0 ? (
@@ -360,7 +358,7 @@ export function CitizenDashboard() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-4 text-sm text-stone-500">Species mix shows up as you tag more trees.</p>
+                  <p className="mt-4 text-sm text-stone-500">{t("speciesMixHint")}</p>
                 )}
               </div>
             ) : null}
@@ -373,11 +371,11 @@ export function CitizenDashboard() {
             >
               <div className="dash-panel-head px-0 pt-0">
                 <div>
-                  <h2 className="dash-panel-title">Your map</h2>
-                  <p className="dash-panel-sub">GPS pins for every tagged tree</p>
+                  <h2 className="dash-panel-title">{t("yourMap")}</h2>
+                  <p className="dash-panel-sub">{t("yourMapSub")}</p>
                 </div>
                 <Link href="/map" className="dash-link">
-                  Full map <ArrowRight className="h-3.5 w-3.5" />
+                  {t("fullMap")} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
               <div className="mt-3 overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
@@ -391,19 +389,19 @@ export function CitizenDashboard() {
       <div className="dash-panel">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="dash-panel-title">Recent trees</h2>
-            <p className="dash-panel-sub">Tap a tree for photos, AI scan, and passport</p>
+            <h2 className="dash-panel-title">{t("recentTrees")}</h2>
+            <p className="dash-panel-sub">{t("recentTreesSub")}</p>
           </div>
           <Link href="/trees" className="dash-link">
-            All trees <ArrowRight className="h-3.5 w-3.5" />
+            {t("allTrees")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
         {recent.length === 0 ? (
           <EmptyState
             icon={TreePine}
-            title="No trees yet"
-            description="Your dashboard will light up once you tag your first one."
-            action={{ label: "Tag your first tree", href: "/trees/new" }}
+            title={t("noTreesTitle")}
+            description={t("noTreesDesc")}
+            action={{ label: t("tagFirstTree"), href: "/trees/new" }}
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -415,10 +413,10 @@ export function CitizenDashboard() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-stone-900 group-hover:text-forest-800 dark:text-stone-50">
-                    {tree.species_text || "Unknown species"}
+                    {tree.species_text || t("unknownSpecies")}
                   </p>
                   {tree.satellite_verified ? (
-                    <span title="Satellite checked">
+                    <span title={t("satelliteCheckedTitle")}>
                       <Satellite className="h-4 w-4 shrink-0 text-sky-600" aria-hidden />
                     </span>
                   ) : null}

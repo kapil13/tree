@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { Leaf } from "lucide-react";
 import type { CmsPublicSite } from "@/lib/cms-api";
 import { CMS_FOOTER_FALLBACK, linkProps } from "@/lib/cms-defaults";
 
 export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: CmsPublicSite["site"]["footer"] }) {
+  const t = useTranslations("marketing");
   const year = new Date().getFullYear();
 
   return (
@@ -51,7 +55,7 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
             <span className="text-xs uppercase tracking-[0.18em]">{footer.legal_note}</span>
           </div>
           <p className="mt-4 text-center text-xs text-emerald-100/50 sm:text-left">
-            A product developed by{" "}
+            {t("developedBy")}{" "}
             <a
               href="https://www.axentis.tech"
               target="_blank"

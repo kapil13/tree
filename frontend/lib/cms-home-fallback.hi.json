@@ -1,0 +1,654 @@
+{
+  "header": {
+    "nav": [
+      {
+        "label": "प्लेटफ़ॉर्म",
+        "href": "#platform"
+      },
+      {
+        "label": "बुद्धिमत्ता",
+        "href": "#intelligence"
+      },
+      {
+        "label": "अनुपालन",
+        "href": "#compliance"
+      },
+      {
+        "label": "रिपोर्ट",
+        "href": "#reports"
+      },
+      {
+        "label": "कार्यक्रम",
+        "href": "#programs"
+      },
+      {
+        "label": "यह कैसे काम करता है",
+        "href": "#how-it-works"
+      }
+    ],
+    "sign_in": {
+      "label": "साइन इन",
+      "href": "/auth?mode=signin"
+    },
+    "get_started": {
+      "label": "शुरू करें",
+      "href": "/auth?mode=signup"
+    }
+  },
+  "footer": {
+    "description": "भारत का पर्यावरण MRV प्लेटफ़ॉर्म — नागरिक पेड़ टैगिंग से सरकारी-स्तर उपग्रह फ्यूजन, जैव ध्वनि विविधता और ऑडिट-तैयार अनुपालन निर्यात तक।",
+    "badge": "एक समृद्ध ग्रह के लिए बुद्धिमत्ता",
+    "columns": [
+      {
+        "title": "प्लेटफ़ॉर्म",
+        "links": [
+          {
+            "label": "कार्यकारी डैशबोर्ड",
+            "href": "/auth?mode=signin&next=/dashboard"
+          },
+          {
+            "label": "पेड़ पंजीकृत करें",
+            "href": "/auth?mode=signup"
+          },
+          {
+            "label": "फील्ड कार्य",
+            "href": "/auth?mode=signin&next=/field-ops"
+          },
+          {
+            "label": "रिपोर्ट और निर्यात",
+            "href": "/auth?mode=signin&next=/reports"
+          }
+        ]
+      },
+      {
+        "title": "कार्यक्रम",
+        "links": [
+          {
+            "label": "BYOT नागरिक टैगिंग",
+            "href": "/auth?mode=signup"
+          },
+          {
+            "label": "सरकार और NHAI",
+            "href": "/auth?mode=signup"
+          },
+          {
+            "label": "कॉर्पोरेट ESG",
+            "href": "/auth?mode=signup"
+          },
+          {
+            "label": "NGO और समुदाय",
+            "href": "/auth?mode=signup"
+          }
+        ]
+      },
+      {
+        "title": "अनुपालन",
+        "links": [
+          {
+            "label": "DPDP गोपनीयता नियंत्रण",
+            "href": "/privacy"
+          },
+          {
+            "label": "BRSR और ISO निर्यात",
+            "href": "/auth?mode=signin&next=/reports"
+          },
+          {
+            "label": "VM0047 चेकलिस्ट",
+            "href": "/#compliance"
+          },
+          {
+            "label": "ऑडिट प्रमाण श्रृंखला",
+            "href": "/#compliance"
+          }
+        ]
+      },
+      {
+        "title": "कानूनी",
+        "links": [
+          {
+            "label": "सेवा की शर्तें",
+            "href": "/terms"
+          },
+          {
+            "label": "गोपनीयता नीति",
+            "href": "/privacy"
+          },
+          {
+            "label": "डेटा उपयोग नीति",
+            "href": "/data-use"
+          },
+          {
+            "label": "साइन इन",
+            "href": "/auth?mode=signin"
+          }
+        ]
+      }
+    ],
+    "copyright": "Aranyix. सर्वाधिकार सुरक्षित।",
+    "legal_note": "MRV और ऑडिट-तैयारी प्लेटफ़ॉर्म · कार्बन क्रेडिट जारीकर्ता नहीं"
+  },
+  "sections": [
+    {
+      "section_type": "hero",
+      "anchor_id": null,
+      "title": "हीरो",
+      "sort_order": 0,
+      "content": {
+        "pill": "MRV · अनुपालन · रिपोर्टिंग",
+        "pill_icon": "Sparkles",
+        "title": "पर्यावरणीय बुद्धिमत्ता",
+        "title_highlight": "फील्ड से ऑडिट कक्ष तक",
+        "subtitle": "मोबाइल पर पेड़ पंजीकृत करें, NDVI को SAR अखंडता के साथ जोड़ें, जैव ध्वनि से विविधता स्कोर करें, और BRSR, ISO 14064-2, TNFD और VM0047 प्रमाण निर्यात करें — नागरिकों, कॉर्पोरेट और सरकारी कार्यक्रमों के लिए एक प्लेटफ़ॉर्म।",
+        "stats": [
+          {
+            "value": "15+",
+            "label": "फ्रेमवर्क मैपिंग"
+          },
+          {
+            "value": "8",
+            "label": "भारतीय भाषाएँ"
+          },
+          {
+            "value": "SAR + NDVI",
+            "label": "उपग्रह फ्यूजन"
+          },
+          {
+            "value": "DPDP ready",
+            "label": "गोपनीयता नियंत्रण"
+          }
+        ],
+        "primary_cta": {
+          "label": "मुफ़्त पंजीकरण शुरू करें",
+          "href": "/auth?mode=signup"
+        },
+        "secondary_cta": {
+          "label": "प्लेटफ़ॉर्म देखें",
+          "href": "#platform"
+        }
+      }
+    },
+    {
+      "section_type": "stats",
+      "anchor_id": null,
+      "title": "विश्वास मेट्रिक",
+      "sort_order": 5,
+      "content": {
+        "items": [
+          {
+            "value": "10M+",
+            "label": "पेड़ लक्ष्य स्केल",
+            "detail": "राष्ट्रीय कार्यक्रमों के लिए"
+          },
+          {
+            "value": "24/7",
+            "label": "निगरानी",
+            "detail": "उपग्रह + अलर्ट फ्यूजन"
+          },
+          {
+            "value": "100%",
+            "label": "प्रमाण श्रृंखला",
+            "detail": "छेड़छाड़-प्रूफ ऑडिट ट्रेल"
+          },
+          {
+            "value": "PWA",
+            "label": "फील्ड ऑफ़लाइन",
+            "detail": "पर्यवेक्षक पेड़ कैश"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "features",
+      "anchor_id": "platform",
+      "title": "प्लेटफ़ॉर्म क्षमताएँ",
+      "sort_order": 10,
+      "content": {
+        "eyebrow": "प्लेटफ़ॉर्म",
+        "title": "पर्यावरण प्रभाव की निगरानी, प्रमाण और रिपोर्ट के लिए सब कुछ",
+        "copy": "एक नागरिक के नीम पेड़ से लेकर लाखों-पेड़ पोर्टफोलियो तक — फील्ड टीम, वैज्ञानिक, अनुपालन अधिकारी और बोर्ड समीक्षकों के लिए एक ही प्रीमियम MRV स्टैक।",
+        "items": [
+          {
+            "icon": "TreePine",
+            "title": "पेड़ MRV और पासपोर्ट",
+            "description": "GPS पंजीकरण, डिजिटल पासपोर्ट, QR कोड, राजमार्ग चेनेज, और प्रत्येक योजना के लिए प्रोजेक्ट सेटअप विज़ार्ड।",
+            "accent": "from-emerald-500/20 to-emerald-900/5"
+          },
+          {
+            "icon": "Smartphone",
+            "title": "मोबाइल फील्ड कार्य",
+            "description": "ऑफ़लाइन पेड़ कैश, फ़ोटो कैप्चर और उच्च-मात्रा रोपण के लिए register-next फ्लो वाला Android फील्ड ऐप।",
+            "accent": "from-lime-500/20 to-lime-900/5"
+          },
+          {
+            "icon": "Satellite",
+            "title": "उपग्रह और SAR फ्यूजन",
+            "description": "Sentinel NDVI स्वास्थ्य परतें, SAR अखंडता रुझान, बाड़ सत्यापन और पोर्टफोलियो खतरा डैशबोर्ड।",
+            "accent": "from-sky-500/15 to-sky-900/5"
+          },
+          {
+            "icon": "Mic",
+            "title": "जैव ध्वनि विविधता",
+            "description": "BirdNET-संचालित प्रजाति पहचान, समृद्धि स्कोरिंग और रोपण प्रमाण के साथ आवास संकेत।",
+            "accent": "from-teal-500/15 to-teal-900/5"
+          },
+          {
+            "icon": "Brain",
+            "title": "AI बुद्धिमत्ता परत",
+            "description": "प्रजाति ID, स्वास्थ्य वर्गीकरण, कार्यकारी सारांश और फील्ड/ऑप्स टीम के लिए इन-ऐप सहायक।",
+            "accent": "from-violet-500/12 to-violet-900/5"
+          },
+          {
+            "icon": "BarChart3",
+            "title": "कार्यकारी डैशबोर्ड",
+            "description": "पोर्टफोलियो स्वास्थ्य, कार्बन NPRT बफर, प्लॉट निगरानी डिज़ाइन और सत्यापनकर्ता वर्कफ़्लो के लिए स्तरीकृत नमूनाकरण।",
+            "accent": "from-amber-500/15 to-amber-900/5"
+          },
+          {
+            "icon": "Bell",
+            "title": "अलर्ट और फील्ड कार्रवाई",
+            "description": "वनस्पति तनाव, मृत्यु विचलन, बाड़ उल्लंघन और SAR विसंगतियाँ पर्यवेक्षकों को सत्यापन लूप के साथ।",
+            "accent": "from-rose-500/12 to-rose-900/5"
+          },
+          {
+            "icon": "ScanLine",
+            "title": "रूल इंजन और योजनाएँ",
+            "description": "NHAI, CAMPA, नगर वन और कॉर्पोरेट टेम्पलेट के साथ केंद्रीय योजना रजिस्ट्री — प्रति कार्यक्रम सत्यापन नियम।",
+            "accent": "from-indigo-500/12 to-indigo-900/5"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "intelligence_pipeline",
+      "anchor_id": "intelligence",
+      "title": "बुद्धिमत्ता पाइपलाइन",
+      "sort_order": 15,
+      "content": {
+        "eyebrow": "बुद्धिमत्ता स्टैक",
+        "title": "पाँच परतें। एक ऑडिट-तैयार कहानी।",
+        "copy": "फील्ड प्रमाण, कक्षीय संकेत, ध्वनि विविधता और AI फ्यूजन हस्ताक्षरित निर्यात में — जिन्हें आपके ऑडिटर और अधिकारी समीक्षा कर सकें।"
+      }
+    },
+    {
+      "section_type": "compliance",
+      "anchor_id": "compliance",
+      "title": "अनुपालन और फ्रेमवर्क",
+      "sort_order": 20,
+      "content": {
+        "eyebrow": "अनुपालन",
+        "title": "उन मानकों से मैप जिनके बारे में ऑडिटर पहले से पूछते हैं",
+        "copy": "Aranyix MRV और ऑडिट-तैयारी प्लेटफ़ॉर्म है — कार्बन क्रेडिट रजिस्ट्री या कानूनी प्रमाणन संस्था नहीं। हम प्रमाण संरचित करते हैं ताकि समीक्षा तेज़ हो।",
+        "items": [
+          {
+            "icon": "Lock",
+            "code": "DPDP Act",
+            "title": "भारत डेटा गोपनीयता",
+            "description": "सेटिंग्स में निर्यात, मिटाना, सहमति लेजर और शिकायत वर्कफ़्लो।"
+          },
+          {
+            "icon": "FileText",
+            "code": "BRSR / SEBI",
+            "title": "कॉर्पोरेट प्रकटीकरण",
+            "description": "सिद्धांत 6 पर्यावरण संकेतक रोपण और कार्बन प्रमाण से मैप।"
+          },
+          {
+            "icon": "Scale",
+            "code": "ISO 14064-2",
+            "title": "परियोजना GHG रिपोर्ट",
+            "description": "ISO 14064-2 पद्धति अनुभागों के अनुरूप संरचित परियोजना रिपोर्ट।"
+          },
+          {
+            "icon": "Leaf",
+            "code": "TNFD",
+            "title": "प्रकृति प्रकटीकरण",
+            "description": "जैव ध्वनि समृद्धि और NDVI आवास संकेतों से LEAP-शैली प्रकृति रिपोर्ट।"
+          },
+          {
+            "icon": "FileCheck2",
+            "code": "VM0047",
+            "title": "Verra ARR तैयारी",
+            "description": "स्तरीकृत नमूनाकरण, बफर गणना, अनिश्चितता स्तर और ICVCM संरेखण चेकलिस्ट।"
+          },
+          {
+            "icon": "Award",
+            "code": "Gold Standard",
+            "title": "Gold Standard LUF",
+            "description": "Land Use & Forests कार्बन और सह-लाभ प्रमाण पैक स्वैच्छिक सत्यापन तैयारी के लिए।"
+          },
+          {
+            "icon": "Trees",
+            "code": "REDD+",
+            "title": "REDD+ MRV",
+            "description": "UNFCCC Warsaw Framework के अनुरूप आधार रेखा, स्थायित्व और रिसाव प्रमाण संरचना।"
+          },
+          {
+            "icon": "Globe2",
+            "code": "Paris / NDC",
+            "title": "पेरिस समझौता ट्रेसेबिलिटी",
+            "description": "राष्ट्रीय प्रतिबद्धताओं और अनुच्छेद 6 पारदर्शिता के लिए जियो-टैग रोपण लेजर।"
+          },
+          {
+            "icon": "BadgeCheck",
+            "code": "Green Credit",
+            "title": "MoEFCC Green Credit",
+            "description": "Green Credit Rules 2023 के तहत भूमि बैंक पंजीकरण और सत्यापनकर्ता-तैयार रोपण प्रमाण।"
+          },
+          {
+            "icon": "ShieldCheck",
+            "code": "ICVCM",
+            "title": "Core Carbon Principles",
+            "description": "फील्ड प्रमाण और निगरानी स्वचालन से मैप अखंडता चेकलिस्ट।"
+          },
+          {
+            "icon": "Globe2",
+            "code": "IPCC AR6",
+            "title": "विज्ञान-आधारित अनुमान",
+            "description": "IPCC-संरेखित डिफ़ॉल्ट और NPRT बफर के साथ बायोमास और CO₂e अनुमान।"
+          },
+          {
+            "icon": "MapPin",
+            "code": "NHAI / Govt",
+            "title": "सार्वजनिक रोपण योजनाएँ",
+            "description": "राजमार्ग, शहरी वनीकरण और विभागीय हरित ऑडिट के लिए जियो-टैग प्रमाण।"
+          },
+          {
+            "icon": "Radar",
+            "code": "CAMPA / NGT",
+            "title": "प्रतिपूरक वनीकरण",
+            "description": "न्यायालय-आदेशित और CAMPA निगरानी वर्कफ़्लो के लिए टाइमस्टैम्प प्रमाण पैक।"
+          },
+          {
+            "icon": "Shield",
+            "code": "Audit chain",
+            "title": "छेड़छाड़-प्रूफ लॉग",
+            "description": "ऑडिट ट्रेल अखंडता के लिए हस्ताक्षरित प्रमाण बंडल और Ed25519 सत्यापन।"
+          },
+          {
+            "icon": "Languages",
+            "code": "WCAG + i18n",
+            "title": "डिज़ाइन से समावेशी",
+            "description": "वेब पर हिंदी और सात भारतीय भाषाएँ; WCAG-परीक्षित मुख्य रूट।"
+          },
+          {
+            "icon": "Sparkles",
+            "code": "BYOT",
+            "title": "नागरिक संरक्षण",
+            "description": "Bring Your Own Tree — मुफ़्त AI स्वास्थ्य स्कैन के साथ सार्वजनिक पंजीकरण।"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "reports",
+      "anchor_id": "reports",
+      "title": "रिपोर्ट और निर्यात",
+      "sort_order": 25,
+      "content": {
+        "eyebrow": "रिपोर्ट",
+        "title": "सोलह लाइव निर्यात। एक प्रमाण ग्राफ।",
+        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, Paris/NDC, Green Credit, इन्वेंटरी, कार्बन, जैव विविधता, ESG, कार्यकारी डाइजेस्ट और हस्ताक्षरित प्रमाण — एक ही रोपण रिकॉर्ड से। आश्वासन पैक, क्रेडिट जारी नहीं।",
+        "items": [
+          {
+            "icon": "FileText",
+            "tag": "BRSR",
+            "title": "BRSR आश्वासन पैक",
+            "description": "रोपण KPI और प्रमाण संदर्भ के साथ SEBI-संरेखित सिद्धांत 6 निर्यात।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Scale",
+            "tag": "ISO 14064-2",
+            "title": "ISO 14064-2 परियोजना रिपोर्ट",
+            "description": "परियोजना सीमा, निगरानी योजना और मात्रा अनुभाग पूर्व-संरचित।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Leaf",
+            "tag": "TNFD",
+            "title": "TNFD LEAP प्रकटीकरण",
+            "description": "उपग्रह और जैव ध्वनि परतों से Locate–Evaluate–Assess–Prepare कथा।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Globe2",
+            "tag": "GHG Protocol",
+            "title": "GHG भू-क्षेत्र इन्वेंटरी",
+            "description": "कॉर्पोरेट GHG Protocol रिपोर्टिंग के लिए संरचित भू-क्षेत्र निष्कासन और उत्सर्जन।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Bird",
+            "tag": "Darwin Core",
+            "title": "Darwin Core occurrence पैक",
+            "description": "जैव विविधता партнёров और वैज्ञानिक पुन: उपयोग के लिए प्रजाति occurrence संग्रह।",
+            "formats": "ZIP · JSON"
+          },
+          {
+            "icon": "FileCheck2",
+            "tag": "VM0047",
+            "title": "कार्बन क्रेडिट लेजर",
+            "description": "प्रति परियोजना सीरियल ट्रैकिंग, सत्यापनकर्ता नमूनाकरण और NPRT बफर मूल्यांकन।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Award",
+            "tag": "Gold Standard",
+            "title": "Gold Standard LUF रिपोर्ट",
+            "description": "स्वैच्छिक सत्यापन तैयारी के लिए Land Use & Forests फ्रेमवर्क-मैप PDF और Excel।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Trees",
+            "tag": "REDD+",
+            "title": "REDD+ MRV रिपोर्ट",
+            "description": "REDD+ कार्यक्रम समीक्षा के लिए संरचित आधार रेखा, स्थायित्व और रिसाव अनुभाग।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Globe2",
+            "tag": "Paris / NDC",
+            "title": "पेरिस समझौता ट्रेसेबिलिटी",
+            "description": "अनुच्छेद 6 सहकारी दृष्टिकोण संदर्भ के साथ NDC-संरेखित रोपण लेजर निर्यात।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "BadgeCheck",
+            "tag": "Green Credit",
+            "title": "Green Credit India पैक",
+            "description": "भूमि बैंक और अवशेष KPI के साथ MoEFCC Green Credit Programme प्रमाण।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "TreePine",
+            "tag": "Inventory",
+            "title": "पेड़ इन्वेंटरी",
+            "description": "अनुपालन पैक के लिए प्रजाति, अवशेष, जियोटैग स्थिति और चेनेज।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "BarChart3",
+            "tag": "Carbon",
+            "title": "कार्बन स्टॉक अनुमान",
+            "description": "IPCC-संरेखित डिफ़ॉल्ट के साथ मॉडल बायोमास और CO₂e — क्रेडिट जारी नहीं।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Mic",
+            "tag": "Biodiversity",
+            "title": "जैव विविधता ध्वनि-दृश्य",
+            "description": "बाड़बंद रोपण स्थल के लिए BirdNET समृद्धि और आवास संकेत।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "ShieldCheck",
+            "tag": "ESG",
+            "title": "ESG हितधारक सारांश",
+            "description": "बोर्ड और खरीदारों के लिए संयुक्त कार्बन, जैव विविधता और NDVI कथा।",
+            "formats": "PDF · XLSX"
+          },
+          {
+            "icon": "Radar",
+            "tag": "Executive",
+            "title": "पोर्टफोलियो स्वास्थ्य डाइजेस्ट",
+            "description": "नेतृत्व के लिए NDVI रुझान, SAR खतरे और अनुपालन पूर्णता स्कोर।",
+            "formats": "PDF"
+          },
+          {
+            "icon": "Shield",
+            "tag": "Evidence",
+            "title": "हस्ताक्षरित प्रमाण बंडल",
+            "description": "तीसरे पक्ष समीक्षा के लिए Ed25519 ऑडिट-श्रृंखला सत्यापन वाला छेड़छाड़-प्रूफ ZIP।",
+            "formats": "ZIP"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "programs",
+      "anchor_id": "programs",
+      "title": "रोपण कार्यक्रम",
+      "sort_order": 30,
+      "content": {
+        "eyebrow": "कार्यक्रम",
+        "title": "एक कार्यक्षेत्र। हर अनुपालन मार्ग।",
+        "copy": "एक खाते से BYOT, सरकार, कॉर्पोरेट ESG या NGO कार्यक्रमों में नामांकन। प्रत्येक मार्ग सही सत्यापन नियम लागू करता है — डेटा विखंडित किए बिना।",
+        "items": [
+          {
+            "icon": "Leaf",
+            "title": "BYOT सार्वजनिक",
+            "description": "नागरिक और स्कूल मिनटों में मोबाइल-प्रथम पंजीकरण और QR पासपोर्ट से पेड़ टैग करते हैं।",
+            "badge": "सबसे लोकप्रिय"
+          },
+          {
+            "icon": "Building2",
+            "title": "सरकार और सार्वजनिक क्षेत्र",
+            "description": "NHAI चेनेज, CAMPA निगरानी, नगर वन शहरी टेम्पलेट और ऑडिट-ग्रेड फील्ड प्रमाण।",
+            "badge": "सरकारी तैयार"
+          },
+          {
+            "icon": "ShieldCheck",
+            "title": "उद्योग और कॉर्पोरेट ESG",
+            "description": "रोपण आधार रेखा, BRSR निर्यात, आपूर्तिकर्ता ट्रेसेबिलिटी और बोर्ड-तैयार स्थिरता पैक।",
+            "badge": "ESG"
+          },
+          {
+            "icon": "Users",
+            "title": "NGO और समुदाय",
+            "description": "जलग्रहीय बहाली, किसान समूह और साझा डैशबोर्ड वाली सामुदायिक नर्सरी।",
+            "badge": "समुदाय"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "steps",
+      "anchor_id": "how-it-works",
+      "title": "यह कैसे काम करता है",
+      "sort_order": 40,
+      "content": {
+        "eyebrow": "यह कैसे काम करता है",
+        "title": "पहले पेड़ से ऑडिट-तैयार पोर्टफोलियो तक",
+        "copy": "फील्ड टीमों के लिए मार्गदर्शित फ्लो — स्वचालित निगरानी और कार्यकारी रिपोर्टिंग के साथ।",
+        "cta": {
+          "label": "अपना कार्यक्षेत्र बनाएँ",
+          "href": "/auth?mode=signup"
+        },
+        "items": [
+          {
+            "step": "01",
+            "title": "नामांकन और सेटअप",
+            "description": "अपना कार्यक्रम चुनें — BYOT, सरकार, ESG या NGO — और योजना-विशिष्ट नियमों के साथ प्रोजेक्ट सेटअप विज़ार्ड पूरा करें।"
+          },
+          {
+            "step": "02",
+            "title": "प्रमाण पंजीकृत करें",
+            "description": "वेब या मोबाइल पर GPS, फ़ोटो और प्रजाति के साथ पेड़ कैप्चर करें। राजमार्ग गलियारों के लिए चेनेज स्वतः आगे बढ़ता है।"
+          },
+          {
+            "step": "03",
+            "title": "निरंतर निगरानी",
+            "description": "उपग्रह NDVI, SAR अखंडता, जैव ध्वनि समृद्धि और AI स्वास्थ्य स्कोरिंग चौबीसों घंटे आपकी साइटों की देखभाल करते हैं।"
+          },
+          {
+            "step": "04",
+            "title": "अलर्ट पर कार्रवाई",
+            "description": "पर्यवेक्षकों को वनस्पति तनाव और विसंगति अलर्ट मिलते हैं — फील्ड सत्यापन वर्कफ़्लो के साथ।"
+          },
+          {
+            "step": "05",
+            "title": "विश्वास के साथ रिपोर्ट",
+            "description": "BRSR, ISO, TNFD, VM0047, Gold Standard, REDD+, Paris/NDC और Green Credit पैक निर्यात — ऑडिटर समीक्षा के लिए हस्ताक्षरित प्रमाण बंडल सहित।"
+          }
+        ]
+      }
+    },
+    {
+      "section_type": "platform_preview",
+      "anchor_id": null,
+      "title": "प्लेटफ़ॉर्म पूर्वावलोकन",
+      "sort_order": 50,
+      "content": {
+        "eyebrow": "लाइव कमांड सेंटर",
+        "title": "अपना रोपण पोर्टफोलियो एक नज़र में देखें",
+        "copy": "कार्यकारी डैशबोर्ड पेड़ स्वास्थ्य, SAR विसंगतियाँ, प्रजाति समृद्धि, अनुपालन पूर्णता और अलर्ट कतार दिखाते हैं — नामांकित कार्यक्रमों के अनुरूप निर्यात।",
+        "bullets": [
+          "NDVI और SAR अखंडता ओवरले वाले इंटरैक्टिव मानचित्र",
+          "स्वास्थ्य, जैव विविधता और अनुपालन KPI के लिए कार्यकारी डैशबोर्ड",
+          "एक संगठन खाते पर बहु-कार्यक्रम नामांकन",
+          "REST API, webhooks और GIS-अनुकूल निर्यात"
+        ],
+        "metrics": [
+          [
+            "12,480",
+            "पंजीकृत पेड़"
+          ],
+          [
+            "0.72",
+            "औसत NDVI"
+          ],
+          [
+            "94%",
+            "पासपोर्ट पूर्ण"
+          ]
+        ],
+        "rows": [
+          [
+            "SAR वनस्पति अखंडता",
+            "2 साइट चिह्नित"
+          ],
+          [
+            "जैव ध्वनि समृद्धि",
+            "इस सप्ताह स्थिर"
+          ],
+          [
+            "अनुपालन चेकलिस्ट",
+            "87% पूर्ण"
+          ],
+          [
+            "CO₂e अनुमान",
+            "1,240 tCO₂e (मॉडल)"
+          ]
+        ]
+      }
+    },
+    {
+      "section_type": "cta",
+      "anchor_id": null,
+      "title": "कार्रवाई आह्वान",
+      "sort_order": 60,
+      "content": {
+        "eyebrow": "शुरू करने के लिए तैयार?",
+        "title": "हर पेड़ को ऑडिट-तैयार पर्यावरण प्रमाण में बदलें",
+        "copy": "रोपण निगरानी, जैव विविधता मूल्यांकन और अनुपालन निर्यात के लिए Aranyix उपयोग करने वाले संगठनों से जुड़ें — नागरिक BYOT से सरकारी-स्तर फील्ड कार्यक्रम तक।",
+        "primary_cta": {
+          "label": "मुफ़्त में शुरू करें",
+          "href": "/auth?mode=signup"
+        },
+        "secondary_cta": {
+          "label": "कार्यक्षेत्र में साइन इन",
+          "href": "/auth?mode=signin"
+        }
+      }
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Menu, X } from "lucide-react";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
@@ -22,6 +23,7 @@ export function MarketingHeader({
   compact?: boolean;
 }) {
   const pathname = usePathname();
+  const t = useTranslations("marketing");
   const [menuOpen, setMenuOpen] = useState(false);
   const onAuth =
     authMode != null || pathname === "/auth" || Boolean(pathname?.startsWith("/auth/"));
@@ -55,7 +57,7 @@ export function MarketingHeader({
           compact ? "py-2.5" : "py-4",
         )}
       >
-        <Link href="/" className="shrink-0" aria-label="Aranyix home">
+        <Link href="/" className="shrink-0" aria-label={t("homeAria")}>
           <AranyixLogo
             className={cn(
               "w-auto",
@@ -68,7 +70,7 @@ export function MarketingHeader({
 
         <nav
           className={cn("hidden items-center gap-1 md:flex", compact && "gap-0")}
-          aria-label="Primary"
+          aria-label={t("primaryNav")}
         >
           {header.nav.map((item) => {
             const link = linkProps(item);
@@ -125,7 +127,7 @@ export function MarketingHeader({
           <button
             type="button"
             className="btn-ghost md:hidden"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? t("closeMenu") : t("openMenu")}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
           >
@@ -139,28 +141,28 @@ export function MarketingHeader({
           <button
             type="button"
             className="absolute inset-0 bg-forest-950/40 backdrop-blur-[2px]"
-            aria-label="Close menu"
+            aria-label={t("closeMenu")}
             onClick={() => setMenuOpen(false)}
           />
           <div
             className="absolute right-0 top-0 flex h-full w-[min(20rem,88vw)] flex-col overflow-y-auto border-l border-forest-900/10 bg-white shadow-2xl"
             role="dialog"
             aria-modal="true"
-            aria-label="Mobile navigation"
+            aria-label={t("mobileNav")}
           >
             <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
               <p className="font-display text-lg font-semibold text-forest-900">Aranyix</p>
               <button
                 type="button"
                 className="btn-ghost"
-                aria-label="Close menu"
+                aria-label={t("closeMenu")}
                 onClick={() => setMenuOpen(false)}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <nav className="flex flex-1 flex-col gap-1 px-3 py-4" aria-label="Mobile primary">
+            <nav className="flex flex-1 flex-col gap-1 px-3 py-4" aria-label={t("mobilePrimaryNav")}>
               {header.nav.map((item) => {
                 const link = linkProps(item);
                 return (
