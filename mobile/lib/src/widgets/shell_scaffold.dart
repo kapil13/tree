@@ -13,10 +13,7 @@ void openAppDrawer(BuildContext context) {
   final scaffold = Scaffold.maybeOf(context);
   if (scaffold?.hasDrawer ?? false) {
     scaffold!.openDrawer();
-    return;
   }
-  final rootScaffold = context.findRootAncestorStateOfType<ScaffoldState>();
-  rootScaffold?.openDrawer();
 }
 
 /// Top bar with hamburger menu for shell screens.

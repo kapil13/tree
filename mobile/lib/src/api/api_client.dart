@@ -11,6 +11,29 @@ import '../session.dart';
 
 export 'api_base_url.dart' show kByotApiBase, allowCustomApiBase;
 
+/// Requests that establish credentials must not trigger refresh / session-expired handling.
+const _publicAuthPaths = {
+  '/auth/login',
+  '/auth/signup/start',
+  '/auth/signup/verify-phone',
+  '/auth/signup/send-email-otp',
+  '/auth/signup/complete',
+  '/auth/otp/request',
+  '/auth/otp/verify',
+  '/auth/password-reset/request',
+  '/auth/password-reset/confirm',
+  '/auth/refresh',
+  '/auth/google/login',
+  '/citizen/signup/start',
+  '/citizen/signup/complete',
+};
+
+bool _isPublicAuthRequest(RequestOptions options) {
+  if (options.extra['skipSessionRecovery'] == true) return true;
+  final path = options.uri.path;
+  return _publicAuthPaths.any((p) => path.endsWith(p));
+}
+
 class ApiClient {
   ApiClient._(this._dio, this._prefs, this._secure);
 
@@ -91,21 +114,18 @@ class ApiClient {
     }
     dio.interceptors.add(InterceptorsWrapper(
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401 &&
-            error.requestOptions.extra['retried'] != true) {
-          final refreshed = await client._refreshAccessToken();
-          if (refreshed) {
-            try {
-              final opts = error.requestOptions;
-              opts.extra['retried'] = true;
-              final access = await client._secure.read(key: _tokenKey);
-              opts.headers['Authorization'] = 'Bearer $access';
-              final response = await dio.fetch(opts);
-              return handler.resolve(response);
-            } catch (_) {
-              // fall through to sign out
-            }
-          }
+        if (error.response?.statusCode != 401) {
+          handler.next(error);
+          return;
+        }
+
+        // Login/signup 401 means bad credentials — never recycle refresh tokens or sign out.
+        if (_isPublicAuthRequest(error.requestOptions)) {
+          handler.next(error);
+          return;
+        }
+
+        if (error.requestOptions.extra['retried'] == true) {
           await client._clearSession();
           return handler.reject(
             DioException(
@@ -116,7 +136,29 @@ class ApiClient {
             ),
           );
         }
-        handler.next(error);
+
+        final refreshed = await client._refreshAccessToken();
+        if (refreshed) {
+          try {
+            final opts = error.requestOptions;
+            opts.extra['retried'] = true;
+            final access = await client._secure.read(key: _tokenKey);
+            opts.headers['Authorization'] = 'Bearer $access';
+            final response = await dio.fetch(opts);
+            return handler.resolve(response);
+          } catch (_) {
+            // fall through to sign out
+          }
+        }
+        await client._clearSession();
+        return handler.reject(
+          DioException(
+            requestOptions: error.requestOptions,
+            response: error.response,
+            type: DioExceptionType.badResponse,
+            error: const SessionExpiredException(),
+          ),
+        );
       },
     ));
     return client;
@@ -157,6 +199,13 @@ class ApiClient {
     await _prefs.remove(_refreshKey);
     sessionController.signOut();
   }
+
+  /// Drops stored tokens locally without calling the logout API (e.g. before sign-in).
+  Future<void> clearLocalSession() async {
+    await _clearSession();
+  }
+
+  Options _publicAuthOptions() => Options(extra: const {'skipSessionRecovery': true});
 
   Future<void> setTokens({required String accessToken, String? refreshToken}) async {
     _dio.options.headers['Authorization'] = 'Bearer $accessToken';
@@ -207,12 +256,17 @@ class ApiClient {
     String password, {
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-      'client_platform': 'mobile',
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/login',
+      data: {
+        'email': email,
+        'password': password,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -221,12 +275,17 @@ class ApiClient {
     String? phone,
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/auth/otp/request', data: {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      'client_platform': 'mobile',
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/otp/request',
+      data: {
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -236,12 +295,17 @@ class ApiClient {
     required String code,
     String? fullName,
   }) async {
-    final r = await _dio.post('/auth/otp/verify', data: {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      'code': code,
-      if (fullName != null) 'full_name': fullName,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/otp/verify',
+      data: {
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        'code': code,
+        if (fullName != null) 'full_name': fullName,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -249,11 +313,16 @@ class ApiClient {
     required String email,
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/auth/password-reset/request', data: {
-      'email': email,
-      'client_platform': 'mobile',
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/password-reset/request',
+      data: {
+        'email': email,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -293,15 +362,20 @@ class ApiClient {
     required String signupCategory,
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/auth/signup/start', data: {
-      'full_name': fullName,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'signup_category': signupCategory,
-      'client_platform': 'mobile',
-      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/start',
+      data: {
+        'full_name': fullName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'signup_category': signupCategory,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 

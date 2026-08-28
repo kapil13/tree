@@ -38,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _busy = false;
   bool _loaded = false;
   bool _inviteLoaded = false;
+  bool _sessionPrepared = false;
   String? _invitePreview;
   bool _rememberMe = true;
   bool _obscurePassword = true;
@@ -62,9 +63,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
   }
 
+  Future<void> _prepareSession() async {
+    final sessionExpired =
+        GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
+    if (!sessionExpired) return;
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
+    } catch (_) {}
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_sessionPrepared) {
+      _sessionPrepared = true;
+      _prepareSession();
+    }
     if (!_inviteLoaded) {
       _inviteLoaded = true;
       _loadInvitePreview();
@@ -151,6 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.invalidate(apiClientProvider);
       }
       final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
       final tokens = await api.login(
         _email.text.trim(),
         _pwd.text,
