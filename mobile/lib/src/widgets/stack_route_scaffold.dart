@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'app_drawer.dart';
-import 'shell_scaffold.dart';
 
 /// Scaffold for authenticated stack routes (no bottom tabs) with left drawer.
 Scaffold stackRouteScaffold({
@@ -11,7 +10,6 @@ Scaffold stackRouteScaffold({
   Widget? floatingActionButton,
 }) {
   return Scaffold(
-    key: shellScaffoldKey,
     drawer: AppDrawer(currentLocation: location),
     appBar: appBar,
     body: body,

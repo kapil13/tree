@@ -78,7 +78,10 @@ class ApiClient {
       baseUrl: '$base/api/v1',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 45),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Aranyix-Client': 'mobile/1.2.1',
+      },
     ));
     CertificatePinning.configureDio(dio);
     final client = ApiClient._(dio, prefs, secure);

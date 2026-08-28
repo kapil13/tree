@@ -13,7 +13,6 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
-import '../widgets/turnstile_captcha.dart';
 import 'auth_flow_screens.dart';
 
 enum _LoginMode { email, phone }
@@ -31,7 +30,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _pwd = TextEditingController();
   final _apiUrl = TextEditingController();
-  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
 
   String? _err;
   bool _busy = false;
@@ -41,10 +39,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = true;
   bool _obscurePassword = true;
 
-  bool _captchaEnabled = false;
-  String? _captchaSiteKey;
-  String? _captchaToken;
-
   @override
   void initState() {
     super.initState();
@@ -52,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptcha()]);
+    await Future.wait([_loadRemembered(), _loadApiUrl()]);
   }
 
   @override
@@ -77,18 +71,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _pwd.text = saved.password;
       }
     });
-  }
-
-  Future<void> _loadCaptcha() async {
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      final cfg = await api.captchaConfig();
-      if (!mounted) return;
-      setState(() {
-        _captchaEnabled = cfg['enabled'] == true;
-        _captchaSiteKey = cfg['site_key'] as String?;
-      });
-    } catch (_) {}
   }
 
   Future<void> _loadApiUrl() async {
@@ -124,10 +106,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submitEmail() async {
-    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _err = 'Please complete the security check below.');
-      return;
-    }
     setState(() {
       _busy = true;
       _err = null;
@@ -146,7 +124,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final tokens = await api.login(
         _email.text.trim(),
         _pwd.text,
-        captchaToken: _captchaToken,
       );
       await api.setTokens(
         accessToken: tokens['access_token'] as String,
@@ -161,11 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on InviteAcceptException catch (e) {
       setState(() => _err = e.message);
     } catch (e) {
-      setState(() {
-        _err = apiErrorMessage(e);
-        _captchaToken = null;
-      });
-      _captchaKey.currentState?.reset();
+      setState(() => _err = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -209,10 +182,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionExpired = GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
     return AuthLightScope(
       child: AuthScaffold(
         title: 'Welcome back',
-        subtitle: 'Sign in to your Aranyix account',
+        subtitle: 'Sign in to continue mapping trees, biodiversity, and compliance evidence.',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : () => context.go('/welcome'),
@@ -220,6 +194,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (sessionExpired) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AranyixColors.warningContainer,
+                  borderRadius: BorderRadius.circular(AranyixRadii.chip),
+                  border: Border.all(color: const Color(0xFFFCD34D)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AranyixColors.warningOnContainer, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Your session expired. Sign in again to continue where you left off.',
+                        style: TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer, height: 1.35),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (_invitePreview != null) ...[
               Container(
                 padding: const EdgeInsets.all(14),
@@ -339,20 +336,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
-              if (_captchaEnabled && _captchaSiteKey != null) ...[
-                const SizedBox(height: 4),
-                TurnstileCaptcha(
-                  key: _captchaKey,
-                  siteKey: _captchaSiteKey!,
-                  onToken: (t) => setState(() {
-                    _captchaToken = t;
-                    _err = null;
-                  }),
-                  onError: () => setState(() => _captchaToken = null),
-                  onExpired: () => setState(() => _captchaToken = null),
-                ),
-                const SizedBox(height: 12),
-              ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  _LoginTrustChip(icon: Icons.gps_fixed, label: 'GPS-verified trees'),
+                  _LoginTrustChip(icon: Icons.cloud_off, label: 'Offline field sync'),
+                  _LoginTrustChip(icon: Icons.verified_user_outlined, label: 'Secure sign-in'),
+                ],
+              ),
               if (_err != null) ...[
                 AuthErrorBanner(message: _err!),
                 const SizedBox(height: 12),
@@ -380,6 +373,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoginTrustChip extends StatelessWidget {
+  const _LoginTrustChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AranyixColors.forestLight,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AranyixColors.forestMuted.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AranyixColors.forest),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AranyixColors.forestDark)),
+        ],
       ),
     );
   }

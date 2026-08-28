@@ -12,7 +12,6 @@ import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
-import '../widgets/turnstile_captcha.dart';
 
 enum _SignupStep { account, verifyPhone, verifyEmail }
 
@@ -42,29 +41,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String _phoneOtp = '';
   String _emailOtp = '';
 
-  bool _captchaEnabled = false;
-  String? _captchaSiteKey;
-  String? _captchaToken;
-  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
-
   @override
   void initState() {
     super.initState();
-    _loadCaptchaConfig();
-  }
-
-  Future<void> _loadCaptchaConfig() async {
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      final cfg = await api.captchaConfig();
-      if (!mounted) return;
-      setState(() {
-        _captchaEnabled = cfg['enabled'] == true;
-        _captchaSiteKey = cfg['site_key'] as String?;
-      });
-    } catch (_) {
-      // Optional — signup may work without captcha in dev.
-    }
   }
 
   double get _progress {
@@ -104,10 +83,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       setState(() => _error = 'Please accept the terms to continue.');
       return;
     }
-    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _error = humanizeAuthError('captcha_required'));
-      return;
-    }
 
     setState(() {
       _busy = true;
@@ -122,7 +97,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         phone: phoneForApi(_phone.text),
         password: _password.text,
         signupCategory: _category,
-        captchaToken: _captchaToken,
       );
       setState(() {
         _signupToken = res['signup_token'] as String;
@@ -130,11 +104,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _step = _SignupStep.verifyPhone;
       });
     } catch (e) {
-      setState(() {
-        _error = apiErrorMessage(e);
-        _captchaToken = null;
-      });
-      _captchaKey.currentState?.reset();
+      setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -397,19 +367,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
           ),
         ),
-        if (_captchaEnabled && _captchaSiteKey != null) ...[
-          const SizedBox(height: 8),
-          TurnstileCaptcha(
-            key: _captchaKey,
-            siteKey: _captchaSiteKey!,
-            onToken: (t) => setState(() {
-              _captchaToken = t;
-              _error = null;
-            }),
-            onError: () => setState(() => _captchaToken = null),
-            onExpired: () => setState(() => _captchaToken = null),
-          ),
-        ],
       ],
     );
   }

@@ -11,7 +11,6 @@ import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
-import '../widgets/turnstile_captcha.dart';
 
 /// Handles deep links: `https://aranyix.tech/auth/callback#access_token=…`
 class AuthCallbackScreen extends ConsumerStatefulWidget {
@@ -98,35 +97,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   String? _error;
   String? _devHint;
 
-  bool _captchaEnabled = false;
-  String? _captchaSiteKey;
-  String? _captchaToken;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCaptcha();
-  }
-
-  Future<void> _loadCaptcha() async {
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      final cfg = await api.captchaConfig();
-      if (!mounted) return;
-      setState(() {
-        _captchaEnabled = cfg['enabled'] == true;
-        _captchaSiteKey = cfg['site_key'] as String?;
-      });
-    } catch (_) {}
-  }
-
   Future<void> _requestCode() async {
     if (!_email.text.contains('@')) {
       setState(() => _error = 'Enter a valid email address.');
-      return;
-    }
-    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _error = 'Please complete the security check.');
       return;
     }
     setState(() {
@@ -137,7 +110,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       final api = await ref.read(apiClientProvider.future);
       final res = await api.requestPasswordReset(
         email: _email.text.trim(),
-        captchaToken: _captchaToken,
       );
       setState(() {
         _devHint = res['dev_hint'] as String?;
@@ -169,7 +141,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         email: _email.text.trim(),
         code: _otp,
         password: _password.text,
-        captchaToken: _captchaToken,
       );
       await api.setTokens(
         accessToken: tokens['access_token'] as String,
@@ -213,13 +184,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
-            if (_captchaEnabled && _captchaSiteKey != null) ...[
-              const SizedBox(height: 12),
-              TurnstileCaptcha(
-                siteKey: _captchaSiteKey!,
-                onToken: (t) => setState(() => _captchaToken = t),
-              ),
-            ],
           ] else ...[
             OtpInput(length: 6, enabled: !_busy, onChanged: (v) => setState(() => _otp = v)),
             const SizedBox(height: 16),
@@ -273,35 +237,10 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
   bool _busy = false;
   String? _error;
   String? _devHint;
-  String? _captchaToken;
-  bool _captchaEnabled = false;
-  String? _captchaSiteKey;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCaptcha();
-  }
-
-  Future<void> _loadCaptcha() async {
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      final cfg = await api.captchaConfig();
-      if (!mounted) return;
-      setState(() {
-        _captchaEnabled = cfg['enabled'] == true;
-        _captchaSiteKey = cfg['site_key'] as String?;
-      });
-    } catch (_) {}
-  }
 
   Future<void> _sendCode() async {
     if (!isValidIndianMobile(_phone.text)) {
       setState(() => _error = 'Enter a valid 10-digit Indian mobile number.');
-      return;
-    }
-    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _error = 'Please complete the security check.');
       return;
     }
     setState(() {
@@ -312,7 +251,6 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
       final api = await ref.read(apiClientProvider.future);
       final res = await api.requestOtp(
         phone: phoneForApi(_phone.text),
-        captchaToken: _captchaToken,
       );
       setState(() {
         _codeSent = true;
@@ -383,13 +321,6 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
               }
             },
           ),
-          if (_captchaEnabled && _captchaSiteKey != null) ...[
-            const SizedBox(height: 12),
-            TurnstileCaptcha(
-              siteKey: _captchaSiteKey!,
-              onToken: (t) => setState(() => _captchaToken = t),
-            ),
-          ],
           const SizedBox(height: 8),
           Text(
             'SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.',

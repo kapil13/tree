@@ -1,15 +1,22 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
 import 'add_action_sheet.dart';
+import 'app_drawer.dart';
 
-/// Global key for the shell [Scaffold] so nested screens can open the drawer.
-final shellScaffoldKey = GlobalKey<ScaffoldState>();
-
+/// Opens the nearest scaffold drawer (tab shell or stack route).
 void openAppDrawer(BuildContext context) {
-  shellScaffoldKey.currentState?.openDrawer();
+  final scaffold = Scaffold.maybeOf(context);
+  if (scaffold?.hasDrawer ?? false) {
+    scaffold!.openDrawer();
+    return;
+  }
+  final rootScaffold = context.findRootAncestorStateOfType<ScaffoldState>();
+  rootScaffold?.openDrawer();
 }
 
 /// Top bar with hamburger menu for shell screens.
@@ -54,7 +61,11 @@ class ShellTopBar extends StatelessWidget implements PreferredSizeWidget {
                 Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                 Text(
                   subtitle!,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AranyixColors.onSurfaceMuted),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ],
             )
@@ -75,7 +86,8 @@ class ShellRegisterFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = sessionController.user;
+    final user = sessionController.user ??
+        ProviderScope.containerOf(context, listen: false).read(userProvider).valueOrNull;
     final l10n = AppLocalizations.of(context)!;
     return FloatingActionButton.extended(
       onPressed: () => showAddActionSheet(context, user: user),

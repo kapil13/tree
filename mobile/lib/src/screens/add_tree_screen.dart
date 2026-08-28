@@ -112,6 +112,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         _programCode ??= programs.isNotEmpty ? programs.first['code'] as String : 'byot';
         _loadingPrograms = false;
       });
+      _syncProgramSelection();
       _syncExtraFields();
       _applySegmentDefaults();
     } catch (e) {
@@ -123,7 +124,31 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     }
   }
 
-  String? get _segment => _project?['segment'] as String?;
+  String? get _segment {
+    final fromProject = _project?['segment'] as String?;
+    if (fromProject != null && fromProject.isNotEmpty) return fromProject;
+    return _activeProgram?['segment'] as String?;
+  }
+
+  bool get _isNhaiContext =>
+      _segment == 'nhai_highway' || _effectiveProgramCode == 'government_nhai';
+
+  String? get _effectiveProgramCode {
+    if (_programCode != null &&
+        _programCode!.trim().isNotEmpty &&
+        _programs.any((p) => p['code'] == _programCode)) {
+      return _programCode;
+    }
+    if (_programs.isEmpty) return _programCode;
+    return _programs.first['code'] as String?;
+  }
+
+  void _syncProgramSelection() {
+    final effective = _effectiveProgramCode;
+    if (effective != null && effective != _programCode) {
+      _programCode = effective;
+    }
+  }
 
   String get _complianceMode =>
       _project?['compliance_mode'] as String? ?? 'open';
@@ -168,7 +193,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   void _applySegmentDefaults() {
-    if (!_isProjectMode && _segment == 'nhai_highway') {
+    if (!_isProjectMode && _isNhaiContext) {
       _pitSize = '60x60x60';
       _guardType ??= 'bamboo';
       _roadSide ??= 'lhs';
@@ -188,9 +213,10 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Map<String, dynamic>? get _activeProgram {
-    if (_programCode == null) return null;
+    final code = _effectiveProgramCode;
+    if (code == null) return null;
     return _programs.cast<Map<String, dynamic>?>().firstWhere(
-          (p) => p?['code'] == _programCode,
+          (p) => p?['code'] == code,
           orElse: () => null,
         );
   }
@@ -208,7 +234,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (key == 'latitude' || key == 'longitude' || key == 'accuracy_m' || key == 'altitude_m') {
           continue;
         }
-        if (_segment == 'nhai_highway' && (key == 'road_side' || key == 'guard_type' || key == 'pit_size_cm')) {
+        if (_isNhaiContext && (key == 'road_side' || key == 'guard_type' || key == 'pit_size_cm')) {
           continue;
         }
         if (map['type'] == 'boolean' || map['type'] == 'select') continue;
@@ -230,7 +256,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (widget.projectId != null) metadata['project_id'] = widget.projectId;
     if (_isProjectMode) {
       if (_chainageEnabled && _roadSide != null) metadata['road_side'] = _roadSide;
-    } else if (_segment == 'nhai_highway') {
+    } else if (_isNhaiContext) {
       if (_roadSide != null) metadata['road_side'] = _roadSide;
       if (_guardType != null) metadata['guard_type'] = _guardType;
       metadata['pit_size_cm'] = _pitSize;
@@ -329,6 +355,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (widget.projectId != null && _workAreas.isNotEmpty && _selectedWorkAreaId == null) {
           return false;
         }
+        if (_project == null && _programs.isNotEmpty && (_effectiveProgramCode == null || _effectiveProgramCode!.isEmpty)) {
+          return false;
+        }
         return true;
       case 1:
         return _species.text.trim().isNotEmpty;
@@ -364,6 +393,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       case 0:
         message = l10n?.addTreeValidationContext ??
             'Finish project setup or select a work area before continuing.';
+        if (_project == null && _programs.isNotEmpty && (_effectiveProgramCode == null || _effectiveProgramCode!.isEmpty)) {
+          message = l10n?.addTreeValidationProgram ?? 'Select a registration program before continuing.';
+        } else if (widget.projectId != null && _workAreas.isNotEmpty && _selectedWorkAreaId == null) {
+          message = l10n?.addTreeValidationWorkArea ?? 'Select a work area before continuing.';
+        }
         break;
       case 1:
         message = l10n?.addTreeValidationSpecies ?? 'Enter a species before continuing.';
@@ -694,7 +728,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (_programs.isNotEmpty && _project == null) ...[
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _programCode,
+            value: _effectiveProgramCode,
             decoration: InputDecoration(labelText: l10n.addTreeProgram),
             items: _programs
                 .map(
@@ -709,7 +743,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 : (v) {
                     setState(() => _programCode = v);
                     _syncExtraFields();
+                    _applySegmentDefaults();
                   },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.addTreeProgramHint,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ],
@@ -749,7 +789,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               _runComplianceCheck();
             },
           ),
-        ] else if (!_isProjectMode && _segment == 'nhai_highway') ...[
+        ] else if (!_isProjectMode && _isNhaiContext) ...[
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _roadSide,

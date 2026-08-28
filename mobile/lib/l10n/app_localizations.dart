@@ -212,11 +212,29 @@ abstract class AppLocalizations {
   /// **'Unlock with biometrics'**
   String get biometricUnlock;
 
+  /// No description provided for @biometricUnlockHint.
+  String get biometricUnlockHint;
+
+  /// No description provided for @biometricEnableFailed.
+  String get biometricEnableFailed;
+
+  /// No description provided for @biometricEnabled.
+  String get biometricEnabled;
+
+  /// No description provided for @biometricDisabled.
+  String get biometricDisabled;
+
   /// No description provided for @screenshotGuard.
   ///
   /// In en, this message translates to:
   /// **'Block screenshots'**
   String get screenshotGuard;
+
+  String get screenshotGuardHint;
+
+  String get screenshotGuardEnabled;
+
+  String get screenshotGuardDisabled;
 
   /// No description provided for @certificatePinning.
   ///
@@ -338,6 +356,13 @@ abstract class AppLocalizations {
   String get addActionSheetSubtitle;
   String get addActionSheetEmpty;
   String get menuOpen;
+
+  String get drawerLoadError;
+
+  String get drawerSignInRequired;
+
+  String get drawerNoNavItems;
+
   String get todayWork;
   String get fieldWorkspace;
   String get viewFullDashboard;
@@ -361,6 +386,13 @@ abstract class AppLocalizations {
   String get addTreeOpenProject;
   String get addTreeWorkArea;
   String get addTreeProgram;
+
+  String get addTreeProgramHint;
+
+  String get addTreeValidationProgram;
+
+  String get addTreeValidationWorkArea;
+
   String get addTreeApprovedSpecies;
   String get addTreeSpecies;
   String get addTreeRoadSide;

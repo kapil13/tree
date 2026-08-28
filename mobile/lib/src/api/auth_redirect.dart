@@ -14,7 +14,7 @@ void redirectToLogin(WidgetRef ref, BuildContext context) {
   ref.invalidate(alertsProvider);
   ref.invalidate(userProvider);
   sessionController.signOut();
-  if (context.mounted) context.go('/login');
+  if (context.mounted) context.go('/login?session=expired');
 }
 
 /// If [err] is a 401 / expired session, redirect to login instead of showing an error screen.

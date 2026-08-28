@@ -68,7 +68,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biometricUnlock => 'Unlock with biometrics';
 
   @override
+  String get biometricUnlockHint =>
+      'Require fingerprint or face unlock when reopening the app.';
+
+  @override
+  String get biometricEnableFailed =>
+      'Biometric unlock was not enabled — confirmation failed.';
+
+  @override
+  String get biometricEnabled => 'Biometric unlock enabled.';
+
+  @override
+  String get biometricDisabled => 'Biometric unlock disabled.';
+
+  @override
   String get screenshotGuard => 'Block screenshots';
+
+  @override
+  String get screenshotGuardHint =>
+      'Blocks screenshots and screen recording on this device.';
+
+  @override
+  String get screenshotGuardEnabled => 'Screenshot guard enabled.';
+
+  @override
+  String get screenshotGuardDisabled => 'Screenshot guard disabled.';
 
   @override
   String get certificatePinning => 'Certificate pinning';
@@ -213,6 +237,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuOpen => 'Open menu';
 
   @override
+  String get drawerLoadError =>
+      'Could not load your profile for navigation. Check your connection and retry.';
+
+  @override
+  String get drawerSignInRequired => 'Sign in to see navigation.';
+
+  @override
+  String get drawerNoNavItems => 'No menu items are available for your account.';
+
+  @override
   String get todayWork => 'Today\'s work';
 
   @override
@@ -279,6 +313,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addTreeProgram => 'Registration program';
+
+  @override
+  String get addTreeProgramHint =>
+      'Choose BYOT citizen planting or a government program such as NHAI highway plantation.';
+
+  @override
+  String get addTreeValidationProgram => 'Select a registration program before continuing.';
+
+  @override
+  String get addTreeValidationWorkArea => 'Select a work area before continuing.';
 
   @override
   String get addTreeApprovedSpecies => 'Approved species';

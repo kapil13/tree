@@ -1,13 +1,16 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth_session.dart';
 import '../nav_access.dart';
 import '../nav_groups.dart';
+import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key, required this.currentLocation});
 
   final String currentLocation;
@@ -39,9 +42,14 @@ class AppDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (sessionController.authenticated && sessionController.user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => ensureSessionUser(ref));
+    }
     final l10n = AppLocalizations.of(context)!;
-    final user = sessionController.user;
+    final userAsync = ref.watch(userProvider);
+    final sessionUser = sessionController.user;
+    final user = sessionUser ?? userAsync.valueOrNull;
     final groups = mobileNavGroupsFor(user);
     final name = user?['full_name'] as String? ?? l10n.appTitle;
     final email = user?['email'] as String? ?? '';
@@ -127,65 +135,78 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  for (final group in groups) ...[
-                    if (!group.hideHeader && group.labelKey != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              child: user == null && sessionController.authenticated
+                  ? userAsync.when(
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (_, __) => _DrawerEmptyState(
+                          message: l10n.drawerLoadError,
+                          onRetry: () => ref.invalidate(userProvider)),
+                      data: (_) => const Center(child: CircularProgressIndicator()),
+                    )
+                  : groups.isEmpty
+                      ? _DrawerEmptyState(
+                          message: user == null ? l10n.drawerSignInRequired : l10n.drawerNoNavItems,
+                          onRetry: user == null ? null : () => ref.invalidate(userProvider),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           children: [
-                            Text(
-                              _label(l10n, group.labelKey!),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AranyixColors.forestDark,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            if (group.descKey != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  _label(l10n, group.descKey!),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AranyixColors.onSurfaceMuted,
-                                    height: 1.3,
+                            for (final group in groups) ...[
+                              if (!group.hideHeader && group.labelKey != null)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _label(l10n, group.labelKey!),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AranyixColors.forestDark,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      if (group.descKey != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            _label(l10n, group.descKey!),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AranyixColors.onSurfaceMuted,
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                              ),
+                              for (final item in group.items)
+                                _DrawerTile(
+                                  icon: item.icon,
+                                  label: _label(l10n, item.labelKey),
+                                  selected: mobileNavItemActive(currentLocation, item),
+                                  highlight: item.route == '/bioacoustic' || item.route == '/trees',
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    if (item.route == currentLocation) return;
+                                    if (item.route == '/home' ||
+                                        item.route == '/trees' ||
+                                        item.route == '/map' ||
+                                        item.route == '/notifications' ||
+                                        item.route == '/monitoring' ||
+                                        item.route == '/projects' ||
+                                        item.route == '/profile') {
+                                      context.go(item.route);
+                                    } else {
+                                      context.push(item.route);
+                                    }
+                                  },
+                                ),
+                            ],
                           ],
                         ),
-                      ),
-                    for (final item in group.items)
-                      _DrawerTile(
-                        icon: item.icon,
-                        label: _label(l10n, item.labelKey),
-                        selected: mobileNavItemActive(currentLocation, item),
-                        highlight: item.route == '/bioacoustic' || item.route == '/trees',
-                        onTap: () {
-                          Navigator.pop(context);
-                          if (item.route == currentLocation) return;
-                          if (item.route == '/home' ||
-                              item.route == '/trees' ||
-                              item.route == '/map' ||
-                              item.route == '/notifications' ||
-                              item.route == '/monitoring' ||
-                              item.route == '/projects' ||
-                              item.route == '/profile') {
-                            context.go(item.route);
-                          } else {
-                            context.push(item.route);
-                          }
-                        },
-                      ),
-                  ],
-                ],
-              ),
             ),
             if (canAddTrees(user))
               Padding(
@@ -211,6 +232,32 @@ class AppDrawer extends StatelessWidget {
                   label: Text(l10n.navBioacoustic),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerEmptyState extends StatelessWidget {
+  const _DrawerEmptyState({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AranyixColors.onSurfaceMuted)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+            ],
           ],
         ),
       ),

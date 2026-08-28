@@ -68,7 +68,30 @@ class AppLocalizationsHi extends AppLocalizations {
   String get biometricUnlock => 'बायोमेट्रिक से अनलॉक';
 
   @override
+  String get biometricUnlockHint =>
+      'ऐप दोबारा खोलने पर फिंगरप्रिंट या फेस अनलॉक आवश्यक।';
+
+  @override
+  String get biometricEnableFailed => 'बायोमेट्रिक अनलॉक सक्षम नहीं — पुष्टि विफल।';
+
+  @override
+  String get biometricEnabled => 'बायोमेट्रिक अनलॉक सक्षम।';
+
+  @override
+  String get biometricDisabled => 'बायोमेट्रिक अनलॉक अक्षम।';
+
+  @override
   String get screenshotGuard => 'स्क्रीनशॉट रोकें';
+
+  @override
+  String get screenshotGuardHint =>
+      'इस डिवाइस पर स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग रोकता है।';
+
+  @override
+  String get screenshotGuardEnabled => 'स्क्रीनशॉट गार्ड सक्षम।';
+
+  @override
+  String get screenshotGuardDisabled => 'स्क्रीनशॉट गार्ड अक्षम।';
 
   @override
   String get certificatePinning => 'प्रमाणपत्र पिनिंग';
@@ -211,6 +234,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get menuOpen => 'मेनू खोलें';
 
   @override
+  String get drawerLoadError =>
+      'नेविगेशन के लिए प्रोफ़ाइल लोड नहीं हो सकी। कनेक्शन जाँचें और पुनः प्रयास करें।';
+
+  @override
+  String get drawerSignInRequired => 'नेविगेशन देखने के लिए साइन इन करें।';
+
+  @override
+  String get drawerNoNavItems => 'आपके खाते के लिए कोई मेनू आइटम उपलब्ध नहीं।';
+
+  @override
   String get todayWork => 'आज का कार्य';
 
   @override
@@ -277,6 +310,16 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get addTreeProgram => 'पंजीकरण कार्यक्रम';
+
+  @override
+  String get addTreeProgramHint =>
+      'BYOT नागरिक रोपण या NHAI राजमार्ग जैसा सरकारी कार्यक्रम चुनें।';
+
+  @override
+  String get addTreeValidationProgram => 'आगे बढ़ने से पहले पंजीकरण कार्यक्रम चुनें।';
+
+  @override
+  String get addTreeValidationWorkArea => 'आगे बढ़ने से पहले कार्य क्षेत्र चुनें।';
 
   @override
   String get addTreeApprovedSpecies => 'अनुमोदित प्रजाति';
