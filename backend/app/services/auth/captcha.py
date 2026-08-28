@@ -24,9 +24,7 @@ def mobile_client_requested(
     if client.startswith("mobile/"):
         return True
     user_agent = request.headers.get("User-Agent", "")
-    if "Dart/" in user_agent or "okhttp" in user_agent.lower():
-        return True
-    return False
+    return "Dart/" in user_agent or "okhttp" in user_agent.lower()
 
 
 async def verify_captcha_token(
