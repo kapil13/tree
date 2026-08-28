@@ -69,7 +69,7 @@ class TreeListScreen extends ConsumerWidget {
                 final t = items[i] as Map<String, dynamic>;
                 final carbon = (t['current_carbon_kg'] as num?)?.toStringAsFixed(0) ?? '0';
                 return ListTile(
-                  title: Text(t['species_text'] ?? 'Unknown'),
+                  title: Text(t['species_text'] ?? l10n.unknownSpecies),
                   subtitle: Text('${t['public_code']} · ${t['current_health'] ?? 'unknown'}'),
                   trailing: Text('$carbon kg'),
                   onTap: () => context.push('/trees/${t['id']}'),

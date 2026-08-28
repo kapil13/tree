@@ -531,7 +531,7 @@ class _AiBriefCard extends StatelessWidget {
                   child: const Icon(Icons.auto_awesome, color: AranyixColors.forest, size: 20),
                 ),
                 const SizedBox(width: 12),
-                Text("Today's AI Brief", style: Theme.of(context).textTheme.titleLarge),
+                Text(l10n.homeAiBriefTitle, style: Theme.of(context).textTheme.titleLarge),
               ],
             ),
             const SizedBox(height: 18),

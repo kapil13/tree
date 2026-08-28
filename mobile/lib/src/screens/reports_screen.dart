@@ -10,13 +10,15 @@ import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 
-const _reportKinds = {
-  'tree': 'Tree portfolio',
-  'plantation': 'Plantation',
-  'carbon': 'Carbon',
-  'esg': 'ESG',
-  'biodiversity': 'Biodiversity',
-};
+const _reportKindKeys = ['tree', 'plantation', 'carbon', 'esg', 'biodiversity'];
+
+String _reportKindLabel(AppLocalizations l10n, String key) => switch (key) {
+      'tree' => l10n.reportTypeTree,
+      'plantation' => l10n.reportTypePlantation,
+      'carbon' => l10n.reportTypeCarbon,
+      'biodiversity' => l10n.reportTypeBiodiversity,
+      _ => key.toUpperCase(),
+    };
 
 const _formats = ['pdf', 'xlsx'];
 
@@ -142,17 +144,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _kind,
-                          decoration: const InputDecoration(labelText: 'Type'),
+                          decoration: InputDecoration(labelText: l10n.typeLabel),
                           items: [
-                            for (final e in _reportKinds.entries)
-                              DropdownMenuItem(value: e.key, child: Text(e.value)),
+                            for (final key in _reportKindKeys)
+                              DropdownMenuItem(value: key, child: Text(_reportKindLabel(l10n, key))),
                           ],
                           onChanged: (v) => setState(() => _kind = v ?? _kind),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           value: _format,
-                          decoration: const InputDecoration(labelText: 'Format'),
+                          decoration: InputDecoration(labelText: l10n.formatLabel),
                           items: [
                             for (final f in _formats) DropdownMenuItem(value: f, child: Text(f.toUpperCase())),
                           ],

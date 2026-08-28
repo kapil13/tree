@@ -1017,4 +1017,310 @@ class AppLocalizationsEn extends AppLocalizations {
   String devHint(String hint) {
     return 'Dev hint: $hint';
   }
+
+  @override
+  String get registrationPrograms => 'Registration programs';
+
+  @override
+  String get registrationProgramsUpdated => 'Registration programs updated.';
+
+  @override
+  String get saveProgramPreferences => 'Save program preferences';
+
+  @override
+  String get biometricConfirmReason => 'Confirm to enable biometric unlock';
+
+  @override
+  String get defaultUserName => 'Aranyix user';
+
+  @override
+  String get fullNameLabel => 'Full name *';
+
+  @override
+  String get fullNameValidation => 'Enter your full name';
+
+  @override
+  String get loginEmailLabel => 'Login email';
+
+  @override
+  String get loginEmailHint => 'Used to sign in. Cannot be changed here.';
+
+  @override
+  String get phoneLabel => 'Phone';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get stateLabel => 'State';
+
+  @override
+  String get notSet => 'Not set';
+
+  @override
+  String get setDateOfBirth => 'Set date of birth';
+
+  @override
+  String ageYearsCount(int count) {
+    return '$count years';
+  }
+
+  @override
+  String get saveProfile => 'Save profile';
+
+  @override
+  String get treeFallback => 'Tree';
+
+  @override
+  String get healthLabel => 'Health';
+
+  @override
+  String get carbonLabel => 'Carbon';
+
+  @override
+  String get dbhCmLabel => 'DBH';
+
+  @override
+  String get heightMLabel => 'Height';
+
+  @override
+  String get satelliteLabel => 'Satellite';
+
+  @override
+  String get riskLabel => 'Risk';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get ndviLabel => 'NDVI';
+
+  @override
+  String get analyzing => 'Analyzing…';
+
+  @override
+  String get runAiAnalysis => 'Run AI analysis';
+
+  @override
+  String get checkingSatellite => 'Checking satellite…';
+
+  @override
+  String get runSatelliteHealth => 'Run satellite health';
+
+  @override
+  String get saveCorridor => 'Save corridor';
+
+  @override
+  String get savePolygonWorkArea => 'Save polygon work area';
+
+  @override
+  String get nameLabel => 'Name';
+
+  @override
+  String get projectLabel => 'Project';
+
+  @override
+  String get projectFallback => 'Project';
+
+  @override
+  String get bufferMLabel => 'Buffer (m)';
+
+  @override
+  String get saveWorkArea => 'Save work area';
+
+  @override
+  String get addTreeTooltip => 'Add tree';
+
+  @override
+  String get polygonModeTooltip => 'Polygon mode';
+
+  @override
+  String get corridorModeTooltip => 'Corridor / linear mode';
+
+  @override
+  String get creditsSummaryHint =>
+      'Organization credit ledger summary (tCO₂e). Estimated until verified / issued.';
+
+  @override
+  String get grossCredits => 'Gross credits';
+
+  @override
+  String get bufferWithheld => 'Buffer withheld';
+
+  @override
+  String get netCredits => 'Net credits';
+
+  @override
+  String get issuedCredits => 'Issued credits';
+
+  @override
+  String get homeAiBriefTitle => 'Today\'s AI Brief';
+
+  @override
+  String get securityCheck => 'Security check';
+
+  @override
+  String get unknownSpecies => 'Unknown';
+
+  @override
+  String get workAreaFallback => 'Work area';
+
+  @override
+  String get areaFallback => 'Area';
+
+  @override
+  String get violationFallback => 'Violation';
+
+  @override
+  String get modeLabel => 'Mode';
+
+  @override
+  String get treesCountLabel => 'Trees';
+
+  @override
+  String get violationsLabel => 'Violations';
+
+  @override
+  String get compliancePassed => 'Compliance check passed';
+
+  @override
+  String get complianceIssuesFound => 'Compliance issues found';
+
+  @override
+  String get treeSaved => 'Tree saved';
+
+  @override
+  String get submitting => 'Submitting…';
+
+  @override
+  String get submitForReview => 'Submit for review';
+
+  @override
+  String get orgDetailsTitle => 'Organization details';
+
+  @override
+  String get workEmailLabel => 'Work email';
+
+  @override
+  String get contactPhoneLabel => 'Contact phone';
+
+  @override
+  String get updatePassword => 'Update password';
+
+  @override
+  String get sendResetCode => 'Send reset code';
+
+  @override
+  String get sendSmsCode => 'Send SMS code';
+
+  @override
+  String get applicationReceivedTitle => 'Application received';
+
+  @override
+  String get verifyPhone => 'Verify phone';
+
+  @override
+  String get verifyEmail => 'Verify email';
+
+  @override
+  String get creating => 'Creating…';
+
+  @override
+  String get continueBtn => 'Continue';
+
+  @override
+  String get verifying => 'Verifying…';
+
+  @override
+  String get finishing => 'Finishing…';
+
+  @override
+  String get finish => 'Finish';
+
+  @override
+  String get joiningAs => 'I am joining as';
+
+  @override
+  String get mobileLabel => 'Mobile';
+
+  @override
+  String get yourJourney => 'Your journey';
+
+  @override
+  String get reportTypeTree => 'Tree portfolio';
+
+  @override
+  String get reportTypePlantation => 'Plantation';
+
+  @override
+  String get reportTypeCarbon => 'Carbon';
+
+  @override
+  String get reportTypeBiodiversity => 'Biodiversity';
+
+  @override
+  String get typeLabel => 'Type';
+
+  @override
+  String get formatLabel => 'Format';
+
+  @override
+  String get survivalStatusLabel => 'Survival status';
+
+  @override
+  String get measurementMethodLabel => 'Measurement method';
+
+  @override
+  String get optionalRemeasure => 'Optional remeasure';
+
+  @override
+  String get optionalHint => 'Optional';
+
+  @override
+  String get remarksLabel => 'Remarks';
+
+  @override
+  String get submitSurvivalSurvey => 'Submit survival survey';
+
+  @override
+  String get survivalLive => 'Live';
+
+  @override
+  String get survivalStressed => 'Stressed';
+
+  @override
+  String get survivalDead => 'Dead';
+
+  @override
+  String get survivalReplaced => 'Replaced';
+
+  @override
+  String get visualEstimate => 'Visual estimate';
+
+  @override
+  String get caliper => 'Caliper';
+
+  @override
+  String get photogrammetry => 'Photogrammetry';
+
+  @override
+  String get medianSide => 'Median';
+
+  @override
+  String get generalCategory => 'General';
+
+  @override
+  String get apiServerLabel => 'API server';
+
+  @override
+  String get securityCheckUnavailable => 'Security check unavailable.';
+
+  @override
+  String get welcomeJourneySub => 'From field capture to executive clarity.';
+
+  @override
+  String get indiaFirstMrv => 'India-first MRV';
+
+  @override
+  String get treeSavedReadyNext => 'Tree saved. Ready for the next gap.';
 }

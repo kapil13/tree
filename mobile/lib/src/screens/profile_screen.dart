@@ -79,9 +79,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final api = await ref.read(apiClientProvider.future);
       await api.updatePlantingProgramMemberships(_selected.toList());
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
         _savingPrograms = false;
-        _programMessage = 'Registration programs updated.';
+        _programMessage = l10n.registrationProgramsUpdated;
       });
       await _loadPrograms();
     } catch (e) {
@@ -134,11 +135,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () => context.push('/profile/edit'),
                 ),
                 const SizedBox(height: 16),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(4, 8, 4, 0),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                   child: Text(
-                    'Registration programs',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    l10n.registrationPrograms,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                   ),
                 ),
                 ..._buildProgramSection(l10n),
@@ -183,7 +184,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onChanged: (v) async {
                       if (v) {
                         final ok = await PushRegistrationService.instance
-                            .authenticateBiometric(reason: 'Confirm to enable biometric unlock');
+                            .authenticateBiometric(reason: l10n.biometricConfirmReason);
                         if (!ok) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -253,6 +254,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(Map<String, dynamic> user) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -280,7 +282,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user['full_name'] as String? ?? 'Aranyix user',
+                  user['full_name'] as String? ?? l10n.defaultUserName,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 17,
@@ -354,7 +356,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.all(16),
           child: FilledButton(
             onPressed: _savingPrograms ? null : _savePrograms,
-            child: Text(_savingPrograms ? 'Saving…' : 'Save program preferences'),
+            child: Text(_savingPrograms ? l10n.saving : l10n.saveProgramPreferences),
           ),
         ),
       if (_programMessage != null)

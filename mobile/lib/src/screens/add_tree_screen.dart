@@ -545,7 +545,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (registerNext && widget.projectId != null) {
         setState(() {
           _sessionSavedCount += 1;
-          _successMessage = 'Tree saved. Ready for the next gap.';
+          _successMessage = l10n.treeSavedReadyNext;
           _photoKeys.clear();
           _localPhotoPaths.clear();
           _lat = null;
@@ -569,7 +569,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         } catch (_) {}
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_successMessage ?? 'Tree saved')),
+          SnackBar(content: Text(_successMessage ?? l10n.treeSaved)),
         );
         return;
       }
@@ -997,6 +997,7 @@ class _ComplianceBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final passed = result['passed'] == true;
     final issues = (result['issues'] as List<dynamic>?) ?? [];
     final chainage = result['chainage_km'];
@@ -1014,10 +1015,10 @@ class _ComplianceBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            passed ? 'Compliance check passed' : 'Compliance issues found',
+            passed ? l10n.compliancePassed : l10n.complianceIssuesFound,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (chainage != null) Text('Chainage: ${chainage} km'),
+          if (chainage != null) Text(l10n.chainageKm('$chainage')),
           for (final issue in issues)
             Text(
               '• ${(issue as Map)['message'] ?? issue['violation_type']}',

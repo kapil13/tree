@@ -141,6 +141,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AranyixRadii.card)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return Padding(
           padding: EdgeInsets.only(
             left: 20,
@@ -155,23 +156,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    _mode == _DrawMode.corridor ? 'Save corridor' : 'Save polygon work area',
+                    _mode == _DrawMode.corridor ? sheetL10n.saveCorridor : sheetL10n.savePolygonWorkArea,
                     style: Theme.of(ctx).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Name'),
+                    decoration: InputDecoration(labelText: sheetL10n.nameLabel),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: projectId,
-                    decoration: const InputDecoration(labelText: 'Project'),
+                    decoration: InputDecoration(labelText: sheetL10n.projectLabel),
                     items: [
                       for (final raw in projects)
                         DropdownMenuItem(
                           value: (raw as Map)['id'] as String,
-                          child: Text(raw['name'] as String? ?? 'Project'),
+                          child: Text(raw['name'] as String? ?? sheetL10n.projectFallback),
                         ),
                     ],
                     onChanged: (v) => setSheet(() => projectId = v),
@@ -180,7 +181,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: bufferCtrl,
-                      decoration: const InputDecoration(labelText: 'Buffer (m)'),
+                      decoration: InputDecoration(labelText: sheetL10n.bufferMLabel),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
                   ],
@@ -198,7 +199,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               bufferM: double.tryParse(bufferCtrl.text.trim()) ?? 8,
                             );
                           },
-                    child: Text(_saving ? 'Saving…' : 'Save work area'),
+                    child: Text(_saving ? sheetL10n.saving : sheetL10n.saveWorkArea),
                   ),
                 ],
               );
@@ -282,20 +283,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         actions: [
           if (showFieldOps)
             IconButton(
-              tooltip: 'Field ops',
+              tooltip: l10n.fieldOps,
               onPressed: () => context.push('/field-ops'),
               icon: const Icon(Icons.construction_outlined),
             ),
           if (_mode != _DrawMode.none) ...[
             IconButton(
-              tooltip: 'Undo point',
+              tooltip: l10n.undoPoint,
               onPressed: _drawPoints.isEmpty
                   ? null
                   : () => setState(() => _drawPoints.removeLast()),
               icon: const Icon(Icons.undo),
             ),
             IconButton(
-              tooltip: 'Cancel draw',
+              tooltip: l10n.cancelDraw,
               onPressed: () => setState(() {
                 _mode = _DrawMode.none;
                 _drawPoints.clear();
@@ -303,7 +304,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               icon: const Icon(Icons.close),
             ),
             IconButton(
-              tooltip: 'Save',
+              tooltip: l10n.save,
               onPressed: _saving ? null : _openSaveSheet,
               icon: const Icon(Icons.check),
             ),
@@ -451,7 +452,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     if (canAddTrees(user))
                       FloatingActionButton.small(
                         heroTag: 'map_add_tree',
-                        tooltip: 'Add tree',
+                        tooltip: l10n.addTreeTooltip,
                         onPressed: () => context.push('/trees/new'),
                         child: const Icon(Icons.add),
                       ),
@@ -461,7 +462,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         heroTag: 'map_polygon',
                         backgroundColor: _mode == _DrawMode.polygon ? AranyixColors.forest : null,
                         foregroundColor: _mode == _DrawMode.polygon ? Colors.white : null,
-                        tooltip: 'Polygon mode',
+                        tooltip: l10n.polygonModeTooltip,
                         onPressed: () => setState(() {
                           _mode = _mode == _DrawMode.polygon ? _DrawMode.none : _DrawMode.polygon;
                           _drawPoints.clear();
@@ -473,7 +474,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         heroTag: 'map_corridor',
                         backgroundColor: _mode == _DrawMode.corridor ? AranyixColors.forest : null,
                         foregroundColor: _mode == _DrawMode.corridor ? Colors.white : null,
-                        tooltip: 'Corridor / linear mode',
+                        tooltip: l10n.corridorModeTooltip,
                         onPressed: () => setState(() {
                           _mode = _mode == _DrawMode.corridor ? _DrawMode.none : _DrawMode.corridor;
                           _drawPoints.clear();

@@ -87,7 +87,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     Row(
                       children: [
                         Text(
-                          'Your journey',
+                          l10n.yourJourney,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 color: AranyixColors.forestDark,
                               ),
@@ -104,9 +104,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'From field capture to executive clarity.',
-                      style: TextStyle(
+                    Text(
+                      l10n.welcomeJourneySub,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: AranyixColors.onSurfaceMuted,
                       ),

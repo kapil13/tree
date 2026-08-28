@@ -170,19 +170,26 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _survivalStatus,
-            decoration: const InputDecoration(labelText: 'Survival status'),
-            items: _survivalStatuses
-                .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
-                .toList(),
+            decoration: InputDecoration(labelText: l10n.survivalStatusLabel),
+            items: [
+              DropdownMenuItem(value: 'live', child: Text(l10n.survivalLive)),
+              DropdownMenuItem(value: 'stressed', child: Text(l10n.survivalStressed)),
+              DropdownMenuItem(value: 'dead', child: Text(l10n.survivalDead)),
+              DropdownMenuItem(value: 'replaced', child: Text(l10n.survivalReplaced)),
+              const DropdownMenuItem(value: 'missing', child: Text('Missing / uprooted')),
+            ],
             onChanged: _submitting ? null : (v) => setState(() => _survivalStatus = v ?? _survivalStatus),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _measurementMethod,
-            decoration: const InputDecoration(labelText: 'Measurement method'),
-            items: _measurementMethods
-                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
-                .toList(),
+            decoration: InputDecoration(labelText: l10n.measurementMethodLabel),
+            items: [
+              const DropdownMenuItem(value: 'tape', child: Text('Tape measure (DBH at 1.3 m)')),
+              DropdownMenuItem(value: 'caliper', child: Text(l10n.caliper)),
+              const DropdownMenuItem(value: 'clinometer', child: Text('Clinometer (height)')),
+              DropdownMenuItem(value: 'visual_estimate', child: Text(l10n.visualEstimate)),
+            ],
             onChanged: _submitting ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
           ),
           const SizedBox(height: 12),
@@ -194,7 +201,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: l10n.dbhLabel,
-                    hintText: 'Optional remeasure',
+                    hintText: l10n.optionalRemeasure,
                   ),
                 ),
               ),
@@ -205,7 +212,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: l10n.heightLabel,
-                    hintText: 'Optional',
+                    hintText: l10n.optionalHint,
                   ),
                 ),
               ),
@@ -214,8 +221,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _remarks,
-            decoration: const InputDecoration(
-              labelText: 'Remarks',
+            decoration: InputDecoration(
+              labelText: l10n.remarksLabel,
               hintText: 'Condition, replacement notes…',
             ),
             maxLines: 3,
@@ -227,7 +234,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _submitting || loc == null ? null : _submit,
-            child: Text(_submitting ? 'Submitting…' : 'Submit survival survey'),
+            child: Text(_submitting ? l10n.submitting : l10n.submitSurvivalSurvey),
           ),
         ],
       ),

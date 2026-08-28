@@ -148,30 +148,30 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               children: [
                 TextFormField(
                   controller: _fullName,
-                  decoration: const InputDecoration(labelText: 'Full name *'),
+                  decoration: InputDecoration(labelText: l10n.fullNameLabel),
                   validator: (v) =>
-                      (v == null || v.trim().length < 2) ? 'Enter your full name' : null,
+                      (v == null || v.trim().length < 2) ? l10n.fullNameValidation : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   initialValue: user['email'] as String? ?? '',
-                  decoration: const InputDecoration(
-                    labelText: 'Login email',
-                    helperText: 'Used to sign in. Cannot be changed here.',
+                  decoration: InputDecoration(
+                    labelText: l10n.loginEmailLabel,
+                    helperText: l10n.loginEmailHint,
                   ),
                   readOnly: true,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _phone,
-                  decoration: const InputDecoration(labelText: 'Phone'),
+                  decoration: InputDecoration(labelText: l10n.phoneLabel),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.dateOfBirth),
-                  subtitle: Text(_dob == null ? 'Not set' : _formatDate(_dob)!),
+                  subtitle: Text(_dob == null ? l10n.notSet : _formatDate(_dob)!),
                   trailing: const Icon(Icons.calendar_today_outlined),
                   onTap: _busy
                       ? null
@@ -183,12 +183,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.age),
-                  subtitle: Text(age == null ? 'Set date of birth' : '$age years'),
+                  subtitle: Text(age == null ? l10n.setDateOfBirth : l10n.ageYearsCount(age)),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.dateOfMarriage),
-                  subtitle: Text(_marriage == null ? 'Not set' : _formatDate(_marriage)!),
+                  subtitle: Text(_marriage == null ? l10n.notSet : _formatDate(_marriage)!),
                   trailing: const Icon(Icons.calendar_today_outlined),
                   onTap: _busy
                       ? null
@@ -201,12 +201,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _city,
-                  decoration: const InputDecoration(labelText: 'City'),
+                  decoration: InputDecoration(labelText: l10n.cityLabel),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _state,
-                  decoration: const InputDecoration(labelText: 'State'),
+                  decoration: InputDecoration(labelText: l10n.stateLabel),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -215,7 +215,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _busy ? null : _save,
-                  child: Text(_busy ? 'Saving…' : 'Save profile'),
+                  child: Text(_busy ? l10n.saving : l10n.saveProfile),
                 ),
               ],
             ),

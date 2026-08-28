@@ -141,7 +141,7 @@ class TurnstileCaptchaState extends State<TurnstileCaptcha> {
                 Icon(Icons.verified_user_outlined, size: 16, color: AranyixColors.forest.withValues(alpha: 0.8)),
                 const SizedBox(width: 6),
                 Text(
-                  'Security check',
+                  context.l10n.securityCheck,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -173,7 +173,7 @@ class TurnstileCaptchaState extends State<TurnstileCaptcha> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    _errorMessage ?? 'Security check unavailable.',
+                    _errorMessage ?? context.l10n.securityCheckUnavailable,
                     style: const TextStyle(fontSize: 12, color: AranyixColors.warningOnContainer),
                   ),
                   const SizedBox(height: 6),

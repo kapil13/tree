@@ -1013,4 +1013,311 @@ class AppLocalizationsHi extends AppLocalizations {
   String devHint(String hint) {
     return 'Dev संकेत: $hint';
   }
+
+  @override
+  String get registrationPrograms => 'पंजीकरण कार्यक्रम';
+
+  @override
+  String get registrationProgramsUpdated => 'पंजीकरण कार्यक्रम अपडेट हुए।';
+
+  @override
+  String get saveProgramPreferences => 'कार्यक्रम प्राथमिकताएँ सहेजें';
+
+  @override
+  String get biometricConfirmReason =>
+      'बायोमेट्रिक अनलॉक सक्षम करने की पुष्टि करें';
+
+  @override
+  String get defaultUserName => 'Aranyix उपयोगकर्ता';
+
+  @override
+  String get fullNameLabel => 'पूरा नाम *';
+
+  @override
+  String get fullNameValidation => 'अपना पूरा नाम दर्ज करें';
+
+  @override
+  String get loginEmailLabel => 'लॉगिन ईमेल';
+
+  @override
+  String get loginEmailHint => 'साइन इन के लिए उपयोग। यहाँ बदला नहीं जा सकता।';
+
+  @override
+  String get phoneLabel => 'फ़ोन';
+
+  @override
+  String get cityLabel => 'शहर';
+
+  @override
+  String get stateLabel => 'राज्य';
+
+  @override
+  String get notSet => 'सेट नहीं';
+
+  @override
+  String get setDateOfBirth => 'जन्म तिथि सेट करें';
+
+  @override
+  String ageYearsCount(int count) {
+    return '$count वर्ष';
+  }
+
+  @override
+  String get saveProfile => 'प्रोफ़ाइल सहेजें';
+
+  @override
+  String get treeFallback => 'पेड़';
+
+  @override
+  String get healthLabel => 'स्वास्थ्य';
+
+  @override
+  String get carbonLabel => 'कार्बन';
+
+  @override
+  String get dbhCmLabel => 'DBH';
+
+  @override
+  String get heightMLabel => 'ऊँचाई';
+
+  @override
+  String get satelliteLabel => 'उपग्रह';
+
+  @override
+  String get riskLabel => 'जोखिम';
+
+  @override
+  String get statusLabel => 'स्थिति';
+
+  @override
+  String get ndviLabel => 'NDVI';
+
+  @override
+  String get analyzing => 'विश्लेषण…';
+
+  @override
+  String get runAiAnalysis => 'AI विश्लेषण चलाएँ';
+
+  @override
+  String get checkingSatellite => 'उपग्रह जाँच…';
+
+  @override
+  String get runSatelliteHealth => 'उपग्रह स्वास्थ्य चलाएँ';
+
+  @override
+  String get saveCorridor => 'कॉरिडोर सहेजें';
+
+  @override
+  String get savePolygonWorkArea => 'बहुभुज कार्य क्षेत्र सहेजें';
+
+  @override
+  String get nameLabel => 'नाम';
+
+  @override
+  String get projectLabel => 'परियोजना';
+
+  @override
+  String get projectFallback => 'परियोजना';
+
+  @override
+  String get bufferMLabel => 'बफ़र (m)';
+
+  @override
+  String get saveWorkArea => 'कार्य क्षेत्र सहेजें';
+
+  @override
+  String get addTreeTooltip => 'पेड़ जोड़ें';
+
+  @override
+  String get polygonModeTooltip => 'बहुभुज मोड';
+
+  @override
+  String get corridorModeTooltip => 'कॉरिडोर / रेखीय मोड';
+
+  @override
+  String get creditsSummaryHint =>
+      'संगठन क्रेडिट खाता सार (tCO₂e)। सत्यापित/जारी होने तक अनुमानित।';
+
+  @override
+  String get grossCredits => 'सकल क्रेडिट';
+
+  @override
+  String get bufferWithheld => 'बफ़र रोक';
+
+  @override
+  String get netCredits => 'शुद्ध क्रेडिट';
+
+  @override
+  String get issuedCredits => 'जारी क्रेडिट';
+
+  @override
+  String get homeAiBriefTitle => 'आज का AI सार';
+
+  @override
+  String get securityCheck => 'सुरक्षा जाँच';
+
+  @override
+  String get unknownSpecies => 'अज्ञात';
+
+  @override
+  String get workAreaFallback => 'कार्य क्षेत्र';
+
+  @override
+  String get areaFallback => 'क्षेत्र';
+
+  @override
+  String get violationFallback => 'उल्लंघन';
+
+  @override
+  String get modeLabel => 'मोड';
+
+  @override
+  String get treesCountLabel => 'पेड़';
+
+  @override
+  String get violationsLabel => 'उल्लंघन';
+
+  @override
+  String get compliancePassed => 'अनुपालन जाँच पास';
+
+  @override
+  String get complianceIssuesFound => 'अनुपालन समस्याएँ मिलीं';
+
+  @override
+  String get treeSaved => 'पेड़ सहेजा';
+
+  @override
+  String get submitting => 'जमा हो रहा है…';
+
+  @override
+  String get submitForReview => 'समीक्षा के लिए जमा करें';
+
+  @override
+  String get orgDetailsTitle => 'संगठन विवरण';
+
+  @override
+  String get workEmailLabel => 'कार्य ईमेल';
+
+  @override
+  String get contactPhoneLabel => 'संपर्क फ़ोन';
+
+  @override
+  String get updatePassword => 'पासवर्ड अपडेट करें';
+
+  @override
+  String get sendResetCode => 'रीसेट कोड भेजें';
+
+  @override
+  String get sendSmsCode => 'SMS कोड भेजें';
+
+  @override
+  String get applicationReceivedTitle => 'आवेदन प्राप्त';
+
+  @override
+  String get verifyPhone => 'फ़ोन सत्यापित करें';
+
+  @override
+  String get verifyEmail => 'ईमेल सत्यापित करें';
+
+  @override
+  String get creating => 'बनाया जा रहा है…';
+
+  @override
+  String get continueBtn => 'जारी रखें';
+
+  @override
+  String get verifying => 'सत्यापन…';
+
+  @override
+  String get finishing => 'पूरा हो रहा है…';
+
+  @override
+  String get finish => 'समाप्त';
+
+  @override
+  String get joiningAs => 'मैं इस रूप में जुड़ रहा/रही हूँ';
+
+  @override
+  String get mobileLabel => 'मोबाइल';
+
+  @override
+  String get yourJourney => 'आपकी यात्रा';
+
+  @override
+  String get reportTypeTree => 'पेड़ पोर्टफोलियो';
+
+  @override
+  String get reportTypePlantation => 'वृक्षारोपण';
+
+  @override
+  String get reportTypeCarbon => 'कार्बन';
+
+  @override
+  String get reportTypeBiodiversity => 'जैव विविधता';
+
+  @override
+  String get typeLabel => 'प्रकार';
+
+  @override
+  String get formatLabel => 'प्रारूप';
+
+  @override
+  String get survivalStatusLabel => 'अस्तित्व स्थिति';
+
+  @override
+  String get measurementMethodLabel => 'माप विधि';
+
+  @override
+  String get optionalRemeasure => 'वैकल्पिक पुनः माप';
+
+  @override
+  String get optionalHint => 'वैकल्पिक';
+
+  @override
+  String get remarksLabel => 'टिप्पणी';
+
+  @override
+  String get submitSurvivalSurvey => 'अस्तित्व सर्वे जमा करें';
+
+  @override
+  String get survivalLive => 'जीवित';
+
+  @override
+  String get survivalStressed => 'तनावग्रस्त';
+
+  @override
+  String get survivalDead => 'मृत';
+
+  @override
+  String get survivalReplaced => 'प्रतिस्थापित';
+
+  @override
+  String get visualEstimate => 'दृश्य अनुमान';
+
+  @override
+  String get caliper => 'कैलिपर';
+
+  @override
+  String get photogrammetry => 'फोटोग्रामmetry';
+
+  @override
+  String get medianSide => 'मध्य';
+
+  @override
+  String get generalCategory => 'सामान्य';
+
+  @override
+  String get apiServerLabel => 'API सर्वर';
+
+  @override
+  String get securityCheckUnavailable => 'सुरक्षा जाँच उपलब्ध नहीं।';
+
+  @override
+  String get welcomeJourneySub => 'फील्ड कैप्चर से कार्यकारी स्पष्टता तक।';
+
+  @override
+  String get indiaFirstMrv => 'India-first MRV';
+
+  @override
+  String get treeSavedReadyNext => 'पेड़ सहेजा। अगले अंतराल के लिए तैयार।';
 }

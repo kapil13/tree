@@ -1921,6 +1921,612 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dev hint: {hint}'**
   String devHint(String hint);
+
+  /// No description provided for @registrationPrograms.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration programs'**
+  String get registrationPrograms;
+
+  /// No description provided for @registrationProgramsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration programs updated.'**
+  String get registrationProgramsUpdated;
+
+  /// No description provided for @saveProgramPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Save program preferences'**
+  String get saveProgramPreferences;
+
+  /// No description provided for @biometricConfirmReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to enable biometric unlock'**
+  String get biometricConfirmReason;
+
+  /// No description provided for @defaultUserName.
+  ///
+  /// In en, this message translates to:
+  /// **'Aranyix user'**
+  String get defaultUserName;
+
+  /// No description provided for @fullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name *'**
+  String get fullNameLabel;
+
+  /// No description provided for @fullNameValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get fullNameValidation;
+
+  /// No description provided for @loginEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Login email'**
+  String get loginEmailLabel;
+
+  /// No description provided for @loginEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to sign in. Cannot be changed here.'**
+  String get loginEmailHint;
+
+  /// No description provided for @phoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phoneLabel;
+
+  /// No description provided for @cityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get cityLabel;
+
+  /// No description provided for @stateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get stateLabel;
+
+  /// No description provided for @notSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get notSet;
+
+  /// No description provided for @setDateOfBirth.
+  ///
+  /// In en, this message translates to:
+  /// **'Set date of birth'**
+  String get setDateOfBirth;
+
+  /// No description provided for @ageYearsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} years'**
+  String ageYearsCount(int count);
+
+  /// No description provided for @saveProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save profile'**
+  String get saveProfile;
+
+  /// No description provided for @treeFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree'**
+  String get treeFallback;
+
+  /// No description provided for @healthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get healthLabel;
+
+  /// No description provided for @carbonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon'**
+  String get carbonLabel;
+
+  /// No description provided for @dbhCmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DBH'**
+  String get dbhCmLabel;
+
+  /// No description provided for @heightMLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get heightMLabel;
+
+  /// No description provided for @satelliteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite'**
+  String get satelliteLabel;
+
+  /// No description provided for @riskLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk'**
+  String get riskLabel;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// No description provided for @ndviLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'NDVI'**
+  String get ndviLabel;
+
+  /// No description provided for @analyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing…'**
+  String get analyzing;
+
+  /// No description provided for @runAiAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Run AI analysis'**
+  String get runAiAnalysis;
+
+  /// No description provided for @checkingSatellite.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking satellite…'**
+  String get checkingSatellite;
+
+  /// No description provided for @runSatelliteHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Run satellite health'**
+  String get runSatelliteHealth;
+
+  /// No description provided for @saveCorridor.
+  ///
+  /// In en, this message translates to:
+  /// **'Save corridor'**
+  String get saveCorridor;
+
+  /// No description provided for @savePolygonWorkArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Save polygon work area'**
+  String get savePolygonWorkArea;
+
+  /// No description provided for @nameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameLabel;
+
+  /// No description provided for @projectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectLabel;
+
+  /// No description provided for @projectFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectFallback;
+
+  /// No description provided for @bufferMLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Buffer (m)'**
+  String get bufferMLabel;
+
+  /// No description provided for @saveWorkArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Save work area'**
+  String get saveWorkArea;
+
+  /// No description provided for @addTreeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tree'**
+  String get addTreeTooltip;
+
+  /// No description provided for @polygonModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Polygon mode'**
+  String get polygonModeTooltip;
+
+  /// No description provided for @corridorModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Corridor / linear mode'**
+  String get corridorModeTooltip;
+
+  /// No description provided for @creditsSummaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization credit ledger summary (tCO₂e). Estimated until verified / issued.'**
+  String get creditsSummaryHint;
+
+  /// No description provided for @grossCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross credits'**
+  String get grossCredits;
+
+  /// No description provided for @bufferWithheld.
+  ///
+  /// In en, this message translates to:
+  /// **'Buffer withheld'**
+  String get bufferWithheld;
+
+  /// No description provided for @netCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Net credits'**
+  String get netCredits;
+
+  /// No description provided for @issuedCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued credits'**
+  String get issuedCredits;
+
+  /// No description provided for @homeAiBriefTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s AI Brief'**
+  String get homeAiBriefTitle;
+
+  /// No description provided for @securityCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Security check'**
+  String get securityCheck;
+
+  /// No description provided for @unknownSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get unknownSpecies;
+
+  /// No description provided for @workAreaFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Work area'**
+  String get workAreaFallback;
+
+  /// No description provided for @areaFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get areaFallback;
+
+  /// No description provided for @violationFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Violation'**
+  String get violationFallback;
+
+  /// No description provided for @modeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get modeLabel;
+
+  /// No description provided for @treesCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trees'**
+  String get treesCountLabel;
+
+  /// No description provided for @violationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations'**
+  String get violationsLabel;
+
+  /// No description provided for @compliancePassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance check passed'**
+  String get compliancePassed;
+
+  /// No description provided for @complianceIssuesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance issues found'**
+  String get complianceIssuesFound;
+
+  /// No description provided for @treeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree saved'**
+  String get treeSaved;
+
+  /// No description provided for @submitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting…'**
+  String get submitting;
+
+  /// No description provided for @submitForReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for review'**
+  String get submitForReview;
+
+  /// No description provided for @orgDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization details'**
+  String get orgDetailsTitle;
+
+  /// No description provided for @workEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Work email'**
+  String get workEmailLabel;
+
+  /// No description provided for @contactPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone'**
+  String get contactPhoneLabel;
+
+  /// No description provided for @updatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Update password'**
+  String get updatePassword;
+
+  /// No description provided for @sendResetCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send reset code'**
+  String get sendResetCode;
+
+  /// No description provided for @sendSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send SMS code'**
+  String get sendSmsCode;
+
+  /// No description provided for @applicationReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Application received'**
+  String get applicationReceivedTitle;
+
+  /// No description provided for @verifyPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify phone'**
+  String get verifyPhone;
+
+  /// No description provided for @verifyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify email'**
+  String get verifyEmail;
+
+  /// No description provided for @creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating…'**
+  String get creating;
+
+  /// No description provided for @continueBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueBtn;
+
+  /// No description provided for @verifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get verifying;
+
+  /// No description provided for @finishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing…'**
+  String get finishing;
+
+  /// No description provided for @finish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finish;
+
+  /// No description provided for @joiningAs.
+  ///
+  /// In en, this message translates to:
+  /// **'I am joining as'**
+  String get joiningAs;
+
+  /// No description provided for @mobileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get mobileLabel;
+
+  /// No description provided for @yourJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Your journey'**
+  String get yourJourney;
+
+  /// No description provided for @reportTypeTree.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree portfolio'**
+  String get reportTypeTree;
+
+  /// No description provided for @reportTypePlantation.
+  ///
+  /// In en, this message translates to:
+  /// **'Plantation'**
+  String get reportTypePlantation;
+
+  /// No description provided for @reportTypeCarbon.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon'**
+  String get reportTypeCarbon;
+
+  /// No description provided for @reportTypeBiodiversity.
+  ///
+  /// In en, this message translates to:
+  /// **'Biodiversity'**
+  String get reportTypeBiodiversity;
+
+  /// No description provided for @typeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get typeLabel;
+
+  /// No description provided for @formatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get formatLabel;
+
+  /// No description provided for @survivalStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival status'**
+  String get survivalStatusLabel;
+
+  /// No description provided for @measurementMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement method'**
+  String get measurementMethodLabel;
+
+  /// No description provided for @optionalRemeasure.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional remeasure'**
+  String get optionalRemeasure;
+
+  /// No description provided for @optionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get optionalHint;
+
+  /// No description provided for @remarksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remarks'**
+  String get remarksLabel;
+
+  /// No description provided for @submitSurvivalSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit survival survey'**
+  String get submitSurvivalSurvey;
+
+  /// No description provided for @survivalLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get survivalLive;
+
+  /// No description provided for @survivalStressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Stressed'**
+  String get survivalStressed;
+
+  /// No description provided for @survivalDead.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead'**
+  String get survivalDead;
+
+  /// No description provided for @survivalReplaced.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced'**
+  String get survivalReplaced;
+
+  /// No description provided for @visualEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual estimate'**
+  String get visualEstimate;
+
+  /// No description provided for @caliper.
+  ///
+  /// In en, this message translates to:
+  /// **'Caliper'**
+  String get caliper;
+
+  /// No description provided for @photogrammetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Photogrammetry'**
+  String get photogrammetry;
+
+  /// No description provided for @medianSide.
+  ///
+  /// In en, this message translates to:
+  /// **'Median'**
+  String get medianSide;
+
+  /// No description provided for @generalCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get generalCategory;
+
+  /// No description provided for @apiServerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API server'**
+  String get apiServerLabel;
+
+  /// No description provided for @securityCheckUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Security check unavailable.'**
+  String get securityCheckUnavailable;
+
+  /// No description provided for @welcomeJourneySub.
+  ///
+  /// In en, this message translates to:
+  /// **'From field capture to executive clarity.'**
+  String get welcomeJourneySub;
+
+  /// No description provided for @indiaFirstMrv.
+  ///
+  /// In en, this message translates to:
+  /// **'India-first MRV'**
+  String get indiaFirstMrv;
+
+  /// No description provided for @treeSavedReadyNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree saved. Ready for the next gap.'**
+  String get treeSavedReadyNext;
 }
 
 class _AppLocalizationsDelegate
