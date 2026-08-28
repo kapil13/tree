@@ -151,7 +151,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     ),
                     const SizedBox(height: 10),
                     OutlinedButton(
-                      onPressed: () => context.push('/login'),
+                      onPressed: () => context.go('/login'),
                       child: const Text('I already have an account'),
                     ),
                   ],

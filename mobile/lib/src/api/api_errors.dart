@@ -21,10 +21,12 @@ String apiErrorMessage(Object err) {
   if (err is SessionExpiredException) {
     return 'Session expired. Please sign in again.';
   }
-  if (err is DioException && err.error is SessionExpiredException) {
-    return 'Session expired. Please sign in again.';
-  }
   if (err is DioException) {
+    if (err.error is SessionExpiredException) {
+      return 'Session expired. Please sign in again.';
+    }
+    final fromBody = _messageFromResponse(err.response);
+    if (fromBody != null) return fromBody;
     if (err.response == null) {
       final type = err.type;
       if (type == DioExceptionType.connectionTimeout ||
@@ -37,40 +39,6 @@ String apiErrorMessage(Object err) {
       }
       return err.message ?? 'Network error';
     }
-    final data = err.response?.data;
-    if (data is Map) {
-      final error = data['error'];
-      if (error is Map && error['message'] is String) {
-        return error['message'] as String;
-      }
-      final detail = data['detail'];
-      if (detail is String) {
-        if (err.response?.statusCode == 401 && detail == 'invalid_credentials') {
-          return humanizeAuthError('invalid_credentials');
-        }
-        if (err.response?.statusCode == 401 && detail == 'invalid_refresh') {
-          return 'Session expired. Please sign in again.';
-        }
-        return humanizeAuthError(detail);
-      }
-      if (detail is List) {
-        return detail
-            .map((d) => d is Map ? (d['msg'] ?? d.toString()) : d.toString())
-            .join('; ');
-      }
-      if (detail is Map) {
-        final compliance = detail['compliance_errors'];
-        if (compliance is List) {
-          return compliance
-              .map((c) => c is Map ? (c['message'] ?? c['violation_type']) : c.toString())
-              .join('\n');
-        }
-        final validation = detail['validation_errors'];
-        if (validation is List && validation.isNotEmpty) {
-          return _humanizeValidationErrors(validation.map((e) => e.toString()).toList());
-        }
-      }
-    }
     if (err.response?.statusCode == 401) return 'Session expired. Please sign in again.';
     // Avoid showing Dio's long default 401 boilerplate.
     if (err.type == DioExceptionType.badResponse) {
@@ -79,6 +47,55 @@ String apiErrorMessage(Object err) {
     return err.message ?? 'Request failed';
   }
   return err.toString();
+}
+
+String? _messageFromResponse(Response<dynamic>? response) {
+  final data = response?.data;
+  if (data is! Map) return null;
+
+  final error = data['error'];
+  if (error is Map) {
+    final code = error['code'];
+    if (code is String && code.isNotEmpty) {
+      if (code == 'invalid_refresh') {
+        return 'Session expired. Please sign in again.';
+      }
+      return humanizeAuthError(code);
+    }
+    final message = error['message'];
+    if (message is String && message.isNotEmpty) {
+      return message;
+    }
+  }
+
+  final detail = data['detail'];
+  if (detail is String) {
+    if (response?.statusCode == 401 && detail == 'invalid_credentials') {
+      return humanizeAuthError('invalid_credentials');
+    }
+    if (response?.statusCode == 401 && detail == 'invalid_refresh') {
+      return 'Session expired. Please sign in again.';
+    }
+    return humanizeAuthError(detail);
+  }
+  if (detail is List) {
+    return detail
+        .map((d) => d is Map ? (d['msg'] ?? d.toString()) : d.toString())
+        .join('; ');
+  }
+  if (detail is Map) {
+    final compliance = detail['compliance_errors'];
+    if (compliance is List) {
+      return compliance
+          .map((c) => c is Map ? (c['message'] ?? c['violation_type']) : c.toString())
+          .join('\n');
+    }
+    final validation = detail['validation_errors'];
+    if (validation is List && validation.isNotEmpty) {
+      return _humanizeValidationErrors(validation.map((e) => e.toString()).toList());
+    }
+  }
+  return null;
 }
 
 const _projectInheritedFields = {
