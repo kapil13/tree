@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../l10n/alert_labels.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
@@ -14,9 +15,22 @@ import '../widgets/shell_scaffold.dart';
 class MonitoringScreen extends ConsumerWidget {
   const MonitoringScreen({super.key});
 
+  void _openWorkArea(BuildContext context, Map raw) {
+    final projectId = raw['project_id'] as String?;
+    if (projectId != null && projectId.isNotEmpty) {
+      context.push('/projects/$projectId');
+      return;
+    }
+    final workAreaId = raw['id'] as String? ?? raw['work_area_id'] as String?;
+    if (workAreaId != null && workAreaId.isNotEmpty) {
+      context.push('/map?focus=$workAreaId');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
     final summaryAsync = ref.watch(monitoringSummaryProvider);
     final user = sessionController.user;
 
@@ -35,7 +49,7 @@ class MonitoringScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(monitoringSummaryProvider),
-                  child: const Text('Retry'),
+                  child: Text(l10n.retry),
                 ),
               ],
             ),
@@ -65,18 +79,18 @@ class MonitoringScreen extends ConsumerWidget {
                   children: [
                     ActionChip(
                       avatar: const Icon(Icons.map_outlined, size: 18),
-                      label: const Text('Map'),
+                      label: Text(l10n.map),
                       onPressed: () => context.go('/map'),
                     ),
                     ActionChip(
                       avatar: const Icon(Icons.notifications_outlined, size: 18),
-                      label: const Text('Alerts'),
+                      label: Text(l10n.navAlerts),
                       onPressed: () => context.go('/notifications'),
                     ),
                     if (canSeeFieldOps(user))
                       ActionChip(
                         avatar: const Icon(Icons.construction_outlined, size: 18),
-                        label: const Text('Field ops'),
+                        label: Text(l10n.fieldOps),
                         onPressed: () => context.push('/field-ops'),
                       ),
                   ],
@@ -87,30 +101,35 @@ class MonitoringScreen extends ConsumerWidget {
                   atRisk: sarAtRisk is int ? sarAtRisk : int.tryParse('$sarAtRisk') ?? 0,
                   divergent: sarDivergent is int ? sarDivergent : int.tryParse('$sarDivergent') ?? 0,
                   aligned: sarAligned is int ? sarAligned : int.tryParse('$sarAligned') ?? 0,
+                  languageCode: lang,
                 ),
                 const SizedBox(height: 12),
                 _StatCard(
-                  title: 'Stale satellite scans',
+                  title: l10n.monitoringStaleSatellite,
                   value: '$stale',
-                  subtitle: 'Work areas without a recent NDVI pass',
+                  subtitle: l10n.monitoringStaleSatelliteHint,
                 ),
                 if (fieldTasks.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  Text('Open SAR field verifications', style: Theme.of(context).textTheme.titleMedium),
+                  Text(l10n.monitoringOpenSarVerifications, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   for (final raw in fieldTasks.take(8))
                     SarWorkAreaTile(
-                      name: (raw as Map)['work_area_name'] as String? ?? 'Work area',
-                      subtitle: raw['alert_kind'] as String? ?? raw['message'] as String? ?? '',
+                      name: (raw as Map)['work_area_name'] as String? ?? l10n.monitoringWorkAreaFallback,
+                      subtitle: () {
+                        final kind = raw['alert_kind'] as String?;
+                        if (kind != null && kind.isNotEmpty) {
+                          return alertKindLabel(kind, languageCode: lang);
+                        }
+                        return raw['message'] as String? ?? '';
+                      }(),
                       integrity: raw['forest_integrity_score'] as num?,
-                      onTap: raw['work_area_id'] != null
-                          ? () => context.push('/monitoring?fence=${raw['work_area_id']}')
-                          : null,
+                      onTap: () => _openWorkArea(context, raw),
                     ),
                 ],
                 if (sarAlerts.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  Text('SAR alerts (30d)', style: Theme.of(context).textTheme.titleMedium),
+                  Text(l10n.monitoringSarAlerts30d, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -119,52 +138,56 @@ class MonitoringScreen extends ConsumerWidget {
                       for (final e in sarAlerts.entries)
                         Chip(
                           backgroundColor: Colors.amber.shade50,
-                          label: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 11)),
+                          label: Text(
+                            '${alertKindLabel(e.key, languageCode: lang)}: ${e.value}',
+                            style: const TextStyle(fontSize: 11),
+                          ),
                         ),
                     ],
                   ),
                 ],
                 const SizedBox(height: 20),
-                Text('Unread alerts by kind', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.monitoringUnreadAlertsByKind, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (alertsByKind.isEmpty)
-                  const Text('No unread alerts.', style: TextStyle(color: AranyixColors.onSurfaceMuted))
+                  Text(l10n.monitoringNoUnreadAlerts, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
                 else
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
                       for (final e in alertsByKind.entries)
-                        Chip(label: Text('${e.key}: ${e.value}')),
+                        Chip(
+                          label: Text('${alertKindLabel(e.key, languageCode: lang)}: ${e.value}'),
+                        ),
                     ],
                   ),
                 const SizedBox(height: 20),
-                Text('Work area SAR status', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.monitoringWorkAreaSarStatus, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (workAreas.isEmpty)
                   Text(
-                    'No work-area monitoring rows yet. Open violations: ${summary['open_violations'] ?? 0}, '
-                    'survival due: ${summary['survival_due'] ?? 0}.',
+                    l10n.monitoringNoWorkAreas(
+                      '${summary['open_violations'] ?? 0}',
+                      '${summary['survival_due'] ?? 0}',
+                    ),
                     style: const TextStyle(color: AranyixColors.onSurfaceMuted),
                   )
                 else
                   for (final raw in workAreas.take(30))
                     SarWorkAreaTile(
-                      name: (raw as Map)['name'] as String? ?? 'Work area',
+                      name: (raw as Map)['name'] as String? ?? l10n.monitoringWorkAreaFallback,
                       subtitle: [
                         raw['project_name'] ?? '',
                         if (raw['latest_ndvi'] != null) 'NDVI ${raw['latest_ndvi']}',
-                        if (raw['days_since_scan'] != null) '${raw['days_since_scan']}d since NDVI',
+                        if (raw['days_since_scan'] != null)
+                          l10n.monitoringDaysSinceNdvi('${raw['days_since_scan']}'),
                       ].where((s) => s.toString().isNotEmpty).join(' · '),
                       integrity: raw['sar_forest_integrity'] as num?,
-                      mode: sarModeLabel(raw['sar_monitoring_mode'] as String?),
+                      mode: sarModeLabel(raw['sar_monitoring_mode'] as String?, languageCode: lang),
                       recommendedAction: raw['sar_recommended_action'] as String?,
                       highlight: highlightFenceId != null && raw['id'] == highlightFenceId,
-                      onTap: raw['id'] != null
-                          ? () => context.push('/monitoring?fence=${raw['id']}')
-                          : (raw['project_id'] != null
-                              ? () => context.push('/projects/${raw['project_id']}')
-                              : null),
+                      onTap: () => _openWorkArea(context, raw),
                     ),
               ],
             ),

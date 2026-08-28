@@ -459,41 +459,39 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Widget _wizardNavButtons(AppLocalizations l10n, {required bool onLastStep}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Row(
-        children: [
-          if (_wizardStep > 0)
-            OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
-          else
-            const SizedBox.shrink(),
-          const Spacer(),
-          if (!onLastStep)
-            FilledButton(
-              onPressed: _busy ? null : _nextWizardStep,
-              child: Text(l10n.addTreeNext),
-            ),
-        ],
-      ),
+    return Row(
+      children: [
+        if (_wizardStep > 0)
+          OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
+        else
+          const SizedBox(width: 1),
+        const Spacer(),
+        if (!onLastStep)
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
+          ),
+      ],
     );
   }
 
   Future<void> _save({bool registerNext = false}) async {
+    final l10n = AppLocalizations.of(context)!;
     if (_lat == null || _lon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Capture GPS before registering.')),
+        SnackBar(content: Text(l10n.captureGpsBeforeRegister)),
       );
       return;
     }
     if (widget.projectId != null && _selectedWorkAreaId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a work area for this project.')),
+        SnackBar(content: Text(l10n.selectWorkAreaForProject)),
       );
       return;
     }
     if (_complianceBlocksSave) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Compliance check failed — fix issues before saving (strict mode).')),
+        SnackBar(content: Text(l10n.complianceStrictBlock)),
       );
       return;
     }
@@ -547,7 +545,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (registerNext && widget.projectId != null) {
         setState(() {
           _sessionSavedCount += 1;
-          _successMessage = 'Tree saved. Ready for the next gap.';
+          _successMessage = l10n.treeSavedReadyNext;
           _photoKeys.clear();
           _localPhotoPaths.clear();
           _lat = null;
@@ -571,7 +569,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         } catch (_) {}
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_successMessage ?? 'Tree saved')),
+          SnackBar(content: Text(_successMessage ?? l10n.treeSaved)),
         );
         return;
       }
@@ -586,7 +584,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       ref.read(treeRegistrationSyncProvider).syncAll(() => ref.read(apiClientProvider.future));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline — queued for sync. ${apiErrorMessage(e)}')),
+        SnackBar(content: Text('${l10n.offlineQueuedSync} ${apiErrorMessage(e)}')),
       );
       context.go('/projects');
     } finally {
@@ -626,6 +624,17 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return stackRouteScaffold(
       location: '/trees/new',
       appBar: ShellTopBar(title: title),
+      bottomNavigationBar: Material(
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: _wizardNavButtons(l10n, onLastStep: onLastStep),
+          ),
+        ),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -666,7 +675,6 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               ],
             ),
           ),
-          _wizardNavButtons(l10n, onLastStep: onLastStep),
         ],
       ),
     );
@@ -750,6 +758,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           Text(
             l10n.addTreeProgramHint,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
           ),
         ],
       ],
@@ -984,6 +997,7 @@ class _ComplianceBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final passed = result['passed'] == true;
     final issues = (result['issues'] as List<dynamic>?) ?? [];
     final chainage = result['chainage_km'];
@@ -1001,10 +1015,10 @@ class _ComplianceBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            passed ? 'Compliance check passed' : 'Compliance issues found',
+            passed ? l10n.compliancePassed : l10n.complianceIssuesFound,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (chainage != null) Text('Chainage: ${chainage} km'),
+          if (chainage != null) Text(l10n.chainageKm('$chainage')),
           for (final issue in issues)
             Text(
               '• ${(issue as Map)['message'] ?? issue['violation_type']}',

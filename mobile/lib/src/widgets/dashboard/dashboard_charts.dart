@@ -1,6 +1,8 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../l10n/alert_labels.dart';
 import '../../theme.dart';
 
 /// Interactive dashboard charts — carbon growth, health mix, species split.
@@ -11,8 +13,10 @@ class DashboardChartsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
     final carbon = _series(dashboard['carbon_growth']);
-    final health = _series(dashboard['health_distribution']);
+    final health = _series(dashboard['health_distribution'], translateHealth: true, lang: lang);
     final species = _series(dashboard['species_distribution']);
 
     if (carbon.isEmpty && health.isEmpty && species.isEmpty) {
@@ -24,12 +28,12 @@ class DashboardChartsSection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text('Insights', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(l10n.homeInsights, style: Theme.of(context).textTheme.titleMedium),
         ),
         if (carbon.isNotEmpty) ...[
           _ChartCard(
-            title: 'Carbon growth',
-            subtitle: 'Estimated sequestration trend',
+            title: l10n.homeCarbonGrowth,
+            subtitle: l10n.homeCarbonGrowthHint,
             height: 200,
             child: _CarbonLineChart(points: carbon),
           ),
@@ -37,17 +41,17 @@ class DashboardChartsSection extends StatelessWidget {
         ],
         if (health.isNotEmpty) ...[
           _ChartCard(
-            title: 'Tree health',
-            subtitle: 'Distribution across your portfolio',
+            title: l10n.homeTreeHealth,
+            subtitle: l10n.homeTreeHealthHint,
             height: 200,
-            child: _HealthPieChart(slices: health),
+            child: _HealthPieChart(slices: health, languageCode: lang),
           ),
           const SizedBox(height: 12),
         ],
         if (species.isNotEmpty)
           _ChartCard(
-            title: 'Species mix',
-            subtitle: 'Top registered species',
+            title: l10n.homeSpeciesMix,
+            subtitle: l10n.homeSpeciesMixHint,
             height: 200,
             child: _SpeciesBarChart(bars: species.take(6).toList()),
           ),
@@ -55,13 +59,21 @@ class DashboardChartsSection extends StatelessWidget {
     );
   }
 
-  List<_ChartPoint> _series(dynamic raw) {
+  List<_ChartPoint> _series(
+    dynamic raw, {
+    bool translateHealth = false,
+    String lang = 'en',
+  }) {
     if (raw is! List) return [];
     return raw
         .map((e) {
           final m = e as Map<String, dynamic>;
+          var label = m['label'] as String? ?? '';
+          if (translateHealth && label.isNotEmpty) {
+            label = healthDistributionLabel(label, languageCode: lang);
+          }
           return _ChartPoint(
-            label: m['label'] as String? ?? '',
+            label: label,
             value: (m['value'] as num?)?.toDouble() ?? 0,
           );
         })
@@ -199,9 +211,10 @@ class _CarbonLineChart extends StatelessWidget {
 }
 
 class _HealthPieChart extends StatelessWidget {
-  const _HealthPieChart({required this.slices});
+  const _HealthPieChart({required this.slices, this.languageCode = 'en'});
 
   final List<_ChartPoint> slices;
+  final String languageCode;
 
   static const _colors = [
     AranyixColors.forest,
@@ -214,7 +227,11 @@ class _HealthPieChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = slices.fold<double>(0, (s, p) => s + p.value);
-    if (total <= 0) return const Center(child: Text('No health data yet'));
+    if (total <= 0) {
+      return Center(
+        child: Text(languageCode == 'hi' ? 'अभी स्वास्थ्य डेटा नहीं' : 'No health data yet'),
+      );
+    }
 
     return Row(
       children: [

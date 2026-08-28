@@ -57,6 +57,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final s = _summary;
     final byStatus = Map<String, dynamic>.from(s?['by_status'] ?? {});
 
@@ -74,7 +75,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
                       ],
                     ),
                   ),
@@ -86,20 +87,20 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       Text(
-                        'Organization credit ledger summary (tCO₂e). Estimated until verified / issued.',
+                        l10n.creditsSummaryHint,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AranyixColors.onSurfaceMuted,
                             ),
                       ),
                       const SizedBox(height: 16),
-                      _row('Projects', '${s?['project_count'] ?? 0}'),
-                      _row('Gross credits', _num(s?['total_gross_credits_tco2e'])),
-                      _row('Buffer withheld', _num(s?['total_buffer_withheld_tco2e'])),
-                      _row('Net credits', _num(s?['total_net_credits_tco2e'])),
-                      _row('Issued credits', _num(s?['total_issued_credits_tco2e'])),
+                      _row(l10n.projects, '${s?['project_count'] ?? 0}'),
+                      _row(l10n.grossCredits, _num(s?['total_gross_credits_tco2e'])),
+                      _row(l10n.bufferWithheld, _num(s?['total_buffer_withheld_tco2e'])),
+                      _row(l10n.netCredits, _num(s?['total_net_credits_tco2e'])),
+                      _row(l10n.issuedCredits, _num(s?['total_issued_credits_tco2e'])),
                       if (byStatus.isNotEmpty) ...[
                         const SizedBox(height: 20),
-                        Text('By status', style: Theme.of(context).textTheme.titleMedium),
+                        Text(l10n.byStatus, style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
                         for (final e in byStatus.entries)
                           ListTile(

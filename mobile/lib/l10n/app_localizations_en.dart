@@ -178,8 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSectionReports => 'Reports & evidence';
 
   @override
-  String get navSectionReportsDesc =>
-      'Exports, carbon, and AI assistant';
+  String get navSectionReportsDesc => 'Exports, carbon, and AI assistant';
 
   @override
   String get navSectionAccount => 'Account';
@@ -230,8 +229,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Primary tools for registration and biodiversity monitoring';
 
   @override
-  String get addActionSheetEmpty =>
-      'No field actions available for your role.';
+  String get addActionSheetEmpty => 'No field actions available for your role.';
 
   @override
   String get menuOpen => 'Open menu';
@@ -244,7 +242,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get drawerSignInRequired => 'Sign in to see navigation.';
 
   @override
-  String get drawerNoNavItems => 'No menu items are available for your account.';
+  String get drawerNoNavItems =>
+      'No menu items are available for your account.';
 
   @override
   String get todayWork => 'Today\'s work';
@@ -277,7 +276,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addTreeStepReview => 'Review & save';
 
   @override
-  String addTreeStepOf(int current, int total) => 'Step $current of $total';
+  String addTreeStepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
 
   @override
   String get addTreeBack => 'Back';
@@ -319,10 +320,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose BYOT citizen planting or a government program such as NHAI highway plantation.';
 
   @override
-  String get addTreeValidationProgram => 'Select a registration program before continuing.';
+  String get addTreeValidationProgram =>
+      'Select a registration program before continuing.';
 
   @override
-  String get addTreeValidationWorkArea => 'Select a work area before continuing.';
+  String get addTreeValidationWorkArea =>
+      'Select a work area before continuing.';
 
   @override
   String get addTreeApprovedSpecies => 'Approved species';
@@ -370,19 +373,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add clear photos of the tree and planting pit. Works offline — uploads when connected.';
 
   @override
-  String addTreeAddPhoto(int count, int target) => 'Add photo ($count/$target)';
+  String addTreeAddPhoto(int count, int target) {
+    return 'Add photo ($count/$target)';
+  }
 
   @override
-  String addTreeOfflinePhotos(int count) => '$count photo(s) saved offline';
+  String addTreeOfflinePhotos(int count) {
+    return '$count photo(s) saved offline';
+  }
 
   @override
   String get addTreeReviewTitle => 'Review registration';
 
   @override
-  String addTreeSessionCount(int count) => '$count this session';
+  String addTreeSessionCount(int count) {
+    return '$count this session';
+  }
 
   @override
-  String addTreeMinPhotosWarning(int min) => 'Program recommends at least $min photos.';
+  String addTreeMinPhotosWarning(int min) {
+    return 'Program recommends at least $min photos.';
+  }
 
   @override
   String get addTreeValidationContext =>
@@ -408,13 +419,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bioRecordingLive => 'Recording live';
 
   @override
-  String bioRecordingTarget(int min, int max) => 'Target: $min–$max s · 48 kHz mono WAV';
+  String bioRecordingTarget(int min, int max) {
+    return 'Target: $min–$max s · 48 kHz mono WAV';
+  }
 
   @override
   String get bioStopAndSave => 'Stop & save';
 
   @override
-  String bioStopMin(int seconds) => 'Stop (${seconds}s min)';
+  String bioStopMin(int seconds) {
+    return 'Stop (${seconds}s min)';
+  }
 
   @override
   String get bioSiteOptional => 'Plantation site (optional)';
@@ -429,7 +444,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bioStartRecording => 'Start ambient recording';
 
   @override
-  String bioSplLevel(String level) => 'Ambient SPL ≈ $level dB';
+  String bioSplLevel(String level) {
+    return 'Ambient SPL ≈ $level dB';
+  }
 
   @override
   String get bioNoiseWarning =>
@@ -450,14 +467,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Recording ambient soundscape… hold phone 1–1.5 m above ground, stay still.';
 
   @override
-  String bioTooShort(int min, int elapsed) =>
-      'Record at least $min seconds (currently $elapsed s).';
+  String bioTooShort(int min, int elapsed) {
+    return 'Record at least $min seconds (currently $elapsed s).';
+  }
 
   @override
   String get bioSaving => 'Saving recording…';
 
   @override
-  String bioSavedOfflineGps(String note) => 'Saved offline. $note';
+  String bioSavedOfflineGps(String note) {
+    return 'Saved offline. $note';
+  }
 
   @override
   String get bioSavedOffline =>
@@ -477,7 +497,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bioSyncing => 'Syncing offline recordings…';
 
   @override
-  String bioSyncedCount(int count) => 'Synced $count recording${count == 1 ? '' : 's'}.';
+  String bioSyncedCount(int count) {
+    return 'Synced $count recording(s).';
+  }
 
   @override
   String get bioNothingToSync => 'No pending recordings to sync.';
@@ -502,4 +524,803 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bioNoRecordingsYet => 'No synced recordings yet.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get monitoringStaleSatellite => 'Stale satellite scans';
+
+  @override
+  String get monitoringStaleSatelliteHint =>
+      'Work areas without a recent NDVI pass';
+
+  @override
+  String get monitoringOpenSarVerifications => 'Open SAR field verifications';
+
+  @override
+  String get monitoringSarAlerts30d => 'SAR alerts (30d)';
+
+  @override
+  String get monitoringUnreadAlertsByKind => 'Unread alerts by kind';
+
+  @override
+  String get monitoringNoUnreadAlerts => 'No unread alerts.';
+
+  @override
+  String get monitoringWorkAreaSarStatus => 'Work area SAR status';
+
+  @override
+  String get monitoringWorkAreaFallback => 'Work area';
+
+  @override
+  String monitoringNoWorkAreas(String violations, String survival) {
+    return 'No work-area monitoring rows yet. Open violations: $violations, survival due: $survival.';
+  }
+
+  @override
+  String monitoringDaysSinceNdvi(String days) {
+    return '${days}d since NDVI';
+  }
+
+  @override
+  String get homeWelcomeBack => 'Welcome back';
+
+  @override
+  String homeHello(String name) {
+    return 'Hello, $name';
+  }
+
+  @override
+  String get homeForestHealth => 'Forest Health';
+
+  @override
+  String get homeInsights => 'Insights';
+
+  @override
+  String get homeCarbonGrowth => 'Carbon growth';
+
+  @override
+  String get homeCarbonGrowthHint => 'Estimated sequestration trend';
+
+  @override
+  String get homeTreeHealth => 'Tree health';
+
+  @override
+  String get homeTreeHealthHint => 'Distribution across your portfolio';
+
+  @override
+  String get homeSpeciesMix => 'Species mix';
+
+  @override
+  String get homeSpeciesMixHint => 'Top registered species';
+
+  @override
+  String get homeMonitoringChip => 'Monitoring';
+
+  @override
+  String get homeFieldOpsChip => 'Field ops';
+
+  @override
+  String get homeReportsChip => 'Reports';
+
+  @override
+  String get homeFieldProjects => 'Field projects';
+
+  @override
+  String get homeAllSites => 'All sites';
+
+  @override
+  String get homeQuickSnapshot => 'Quick Snapshot';
+
+  @override
+  String get homeAskAranyix => 'Ask Aranyix';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get noAlerts => 'No alerts.';
+
+  @override
+  String get noTreesYet => 'No trees yet.';
+
+  @override
+  String get addFirstTree => 'Add your first tree';
+
+  @override
+  String get noProjectsYet => 'No planting projects assigned yet.';
+
+  @override
+  String get preferences => 'Preferences';
+
+  @override
+  String get alertPreferences => 'Alert preferences';
+
+  @override
+  String get preferencesSaved => 'Preferences saved';
+
+  @override
+  String get satelliteHealth => 'Satellite health';
+
+  @override
+  String get survivalSurvey => 'Survival survey';
+
+  @override
+  String get threatWatch => 'Threat watch';
+
+  @override
+  String get complianceLabel => 'Compliance';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String get reviewActions => 'Review Actions';
+
+  @override
+  String get takeAction => 'Take Action';
+
+  @override
+  String homeTrend(String trend) {
+    return 'Trend: $trend';
+  }
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get editProfile => 'Edit personal profile';
+
+  @override
+  String get editProfileSub => 'Name, phone, date of birth, city, state';
+
+  @override
+  String get appVersion => 'App version';
+
+  @override
+  String get workAreas => 'Work areas';
+
+  @override
+  String get noWorkAreasYet => 'No work areas defined on web yet.';
+
+  @override
+  String get registerTreeBtn => 'Register tree';
+
+  @override
+  String get createReport => 'Create report';
+
+  @override
+  String get yourReports => 'Your reports';
+
+  @override
+  String get noReportsYet => 'No reports yet.';
+
+  @override
+  String get reportCreated => 'Report created';
+
+  @override
+  String get reportNeedsArea =>
+      'This report type needs a plantation / work area.';
+
+  @override
+  String get byStatus => 'By status';
+
+  @override
+  String get resolve => 'Resolve';
+
+  @override
+  String get violationResolved => 'Violation resolved';
+
+  @override
+  String get recentViolations => 'Recent violations';
+
+  @override
+  String get noOpenViolations => 'No open violations.';
+
+  @override
+  String get survivalDueByProject => 'Survival due by project';
+
+  @override
+  String get noSurvivalDue => 'No survival surveys due.';
+
+  @override
+  String get drawPolygon => 'Draw polygon';
+
+  @override
+  String get drawCorridor => 'Draw corridor';
+
+  @override
+  String get undoPoint => 'Undo point';
+
+  @override
+  String get cancelDraw => 'Cancel draw';
+
+  @override
+  String get workAreaSaved => 'Work area saved';
+
+  @override
+  String get needTwoPoints => 'Add at least 2 points on the map';
+
+  @override
+  String get polygonNeedsThree => 'Polygon needs at least 3 points';
+
+  @override
+  String get createProjectFirst => 'Create or join a planting project first';
+
+  @override
+  String get noTreesOnMap =>
+      'No trees with GPS yet. Add a tree to see it on the map.';
+
+  @override
+  String get quickActions => 'Quick actions';
+
+  @override
+  String get liveMap => 'Live map';
+
+  @override
+  String get openFullMap => 'Open full map';
+
+  @override
+  String get expand => 'Expand';
+
+  @override
+  String get noTreesOnMapPreview => 'No trees on map yet';
+
+  @override
+  String get registerFirstTree => 'Register first tree';
+
+  @override
+  String get pendingTreeRegistrations => 'Pending tree registrations';
+
+  @override
+  String get captureGpsBeforeRegister => 'Capture GPS before registering.';
+
+  @override
+  String get selectWorkAreaForProject => 'Select a work area for this project.';
+
+  @override
+  String get complianceStrictBlock =>
+      'Compliance check failed — fix issues before saving (strict mode).';
+
+  @override
+  String get offlineQueuedSync => 'Offline — queued for sync.';
+
+  @override
+  String get profileSaved => 'Profile saved';
+
+  @override
+  String get dateOfBirth => 'Date of birth';
+
+  @override
+  String get age => 'Age';
+
+  @override
+  String get dateOfMarriage => 'Date of marriage';
+
+  @override
+  String get survivalRegeotag => 'Survival / re-geotag';
+
+  @override
+  String get currentGps => 'Current GPS';
+
+  @override
+  String get noGpsFix => 'No fix yet';
+
+  @override
+  String get refreshGps => 'Refresh GPS';
+
+  @override
+  String get survivalSurveySaved =>
+      'Survival survey saved with measurement record';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get createAccount => 'Create an account';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get alreadyHaveAccountSignIn => 'Already have an account? Sign in';
+
+  @override
+  String get createFreeAccount => 'Create free account';
+
+  @override
+  String get alreadyHaveAccountBtn => 'I already have an account';
+
+  @override
+  String get completingSignIn => 'Completing sign-in…';
+
+  @override
+  String get backToSignIn => 'Back to sign in';
+
+  @override
+  String get useEmailInstead => 'Use email instead';
+
+  @override
+  String get retrySecurityCheck => 'Retry security check';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get homeFieldProjectsSub =>
+      'NHAI packages, mine belts, society blocks';
+
+  @override
+  String get estimate => 'Estimate';
+
+  @override
+  String carbonKg(String kg) {
+    return 'Carbon: $kg kg';
+  }
+
+  @override
+  String inputCompleteness(String value) {
+    return 'Input completeness: $value';
+  }
+
+  @override
+  String methodologyLabel(String value) {
+    return 'Methodology: $value';
+  }
+
+  @override
+  String chainageKm(String km) {
+    return 'Chainage: $km km';
+  }
+
+  @override
+  String get exploreByot => 'Explore BYOT features';
+
+  @override
+  String get visitWebsite => 'Visit aranyix.tech';
+
+  @override
+  String get whatHappensNext => 'What happens next';
+
+  @override
+  String get orgTypeGovernment => 'Government / public agency';
+
+  @override
+  String get orgTypeCorporate => 'Corporate / industry';
+
+  @override
+  String get orgTypeNgo => 'NGO / community';
+
+  @override
+  String get askAnythingForest => 'Ask anything about your forest…';
+
+  @override
+  String get alertFallback => 'Alert';
+
+  @override
+  String get noHealthDataYet => 'No health data yet';
+
+  @override
+  String get siteFallback => 'Site';
+
+  @override
+  String get plantationFallback => 'Plantation';
+
+  @override
+  String get orDivider => 'or';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get signingIn => 'Signing in…';
+
+  @override
+  String get welcomeBackTitle => 'Welcome back';
+
+  @override
+  String get welcomeBackSub =>
+      'Sign in to continue mapping trees, biodiversity, and compliance evidence.';
+
+  @override
+  String get phoneOtpTab => 'Phone OTP';
+
+  @override
+  String get emailTab => 'Email';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get gpsVerified => 'GPS-verified';
+
+  @override
+  String get offlineSyncLabel => 'Offline sync';
+
+  @override
+  String get assistantTitle => 'AI Assistant';
+
+  @override
+  String get assistantHint => 'Ask about trees, compliance, satellite health…';
+
+  @override
+  String get assistantSend => 'Send';
+
+  @override
+  String get assistantEmpty => 'Ask a question to get started.';
+
+  @override
+  String get creditsTitle => 'Credits';
+
+  @override
+  String get carbonTitle => 'Carbon estimator';
+
+  @override
+  String get speciesLabel => 'Species';
+
+  @override
+  String get dbhLabel => 'DBH (cm)';
+
+  @override
+  String get heightLabel => 'Height (m)';
+
+  @override
+  String get ageYearsLabel => 'Age (years)';
+
+  @override
+  String integrityScore(String score) {
+    return 'Integrity $score';
+  }
+
+  @override
+  String get forestIntegrityTitle => 'Forest Integrity';
+
+  @override
+  String get sarProviderLabel => 'Axentis SAR';
+
+  @override
+  String get portfolioAvg => '/ 100 portfolio avg';
+
+  @override
+  String atRiskCount(int count) {
+    return '$count at risk';
+  }
+
+  @override
+  String divergentCount(int count) {
+    return '$count divergent';
+  }
+
+  @override
+  String alignedCount(int count) {
+    return '$count aligned';
+  }
+
+  @override
+  String get sarBaselineHint =>
+      'Run SAR scans on the web satellite page to establish Forest Integrity baselines.';
+
+  @override
+  String get selectSite => 'Select site';
+
+  @override
+  String devHint(String hint) {
+    return 'Dev hint: $hint';
+  }
+
+  @override
+  String get registrationPrograms => 'Registration programs';
+
+  @override
+  String get registrationProgramsUpdated => 'Registration programs updated.';
+
+  @override
+  String get saveProgramPreferences => 'Save program preferences';
+
+  @override
+  String get biometricConfirmReason => 'Confirm to enable biometric unlock';
+
+  @override
+  String get defaultUserName => 'Aranyix user';
+
+  @override
+  String get fullNameLabel => 'Full name *';
+
+  @override
+  String get fullNameValidation => 'Enter your full name';
+
+  @override
+  String get loginEmailLabel => 'Login email';
+
+  @override
+  String get loginEmailHint => 'Used to sign in. Cannot be changed here.';
+
+  @override
+  String get phoneLabel => 'Phone';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get stateLabel => 'State';
+
+  @override
+  String get notSet => 'Not set';
+
+  @override
+  String get setDateOfBirth => 'Set date of birth';
+
+  @override
+  String ageYearsCount(int count) {
+    return '$count years';
+  }
+
+  @override
+  String get saveProfile => 'Save profile';
+
+  @override
+  String get treeFallback => 'Tree';
+
+  @override
+  String get healthLabel => 'Health';
+
+  @override
+  String get carbonLabel => 'Carbon';
+
+  @override
+  String get dbhCmLabel => 'DBH';
+
+  @override
+  String get heightMLabel => 'Height';
+
+  @override
+  String get satelliteLabel => 'Satellite';
+
+  @override
+  String get riskLabel => 'Risk';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get ndviLabel => 'NDVI';
+
+  @override
+  String get analyzing => 'Analyzing…';
+
+  @override
+  String get runAiAnalysis => 'Run AI analysis';
+
+  @override
+  String get checkingSatellite => 'Checking satellite…';
+
+  @override
+  String get runSatelliteHealth => 'Run satellite health';
+
+  @override
+  String get saveCorridor => 'Save corridor';
+
+  @override
+  String get savePolygonWorkArea => 'Save polygon work area';
+
+  @override
+  String get nameLabel => 'Name';
+
+  @override
+  String get projectLabel => 'Project';
+
+  @override
+  String get projectFallback => 'Project';
+
+  @override
+  String get bufferMLabel => 'Buffer (m)';
+
+  @override
+  String get saveWorkArea => 'Save work area';
+
+  @override
+  String get addTreeTooltip => 'Add tree';
+
+  @override
+  String get polygonModeTooltip => 'Polygon mode';
+
+  @override
+  String get corridorModeTooltip => 'Corridor / linear mode';
+
+  @override
+  String get creditsSummaryHint =>
+      'Organization credit ledger summary (tCO₂e). Estimated until verified / issued.';
+
+  @override
+  String get grossCredits => 'Gross credits';
+
+  @override
+  String get bufferWithheld => 'Buffer withheld';
+
+  @override
+  String get netCredits => 'Net credits';
+
+  @override
+  String get issuedCredits => 'Issued credits';
+
+  @override
+  String get homeAiBriefTitle => 'Today\'s AI Brief';
+
+  @override
+  String get securityCheck => 'Security check';
+
+  @override
+  String get unknownSpecies => 'Unknown';
+
+  @override
+  String get workAreaFallback => 'Work area';
+
+  @override
+  String get areaFallback => 'Area';
+
+  @override
+  String get violationFallback => 'Violation';
+
+  @override
+  String get modeLabel => 'Mode';
+
+  @override
+  String get treesCountLabel => 'Trees';
+
+  @override
+  String get violationsLabel => 'Violations';
+
+  @override
+  String get compliancePassed => 'Compliance check passed';
+
+  @override
+  String get complianceIssuesFound => 'Compliance issues found';
+
+  @override
+  String get treeSaved => 'Tree saved';
+
+  @override
+  String get submitting => 'Submitting…';
+
+  @override
+  String get submitForReview => 'Submit for review';
+
+  @override
+  String get orgDetailsTitle => 'Organization details';
+
+  @override
+  String get workEmailLabel => 'Work email';
+
+  @override
+  String get contactPhoneLabel => 'Contact phone';
+
+  @override
+  String get updatePassword => 'Update password';
+
+  @override
+  String get sendResetCode => 'Send reset code';
+
+  @override
+  String get sendSmsCode => 'Send SMS code';
+
+  @override
+  String get applicationReceivedTitle => 'Application received';
+
+  @override
+  String get verifyPhone => 'Verify phone';
+
+  @override
+  String get verifyEmail => 'Verify email';
+
+  @override
+  String get creating => 'Creating…';
+
+  @override
+  String get continueBtn => 'Continue';
+
+  @override
+  String get verifying => 'Verifying…';
+
+  @override
+  String get finishing => 'Finishing…';
+
+  @override
+  String get finish => 'Finish';
+
+  @override
+  String get joiningAs => 'I am joining as';
+
+  @override
+  String get mobileLabel => 'Mobile';
+
+  @override
+  String get yourJourney => 'Your journey';
+
+  @override
+  String get reportTypeTree => 'Tree portfolio';
+
+  @override
+  String get reportTypePlantation => 'Plantation';
+
+  @override
+  String get reportTypeCarbon => 'Carbon';
+
+  @override
+  String get reportTypeBiodiversity => 'Biodiversity';
+
+  @override
+  String get typeLabel => 'Type';
+
+  @override
+  String get formatLabel => 'Format';
+
+  @override
+  String get survivalStatusLabel => 'Survival status';
+
+  @override
+  String get measurementMethodLabel => 'Measurement method';
+
+  @override
+  String get optionalRemeasure => 'Optional remeasure';
+
+  @override
+  String get optionalHint => 'Optional';
+
+  @override
+  String get remarksLabel => 'Remarks';
+
+  @override
+  String get submitSurvivalSurvey => 'Submit survival survey';
+
+  @override
+  String get survivalLive => 'Live';
+
+  @override
+  String get survivalStressed => 'Stressed';
+
+  @override
+  String get survivalDead => 'Dead';
+
+  @override
+  String get survivalReplaced => 'Replaced';
+
+  @override
+  String get visualEstimate => 'Visual estimate';
+
+  @override
+  String get caliper => 'Caliper';
+
+  @override
+  String get photogrammetry => 'Photogrammetry';
+
+  @override
+  String get medianSide => 'Median';
+
+  @override
+  String get generalCategory => 'General';
+
+  @override
+  String get apiServerLabel => 'API server';
+
+  @override
+  String get securityCheckUnavailable => 'Security check unavailable.';
+
+  @override
+  String get welcomeJourneySub => 'From field capture to executive clarity.';
+
+  @override
+  String get indiaFirstMrv => 'India-first MRV';
+
+  @override
+  String get treeSavedReadyNext => 'Tree saved. Ready for the next gap.';
 }

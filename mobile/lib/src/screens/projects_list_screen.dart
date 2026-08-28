@@ -40,8 +40,8 @@ class ProjectsListScreen extends ConsumerWidget {
           if (projects.isEmpty) {
             return ListView(
               padding: const EdgeInsets.all(16),
-              children: const [
-                Text('No planting projects assigned yet.'),
+              children: [
+                Text(l10n.noProjectsYet),
                 SizedBox(height: 16),
                 OfflineTreeQueueSection(),
               ],

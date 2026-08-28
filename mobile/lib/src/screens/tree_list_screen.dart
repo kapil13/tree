@@ -35,7 +35,7 @@ class TreeListScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => ref.invalidate(treesProvider),
-                    child: const Text('Retry'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -48,12 +48,12 @@ class TreeListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('No trees yet.'),
+                  Text(l10n.noTreesYet),
                   if (canAdd) ...[
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () => context.push('/trees/new'),
-                      child: const Text('Add your first tree'),
+                      child: Text(l10n.addFirstTree),
                     ),
                   ],
                 ],
@@ -69,7 +69,7 @@ class TreeListScreen extends ConsumerWidget {
                 final t = items[i] as Map<String, dynamic>;
                 final carbon = (t['current_carbon_kg'] as num?)?.toStringAsFixed(0) ?? '0';
                 return ListTile(
-                  title: Text(t['species_text'] ?? 'Unknown'),
+                  title: Text(t['species_text'] ?? l10n.unknownSpecies),
                   subtitle: Text('${t['public_code']} · ${t['current_health'] ?? 'unknown'}'),
                   trailing: Text('$carbon kg'),
                   onTap: () => context.push('/trees/${t['id']}'),

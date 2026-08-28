@@ -62,6 +62,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final co2e = (_result?['co2e_kg'] as num?)?.toDouble();
     final lower = (_result?['co2e_kg_lower_90'] as num?)?.toDouble();
     final upper = (_result?['co2e_kg_upper_90'] as num?)?.toDouble();
@@ -82,31 +83,31 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _species,
-            decoration: const InputDecoration(labelText: 'Species'),
+            decoration: InputDecoration(labelText: l10n.speciesLabel),
             textCapitalization: TextCapitalization.sentences,
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _dbh,
-            decoration: const InputDecoration(labelText: 'DBH (cm, optional)'),
+            decoration: InputDecoration(labelText: l10n.dbhLabel),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _height,
-            decoration: const InputDecoration(labelText: 'Height (m, optional)'),
+            decoration: InputDecoration(labelText: l10n.heightLabel),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _age,
-            decoration: const InputDecoration(labelText: 'Age (years, optional)'),
+            decoration: InputDecoration(labelText: l10n.ageYearsLabel),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _busy ? null : _estimate,
-            child: Text(_busy ? 'Estimating…' : 'Estimate'),
+            child: Text(_busy ? l10n.saving : l10n.estimate),
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
@@ -120,7 +121,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Estimate', style: TextStyle(fontWeight: FontWeight.w600, color: AranyixColors.forest)),
+                    Text(l10n.estimate, style: const TextStyle(fontWeight: FontWeight.w600, color: AranyixColors.forest)),
                     const SizedBox(height: 8),
                     Text(
                       lower != null && upper != null && upper > lower
@@ -138,9 +139,9 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    Text('Carbon: ${(_result!['carbon_kg'] as num?)?.toStringAsFixed(1) ?? '—'} kg'),
-                    Text('Input completeness: ${(_result!['confidence'] as num?)?.toStringAsFixed(2) ?? '—'}'),
-                    Text('Methodology: ${_result!['methodology'] ?? '—'}'),
+                    Text(l10n.carbonKg((_result!['carbon_kg'] as num?)?.toStringAsFixed(1) ?? '—')),
+                    Text(l10n.inputCompleteness((_result!['confidence'] as num?)?.toStringAsFixed(2) ?? '—')),
+                    Text(l10n.methodologyLabel(_result!['methodology']?.toString() ?? '—')),
                     const SizedBox(height: 8),
                     const Text(
                       'Honesty label: Estimate (modelled). Not Live sensor data.',

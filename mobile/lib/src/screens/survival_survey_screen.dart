@@ -8,6 +8,7 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
+import '../l10n/l10n_ext.dart';
 
 const _survivalStatuses = [
   ('live', 'Live'),
@@ -110,7 +111,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
       ref.invalidate(treesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Survival survey saved with measurement record')),
+          SnackBar(content: Text(context.l10n.survivalSurveySaved)),
         );
         context.pop();
       }
@@ -125,9 +126,10 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   Widget build(BuildContext context) {
     final loc = _location;
 
+    final l10n = context.l10n;
     return stackRouteScaffold(
       location: '/trees/${widget.treeId}/survival',
-      appBar: const ShellTopBar(title: 'Survival / re-geotag', menuWithBack: true),
+      appBar: ShellTopBar(title: l10n.survivalRegeotag, menuWithBack: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -143,14 +145,14 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Current GPS', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(l10n.currentGps, style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   if (_locating)
                     const LinearProgressIndicator()
                   else if (loc != null)
                     Text(formatCoordinates(loc.latitude, loc.longitude, accuracyMeters: loc.accuracyMeters))
                   else
-                    const Text('No fix yet'),
+                    Text(l10n.noGpsFix),
                   if (_locMessage != null) ...[
                     const SizedBox(height: 6),
                     Text(_locMessage!, style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted)),
@@ -159,7 +161,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                   OutlinedButton.icon(
                     onPressed: _locating ? null : _captureGps,
                     icon: const Icon(Icons.my_location),
-                    label: const Text('Refresh GPS'),
+                    label: Text(l10n.refreshGps),
                   ),
                 ],
               ),
@@ -168,19 +170,26 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _survivalStatus,
-            decoration: const InputDecoration(labelText: 'Survival status'),
-            items: _survivalStatuses
-                .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
-                .toList(),
+            decoration: InputDecoration(labelText: l10n.survivalStatusLabel),
+            items: [
+              DropdownMenuItem(value: 'live', child: Text(l10n.survivalLive)),
+              DropdownMenuItem(value: 'stressed', child: Text(l10n.survivalStressed)),
+              DropdownMenuItem(value: 'dead', child: Text(l10n.survivalDead)),
+              DropdownMenuItem(value: 'replaced', child: Text(l10n.survivalReplaced)),
+              const DropdownMenuItem(value: 'missing', child: Text('Missing / uprooted')),
+            ],
             onChanged: _submitting ? null : (v) => setState(() => _survivalStatus = v ?? _survivalStatus),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             value: _measurementMethod,
-            decoration: const InputDecoration(labelText: 'Measurement method'),
-            items: _measurementMethods
-                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
-                .toList(),
+            decoration: InputDecoration(labelText: l10n.measurementMethodLabel),
+            items: [
+              const DropdownMenuItem(value: 'tape', child: Text('Tape measure (DBH at 1.3 m)')),
+              DropdownMenuItem(value: 'caliper', child: Text(l10n.caliper)),
+              const DropdownMenuItem(value: 'clinometer', child: Text('Clinometer (height)')),
+              DropdownMenuItem(value: 'visual_estimate', child: Text(l10n.visualEstimate)),
+            ],
             onChanged: _submitting ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
           ),
           const SizedBox(height: 12),
@@ -190,9 +199,9 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                 child: TextField(
                   controller: _dbh,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'DBH (cm)',
-                    hintText: 'Optional remeasure',
+                  decoration: InputDecoration(
+                    labelText: l10n.dbhLabel,
+                    hintText: l10n.optionalRemeasure,
                   ),
                 ),
               ),
@@ -201,9 +210,9 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                 child: TextField(
                   controller: _height,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Height (m)',
-                    hintText: 'Optional',
+                  decoration: InputDecoration(
+                    labelText: l10n.heightLabel,
+                    hintText: l10n.optionalHint,
                   ),
                 ),
               ),
@@ -212,8 +221,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _remarks,
-            decoration: const InputDecoration(
-              labelText: 'Remarks',
+            decoration: InputDecoration(
+              labelText: l10n.remarksLabel,
               hintText: 'Condition, replacement notes…',
             ),
             maxLines: 3,
@@ -225,7 +234,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _submitting || loc == null ? null : _submit,
-            child: Text(_submitting ? 'Submitting…' : 'Submit survival survey'),
+            child: Text(_submitting ? l10n.submitting : l10n.submitSurvivalSurvey),
           ),
         ],
       ),

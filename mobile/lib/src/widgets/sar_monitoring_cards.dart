@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme.dart';
+import '../l10n/l10n_ext.dart';
 
 /// Forest Integrity hero for mobile monitoring (Phase 4.5).
 class SarIntegrityHeroCard extends StatelessWidget {
@@ -11,12 +12,14 @@ class SarIntegrityHeroCard extends StatelessWidget {
     required this.atRisk,
     required this.divergent,
     required this.aligned,
+    this.languageCode = 'en',
   });
 
   final num? avgIntegrity;
   final int atRisk;
   final int divergent;
   final int aligned;
+  final String languageCode;
 
   Color _scoreColor(num score) {
     if (score >= 75) return Colors.green.shade700;
@@ -27,6 +30,7 @@ class SarIntegrityHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -47,7 +51,7 @@ class SarIntegrityHeroCard extends StatelessWidget {
               Icon(Icons.radar, color: AranyixColors.forest, size: 22),
               const SizedBox(width: 8),
               Text(
-                'Forest Integrity',
+                l10n.forestIntegrityTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AranyixColors.forest,
@@ -55,7 +59,7 @@ class SarIntegrityHeroCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Axentis SAR',
+                l10n.sarProviderLabel,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AranyixColors.onSurfaceMuted,
                     ),
@@ -76,25 +80,31 @@ class SarIntegrityHeroCard extends StatelessWidget {
                     height: 1,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 4, bottom: 4),
-                  child: Text('/ 100 portfolio avg', style: TextStyle(color: AranyixColors.onSurfaceMuted)),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 4),
+                  child: Text(l10n.portfolioAvg, style: const TextStyle(color: AranyixColors.onSurfaceMuted)),
                 ),
               ],
             )
           else
-            const Text(
-              'Run SAR scans on the web satellite page to establish Forest Integrity baselines.',
-              style: TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13),
+            Text(
+              l10n.sarBaselineHint,
+              style: const TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13),
             ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Chip(label: '$atRisk at risk', warn: atRisk > 0),
-              _Chip(label: '$divergent divergent', warn: divergent > 0),
-              _Chip(label: '$aligned aligned'),
+              _Chip(
+                label: l10n.atRiskCount(atRisk),
+                warn: atRisk > 0,
+              ),
+              _Chip(
+                label: l10n.divergentCount(divergent),
+                warn: divergent > 0,
+              ),
+              _Chip(label: l10n.alignedCount(aligned)),
             ],
           ),
         ],
@@ -139,7 +149,7 @@ class SarWorkAreaTile extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Integrity $integrity${mode != null ? ' · $mode' : ''}',
+                  context.l10n.integrityScore('$integrity${mode != null ? ' · $mode' : ''}'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -189,7 +199,16 @@ class _Chip extends StatelessWidget {
   }
 }
 
-String? sarModeLabel(String? mode) {
+String? sarModeLabel(String? mode, {String languageCode = 'en'}) {
+  if (languageCode == 'hi') {
+    return switch (mode) {
+      'aligned' => 'संरेखित',
+      'optical_sar_divergent' => 'असमान',
+      'sar_gap_fill' => 'अंतर भरण',
+      'sar_stress' => 'तनाव',
+      _ => mode,
+    };
+  }
   switch (mode) {
     case 'aligned':
       return 'Aligned';

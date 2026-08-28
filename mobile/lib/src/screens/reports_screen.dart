@@ -10,13 +10,15 @@ import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 
-const _reportKinds = {
-  'tree': 'Tree portfolio',
-  'plantation': 'Plantation',
-  'carbon': 'Carbon',
-  'esg': 'ESG',
-  'biodiversity': 'Biodiversity',
-};
+const _reportKindKeys = ['tree', 'plantation', 'carbon', 'esg', 'biodiversity'];
+
+String _reportKindLabel(AppLocalizations l10n, String key) => switch (key) {
+      'tree' => l10n.reportTypeTree,
+      'plantation' => l10n.reportTypePlantation,
+      'carbon' => l10n.reportTypeCarbon,
+      'biodiversity' => l10n.reportTypeBiodiversity,
+      _ => key.toUpperCase(),
+    };
 
 const _formats = ['pdf', 'xlsx'];
 
@@ -66,6 +68,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _create() async {
+    final l10n = AppLocalizations.of(context)!;
     final needsFence = _kind == 'biodiversity' || _kind == 'plantation';
     String? fenceId;
     if (needsFence) {
@@ -75,7 +78,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         if (fences.isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('This report type needs a plantation / work area.')),
+              SnackBar(content: Text(l10n.reportNeedsArea)),
             );
           }
           return;
@@ -95,7 +98,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       await api.createReport(reportType: _kind, format: _format, plantationFenceId: fenceId);
       await _load();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report created')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.reportCreated)));
       }
     } catch (e) {
       if (mounted) {
@@ -108,6 +111,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final canGenerate = canGenerateReports(sessionController.user);
 
     return stackRouteScaffold(
@@ -124,7 +128,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
                       ],
                     ),
                   ),
@@ -136,21 +140,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       if (canGenerate) ...[
-                        Text('Create report', style: Theme.of(context).textTheme.titleMedium),
+                        Text(l10n.createReport, style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _kind,
-                          decoration: const InputDecoration(labelText: 'Type'),
+                          decoration: InputDecoration(labelText: l10n.typeLabel),
                           items: [
-                            for (final e in _reportKinds.entries)
-                              DropdownMenuItem(value: e.key, child: Text(e.value)),
+                            for (final key in _reportKindKeys)
+                              DropdownMenuItem(value: key, child: Text(_reportKindLabel(l10n, key))),
                           ],
                           onChanged: (v) => setState(() => _kind = v ?? _kind),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           value: _format,
-                          decoration: const InputDecoration(labelText: 'Format'),
+                          decoration: InputDecoration(labelText: l10n.formatLabel),
                           items: [
                             for (final f in _formats) DropdownMenuItem(value: f, child: Text(f.toUpperCase())),
                           ],
@@ -159,14 +163,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         const SizedBox(height: 12),
                         FilledButton(
                           onPressed: _creating ? null : _create,
-                          child: Text(_creating ? 'Creating…' : 'Create report'),
+                          child: Text(_creating ? l10n.saving : l10n.createReport),
                         ),
                         const SizedBox(height: 24),
                       ],
-                      Text('Your reports', style: Theme.of(context).textTheme.titleMedium),
+                      Text(l10n.yourReports, style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       if (_reports.isEmpty)
-                        const Text('No reports yet.', style: TextStyle(color: AranyixColors.onSurfaceMuted))
+                        Text(l10n.noReportsYet, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
                       else
                         for (final raw in _reports)
                           ListTile(

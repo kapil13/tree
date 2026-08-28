@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../nav_access.dart';
 import '../../theme.dart';
+import '../../l10n/l10n_ext.dart';
 
 class QuickAction {
   const QuickAction({
@@ -26,32 +27,33 @@ class DashboardQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final actions = <QuickAction>[
-      const QuickAction(
-        label: 'Register tree',
+      QuickAction(
+        label: l10n.registerTreeBtn,
         icon: Icons.add_circle_outline,
         route: '/trees/new',
         color: AranyixColors.forest,
       ),
-      const QuickAction(
-        label: 'Map',
+      QuickAction(
+        label: l10n.map,
         icon: Icons.map_outlined,
         route: '/map',
       ),
-      const QuickAction(
-        label: 'Assistant',
+      QuickAction(
+        label: l10n.navAssistant,
         icon: Icons.auto_awesome,
         route: '/assistant',
       ),
       if (canSeeFieldProjectsCard(user))
-        const QuickAction(
-          label: 'Projects',
+        QuickAction(
+          label: l10n.projects,
           icon: Icons.assignment_outlined,
           route: '/projects',
         ),
       if (canSeeBioacoustic(user))
-        const QuickAction(
-          label: 'Bioacoustic',
+        QuickAction(
+          label: l10n.navBioacoustic,
           icon: Icons.graphic_eq,
           route: '/bioacoustic',
         ),
@@ -62,7 +64,7 @@ class DashboardQuickActions extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text('Quick actions', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(l10n.quickActions, style: Theme.of(context).textTheme.titleMedium),
         ),
         SizedBox(
           height: 96,

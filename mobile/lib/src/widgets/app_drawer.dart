@@ -256,7 +256,7 @@ class _DrawerEmptyState extends StatelessWidget {
             Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AranyixColors.onSurfaceMuted)),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+              OutlinedButton(onPressed: onRetry, child: Text(AppLocalizations.of(context)!.retry)),
             ],
           ],
         ),

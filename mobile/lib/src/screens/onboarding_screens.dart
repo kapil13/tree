@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
 import '../widgets/auth_scaffold.dart';
+import '../l10n/l10n_ext.dart';
 
 /// Shown when professional signup awaits admin approval.
 class OnboardingPendingScreen extends StatelessWidget {
@@ -11,6 +12,7 @@ class OnboardingPendingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AuthScaffold(
       title: 'Application received',
       subtitle:
@@ -24,21 +26,21 @@ class OnboardingPendingScreen extends StatelessWidget {
               color: AranyixColors.forestLight,
               borderRadius: BorderRadius.circular(AranyixRadii.card),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('What happens next', style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(height: 8),
-                Text('• Our team verifies your organization details'),
-                Text('• You receive an approval email'),
-                Text('• Open the app and sign in to access your dashboard'),
+                Text(l10n.whatHappensNext, style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                const Text('• Our team verifies your organization details'),
+                const Text('• You receive an approval email'),
+                const Text('• Open the app and sign in to access your dashboard'),
               ],
             ),
           ),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: () => context.go('/home'),
-            child: const Text('Explore BYOT features'),
+            child: Text(l10n.exploreByot),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
@@ -48,7 +50,7 @@ class OnboardingPendingScreen extends StatelessWidget {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
-            child: const Text('Visit aranyix.tech'),
+            child: Text(l10n.visitWebsite),
           ),
         ],
       ),

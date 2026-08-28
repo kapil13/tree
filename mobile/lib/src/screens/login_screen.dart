@@ -16,6 +16,7 @@ import '../widgets/auth_scaffold.dart';
 import '../widgets/mobile_auth_security.dart';
 import '../widgets/turnstile_captcha.dart';
 import '../auth/auth_messages.dart';
+import '../l10n/l10n_ext.dart';
 import 'auth_flow_screens.dart';
 
 enum _LoginMode { email, phone }
@@ -234,11 +235,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionExpired = GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
+    final l10n = context.l10n;
     return AuthLightScope(
       child: AuthScaffold(
         compact: true,
-        title: 'Welcome back',
-        subtitle: 'Sign in to continue mapping trees, biodiversity, and compliance evidence.',
+        title: l10n.welcomeBackTitle,
+        subtitle: l10n.welcomeBackSub,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : () => context.go('/welcome'),
@@ -252,12 +254,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             OutlinedButton.icon(
               onPressed: _busy ? null : _googleSignIn,
               icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Continue with Google'),
+              label: Text(l10n.continueWithGoogle),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: _busy ? null : () => context.push('/signup'),
-              child: const Text('Create an account'),
+              child: Text(l10n.createAccount),
             ),
           ],
         ),
@@ -313,7 +315,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
             AuthModeTabs<_LoginMode>(
               values: const [_LoginMode.email, _LoginMode.phone],
-              labels: const ['Email', 'Phone OTP'],
+              labels: [l10n.emailTab, l10n.phoneOtpTab],
               selected: _mode,
               onChanged: _busy ? (_) {} : (mode) => setState(() => _mode = mode),
             ),
@@ -336,9 +338,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.mail_outline, size: 20),
+                decoration: InputDecoration(
+                  labelText: l10n.emailLabel,
+                  prefixIcon: const Icon(Icons.mail_outline, size: 20),
                 ),
               ),
               const SizedBox(height: 12),
@@ -350,7 +352,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   if (!_busy && _loaded) _submitEmail();
                 },
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: l10n.passwordLabel,
                   prefixIcon: const Icon(Icons.lock_outline, size: 20),
                   suffixIcon: IconButton(
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -388,9 +390,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Remember me',
-                              style: TextStyle(
+                            Text(
+                              l10n.rememberMe,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AranyixColors.onSurface,
@@ -403,7 +405,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: _busy ? null : () => context.push('/forgot-password'),
-                    child: const Text('Forgot password?'),
+                    child: Text(l10n.forgotPassword),
                   ),
                 ],
               ),
@@ -429,15 +431,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: _busy || !_loaded ? null : _submitEmail,
-                child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                child: Text(_busy ? l10n.signingIn : l10n.signIn),
               ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: const [
-                  _LoginTrustChip(icon: Icons.gps_fixed, label: 'GPS-verified'),
-                  _LoginTrustChip(icon: Icons.cloud_off, label: 'Offline sync'),
+                children: [
+                  _LoginTrustChip(icon: Icons.gps_fixed, label: l10n.gpsVerified),
+                  _LoginTrustChip(icon: Icons.cloud_off, label: l10n.offlineSyncLabel),
                 ],
               ),
             ] else

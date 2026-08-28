@@ -112,10 +112,11 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final t = tree;
     return stackRouteScaffold(
       location: '/trees/${widget.id}',
-      appBar: ShellTopBar(title: t?['species_text'] ?? 'Tree', menuWithBack: true),
+      appBar: ShellTopBar(title: t?['species_text'] ?? l10n.treeFallback, menuWithBack: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -127,7 +128,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
                       ],
                     ),
                   ),
@@ -143,11 +144,11 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                           children: [
                             Text(t!['public_code'], style: const TextStyle(fontFamily: 'monospace')),
                             const SizedBox(height: 8),
-                            _row('Health', _str(t['current_health'])),
-                            _row('Carbon', '${t['current_carbon_kg']} kg'),
-                            _row('DBH', '${t['current_dbh_cm'] ?? '—'} cm'),
-                            _row('Height', '${t['current_height_m'] ?? '—'} m'),
-                            _row('Satellite', t['satellite_verified'] == true ? '✓' : '—'),
+                            _row(l10n.healthLabel, _str(t['current_health'])),
+                            _row(l10n.carbonLabel, '${t['current_carbon_kg']} kg'),
+                            _row(l10n.dbhCmLabel, '${t['current_dbh_cm'] ?? '—'} cm'),
+                            _row(l10n.heightMLabel, '${t['current_height_m'] ?? '—'} m'),
+                            _row(l10n.satelliteLabel, t['satellite_verified'] == true ? '✓' : '—'),
                           ],
                         ),
                       ),
@@ -161,14 +162,14 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Satellite health',
+                                l10n.satelliteHealth,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
-                              _row('Risk', _str(satellite!['risk_level'])),
-                              _row('Status', _str(satellite!['health_status'])),
+                              _row(l10n.riskLabel, _str(satellite!['risk_level'])),
+                              _row(l10n.statusLabel, _str(satellite!['health_status'])),
                               if (satellite!['ndvi_current'] != null)
-                                _row('NDVI', _str(satellite!['ndvi_current'])),
+                                _row(l10n.ndviLabel, _str(satellite!['ndvi_current'])),
                               const SizedBox(height: 8),
                               Text(_str(satellite!['summary'])),
                               if (satellite!['llm_narrative'] != null) ...[
@@ -194,7 +195,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             final url = snap.hasData
                                 ? snap.data!.publicTreeUrl(code)
                                 : 'https://aranyix.tech/p/$code';
-                            final l10n = AppLocalizations.of(context);
+                            final shareL10n = AppLocalizations.of(context)!;
                             return Column(
                               children: [
                                 QrImageView(data: url, size: 180),
@@ -202,7 +203,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                                 OutlinedButton.icon(
                                   onPressed: () => _shareTree(url),
                                   icon: const Icon(Icons.share_outlined),
-                                  label: Text(l10n?.shareTreeQr ?? 'Share tree QR'),
+                                  label: Text(shareL10n.shareTreeQr),
                                 ),
                               ],
                             );
@@ -215,20 +216,20 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       OutlinedButton.icon(
                         onPressed: () => context.push('/trees/${widget.id}/survival'),
                         icon: const Icon(Icons.my_location),
-                        label: const Text('Survival / re-geotag'),
+                        label: Text(l10n.survivalRegeotag),
                       ),
                       const SizedBox(height: 8),
                     ],
                     FilledButton.icon(
                       onPressed: analyzing ? null : _analyze,
                       icon: const Icon(Icons.auto_awesome),
-                      label: Text(analyzing ? 'Analyzing…' : 'Run AI analysis'),
+                      label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: satelliteBusy ? null : _satelliteHealth,
                       icon: const Icon(Icons.satellite_alt),
-                      label: Text(satelliteBusy ? 'Checking satellite…' : 'Run satellite health'),
+                      label: Text(satelliteBusy ? l10n.checkingSatellite : l10n.runSatelliteHealth),
                     ),
                   ],
                 ),

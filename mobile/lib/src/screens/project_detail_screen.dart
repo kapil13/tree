@@ -16,6 +16,7 @@ class ProjectDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final projectAsync = ref.watch(plantingProjectProvider(projectId));
     final workAreasAsync = ref.watch(workAreasProvider(projectId));
 
@@ -26,7 +27,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         data: (project) => FloatingActionButton.extended(
           onPressed: () => context.push('/trees/new?project=$projectId'),
           icon: const Icon(Icons.add),
-          label: const Text('Register tree'),
+          label: Text(l10n.registerTreeBtn),
         ),
         orElse: () => null,
       ),
@@ -48,22 +49,22 @@ class ProjectDetailScreen extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _chip('Mode', '${project['compliance_mode']}'),
-                  _chip('Trees', '${summary?['tree_count'] ?? 0}'),
-                  _chip('Work areas', '${summary?['work_area_count'] ?? 0}'),
+                  _chip(l10n.modeLabel, '${project['compliance_mode']}'),
+                  _chip(l10n.treesCountLabel, '${summary?['tree_count'] ?? 0}'),
+                  _chip(l10n.workAreas, '${summary?['work_area_count'] ?? 0}'),
                   if ((summary?['open_violations'] ?? 0) > 0)
-                    _chip('Violations', '${summary?['open_violations']}', warn: true),
+                    _chip(l10n.violationsLabel, '${summary?['open_violations']}', warn: true),
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Work areas', style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n.workAreas, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               workAreasAsync.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) => Text(apiErrorMessage(e)),
                 data: (areas) {
                   if (areas.isEmpty) {
-                    return const Text('No work areas defined on web yet.');
+                    return Text(l10n.noWorkAreasYet);
                   }
                   return Column(
                     children: areas.map((wa) {
@@ -74,7 +75,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                       final scanLabel = _satelliteLabel(lastScan);
                       return Card(
                         child: ListTile(
-                          title: Text(m['name'] as String? ?? 'Work area'),
+                          title: Text(m['name'] as String? ?? l10n.workAreaFallback),
                           subtitle: Text(
                             '${m['geometry_type']} · ${m['tree_count'] ?? 0} trees'
                             '${m['segment_code'] != null ? ' · block ${m['segment_code']}' : ''}'

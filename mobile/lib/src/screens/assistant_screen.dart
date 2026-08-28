@@ -78,8 +78,17 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
-                  Expanded(child: TextField(controller: _input, decoration: const InputDecoration(hintText: 'Ask anything…'))),
-                  IconButton(onPressed: busy ? null : _ask, icon: const Icon(Icons.send, color: Color(0xFF15803D))),
+                  Expanded(
+                    child: TextField(
+                      controller: _input,
+                      decoration: InputDecoration(hintText: l10n.askAnythingForest),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: busy ? null : _ask,
+                    icon: const Icon(Icons.send, color: Color(0xFF15803D)),
+                    tooltip: l10n.assistantSend,
+                  ),
                 ],
               ),
             ),

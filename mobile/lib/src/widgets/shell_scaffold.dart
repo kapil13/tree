@@ -8,12 +8,23 @@ import '../theme.dart';
 import 'add_action_sheet.dart';
 import 'app_drawer.dart';
 
-/// Opens the nearest scaffold drawer (tab shell or stack route).
+/// Opens the app drawer — works for nested scaffolds (monitoring/map inside [AppShell]).
 void openAppDrawer(BuildContext context) {
-  final scaffold = Scaffold.maybeOf(context);
-  if (scaffold?.hasDrawer ?? false) {
-    scaffold!.openDrawer();
+  final direct = Scaffold.maybeOf(context);
+  if (direct?.hasDrawer ?? false) {
+    direct!.openDrawer();
+    return;
   }
+
+  ScaffoldState? drawerHost;
+  context.visitAncestorElements((element) {
+    if (element is StatefulElement && element.state is ScaffoldState) {
+      final state = element.state as ScaffoldState;
+      if (state.hasDrawer) drawerHost = state;
+    }
+    return true;
+  });
+  drawerHost?.openDrawer();
 }
 
 /// Top bar with hamburger menu for shell screens.
