@@ -11,6 +11,7 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/mobile_auth_security.dart';
 import '../widgets/otp_input.dart';
 
 enum _SignupStep { account, verifyPhone, verifyEmail }
@@ -174,6 +175,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     return AuthLightScope(
       child: AuthScaffold(
+        compact: true,
         title: switch (_step) {
           _SignupStep.account => 'Create account',
           _SignupStep.verifyPhone => 'Verify phone',
@@ -209,7 +211,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_step == _SignupStep.account) _buildAccountStep(),
+            if (_step == _SignupStep.account) ...[
+              _buildAccountStep(),
+              const SizedBox(height: 12),
+              const MobileAuthSecurityNote(),
+            ],
             if (_step == _SignupStep.verifyPhone) _buildOtpStep(isPhone: true),
             if (_step == _SignupStep.verifyEmail) _buildOtpStep(isPhone: false),
             if (_error != null) ...[

@@ -210,7 +210,8 @@ class ApiClient {
     final r = await _dio.post('/auth/login', data: {
       'email': email,
       'password': password,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -223,7 +224,8 @@ class ApiClient {
     final r = await _dio.post('/auth/otp/request', data: {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -249,7 +251,8 @@ class ApiClient {
   }) async {
     final r = await _dio.post('/auth/password-reset/request', data: {
       'email': email,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -296,7 +299,8 @@ class ApiClient {
       'phone': phone,
       'password': password,
       'signup_category': signupCategory,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }

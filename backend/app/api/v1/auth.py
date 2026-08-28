@@ -212,7 +212,12 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
 
 @router.post("/login", response_model=TokenResponse, dependencies=[rate_limit(30, 60)])
 async def login(payload: LoginRequest, request: Request, db: DB) -> TokenResponse:
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
+    await verify_captcha_token(
+        payload.captcha_token,
+        remote_ip=_client_ip(request),
+        request=request,
+        client_platform=payload.client_platform,
+    )
     res = await db.execute(select(User).where(User.email == payload.email))
     user = res.scalar_one_or_none()
     if user is None or not user.hashed_password or not verify_password(

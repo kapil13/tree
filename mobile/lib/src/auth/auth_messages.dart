@@ -17,7 +17,7 @@ String humanizeAuthError(String code) {
     'sms_not_configured':
         'SMS is not live yet. Use email sign-in, or try again after SMS is enabled on the server.',
     'sms_send_failed': 'Could not send the SMS code. Please try again shortly.',
-    'captcha_required': 'Please complete the security check.',
+    'captcha_required': 'Mobile sign-in does not use web captcha. Update the app or try again in a moment.',
     'captcha_failed': 'Security check failed. Please try again.',
     'rate_limited': 'Too many attempts. Please wait a moment and try again.',
     'rate_limit_unavailable': 'Sign-up is temporarily unavailable. Please try again later.',

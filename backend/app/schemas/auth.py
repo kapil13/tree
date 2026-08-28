@@ -65,6 +65,7 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
     captcha_token: str | None = None
+    client_platform: str | None = None
 
 
 class PasswordResetRequest(BaseModel):

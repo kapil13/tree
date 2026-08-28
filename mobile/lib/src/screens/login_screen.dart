@@ -13,6 +13,7 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/mobile_auth_security.dart';
 import 'auth_flow_screens.dart';
 
 enum _LoginMode { email, phone }
@@ -185,14 +186,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final sessionExpired = GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
     return AuthLightScope(
       child: AuthScaffold(
+        compact: true,
         title: 'Welcome back',
         subtitle: 'Sign in to continue mapping trees, biodiversity, and compliance evidence.',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : () => context.go('/welcome'),
         ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AuthOrDivider(),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _googleSignIn,
+              icon: const Icon(Icons.g_mobiledata, size: 28),
+              label: const Text('Continue with Google'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _busy ? null : () => context.push('/signup'),
+              child: const Text('Create an account'),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (sessionExpired) ...[
               Container(
@@ -246,7 +267,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               selected: _mode,
               onChanged: _busy ? (_) {} : (mode) => setState(() => _mode = mode),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             if (_mode == _LoginMode.email) ...[
               if (allowCustomApiBase) ...[
                 TextField(
@@ -336,41 +357,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: const [
-                  _LoginTrustChip(icon: Icons.gps_fixed, label: 'GPS-verified trees'),
-                  _LoginTrustChip(icon: Icons.cloud_off, label: 'Offline field sync'),
-                  _LoginTrustChip(icon: Icons.verified_user_outlined, label: 'Secure sign-in'),
-                ],
-              ),
+              const SizedBox(height: 10),
+              const MobileAuthSecurityNote(),
               if (_err != null) ...[
+                const SizedBox(height: 10),
                 AuthErrorBanner(message: _err!),
-                const SizedBox(height: 12),
               ],
+              const SizedBox(height: 12),
               FilledButton(
                 onPressed: _busy || !_loaded ? null : _submitEmail,
                 child: Text(_busy ? 'Signing in…' : 'Sign in'),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: const [
+                  _LoginTrustChip(icon: Icons.gps_fixed, label: 'GPS-verified'),
+                  _LoginTrustChip(icon: Icons.cloud_off, label: 'Offline sync'),
+                ],
               ),
             ] else
               PhoneOtpLoginPanel(
                 onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
               ),
-            const SizedBox(height: 20),
-            const AuthOrDivider(),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _googleSignIn,
-              icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Continue with Google'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: _busy ? null : () => context.push('/signup'),
-              child: const Text('Create an account'),
-            ),
           ],
         ),
       ),
