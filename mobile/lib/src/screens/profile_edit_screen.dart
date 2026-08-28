@@ -8,6 +8,7 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
+import '../l10n/l10n_ext.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -114,7 +115,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       ref.invalidate(userProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved')),
+        SnackBar(content: Text(context.l10n.profileSaved)),
       );
       context.pop();
     } catch (e) {
@@ -127,6 +128,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final userAsync = ref.watch(userProvider);
     return stackRouteScaffold(
       location: '/profile/edit',
@@ -168,7 +170,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Date of birth'),
+                  title: Text(l10n.dateOfBirth),
                   subtitle: Text(_dob == null ? 'Not set' : _formatDate(_dob)!),
                   trailing: const Icon(Icons.calendar_today_outlined),
                   onTap: _busy
@@ -180,12 +182,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Age'),
+                  title: Text(l10n.age),
                   subtitle: Text(age == null ? 'Set date of birth' : '$age years'),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Date of marriage'),
+                  title: Text(l10n.dateOfMarriage),
                   subtitle: Text(_marriage == null ? 'Not set' : _formatDate(_marriage)!),
                   trailing: const Icon(Icons.calendar_today_outlined),
                   onTap: _busy

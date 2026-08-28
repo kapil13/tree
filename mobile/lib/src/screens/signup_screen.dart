@@ -14,6 +14,7 @@ import '../widgets/auth_scaffold.dart';
 import '../widgets/mobile_auth_security.dart';
 import '../widgets/otp_input.dart';
 import '../widgets/turnstile_captcha.dart';
+import '../l10n/l10n_ext.dart';
 
 enum _SignupStep { account, verifyPhone, verifyEmail }
 
@@ -207,11 +208,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AuthLightScope(
       child: AuthScaffold(
         compact: true,
         title: switch (_step) {
-          _SignupStep.account => 'Create account',
+          _SignupStep.account => l10n.createAccount,
           _SignupStep.verifyPhone => 'Verify phone',
           _SignupStep.verifyEmail => 'Verify email',
         },
@@ -271,7 +273,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             if (_devHint != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Dev hint: $_devHint',
+                l10n.devHint(_devHint!),
                 style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
               ),
             ],
@@ -294,7 +296,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 8),
             TextButton(
               onPressed: _busy ? null : () => context.go('/login'),
-              child: const Text('Already have an account? Sign in'),
+              child: Text(l10n.alreadyHaveAccountSignIn),
             ),
           ],
         ),
@@ -303,6 +305,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildAccountStep() {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -346,9 +349,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            prefixIcon: Icon(Icons.mail_outline, size: 20),
+          decoration: InputDecoration(
+            labelText: l10n.emailLabel,
+            prefixIcon: const Icon(Icons.mail_outline, size: 20),
           ),
         ),
         const SizedBox(height: 10),
@@ -378,7 +381,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           obscureText: _obscurePassword,
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(
-            labelText: 'Password',
+            labelText: l10n.passwordLabel,
             helperText: 'Min. 12 characters',
             helperMaxLines: 1,
             prefixIcon: const Icon(Icons.lock_outline, size: 20),

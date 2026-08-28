@@ -35,7 +35,7 @@ class TreeListScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => ref.invalidate(treesProvider),
-                    child: const Text('Retry'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -48,12 +48,12 @@ class TreeListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('No trees yet.'),
+                  Text(l10n.noTreesYet),
                   if (canAdd) ...[
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () => context.push('/trees/new'),
-                      child: const Text('Add your first tree'),
+                      child: Text(l10n.addFirstTree),
                     ),
                   ],
                 ],

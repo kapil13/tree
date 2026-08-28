@@ -16,6 +16,7 @@ class ProjectDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final projectAsync = ref.watch(plantingProjectProvider(projectId));
     final workAreasAsync = ref.watch(workAreasProvider(projectId));
 
@@ -26,7 +27,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         data: (project) => FloatingActionButton.extended(
           onPressed: () => context.push('/trees/new?project=$projectId'),
           icon: const Icon(Icons.add),
-          label: const Text('Register tree'),
+          label: Text(l10n.registerTreeBtn),
         ),
         orElse: () => null,
       ),
@@ -56,14 +57,14 @@ class ProjectDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Work areas', style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n.workAreas, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               workAreasAsync.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) => Text(apiErrorMessage(e)),
                 data: (areas) {
                   if (areas.isEmpty) {
-                    return const Text('No work areas defined on web yet.');
+                    return Text(l10n.noWorkAreasYet);
                   }
                   return Column(
                     children: areas.map((wa) {

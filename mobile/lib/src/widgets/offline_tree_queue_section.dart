@@ -6,6 +6,7 @@ import '../offline/tree_registration_queue.dart';
 import '../offline/tree_registration_sync.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../l10n/l10n_ext.dart';
 
 class OfflineTreeQueueSection extends ConsumerStatefulWidget {
   const OfflineTreeQueueSection({super.key});
@@ -35,14 +36,15 @@ class _OfflineTreeQueueSectionState extends ConsumerState<OfflineTreeQueueSectio
     if (mounted) setState(() => _items = items);
   }
 
-  String _statusLabel(TreeQueueStatus status) {
+  String _statusLabel(BuildContext context, TreeQueueStatus status) {
+    final l10n = context.l10n;
     switch (status) {
       case TreeQueueStatus.pending:
-        return 'Pending upload';
+        return l10n.bioQueuePending;
       case TreeQueueStatus.syncing:
-        return 'Syncing…';
+        return l10n.bioQueueSyncing;
       case TreeQueueStatus.failed:
-        return 'Failed';
+        return l10n.bioQueueFailed;
     }
   }
 
@@ -60,6 +62,7 @@ class _OfflineTreeQueueSectionState extends ConsumerState<OfflineTreeQueueSectio
   @override
   Widget build(BuildContext context) {
     if (_items.isEmpty) return const SizedBox.shrink();
+    final l10n = context.l10n;
     final sync = ref.watch(treeRegistrationSyncProvider);
 
     return Column(
@@ -67,7 +70,7 @@ class _OfflineTreeQueueSectionState extends ConsumerState<OfflineTreeQueueSectio
       children: [
         Row(
           children: [
-            Text('Pending tree registrations', style: Theme.of(context).textTheme.titleMedium),
+            Text(l10n.pendingTreeRegistrations, style: Theme.of(context).textTheme.titleMedium),
             const Spacer(),
             if (sync.syncing)
               const Padding(
@@ -83,18 +86,18 @@ class _OfflineTreeQueueSectionState extends ConsumerState<OfflineTreeQueueSectio
                   ? null
                   : () => sync.syncAll(() => ref.read(apiClientProvider.future)),
               icon: const Icon(Icons.sync, size: 18),
-              label: const Text('Sync now'),
+              label: Text(l10n.bioSyncNow),
             ),
           ],
         ),
         const SizedBox(height: 8),
         ..._items.map((item) {
-          final species = item.payload['species_text'] as String? ?? 'Tree';
+          final species = item.payload['species_text'] as String? ?? l10n.trees;
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
               leading: Icon(_statusIcon(item.status), color: AranyixColors.forest),
-              title: Text('$species · ${_statusLabel(item.status)}'),
+              title: Text('$species · ${_statusLabel(context, item.status)}'),
               subtitle: Text(
                 '${item.createdAt.toLocal().toString().substring(0, 16)}'
                 '${item.photoPaths.isNotEmpty ? ' · ${item.photoPaths.length} photo(s)' : ''}'
@@ -103,7 +106,7 @@ class _OfflineTreeQueueSectionState extends ConsumerState<OfflineTreeQueueSectio
               isThreeLine: item.errorMessage != null && item.errorMessage!.isNotEmpty,
               trailing: item.status == TreeQueueStatus.failed
                   ? IconButton(
-                      tooltip: 'Retry',
+                      tooltip: l10n.retry,
                       onPressed: () async {
                         await ref.read(treeRegistrationQueueProvider).markPending(item.id);
                         await sync.syncAll(() => ref.read(apiClientProvider.future));

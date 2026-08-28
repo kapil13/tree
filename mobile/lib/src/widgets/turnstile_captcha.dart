@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../api/api_base_url.dart';
 import '../theme.dart';
+import '../l10n/l10n_ext.dart';
 
 /// Cloudflare Turnstile for mobile — loads from aranyix.tech (registered domain)
 /// and returns token via `aranyix://captcha?token=…` navigation intercept.
@@ -184,7 +185,7 @@ class TurnstileCaptchaState extends State<TurnstileCaptcha> {
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Retry security check'),
+                    child: Text(context.l10n.retrySecurityCheck),
                   ),
                 ],
               ),

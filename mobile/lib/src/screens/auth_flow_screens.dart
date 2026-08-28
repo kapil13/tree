@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
+import '../l10n/l10n_ext.dart';
 
 /// Handles deep links: `https://aranyix.tech/auth/callback#access_token=…`
 class AuthCallbackScreen extends ConsumerStatefulWidget {
@@ -53,6 +54,7 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Center(
         child: Padding(
@@ -63,13 +65,13 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
               if (_error == null) ...[
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                const Text('Completing sign-in…'),
+                Text(l10n.completingSignIn),
               ] else ...[
                 Text(_error!, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () => context.go('/login'),
-                  child: const Text('Back to sign in'),
+                  child: Text(l10n.backToSignIn),
                 ),
               ],
             ],
@@ -165,9 +167,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AuthLightScope(
       child: AuthScaffold(
-      title: _step2 ? 'Set new password' : 'Forgot password',
+      title: _step2 ? l10n.passwordLabel : l10n.forgotPassword,
       subtitle: _step2
           ? 'Enter the code sent to ${_email.text.trim()} and choose a new password.'
           : 'We will email you a one-time code to reset your password.',
@@ -182,7 +185,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(labelText: l10n.emailLabel),
             ),
           ] else ...[
             OtpInput(length: 6, enabled: !_busy, onChanged: (v) => setState(() => _otp = v)),
@@ -190,8 +193,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             TextField(
               controller: _password,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New password',
+              decoration: InputDecoration(
+                labelText: l10n.passwordLabel,
                 helperText: 'At least 12 characters',
               ),
             ),
@@ -202,7 +205,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ],
           if (_devHint != null) ...[
             const SizedBox(height: 8),
-            Text('Dev hint: $_devHint', style: Theme.of(context).textTheme.bodySmall),
+            Text(l10n.devHint(_devHint!), style: Theme.of(context).textTheme.bodySmall),
           ],
           const SizedBox(height: 20),
           FilledButton(
@@ -300,6 +303,7 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -342,20 +346,20 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
         ],
         if (_devHint != null) ...[
           const SizedBox(height: 8),
-          Text('Dev hint: $_devHint', style: Theme.of(context).textTheme.bodySmall),
+          Text(l10n.devHint(_devHint!), style: Theme.of(context).textTheme.bodySmall),
         ],
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy ? null : (_codeSent ? _verify : _sendCode),
           child: Text(_busy
-              ? 'Please wait…'
+              ? l10n.saving
               : _codeSent
-                  ? 'Verify & sign in'
+                  ? l10n.signIn
                   : 'Send SMS code'),
         ),
         TextButton(
           onPressed: _busy ? null : widget.onSwitchToEmail,
-          child: const Text('Use email instead'),
+          child: Text(l10n.useEmailInstead),
         ),
       ],
     );

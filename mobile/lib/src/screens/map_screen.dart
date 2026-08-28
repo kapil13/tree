@@ -106,15 +106,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _openSaveSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_drawPoints.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least 2 points on the map')),
+        SnackBar(content: Text(l10n.needTwoPoints)),
       );
       return;
     }
     if (_mode == _DrawMode.polygon && _drawPoints.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Polygon needs at least 3 points')),
+        SnackBar(content: Text(l10n.polygonNeedsThree)),
       );
       return;
     }
@@ -123,7 +124,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (!mounted) return;
     if (projects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create or join a planting project first')),
+        SnackBar(content: Text(l10n.createProjectFirst)),
       );
       return;
     }
@@ -217,6 +218,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     required String name,
     required double bufferM,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _saving = true);
     try {
       final api = await ref.read(apiClientProvider.future);
@@ -245,7 +247,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         });
         ref.invalidate(plantationFencesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Work area saved')),
+          SnackBar(content: Text(l10n.workAreaSaved)),
         );
       }
     } catch (e) {
@@ -275,8 +277,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         title: _mode == _DrawMode.none
             ? l10n.map
             : _mode == _DrawMode.polygon
-                ? 'Draw polygon'
-                : 'Draw corridor',
+                ? l10n.drawPolygon
+                : l10n.drawCorridor,
         actions: [
           if (showFieldOps)
             IconButton(
@@ -320,7 +322,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(mapTreesProvider(bbox)),
-                  child: const Text('Retry'),
+                  child: Text(l10n.retry),
                 ),
               ],
             ),
@@ -428,14 +430,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ],
               ),
               if (points.isEmpty && _mode == _DrawMode.none)
-                const Align(
+                Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 88),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                     child: Card(
                       child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Text('No trees with GPS yet. Add a tree to see it on the map.'),
+                        padding: const EdgeInsets.all(12),
+                        child: Text(l10n.noTreesOnMap),
                       ),
                     ),
                   ),

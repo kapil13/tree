@@ -25,6 +25,7 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   Future<void> _openPreferences(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final api = await ref.read(apiClientProvider.future);
       final prefs = await api.getAlertPreferences();
@@ -51,24 +52,24 @@ class NotificationsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Alert preferences', style: Theme.of(ctx).textTheme.titleLarge),
+                      Text(l10n.alertPreferences, style: Theme.of(ctx).textTheme.titleLarge),
                       SwitchListTile(
-                        title: const Text('Satellite health'),
+                        title: Text(l10n.satelliteHealth),
                         value: satellite,
                         onChanged: saving ? null : (v) => setSheet(() => satellite = v),
                       ),
                       SwitchListTile(
-                        title: const Text('Survival survey'),
+                        title: Text(l10n.survivalSurvey),
                         value: survival,
                         onChanged: saving ? null : (v) => setSheet(() => survival = v),
                       ),
                       SwitchListTile(
-                        title: const Text('Threat watch'),
+                        title: Text(l10n.threatWatch),
                         value: threat,
                         onChanged: saving ? null : (v) => setSheet(() => threat = v),
                       ),
                       SwitchListTile(
-                        title: const Text('Compliance'),
+                        title: Text(l10n.complianceLabel),
                         value: compliance,
                         onChanged: saving ? null : (v) => setSheet(() => compliance = v),
                       ),
@@ -110,7 +111,7 @@ class NotificationsScreen extends ConsumerWidget {
                                     if (ctx.mounted) Navigator.pop(ctx);
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Preferences saved')),
+                                        SnackBar(content: Text(l10n.preferencesSaved)),
                                       );
                                     }
                                   } catch (e) {
@@ -122,7 +123,7 @@ class NotificationsScreen extends ConsumerWidget {
                                     }
                                   }
                                 },
-                          child: Text(saving ? 'Saving…' : 'Save'),
+                          child: Text(saving ? l10n.saving : l10n.save),
                         ),
                       ),
                     ],
@@ -151,7 +152,7 @@ class NotificationsScreen extends ConsumerWidget {
         title: l10n.navAlerts,
         actions: [
           IconButton(
-            tooltip: 'Preferences',
+            tooltip: l10n.preferences,
             onPressed: () => _openPreferences(context, ref),
             icon: const Icon(Icons.tune),
           ),
@@ -169,7 +170,7 @@ class NotificationsScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(alertsProvider),
-                  child: const Text('Retry'),
+                  child: Text(l10n.retry),
                 ),
               ],
             ),
@@ -177,7 +178,7 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(child: Text('No alerts.'));
+            return Center(child: Text(l10n.noAlerts));
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(alertsProvider),

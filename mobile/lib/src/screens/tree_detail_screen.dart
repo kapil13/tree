@@ -112,6 +112,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final t = tree;
     return stackRouteScaffold(
       location: '/trees/${widget.id}',
@@ -127,7 +128,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
                       ],
                     ),
                   ),
@@ -161,7 +162,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Satellite health',
+                                l10n.satelliteHealth,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
@@ -215,7 +216,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       OutlinedButton.icon(
                         onPressed: () => context.push('/trees/${widget.id}/survival'),
                         icon: const Icon(Icons.my_location),
-                        label: const Text('Survival / re-geotag'),
+                        label: Text(l10n.survivalRegeotag),
                       ),
                       const SizedBox(height: 8),
                     ],

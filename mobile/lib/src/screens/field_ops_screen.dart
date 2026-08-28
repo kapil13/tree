@@ -14,6 +14,7 @@ class FieldOpsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final summaryAsync = ref.watch(fieldOpsSummaryProvider);
 
     return stackRouteScaffold(
@@ -31,7 +32,7 @@ class FieldOpsScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(fieldOpsSummaryProvider),
-                  child: const Text('Retry'),
+                  child: Text(l10n.retry),
                 ),
               ],
             ),
@@ -55,17 +56,17 @@ class FieldOpsScreen extends ConsumerWidget {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    _KpiChip(label: 'Projects', value: '${summary['project_count'] ?? 0}'),
-                    _KpiChip(label: 'Trees', value: '${summary['tree_count'] ?? 0}'),
-                    _KpiChip(label: 'Open violations', value: '${summary['open_violations'] ?? 0}'),
-                    _KpiChip(label: 'Survival due', value: '${summary['survival_due'] ?? 0}'),
+                    _KpiChip(label: l10n.projects, value: '${summary['project_count'] ?? 0}'),
+                    _KpiChip(label: l10n.trees, value: '${summary['tree_count'] ?? 0}'),
+                    _KpiChip(label: l10n.recentViolations, value: '${summary['open_violations'] ?? 0}'),
+                    _KpiChip(label: l10n.survivalDueByProject, value: '${summary['survival_due'] ?? 0}'),
                   ],
                 ),
                 const SizedBox(height: 24),
-                Text('Recent violations', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.recentViolations, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (violations.isEmpty)
-                  const Text('No open violations.', style: TextStyle(color: AranyixColors.onSurfaceMuted))
+                  Text(l10n.noOpenViolations, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
                 else
                   for (final raw in violations)
                     _ViolationTile(
@@ -73,10 +74,10 @@ class FieldOpsScreen extends ConsumerWidget {
                       onResolve: () => _resolve(context, ref, Map<String, dynamic>.from(raw)),
                     ),
                 const SizedBox(height: 24),
-                Text('Survival due by project', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.survivalDueByProject, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (withSurvival.isEmpty)
-                  const Text('No survival surveys due.', style: TextStyle(color: AranyixColors.onSurfaceMuted))
+                  Text(l10n.noSurvivalDue, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
                 else
                   for (final raw in withSurvival)
                     ListTile(
@@ -104,7 +105,7 @@ class FieldOpsScreen extends ConsumerWidget {
       ref.invalidate(fieldOpsSummaryProvider);
       ref.invalidate(monitoringSummaryProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Violation resolved')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.violationResolved)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -157,7 +158,7 @@ class _ViolationTile extends StatelessWidget {
         subtitle: Text(
           '${violation['project_name'] ?? ''} · ${violation['severity'] ?? ''}',
         ),
-        trailing: TextButton(onPressed: onResolve, child: const Text('Resolve')),
+        trailing: TextButton(onPressed: onResolve, child: Text(AppLocalizations.of(context)!.resolve)),
       ),
     );
   }

@@ -115,7 +115,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: () => ref.invalidate(userProvider),
-                      child: const Text('Retry'),
+                      child: Text(l10n.retry),
                     ),
                   ],
                 ),
@@ -128,8 +128,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Edit personal profile'),
-                  subtitle: const Text('Name, phone, date of birth, city, state'),
+                  title: Text(l10n.editProfile),
+                  subtitle: Text(l10n.editProfileSub),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/profile/edit'),
                 ),
@@ -231,13 +231,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 if (_appVersion.isNotEmpty)
                   ListTile(
                     dense: true,
-                    title: const Text('App version'),
+                    title: Text(l10n.appVersion),
                     subtitle: Text(_appVersion),
                   ),
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.logout),
-                  title: const Text('Sign out'),
+                  title: Text(l10n.signOut),
                   onTap: () async {
                     final api = await ref.read(apiClientProvider.future);
                     await api.logout();

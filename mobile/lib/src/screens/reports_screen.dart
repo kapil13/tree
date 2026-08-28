@@ -66,6 +66,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _create() async {
+    final l10n = AppLocalizations.of(context)!;
     final needsFence = _kind == 'biodiversity' || _kind == 'plantation';
     String? fenceId;
     if (needsFence) {
@@ -75,7 +76,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         if (fences.isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('This report type needs a plantation / work area.')),
+              SnackBar(content: Text(l10n.reportNeedsArea)),
             );
           }
           return;
@@ -95,7 +96,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       await api.createReport(reportType: _kind, format: _format, plantationFenceId: fenceId);
       await _load();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report created')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.reportCreated)));
       }
     } catch (e) {
       if (mounted) {
@@ -108,6 +109,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final canGenerate = canGenerateReports(sessionController.user);
 
     return stackRouteScaffold(
@@ -124,7 +126,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: const Text('Retry')),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
                       ],
                     ),
                   ),
@@ -136,7 +138,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       if (canGenerate) ...[
-                        Text('Create report', style: Theme.of(context).textTheme.titleMedium),
+                        Text(l10n.createReport, style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _kind,
@@ -159,14 +161,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         const SizedBox(height: 12),
                         FilledButton(
                           onPressed: _creating ? null : _create,
-                          child: Text(_creating ? 'Creating…' : 'Create report'),
+                          child: Text(_creating ? l10n.saving : l10n.createReport),
                         ),
                         const SizedBox(height: 24),
                       ],
-                      Text('Your reports', style: Theme.of(context).textTheme.titleMedium),
+                      Text(l10n.yourReports, style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       if (_reports.isEmpty)
-                        const Text('No reports yet.', style: TextStyle(color: AranyixColors.onSurfaceMuted))
+                        Text(l10n.noReportsYet, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
                       else
                         for (final raw in _reports)
                           ListTile(

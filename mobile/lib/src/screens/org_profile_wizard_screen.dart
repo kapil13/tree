@@ -7,6 +7,7 @@ import '../auth/signup_catalog.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../widgets/auth_scaffold.dart';
+import '../l10n/l10n_ext.dart';
 
 /// In-app professional org profile — mirrors web org-profile wizard.
 class OrgProfileWizardScreen extends ConsumerStatefulWidget {
@@ -132,6 +133,7 @@ class _OrgProfileWizardScreenState extends ConsumerState<OrgProfileWizardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AuthScaffold(
       title: 'Organization details',
       subtitle:
@@ -148,10 +150,10 @@ class _OrgProfileWizardScreenState extends ConsumerState<OrgProfileWizardScreen>
           DropdownButtonFormField<String>(
             value: _orgType,
             decoration: const InputDecoration(labelText: 'Organization type *'),
-            items: const [
-              DropdownMenuItem(value: 'government', child: Text('Government / public agency')),
-              DropdownMenuItem(value: 'corporate', child: Text('Corporate / industry')),
-              DropdownMenuItem(value: 'ngo', child: Text('NGO / community')),
+            items: [
+              DropdownMenuItem(value: 'government', child: Text(l10n.orgTypeGovernment)),
+              DropdownMenuItem(value: 'corporate', child: Text(l10n.orgTypeCorporate)),
+              DropdownMenuItem(value: 'ngo', child: Text(l10n.orgTypeNgo)),
             ],
             onChanged: _busy ? null : (v) => setState(() => _orgType = v ?? 'government'),
           ),

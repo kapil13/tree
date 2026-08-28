@@ -267,5 +267,180 @@
   "homeFieldProjects": "Field projects",
   "homeAllSites": "All sites",
   "homeQuickSnapshot": "Quick Snapshot",
-  "homeAskAranyix": "Ask Aranyix"
+  "homeAskAranyix": "Ask Aranyix",
+  "save": "Save",
+  "cancel": "Cancel",
+  "saving": "Saving…",
+  "noAlerts": "No alerts.",
+  "noTreesYet": "No trees yet.",
+  "addFirstTree": "Add your first tree",
+  "noProjectsYet": "No planting projects assigned yet.",
+  "preferences": "Preferences",
+  "alertPreferences": "Alert preferences",
+  "preferencesSaved": "Preferences saved",
+  "satelliteHealth": "Satellite health",
+  "survivalSurvey": "Survival survey",
+  "threatWatch": "Threat watch",
+  "complianceLabel": "Compliance",
+  "viewDetails": "View Details",
+  "reviewActions": "Review Actions",
+  "takeAction": "Take Action",
+  "homeTrend": "Trend: {trend}",
+  "@homeTrend": {
+    "placeholders": {
+      "trend": {"type": "String"}
+    }
+  },
+  "signOut": "Sign out",
+  "editProfile": "Edit personal profile",
+  "editProfileSub": "Name, phone, date of birth, city, state",
+  "appVersion": "App version",
+  "workAreas": "Work areas",
+  "noWorkAreasYet": "No work areas defined on web yet.",
+  "registerTreeBtn": "Register tree",
+  "createReport": "Create report",
+  "yourReports": "Your reports",
+  "noReportsYet": "No reports yet.",
+  "reportCreated": "Report created",
+  "reportNeedsArea": "This report type needs a plantation / work area.",
+  "byStatus": "By status",
+  "resolve": "Resolve",
+  "violationResolved": "Violation resolved",
+  "recentViolations": "Recent violations",
+  "noOpenViolations": "No open violations.",
+  "survivalDueByProject": "Survival due by project",
+  "noSurvivalDue": "No survival surveys due.",
+  "drawPolygon": "Draw polygon",
+  "drawCorridor": "Draw corridor",
+  "undoPoint": "Undo point",
+  "cancelDraw": "Cancel draw",
+  "workAreaSaved": "Work area saved",
+  "needTwoPoints": "Add at least 2 points on the map",
+  "polygonNeedsThree": "Polygon needs at least 3 points",
+  "createProjectFirst": "Create or join a planting project first",
+  "noTreesOnMap": "No trees with GPS yet. Add a tree to see it on the map.",
+  "quickActions": "Quick actions",
+  "liveMap": "Live map",
+  "openFullMap": "Open full map",
+  "expand": "Expand",
+  "noTreesOnMapPreview": "No trees on map yet",
+  "registerFirstTree": "Register first tree",
+  "pendingTreeRegistrations": "Pending tree registrations",
+  "captureGpsBeforeRegister": "Capture GPS before registering.",
+  "selectWorkAreaForProject": "Select a work area for this project.",
+  "complianceStrictBlock": "Compliance check failed — fix issues before saving (strict mode).",
+  "offlineQueuedSync": "Offline — queued for sync.",
+  "profileSaved": "Profile saved",
+  "dateOfBirth": "Date of birth",
+  "age": "Age",
+  "dateOfMarriage": "Date of marriage",
+  "survivalRegeotag": "Survival / re-geotag",
+  "currentGps": "Current GPS",
+  "noGpsFix": "No fix yet",
+  "refreshGps": "Refresh GPS",
+  "survivalSurveySaved": "Survival survey saved with measurement record",
+  "continueWithGoogle": "Continue with Google",
+  "createAccount": "Create an account",
+  "forgotPassword": "Forgot password?",
+  "alreadyHaveAccountSignIn": "Already have an account? Sign in",
+  "createFreeAccount": "Create free account",
+  "alreadyHaveAccountBtn": "I already have an account",
+  "completingSignIn": "Completing sign-in…",
+  "backToSignIn": "Back to sign in",
+  "useEmailInstead": "Use email instead",
+  "retrySecurityCheck": "Retry security check",
+  "signInWithGoogle": "Sign in with Google",
+  "homeFieldProjectsSub": "NHAI packages, mine belts, society blocks",
+  "estimate": "Estimate",
+  "carbonKg": "Carbon: {kg} kg",
+  "@carbonKg": {
+    "placeholders": {
+      "kg": {"type": "String"}
+    }
+  },
+  "inputCompleteness": "Input completeness: {value}",
+  "@inputCompleteness": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "methodologyLabel": "Methodology: {value}",
+  "@methodologyLabel": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "chainageKm": "Chainage: {km} km",
+  "@chainageKm": {
+    "placeholders": {
+      "km": {"type": "String"}
+    }
+  },
+  "exploreByot": "Explore BYOT features",
+  "visitWebsite": "Visit aranyix.tech",
+  "whatHappensNext": "What happens next",
+  "orgTypeGovernment": "Government / public agency",
+  "orgTypeCorporate": "Corporate / industry",
+  "orgTypeNgo": "NGO / community",
+  "askAnythingForest": "Ask anything about your forest…",
+  "alertFallback": "Alert",
+  "noHealthDataYet": "No health data yet",
+  "siteFallback": "Site",
+  "plantationFallback": "Plantation",
+  "orDivider": "or",
+  "rememberMe": "Remember me",
+  "signingIn": "Signing in…",
+  "welcomeBackTitle": "Welcome back",
+  "welcomeBackSub": "Sign in to continue mapping trees, biodiversity, and compliance evidence.",
+  "phoneOtpTab": "Phone OTP",
+  "emailTab": "Email",
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "gpsVerified": "GPS-verified",
+  "offlineSyncLabel": "Offline sync",
+  "assistantTitle": "AI Assistant",
+  "assistantHint": "Ask about trees, compliance, satellite health…",
+  "assistantSend": "Send",
+  "assistantEmpty": "Ask a question to get started.",
+  "creditsTitle": "Credits",
+  "carbonTitle": "Carbon estimator",
+  "speciesLabel": "Species",
+  "dbhLabel": "DBH (cm)",
+  "heightLabel": "Height (m)",
+  "ageYearsLabel": "Age (years)",
+  "integrityScore": "Integrity {score}",
+  "@integrityScore": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "forestIntegrityTitle": "Forest Integrity",
+  "sarProviderLabel": "Axentis SAR",
+  "portfolioAvg": "/ 100 portfolio avg",
+  "atRiskCount": "{count} at risk",
+  "@atRiskCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "divergentCount": "{count} divergent",
+  "@divergentCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "alignedCount": "{count} aligned",
+  "@alignedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "sarBaselineHint": "Run SAR scans on the web satellite page to establish Forest Integrity baselines.",
+  "selectSite": "Select site",
+  "devHint": "Dev hint: {hint}",
+  "@devHint": {
+    "placeholders": {
+      "hint": {"type": "String"}
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../l10n/l10n_ext.dart';
+
 /// In-app Google OAuth — intercepts redirect to `/auth/callback#access_token=…`.
 class GoogleOAuthWebView extends StatefulWidget {
   const GoogleOAuthWebView({super.key, required this.authorizeUrl});
@@ -66,7 +68,7 @@ class _GoogleOAuthWebViewState extends State<GoogleOAuthWebView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign in with Google'),
+        title: Text(context.l10n.signInWithGoogle),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n_ext.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/brand_mark.dart';
@@ -20,29 +21,32 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   final _page = PageController(viewportFraction: 0.86);
   int _pageIndex = 0;
 
-  static const _journey = [
-    _JourneyStep(
-      icon: Icons.pin_drop_rounded,
-      title: 'Capture in the field',
-      line: 'GPS · photos · offline sync',
-      accent: Color(0xFF1B8A4C),
-      soft: Color(0xFFE8F5EC),
-    ),
-    _JourneyStep(
-      icon: Icons.satellite_alt_rounded,
-      title: 'See forest health',
-      line: 'Satellite NDVI · AI alerts',
-      accent: Color(0xFF0E7490),
-      soft: Color(0xFFE0F2FE),
-    ),
-    _JourneyStep(
-      icon: Icons.insights_rounded,
-      title: 'Report with clarity',
-      line: 'Carbon · biodiversity · audit',
-      accent: Color(0xFF166534),
-      soft: Color(0xFFECFDF3),
-    ),
-  ];
+  List<_JourneyStep> _journeySteps(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      _JourneyStep(
+        icon: Icons.pin_drop_rounded,
+        title: l10n.registerTreePrimary,
+        line: l10n.registerTreePrimarySub,
+        accent: const Color(0xFF1B8A4C),
+        soft: const Color(0xFFE8F5EC),
+      ),
+      _JourneyStep(
+        icon: Icons.satellite_alt_rounded,
+        title: l10n.homeForestHealth,
+        line: l10n.navSectionIntelligenceDesc,
+        accent: const Color(0xFF0E7490),
+        soft: const Color(0xFFE0F2FE),
+      ),
+      _JourneyStep(
+        icon: Icons.insights_rounded,
+        title: l10n.navSectionReports,
+        line: l10n.navSectionReportsDesc,
+        accent: const Color(0xFF166534),
+        soft: const Color(0xFFECFDF3),
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -63,6 +67,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final journey = _journeySteps(context);
     return AuthLightScope(
       child: Scaffold(
         backgroundColor: AranyixColors.surface,
@@ -88,7 +94,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                         ),
                         const Spacer(),
                         Text(
-                          '${_pageIndex + 1}/${_journey.length}',
+                          '${_pageIndex + 1}/${journey.length}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -110,15 +116,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       height: 196,
                       child: PageView.builder(
                         controller: _page,
-                        itemCount: _journey.length,
+                        itemCount: journey.length,
                         onPageChanged: (i) => setState(() => _pageIndex = i),
                         itemBuilder: (context, index) {
                           return Padding(
                             padding: EdgeInsets.only(
-                              right: index == _journey.length - 1 ? 0 : 12,
+                              right: index == journey.length - 1 ? 0 : 12,
                             ),
                             child: _JourneyCard(
-                              step: _journey[index],
+                              step: journey[index],
                               number: index + 1,
                             ),
                           );
@@ -128,7 +134,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_journey.length, (i) {
+                      children: List.generate(journey.length, (i) {
                         final active = i == _pageIndex;
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -147,12 +153,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     const SizedBox(height: 28),
                     FilledButton(
                       onPressed: () => context.push('/signup'),
-                      child: const Text('Create free account'),
+                      child: Text(l10n.createFreeAccount),
                     ),
                     const SizedBox(height: 10),
                     OutlinedButton(
                       onPressed: () => context.go('/login'),
-                      child: const Text('I already have an account'),
+                      child: Text(l10n.alreadyHaveAccountBtn),
                     ),
                   ],
                 ),
@@ -215,9 +221,9 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Aranyix',
-            style: TextStyle(
+          Text(
+            context.l10n.appTitle,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
               fontWeight: FontWeight.w800,
@@ -227,7 +233,7 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Plantation intelligence — field to audit-ready evidence.',
+            context.l10n.welcomeTitle,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.92),
               fontSize: 15,

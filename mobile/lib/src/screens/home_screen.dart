@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: ListTile(
                               leading: const Icon(Icons.assignment_outlined),
                               title: Text(l10n.homeFieldProjects),
-                              subtitle: const Text('NHAI packages, mine belts, society blocks'),
+                              subtitle: Text(l10n.homeFieldProjectsSub),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => context.push('/projects'),
                             ),
@@ -205,6 +205,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _errorBody(BuildContext context, WidgetRef ref, Object e) {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       children: [
         SizedBox(
@@ -248,6 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _showProjectPicker(BuildContext context, List<dynamic> fences) {
     if (fences.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AranyixColors.surfaceContainer,
@@ -261,12 +263,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
-              child: Text('Projects', style: Theme.of(ctx).textTheme.titleLarge),
+              child: Text(l10n.projects, style: Theme.of(ctx).textTheme.titleLarge),
             ),
             for (final raw in fences)
               ListTile(
                 leading: const Icon(Icons.forest_outlined, color: AranyixColors.forest),
-                title: Text((raw as Map<String, dynamic>)['name'] as String? ?? 'Site'),
+                title: Text((raw as Map<String, dynamic>)['name'] as String? ?? l10n.siteFallback),
                 onTap: () => Navigator.pop(ctx),
               ),
             const SizedBox(height: 8),
@@ -410,6 +412,7 @@ class _ForestHealthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final trendText = trendDelta >= 0 ? '↑ +$trendDelta since yesterday' : '↓ $trendDelta since yesterday';
 
     return Container(
@@ -434,7 +437,7 @@ class _ForestHealthHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Forest Health',
+            l10n.homeForestHealth,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.85),
               fontSize: 14,
@@ -478,7 +481,7 @@ class _ForestHealthHero extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Trend: $trendText',
+            l10n.homeTrend(trendText),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
@@ -493,7 +496,7 @@ class _ForestHealthHero extends StatelessWidget {
                 backgroundColor: Colors.white,
                 foregroundColor: AranyixColors.forestDark,
               ),
-              child: const Text('View Details'),
+              child: Text(l10n.viewDetails),
             ),
           ),
         ],
@@ -510,6 +513,7 @@ class _AiBriefCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(22),
@@ -541,7 +545,7 @@ class _AiBriefCard extends StatelessWidget {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(onPressed: onReview, child: const Text('Review Actions')),
+              child: OutlinedButton(onPressed: onReview, child: Text(l10n.reviewActions)),
             ),
           ],
         ),
@@ -558,6 +562,7 @@ class _PriorityAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -600,7 +605,7 @@ class _PriorityAlertCard extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFEA580C),
               ),
-              child: const Text('Take Action'),
+              child: Text(l10n.takeAction),
             ),
           ),
         ],
@@ -616,12 +621,13 @@ class _QuickSnapshotRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text('Quick Snapshot', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(l10n.homeQuickSnapshot, style: Theme.of(context).textTheme.titleMedium),
         ),
         SizedBox(
           height: 108,
@@ -703,6 +709,7 @@ class _AskAranyixCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -712,7 +719,7 @@ class _AskAranyixCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Ask Aranyix', style: Theme.of(context).textTheme.titleLarge),
+              Text(l10n.homeAskAranyix, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -724,7 +731,7 @@ class _AskAranyixCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Ask anything about your forest…',
+                        l10n.askAnythingForest,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AranyixColors.onSurfaceMuted,
                             ),

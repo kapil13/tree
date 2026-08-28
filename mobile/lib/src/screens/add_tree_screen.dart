@@ -476,21 +476,22 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Future<void> _save({bool registerNext = false}) async {
+    final l10n = AppLocalizations.of(context)!;
     if (_lat == null || _lon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Capture GPS before registering.')),
+        SnackBar(content: Text(l10n.captureGpsBeforeRegister)),
       );
       return;
     }
     if (widget.projectId != null && _selectedWorkAreaId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a work area for this project.')),
+        SnackBar(content: Text(l10n.selectWorkAreaForProject)),
       );
       return;
     }
     if (_complianceBlocksSave) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Compliance check failed — fix issues before saving (strict mode).')),
+        SnackBar(content: Text(l10n.complianceStrictBlock)),
       );
       return;
     }
@@ -583,7 +584,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       ref.read(treeRegistrationSyncProvider).syncAll(() => ref.read(apiClientProvider.future));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline — queued for sync. ${apiErrorMessage(e)}')),
+        SnackBar(content: Text('${l10n.offlineQueuedSync} ${apiErrorMessage(e)}')),
       );
       context.go('/projects');
     } finally {

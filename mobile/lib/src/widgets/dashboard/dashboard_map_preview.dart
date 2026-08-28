@@ -3,9 +3,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 
 import '../../providers.dart';
 import '../../theme.dart';
+import '../../l10n/l10n_ext.dart';
 
 /// Compact interactive map preview on the home dashboard.
 class DashboardMapPreview extends ConsumerWidget {
@@ -13,15 +15,17 @@ class DashboardMapPreview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final treesAsync = ref.watch(treesProvider);
 
     return treesAsync.when(
-      loading: () => const _MapPreviewShell(child: Center(child: CircularProgressIndicator())),
+      loading: () => _MapPreviewShell(l10n: l10n, child: const Center(child: CircularProgressIndicator())),
       error: (_, __) => _MapPreviewShell(
+        l10n: l10n,
         child: Center(
           child: TextButton(
             onPressed: () => context.push('/map'),
-            child: const Text('Open full map'),
+            child: Text(l10n.openFullMap),
           ),
         ),
       ),
@@ -38,17 +42,18 @@ class DashboardMapPreview extends ConsumerWidget {
 
         if (points.isEmpty) {
           return _MapPreviewShell(
+            l10n: l10n,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.map_outlined, size: 40, color: AranyixColors.onSurfaceMuted),
                   const SizedBox(height: 8),
-                  const Text('No trees on map yet'),
+                  Text(l10n.noTreesOnMapPreview),
                   const SizedBox(height: 8),
                   FilledButton.tonal(
                     onPressed: () => context.push('/trees/new'),
-                    child: const Text('Register first tree'),
+                    child: Text(l10n.registerFirstTree),
                   ),
                 ],
               ),
@@ -60,6 +65,7 @@ class DashboardMapPreview extends ConsumerWidget {
         final zoom = points.length == 1 ? 14.0 : 11.0;
 
         return _MapPreviewShell(
+          l10n: l10n,
           onTap: () => context.push('/map'),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AranyixRadii.card - 2),
@@ -112,8 +118,9 @@ class DashboardMapPreview extends ConsumerWidget {
 }
 
 class _MapPreviewShell extends StatelessWidget {
-  const _MapPreviewShell({required this.child, this.onTap});
+  const _MapPreviewShell({required this.l10n, required this.child, this.onTap});
 
+  final AppLocalizations l10n;
   final Widget child;
   final VoidCallback? onTap;
 
@@ -126,12 +133,12 @@ class _MapPreviewShell extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Row(
             children: [
-              Text('Live map', style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n.liveMap, style: Theme.of(context).textTheme.titleMedium),
               const Spacer(),
               if (onTap != null)
                 TextButton(
                   onPressed: onTap,
-                  child: const Text('Expand'),
+                  child: Text(l10n.expand),
                 ),
             ],
           ),
