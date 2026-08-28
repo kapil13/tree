@@ -1323,4 +1323,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get treeSavedReadyNext => 'Tree saved. Ready for the next gap.';
+
+  @override
+  String get setupStepTreeDefaults => 'Tree registration defaults';
+
+  @override
+  String get setupStepPlantingStandard => 'Planting standard';
+
+  @override
+  String get setupStepWorkAreas => 'Work areas on map';
+
+  @override
+  String get addTreeSetupBlockedExplain =>
+      'Tree registration for this project needs one-time settings on the web app. On mobile you only enter GPS, photos, and species per tree — not permit or legal fields again.';
+
+  @override
+  String get openProjectSetupWeb => 'Complete setup on web';
+
+  @override
+  String get setupDefaultsSaved => 'Permit, site zone, and agency saved';
+
+  @override
+  String get setupStandardAttached => 'Compliance standard attached';
+
+  @override
+  String get setupNoStandard => 'No planting standard attached';
+
+  @override
+  String setupWorkAreasCount(int count) {
+    return '$count area(s) defined';
+  }
+
+  @override
+  String get setupDrawWorkArea => 'Draw at least one polygon or corridor';
+
+  @override
+  String setupMissingFields(String fields) {
+    return 'Missing: $fields';
+  }
+
+  @override
+  String get fieldOpsQuickActions => 'Quick actions';
+
+  @override
+  String get viewAllProjects => 'View all projects';
+
+  @override
+  String get registerTreeInField => 'Register a tree';
 }

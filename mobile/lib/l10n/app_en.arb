@@ -548,5 +548,29 @@
   "securityCheckUnavailable": "Security check unavailable.",
   "welcomeJourneySub": "From field capture to executive clarity.",
   "indiaFirstMrv": "India-first MRV",
-  "treeSavedReadyNext": "Tree saved. Ready for the next gap."
+  "treeSavedReadyNext": "Tree saved. Ready for the next gap.",
+  "setupStepTreeDefaults": "Tree registration defaults",
+  "setupStepPlantingStandard": "Planting standard",
+  "setupStepWorkAreas": "Work areas on map",
+  "addTreeSetupBlockedExplain": "Tree registration for this project needs one-time settings on the web app. On mobile you only enter GPS, photos, and species per tree — not permit or legal fields again.",
+  "openProjectSetupWeb": "Complete setup on web",
+  "setupDefaultsSaved": "Permit, site zone, and agency saved",
+  "setupStandardAttached": "Compliance standard attached",
+  "setupNoStandard": "No planting standard attached",
+  "setupWorkAreasCount": "{count} area(s) defined",
+  "@setupWorkAreasCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "setupDrawWorkArea": "Draw at least one polygon or corridor",
+  "setupMissingFields": "Missing: {fields}",
+  "@setupMissingFields": {
+    "placeholders": {
+      "fields": {"type": "String"}
+    }
+  },
+  "fieldOpsQuickActions": "Quick actions",
+  "viewAllProjects": "View all projects",
+  "registerTreeInField": "Register a tree"
 }

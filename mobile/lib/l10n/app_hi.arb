@@ -404,5 +404,19 @@
   "securityCheckUnavailable": "सुरक्षा जाँच उपलब्ध नहीं।",
   "welcomeJourneySub": "फील्ड कैप्चर से कार्यकारी स्पष्टता तक।",
   "indiaFirstMrv": "India-first MRV",
-  "treeSavedReadyNext": "पेड़ सहेजा। अगले अंतराल के लिए तैयार।"
+  "treeSavedReadyNext": "पेड़ सहेजा। अगले अंतराल के लिए तैयार।",
+  "setupStepTreeDefaults": "पेड़ पंजीकरण डिफ़ॉल्ट",
+  "setupStepPlantingStandard": "रोपण मानक",
+  "setupStepWorkAreas": "मानचित्र पर कार्य क्षेत्र",
+  "addTreeSetupBlockedExplain": "इस परियोजना के लिए वेब ऐप पर एक बार की सेटिंग चाहिए। मोबाइल पर केवल GPS, फ़ोटो और प्रजाति दर्ज करें — permit या legal फ़ील्ड दोबारा नहीं।",
+  "openProjectSetupWeb": "वेब पर सेटअप पूरा करें",
+  "setupDefaultsSaved": "Permit, site zone और agency सहेजे",
+  "setupStandardAttached": "अनुपालन मानक जुड़ा",
+  "setupNoStandard": "कोई रोपण मानक नहीं",
+  "setupWorkAreasCount": "{count} क्षेत्र परिभाषित",
+  "setupDrawWorkArea": "कम से कम एक बहुभुज या कॉरिडोर बनाएँ",
+  "setupMissingFields": "अनुपस्थित: {fields}",
+  "fieldOpsQuickActions": "त्वरित कार्य",
+  "viewAllProjects": "सभी परियोजनाएँ देखें",
+  "registerTreeInField": "पेड़ पंजीकृत करें"
 }

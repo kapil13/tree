@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
 import '../location_helper.dart';
+import '../l10n/setup_labels.dart';
 import '../offline/tree_registration_queue.dart';
+import '../project_setup_readiness.dart';
 import '../providers.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
@@ -174,22 +177,19 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   bool get _projectSetupBlocks {
     if (!_isProjectMode) return false;
-    if (_project?['active_standard'] == null) return true;
-    if (_complianceMode != 'open' && _workAreas.isEmpty) return true;
-    final schemeCode = _project?['scheme_code'];
-    final programCode = _project?['program_code'];
-    if (schemeCode == null && programCode != 'government_nhai') return false;
-    final defaults =
-        (_project?['metadata']?['tree_registration_defaults'] as Map<String, dynamic>?) ?? {};
-    for (final key in [
-      'permit_reference',
-      'site_zone',
-      'implementing_agency',
-      'maintenance_responsible',
-    ]) {
-      if ((defaults[key]?.toString().trim() ?? '').isEmpty) return true;
-    }
-    return false;
+    return !evaluateProjectSetup(_project!, _workAreas).canRegisterTree;
+  }
+
+  ProjectSetupStatus? get _setupStatus {
+    if (!_isProjectMode || _project == null) return null;
+    return evaluateProjectSetup(_project!, _workAreas);
+  }
+
+  Future<void> _openProjectSetupWeb() async {
+    final id = widget.projectId;
+    if (id == null) return;
+    final uri = Uri.parse(projectSetupWebUrl(id));
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   void _applySegmentDefaults() {
@@ -459,6 +459,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Widget _wizardNavButtons(AppLocalizations l10n, {required bool onLastStep}) {
+    final setupBlocked = _projectSetupBlocks && _wizardStep == 0;
     return Row(
       children: [
         if (_wizardStep > 0)
@@ -466,12 +467,26 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         else
           const SizedBox(width: 1),
         const Spacer(),
-        if (!onLastStep)
+        if (!onLastStep && !setupBlocked)
           FilledButton(
             onPressed: _busy ? null : _nextWizardStep,
             child: Text(l10n.addTreeNext),
           ),
       ],
+    );
+  }
+
+  Widget _wizardStickyFooter(AppLocalizations l10n, {required bool onLastStep}) {
+    return Material(
+      elevation: 8,
+      color: Theme.of(context).colorScheme.surface,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: _wizardNavButtons(l10n, onLastStep: onLastStep),
+        ),
+      ),
     );
   }
 
@@ -624,24 +639,14 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return stackRouteScaffold(
       location: '/trees/new',
       appBar: ShellTopBar(title: title),
-      bottomNavigationBar: Material(
-        color: Theme.of(context).colorScheme.surface,
-        elevation: 8,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: _wizardNavButtons(l10n, onLastStep: onLastStep),
-          ),
-        ),
-      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _wizardProgress(l10n),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
                 switch (_wizardStep) {
                   0 => _stepContext(l10n),
@@ -675,6 +680,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               ],
             ),
           ),
+          _wizardStickyFooter(l10n, onLastStep: onLastStep),
         ],
       ),
     );
@@ -703,7 +709,49 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               children: [
                 Text(l10n.addTreeSetupBlockedTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(l10n.addTreeSetupBlockedBody, style: const TextStyle(fontSize: 13)),
+                Text(l10n.addTreeSetupBlockedExplain, style: const TextStyle(fontSize: 13)),
+                if (_setupStatus?.blockReason != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _setupStatus!.blockReason!,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                for (final ProjectSetupStep step in _setupStatus?.steps.where((s) => s.required) ?? const [])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          step.complete ? Icons.check_circle : Icons.warning_amber_rounded,
+                          size: 18,
+                          color: step.complete ? Colors.green.shade700 : Colors.amber.shade800,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                localizedSetupStepLabel(l10n, step.id),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                              if (step.description != null)
+                                Text(step.description!, style: const TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: _openProjectSetupWeb,
+                  icon: const Icon(Icons.open_in_new),
+                  label: Text(l10n.openProjectSetupWeb),
+                ),
                 const SizedBox(height: 8),
                 OutlinedButton(
                   onPressed: () => context.go('/projects/${widget.projectId}'),
@@ -877,6 +925,12 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
             ],
           ),
         ],
+        const SizedBox(height: 24),
+        if (!_projectSetupBlocks)
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
+          ),
       ],
     );
   }

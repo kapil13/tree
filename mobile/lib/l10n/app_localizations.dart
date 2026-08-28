@@ -2527,6 +2527,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tree saved. Ready for the next gap.'**
   String get treeSavedReadyNext;
+
+  /// No description provided for @setupStepTreeDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree registration defaults'**
+  String get setupStepTreeDefaults;
+
+  /// No description provided for @setupStepPlantingStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Planting standard'**
+  String get setupStepPlantingStandard;
+
+  /// No description provided for @setupStepWorkAreas.
+  ///
+  /// In en, this message translates to:
+  /// **'Work areas on map'**
+  String get setupStepWorkAreas;
+
+  /// No description provided for @addTreeSetupBlockedExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree registration for this project needs one-time settings on the web app. On mobile you only enter GPS, photos, and species per tree — not permit or legal fields again.'**
+  String get addTreeSetupBlockedExplain;
+
+  /// No description provided for @openProjectSetupWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete setup on web'**
+  String get openProjectSetupWeb;
+
+  /// No description provided for @setupDefaultsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Permit, site zone, and agency saved'**
+  String get setupDefaultsSaved;
+
+  /// No description provided for @setupStandardAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance standard attached'**
+  String get setupStandardAttached;
+
+  /// No description provided for @setupNoStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'No planting standard attached'**
+  String get setupNoStandard;
+
+  /// No description provided for @setupWorkAreasCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} area(s) defined'**
+  String setupWorkAreasCount(int count);
+
+  /// No description provided for @setupDrawWorkArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw at least one polygon or corridor'**
+  String get setupDrawWorkArea;
+
+  /// No description provided for @setupMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing: {fields}'**
+  String setupMissingFields(String fields);
+
+  /// No description provided for @fieldOpsQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get fieldOpsQuickActions;
+
+  /// No description provided for @viewAllProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'View all projects'**
+  String get viewAllProjects;
+
+  /// No description provided for @registerTreeInField.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a tree'**
+  String get registerTreeInField;
 }
 
 class _AppLocalizationsDelegate

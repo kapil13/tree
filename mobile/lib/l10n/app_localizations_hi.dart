@@ -1320,4 +1320,51 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get treeSavedReadyNext => 'पेड़ सहेजा। अगले अंतराल के लिए तैयार।';
+
+  @override
+  String get setupStepTreeDefaults => 'पेड़ पंजीकरण डिफ़ॉल्ट';
+
+  @override
+  String get setupStepPlantingStandard => 'रोपण मानक';
+
+  @override
+  String get setupStepWorkAreas => 'मानचित्र पर कार्य क्षेत्र';
+
+  @override
+  String get addTreeSetupBlockedExplain =>
+      'इस परियोजना के लिए वेब ऐप पर एक बार की सेटिंग चाहिए। मोबाइल पर केवल GPS, फ़ोटो और प्रजाति दर्ज करें — permit या legal फ़ील्ड दोबारा नहीं।';
+
+  @override
+  String get openProjectSetupWeb => 'वेब पर सेटअप पूरा करें';
+
+  @override
+  String get setupDefaultsSaved => 'Permit, site zone और agency सहेजे';
+
+  @override
+  String get setupStandardAttached => 'अनुपालन मानक जुड़ा';
+
+  @override
+  String get setupNoStandard => 'कोई रोपण मानक नहीं';
+
+  @override
+  String setupWorkAreasCount(int count) {
+    return '$count क्षेत्र परिभाषित';
+  }
+
+  @override
+  String get setupDrawWorkArea => 'कम से कम एक बहुभुज या कॉरिडोर बनाएँ';
+
+  @override
+  String setupMissingFields(String fields) {
+    return 'अनुपस्थित: $fields';
+  }
+
+  @override
+  String get fieldOpsQuickActions => 'त्वरित कार्य';
+
+  @override
+  String get viewAllProjects => 'सभी परियोजनाएँ देखें';
+
+  @override
+  String get registerTreeInField => 'पेड़ पंजीकृत करें';
 }

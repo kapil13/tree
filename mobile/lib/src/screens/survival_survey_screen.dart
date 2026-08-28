@@ -10,21 +10,6 @@ import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 import '../l10n/l10n_ext.dart';
 
-const _survivalStatuses = [
-  ('live', 'Live'),
-  ('stressed', 'Stressed'),
-  ('dead', 'Dead'),
-  ('replaced', 'Replaced'),
-  ('missing', 'Missing / uprooted'),
-];
-
-const _measurementMethods = [
-  ('tape', 'Tape measure (DBH at 1.3 m)'),
-  ('caliper', 'Caliper'),
-  ('clinometer', 'Clinometer (height)'),
-  ('visual_estimate', 'Visual estimate'),
-];
-
 class SurvivalSurveyScreen extends ConsumerStatefulWidget {
   const SurvivalSurveyScreen({super.key, required this.treeId});
 
