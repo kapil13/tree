@@ -313,6 +313,34 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Helps improve the app (no personal tree photos).'**
   String get analyticsHint;
+
+  String get navDashboard;
+  String get navSectionPlantation;
+  String get navSectionPlantationDesc;
+  String get navSectionIntelligence;
+  String get navSectionIntelligenceDesc;
+  String get navSectionReports;
+  String get navSectionReportsDesc;
+  String get navSectionAccount;
+  String get navBioacoustic;
+  String get navAlerts;
+  String get navReports;
+  String get navAssistant;
+  String get navCarbon;
+  String get navCredits;
+  String get registerTreePrimary;
+  String get registerTreePrimarySub;
+  String get bioacousticActionSub;
+  String get bioacousticTileSub;
+  String get projectsTileSub;
+  String get addActionFab;
+  String get addActionSheetTitle;
+  String get addActionSheetSubtitle;
+  String get addActionSheetEmpty;
+  String get menuOpen;
+  String get todayWork;
+  String get fieldWorkspace;
+  String get viewFullDashboard;
 }
 
 class _AppLocalizationsDelegate

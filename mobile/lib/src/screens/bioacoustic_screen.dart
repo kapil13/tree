@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -265,9 +266,11 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen> {
     final queue = ref.watch(bioacousticQueueProvider);
     final sync = ref.watch(bioacousticSyncProvider);
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Biodiversity Assessment'),
+        title: Text(l10n.navBioacoustic),
         actions: [
           if (sync.syncing)
             const Padding(

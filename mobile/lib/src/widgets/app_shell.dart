@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../nav_access.dart';
+import '../nav_groups.dart';
 import '../session.dart';
 import '../theme.dart';
+import 'app_drawer.dart';
+import 'shell_scaffold.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -38,13 +41,18 @@ class AppShell extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
 
     final destinations = navDestinationsFor(user);
+    final showFab = canAddTrees(user) && showFieldFabOnRoute(location);
 
     final selectedIndex = destinations.indexWhere((d) => location.startsWith(d.path));
     final currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
 
     return Scaffold(
+      key: shellScaffoldKey,
       backgroundColor: AranyixColors.surface,
+      drawer: AppDrawer(currentLocation: location),
       body: child,
+      floatingActionButton: showFab ? ShellRegisterFab(location: location) : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AranyixColors.surfaceElevated,

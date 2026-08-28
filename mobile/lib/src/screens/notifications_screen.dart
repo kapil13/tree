@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -142,10 +144,11 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final alertsAsync = ref.watch(alertsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
+      appBar: ShellTopBar(
+        title: l10n.navAlerts,
         actions: [
           IconButton(
             tooltip: 'Preferences',

@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +10,15 @@ import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../widgets/offline_tree_queue_section.dart';
+import '../widgets/primary_field_actions.dart';
+import '../widgets/shell_scaffold.dart';
 
 class FieldWorkerHomeScreen extends ConsumerWidget {
   const FieldWorkerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final user = sessionController.user;
     final projectsAsync = ref.watch(plantingProjectsProvider);
     final treesAsync = ref.watch(treesProvider);
@@ -36,56 +40,46 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    Text(
-                      'Field workspace${user?['organization_name'] != null ? ' · ${user!['organization_name']}' : ''}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AranyixColors.forest,
-                      ),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => openAppDrawer(context),
+                          icon: const Icon(Icons.menu_rounded),
+                          color: AranyixColors.forestDark,
+                          tooltip: l10n.menuOpen,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${l10n.fieldWorkspace}${user?['organization_name'] != null ? ' · ${user!['organization_name']}' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AranyixColors.forest,
+                                ),
+                              ),
+                              Text(l10n.todayWork, style: Theme.of(context).textTheme.headlineSmall),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: l10n.profile,
+                          onPressed: () => context.go('/profile'),
+                          icon: const Icon(Icons.person_outline, color: AranyixColors.forestDark),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text("Today's work", style: Theme.of(context).textTheme.headlineSmall),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
-                      'Register trees in your assigned packages and keep GPS / photos up to date.',
+                      l10n.registerTreePrimarySub,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AranyixColors.onSurfaceMuted,
                           ),
                     ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        tooltip: 'Profile',
-                        onPressed: () => context.go('/profile'),
-                        icon: const Icon(Icons.person_outline, color: AranyixColors.forestDark),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ActionCard(
-                            icon: Icons.eco_outlined,
-                            title: 'Register tree',
-                            subtitle: 'GPS, photos, compliance',
-                            onTap: canAddTrees(user)
-                                ? () => context.push('/trees/new')
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionCard(
-                            icon: Icons.assignment_outlined,
-                            title: 'My projects',
-                            subtitle: 'Packages & work areas',
-                            onTap: () => context.go('/projects'),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 16),
+                    PrimaryFieldActions(user: user),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
@@ -93,24 +87,24 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                       children: [
                         ActionChip(
                           avatar: const Icon(Icons.map_outlined, size: 18),
-                          label: const Text('Map'),
+                          label: Text(l10n.map),
                           onPressed: () => context.go('/map'),
                         ),
                         ActionChip(
                           avatar: const Icon(Icons.notifications_outlined, size: 18),
-                          label: const Text('Alerts'),
+                          label: Text(l10n.navAlerts),
                           onPressed: () => context.go('/notifications'),
                         ),
                         if (canSeeFieldOps(user))
                           ActionChip(
                             avatar: const Icon(Icons.construction_outlined, size: 18),
-                            label: const Text('Field ops'),
+                            label: Text(l10n.fieldOps),
                             onPressed: () => context.push('/field-ops'),
                           ),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    Text('Assigned projects', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l10n.projects, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     projectsAsync.when(
                       loading: () => const LinearProgressIndicator(),
@@ -122,17 +116,21 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                       },
                       data: (projects) {
                         if (projects.isEmpty) {
-                          return const Text(
-                            'No projects assigned yet. Ask your supervisor to add you on the project Team tab.',
+                          return Text(
+                            'No projects assigned yet.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AranyixColors.onSurfaceMuted,
+                                ),
                           );
                         }
                         return Column(
                           children: [
-                            for (final raw in projects)
+                            for (final raw in projects.take(5))
                               Card(
+                                margin: const EdgeInsets.only(bottom: 8),
                                 child: ListTile(
-                                  title: Text((raw as Map)['name'] as String? ?? 'Project'),
-                                  subtitle: Text((raw)['segment'] as String? ?? 'general'),
+                                  leading: const Icon(Icons.assignment_outlined, color: AranyixColors.forest),
+                                  title: Text((raw as Map<String, dynamic>)['name'] as String? ?? 'Project'),
                                   trailing: const Icon(Icons.chevron_right),
                                   onTap: () => context.push('/projects/${raw['id']}'),
                                 ),
@@ -142,71 +140,42 @@ class FieldWorkerHomeScreen extends ConsumerWidget {
                       },
                     ),
                     const SizedBox(height: 24),
-                    Text('Recent trees', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l10n.trees, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     treesAsync.when(
                       loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text(apiErrorMessage(e)),
-                      data: (trees) {
-                        if (trees.isEmpty) {
-                          return const Text('No trees registered yet.');
+                      error: (e, _) {
+                        if (maybeRedirectUnauthorized(ref, context, e)) {
+                          return const SizedBox.shrink();
+                        }
+                        return Text(apiErrorMessage(e));
+                      },
+                      data: (items) {
+                        if (items.isEmpty) {
+                          return Text(
+                            'No trees registered yet.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AranyixColors.onSurfaceMuted,
+                                ),
+                          );
                         }
                         return Column(
                           children: [
-                            for (final raw in trees.take(5))
+                            for (final raw in items.take(4))
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: Text((raw as Map)['species_text'] as String? ?? 'Tree'),
-                                subtitle: Text((raw)['public_code'] as String? ?? ''),
-                                trailing: const Icon(Icons.chevron_right, size: 18),
+                                title: Text((raw as Map<String, dynamic>)['species_text'] as String? ?? 'Tree'),
+                                subtitle: Text(raw['public_code'] as String? ?? ''),
+                                trailing: const Icon(Icons.chevron_right),
                                 onTap: () => context.push('/trees/${raw['id']}'),
                               ),
                           ],
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
-                    const OfflineTreeQueueSection(),
                   ]),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: onTap == null ? Colors.grey : AranyixColors.forest),
-              const SizedBox(height: 12),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted)),
             ],
           ),
         ),

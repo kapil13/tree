@@ -130,4 +130,92 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get analyticsHint => 'ऐप सुधारने में मदद (कोई व्यक्तिगत फ़ोटो नहीं)।';
+
+  @override
+  String get navDashboard => 'डैशबोर्ड';
+
+  @override
+  String get navSectionPlantation => 'सेटअप और रोपण';
+
+  @override
+  String get navSectionPlantationDesc =>
+      'कार्यक्रम, पेड़ पंजी, मानचित्र और फील्ड कार्य';
+
+  @override
+  String get navSectionIntelligence => 'निगरानी और विश्लेषण';
+
+  @override
+  String get navSectionIntelligenceDesc =>
+      'उपग्रह, जैव विविधता और अलर्ट';
+
+  @override
+  String get navSectionReports => 'रिपोर्ट और प्रमाण';
+
+  @override
+  String get navSectionReportsDesc =>
+      'निर्यात, कार्बन और AI सहायक';
+
+  @override
+  String get navSectionAccount => 'खाता';
+
+  @override
+  String get navBioacoustic => 'जैव ध्वनि';
+
+  @override
+  String get navAlerts => 'अलर्ट';
+
+  @override
+  String get navReports => 'रिपोर्ट';
+
+  @override
+  String get navAssistant => 'AI सहायक';
+
+  @override
+  String get navCarbon => 'कार्बन';
+
+  @override
+  String get navCredits => 'क्रेडिट';
+
+  @override
+  String get registerTreePrimary => 'पेड़ पंजीकृत करें';
+
+  @override
+  String get registerTreePrimarySub =>
+      'GPS, फ़ोटो और फील्ड में ऑफ़लाइन सिंक';
+
+  @override
+  String get bioacousticActionSub =>
+      'प्रजाति पहचान के लिए 60–180 सेकंड ध्वनि रिकॉर्ड करें';
+
+  @override
+  String get bioacousticTileSub => 'ध्वनि-दृश्य रिकॉर्ड';
+
+  @override
+  String get projectsTileSub => 'पैकेज और कार्य क्षेत्र';
+
+  @override
+  String get addActionFab => 'जोड़ें';
+
+  @override
+  String get addActionSheetTitle => 'फील्ड कार्य';
+
+  @override
+  String get addActionSheetSubtitle =>
+      'पंजीकरण और जैव विविधता निगरानी के मुख्य उपकरण';
+
+  @override
+  String get addActionSheetEmpty =>
+      'आपकी भूमिका के लिए कोई फील्ड कार्य उपलब्ध नहीं।';
+
+  @override
+  String get menuOpen => 'मेनू खोलें';
+
+  @override
+  String get todayWork => 'आज का कार्य';
+
+  @override
+  String get fieldWorkspace => 'फील्ड कार्यक्षेत्र';
+
+  @override
+  String get viewFullDashboard => 'पूरा डैशबोर्ड देखें';
 }

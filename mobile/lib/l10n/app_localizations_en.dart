@@ -132,4 +132,92 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get analyticsHint =>
       'Helps improve the app (no personal tree photos).';
+
+  @override
+  String get navDashboard => 'Dashboard';
+
+  @override
+  String get navSectionPlantation => 'Setup & planting';
+
+  @override
+  String get navSectionPlantationDesc =>
+      'Programs, tree registry, map, and field work';
+
+  @override
+  String get navSectionIntelligence => 'Monitoring & analysis';
+
+  @override
+  String get navSectionIntelligenceDesc =>
+      'Satellite, biodiversity, and alerts';
+
+  @override
+  String get navSectionReports => 'Reports & evidence';
+
+  @override
+  String get navSectionReportsDesc =>
+      'Exports, carbon, and AI assistant';
+
+  @override
+  String get navSectionAccount => 'Account';
+
+  @override
+  String get navBioacoustic => 'Bioacoustic';
+
+  @override
+  String get navAlerts => 'Alerts';
+
+  @override
+  String get navReports => 'Reports';
+
+  @override
+  String get navAssistant => 'AI assistant';
+
+  @override
+  String get navCarbon => 'Carbon';
+
+  @override
+  String get navCredits => 'Credits';
+
+  @override
+  String get registerTreePrimary => 'Register a tree';
+
+  @override
+  String get registerTreePrimarySub =>
+      'GPS, photos, and offline sync in the field';
+
+  @override
+  String get bioacousticActionSub =>
+      'Record 60–180s ambient sound for species detection';
+
+  @override
+  String get bioacousticTileSub => 'Record soundscape';
+
+  @override
+  String get projectsTileSub => 'Packages & work areas';
+
+  @override
+  String get addActionFab => 'Add';
+
+  @override
+  String get addActionSheetTitle => 'Field actions';
+
+  @override
+  String get addActionSheetSubtitle =>
+      'Primary tools for registration and biodiversity monitoring';
+
+  @override
+  String get addActionSheetEmpty =>
+      'No field actions available for your role.';
+
+  @override
+  String get menuOpen => 'Open menu';
+
+  @override
+  String get todayWork => 'Today\'s work';
+
+  @override
+  String get fieldWorkspace => 'Field workspace';
+
+  @override
+  String get viewFullDashboard => 'View full dashboard';
 }
