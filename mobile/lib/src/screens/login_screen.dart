@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_client.dart';
@@ -209,10 +210,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AuthLightScope(
       child: AuthScaffold(
-        title: 'Welcome back',
-        subtitle: 'Sign in to your Aranyix account',
+        title: l10n?.welcomeBack ?? 'Welcome back',
+        subtitle: l10n?.signInSubtitle ?? 'Sign in to your Aranyix account',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : () => context.go('/welcome'),
@@ -320,9 +322,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Remember me',
-                              style: TextStyle(
+                            Text(
+                              l10n?.rememberMe ?? 'Remember me',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AranyixColors.onSurface,
@@ -335,7 +337,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: _busy ? null : () => context.push('/forgot-password'),
-                    child: const Text('Forgot password?'),
+                    child: Text(l10n?.forgotPassword ?? 'Forgot password?'),
                   ),
                 ],
               ),
@@ -359,7 +361,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ],
               FilledButton(
                 onPressed: _busy || !_loaded ? null : _submitEmail,
-                child: Text(_busy ? 'Signing in…' : 'Sign in'),
+                child: Text(_busy ? 'Signing in…' : (l10n?.signIn ?? 'Sign in')),
               ),
             ] else
               PhoneOtpLoginPanel(
@@ -371,12 +373,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             OutlinedButton.icon(
               onPressed: _busy ? null : _googleSignIn,
               icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Continue with Google'),
+              label: Text(l10n?.continueWithGoogle ?? 'Continue with Google'),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
               onPressed: _busy ? null : () => context.push('/signup'),
-              child: const Text('Create an account'),
+              child: Text(l10n?.createAccount ?? 'Create an account'),
             ),
           ],
         ),

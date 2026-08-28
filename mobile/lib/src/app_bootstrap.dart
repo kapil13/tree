@@ -71,7 +71,9 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
   }
 
   Future<void> _promptBiometric() async {
-    final ok = await PushRegistrationService.instance.authenticateBiometric();
+    final ok = await PushRegistrationService.instance.authenticateBiometric(
+      reason: 'Unlock Aranyix',
+    );
     if (!mounted) return;
     setState(() => _biometricGateOpen = ok);
     if (!ok) {

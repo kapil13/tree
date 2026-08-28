@@ -616,6 +616,21 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> submitProgramAccessRequest({
+    required String programCode,
+    String? message,
+  }) async {
+    final r = await _dio.post('/planting-programs/me/access-requests', data: {
+      'program_code': programCode,
+      if (message != null && message.trim().isNotEmpty) 'message': message.trim(),
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> withdrawProgramAccessRequest(String requestId) async {
+    await _dio.delete('/planting-programs/me/access-requests/$requestId');
+  }
+
   Future<String> uploadImageFile(String filePath, {String? filename}) async {
     final name = filename ?? filePath.split('/').last;
     final presign = Map<String, dynamic>.from(
@@ -651,6 +666,15 @@ class ApiClient {
 
   Future<Map<String, dynamic>> runSatelliteHealth(String treeId) async {
     final r = await _dio.post('/satellite-health/trees/$treeId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Fetch live NDVI for a tree (creates SatelliteRecord). Requires professional write access.
+  Future<Map<String, dynamic>> scanTreeSatellite(String treeId) async {
+    final r = await _dio.post(
+      '/satellite/scan',
+      queryParameters: {'tree_id': treeId},
+    );
     return Map<String, dynamic>.from(r.data);
   }
 

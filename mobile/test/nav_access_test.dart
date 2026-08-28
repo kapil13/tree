@@ -24,6 +24,26 @@ void main() {
     );
   });
 
+  test('bioacoustic is professional-only, not merely non-BYOT', () {
+    final byotCitizen = {
+      'role': 'citizen',
+      'has_professional_program': false,
+    };
+    final professional = {
+      'role': 'corporate',
+      'has_professional_program': true,
+    };
+    final govRole = {
+      'role': 'government',
+      'has_professional_program': false,
+    };
+    expect(canSeeBioacoustic(byotCitizen), isFalse);
+    expect(canSeeBioacoustic(professional), isTrue);
+    // Professional roles grant access even without the program flag.
+    expect(userHasProfessionalAccess(govRole), isTrue);
+    expect(canSeeBioacoustic(govRole), isTrue);
+  });
+
   test('viewer cannot add trees', () {
     final viewer = {
       'role': 'government',
