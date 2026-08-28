@@ -13,7 +13,9 @@ import '../providers.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/mobile_auth_security.dart';
 import '../widgets/turnstile_captcha.dart';
+import '../auth/auth_messages.dart';
 import 'auth_flow_screens.dart';
 
 enum _LoginMode { email, phone }
@@ -31,7 +33,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _pwd = TextEditingController();
   final _apiUrl = TextEditingController();
-  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
 
   String? _err;
   bool _busy = false;
@@ -42,8 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
 
   bool _captchaEnabled = false;
+  bool _skipCaptchaForMobile = false;
   String? _captchaSiteKey;
   String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
+  bool get _needsCaptchaWidget => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
 
   @override
   void initState() {
@@ -52,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptcha()]);
+    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
   }
 
   @override
@@ -79,13 +86,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
-  Future<void> _loadCaptcha() async {
+  Future<void> _loadCaptchaConfig() async {
     try {
       final api = await ref.read(apiClientProvider.future);
       final cfg = await api.captchaConfig();
       if (!mounted) return;
       setState(() {
         _captchaEnabled = cfg['enabled'] == true;
+        _skipCaptchaForMobile = cfg['skip_for_mobile'] == true;
         _captchaSiteKey = cfg['site_key'] as String?;
       });
     } catch (_) {}
@@ -124,8 +132,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submitEmail() async {
-    if (_captchaEnabled && (_captchaToken == null || _captchaToken!.isEmpty)) {
-      setState(() => _err = 'Please complete the security check below.');
+    if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _err = humanizeAuthError('captcha_required'));
       return;
     }
     setState(() {
@@ -209,17 +217,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionExpired = GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
     return AuthLightScope(
       child: AuthScaffold(
+        compact: true,
         title: 'Welcome back',
-        subtitle: 'Sign in to your Aranyix account',
+        subtitle: 'Sign in to continue mapping trees, biodiversity, and compliance evidence.',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : () => context.go('/welcome'),
         ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AuthOrDivider(),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _googleSignIn,
+              icon: const Icon(Icons.g_mobiledata, size: 28),
+              label: const Text('Continue with Google'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _busy ? null : () => context.push('/signup'),
+              child: const Text('Create an account'),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            if (sessionExpired) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AranyixColors.warningContainer,
+                  borderRadius: BorderRadius.circular(AranyixRadii.chip),
+                  border: Border.all(color: const Color(0xFFFCD34D)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AranyixColors.warningOnContainer, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Your session expired. Sign in again to continue where you left off.',
+                        style: TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer, height: 1.35),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (_invitePreview != null) ...[
               Container(
                 padding: const EdgeInsets.all(14),
@@ -249,7 +301,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               selected: _mode,
               onChanged: _busy ? (_) {} : (mode) => setState(() => _mode = mode),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             if (_mode == _LoginMode.email) ...[
               if (allowCustomApiBase) ...[
                 TextField(
@@ -339,47 +391,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
-              if (_captchaEnabled && _captchaSiteKey != null) ...[
-                const SizedBox(height: 4),
+              const SizedBox(height: 10),
+              if (_captchaEnabled && _skipCaptchaForMobile)
+                const MobileAuthSecurityNote()
+              else if (_needsCaptchaWidget && _captchaSiteKey != null) ...[
                 TurnstileCaptcha(
                   key: _captchaKey,
                   siteKey: _captchaSiteKey!,
-                  onToken: (t) => setState(() {
-                    _captchaToken = t;
+                  onToken: (token) => setState(() {
+                    _captchaToken = token;
                     _err = null;
                   }),
                   onError: () => setState(() => _captchaToken = null),
                   onExpired: () => setState(() => _captchaToken = null),
                 ),
-                const SizedBox(height: 12),
               ],
               if (_err != null) ...[
+                const SizedBox(height: 10),
                 AuthErrorBanner(message: _err!),
-                const SizedBox(height: 12),
               ],
+              const SizedBox(height: 12),
               FilledButton(
                 onPressed: _busy || !_loaded ? null : _submitEmail,
                 child: Text(_busy ? 'Signing in…' : 'Sign in'),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: const [
+                  _LoginTrustChip(icon: Icons.gps_fixed, label: 'GPS-verified'),
+                  _LoginTrustChip(icon: Icons.cloud_off, label: 'Offline sync'),
+                ],
               ),
             ] else
               PhoneOtpLoginPanel(
                 onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
               ),
-            const SizedBox(height: 20),
-            const AuthOrDivider(),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _googleSignIn,
-              icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Continue with Google'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: _busy ? null : () => context.push('/signup'),
-              child: const Text('Create an account'),
-            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoginTrustChip extends StatelessWidget {
+  const _LoginTrustChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AranyixColors.forestLight,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AranyixColors.forestMuted.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AranyixColors.forest),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AranyixColors.forestDark)),
+        ],
       ),
     );
   }

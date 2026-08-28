@@ -26,7 +26,14 @@
   "languageHindi": "Hindi",
   "security": "Security",
   "biometricUnlock": "Unlock with biometrics",
+  "biometricUnlockHint": "Require fingerprint or face unlock when reopening the app.",
+  "biometricEnableFailed": "Biometric unlock was not enabled — confirmation failed.",
+  "biometricEnabled": "Biometric unlock enabled.",
+  "biometricDisabled": "Biometric unlock disabled.",
   "screenshotGuard": "Block screenshots",
+  "screenshotGuardHint": "Blocks screenshots and screen recording on this device.",
+  "screenshotGuardEnabled": "Screenshot guard enabled.",
+  "screenshotGuardDisabled": "Screenshot guard disabled.",
   "certificatePinning": "Certificate pinning",
   "offlineSyncPending": "{count, plural, =1{1 item waiting to sync} other{{count} items waiting to sync}}",
   "@offlineSyncPending": {
@@ -49,5 +56,172 @@
   "pushNotificationsHint": "Alerts for satellite health, compliance, and survival surveys.",
   "deepLinkTreeNotFound": "Tree not found or you do not have access.",
   "analyticsEnabled": "Usage analytics",
-  "analyticsHint": "Helps improve the app (no personal tree photos)."
+  "analyticsHint": "Helps improve the app (no personal tree photos).",
+  "navDashboard": "Dashboard",
+  "navSectionPlantation": "Setup & planting",
+  "navSectionPlantationDesc": "Programs, tree registry, map, and field work",
+  "navSectionIntelligence": "Monitoring & analysis",
+  "navSectionIntelligenceDesc": "Satellite, biodiversity, and alerts",
+  "navSectionReports": "Reports & evidence",
+  "navSectionReportsDesc": "Exports, carbon, and AI assistant",
+  "navSectionAccount": "Account",
+  "navBioacoustic": "Bioacoustic",
+  "navAlerts": "Alerts",
+  "navReports": "Reports",
+  "navAssistant": "AI assistant",
+  "navCarbon": "Carbon",
+  "navCredits": "Credits",
+  "registerTreePrimary": "Register a tree",
+  "registerTreePrimarySub": "GPS, photos, and offline sync in the field",
+  "bioacousticActionSub": "Record 60–180s ambient sound for species detection",
+  "bioacousticTileSub": "Record soundscape",
+  "projectsTileSub": "Packages & work areas",
+  "addActionFab": "Add",
+  "addActionSheetTitle": "Field actions",
+  "addActionSheetSubtitle": "Primary tools for registration and biodiversity monitoring",
+  "addActionSheetEmpty": "No field actions available for your role.",
+  "menuOpen": "Open menu",
+  "drawerLoadError": "Could not load your profile for navigation. Check your connection and retry.",
+  "drawerSignInRequired": "Sign in to see navigation.",
+  "drawerNoNavItems": "No menu items are available for your account.",
+  "todayWork": "Today's work",
+  "fieldWorkspace": "Field workspace",
+  "viewFullDashboard": "View full dashboard",
+  "addTreeTitle": "Add tree",
+  "addTreeTitleProject": "Register project tree",
+  "addTreeStepContext": "Context",
+  "addTreeStepSpecies": "Species & details",
+  "addTreeStepLocation": "Location",
+  "addTreeStepPhotos": "Photos",
+  "addTreeStepReview": "Review & save",
+  "addTreeStepOf": "Step {current} of {total}",
+  "@addTreeStepOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "addTreeBack": "Back",
+  "addTreeNext": "Next",
+  "addTreeSaving": "Saving…",
+  "addTreeSaveAndNext": "Save & register next",
+  "addTreeSaveAndExit": "Save & exit",
+  "addTreeProjectHint": "GPS, photos, and species only — pit, spacing, and guard inherit from the project.",
+  "addTreeSetupBlockedTitle": "Finish project setup first",
+  "addTreeSetupBlockedBody": "Complete tree registration defaults (permit, site zone, agency) in the web project setup before registering trees here.",
+  "addTreeOpenProject": "Open project",
+  "addTreeWorkArea": "Work area *",
+  "addTreeProgram": "Registration program",
+  "addTreeProgramHint": "Choose BYOT citizen planting or a government program such as NHAI highway plantation.",
+  "addTreeValidationProgram": "Select a registration program before continuing.",
+  "addTreeValidationWorkArea": "Select a work area before continuing.",
+  "addTreeApprovedSpecies": "Approved species",
+  "addTreeSpecies": "Species",
+  "addTreeRoadSide": "Road side *",
+  "addTreeRoadSideNhai": "Road side (LHS/RHS) *",
+  "addTreeGuard": "Tree guard *",
+  "addTreePitSize": "Pit size (LxWxD cm)",
+  "addTreeMeasurementsTitle": "Field measurements (optional)",
+  "addTreeMeasurementsHint": "Measure DBH at 1.3 m above ground. Leave blank if not measured yet.",
+  "addTreeMeasurementMethod": "Measurement method",
+  "addTreeDbh": "DBH (cm)",
+  "addTreeHeight": "Height (m)",
+  "addTreeLocationHint": "Capture GPS at the planting point. Compliance checks run automatically for project trees.",
+  "addTreeGetGps": "Get GPS location",
+  "addTreePhotosHint": "Add clear photos of the tree and planting pit. Works offline — uploads when connected.",
+  "addTreeAddPhoto": "Add photo ({count}/{target})",
+  "@addTreeAddPhoto": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "target": {"type": "int"}
+    }
+  },
+  "addTreeOfflinePhotos": "{count} photo(s) saved offline",
+  "@addTreeOfflinePhotos": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addTreeReviewTitle": "Review registration",
+  "addTreeSessionCount": "{count} this session",
+  "@addTreeSessionCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addTreeMinPhotosWarning": "Program recommends at least {min} photos.",
+  "@addTreeMinPhotosWarning": {
+    "placeholders": {
+      "min": {"type": "int"}
+    }
+  },
+  "addTreeValidationContext": "Finish project setup or select a work area before continuing.",
+  "addTreeValidationSpecies": "Enter a species before continuing.",
+  "addTreeValidationLocation": "Capture GPS before continuing.",
+  "addTreeValidationCompliance": "Compliance check failed — fix issues before saving (strict mode).",
+  "bioTabRecord": "Record",
+  "bioTabHistory": "History",
+  "bioRecordingLive": "Recording live",
+  "bioRecordingTarget": "Target: {min}–{max} s · 48 kHz mono WAV",
+  "@bioRecordingTarget": {
+    "placeholders": {
+      "min": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "bioStopAndSave": "Stop & save",
+  "bioStopMin": "Stop ({seconds}s min)",
+  "@bioStopMin": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "bioSiteOptional": "Plantation site (optional)",
+  "bioSiteGpsOnly": "No site — GPS only",
+  "bioTapToRecord": "Tap to start recording",
+  "bioStartRecording": "Start ambient recording",
+  "bioSplLevel": "Ambient SPL ≈ {level} dB",
+  "@bioSplLevel": {
+    "placeholders": {
+      "level": {"type": "String"}
+    }
+  },
+  "bioNoiseWarning": "High background noise — traffic, wind, or machinery may reduce accuracy.",
+  "bioFieldTips": "Record ambient environmental sound (not voice). Hold phone 1–1.5 m above ground, stay still. Best at sunrise or sunset. Works offline.",
+  "bioSyncTooltip": "Sync offline recordings",
+  "bioMicDenied": "Microphone permission denied",
+  "bioRecordingStatus": "Recording ambient soundscape… hold phone 1–1.5 m above ground, stay still.",
+  "bioTooShort": "Record at least {min} seconds (currently {elapsed} s).",
+  "@bioTooShort": {
+    "placeholders": {
+      "min": {"type": "int"},
+      "elapsed": {"type": "int"}
+    }
+  },
+  "bioSaving": "Saving recording…",
+  "bioSavedOfflineGps": "Saved offline. {note}",
+  "@bioSavedOfflineGps": {
+    "placeholders": {
+      "note": {"type": "String"}
+    }
+  },
+  "bioSavedOffline": "Saved offline. Will upload and analyze automatically when you have signal.",
+  "bioUploading": "Uploading and analyzing…",
+  "bioAnalysisComplete": "Analysis complete. See results below.",
+  "bioUploadFailedOffline": "Upload failed — saved offline. Tap Sync when your connection is stable.",
+  "bioSyncing": "Syncing offline recordings…",
+  "bioSyncedCount": "Synced {count} recording(s).",
+  "@bioSyncedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "bioNothingToSync": "No pending recordings to sync.",
+  "bioQueuePending": "Waiting to sync",
+  "bioQueueSyncing": "Syncing…",
+  "bioQueueFailed": "Sync failed",
+  "bioOfflineQueue": "Offline queue",
+  "bioSyncNow": "Sync now",
+  "bioSyncedRecordings": "Synced recordings",
+  "bioNoRecordingsYet": "No synced recordings yet."
 }

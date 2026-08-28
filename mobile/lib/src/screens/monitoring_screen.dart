@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,18 +9,20 @@ import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
 import '../widgets/sar_monitoring_cards.dart';
+import '../widgets/shell_scaffold.dart';
 
 class MonitoringScreen extends ConsumerWidget {
   const MonitoringScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final summaryAsync = ref.watch(monitoringSummaryProvider);
     final user = sessionController.user;
 
     return Scaffold(
       backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Monitoring')),
+      appBar: ShellTopBar(title: l10n.monitoring),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

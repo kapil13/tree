@@ -78,7 +78,10 @@ class ApiClient {
       baseUrl: '$base/api/v1',
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 45),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Aranyix-Client': 'mobile/1.2.1',
+      },
     ));
     CertificatePinning.configureDio(dio);
     final client = ApiClient._(dio, prefs, secure);
@@ -207,7 +210,8 @@ class ApiClient {
     final r = await _dio.post('/auth/login', data: {
       'email': email,
       'password': password,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -220,7 +224,8 @@ class ApiClient {
     final r = await _dio.post('/auth/otp/request', data: {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -246,7 +251,8 @@ class ApiClient {
   }) async {
     final r = await _dio.post('/auth/password-reset/request', data: {
       'email': email,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }
@@ -293,7 +299,8 @@ class ApiClient {
       'phone': phone,
       'password': password,
       'signup_category': signupCategory,
-      'captcha_token': captchaToken,
+      'client_platform': 'mobile',
+      if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
     });
     return Map<String, dynamic>.from(r.data);
   }

@@ -1,9 +1,12 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 class CreditsScreen extends ConsumerStatefulWidget {
   const CreditsScreen({super.key});
@@ -57,9 +60,9 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
     final s = _summary;
     final byStatus = Map<String, dynamic>.from(s?['by_status'] ?? {});
 
-    return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Credits')),
+    return stackRouteScaffold(
+      location: '/credits',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navCredits),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

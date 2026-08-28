@@ -42,6 +42,15 @@ Future<String> completeAuthSession(
   return '/home';
 }
 
+/// Keeps [sessionController.user] in sync when the app has tokens but profile was not loaded.
+Future<void> ensureSessionUser(WidgetRef ref) async {
+  if (!sessionController.authenticated || sessionController.user != null) return;
+  try {
+    final user = await ref.read(userProvider.future);
+    sessionController.setUser(user);
+  } catch (_) {}
+}
+
 class InviteAcceptException implements Exception {
   InviteAcceptException(this.message);
   final String message;

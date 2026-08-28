@@ -14,6 +14,7 @@ class AuthScaffold extends StatelessWidget {
     this.stepLabel,
     this.stepProgress,
     this.footer,
+    this.compact = false,
   });
 
   final String title;
@@ -23,6 +24,7 @@ class AuthScaffold extends StatelessWidget {
   final String? stepLabel;
   final double? stepProgress;
   final Widget? footer;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -65,28 +67,35 @@ class AuthScaffold extends StatelessWidget {
                   ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                    padding: EdgeInsets.fromLTRB(24, compact ? 8 : 12, 24, footer != null ? 12 : 28),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const AranyixBrandMark(size: 58, radius: 18, showGlow: true),
-                        const SizedBox(height: 20),
+                        AranyixBrandMark(
+                          size: compact ? 48 : 58,
+                          radius: compact ? 14 : 18,
+                          showGlow: !compact,
+                        ),
+                        SizedBox(height: compact ? 14 : 20),
                         Text(
                           title,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 color: AranyixColors.forestDark,
+                                fontSize: compact ? 26 : null,
                               ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           subtitle,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: AranyixColors.onSurfaceMuted,
-                                height: 1.45,
+                                height: 1.4,
+                                fontSize: compact ? 14.5 : null,
                               ),
                         ),
                         if (stepLabel != null) ...[
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 18),
                           Row(
                             children: [
                               Expanded(
@@ -110,7 +119,7 @@ class AuthScaffold extends StatelessWidget {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 28),
+                        SizedBox(height: compact ? 18 : 24),
                         child,
                       ],
                     ),

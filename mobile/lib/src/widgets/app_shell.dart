@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../nav_access.dart';
+import '../providers.dart';
+import '../nav_groups.dart';
+import '../auth_session.dart';
 import '../session.dart';
 import '../theme.dart';
+import 'app_drawer.dart';
+import 'shell_scaffold.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -34,17 +39,25 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = sessionController.user;
+    final userAsync = ref.watch(userProvider);
+    final user = sessionController.user ?? userAsync.valueOrNull;
+    if (sessionController.authenticated && user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => ensureSessionUser(ref));
+    }
     final location = GoRouterState.of(context).matchedLocation;
 
     final destinations = navDestinationsFor(user);
+    final showFab = canAddTrees(user) && showFieldFabOnRoute(location);
 
     final selectedIndex = destinations.indexWhere((d) => location.startsWith(d.path));
     final currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
 
     return Scaffold(
       backgroundColor: AranyixColors.surface,
+      drawer: AppDrawer(currentLocation: location),
       body: child,
+      floatingActionButton: showFab ? ShellRegisterFab(location: location) : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AranyixColors.surfaceElevated,

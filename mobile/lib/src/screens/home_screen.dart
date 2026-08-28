@@ -12,7 +12,8 @@ import '../session.dart';
 import '../theme.dart';
 import '../widgets/dashboard/dashboard_charts.dart';
 import '../widgets/dashboard/dashboard_map_preview.dart';
-import '../widgets/dashboard/dashboard_quick_actions.dart';
+import '../widgets/primary_field_actions.dart';
+import '../widgets/shell_scaffold.dart';
 import '../services/coach_marks.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
@@ -101,6 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: _DashboardTopBar(
                       greeting: firstName != null ? 'Hello, $firstName' : null,
                       projectName: _projectLabel(fences, user),
+                      onMenu: () => openAppDrawer(context),
                       onNotifications: () => context.go('/notifications'),
                       onProfile: () => context.go('/profile'),
                       onProjectTap: () => _showProjectPicker(context, fences),
@@ -119,6 +121,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           const SizedBox(height: 4),
                         ],
+                        PrimaryFieldActions(user: user),
+                        const SizedBox(height: 20),
                         _ForestHealthHero(
                           score: health.score,
                           label: health.label,
@@ -164,8 +168,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onAction: () => context.push('/notifications'),
                           ),
                         ],
-                        const SizedBox(height: 20),
-                        DashboardQuickActions(user: user),
                         const SizedBox(height: 24),
                         DashboardMapPreview(),
                         const SizedBox(height: 24),
@@ -278,6 +280,7 @@ class _DashboardTopBar extends StatelessWidget {
   const _DashboardTopBar({
     this.greeting,
     required this.projectName,
+    required this.onMenu,
     required this.onNotifications,
     required this.onProfile,
     required this.onProjectTap,
@@ -285,6 +288,7 @@ class _DashboardTopBar extends StatelessWidget {
 
   final String? greeting;
   final String projectName;
+  final VoidCallback onMenu;
   final VoidCallback onNotifications;
   final VoidCallback onProfile;
   final VoidCallback onProjectTap;
@@ -298,6 +302,12 @@ class _DashboardTopBar extends StatelessWidget {
         children: [
           Row(
             children: [
+              IconButton(
+                onPressed: onMenu,
+                icon: const Icon(Icons.menu_rounded),
+                color: AranyixColors.forestDark,
+                tooltip: 'Menu',
+              ),
               Container(
                 width: 36,
                 height: 36,

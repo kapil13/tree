@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
 
 enum _DrawMode { none, polygon, corridor }
 
@@ -266,13 +268,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final canDraw = canDrawOnMap(user);
     final showFieldOps = canSeeFieldOps(user) && (isSupervisor(user) || canSeeExecutiveHome(user));
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_mode == _DrawMode.none
-            ? 'Map'
+      appBar: ShellTopBar(
+        title: _mode == _DrawMode.none
+            ? l10n.map
             : _mode == _DrawMode.polygon
                 ? 'Draw polygon'
-                : 'Draw corridor'),
+                : 'Draw corridor',
         actions: [
           if (showFieldOps)
             IconButton(

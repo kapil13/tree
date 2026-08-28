@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 class FieldOpsScreen extends ConsumerWidget {
   const FieldOpsScreen({super.key});
@@ -13,9 +16,9 @@ class FieldOpsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(fieldOpsSummaryProvider);
 
-    return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Field ops')),
+    return stackRouteScaffold(
+      location: '/field-ops',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.fieldOps),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

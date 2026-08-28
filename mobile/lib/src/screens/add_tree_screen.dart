@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,8 @@ import '../api/api_errors.dart';
 import '../location_helper.dart';
 import '../offline/tree_registration_queue.dart';
 import '../providers.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 const _roadSides = [
   ('lhs', 'LHS (left)'),
@@ -72,6 +75,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   String _measurementMethod = 'visual_estimate';
   int _sessionSavedCount = 0;
   String? _successMessage;
+  int _wizardStep = 0;
+  static const _wizardStepCount = 5;
 
   @override
   void initState() {
@@ -107,6 +112,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         _programCode ??= programs.isNotEmpty ? programs.first['code'] as String : 'byot';
         _loadingPrograms = false;
       });
+      _syncProgramSelection();
       _syncExtraFields();
       _applySegmentDefaults();
     } catch (e) {
@@ -118,7 +124,31 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     }
   }
 
-  String? get _segment => _project?['segment'] as String?;
+  String? get _segment {
+    final fromProject = _project?['segment'] as String?;
+    if (fromProject != null && fromProject.isNotEmpty) return fromProject;
+    return _activeProgram?['segment'] as String?;
+  }
+
+  bool get _isNhaiContext =>
+      _segment == 'nhai_highway' || _effectiveProgramCode == 'government_nhai';
+
+  String? get _effectiveProgramCode {
+    if (_programCode != null &&
+        _programCode!.trim().isNotEmpty &&
+        _programs.any((p) => p['code'] == _programCode)) {
+      return _programCode;
+    }
+    if (_programs.isEmpty) return _programCode;
+    return _programs.first['code'] as String?;
+  }
+
+  void _syncProgramSelection() {
+    final effective = _effectiveProgramCode;
+    if (effective != null && effective != _programCode) {
+      _programCode = effective;
+    }
+  }
 
   String get _complianceMode =>
       _project?['compliance_mode'] as String? ?? 'open';
@@ -163,7 +193,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   void _applySegmentDefaults() {
-    if (!_isProjectMode && _segment == 'nhai_highway') {
+    if (!_isProjectMode && _isNhaiContext) {
       _pitSize = '60x60x60';
       _guardType ??= 'bamboo';
       _roadSide ??= 'lhs';
@@ -183,9 +213,10 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Map<String, dynamic>? get _activeProgram {
-    if (_programCode == null) return null;
+    final code = _effectiveProgramCode;
+    if (code == null) return null;
     return _programs.cast<Map<String, dynamic>?>().firstWhere(
-          (p) => p?['code'] == _programCode,
+          (p) => p?['code'] == code,
           orElse: () => null,
         );
   }
@@ -203,7 +234,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (key == 'latitude' || key == 'longitude' || key == 'accuracy_m' || key == 'altitude_m') {
           continue;
         }
-        if (_segment == 'nhai_highway' && (key == 'road_side' || key == 'guard_type' || key == 'pit_size_cm')) {
+        if (_isNhaiContext && (key == 'road_side' || key == 'guard_type' || key == 'pit_size_cm')) {
           continue;
         }
         if (map['type'] == 'boolean' || map['type'] == 'select') continue;
@@ -225,7 +256,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (widget.projectId != null) metadata['project_id'] = widget.projectId;
     if (_isProjectMode) {
       if (_chainageEnabled && _roadSide != null) metadata['road_side'] = _roadSide;
-    } else if (_segment == 'nhai_highway') {
+    } else if (_isNhaiContext) {
       if (_roadSide != null) metadata['road_side'] = _roadSide;
       if (_guardType != null) metadata['guard_type'] = _guardType;
       metadata['pit_size_cm'] = _pitSize;
@@ -315,6 +346,136 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (_complianceMode != 'strict') return false;
     if (_compliance == null) return widget.projectId != null;
     return _compliance!['passed'] != true;
+  }
+
+  bool _canAdvanceFromStep(int step) {
+    switch (step) {
+      case 0:
+        if (_projectSetupBlocks) return false;
+        if (widget.projectId != null && _workAreas.isNotEmpty && _selectedWorkAreaId == null) {
+          return false;
+        }
+        if (_project == null && _programs.isNotEmpty && (_effectiveProgramCode == null || _effectiveProgramCode!.isEmpty)) {
+          return false;
+        }
+        return true;
+      case 1:
+        return _species.text.trim().isNotEmpty;
+      case 2:
+        return _lat != null && _lon != null;
+      case 3:
+        return true;
+      case 4:
+        return !_complianceBlocksSave;
+      default:
+        return false;
+    }
+  }
+
+  void _nextWizardStep() {
+    if (!_canAdvanceFromStep(_wizardStep)) {
+      _showStepValidationMessage(_wizardStep);
+      return;
+    }
+    if (_wizardStep < _wizardStepCount - 1) {
+      setState(() => _wizardStep++);
+    }
+  }
+
+  void _prevWizardStep() {
+    if (_wizardStep > 0) setState(() => _wizardStep--);
+  }
+
+  void _showStepValidationMessage(int step) {
+    final l10n = AppLocalizations.of(context);
+    String message;
+    switch (step) {
+      case 0:
+        message = l10n?.addTreeValidationContext ??
+            'Finish project setup or select a work area before continuing.';
+        if (_project == null && _programs.isNotEmpty && (_effectiveProgramCode == null || _effectiveProgramCode!.isEmpty)) {
+          message = l10n?.addTreeValidationProgram ?? 'Select a registration program before continuing.';
+        } else if (widget.projectId != null && _workAreas.isNotEmpty && _selectedWorkAreaId == null) {
+          message = l10n?.addTreeValidationWorkArea ?? 'Select a work area before continuing.';
+        }
+        break;
+      case 1:
+        message = l10n?.addTreeValidationSpecies ?? 'Enter a species before continuing.';
+        break;
+      case 2:
+        message = l10n?.addTreeValidationLocation ?? 'Capture GPS before continuing.';
+        break;
+      default:
+        message = l10n?.addTreeValidationCompliance ??
+            'Compliance check failed — fix issues before saving (strict mode).';
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _wizardStepLabel(int step, AppLocalizations l10n) {
+    switch (step) {
+      case 0:
+        return l10n.addTreeStepContext;
+      case 1:
+        return l10n.addTreeStepSpecies;
+      case 2:
+        return l10n.addTreeStepLocation;
+      case 3:
+        return l10n.addTreeStepPhotos;
+      default:
+        return l10n.addTreeStepReview;
+    }
+  }
+
+  Widget _wizardProgress(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: List.generate(_wizardStepCount, (i) {
+              final active = i <= _wizardStep;
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(right: i == _wizardStepCount - 1 ? 0 : 6),
+                  decoration: BoxDecoration(
+                    color: active ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${l10n.addTreeStepOf(_wizardStep + 1, _wizardStepCount)} · ${_wizardStepLabel(_wizardStep, l10n)}',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wizardNavButtons(AppLocalizations l10n, {required bool onLastStep}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Row(
+        children: [
+          if (_wizardStep > 0)
+            OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
+          else
+            const SizedBox.shrink(),
+          const Spacer(),
+          if (!onLastStep)
+            FilledButton(
+              onPressed: _busy ? null : _nextWizardStep,
+              child: Text(l10n.addTreeNext),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _save({bool registerNext = false}) async {
@@ -446,9 +607,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final title = _isProjectMode ? l10n.addTreeTitleProject : l10n.addTreeTitle;
+
     if (_loadingPrograms) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Register tree')),
+      return stackRouteScaffold(
+        location: '/trees/new',
+        appBar: ShellTopBar(title: title),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -456,265 +621,355 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     final active = _activeProgram;
     final minPhotos = (active?['min_photos'] as num?)?.toInt() ?? 0;
     final photoCount = _photoKeys.length + _localPhotoPaths.length;
+    final onLastStep = _wizardStep == _wizardStepCount - 1;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isProjectMode ? 'Register project tree' : 'Add tree'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return stackRouteScaffold(
+      location: '/trees/new',
+      appBar: ShellTopBar(title: title),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_isProjectMode) ...[
-            Text(_project!['name'] as String, style: Theme.of(context).textTheme.titleMedium),
-            Text(
-              'GPS, photos, and species only — pit, spacing, and guard inherit from the project.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (_projectSetupBlocks) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                border: Border.all(color: Colors.amber.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Finish project setup first',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Complete tree registration defaults (permit, site zone, agency) '
-                    'in the web project setup before registering trees here.',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () => context.go('/projects/${widget.projectId}'),
-                    child: const Text('Open project'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (_project != null && !_projectSetupBlocks) ...[
-            if (_workAreas.isNotEmpty)
-              DropdownButtonFormField<String>(
-                value: _selectedWorkAreaId,
-                decoration: const InputDecoration(labelText: 'Work area *'),
-                items: _workAreas
-                    .map(
-                      (wa) => DropdownMenuItem<String>(
-                        value: (wa as Map)['id'] as String,
-                        child: Text((wa)['name'] as String? ?? 'Area'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _busy
-                    ? null
-                    : (v) {
-                        setState(() => _selectedWorkAreaId = v);
-                        _runComplianceCheck();
-                      },
-              ),
-            const SizedBox(height: 12),
-          ],
-          if (_programs.isNotEmpty && _project == null)
-            DropdownButtonFormField<String>(
-              value: _programCode,
-              decoration: const InputDecoration(labelText: 'Registration program'),
-              items: _programs
-                  .map(
-                    (program) => DropdownMenuItem<String>(
-                      value: program['code'] as String,
-                      child: Text(program['name'] as String? ?? program['code'] as String),
-                    ),
-                  )
-                  .toList(),
-              onChanged: _busy
-                  ? null
-                  : (v) {
-                      setState(() => _programCode = v);
-                      _syncExtraFields();
-                    },
-            ),
-          const SizedBox(height: 12),
-          if (_allowedSpecies.isNotEmpty)
-            DropdownButtonFormField<String>(
-              value: _allowedSpecies.contains(_species.text) ? _species.text : _allowedSpecies.first,
-              decoration: const InputDecoration(labelText: 'Approved species'),
-              items: _allowedSpecies
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: _busy
-                  ? null
-                  : (v) {
-                      setState(() => _species.text = v ?? _species.text);
-                      _runComplianceCheck();
-                    },
-            )
-          else
-            TextField(
-              controller: _species,
-              decoration: const InputDecoration(labelText: 'Species'),
-              onChanged: (_) => _runComplianceCheck(),
-            ),
-          if (_isProjectMode && _chainageEnabled) ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _roadSide,
-              decoration: const InputDecoration(labelText: 'Road side *'),
-              items: _roadSides
-                  .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
-                  .toList(),
-              onChanged: (v) {
-                setState(() => _roadSide = v);
-                _runComplianceCheck();
-              },
-            ),
-          ] else if (!_isProjectMode && _segment == 'nhai_highway') ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _roadSide,
-              decoration: const InputDecoration(labelText: 'Road side (LHS/RHS) *'),
-              items: _roadSides
-                  .map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2)))
-                  .toList(),
-              onChanged: (v) {
-                setState(() => _roadSide = v);
-                _runComplianceCheck();
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _guardType,
-              decoration: const InputDecoration(labelText: 'Tree guard *'),
-              items: _guardTypes.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (v) {
-                setState(() => _guardType = v);
-                _runComplianceCheck();
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: _pitSize,
-              decoration: const InputDecoration(labelText: 'Pit size (LxWxD cm)'),
-              onChanged: (v) {
-                _pitSize = v;
-                _runComplianceCheck();
-              },
-            ),
-          ],
-          for (final field in _extraFields) ...[
-            const SizedBox(height: 12),
-            TextField(
-              controller: _extraControllers[field['key'] as String],
-              decoration: InputDecoration(
-                labelText: '${field['label']}${field['required'] == true ? ' *' : ''}',
-              ),
-            ),
-          ],
-          if (!_isProjectMode) ...[
-            const SizedBox(height: 16),
-            Text('Field measurements (optional)', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Text(
-              'Measure DBH at 1.3 m above ground. Leave blank if not measured yet.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _measurementMethod,
-              decoration: const InputDecoration(labelText: 'Measurement method'),
-              items: _measurementMethods
-                  .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
-                  .toList(),
-              onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
-            ),
-            const SizedBox(height: 12),
-            Row(
+          _wizardProgress(l10n),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _dbh,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'DBH (cm)',
-                      hintText: 'e.g. 12.5',
+                switch (_wizardStep) {
+                  0 => _stepContext(l10n),
+                  1 => _stepSpecies(l10n),
+                  2 => _stepLocation(l10n),
+                  3 => _stepPhotos(l10n, minPhotos: minPhotos, photoCount: photoCount),
+                  _ => _stepReview(l10n, minPhotos: minPhotos, photoCount: photoCount),
+                },
+                if (_err != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_err!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                ],
+                if (onLastStep && !_projectSetupBlocks) ...[
+                  const SizedBox(height: 24),
+                  if (_isProjectMode) ...[
+                    FilledButton(
+                      onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: true),
+                      child: Text(_busy ? l10n.addTreeSaving : l10n.addTreeSaveAndNext),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _height,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Height (m)',
-                      hintText: 'e.g. 3.2',
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
+                      child: Text(l10n.addTreeSaveAndExit),
                     ),
-                  ),
+                  ] else
+                    FilledButton(
+                      onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
+                      child: Text(_busy ? l10n.addTreeSaving : l10n.registerTreePrimary),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          _wizardNavButtons(l10n, onLastStep: onLastStep),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepContext(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isProjectMode) ...[
+          Text(_project!['name'] as String, style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.addTreeProjectHint, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
+        ],
+        if (_projectSetupBlocks) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              border: Border.all(color: Colors.amber.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.addTreeSetupBlockedTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(l10n.addTreeSetupBlockedBody, style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () => context.go('/projects/${widget.projectId}'),
+                  child: Text(l10n.addTreeOpenProject),
                 ),
               ],
             ),
-          ],
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : _useGps,
-            icon: const Icon(Icons.my_location),
-            label: const Text('Get GPS location'),
           ),
-          if (_lat != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
+          const SizedBox(height: 12),
+        ],
+        if (_project != null && !_projectSetupBlocks && _workAreas.isNotEmpty)
+          DropdownButtonFormField<String>(
+            value: _selectedWorkAreaId,
+            decoration: InputDecoration(labelText: l10n.addTreeWorkArea),
+            items: _workAreas
+                .map(
+                  (wa) => DropdownMenuItem<String>(
+                    value: (wa as Map)['id'] as String,
+                    child: Text((wa)['name'] as String? ?? 'Area'),
+                  ),
+                )
+                .toList(),
+            onChanged: _busy
+                ? null
+                : (v) {
+                    setState(() => _selectedWorkAreaId = v);
+                    _runComplianceCheck();
+                  },
+          ),
+        if (_programs.isNotEmpty && _project == null) ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _effectiveProgramCode,
+            decoration: InputDecoration(labelText: l10n.addTreeProgram),
+            items: _programs
+                .map(
+                  (program) => DropdownMenuItem<String>(
+                    value: program['code'] as String,
+                    child: Text(program['name'] as String? ?? program['code'] as String),
+                  ),
+                )
+                .toList(),
+            onChanged: _busy
+                ? null
+                : (v) {
+                    setState(() => _programCode = v);
+                    _syncExtraFields();
+                    _applySegmentDefaults();
+                  },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.addTreeProgramHint,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _stepSpecies(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_allowedSpecies.isNotEmpty)
+          DropdownButtonFormField<String>(
+            value: _allowedSpecies.contains(_species.text) ? _species.text : _allowedSpecies.first,
+            decoration: InputDecoration(labelText: l10n.addTreeApprovedSpecies),
+            items: _allowedSpecies.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+            onChanged: _busy
+                ? null
+                : (v) {
+                    setState(() => _species.text = v ?? _species.text);
+                    _runComplianceCheck();
+                  },
+          )
+        else
+          TextField(
+            controller: _species,
+            decoration: InputDecoration(labelText: l10n.addTreeSpecies),
+            onChanged: (_) => _runComplianceCheck(),
+          ),
+        if (_isProjectMode && _chainageEnabled) ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _roadSide,
+            decoration: InputDecoration(labelText: l10n.addTreeRoadSide),
+            items: _roadSides.map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2))).toList(),
+            onChanged: (v) {
+              setState(() => _roadSide = v);
+              _runComplianceCheck();
+            },
+          ),
+        ] else if (!_isProjectMode && _isNhaiContext) ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _roadSide,
+            decoration: InputDecoration(labelText: l10n.addTreeRoadSideNhai),
+            items: _roadSides.map((s) => DropdownMenuItem(value: s.$1, child: Text(s.$2))).toList(),
+            onChanged: (v) {
+              setState(() => _roadSide = v);
+              _runComplianceCheck();
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _guardType,
+            decoration: InputDecoration(labelText: l10n.addTreeGuard),
+            items: _guardTypes.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+            onChanged: (v) {
+              setState(() => _guardType = v);
+              _runComplianceCheck();
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: _pitSize,
+            decoration: InputDecoration(labelText: l10n.addTreePitSize),
+            onChanged: (v) {
+              _pitSize = v;
+              _runComplianceCheck();
+            },
+          ),
+        ],
+        for (final field in _extraFields) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _extraControllers[field['key'] as String],
+            decoration: InputDecoration(
+              labelText: '${field['label']}${field['required'] == true ? ' *' : ''}',
             ),
-          if (_compliance != null) ...[
-            const SizedBox(height: 12),
-            _ComplianceBanner(result: _compliance!, mode: _complianceMode),
-          ],
-          if (minPhotos > 0 || _project != null) ...[
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _addPhoto,
-              icon: const Icon(Icons.photo_camera_outlined),
-              label: Text('Add photo ($photoCount/${minPhotos > 0 ? minPhotos : 3})'),
+          ),
+        ],
+        if (!_isProjectMode) ...[
+          const SizedBox(height: 16),
+          Text(l10n.addTreeMeasurementsTitle, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(l10n.addTreeMeasurementsHint, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _measurementMethod,
+            decoration: InputDecoration(labelText: l10n.addTreeMeasurementMethod),
+            items: _measurementMethods
+                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
+                .toList(),
+            onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _dbh,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: l10n.addTreeDbh, hintText: '12.5'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _height,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: l10n.addTreeHeight, hintText: '3.2'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _stepLocation(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.addTreeLocationHint, style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : _useGps,
+          icon: const Icon(Icons.my_location),
+          label: Text(l10n.addTreeGetGps),
+        ),
+        if (_lat != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
+          ),
+        if (_compliance != null) ...[
+          const SizedBox(height: 12),
+          _ComplianceBanner(result: _compliance!, mode: _complianceMode),
+        ],
+      ],
+    );
+  }
+
+  Widget _stepPhotos(AppLocalizations l10n, {required int minPhotos, required int photoCount}) {
+    final target = minPhotos > 0 ? minPhotos : 3;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.addTreePhotosHint, style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : _addPhoto,
+          icon: const Icon(Icons.photo_camera_outlined),
+          label: Text(l10n.addTreeAddPhoto(photoCount, target)),
+        ),
+        if (_localPhotoPaths.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(l10n.addTreeOfflinePhotos(_localPhotoPaths.length)),
+          ),
+      ],
+    );
+  }
+
+  Widget _stepReview(AppLocalizations l10n, {required int minPhotos, required int photoCount}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.addTreeReviewTitle, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        _ReviewRow(label: l10n.addTreeSpecies, value: _species.text.trim()),
+        if (_selectedWorkAreaId != null)
+          _ReviewRow(
+            label: l10n.addTreeWorkArea,
+            value: (_workAreas.cast<Map<String, dynamic>?>().firstWhere(
+                  (w) => w?['id'] == _selectedWorkAreaId,
+                  orElse: () => null,
+                )?['name'] as String?) ??
+                _selectedWorkAreaId!,
+          ),
+        if (_lat != null) _ReviewRow(label: l10n.addTreeStepLocation, value: formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
+        _ReviewRow(label: l10n.addTreeStepPhotos, value: '$photoCount'),
+        if (_compliance != null) ...[
+          const SizedBox(height: 8),
+          _ComplianceBanner(result: _compliance!, mode: _complianceMode),
+        ],
+        if (_successMessage != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            '$_successMessage (${l10n.addTreeSessionCount(_sessionSavedCount)})',
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
+        ],
+        if (minPhotos > 0 && photoCount < minPhotos)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l10n.addTreeMinPhotosWarning(minPhotos),
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
             ),
-          ],
-          if (_successMessage != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              '$_successMessage (${_sessionSavedCount} this session)',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-          ],
-          if (_err != null) ...[
-            const SizedBox(height: 12),
-            Text(_err!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ],
-          const SizedBox(height: 24),
-          if (_isProjectMode && !_projectSetupBlocks) ...[
-            FilledButton(
-              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: true),
-              child: Text(_busy ? 'Saving…' : 'Save & register next'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
-              child: const Text('Save & exit'),
-            ),
-          ] else if (!_projectSetupBlocks)
-            FilledButton(
-              onPressed: (_busy || _complianceBlocksSave) ? null : () => _save(registerNext: false),
-              child: Text(_busy ? 'Saving…' : 'Register tree'),
-            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReviewRow extends StatelessWidget {
+  const _ReviewRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(child: Text(value)),
         ],
       ),
     );

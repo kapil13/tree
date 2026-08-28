@@ -14,6 +14,38 @@ def test_captcha_skipped_when_disabled(monkeypatch):
     asyncio.run(verify_captcha_token(None))
 
 
+def test_captcha_skipped_for_mobile_client(monkeypatch):
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
+
+    class FakeRequest:
+        headers = {"X-Aranyix-Client": "mobile/1.2.1"}
+
+    asyncio.run(verify_captcha_token(None, request=FakeRequest()))  # type: ignore[arg-type]
+
+
+def test_captcha_skipped_for_mobile_client_body(monkeypatch):
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
+
+    class FakeRequest:
+        headers: dict[str, str] = {}
+
+    asyncio.run(
+        verify_captcha_token(None, request=FakeRequest(), client_platform="mobile")  # type: ignore[arg-type]
+    )
+
+
+def test_captcha_skipped_for_dart_user_agent(monkeypatch):
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
+    monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")
+
+    class FakeRequest:
+        headers = {"User-Agent": "Dart/3.5 (dart:io)"}
+
+    asyncio.run(verify_captcha_token(None, request=FakeRequest()))  # type: ignore[arg-type]
+
+
 def test_captcha_required_when_enabled(monkeypatch):
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_secret_key", "secret")
     monkeypatch.setattr("app.services.auth.captcha.settings.turnstile_site_key", "site")

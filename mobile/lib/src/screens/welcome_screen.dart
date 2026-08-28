@@ -71,105 +71,91 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
             opacity: _fade,
             child: SlideTransition(
               position: _slide,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _HeroCard(),
-                          const SizedBox(height: 22),
-                          Row(
-                            children: [
-                              Text(
-                                'Your journey',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      color: AranyixColors.forestDark,
-                                    ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                '${_pageIndex + 1}/${_journey.length}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AranyixColors.onSurfaceMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'From field capture to executive clarity.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AranyixColors.onSurfaceMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            height: 196,
-                            child: PageView.builder(
-                              controller: _page,
-                              itemCount: _journey.length,
-                              onPageChanged: (i) => setState(() => _pageIndex = i),
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    right: index == _journey.length - 1 ? 0 : 12,
-                                  ),
-                                  child: _JourneyCard(
-                                    step: _journey[index],
-                                    number: index + 1,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(_journey.length, (i) {
-                              final active = i == _pageIndex;
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.symmetric(horizontal: 3),
-                                width: active ? 18 : 7,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? AranyixColors.forest
-                                      : AranyixColors.borderStrong,
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _HeroCard(),
+                    const SizedBox(height: 22),
+                    Row(
                       children: [
-                        FilledButton(
-                          onPressed: () => context.push('/signup'),
-                          child: const Text('Create free account'),
+                        Text(
+                          'Your journey',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: AranyixColors.forestDark,
+                              ),
                         ),
-                        const SizedBox(height: 10),
-                        OutlinedButton(
-                          onPressed: () => context.push('/login'),
-                          child: const Text('I already have an account'),
+                        const Spacer(),
+                        Text(
+                          '${_pageIndex + 1}/${_journey.length}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AranyixColors.onSurfaceMuted,
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    const Text(
+                      'From field capture to executive clarity.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AranyixColors.onSurfaceMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      height: 196,
+                      child: PageView.builder(
+                        controller: _page,
+                        itemCount: _journey.length,
+                        onPageChanged: (i) => setState(() => _pageIndex = i),
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: index == _journey.length - 1 ? 0 : 12,
+                            ),
+                            child: _JourneyCard(
+                              step: _journey[index],
+                              number: index + 1,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_journey.length, (i) {
+                        final active = i == _pageIndex;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: active ? 18 : 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? AranyixColors.forest
+                                : AranyixColors.borderStrong,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 28),
+                    FilledButton(
+                      onPressed: () => context.push('/signup'),
+                      child: const Text('Create free account'),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      onPressed: () => context.push('/login'),
+                      child: const Text('I already have an account'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

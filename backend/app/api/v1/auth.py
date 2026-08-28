@@ -130,6 +130,7 @@ async def captcha_config() -> CaptchaConfigOut:
     return CaptchaConfigOut(
         enabled=settings.captcha_enabled,
         site_key=settings.turnstile_site_key if settings.captcha_enabled else None,
+        skip_for_mobile=settings.captcha_enabled,
     )
 
 
@@ -161,7 +162,7 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
             detail="use_signup_otp_flow",
         )
     await assert_registration_allowed(db)
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status.HTTP_409_CONFLICT, detail="email_taken")
@@ -212,7 +213,12 @@ async def register(payload: RegisterRequest, request: Request, db: DB) -> UserOu
 
 @router.post("/login", response_model=TokenResponse, dependencies=[rate_limit(30, 60)])
 async def login(payload: LoginRequest, request: Request, db: DB) -> TokenResponse:
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(
+        payload.captcha_token,
+        remote_ip=_client_ip(request),
+        request=request,
+        client_platform=payload.client_platform,
+    )
     res = await db.execute(select(User).where(User.email == payload.email))
     user = res.scalar_one_or_none()
     if user is None or not user.hashed_password or not verify_password(
@@ -254,7 +260,7 @@ def _password_reset_error(exc: PasswordResetError) -> HTTPException:
 async def password_reset_request(
     payload: PasswordResetRequest, request: Request, db: DB
 ) -> PasswordResetOut:
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     try:
         dev_hint = await request_password_reset(db, payload.email)
     except PasswordResetError as exc:
@@ -274,7 +280,7 @@ async def password_reset_request(
 async def password_reset_confirm(
     payload: PasswordResetConfirm, request: Request, db: DB
 ) -> TokenResponse:
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     try:
         user = await confirm_password_reset(
             db,
@@ -361,7 +367,7 @@ def _signup_error(exc: SignupError) -> HTTPException:
 @router.post("/signup/start", response_model=SignupStartOut, dependencies=[rate_limit(10, 60)])
 async def signup_start(payload: SignupStartRequest, request: Request, db: DB) -> SignupStartOut:
     await assert_registration_allowed(db)
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     try:
         token, dev_hint = await start_signup(
             db,
@@ -452,7 +458,7 @@ async def signup_complete(payload: SignupCompleteRequest, request: Request, db: 
 
 @router.post("/otp/request", response_model=OTPRequestOut, dependencies=[rate_limit(10, 60)])
 async def request_otp(payload: OTPRequest, request: Request) -> OTPRequestOut:
-    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request))
+    await verify_captcha_token(payload.captcha_token, remote_ip=_client_ip(request), request=request)
     if not payload.email and not payload.phone:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email_or_phone")
     phone: str | None = None

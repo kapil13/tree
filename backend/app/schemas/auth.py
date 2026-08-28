@@ -65,6 +65,7 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
     captcha_token: str | None = None
+    client_platform: str | None = None
 
 
 class PasswordResetRequest(BaseModel):
@@ -119,6 +120,7 @@ class CaptchaConfigOut(BaseModel):
     enabled: bool
     provider: str = "turnstile"
     site_key: str | None = None
+    skip_for_mobile: bool = False
 
 
 class OtpConfigOut(BaseModel):

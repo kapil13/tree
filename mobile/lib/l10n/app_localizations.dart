@@ -212,11 +212,29 @@ abstract class AppLocalizations {
   /// **'Unlock with biometrics'**
   String get biometricUnlock;
 
+  /// No description provided for @biometricUnlockHint.
+  String get biometricUnlockHint;
+
+  /// No description provided for @biometricEnableFailed.
+  String get biometricEnableFailed;
+
+  /// No description provided for @biometricEnabled.
+  String get biometricEnabled;
+
+  /// No description provided for @biometricDisabled.
+  String get biometricDisabled;
+
   /// No description provided for @screenshotGuard.
   ///
   /// In en, this message translates to:
   /// **'Block screenshots'**
   String get screenshotGuard;
+
+  String get screenshotGuardHint;
+
+  String get screenshotGuardEnabled;
+
+  String get screenshotGuardDisabled;
 
   /// No description provided for @certificatePinning.
   ///
@@ -313,6 +331,124 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Helps improve the app (no personal tree photos).'**
   String get analyticsHint;
+
+  String get navDashboard;
+  String get navSectionPlantation;
+  String get navSectionPlantationDesc;
+  String get navSectionIntelligence;
+  String get navSectionIntelligenceDesc;
+  String get navSectionReports;
+  String get navSectionReportsDesc;
+  String get navSectionAccount;
+  String get navBioacoustic;
+  String get navAlerts;
+  String get navReports;
+  String get navAssistant;
+  String get navCarbon;
+  String get navCredits;
+  String get registerTreePrimary;
+  String get registerTreePrimarySub;
+  String get bioacousticActionSub;
+  String get bioacousticTileSub;
+  String get projectsTileSub;
+  String get addActionFab;
+  String get addActionSheetTitle;
+  String get addActionSheetSubtitle;
+  String get addActionSheetEmpty;
+  String get menuOpen;
+
+  String get drawerLoadError;
+
+  String get drawerSignInRequired;
+
+  String get drawerNoNavItems;
+
+  String get todayWork;
+  String get fieldWorkspace;
+  String get viewFullDashboard;
+
+  String get addTreeTitle;
+  String get addTreeTitleProject;
+  String get addTreeStepContext;
+  String get addTreeStepSpecies;
+  String get addTreeStepLocation;
+  String get addTreeStepPhotos;
+  String get addTreeStepReview;
+  String addTreeStepOf(int current, int total);
+  String get addTreeBack;
+  String get addTreeNext;
+  String get addTreeSaving;
+  String get addTreeSaveAndNext;
+  String get addTreeSaveAndExit;
+  String get addTreeProjectHint;
+  String get addTreeSetupBlockedTitle;
+  String get addTreeSetupBlockedBody;
+  String get addTreeOpenProject;
+  String get addTreeWorkArea;
+  String get addTreeProgram;
+
+  String get addTreeProgramHint;
+
+  String get addTreeValidationProgram;
+
+  String get addTreeValidationWorkArea;
+
+  String get addTreeApprovedSpecies;
+  String get addTreeSpecies;
+  String get addTreeRoadSide;
+  String get addTreeRoadSideNhai;
+  String get addTreeGuard;
+  String get addTreePitSize;
+  String get addTreeMeasurementsTitle;
+  String get addTreeMeasurementsHint;
+  String get addTreeMeasurementMethod;
+  String get addTreeDbh;
+  String get addTreeHeight;
+  String get addTreeLocationHint;
+  String get addTreeGetGps;
+  String get addTreePhotosHint;
+  String addTreeAddPhoto(int count, int target);
+  String addTreeOfflinePhotos(int count);
+  String get addTreeReviewTitle;
+  String addTreeSessionCount(int count);
+  String addTreeMinPhotosWarning(int min);
+  String get addTreeValidationContext;
+  String get addTreeValidationSpecies;
+  String get addTreeValidationLocation;
+  String get addTreeValidationCompliance;
+  String get bioTabRecord;
+  String get bioTabHistory;
+  String get bioRecordingLive;
+  String bioRecordingTarget(int min, int max);
+  String get bioStopAndSave;
+  String bioStopMin(int seconds);
+  String get bioSiteOptional;
+  String get bioSiteGpsOnly;
+  String get bioTapToRecord;
+  String get bioStartRecording;
+  String bioSplLevel(String level);
+  String get bioNoiseWarning;
+  String get bioFieldTips;
+  String get bioSyncTooltip;
+  String get bioMicDenied;
+  String get bioRecordingStatus;
+  String bioTooShort(int min, int elapsed);
+  String get bioSaving;
+  String bioSavedOfflineGps(String note);
+  String get bioSavedOffline;
+  String get bioUploading;
+  String get bioAnalysisComplete;
+  String get bioUploadFailedOffline;
+  String get bioSyncing;
+  String bioSyncedCount(int count);
+  String get bioNothingToSync;
+  String get bioQueuePending;
+  String get bioQueueSyncing;
+  String get bioQueueFailed;
+  String get bioOfflineQueue;
+  String get bioSyncNow;
+  String get bioSyncedRecordings;
+  String get bioNoRecordingsYet;
 }
 
 class _AppLocalizationsDelegate
