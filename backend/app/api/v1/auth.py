@@ -130,6 +130,7 @@ async def captcha_config() -> CaptchaConfigOut:
     return CaptchaConfigOut(
         enabled=settings.captcha_enabled,
         site_key=settings.turnstile_site_key if settings.captcha_enabled else None,
+        skip_for_mobile=settings.captcha_enabled,
     )
 
 

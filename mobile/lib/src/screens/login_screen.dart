@@ -14,6 +14,8 @@ import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/mobile_auth_security.dart';
+import '../widgets/turnstile_captcha.dart';
+import '../auth/auth_messages.dart';
 import 'auth_flow_screens.dart';
 
 enum _LoginMode { email, phone }
@@ -40,6 +42,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = true;
   bool _obscurePassword = true;
 
+  bool _captchaEnabled = false;
+  bool _skipCaptchaForMobile = false;
+  String? _captchaSiteKey;
+  String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
+  bool get _needsCaptchaWidget => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _bootstrap() async {
-    await Future.wait([_loadRemembered(), _loadApiUrl()]);
+    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
   }
 
   @override
@@ -72,6 +84,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _pwd.text = saved.password;
       }
     });
+  }
+
+  Future<void> _loadCaptchaConfig() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final cfg = await api.captchaConfig();
+      if (!mounted) return;
+      setState(() {
+        _captchaEnabled = cfg['enabled'] == true;
+        _skipCaptchaForMobile = cfg['skip_for_mobile'] == true;
+        _captchaSiteKey = cfg['site_key'] as String?;
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadApiUrl() async {
@@ -107,6 +132,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submitEmail() async {
+    if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _err = humanizeAuthError('captcha_required'));
+      return;
+    }
     setState(() {
       _busy = true;
       _err = null;
@@ -125,6 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final tokens = await api.login(
         _email.text.trim(),
         _pwd.text,
+        captchaToken: _captchaToken,
       );
       await api.setTokens(
         accessToken: tokens['access_token'] as String,
@@ -139,7 +169,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on InviteAcceptException catch (e) {
       setState(() => _err = e.message);
     } catch (e) {
-      setState(() => _err = apiErrorMessage(e));
+      setState(() {
+        _err = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -358,7 +392,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              const MobileAuthSecurityNote(),
+              if (_captchaEnabled && _skipCaptchaForMobile)
+                const MobileAuthSecurityNote()
+              else if (_needsCaptchaWidget && _captchaSiteKey != null) ...[
+                TurnstileCaptcha(
+                  key: _captchaKey,
+                  siteKey: _captchaSiteKey!,
+                  onToken: (token) => setState(() {
+                    _captchaToken = token;
+                    _err = null;
+                  }),
+                  onError: () => setState(() => _captchaToken = null),
+                  onExpired: () => setState(() => _captchaToken = null),
+                ),
+              ],
               if (_err != null) ...[
                 const SizedBox(height: 10),
                 AuthErrorBanner(message: _err!),

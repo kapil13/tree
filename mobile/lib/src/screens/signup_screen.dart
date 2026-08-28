@@ -13,6 +13,7 @@ import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/mobile_auth_security.dart';
 import '../widgets/otp_input.dart';
+import '../widgets/turnstile_captcha.dart';
 
 enum _SignupStep { account, verifyPhone, verifyEmail }
 
@@ -42,9 +43,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String _phoneOtp = '';
   String _emailOtp = '';
 
+  bool _captchaEnabled = false;
+  bool _skipCaptchaForMobile = false;
+  String? _captchaSiteKey;
+  String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
+  bool get _needsCaptchaWidget => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
+
   @override
   void initState() {
     super.initState();
+    _loadCaptchaConfig();
+  }
+
+  Future<void> _loadCaptchaConfig() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final cfg = await api.captchaConfig();
+      if (!mounted) return;
+      setState(() {
+        _captchaEnabled = cfg['enabled'] == true;
+        _skipCaptchaForMobile = cfg['skip_for_mobile'] == true;
+        _captchaSiteKey = cfg['site_key'] as String?;
+      });
+    } catch (_) {}
   }
 
   double get _progress {
@@ -84,6 +109,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       setState(() => _error = 'Please accept the terms to continue.');
       return;
     }
+    if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _error = humanizeAuthError('captcha_required'));
+      return;
+    }
 
     setState(() {
       _busy = true;
@@ -98,6 +127,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         phone: phoneForApi(_phone.text),
         password: _password.text,
         signupCategory: _category,
+        captchaToken: _captchaToken,
       );
       setState(() {
         _signupToken = res['signup_token'] as String;
@@ -105,7 +135,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _step = _SignupStep.verifyPhone;
       });
     } catch (e) {
-      setState(() => _error = apiErrorMessage(e));
+      setState(() {
+        _error = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -214,7 +248,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             if (_step == _SignupStep.account) ...[
               _buildAccountStep(),
               const SizedBox(height: 12),
-              const MobileAuthSecurityNote(),
+              if (_captchaEnabled && _skipCaptchaForMobile)
+                const MobileAuthSecurityNote()
+              else if (_needsCaptchaWidget && _captchaSiteKey != null)
+                TurnstileCaptcha(
+                  key: _captchaKey,
+                  siteKey: _captchaSiteKey!,
+                  onToken: (token) => setState(() {
+                    _captchaToken = token;
+                    _error = null;
+                  }),
+                  onError: () => setState(() => _captchaToken = null),
+                  onExpired: () => setState(() => _captchaToken = null),
+                ),
             ],
             if (_step == _SignupStep.verifyPhone) _buildOtpStep(isPhone: true),
             if (_step == _SignupStep.verifyEmail) _buildOtpStep(isPhone: false),

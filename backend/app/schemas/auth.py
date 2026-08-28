@@ -120,6 +120,7 @@ class CaptchaConfigOut(BaseModel):
     enabled: bool
     provider: str = "turnstile"
     site_key: str | None = None
+    skip_for_mobile: bool = False
 
 
 class OtpConfigOut(BaseModel):
