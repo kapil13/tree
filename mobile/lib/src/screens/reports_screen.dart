@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +7,8 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 const _reportKinds = {
   'tree': 'Tree portfolio',
@@ -107,9 +110,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     final canGenerate = canGenerateReports(sessionController.user);
 
-    return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Reports')),
+    return stackRouteScaffold(
+      location: '/reports',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navReports),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

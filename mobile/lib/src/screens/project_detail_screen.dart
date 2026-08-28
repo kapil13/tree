@@ -1,9 +1,12 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 import 'projects_list_screen.dart' show segmentLabels;
 
 class ProjectDetailScreen extends ConsumerWidget {
@@ -16,8 +19,9 @@ class ProjectDetailScreen extends ConsumerWidget {
     final projectAsync = ref.watch(plantingProjectProvider(projectId));
     final workAreasAsync = ref.watch(workAreasProvider(projectId));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Project')),
+    return stackRouteScaffold(
+      location: '/projects/$projectId',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.projects, menuWithBack: true),
       floatingActionButton: projectAsync.maybeWhen(
         data: (project) => FloatingActionButton.extended(
           onPressed: () => context.push('/trees/new?project=$projectId'),

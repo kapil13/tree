@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -125,8 +128,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(userProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile')),
+    return stackRouteScaffold(
+      location: '/profile/edit',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.profile, menuWithBack: true),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(apiErrorMessage(e))),

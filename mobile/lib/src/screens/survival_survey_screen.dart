@@ -6,6 +6,8 @@ import '../api/api_errors.dart';
 import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 const _survivalStatuses = [
   ('live', 'Live'),
@@ -123,9 +125,9 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   Widget build(BuildContext context) {
     final loc = _location;
 
-    return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: AppBar(title: const Text('Survival / re-geotag')),
+    return stackRouteScaffold(
+      location: '/trees/${widget.treeId}/survival',
+      appBar: const ShellTopBar(title: 'Survival / re-geotag', menuWithBack: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

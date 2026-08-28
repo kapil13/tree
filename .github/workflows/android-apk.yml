@@ -14,6 +14,7 @@ on:
       - cursor/android-apk-v110-beta-f2ba
       - cursor/android-apk-build-f2ba
       - cursor/mobile-full-app-apk-f2ba
+      - cursor/mobile-nav-redesign-f2ba
     tags:
       - "android-v*"
   pull_request:

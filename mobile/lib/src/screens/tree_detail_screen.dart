@@ -10,6 +10,8 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../services/analytics_service.dart';
 import '../session.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
 
 class TreeDetailScreen extends ConsumerStatefulWidget {
   const TreeDetailScreen({super.key, required this.id});
@@ -111,8 +113,9 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final t = tree;
-    return Scaffold(
-      appBar: AppBar(title: Text(t?['species_text'] ?? 'Tree')),
+    return stackRouteScaffold(
+      location: '/trees/${widget.id}',
+      appBar: ShellTopBar(title: t?['species_text'] ?? 'Tree', menuWithBack: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

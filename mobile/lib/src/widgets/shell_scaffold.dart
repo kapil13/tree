@@ -20,26 +20,33 @@ class ShellTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.subtitle,
     this.actions = const [],
     this.showMenu = true,
+    this.menuWithBack = false,
   });
 
   final String title;
   final String? subtitle;
   final List<Widget> actions;
   final bool showMenu;
+  /// When true and [Navigator.canPop], back is leading and drawer moves to actions.
+  final bool menuWithBack;
 
   @override
   Size get preferredSize => Size.fromHeight(subtitle != null ? 72 : kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+    final drawerAction = showMenu
+        ? IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+            onPressed: () => openAppDrawer(context),
+          )
+        : null;
+
     return AppBar(
-      leading: showMenu
-          ? IconButton(
-              icon: const Icon(Icons.menu_rounded),
-              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-              onPressed: () => openAppDrawer(context),
-            )
-          : null,
+      leading: showMenu && !(menuWithBack && canPop) ? drawerAction : null,
+      automaticallyImplyLeading: menuWithBack && canPop,
       title: subtitle != null
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +59,10 @@ class ShellTopBar extends StatelessWidget implements PreferredSizeWidget {
               ],
             )
           : Text(title),
-      actions: actions,
+      actions: [
+        if (showMenu && menuWithBack && canPop) drawerAction!,
+        ...actions,
+      ],
     );
   }
 }

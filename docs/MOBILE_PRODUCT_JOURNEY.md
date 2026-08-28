@@ -46,7 +46,13 @@ Home (field worker)
   Task-focused: register tree, assigned projects, offline queue
 
 Profile
-  Identity, planting program preferences, sign out
+  Identity, planting program preferences, language, security, sign-out
+  (App features — bioacoustic, reports, field ops — live in the left navigation drawer)
+
+Navigation (2026 redesign)
+  Left drawer — grouped menu (Setup & planting, Monitoring, Reports, Account)
+  Home — primary Register tree + Bioacoustic tiles
+  Add FAB — bottom sheet for register tree / bioacoustic
 ```
 
 ---
