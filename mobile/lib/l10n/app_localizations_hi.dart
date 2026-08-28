@@ -499,4 +499,89 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get bioNoRecordingsYet => 'अभी कोई सिंक रिकॉर्डिंग नहीं।';
+
+  @override
+  String get retry => 'पुनः प्रयास';
+
+  @override
+  String get monitoringStaleSatellite => 'पुराने उपग्रह स्कैन';
+
+  @override
+  String get monitoringStaleSatelliteHint => 'हाल NDVI पास के बिना कार्य क्षेत्र';
+
+  @override
+  String get monitoringOpenSarVerifications => 'खुले SAR फील्ड सत्यापन';
+
+  @override
+  String get monitoringSarAlerts30d => 'SAR अलर्ट (30 दिन)';
+
+  @override
+  String get monitoringUnreadAlertsByKind => 'अपठित अलर्ट (प्रकार)';
+
+  @override
+  String get monitoringNoUnreadAlerts => 'कोई अपठित अलर्ट नहीं।';
+
+  @override
+  String get monitoringWorkAreaSarStatus => 'कार्य क्षेत्र SAR स्थिति';
+
+  @override
+  String get monitoringWorkAreaFallback => 'कार्य क्षेत्र';
+
+  @override
+  String monitoringNoWorkAreas(String violations, String survival) =>
+      'अभी कोई कार्य क्षेत्र निगरानी पंक्ति नहीं। खुले उल्लंघन: $violations, अस्तित्व बकाया: $survival।';
+
+  @override
+  String monitoringDaysSinceNdvi(String days) => 'NDVI से $days दिन';
+
+  @override
+  String get homeWelcomeBack => 'वापसी पर स्वागत';
+
+  @override
+  String homeHello(String name) => 'नमस्ते, $name';
+
+  @override
+  String get homeForestHealth => 'वन स्वास्थ्य';
+
+  @override
+  String get homeInsights => 'अंतर्दृष्टि';
+
+  @override
+  String get homeCarbonGrowth => 'कार्बन वृद्धि';
+
+  @override
+  String get homeCarbonGrowthHint => 'अनुमानित अवशोषण प्रवृत्ति';
+
+  @override
+  String get homeTreeHealth => 'पेड़ स्वास्थ्य';
+
+  @override
+  String get homeTreeHealthHint => 'आपके पोर्टफोलियो में वितरण';
+
+  @override
+  String get homeSpeciesMix => 'प्रजाति मिश्रण';
+
+  @override
+  String get homeSpeciesMixHint => 'शीर्ष पंजीकृत प्रजातियाँ';
+
+  @override
+  String get homeMonitoringChip => 'निगरानी';
+
+  @override
+  String get homeFieldOpsChip => 'फील्ड कार्य';
+
+  @override
+  String get homeReportsChip => 'रिपोर्ट';
+
+  @override
+  String get homeFieldProjects => 'फील्ड परियोजनाएँ';
+
+  @override
+  String get homeAllSites => 'सभी साइटें';
+
+  @override
+  String get homeQuickSnapshot => 'त्वरित सार';
+
+  @override
+  String get homeAskAranyix => 'Aranyix से पूछें';
 }

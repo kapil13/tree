@@ -8,11 +8,13 @@ Scaffold stackRouteScaffold({
   required PreferredSizeWidget appBar,
   required Widget body,
   Widget? floatingActionButton,
+  Widget? bottomNavigationBar,
 }) {
   return Scaffold(
     drawer: AppDrawer(currentLocation: location),
     appBar: appBar,
     body: body,
     floatingActionButton: floatingActionButton,
+    bottomNavigationBar: bottomNavigationBar,
   );
 }

@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,19 @@ import '../session.dart';
 import '../theme.dart';
 import 'app_drawer.dart';
 import 'shell_scaffold.dart';
+
+String navDestinationLabel(AppLocalizations l10n, String labelKey) {
+  return switch (labelKey) {
+    'home' => l10n.home,
+    'trees' => l10n.trees,
+    'map' => l10n.map,
+    'monitoring' => l10n.monitoring,
+    'projects' => l10n.projects,
+    'profile' => l10n.profile,
+    'navAlerts' => l10n.navAlerts,
+    _ => labelKey,
+  };
+}
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -45,6 +59,7 @@ class AppShell extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => ensureSessionUser(ref));
     }
     final location = GoRouterState.of(context).matchedLocation;
+    final l10n = AppLocalizations.of(context)!;
 
     final destinations = navDestinationsFor(user);
     final showFab = canAddTrees(user) && showFieldFabOnRoute(location);
@@ -74,7 +89,7 @@ class AppShell extends ConsumerWidget {
               NavigationDestination(
                 icon: Icon(_iconFor(d.path, selected: false)),
                 selectedIcon: Icon(_iconFor(d.path, selected: true)),
-                label: d.label,
+                label: navDestinationLabel(l10n, d.labelKey),
               ),
           ],
         ),

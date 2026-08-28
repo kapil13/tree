@@ -459,22 +459,19 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Widget _wizardNavButtons(AppLocalizations l10n, {required bool onLastStep}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Row(
-        children: [
-          if (_wizardStep > 0)
-            OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
-          else
-            const SizedBox.shrink(),
-          const Spacer(),
-          if (!onLastStep)
-            FilledButton(
-              onPressed: _busy ? null : _nextWizardStep,
-              child: Text(l10n.addTreeNext),
-            ),
-        ],
-      ),
+    return Row(
+      children: [
+        if (_wizardStep > 0)
+          OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
+        else
+          const SizedBox(width: 1),
+        const Spacer(),
+        if (!onLastStep)
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
+          ),
+      ],
     );
   }
 
@@ -626,6 +623,17 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return stackRouteScaffold(
       location: '/trees/new',
       appBar: ShellTopBar(title: title),
+      bottomNavigationBar: Material(
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: _wizardNavButtons(l10n, onLastStep: onLastStep),
+          ),
+        ),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -666,7 +674,6 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               ],
             ),
           ),
-          _wizardNavButtons(l10n, onLastStep: onLastStep),
         ],
       ),
     );
@@ -750,6 +757,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           Text(
             l10n.addTreeProgramHint,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
           ),
         ],
       ],

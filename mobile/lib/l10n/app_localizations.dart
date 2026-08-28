@@ -449,6 +449,34 @@ abstract class AppLocalizations {
   String get bioSyncNow;
   String get bioSyncedRecordings;
   String get bioNoRecordingsYet;
+  String get retry;
+  String get monitoringStaleSatellite;
+  String get monitoringStaleSatelliteHint;
+  String get monitoringOpenSarVerifications;
+  String get monitoringSarAlerts30d;
+  String get monitoringUnreadAlertsByKind;
+  String get monitoringNoUnreadAlerts;
+  String get monitoringWorkAreaSarStatus;
+  String get monitoringWorkAreaFallback;
+  String monitoringNoWorkAreas(String violations, String survival);
+  String monitoringDaysSinceNdvi(String days);
+  String get homeWelcomeBack;
+  String homeHello(String name);
+  String get homeForestHealth;
+  String get homeInsights;
+  String get homeCarbonGrowth;
+  String get homeCarbonGrowthHint;
+  String get homeTreeHealth;
+  String get homeTreeHealthHint;
+  String get homeSpeciesMix;
+  String get homeSpeciesMixHint;
+  String get homeMonitoringChip;
+  String get homeFieldOpsChip;
+  String get homeReportsChip;
+  String get homeFieldProjects;
+  String get homeAllSites;
+  String get homeQuickSnapshot;
+  String get homeAskAranyix;
 }
 
 class _AppLocalizationsDelegate

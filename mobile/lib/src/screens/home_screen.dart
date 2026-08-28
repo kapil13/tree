@@ -78,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return _errorBody(context, ref, e);
             },
             data: (dashboard) {
+              final l10n = AppLocalizations.of(context)!;
               final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
               final weather = weatherAsync.maybeWhen(data: (d) => d, orElse: () => null);
               final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
@@ -100,8 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SliverToBoxAdapter(child: PendingSyncBanner()),
                   SliverToBoxAdapter(
                     child: _DashboardTopBar(
-                      greeting: firstName != null ? 'Hello, $firstName' : null,
-                      projectName: _projectLabel(fences, user),
+                      greeting: firstName != null ? l10n.homeHello(firstName) : null,
+                      projectName: _projectLabel(fences, user, l10n),
                       onMenu: () => openAppDrawer(context),
                       onNotifications: () => context.go('/notifications'),
                       onProfile: () => context.go('/profile'),
@@ -114,7 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       delegate: SliverChildListDelegate([
                         if (firstName != null) ...[
                           Text(
-                            'Welcome back',
+                            l10n.homeWelcomeBack,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: AranyixColors.onSurfaceMuted,
                                 ),
@@ -138,19 +139,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               if (canSeeMonitoring(user))
                                 ActionChip(
                                   avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
-                                  label: const Text('Monitoring'),
+                                  label: Text(l10n.homeMonitoringChip),
                                   onPressed: () => context.go('/monitoring'),
                                 ),
                               if (canSeeFieldOps(user))
                                 ActionChip(
                                   avatar: const Icon(Icons.construction_outlined, size: 18),
-                                  label: const Text('Field ops'),
+                                  label: Text(l10n.homeFieldOpsChip),
                                   onPressed: () => context.push('/field-ops'),
                                 ),
                               if (canSeeReports(user))
                                 ActionChip(
                                   avatar: const Icon(Icons.description_outlined, size: 18),
-                                  label: const Text('Reports'),
+                                  label: Text(l10n.homeReportsChip),
                                   onPressed: () => context.push('/reports'),
                                 ),
                             ],
@@ -184,7 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Card(
                             child: ListTile(
                               leading: const Icon(Icons.assignment_outlined),
-                              title: const Text('Field projects'),
+                              title: Text(l10n.homeFieldProjects),
                               subtitle: const Text('NHAI packages, mine belts, society blocks'),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () => context.push('/projects'),
@@ -218,7 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 12),
                   FilledButton(
                     onPressed: () => ref.invalidate(dashboardProvider),
-                    child: const Text('Retry'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -235,14 +236,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return name.split(' ').first;
   }
 
-  String _projectLabel(List<dynamic> fences, Map<String, dynamic>? user) {
+  String _projectLabel(List<dynamic> fences, Map<String, dynamic>? user, AppLocalizations l10n) {
     if (fences.isNotEmpty) {
       final first = fences.first as Map<String, dynamic>;
-      final name = first['name'] as String? ?? 'Plantation';
+      final name = first['name'] as String? ?? l10n.homeAllSites;
       if (fences.length == 1) return name;
       return '$name +${fences.length - 1}';
     }
-    return user?['full_name'] as String? ?? 'All sites';
+    return user?['full_name'] as String? ?? l10n.homeAllSites;
   }
 
   void _showProjectPicker(BuildContext context, List<dynamic> fences) {

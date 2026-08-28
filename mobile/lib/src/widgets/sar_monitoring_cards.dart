@@ -11,12 +11,14 @@ class SarIntegrityHeroCard extends StatelessWidget {
     required this.atRisk,
     required this.divergent,
     required this.aligned,
+    this.languageCode = 'en',
   });
 
   final num? avgIntegrity;
   final int atRisk;
   final int divergent;
   final int aligned;
+  final String languageCode;
 
   Color _scoreColor(num score) {
     if (score >= 75) return Colors.green.shade700;
@@ -47,7 +49,7 @@ class SarIntegrityHeroCard extends StatelessWidget {
               Icon(Icons.radar, color: AranyixColors.forest, size: 22),
               const SizedBox(width: 8),
               Text(
-                'Forest Integrity',
+                languageCode == 'hi' ? 'वन अखंडता' : 'Forest Integrity',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AranyixColors.forest,
@@ -83,18 +85,26 @@ class SarIntegrityHeroCard extends StatelessWidget {
               ],
             )
           else
-            const Text(
-              'Run SAR scans on the web satellite page to establish Forest Integrity baselines.',
-              style: TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13),
+            Text(
+              languageCode == 'hi'
+                  ? 'Forest Integrity आधार बनाने के लिए वेब उपग्रह पृष्ठ पर SAR स्कैन चलाएँ।'
+                  : 'Run SAR scans on the web satellite page to establish Forest Integrity baselines.',
+              style: const TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13),
             ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Chip(label: '$atRisk at risk', warn: atRisk > 0),
-              _Chip(label: '$divergent divergent', warn: divergent > 0),
-              _Chip(label: '$aligned aligned'),
+              _Chip(
+                label: languageCode == 'hi' ? '$atRisk जोखिम पर' : '$atRisk at risk',
+                warn: atRisk > 0,
+              ),
+              _Chip(
+                label: languageCode == 'hi' ? '$divergent असमान' : '$divergent divergent',
+                warn: divergent > 0,
+              ),
+              _Chip(label: languageCode == 'hi' ? '$aligned संरेखित' : '$aligned aligned'),
             ],
           ),
         ],
@@ -189,7 +199,16 @@ class _Chip extends StatelessWidget {
   }
 }
 
-String? sarModeLabel(String? mode) {
+String? sarModeLabel(String? mode, {String languageCode = 'en'}) {
+  if (languageCode == 'hi') {
+    return switch (mode) {
+      'aligned' => 'संरेखित',
+      'optical_sar_divergent' => 'असमान',
+      'sar_gap_fill' => 'अंतर भरण',
+      'sar_stress' => 'तनाव',
+      _ => mode,
+    };
+  }
   switch (mode) {
     case 'aligned':
       return 'Aligned';

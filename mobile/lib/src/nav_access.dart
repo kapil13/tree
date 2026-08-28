@@ -120,7 +120,7 @@ bool canSeeCarbon(UserMap? user) => user != null;
 bool canSeeAssistant(UserMap? user) => user != null;
 
 /// Bottom-nav path+label descriptors by role shell.
-/// Icons are applied in [AppShell].
+/// Icons are applied in [AppShell]; labels resolved via [navDestinationLabelKey].
 ///
 /// Role shells:
 /// - Field worker: Home, Trees, Map, Alerts (`/notifications`)
@@ -130,39 +130,39 @@ bool canSeeAssistant(UserMap? user) => user != null;
 List<NavDestinationDesc> navDestinationsFor(UserMap? user) {
   if (isFieldWorkerHome(user)) {
     return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/trees', 'Trees'),
-      NavDestinationDesc('/map', 'Map'),
-      NavDestinationDesc('/notifications', 'Alerts'),
+      NavDestinationDesc('/home', 'home'),
+      NavDestinationDesc('/trees', 'trees'),
+      NavDestinationDesc('/map', 'map'),
+      NavDestinationDesc('/notifications', 'navAlerts'),
     ];
   }
   if (isSupervisor(user)) {
     return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/map', 'Map'),
-      NavDestinationDesc('/notifications', 'Alerts'),
-      NavDestinationDesc('/trees', 'Trees'),
+      NavDestinationDesc('/home', 'home'),
+      NavDestinationDesc('/map', 'map'),
+      NavDestinationDesc('/notifications', 'navAlerts'),
+      NavDestinationDesc('/trees', 'trees'),
     ];
   }
   if (canSeeExecutiveHome(user) || userHasProfessionalAccess(user)) {
     return const [
-      NavDestinationDesc('/home', 'Home'),
-      NavDestinationDesc('/monitoring', 'Monitoring'),
-      NavDestinationDesc('/projects', 'Projects'),
-      NavDestinationDesc('/notifications', 'Alerts'),
+      NavDestinationDesc('/home', 'home'),
+      NavDestinationDesc('/monitoring', 'monitoring'),
+      NavDestinationDesc('/projects', 'projects'),
+      NavDestinationDesc('/notifications', 'navAlerts'),
     ];
   }
   return const [
-    NavDestinationDesc('/home', 'Home'),
-    NavDestinationDesc('/trees', 'Trees'),
-    NavDestinationDesc('/map', 'Map'),
-    NavDestinationDesc('/profile', 'Profile'),
+    NavDestinationDesc('/home', 'home'),
+    NavDestinationDesc('/trees', 'trees'),
+    NavDestinationDesc('/map', 'map'),
+    NavDestinationDesc('/profile', 'profile'),
   ];
 }
 
 class NavDestinationDesc {
-  const NavDestinationDesc(this.path, this.label);
+  const NavDestinationDesc(this.path, this.labelKey);
 
   final String path;
-  final String label;
+  final String labelKey;
 }

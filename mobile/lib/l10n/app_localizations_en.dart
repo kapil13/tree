@@ -502,4 +502,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bioNoRecordingsYet => 'No synced recordings yet.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get monitoringStaleSatellite => 'Stale satellite scans';
+
+  @override
+  String get monitoringStaleSatelliteHint => 'Work areas without a recent NDVI pass';
+
+  @override
+  String get monitoringOpenSarVerifications => 'Open SAR field verifications';
+
+  @override
+  String get monitoringSarAlerts30d => 'SAR alerts (30d)';
+
+  @override
+  String get monitoringUnreadAlertsByKind => 'Unread alerts by kind';
+
+  @override
+  String get monitoringNoUnreadAlerts => 'No unread alerts.';
+
+  @override
+  String get monitoringWorkAreaSarStatus => 'Work area SAR status';
+
+  @override
+  String get monitoringWorkAreaFallback => 'Work area';
+
+  @override
+  String monitoringNoWorkAreas(String violations, String survival) =>
+      'No work-area monitoring rows yet. Open violations: $violations, survival due: $survival.';
+
+  @override
+  String monitoringDaysSinceNdvi(String days) => '${days}d since NDVI';
+
+  @override
+  String get homeWelcomeBack => 'Welcome back';
+
+  @override
+  String homeHello(String name) => 'Hello, $name';
+
+  @override
+  String get homeForestHealth => 'Forest Health';
+
+  @override
+  String get homeInsights => 'Insights';
+
+  @override
+  String get homeCarbonGrowth => 'Carbon growth';
+
+  @override
+  String get homeCarbonGrowthHint => 'Estimated sequestration trend';
+
+  @override
+  String get homeTreeHealth => 'Tree health';
+
+  @override
+  String get homeTreeHealthHint => 'Distribution across your portfolio';
+
+  @override
+  String get homeSpeciesMix => 'Species mix';
+
+  @override
+  String get homeSpeciesMixHint => 'Top registered species';
+
+  @override
+  String get homeMonitoringChip => 'Monitoring';
+
+  @override
+  String get homeFieldOpsChip => 'Field ops';
+
+  @override
+  String get homeReportsChip => 'Reports';
+
+  @override
+  String get homeFieldProjects => 'Field projects';
+
+  @override
+  String get homeAllSites => 'All sites';
+
+  @override
+  String get homeQuickSnapshot => 'Quick Snapshot';
+
+  @override
+  String get homeAskAranyix => 'Ask Aranyix';
 }

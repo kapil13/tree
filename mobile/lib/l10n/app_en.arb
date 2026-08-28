@@ -223,5 +223,49 @@
   "bioOfflineQueue": "Offline queue",
   "bioSyncNow": "Sync now",
   "bioSyncedRecordings": "Synced recordings",
-  "bioNoRecordingsYet": "No synced recordings yet."
+  "bioNoRecordingsYet": "No synced recordings yet.",
+  "retry": "Retry",
+  "monitoringStaleSatellite": "Stale satellite scans",
+  "monitoringStaleSatelliteHint": "Work areas without a recent NDVI pass",
+  "monitoringOpenSarVerifications": "Open SAR field verifications",
+  "monitoringSarAlerts30d": "SAR alerts (30d)",
+  "monitoringUnreadAlertsByKind": "Unread alerts by kind",
+  "monitoringNoUnreadAlerts": "No unread alerts.",
+  "monitoringWorkAreaSarStatus": "Work area SAR status",
+  "monitoringWorkAreaFallback": "Work area",
+  "monitoringNoWorkAreas": "No work-area monitoring rows yet. Open violations: {violations}, survival due: {survival}.",
+  "@monitoringNoWorkAreas": {
+    "placeholders": {
+      "violations": {"type": "String"},
+      "survival": {"type": "String"}
+    }
+  },
+  "monitoringDaysSinceNdvi": "{days}d since NDVI",
+  "@monitoringDaysSinceNdvi": {
+    "placeholders": {
+      "days": {"type": "String"}
+    }
+  },
+  "homeWelcomeBack": "Welcome back",
+  "homeHello": "Hello, {name}",
+  "@homeHello": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeForestHealth": "Forest Health",
+  "homeInsights": "Insights",
+  "homeCarbonGrowth": "Carbon growth",
+  "homeCarbonGrowthHint": "Estimated sequestration trend",
+  "homeTreeHealth": "Tree health",
+  "homeTreeHealthHint": "Distribution across your portfolio",
+  "homeSpeciesMix": "Species mix",
+  "homeSpeciesMixHint": "Top registered species",
+  "homeMonitoringChip": "Monitoring",
+  "homeFieldOpsChip": "Field ops",
+  "homeReportsChip": "Reports",
+  "homeFieldProjects": "Field projects",
+  "homeAllSites": "All sites",
+  "homeQuickSnapshot": "Quick Snapshot",
+  "homeAskAranyix": "Ask Aranyix"
 }
