@@ -803,182 +803,77 @@ html[lang="hi"] body {
   color: #57534e;
 }
 
+.marketing-reports-hub-top {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .marketing-reports-hub-top {
+    grid-template-columns: 1fr minmax(18rem, 22rem);
+    align-items: end;
+    gap: 2rem;
+  }
+}
+
 .marketing-reports-hub-headline {
   max-width: 42rem;
-  margin-bottom: 1.75rem;
 }
 
-.marketing-reports-featured {
+.marketing-reports-stats {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
-  margin-bottom: 1.25rem;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.95rem;
+  background: #fff;
+  list-style: none;
 }
 
-@media (min-width: 900px) {
-  .marketing-reports-featured {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (min-width: 640px) {
+  .marketing-reports-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-.marketing-reports-featured-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 0.15rem 0.65rem;
-  align-items: center;
-  padding: 0.95rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--report-accent, #14532d) 22%, #e7e5e4);
-  border-left: 3px solid var(--report-accent, #14532d);
-  border-radius: 0.85rem;
-  background: #fff;
-  text-decoration: none;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+.marketing-reports-stats div {
+  padding: 0.35rem 0.45rem;
 }
 
-.marketing-reports-featured-item:hover {
-  border-color: color-mix(in srgb, var(--report-accent, #14532d) 40%, #e7e5e4);
-  box-shadow: 0 10px 24px rgba(20, 83, 45, 0.07);
-}
-
-.marketing-reports-featured-item span {
-  grid-column: 1 / -1;
+.marketing-reports-stats dt {
   font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--report-accent, #14532d);
+  color: #78716c;
 }
 
-.marketing-reports-featured-item strong {
-  grid-column: 1 / 3;
+.marketing-reports-stats dd {
+  margin-top: 0.2rem;
   font-family: var(--font-display), Georgia, serif;
-  font-size: 0.98rem;
-  line-height: 1.25;
-  color: #1c1917;
-}
-
-.marketing-reports-featured-item em {
-  grid-column: 1 / 3;
-  font-style: normal;
-  font-size: 0.72rem;
-  color: #78716c;
-}
-
-.marketing-reports-featured-item svg {
-  grid-row: 2 / 4;
-  grid-column: 3;
-  color: #78716c;
-}
-
-.marketing-reports-catalog {
-  display: grid;
-  gap: 1rem;
-  border: 1px solid #e7e5e4;
-  border-radius: 1.1rem;
-  background: #fff;
-  overflow: hidden;
-}
-
-@media (min-width: 900px) {
-  .marketing-reports-catalog {
-    grid-template-columns: 15rem 1fr;
-  }
-}
-
-.marketing-reports-sidebar {
-  padding: 1rem;
-  background: #f8f7f4;
-  border-bottom: 1px solid #eceae6;
-}
-
-@media (min-width: 900px) {
-  .marketing-reports-sidebar {
-    border-bottom: 0;
-    border-right: 1px solid #eceae6;
-  }
-}
-
-.marketing-reports-sidebar-label {
-  margin-bottom: 0.65rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #78716c;
-}
-
-.marketing-reports-sidebar nav {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.marketing-reports-sidebar button {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  width: 100%;
-  padding: 0.7rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 0.7rem;
-  background: transparent;
-  text-align: left;
-  color: #44403c;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.marketing-reports-sidebar button span {
-  display: grid;
-  gap: 0.1rem;
-}
-
-.marketing-reports-sidebar button strong {
-  font-size: 0.88rem;
-  color: #1c1917;
-}
-
-.marketing-reports-sidebar button em {
-  font-style: normal;
-  font-size: 0.72rem;
-  color: #78716c;
-}
-
-.marketing-reports-sidebar button.is-active {
-  border-color: #bbf7d0;
-  background: #ecfccb;
-}
-
-.marketing-reports-sidebar button.is-active strong {
+  font-size: 1.15rem;
+  font-weight: 700;
   color: #14532d;
 }
 
-.marketing-reports-panel {
-  padding: 1rem 1.1rem 1.1rem;
-}
-
-.marketing-reports-panel-head {
+.marketing-reports-hub-toolbar {
   display: grid;
   gap: 0.85rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f5f5f4;
+  margin-bottom: 1.1rem;
 }
 
 @media (min-width: 760px) {
-  .marketing-reports-panel-head {
-    grid-template-columns: 1fr minmax(12rem, 16rem);
-    align-items: end;
+  .marketing-reports-hub-toolbar {
+    grid-template-columns: 1fr minmax(14rem, 18rem);
+    align-items: center;
   }
 }
 
-.marketing-reports-panel-head h3 {
-  font-size: 1.25rem;
-  color: #14532d;
-}
-
-.marketing-reports-panel-head p {
-  margin-top: 0.35rem;
+.marketing-reports-hub-toolbar > p {
   font-size: 0.84rem;
-  line-height: 1.55;
   color: #57534e;
 }
 
@@ -989,7 +884,7 @@ html[lang="hi"] body {
   padding: 0.65rem 0.85rem;
   border: 1px solid #d6d3d1;
   border-radius: 0.75rem;
-  background: #fafaf9;
+  background: #fff;
   color: #78716c;
 }
 
@@ -1002,114 +897,184 @@ html[lang="hi"] body {
   outline: none;
 }
 
-.marketing-reports-list {
+.marketing-reports-streams {
   display: grid;
-  gap: 0;
-}
-
-.marketing-reports-row {
-  display: grid;
-  gap: 0.85rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid #f5f5f4;
-}
-
-.marketing-reports-row:last-child {
-  border-bottom: 0;
+  gap: 1rem;
 }
 
 @media (min-width: 900px) {
-  .marketing-reports-row {
-    grid-template-columns: 1fr auto;
-    align-items: center;
+  .marketing-reports-streams {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.marketing-reports-row-main {
+.marketing-reports-stream {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: 1px solid color-mix(in srgb, var(--stream-tone, #14532d) 18%, #e7e5e4);
+  border-radius: 1rem;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgba(20, 83, 45, 0.04);
+}
+
+.marketing-reports-stream-head {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid #f5f5f4;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--stream-tone, #14532d) 6%, #fff) 0%,
+    #fff 100%
+  );
 }
 
-@media (min-width: 640px) {
-  .marketing-reports-row-main {
-    grid-template-columns: 5.5rem 1fr;
-    align-items: start;
-  }
+.marketing-reports-stream-icon {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--stream-tone, #14532d) 12%, #fff);
+  color: var(--stream-tone, #14532d);
 }
 
-.marketing-reports-row-tag {
+.marketing-reports-stream-label {
   font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #166534;
+  color: var(--stream-tone, #14532d);
 }
 
-.marketing-reports-row-main h3 {
-  font-size: 0.98rem;
-  line-height: 1.25;
+.marketing-reports-stream-head h3 {
+  margin-top: 0.2rem;
+  font-size: 1.02rem;
+  line-height: 1.3;
   color: #1c1917;
 }
 
-.marketing-reports-row-main p {
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
+.marketing-reports-stream-head p {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
   line-height: 1.5;
   color: #57534e;
 }
 
-.marketing-reports-row-side {
-  display: flex;
-  flex-wrap: wrap;
+.marketing-reports-stream-count {
+  align-self: start;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #f5f5f4;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #57534e;
+  white-space: nowrap;
+}
+
+.marketing-reports-stream-list {
+  display: grid;
+  gap: 0;
+  flex: 1;
+}
+
+.marketing-reports-export-link {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.15rem 0.75rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f5f5f4;
+  text-decoration: none;
+  transition: background 120ms ease;
 }
 
-@media (min-width: 900px) {
-  .marketing-reports-row-side {
-    flex-direction: column;
-    align-items: flex-end;
-    min-width: 11rem;
-  }
+.marketing-reports-export-link:hover {
+  background: color-mix(in srgb, var(--stream-accent, #14532d) 5%, #fff);
 }
 
-.marketing-reports-row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+.marketing-reports-export-link-tag {
+  grid-row: 1 / -1;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stream-accent, #14532d);
+}
+
+.marketing-reports-export-link-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #1c1917;
+}
+
+.marketing-reports-export-link-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   color: #78716c;
 }
 
-.marketing-reports-row-meta em {
-  font-style: normal;
-}
-
-.marketing-reports-row-signed {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  color: #0f766e;
-  font-weight: 700;
-}
-
-.marketing-reports-row-action {
+.marketing-reports-export-link-action {
+  grid-row: 1 / -1;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.65rem;
   border-radius: 0.55rem;
   background: #14532d;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #fff;
-  text-decoration: none;
   white-space: nowrap;
 }
 
-.marketing-reports-row-action:hover {
+.marketing-reports-export-link:hover .marketing-reports-export-link-action {
   background: #166534;
+}
+
+@media (max-width: 639px) {
+  .marketing-reports-export-link {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+  }
+
+  .marketing-reports-export-link-tag {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+
+  .marketing-reports-export-link-action {
+    grid-row: auto;
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
+.marketing-reports-stream-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-top: 1px solid #f5f5f4;
+  background: #fafaf9;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--stream-tone, #14532d);
+  cursor: pointer;
+}
+
+.marketing-reports-stream-toggle svg.is-flipped {
+  transform: rotate(180deg);
 }
 
 .marketing-reports-hub-empty {
@@ -1118,6 +1083,7 @@ html[lang="hi"] body {
   border-radius: 0.85rem;
   text-align: center;
   color: #57534e;
+  background: #fff;
 }
 
 .marketing-reports-hub .marketing-reports-footer {
@@ -1620,6 +1586,31 @@ html[lang="hi"] body {
   pointer-events: none;
 }
 
+.marketing-ghg-site-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem 0;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #e7e5e4;
+}
+
+.marketing-ghg-site-badges span {
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.marketing-ghg-site-badges span.is-alert {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
 .marketing-ghg-site-legend {
   display: flex;
   flex-wrap: wrap;
@@ -1656,45 +1647,6 @@ html[lang="hi"] body {
 
 .marketing-ghg-site-legend i.tone-high {
   background: #15803d;
-}
-
-.marketing-ghg-site-callouts {
-  display: grid;
-  gap: 0.55rem;
-  padding: 0 0.85rem 0.85rem;
-}
-
-.marketing-ghg-site-callouts div {
-  display: grid;
-  gap: 0.1rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: 0.65rem;
-  background: #f5faf7;
-  border: 1px solid #dcefe3;
-}
-
-.marketing-ghg-site-callouts div.is-alert {
-  background: #fff7ed;
-  border-color: #fed7aa;
-}
-
-.marketing-ghg-site-callouts span {
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #78716c;
-}
-
-.marketing-ghg-site-callouts strong {
-  font-size: 0.84rem;
-  color: #1c1917;
-}
-
-.marketing-ghg-site-callouts em {
-  font-size: 0.72rem;
-  font-style: normal;
-  color: #57534e;
 }
 
 .marketing-ghg-dashboard-grid {

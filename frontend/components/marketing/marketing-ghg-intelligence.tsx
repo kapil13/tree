@@ -47,30 +47,21 @@ function SiteIntensityGrid() {
       <svg viewBox="0 0 360 200" className="marketing-ghg-site-overlay" aria-hidden>
         <polygon
           points="28,156 84,48 168,36 248,62 320,88 332,148 260,172 120,178"
-          fill="none"
+          fill="rgba(20, 83, 45, 0.06)"
           stroke="#14532d"
           strokeWidth="2"
           strokeDasharray="6 4"
         />
-        <rect x="132" y="88" width="44" height="36" rx="4" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
       </svg>
-      <ul className="marketing-ghg-site-legend">
-        <li><i className="tone-low" /> Low signal</li>
-        <li><i className="tone-med" /> Elevated</li>
-        <li><i className="tone-high" /> Hotspot zone</li>
-      </ul>
-      <div className="marketing-ghg-site-callouts">
-        <div>
-          <span>Zone A</span>
-          <strong>CH₄ consistent</strong>
-          <em>TROPOMI + source fusion</em>
-        </div>
-        <div className="is-alert">
-          <span>Zone B</span>
-          <strong>Elevated anomaly</strong>
-          <em>Field verification suggested</em>
-        </div>
+      <div className="marketing-ghg-site-badges">
+        <span>Zone A · CH₄ consistent</span>
+        <span className="is-alert">Zone B · Elevated anomaly</span>
       </div>
+      <ul className="marketing-ghg-site-legend">
+        <li><i className="tone-low" /> Low</li>
+        <li><i className="tone-med" /> Elevated</li>
+        <li><i className="tone-high" /> Hotspot</li>
+      </ul>
     </div>
   );
 }
