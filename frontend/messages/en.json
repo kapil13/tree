@@ -763,7 +763,103 @@
     "mobilePrimaryNav": "Mobile primary",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "home": {
+      "bio": {
+        "demoBadge": "Sample interface — sign in to analyse live recordings",
+        "liveSoundMonitoring": "Live sound monitoring",
+        "projectSoundscape": "Project soundscape · Demo site",
+        "recording": "Recording",
+        "standby": "Standby",
+        "stopDemo": "Stop demo",
+        "startDemo": "Start demo recording",
+        "duration": "Duration",
+        "audioLevel": "Audio level",
+        "location": "Location",
+        "demoLocation": "Demo plantation fence",
+        "consoleNote": "Field teams capture 60–180 s recordings on web or mobile. BirdNET analysis runs server-side after upload.",
+        "speciesDetection": "Species detection",
+        "speciesDetectionSub": "Illustrative results from the bioacoustic engine",
+        "verifiedDetection": "Verified detection",
+        "needsReview": "Needs review",
+        "acousticMatched": "Acoustic signature matched",
+        "speciesDetected": "Species detected",
+        "uniqueSpecies": "Unique species",
+        "recordingsAnalysed": "Recordings analysed",
+        "meanConfidence": "Mean confidence",
+        "pipelineAria": "How biodiversity intelligence works"
+      },
+      "ghg": {
+        "demoBadge": "Sample dashboard — project data loads after sign-in",
+        "projectLabel": "Sample plantation corridor",
+        "monitoringPeriod": "Last 90 days",
+        "areaMonitored": "{ha} ha monitored",
+        "dataStatus": "Demo interface",
+        "totalEmissions": "Total project emissions",
+        "deltaVsPrevious": "+{pct}% vs previous period",
+        "emissionIntensity": "Emission intensity",
+        "estimatedRemovals": "Estimated removals",
+        "netBalance": "Net GHG balance",
+        "emissionSources": "Emission sources",
+        "trend90Day": "90-day trend",
+        "siteIntensity": "Site emission intensity",
+        "siteLead": "Work-area grid with project boundary, TROPOMI scan context, and fusion zones.",
+        "zoneA": "Zone A · CH₄ consistent",
+        "zoneB": "Zone B · Elevated anomaly",
+        "legendLow": "Low",
+        "legendElevated": "Elevated",
+        "legendHotspot": "Hotspot",
+        "mapNote": "Signed-in projects render live plume contours and registered sources on the work-area map.",
+        "tooltipEmissions": "Emissions",
+        "sourceBiomass": "Biomass loss",
+        "sourceAgriculture": "Agriculture",
+        "sourceLivestock": "Livestock",
+        "sourceEnergy": "Energy / transport",
+        "sourceFire": "Fire / degradation",
+        "sourceOther": "Other"
+      },
+      "reports": {
+        "statsAria": "Export catalog summary",
+        "liveExports": "Live exports",
+        "evidenceStreams": "Evidence streams",
+        "signedBundles": "Signed bundles",
+        "sourceRecord": "Source record",
+        "sourceGraph": "1 graph",
+        "toolbarHint": "Browse by stream — expand any lane for the full catalog.",
+        "searchPlaceholder": "Search exports…",
+        "searchAria": "Search exports",
+        "empty": "No exports match your search.",
+        "signed": "Signed",
+        "actionGenerate": "Generate",
+        "actionDownload": "Download",
+        "actionView": "View",
+        "showFewer": "Show fewer",
+        "viewAllExports": "View all {count} exports",
+        "exportCount": "{count} exports",
+        "streams": {
+          "carbon": {
+            "label": "Carbon & GHG",
+            "headline": "Land-sector inventories, methane fusion, and credit ledgers",
+            "description": "GHG Protocol, TROPOMI context, VM0047 ledger, and ISO 14064-1 org roll-ups."
+          },
+          "biodiversity": {
+            "label": "Biodiversity & Nature",
+            "headline": "Soundscapes, species evidence, and habitat narratives",
+            "description": "Bioacoustic engine outputs, Darwin Core packs, and TNFD-ready nature summaries."
+          },
+          "disclosure": {
+            "label": "Climate / ESG / Disclosure",
+            "headline": "Voluntary standards and national programme packs",
+            "description": "TNFD LEAP, Green Credit India, REDD+, Paris traceability, and Gold Standard LUF."
+          },
+          "compliance": {
+            "label": "Compliance / Inventory",
+            "headline": "Assurance, inventory handoff, and signed evidence",
+            "description": "BRSR, ISO 14064-2, ETF/BTR, SBTi FLAG, EUDR geo packs, and Ed25519 bundles."
+          }
+        }
+      }
+    }
   },
   "stewardshipPanel": {
     "loading": "Loading stewardship…",

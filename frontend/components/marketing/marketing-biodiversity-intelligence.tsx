@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowRight, Mic, Pause, Play, Radio } from "lucide-react";
 import { BIODIVERSITY_DEMO_SPECIES } from "@/lib/marketing-home-data";
 
@@ -42,6 +43,7 @@ export function MarketingBiodiversityIntelligence({
   cta = { label: "Open bioacoustic workspace", href: "/auth?mode=signin&next=/bioacoustic" },
   pipelineSteps = ["Field recording", "Bioacoustic engine", "Species model", "Verified evidence"],
 }: BiodiversityIntelligenceProps) {
+  const t = useTranslations("marketing.home.bio");
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [level, setLevel] = useState(42);
@@ -66,19 +68,19 @@ export function MarketingBiodiversityIntelligence({
             <h2 className="marketing-section-title font-display">{title}</h2>
             <p className="marketing-section-copy">{copy}</p>
           </div>
-          <span className="marketing-demo-badge">Sample interface — sign in to analyse live recordings</span>
+          <span className="marketing-demo-badge">{t("demoBadge")}</span>
         </div>
 
         <div className="marketing-bio-intel-grid">
           <div className="marketing-bio-console">
             <div className="marketing-bio-console-top">
               <div>
-                <p className="marketing-bio-console-label">Live sound monitoring</p>
-                <h3>Project soundscape · Demo site</h3>
+                <p className="marketing-bio-console-label">{t("liveSoundMonitoring")}</p>
+                <h3>{t("projectSoundscape")}</h3>
               </div>
               <span className={`marketing-bio-live-pill${recording ? " is-active" : ""}`}>
                 <Radio className="h-3.5 w-3.5" aria-hidden />
-                {recording ? "Recording" : "Standby"}
+                {recording ? t("recording") : t("standby")}
               </span>
             </div>
 
@@ -95,36 +97,33 @@ export function MarketingBiodiversityIntelligence({
                 aria-pressed={recording}
               >
                 {recording ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                {recording ? "Stop demo" : "Start demo recording"}
+                {recording ? t("stopDemo") : t("startDemo")}
               </button>
               <div className="marketing-bio-console-metrics">
                 <div>
-                  <span>Duration</span>
+                  <span>{t("duration")}</span>
                   <strong>{duration}</strong>
                 </div>
                 <div>
-                  <span>Audio level</span>
+                  <span>{t("audioLevel")}</span>
                   <strong>{level} dBFS</strong>
                 </div>
                 <div>
-                  <span>Location</span>
-                  <strong>Demo plantation fence</strong>
+                  <span>{t("location")}</span>
+                  <strong>{t("demoLocation")}</strong>
                 </div>
               </div>
             </div>
 
-            <p className="marketing-bio-console-note">
-              {/* TODO: integrate public portfolio bio summary when a marketing-safe endpoint exists. */}
-              Field teams capture 60–180 s recordings on web or mobile. BirdNET analysis runs server-side after upload.
-            </p>
+            <p className="marketing-bio-console-note">{t("consoleNote")}</p>
           </div>
 
           <aside className="marketing-bio-detections">
             <div className="marketing-bio-detections-head">
               <Mic className="h-5 w-5 text-teal-700" aria-hidden />
               <div>
-                <h3>Species detection</h3>
-                <p>Illustrative results from the bioacoustic engine</p>
+                <h3>{t("speciesDetection")}</h3>
+                <p>{t("speciesDetectionSub")}</p>
               </div>
             </div>
 
@@ -137,8 +136,8 @@ export function MarketingBiodiversityIntelligence({
                   </div>
                   <ConfidenceBar value={species.confidence} />
                   <div className="marketing-bio-species-meta">
-                    <span>{species.status === "verified" ? "Verified detection" : "Needs review"}</span>
-                    <span>Acoustic signature matched</span>
+                    <span>{species.status === "verified" ? t("verifiedDetection") : t("needsReview")}</span>
+                    <span>{t("acousticMatched")}</span>
                   </div>
                 </li>
               ))}
@@ -146,26 +145,26 @@ export function MarketingBiodiversityIntelligence({
 
             <dl className="marketing-bio-kpis">
               <div>
-                <dt>Species detected</dt>
+                <dt>{t("speciesDetected")}</dt>
                 <dd>3</dd>
               </div>
               <div>
-                <dt>Unique species</dt>
+                <dt>{t("uniqueSpecies")}</dt>
                 <dd>3</dd>
               </div>
               <div>
-                <dt>Recordings analysed</dt>
+                <dt>{t("recordingsAnalysed")}</dt>
                 <dd>—</dd>
               </div>
               <div>
-                <dt>Mean confidence</dt>
+                <dt>{t("meanConfidence")}</dt>
                 <dd>91.1%</dd>
               </div>
             </dl>
           </aside>
         </div>
 
-        <ol className="marketing-intel-pipeline" aria-label="How biodiversity intelligence works">
+        <ol className="marketing-intel-pipeline" aria-label={t("pipelineAria")}>
           {pipelineSteps.map((step, index) => (
             <li key={step}>
               <span>{String(index + 1).padStart(2, "0")}</span>

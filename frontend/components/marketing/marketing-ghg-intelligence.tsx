@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, Cloud, TrendingUp } from "lucide-react";
 import {
   Area,
@@ -20,8 +21,16 @@ type GhgIntelligenceProps = {
   cta?: { label?: string; href?: string };
 };
 
-/** NDVI-style intensity tiles for demo spatial view — not live geospatial data. */
-function SiteIntensityGrid() {
+const SOURCE_KEYS: Record<string, string> = {
+  "Biomass loss": "sourceBiomass",
+  Agriculture: "sourceAgriculture",
+  Livestock: "sourceLivestock",
+  "Energy / transport": "sourceEnergy",
+  "Fire / degradation": "sourceFire",
+  Other: "sourceOther",
+};
+
+function SiteIntensityGrid({ labels }: { labels: { zoneA: string; zoneB: string; low: string; elevated: string; hotspot: string } }) {
   const cells = [
     0.18, 0.22, 0.28, 0.34, 0.42, 0.38, 0.31, 0.26,
     0.24, 0.36, 0.52, 0.68, 0.74, 0.61, 0.48, 0.33,
@@ -54,13 +63,13 @@ function SiteIntensityGrid() {
         />
       </svg>
       <div className="marketing-ghg-site-badges">
-        <span>Zone A · CH₄ consistent</span>
-        <span className="is-alert">Zone B · Elevated anomaly</span>
+        <span>{labels.zoneA}</span>
+        <span className="is-alert">{labels.zoneB}</span>
       </div>
       <ul className="marketing-ghg-site-legend">
-        <li><i className="tone-low" /> Low</li>
-        <li><i className="tone-med" /> Elevated</li>
-        <li><i className="tone-high" /> Hotspot</li>
+        <li><i className="tone-low" /> {labels.low}</li>
+        <li><i className="tone-med" /> {labels.elevated}</li>
+        <li><i className="tone-high" /> {labels.hotspot}</li>
       </ul>
     </div>
   );
@@ -72,7 +81,13 @@ export function MarketingGhgIntelligence({
   copy = "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, source inventory, dispersion, and fusion inside the project area.",
   cta = { label: "Open emissions workspace", href: "/auth?mode=signin&next=/projects" },
 }: GhgIntelligenceProps) {
+  const t = useTranslations("marketing.home.ghg");
   const demo = GHG_DEMO_DASHBOARD;
+
+  function sourceLabel(label: string) {
+    const key = SOURCE_KEYS[label];
+    return key ? t(key) : label;
+  }
 
   return (
     <section id="carbon-intelligence" className="marketing-ghg-intel">
@@ -83,17 +98,17 @@ export function MarketingGhgIntelligence({
             <h2 className="marketing-section-title font-display">{title}</h2>
             <p className="marketing-section-copy">{copy}</p>
           </div>
-          <span className="marketing-demo-badge">Sample dashboard — project data loads after sign-in</span>
+          <span className="marketing-demo-badge">{t("demoBadge")}</span>
         </div>
 
         <div className="marketing-ghg-dashboard">
           <header className="marketing-ghg-dashboard-head">
             <div>
-              <p className="marketing-ghg-dashboard-label">{demo.projectLabel}</p>
+              <p className="marketing-ghg-dashboard-label">{t("projectLabel")}</p>
               <div className="marketing-ghg-dashboard-meta">
-                <span>{demo.monitoringPeriod}</span>
-                <span>{demo.areaHa} ha monitored</span>
-                <span>{demo.dataStatus}</span>
+                <span>{t("monitoringPeriod")}</span>
+                <span>{t("areaMonitored", { ha: demo.areaHa })}</span>
+                <span>{t("dataStatus")}</span>
               </div>
             </div>
             <Cloud className="h-8 w-8 text-forest-700" aria-hidden />
@@ -101,23 +116,24 @@ export function MarketingGhgIntelligence({
 
           <div className="marketing-ghg-dashboard-kpi">
             <div>
-              <p>Total project emissions</p>
+              <p>{t("totalEmissions")}</p>
               <strong>{demo.totalTco2e.toLocaleString()} tCO₂e</strong>
               <span className="marketing-ghg-delta">
-                <TrendingUp className="h-3.5 w-3.5" aria-hidden />+{demo.deltaPct}% vs previous period
+                <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+                {t("deltaVsPrevious", { pct: demo.deltaPct })}
               </span>
             </div>
             <dl className="marketing-ghg-dashboard-indicators">
               <div>
-                <dt>Emission intensity</dt>
+                <dt>{t("emissionIntensity")}</dt>
                 <dd>{demo.intensityTco2ePerHa} tCO₂e/ha</dd>
               </div>
               <div>
-                <dt>Estimated removals</dt>
+                <dt>{t("estimatedRemovals")}</dt>
                 <dd>{demo.removalsTco2e.toLocaleString()} tCO₂e</dd>
               </div>
               <div>
-                <dt>Net GHG balance</dt>
+                <dt>{t("netBalance")}</dt>
                 <dd>{demo.netBalanceTco2e.toLocaleString()} tCO₂e</dd>
               </div>
             </dl>
@@ -126,12 +142,12 @@ export function MarketingGhgIntelligence({
           <div className="marketing-ghg-dashboard-split">
             <div className="marketing-ghg-analytics">
               <div className="marketing-ghg-panel">
-                <h3>Emission sources</h3>
+                <h3>{t("emissionSources")}</h3>
                 <ul className="marketing-ghg-sources marketing-ghg-sources--compact">
                   {demo.sources.slice(0, 4).map((source) => (
                     <li key={source.label}>
                       <div className="marketing-ghg-source-row">
-                        <span>{source.label}</span>
+                        <span>{sourceLabel(source.label)}</span>
                         <strong>{source.pct}%</strong>
                       </div>
                       <div className="marketing-ghg-source-bar">
@@ -143,7 +159,7 @@ export function MarketingGhgIntelligence({
               </div>
 
               <div className="marketing-ghg-panel">
-                <h3>90-day trend</h3>
+                <h3>{t("trend90Day")}</h3>
                 <div className="marketing-ghg-chart">
                   <ResponsiveContainer width="100%" height={180}>
                     <AreaChart data={demo.trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -157,7 +173,7 @@ export function MarketingGhgIntelligence({
                       <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} width={42} />
                       <Tooltip
-                        formatter={(value: number) => [`${value.toLocaleString()} tCO₂e`, "Emissions"]}
+                        formatter={(value: number) => [`${value.toLocaleString()} tCO₂e`, t("tooltipEmissions")]}
                         contentStyle={{ borderRadius: 10, borderColor: "#d6d3d1", fontSize: 12 }}
                       />
                       <Area type="monotone" dataKey="value" stroke="#166534" strokeWidth={2} fill="url(#ghgTrend)" />
@@ -168,15 +184,18 @@ export function MarketingGhgIntelligence({
             </div>
 
             <div className="marketing-ghg-panel marketing-ghg-panel--site">
-              <h3>Site emission intensity</h3>
-              <p className="marketing-ghg-site-lead">
-                Work-area grid with project boundary, TROPOMI scan context, and fusion zones.
-              </p>
-              <SiteIntensityGrid />
-              <p className="marketing-ghg-map-note">
-                {/* TODO: reuse EmissionsPlumeMap when a public demo project + auth-free preview route exists. */}
-                Signed-in projects render live plume contours and registered sources on the work-area map.
-              </p>
+              <h3>{t("siteIntensity")}</h3>
+              <p className="marketing-ghg-site-lead">{t("siteLead")}</p>
+              <SiteIntensityGrid
+                labels={{
+                  zoneA: t("zoneA"),
+                  zoneB: t("zoneB"),
+                  low: t("legendLow"),
+                  elevated: t("legendElevated"),
+                  hotspot: t("legendHotspot"),
+                }}
+              />
+              <p className="marketing-ghg-map-note">{t("mapNote")}</p>
             </div>
           </div>
         </div>
