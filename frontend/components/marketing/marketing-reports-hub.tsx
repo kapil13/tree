@@ -4,16 +4,18 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
-  BadgeCheck,
+  ChevronDown,
   Download,
   FileText,
+  Leaf,
+  Scale,
   Search,
   ShieldCheck,
+  Sprout,
+  Trees,
 } from "lucide-react";
-import { ReportPreviewArt } from "@/components/marketing/marketing-visuals";
 import {
   normalizeReportItems,
-  REPORT_CATEGORIES,
   type MarketingReportItem,
   type ReportCategoryId,
 } from "@/lib/marketing-home-data";
@@ -26,170 +28,223 @@ type ReportsHubProps = {
   footerLink?: { label?: string; href?: string };
 };
 
+const STREAMS: Array<{
+  id: ReportCategoryId;
+  label: string;
+  headline: string;
+  description: string;
+  icon: typeof Leaf;
+  tone: string;
+}> = [
+  {
+    id: "carbon",
+    label: "Carbon & GHG",
+    headline: "Land-sector inventories, methane fusion, and credit ledgers",
+    description: "GHG Protocol, TROPOMI context, VM0047 ledger, and ISO 14064-1 org roll-ups.",
+    icon: Leaf,
+    tone: "#15803d",
+  },
+  {
+    id: "biodiversity",
+    label: "Biodiversity & Nature",
+    headline: "Soundscapes, species evidence, and habitat narratives",
+    description: "Bioacoustic engine outputs, Darwin Core packs, and TNFD-ready nature summaries.",
+    icon: Sprout,
+    tone: "#0d9488",
+  },
+  {
+    id: "disclosure",
+    label: "Climate / ESG / Disclosure",
+    headline: "Voluntary standards and national programme packs",
+    description: "TNFD LEAP, Green Credit India, REDD+, Paris traceability, and Gold Standard LUF.",
+    icon: Trees,
+    tone: "#4d7c0f",
+  },
+  {
+    id: "compliance",
+    label: "Compliance / Inventory",
+    headline: "Assurance, inventory handoff, and signed evidence",
+    description: "BRSR, ISO 14064-2, ETF/BTR, SBTi FLAG, EUDR geo packs, and Ed25519 bundles.",
+    icon: Scale,
+    tone: "#1e3a5f",
+  },
+];
+
+const PREVIEW_COUNT = 3;
+
 function actionLabel(action: MarketingReportItem["action"]) {
   if (action === "download") return "Download";
   if (action === "view") return "View";
   return "Generate";
 }
 
-function ReportCard({ item, compact }: { item: MarketingReportItem; compact?: boolean }) {
+function ExportLink({ item }: { item: MarketingReportItem }) {
   const ActionIcon = item.action === "download" ? Download : FileText;
   return (
-    <article
-      className={`marketing-report-hub-card${item.featured ? " marketing-report-hub-card--featured" : ""}${compact ? " marketing-report-hub-card--compact" : ""}`}
-      style={{ ["--report-accent" as string]: item.accent || "#14532d" }}
+    <Link
+      href={item.href || "/auth?mode=signin&next=/reports"}
+      className="marketing-reports-export-link"
+      style={{ ["--stream-accent" as string]: item.accent || "#14532d" }}
     >
-      <div className="marketing-report-hub-card-preview">
-        <div className="marketing-report-hub-sheet">
-          <span>{item.tag}</span>
-          <ReportPreviewArt tag={item.tag} title={item.title} />
+      <span className="marketing-reports-export-link-tag">{item.tag}</span>
+      <span className="marketing-reports-export-link-title">{item.title}</span>
+      <span className="marketing-reports-export-link-meta">
+        {item.formats}
+        {item.signed ? (
+          <>
+            <ShieldCheck className="h-3 w-3" aria-hidden />
+            Signed
+          </>
+        ) : null}
+      </span>
+      <span className="marketing-reports-export-link-action">
+        <ActionIcon className="h-3.5 w-3.5" aria-hidden />
+        {actionLabel(item.action)}
+      </span>
+    </Link>
+  );
+}
+
+function StreamPanel({
+  stream,
+  items,
+  expanded,
+  onToggle,
+}: {
+  stream: (typeof STREAMS)[number];
+  items: MarketingReportItem[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = stream.icon;
+  const preview = items.slice(0, PREVIEW_COUNT);
+  const rest = items.slice(PREVIEW_COUNT);
+  const hiddenCount = rest.length;
+
+  return (
+    <article
+      className={`marketing-reports-stream${expanded ? " is-expanded" : ""}`}
+      style={{ ["--stream-tone" as string]: stream.tone }}
+    >
+      <header className="marketing-reports-stream-head">
+        <div className="marketing-reports-stream-icon" aria-hidden>
+          <Icon className="h-5 w-5" />
         </div>
+        <div>
+          <p className="marketing-reports-stream-label">{stream.label}</p>
+          <h3 className="font-display">{stream.headline}</h3>
+          <p>{stream.description}</p>
+        </div>
+        <span className="marketing-reports-stream-count">{items.length} exports</span>
+      </header>
+
+      <div className="marketing-reports-stream-list">
+        {(expanded ? items : preview).map((item) => (
+          <ExportLink key={item.title} item={item} />
+        ))}
       </div>
-      <div className="marketing-report-hub-card-body">
-        <div className="marketing-report-hub-card-meta">
-          <span className="marketing-report-hub-tag">{item.tag}</span>
-          <span className={`marketing-report-hub-status marketing-report-hub-status--${item.status || "live"}`}>
-            {item.status === "beta" ? "Beta" : "Live export"}
-          </span>
-          {item.signed ? (
-            <span className="marketing-report-hub-signed">
-              <ShieldCheck className="h-3 w-3" aria-hidden />
-              Signed
-            </span>
-          ) : null}
-        </div>
-        <h3>{item.title}</h3>
-        <p>{item.description}</p>
-        <div className="marketing-report-hub-card-foot">
-          <div className="marketing-report-hub-card-evidence">
-            <span>{item.formats}</span>
-            {item.evidence_hint ? <em>{item.evidence_hint}</em> : null}
-          </div>
-          <Link href={item.href || "/auth?mode=signin&next=/reports"} className="marketing-report-hub-action">
-            <ActionIcon className="h-3.5 w-3.5" aria-hidden />
-            {actionLabel(item.action)}
-          </Link>
-        </div>
-      </div>
+
+      {hiddenCount > 0 ? (
+        <button type="button" className="marketing-reports-stream-toggle" onClick={onToggle}>
+          {expanded ? "Show fewer" : `View all ${items.length} exports`}
+          <ChevronDown className={`h-4 w-4${expanded ? " is-flipped" : ""}`} aria-hidden />
+        </button>
+      ) : null}
     </article>
   );
 }
 
 export function MarketingReportsHub({ eyebrow, title, copy, content, footerLink }: ReportsHubProps) {
   const items = useMemo(() => normalizeReportItems(content), [content]);
-  const [category, setCategory] = useState<ReportCategoryId>("all");
   const [query, setQuery] = useState("");
+  const [expandedStream, setExpandedStream] = useState<ReportCategoryId | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((item) => {
-      const categoryOk = category === "all" || item.category === category;
-      if (!categoryOk) return false;
-      if (!q) return true;
-      return (
-        item.title.toLowerCase().includes(q) ||
-        item.tag.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q)
-      );
-    });
-  }, [items, category, query]);
+  const q = query.trim().toLowerCase();
 
-  const featured = filtered.filter((item) => item.featured);
-  const regular = filtered.filter((item) => !item.featured);
-  const counts = useMemo(() => {
-    const map: Partial<Record<ReportCategoryId, number>> = { all: items.length };
+  const filteredByStream = useMemo(() => {
+    const map: Record<ReportCategoryId, MarketingReportItem[]> = {
+      carbon: [],
+      biodiversity: [],
+      disclosure: [],
+      compliance: [],
+      all: [],
+    };
     for (const item of items) {
-      map[item.category] = (map[item.category] || 0) + 1;
+      if (q) {
+        const haystack = `${item.title} ${item.tag} ${item.description}`.toLowerCase();
+        if (!haystack.includes(q)) continue;
+      }
+      map[item.category]?.push(item);
     }
     return map;
-  }, [items]);
+  }, [items, q]);
+
+  const visibleStreams = STREAMS.filter((stream) => (filteredByStream[stream.id]?.length ?? 0) > 0);
+  const totalVisible = visibleStreams.reduce((sum, stream) => sum + (filteredByStream[stream.id]?.length ?? 0), 0);
+  const signedCount = items.filter((item) => item.signed).length;
 
   return (
     <section id="reports" className="marketing-reports-hub">
       <div className="mx-auto max-w-7xl px-6 py-20">
-        <div className="marketing-reports-hub-head">
-          <div className="marketing-reports-hub-intro">
+        <div className="marketing-reports-hub-top">
+          <div className="marketing-reports-hub-headline">
             <p className="marketing-eyebrow">{eyebrow || "Reports"}</p>
-            <h2 className="marketing-section-title font-display">{title || "Sixteen live exports. One evidence graph."}</h2>
+            <h2 className="marketing-section-title font-display">
+              {title || "Sixteen live exports. One evidence graph."}
+            </h2>
             <p className="marketing-section-copy">
               {copy ||
-                "Framework-mapped assurance packs generated from the same plantation record — carbon, biodiversity, disclosure, and compliance exports for auditors and program officers."}
+                "One plantation record powers every export — browse by evidence stream, then generate assurance packs in the workspace."}
             </p>
           </div>
-          <div className="marketing-reports-hub-stats" aria-label="Export summary">
+
+          <dl className="marketing-reports-stats" aria-label="Export catalog summary">
             <div>
-              <strong>{items.length}</strong>
-              <span>Live export types</span>
+              <dt>Live exports</dt>
+              <dd>{items.length}</dd>
             </div>
             <div>
-              <strong>1</strong>
-              <span>Evidence graph</span>
+              <dt>Evidence streams</dt>
+              <dd>4</dd>
             </div>
             <div>
-              <strong>
-                <BadgeCheck className="inline h-4 w-4 text-emerald-600" aria-hidden />
-              </strong>
-              <span>Assurance packs, not credit issuance</span>
+              <dt>Signed bundles</dt>
+              <dd>{signedCount}</dd>
             </div>
-          </div>
+            <div>
+              <dt>Source record</dt>
+              <dd>1 graph</dd>
+            </div>
+          </dl>
         </div>
 
         <div className="marketing-reports-hub-toolbar">
+          <p>Browse by stream — expand any lane for the full catalog.</p>
           <div className="marketing-reports-hub-search">
             <Search className="h-4 w-4" aria-hidden />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search reports by name, framework, or keyword…"
-              aria-label="Search reports"
+              placeholder="Search exports…"
+              aria-label="Search exports"
             />
-          </div>
-          <div className="marketing-reports-hub-filters" role="tablist" aria-label="Report categories">
-            {REPORT_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                role="tab"
-                aria-selected={category === cat.id}
-                className={category === cat.id ? "is-active" : undefined}
-                onClick={() => setCategory(cat.id)}
-              >
-                {cat.label}
-                {cat.id !== "all" && counts[cat.id] ? (
-                  <span className="marketing-reports-hub-filter-count">{counts[cat.id]}</span>
-                ) : null}
-              </button>
-            ))}
           </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <p className="marketing-reports-hub-empty">No reports match your search. Try another category or keyword.</p>
+        {totalVisible === 0 ? (
+          <p className="marketing-reports-hub-empty">No exports match your search.</p>
         ) : (
-          <div className="marketing-reports-hub-grid">
-            {featured.length > 0 ? (
-              <div className="marketing-reports-hub-featured">
-                <p className="marketing-reports-hub-section-label">Primary exports</p>
-                <div className="marketing-reports-hub-featured-grid">
-                  {featured.map((item) => (
-                    <ReportCard key={item.title} item={item} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {regular.length > 0 ? (
-              <div className="marketing-reports-hub-regular">
-                {featured.length > 0 ? (
-                  <p className="marketing-reports-hub-section-label">Supporting exports</p>
-                ) : null}
-                <div className="marketing-reports-hub-regular-grid">
-                  {regular.map((item) => (
-                    <ReportCard key={item.title} item={item} compact />
-                  ))}
-                </div>
-              </div>
-            ) : null}
+          <div className="marketing-reports-streams">
+            {visibleStreams.map((stream) => (
+              <StreamPanel
+                key={stream.id}
+                stream={stream}
+                items={filteredByStream[stream.id] ?? []}
+                expanded={expandedStream === stream.id}
+                onToggle={() => setExpandedStream((current) => (current === stream.id ? null : stream.id))}
+              />
+            ))}
           </div>
         )}
 
