@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.cms.home_reports_items import HOME_REPORT_ITEMS
+
 HEADER_DEFAULT: dict[str, Any] = {
     "nav": [
         {"label": "Platform", "href": "#platform"},
         {"label": "Intelligence", "href": "#intelligence"},
+        {"label": "Biodiversity", "href": "#biodiversity"},
+        {"label": "Carbon", "href": "#carbon-intelligence"},
         {"label": "Compliance", "href": "#compliance"},
         {"label": "Reports", "href": "#reports"},
         {"label": "Programs", "href": "#programs"},
@@ -184,6 +188,39 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         },
     },
     {
+        "section_type": "biodiversity_intelligence",
+        "anchor_id": "biodiversity",
+        "title": "Biodiversity Intelligence",
+        "sort_order": 16,
+        "content": {
+            "eyebrow": "Biodiversity Intelligence",
+            "title": "Listen to the landscape",
+            "copy": "Turn field sound into biodiversity evidence.",
+            "cta": {"label": "Open bioacoustic workspace", "href": "/auth?mode=signin&next=/bioacoustic"},
+            "pipeline_steps": [
+                "Field recording",
+                "Bioacoustic engine",
+                "Species model",
+                "Verified evidence",
+            ],
+        },
+    },
+    {
+        "section_type": "ghg_intelligence",
+        "anchor_id": "carbon-intelligence",
+        "title": "Project Carbon Intelligence",
+        "sort_order": 17,
+        "content": {
+            "eyebrow": "Project Carbon Intelligence",
+            "title": "Project GHG emissions within your boundary",
+            "copy": (
+                "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, "
+                "registered sources, dispersion modelling, and fusion inside the project work area."
+            ),
+            "cta": {"label": "Open emissions workspace", "href": "/auth?mode=signin&next=/projects"},
+        },
+    },
+    {
         "section_type": "compliance",
         "anchor_id": "compliance",
         "title": "Compliance & frameworks",
@@ -232,35 +269,15 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             "eyebrow": "Reports",
             "title": "Sixteen live exports. One evidence graph.",
             "copy": (
-                "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, "
-                "Paris/NDC, ETF/BTR handoff, SBTi FLAG, GBF, EUDR, ISO 14064-1 org inventory, "
-                "Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
-                "and signed evidence — generated from the same plantation record. Assurance packs, "
-                "not credit issuance."
+                "Framework-mapped assurance packs generated from the same plantation record — "
+                "carbon, biodiversity, disclosure, and compliance exports for auditors, "
+                "program officers, and ESG teams. Assurance packs, not credit issuance."
             ),
-            "items": [
-                {"icon": "FileText", "tag": "BRSR", "title": "BRSR assurance pack", "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.", "formats": "PDF · XLSX"},
-                {"icon": "Scale", "tag": "ISO 14064-2", "title": "ISO 14064-2 project report", "description": "Project boundary, monitoring plan, and quantification sections pre-structured.", "formats": "PDF · XLSX"},
-                {"icon": "Leaf", "tag": "TNFD", "title": "TNFD LEAP disclosure", "description": "Locate–Evaluate–Assess–Prepare narrative from satellite and bioacoustic layers.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "GHG Protocol", "title": "GHG land-sector inventory", "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.", "formats": "PDF · XLSX"},
-                {"icon": "Bird", "tag": "Darwin Core", "title": "Darwin Core occurrence pack", "description": "Species occurrence archive for biodiversity partners and scientific reuse.", "formats": "ZIP · JSON"},
-                {"icon": "FileCheck2", "tag": "VM0047", "title": "Carbon credit ledger", "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.", "formats": "PDF · XLSX"},
-                {"icon": "Award", "tag": "Gold Standard", "title": "Gold Standard LUF report", "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.", "formats": "PDF · XLSX"},
-                {"icon": "Trees", "tag": "REDD+", "title": "REDD+ MRV report", "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "Paris / NDC", "title": "Paris Agreement traceability", "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "ETF / BTR", "title": "National inventory handoff", "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.", "formats": "CSV · XLSX"},
-                {"icon": "Target", "tag": "SBTi FLAG", "title": "FLAG land-sector worksheet", "description": "Land-related removals vs target boundary linked to VM0047 and GHG exports.", "formats": "XLSX"},
-                {"icon": "Dna", "tag": "GBF", "title": "GBF indicator mapping", "description": "Kunming-Montreal Targets 2 & 3 metrics bridged to TNFD nature disclosures.", "formats": "XLSX"},
-                {"icon": "MapPin", "tag": "EUDR", "title": "Supplier geo due diligence", "description": "WGS84 coordinate pack with BRSR value-chain linkage for corporate buyers.", "formats": "XLSX · ZIP"},
-                {"icon": "Scale", "tag": "ISO 14064-1", "title": "Organizational GHG inventory", "description": "Org-level inventory complementing ISO 14064-2 project quantification reports.", "formats": "JSON · XLSX · ZIP"},
-                {"icon": "BadgeCheck", "tag": "Green Credit", "title": "Green Credit India pack", "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.", "formats": "PDF · XLSX"},
-                {"icon": "TreePine", "tag": "Inventory", "title": "Tree inventory", "description": "Species, survival, geotag status, and chainage for compliance packs.", "formats": "PDF · XLSX"},
-                {"icon": "BarChart3", "tag": "Carbon", "title": "Carbon stock estimate", "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.", "formats": "PDF · XLSX"},
-                {"icon": "Mic", "tag": "Biodiversity", "title": "Biodiversity soundscape", "description": "BirdNET richness and habitat signals for a fenced plantation site.", "formats": "PDF · XLSX"},
-                {"icon": "ShieldCheck", "tag": "ESG", "title": "ESG stakeholder summary", "description": "Combined carbon, biodiversity, and NDVI narrative for boards and buyers.", "formats": "PDF · XLSX"},
-                {"icon": "Radar", "tag": "Executive", "title": "Portfolio health digest", "description": "NDVI trends, SAR threats, and compliance completion scores for leadership.", "formats": "PDF"},
-                {"icon": "Shield", "tag": "Evidence", "title": "Signed evidence bundle", "description": "Tamper-evident ZIP with Ed25519 audit-chain verification for third-party review.", "formats": "ZIP"},
-            ],
+            "footer_link": {
+                "label": "Open full reports workspace",
+                "href": "/auth?mode=signin&next=/reports",
+            },
+            "items": HOME_REPORT_ITEMS,
         },
     },
     {
@@ -367,6 +384,8 @@ SECTION_TYPES = (
     "stats",
     "features",
     "intelligence_pipeline",
+    "biodiversity_intelligence",
+    "ghg_intelligence",
     "compliance",
     "reports",
     "programs",

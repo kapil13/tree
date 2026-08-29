@@ -10,9 +10,11 @@ import {
   IntelligenceRiver,
   PLATFORM_EDGES,
   ProgramScene,
-  ReportPaper,
   SatelliteFusionVisual,
 } from "@/components/marketing/marketing-visuals";
+import { MarketingBiodiversityIntelligence } from "@/components/marketing/marketing-biodiversity-intelligence";
+import { MarketingGhgIntelligence } from "@/components/marketing/marketing-ghg-intelligence";
+import { MarketingReportsHub } from "@/components/marketing/marketing-reports-hub";
 import { cmsIcon } from "@/lib/cms-icons";
 import type { CmsSection } from "@/lib/cms-api";
 import { linkProps } from "@/lib/cms-defaults";
@@ -80,8 +82,6 @@ function marketingSecondaryHref(href: string): string {
   if (href === "/dashboard" || href.startsWith("/dashboard?")) return "#how-it-works";
   return href;
 }
-
-const REPORT_ACCENTS = ["#14532d", "#0e7490", "#3f6212", "#1e3a5f", "#854d0e", "#4c1d95"];
 
 function complianceGroups(items: Array<Record<string, string>>) {
   const india = items.filter((i) =>
@@ -305,30 +305,37 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
       );
     }
 
-    case "reports": {
-      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+    case "biodiversity_intelligence":
       return (
-        <section id={section.anchor_id || undefined} className="marketing-reports">
-          <div className="mx-auto max-w-7xl px-6 py-20">
-            <div className="marketing-section-head">
-              <p className="marketing-eyebrow">{String(c.eyebrow || "")}</p>
-              <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
-              <p className="marketing-section-copy">{String(c.copy || "")}</p>
-            </div>
-            <div className="marketing-report-gallery">
-              {items.map((item, i) => (
-                <ReportPaper
-                  key={item.title}
-                  tag={item.tag || "EXPORT"}
-                  title={item.title}
-                  description={item.description}
-                  formats={item.formats || "PDF · XLSX"}
-                  accent={REPORT_ACCENTS[i % REPORT_ACCENTS.length] ?? "#14532d"}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+        <MarketingBiodiversityIntelligence
+          eyebrow={String(c.eyebrow || "")}
+          title={String(c.title || "")}
+          copy={String(c.copy || "")}
+          cta={c.cta as { label?: string; href?: string }}
+          pipelineSteps={Array.isArray(c.pipeline_steps) ? (c.pipeline_steps as string[]) : undefined}
+        />
+      );
+
+    case "ghg_intelligence":
+      return (
+        <MarketingGhgIntelligence
+          eyebrow={String(c.eyebrow || "")}
+          title={String(c.title || "")}
+          copy={String(c.copy || "")}
+          cta={c.cta as { label?: string; href?: string }}
+        />
+      );
+
+    case "reports": {
+      const footerLink = c.footer_link as { label?: string; href?: string } | undefined;
+      return (
+        <MarketingReportsHub
+          eyebrow={String(c.eyebrow || "")}
+          title={String(c.title || "")}
+          copy={String(c.copy || "")}
+          content={c as Record<string, unknown>}
+          footerLink={footerLink}
+        />
       );
     }
 

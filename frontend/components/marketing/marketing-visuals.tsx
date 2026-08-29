@@ -428,8 +428,8 @@ export function ComplianceOrbit({ codes: _codes }: { codes: string[] }) {
   );
 }
 
-function ReportPreviewArt({ tag }: { tag: string }) {
-  const key = tag.toLowerCase();
+export function ReportPreviewArt({ tag, title }: { tag: string; title?: string }) {
+  const key = `${tag} ${title ?? ""}`.toLowerCase();
   if (key.includes("brsr")) {
     return (
       <div className="marketing-report-art">
@@ -503,12 +503,78 @@ function ReportPreviewArt({ tag }: { tag: string }) {
       </div>
     );
   }
-  if (key.includes("bio")) {
+  if (key.includes("bio") || key.includes("soundscape") || key.includes("acoustic") || key.includes("birdnet")) {
     return (
       <div className="marketing-report-art marketing-report-art--wave">
         <svg viewBox="0 0 120 36" aria-hidden>
           <path d="M2 22 C14 8 22 30 34 16 C46 6 54 28 68 14 C80 4 92 26 118 12" fill="none" stroke="currentColor" strokeWidth="2" />
         </svg>
+      </div>
+    );
+  }
+  if (key.includes("methane") || key.includes("ch4") || key.includes("tropomi")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--methane">
+        <em>CH₄</em>
+        <i style={{ height: "72%" }} />
+        <i style={{ height: "48%" }} />
+        <i style={{ height: "36%" }} />
+      </div>
+    );
+  }
+  if (key.includes("boundary") || key.includes("fence") || key.includes("site map") || key.includes("plantation site")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--boundary">
+        <svg viewBox="0 0 88 56" aria-hidden>
+          <rect x="4" y="8" width="80" height="40" rx="4" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" />
+          <circle cx="28" cy="28" r="4" fill="currentColor" />
+          <circle cx="52" cy="22" r="3" fill="currentColor" opacity="0.7" />
+          <circle cx="62" cy="34" r="3" fill="currentColor" opacity="0.7" />
+        </svg>
+        <span>12.4 ha</span>
+      </div>
+    );
+  }
+  if (key.includes("gold")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--badge">
+        <strong>GS</strong>
+        <span>LUF</span>
+      </div>
+    );
+  }
+  if (key.includes("redd")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--badge">
+        <strong>REDD</strong>
+        <span>+ MRV</span>
+      </div>
+    );
+  }
+  if (key.includes("paris") || key.includes("ndc")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--grid4">
+        {["A6", "NDC", "GEO", "CO₂"].map((cell) => (
+          <strong key={cell}>{cell}</strong>
+        ))}
+      </div>
+    );
+  }
+  if (key.includes("green credit")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--badge">
+        <strong>GCP</strong>
+        <span>India</span>
+      </div>
+    );
+  }
+  if (key.includes("plantation") && !key.includes("site")) {
+    return (
+      <div className="marketing-report-art marketing-report-art--boundary">
+        <svg viewBox="0 0 88 56" aria-hidden>
+          <path d="M8 40 L24 24 L40 32 L56 18 L72 28 L80 22" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+        <span>NDVI 0.71</span>
       </div>
     );
   }
@@ -556,7 +622,7 @@ export function ReportPaper({
       <div className="marketing-report-preview" style={{ ["--paper-accent" as string]: accent }}>
         <div className="marketing-report-sheet">
           <span>{tag}</span>
-          <ReportPreviewArt tag={tag} />
+          <ReportPreviewArt tag={tag} title={title} />
         </div>
       </div>
       <div className="marketing-report-body">

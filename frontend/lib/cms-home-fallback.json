@@ -10,6 +10,14 @@
         "href": "#intelligence"
       },
       {
+        "label": "Biodiversity",
+        "href": "#biodiversity"
+      },
+      {
+        "label": "Carbon",
+        "href": "#carbon-intelligence"
+      },
+      {
         "label": "Compliance",
         "href": "#compliance"
       },
@@ -36,7 +44,7 @@
     }
   },
   "footer": {
-    "description": "India's environmental MRV platform \u2014 from citizen tree tagging to government-grade satellite fusion, bioacoustic biodiversity, and audit-ready compliance exports.",
+    "description": "India's environmental MRV platform — from citizen tree tagging to government-grade satellite fusion, bioacoustic biodiversity, and audit-ready compliance exports.",
     "badge": "Intelligence for a thriving planet",
     "columns": [
       {
@@ -125,7 +133,7 @@
       }
     ],
     "copyright": "Aranyix. All rights reserved.",
-    "legal_note": "MRV & audit-prep platform \u00b7 Not a carbon credit issuer"
+    "legal_note": "MRV & audit-prep platform · Not a carbon credit issuer"
   },
   "sections": [
     {
@@ -134,11 +142,11 @@
       "title": "Hero",
       "sort_order": 0,
       "content": {
-        "pill": "MRV \u00b7 Compliance \u00b7 Reporting",
+        "pill": "MRV · Compliance · Reporting",
         "pill_icon": "Sparkles",
         "title": "Environmental intelligence",
         "title_highlight": "from field to audit room",
-        "subtitle": "Register trees on mobile, fuse NDVI with SAR integrity, score biodiversity with bioacoustics, and export BRSR, ISO 14064-2, TNFD, and VM0047 evidence \u2014 one platform for citizens, corporates, and government programs.",
+        "subtitle": "Register trees on mobile, fuse NDVI with SAR integrity, score biodiversity with bioacoustics, and export BRSR, ISO 14064-2, TNFD, and VM0047 evidence — one platform for citizens, corporates, and government programs.",
         "stats": [
           {
             "value": "15+",
@@ -205,7 +213,7 @@
       "content": {
         "eyebrow": "Platform",
         "title": "Everything to monitor, prove, and report environmental impact",
-        "copy": "From a single citizen neem tree to million-tree portfolios \u2014 the same premium MRV stack for field teams, scientists, compliance officers, and board reviewers.",
+        "copy": "From a single citizen neem tree to million-tree portfolios — the same premium MRV stack for field teams, scientists, compliance officers, and board reviewers.",
         "items": [
           {
             "icon": "TreePine",
@@ -252,7 +260,7 @@
           {
             "icon": "ScanLine",
             "title": "Rule engine & schemes",
-            "description": "Central scheme registry with NHAI, CAMPA, Nagar Van, and corporate templates \u2014 validation rules per program.",
+            "description": "Central scheme registry with NHAI, CAMPA, Nagar Van, and corporate templates — validation rules per program.",
             "accent": "from-indigo-500/12 to-indigo-900/5"
           }
         ]
@@ -270,6 +278,42 @@
       }
     },
     {
+      "section_type": "biodiversity_intelligence",
+      "anchor_id": "biodiversity",
+      "title": "Biodiversity Intelligence",
+      "sort_order": 16,
+      "content": {
+        "eyebrow": "Biodiversity Intelligence",
+        "title": "Listen to the landscape",
+        "copy": "Turn field sound into biodiversity evidence.",
+        "cta": {
+          "label": "Open bioacoustic workspace",
+          "href": "/auth?mode=signin&next=/bioacoustic"
+        },
+        "pipeline_steps": [
+          "Field recording",
+          "Bioacoustic engine",
+          "Species model",
+          "Verified evidence"
+        ]
+      }
+    },
+    {
+      "section_type": "ghg_intelligence",
+      "anchor_id": "carbon-intelligence",
+      "title": "Project Carbon Intelligence",
+      "sort_order": 17,
+      "content": {
+        "eyebrow": "Project Carbon Intelligence",
+        "title": "Project GHG emissions within your boundary",
+        "copy": "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, registered sources, dispersion modelling, and fusion inside the project work area.",
+        "cta": {
+          "label": "Open emissions workspace",
+          "href": "/auth?mode=signin&next=/projects"
+        }
+      }
+    },
+    {
       "section_type": "compliance",
       "anchor_id": "compliance",
       "title": "Compliance & frameworks",
@@ -277,7 +321,7 @@
       "content": {
         "eyebrow": "Compliance",
         "title": "Mapped to the standards your auditors already ask about",
-        "copy": "Aranyix is an MRV and audit-preparation platform \u2014 not a carbon credit registry or legal certification body. We structure evidence so review conversations move faster.",
+        "copy": "Aranyix is an MRV and audit-preparation platform — not a carbon credit registry or legal certification body. We structure evidence so review conversations move faster.",
         "items": [
           {
             "icon": "Lock",
@@ -328,6 +372,54 @@
             "description": "Geo-tagged planting ledger supporting national commitments and Article 6 transparency."
           },
           {
+            "icon": "Globe2",
+            "code": "Article 6",
+            "title": "Article 6 readiness",
+            "description": "Cooperative approaches checklist with corresponding adjustment refs and serial traceability."
+          },
+          {
+            "icon": "Globe2",
+            "code": "ETF / BTR",
+            "title": "National inventory handoff",
+            "description": "IPCC-aligned org roll-up for Enhanced Transparency Framework and BTR preparation."
+          },
+          {
+            "icon": "Landmark",
+            "code": "World Bank ESF",
+            "title": "ESF safeguard screening",
+            "description": "PS5 land/tenure and PS6 biodiversity evidence packs for DFI-backed corridors."
+          },
+          {
+            "icon": "Handshake",
+            "code": "UNDP SES",
+            "title": "UNDP SES screening",
+            "description": "Social and environmental risk screening with stakeholder engagement exports."
+          },
+          {
+            "icon": "Target",
+            "code": "SBTi FLAG",
+            "title": "Land-sector targets",
+            "description": "FLAG removals worksheet linked to VM0047 and GHG Protocol single source of truth."
+          },
+          {
+            "icon": "Globe2",
+            "code": "GBF",
+            "title": "Global Biodiversity Framework",
+            "description": "Targets 2 & 3 indicator mapping bridged to TNFD LEAP disclosures."
+          },
+          {
+            "icon": "MapPin",
+            "code": "EUDR",
+            "title": "Supplier geo MRV",
+            "description": "Geo-coordinate due diligence for corporate buyers and BRSR value-chain linkage."
+          },
+          {
+            "icon": "Scale",
+            "code": "ISO 14064-1",
+            "title": "Org GHG inventory",
+            "description": "Organizational inventory export complementing ISO 14064-2 project reports."
+          },
+          {
             "icon": "BadgeCheck",
             "code": "Green Credit",
             "title": "MoEFCC Green Credit",
@@ -343,7 +435,7 @@
             "icon": "Globe2",
             "code": "IPCC AR6",
             "title": "Science-based estimates",
-            "description": "Biomass and CO\u2082e estimates with IPCC-aligned defaults and NPRT buffers."
+            "description": "Biomass and CO₂e estimates with IPCC-aligned defaults and NPRT buffers."
           },
           {
             "icon": "MapPin",
@@ -373,7 +465,7 @@
             "icon": "Sparkles",
             "code": "BYOT",
             "title": "Citizen stewardship",
-            "description": "Bring Your Own Tree \u2014 public registration with complimentary AI health scans."
+            "description": "Bring Your Own Tree — public registration with complimentary AI health scans."
           }
         ]
       }
@@ -386,119 +478,252 @@
       "content": {
         "eyebrow": "Reports",
         "title": "Sixteen live exports. One evidence graph.",
-        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, Paris/NDC, Green Credit, inventory, carbon, biodiversity, ESG, executive digest, and signed evidence \u2014 generated from the same plantation record. Assurance packs, not credit issuance.",
+        "copy": "Framework-mapped assurance packs generated from the same plantation record — carbon, biodiversity, disclosure, and compliance exports for auditors, program officers, and ESG teams. Assurance packs, not credit issuance.",
+        "footer_link": {
+          "label": "Open full reports workspace",
+          "href": "/auth?mode=signin&next=/reports"
+        },
         "items": [
           {
-            "icon": "FileText",
-            "tag": "BRSR",
-            "title": "BRSR assurance pack",
-            "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "Scale",
-            "tag": "ISO 14064-2",
-            "title": "ISO 14064-2 project report",
-            "description": "Project boundary, monitoring plan, and quantification sections pre-structured.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "Leaf",
-            "tag": "TNFD",
-            "title": "TNFD LEAP disclosure",
-            "description": "Locate\u2013Evaluate\u2013Assess\u2013Prepare narrative from satellite and bioacoustic layers.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "Globe2",
+            "category": "carbon",
             "tag": "GHG Protocol",
             "title": "GHG land-sector inventory",
             "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.",
-            "formats": "PDF \u00b7 XLSX"
+            "formats": "PDF · XLSX",
+            "featured": true,
+            "evidence_hint": "Org + project roll-up",
+            "action": "generate",
+            "accent": "#15803d",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "Bird",
-            "tag": "Darwin Core",
-            "title": "Darwin Core occurrence pack",
-            "description": "Species occurrence archive for biodiversity partners and scientific reuse.",
-            "formats": "ZIP \u00b7 JSON"
+            "category": "carbon",
+            "tag": "Carbon",
+            "title": "Carbon stock & tree absorption",
+            "description": "Modelled biomass and CO₂e removals by species and plot with IPCC-aligned defaults.",
+            "formats": "PDF · XLSX",
+            "featured": true,
+            "evidence_hint": "Per plantation site",
+            "action": "generate",
+            "accent": "#166534",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "FileCheck2",
+            "category": "carbon",
+            "tag": "Methane",
+            "title": "Site methane & atmospheric GHG",
+            "description": "TROPOMI-fused CH₄ context overlaid on project work areas with dispersion and fusion review.",
+            "formats": "PDF · XLSX",
+            "evidence_hint": "Satellite + source fusion",
+            "action": "generate",
+            "accent": "#0e7490",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "carbon",
             "tag": "VM0047",
             "title": "Carbon credit ledger",
             "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.",
-            "formats": "PDF \u00b7 XLSX"
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#14532d",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "Award",
-            "tag": "Gold Standard",
-            "title": "Gold Standard LUF report",
-            "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.",
-            "formats": "PDF \u00b7 XLSX"
+            "category": "carbon",
+            "tag": "ISO 14064-1",
+            "title": "Organizational GHG inventory",
+            "description": "Org-level inventory export complementing ISO 14064-2 project quantification reports.",
+            "formats": "JSON · XLSX · ZIP",
+            "action": "generate",
+            "accent": "#1e3a5f",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "Trees",
-            "tag": "REDD+",
-            "title": "REDD+ MRV report",
-            "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.",
-            "formats": "PDF \u00b7 XLSX"
+            "category": "biodiversity",
+            "tag": "Soundscape",
+            "title": "Biodiversity soundscape report",
+            "description": "BirdNET species detections, acoustic richness scores, and seasonal trends for a fenced site.",
+            "formats": "PDF · XLSX",
+            "featured": true,
+            "evidence_hint": "Bioacoustic engine",
+            "action": "generate",
+            "accent": "#0d9488",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "Globe2",
-            "tag": "Paris / NDC",
-            "title": "Paris Agreement traceability",
-            "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.",
-            "formats": "PDF \u00b7 XLSX"
+            "category": "biodiversity",
+            "tag": "Darwin Core",
+            "title": "Darwin Core occurrence pack",
+            "description": "Standardized species occurrence archive for biodiversity partners and scientific reuse.",
+            "formats": "ZIP · JSON",
+            "action": "download",
+            "accent": "#0f766e",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "BadgeCheck",
+            "category": "biodiversity",
+            "tag": "Biodiversity",
+            "title": "Biodiversity evidence summary",
+            "description": "Species richness, habitat signals, and acoustic health for a plantation fence boundary.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#115e59",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "biodiversity",
+            "tag": "ESG",
+            "title": "ESG nature narrative",
+            "description": "Combined biodiversity, NDVI habitat, and acoustic richness narrative for stakeholders.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#134e4a",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "disclosure",
+            "tag": "TNFD",
+            "title": "TNFD LEAP disclosure",
+            "description": "Locate–Evaluate–Assess–Prepare narrative from satellite and bioacoustic layers.",
+            "formats": "PDF · XLSX",
+            "featured": true,
+            "action": "generate",
+            "accent": "#3f6212",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "disclosure",
             "tag": "Green Credit",
             "title": "Green Credit India pack",
             "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.",
-            "formats": "PDF \u00b7 XLSX"
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#4d7c0f",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "TreePine",
+            "category": "disclosure",
+            "tag": "REDD+",
+            "title": "REDD+ MRV report",
+            "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#365314",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "disclosure",
+            "tag": "Paris / NDC",
+            "title": "Paris Agreement traceability",
+            "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#1e3a5f",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "disclosure",
+            "tag": "Gold Standard",
+            "title": "Gold Standard LUF report",
+            "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#854d0e",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
+            "tag": "BRSR",
+            "title": "BRSR assurance pack",
+            "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.",
+            "formats": "PDF · XLSX",
+            "featured": true,
+            "action": "generate",
+            "accent": "#14532d",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
+            "tag": "ISO 14064-2",
+            "title": "ISO 14064-2 project report",
+            "description": "Project boundary, monitoring plan, and quantification sections pre-structured.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#166534",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
+            "tag": "ETF / BTR",
+            "title": "National inventory handoff",
+            "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.",
+            "formats": "CSV · XLSX",
+            "action": "download",
+            "accent": "#1e3a5f",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
+            "tag": "SBTi FLAG",
+            "title": "FLAG land-sector worksheet",
+            "description": "Land-related removals vs target boundary linked to VM0047 and GHG exports.",
+            "formats": "XLSX",
+            "action": "download",
+            "accent": "#4c1d95",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
+            "tag": "EUDR",
+            "title": "Supplier geo due diligence",
+            "description": "WGS84 coordinate pack with BRSR value-chain linkage for corporate buyers.",
+            "formats": "XLSX · ZIP",
+            "action": "download",
+            "accent": "#44403c",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
+          },
+          {
+            "category": "compliance",
             "tag": "Inventory",
-            "title": "Tree inventory",
-            "description": "Species, survival, geotag status, and chainage for compliance packs.",
-            "formats": "PDF \u00b7 XLSX"
+            "title": "Geo-tagged tree inventory",
+            "description": "Species, survival, chainage, and geotag completeness for compliance packs.",
+            "formats": "PDF · XLSX",
+            "action": "generate",
+            "accent": "#3f6212",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           },
           {
-            "icon": "BarChart3",
-            "tag": "Carbon",
-            "title": "Carbon stock estimate",
-            "description": "Modelled biomass and CO\u2082e with IPCC-aligned defaults \u2014 not a credit issuance.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "Mic",
-            "tag": "Biodiversity",
-            "title": "Biodiversity soundscape",
-            "description": "BirdNET richness and habitat signals for a fenced plantation site.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "ShieldCheck",
-            "tag": "ESG",
-            "title": "ESG stakeholder summary",
-            "description": "Combined carbon, biodiversity, and NDVI narrative for boards and buyers.",
-            "formats": "PDF \u00b7 XLSX"
-          },
-          {
-            "icon": "Radar",
-            "tag": "Executive",
-            "title": "Portfolio health digest",
-            "description": "NDVI trends, SAR threats, and compliance completion scores for leadership.",
-            "formats": "PDF"
-          },
-          {
-            "icon": "Shield",
+            "category": "compliance",
             "tag": "Evidence",
             "title": "Signed evidence bundle",
             "description": "Tamper-evident ZIP with Ed25519 audit-chain verification for third-party review.",
-            "formats": "ZIP"
+            "formats": "ZIP",
+            "signed": true,
+            "action": "download",
+            "accent": "#14532d",
+            "href": "/auth?mode=signin&next=/reports",
+            "status": "live"
           }
         ]
       }
@@ -557,7 +782,7 @@
           {
             "step": "01",
             "title": "Enroll & set up",
-            "description": "Pick your program \u2014 BYOT, government, ESG, or NGO \u2014 and complete the project setup wizard with scheme-specific rules."
+            "description": "Pick your program — BYOT, government, ESG, or NGO — and complete the project setup wizard with scheme-specific rules."
           },
           {
             "step": "02",
@@ -577,7 +802,7 @@
           {
             "step": "05",
             "title": "Report with confidence",
-            "description": "Export BRSR, ISO, TNFD, VM0047, Gold Standard, REDD+, Paris/NDC, and Green Credit packs \u2014 plus signed evidence bundles for auditor review."
+            "description": "Export BRSR, ISO, TNFD, VM0047, Gold Standard, REDD+, Paris/NDC, and Green Credit packs — plus signed evidence bundles for auditor review."
           }
         ]
       }
@@ -590,7 +815,7 @@
       "content": {
         "eyebrow": "Live command center",
         "title": "See your plantation portfolio at a glance",
-        "copy": "Executive dashboards surface tree health, SAR anomalies, species richness, compliance completion, and alert queues \u2014 with exports tailored to enrolled programs.",
+        "copy": "Executive dashboards surface tree health, SAR anomalies, species richness, compliance completion, and alert queues — with exports tailored to enrolled programs.",
         "bullets": [
           "Interactive maps with NDVI and SAR integrity overlays",
           "Executive dashboard for health, biodiversity, and compliance KPIs",
@@ -625,8 +850,8 @@
             "87% complete"
           ],
           [
-            "CO\u2082e estimate",
-            "1,240 tCO\u2082e (modelled)"
+            "CO₂e estimate",
+            "1,240 tCO₂e (modelled)"
           ]
         ]
       }
@@ -639,7 +864,7 @@
       "content": {
         "eyebrow": "Ready to begin?",
         "title": "Turn every tree into audit-ready environmental evidence",
-        "copy": "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, and compliance exports \u2014 from citizen BYOT to government-grade field programs.",
+        "copy": "Join organizations using Aranyix for plantation monitoring, biodiversity assessment, and compliance exports — from citizen BYOT to government-grade field programs.",
         "primary_cta": {
           "label": "Get started free",
           "href": "/auth?mode=signup"

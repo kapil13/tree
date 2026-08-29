@@ -32,6 +32,8 @@ def test_section_types_include_hero():
     assert "stats" in SECTION_TYPES
     assert "reports" in SECTION_TYPES
     assert "intelligence_pipeline" in SECTION_TYPES
+    assert "biodiversity_intelligence" in SECTION_TYPES
+    assert "ghg_intelligence" in SECTION_TYPES
 
 
 def test_header_default_has_nav():
