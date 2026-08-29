@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.cms.home_reports_items import HOME_REPORT_ITEMS
+
 HEADER_DEFAULT: dict[str, Any] = {
     "nav": [
         {"label": "Platform", "href": "#platform"},
         {"label": "Intelligence", "href": "#intelligence"},
+        {"label": "Biodiversity", "href": "#biodiversity"},
+        {"label": "Carbon", "href": "#carbon-intelligence"},
         {"label": "Compliance", "href": "#compliance"},
         {"label": "Reports", "href": "#reports"},
         {"label": "Programs", "href": "#programs"},
@@ -184,6 +188,39 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         },
     },
     {
+        "section_type": "biodiversity_intelligence",
+        "anchor_id": "biodiversity",
+        "title": "Biodiversity Intelligence",
+        "sort_order": 16,
+        "content": {
+            "eyebrow": "Biodiversity Intelligence",
+            "title": "Listen to the landscape",
+            "copy": "Turn field sound into biodiversity evidence.",
+            "cta": {"label": "Open bioacoustic workspace", "href": "/auth?mode=signin&next=/bioacoustic"},
+            "pipeline_steps": [
+                "Field recording",
+                "Bioacoustic engine",
+                "Species model",
+                "Verified evidence",
+            ],
+        },
+    },
+    {
+        "section_type": "ghg_intelligence",
+        "anchor_id": "carbon-intelligence",
+        "title": "Project Carbon Intelligence",
+        "sort_order": 17,
+        "content": {
+            "eyebrow": "Project Carbon Intelligence",
+            "title": "Project GHG emissions within your boundary",
+            "copy": (
+                "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, "
+                "registered sources, dispersion modelling, and fusion inside the project work area."
+            ),
+            "cta": {"label": "Open emissions workspace", "href": "/auth?mode=signin&next=/projects"},
+        },
+    },
+    {
         "section_type": "compliance",
         "anchor_id": "compliance",
         "title": "Compliance & frameworks",
@@ -230,112 +267,17 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "sort_order": 25,
         "content": {
             "eyebrow": "Reports",
-            "title": "Two evidence streams. One plantation record.",
+            "title": "Sixteen live exports. One evidence graph.",
             "copy": (
-                "Nature and climate intelligence are reported separately — bioacoustic biodiversity "
-                "on one side, GHG and methane signals with tree carbon absorption and site boundaries "
-                "on the other — all generated from the same geo-tagged planting evidence."
+                "Framework-mapped assurance packs generated from the same plantation record — "
+                "carbon, biodiversity, disclosure, and compliance exports for auditors, "
+                "program officers, and ESG teams. Assurance packs, not credit issuance."
             ),
             "footer_link": {
-                "label": "View all compliance framework exports",
+                "label": "Open full reports workspace",
                 "href": "/auth?mode=signin&next=/reports",
             },
-            "groups": [
-                {
-                    "id": "bioacoustic",
-                    "theme": "bio",
-                    "title": "Bioacoustic & biodiversity",
-                    "subtitle": (
-                        "Soundscape monitoring, species richness, and nature disclosures "
-                        "from BirdNET and habitat layers at your planted sites."
-                    ),
-                    "items": [
-                        {
-                            "icon": "Mic",
-                            "tag": "Soundscape",
-                            "title": "Biodiversity soundscape report",
-                            "description": "BirdNET species detections, acoustic richness scores, and seasonal trends for a fenced plantation site.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#0d9488",
-                        },
-                        {
-                            "icon": "Bird",
-                            "tag": "Darwin Core",
-                            "title": "Darwin Core occurrence pack",
-                            "description": "Standardized species occurrence archive for biodiversity partners, TNFD reviewers, and scientific reuse.",
-                            "formats": "ZIP · JSON",
-                            "accent": "#0f766e",
-                        },
-                        {
-                            "icon": "Leaf",
-                            "tag": "TNFD",
-                            "title": "TNFD LEAP nature disclosure",
-                            "description": "Locate–Evaluate–Assess–Prepare narrative weaving bioacoustic richness with NDVI habitat signals.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#115e59",
-                        },
-                        {
-                            "icon": "Radar",
-                            "tag": "Acoustic trends",
-                            "title": "Multi-taxa acoustic digest",
-                            "description": "Week-over-week soundscape health, key species presence, and alert-linked field verification notes.",
-                            "formats": "PDF",
-                            "accent": "#134e4a",
-                        },
-                    ],
-                },
-                {
-                    "id": "ghg-carbon",
-                    "theme": "ghg",
-                    "title": "GHG, methane & carbon at planted sites",
-                    "subtitle": (
-                        "Atmospheric methane and land-sector GHG context, modelled tree absorption, "
-                        "and geofenced site area identification for every planting boundary."
-                    ),
-                    "items": [
-                        {
-                            "icon": "Globe2",
-                            "tag": "Methane",
-                            "title": "Site methane & atmospheric GHG",
-                            "description": "TROPOMI-fused CH₄ and regional GHG context overlaid on plantation fences — not a credit issuance.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#15803d",
-                        },
-                        {
-                            "icon": "BarChart3",
-                            "tag": "Carbon",
-                            "title": "Tree absorption & carbon stock",
-                            "description": "Modelled biomass and CO₂e removals by species and plot with IPCC-aligned defaults and uncertainty bands.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#166534",
-                        },
-                        {
-                            "icon": "MapPin",
-                            "tag": "Site boundary",
-                            "title": "Plantation site boundary & area",
-                            "description": "Geofenced planting area, hectare totals, fence validation, and WGS84 coordinates for auditors and buyers.",
-                            "formats": "PDF · XLSX · GeoJSON",
-                            "accent": "#14532d",
-                        },
-                        {
-                            "icon": "TreePine",
-                            "tag": "Inventory",
-                            "title": "Geo-tagged tree inventory",
-                            "description": "Species, survival, chainage, and geotag completeness — the field baseline for carbon and compliance exports.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#3f6212",
-                        },
-                        {
-                            "icon": "Globe2",
-                            "tag": "GHG Protocol",
-                            "title": "GHG land-sector inventory",
-                            "description": "Land-sector removals and emissions structured for corporate GHG Protocol and ISO 14064-2 project reporting.",
-                            "formats": "PDF · XLSX",
-                            "accent": "#1e3a5f",
-                        },
-                    ],
-                },
-            ],
+            "items": HOME_REPORT_ITEMS,
         },
     },
     {
@@ -442,6 +384,8 @@ SECTION_TYPES = (
     "stats",
     "features",
     "intelligence_pipeline",
+    "biodiversity_intelligence",
+    "ghg_intelligence",
     "compliance",
     "reports",
     "programs",

@@ -428,7 +428,7 @@ export function ComplianceOrbit({ codes: _codes }: { codes: string[] }) {
   );
 }
 
-function ReportPreviewArt({ tag, title }: { tag: string; title?: string }) {
+export function ReportPreviewArt({ tag, title }: { tag: string; title?: string }) {
   const key = `${tag} ${title ?? ""}`.toLowerCase();
   if (key.includes("brsr")) {
     return (
