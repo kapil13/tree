@@ -24,6 +24,25 @@ Aranyix separates **access programs** (who can use the platform) from **central 
 | `jal_shakti_riparian` | Jal Shakti | central | government_nhai, ngo_community |
 | `green_credit_india` | MoEFCC | corporate | corporate_esg, government_nhai |
 | `sahakar_van` | Ministry of Cooperation | cooperative | ngo_community, government_nhai |
+| `estate_monitoring` | MoEFCC / State Forest | central | government_nhai, ngo_community, corporate_esg |
+
+## Estate monitoring scheme (`estate_monitoring`)
+
+For **existing forest or plantation cover** where satellite MRV replaces mandatory tree census.
+
+| Setting | Value |
+| --- | --- |
+| Segment | `estate_monitoring` |
+| Template | `estate_monitoring_v1` |
+| Compliance | Guided |
+| KPIs | Scan coverage ≥80%, scans within 35 days — **not** survival/geo-tag |
+| Checklist | `estate_monitoring` |
+| Work areas | 10–500 ha polygons; ~100 ha recommended per block |
+| Tree registration | Optional (plot-based ground truth only) |
+
+Lifecycle: use planting schemes (CAMPA, Nagar Van, GIM) during the planting phase, then
+`estate_monitoring` for 5–20 year post-planting watch. Link via optional `parent_scheme_code`
+in estate metadata.
 
 ## API
 

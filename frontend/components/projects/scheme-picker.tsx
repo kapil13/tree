@@ -10,6 +10,7 @@ import {
   Leaf,
   Route,
   Search,
+  Satellite,
   Sprout,
   Trees,
   Users,
@@ -30,6 +31,7 @@ const SCHEME_ICONS: Record<string, LucideIcon> = {
   jal_shakti_riparian: Droplets,
   green_credit_india: BadgeCheck,
   sahakar_van: Handshake,
+  estate_monitoring: Satellite,
 };
 
 const SCHEME_ACCENT: Record<string, string> = {
@@ -42,11 +44,13 @@ const SCHEME_ACCENT: Record<string, string> = {
   jal_shakti_riparian: "from-cyan-500/15 to-blue-500/5 text-cyan-800 ring-cyan-500/30",
   green_credit_india: "from-forest-500/15 to-emerald-600/5 text-forest-800 ring-forest-500/30",
   sahakar_van: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
+  estate_monitoring: "from-sky-500/15 to-indigo-600/5 text-sky-900 ring-sky-500/30",
 };
 
 const MINISTRY_TONE: Record<string, string> = {
   MoEFCC: "bg-emerald-50 text-emerald-800 ring-emerald-100",
   "MoRTH / NHAI": "bg-sky-50 text-sky-800 ring-sky-100",
+  "MoEFCC / State Forest": "bg-teal-50 text-teal-900 ring-teal-100",
   "Jal Shakti": "bg-cyan-50 text-cyan-800 ring-cyan-100",
   "Rural Development": "bg-amber-50 text-amber-900 ring-amber-100",
   "Ministry of Cooperation": "bg-orange-50 text-orange-900 ring-orange-100",
@@ -72,6 +76,8 @@ function SchemeCard({
   const ministryTone = MINISTRY_TONE[scheme.ministry] ?? "bg-stone-100 text-stone-700 ring-stone-200";
   const survival = scheme.kpi_targets.survival_pct_min;
   const geo = scheme.kpi_targets.geo_tagged_pct_min;
+  const scanCoverage = scheme.kpi_targets.scan_coverage_pct_min;
+  const isMonitoring = scheme.code === "estate_monitoring";
 
   return (
     <button
@@ -128,6 +134,11 @@ function SchemeCard({
         <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600">
           {complianceLabel(scheme.default_compliance_mode)}
         </span>
+        {isMonitoring && (
+          <span className="rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-800">
+            No tree census
+          </span>
+        )}
         {survival != null && (
           <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600">
             ≥{survival}% survival
@@ -136,6 +147,11 @@ function SchemeCard({
         {geo != null && (
           <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600">
             ≥{geo}% geo-tag
+          </span>
+        )}
+        {scanCoverage != null && (
+          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-medium text-stone-600">
+            ≥{scanCoverage}% scan coverage
           </span>
         )}
       </div>
@@ -298,9 +314,41 @@ export function SchemePickerStep({
     .filter((g) => g.items.length > 0);
 
   const hasSelection = Boolean(selectedScheme || selectedFlexCode);
+  const monitoringScheme = schemes.find((s) => s.code === "estate_monitoring");
+  const showMonitoringCallout =
+    monitoringScheme && matchesScheme(monitoringScheme) && !query.includes("campa");
 
   return (
     <div className="space-y-6">
+      {showMonitoringCallout && monitoringScheme && (
+        <section className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50/90 via-white to-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-sky-800">
+                Existing cover — monitor only
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-stone-900">{monitoringScheme.label}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+                Draw estate boundaries, run monthly NDVI and SAR integrity scans, and track AI
+                health alerts — without registering every tree. Ideal for 100 ha blocks and 5–20
+                year forest watch programmes after CAMPA or Nagar Van planting.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSelectScheme(monitoringScheme)}
+              className={cn(
+                "btn-primary shrink-0",
+                selectedScheme?.code === monitoringScheme.code && "ring-2 ring-sky-400 ring-offset-2",
+              )}
+            >
+              <Satellite className="h-4 w-4" />
+              Select estate watch
+            </button>
+          </div>
+        </section>
+      )}
+
       <div className="relative">
         <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
         <input

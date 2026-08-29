@@ -400,6 +400,88 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             "required": False,
         },
     ],
+    "estate_monitoring": [
+        {
+            "key": "estate_name",
+            "label": "Estate / forest block name",
+            "type": "text",
+            "required": True,
+            "placeholder": "Kumbhalgarh Wildlife Sanctuary — Block C",
+        },
+        {
+            "key": "managing_agency",
+            "label": "Managing agency",
+            "type": "text",
+            "required": True,
+            "placeholder": "Rajasthan Forest Department",
+        },
+        {
+            "key": "state_name",
+            "label": "State / UT",
+            "type": "text",
+            "required": True,
+            "placeholder": "Rajasthan",
+        },
+        {
+            "key": "forest_type",
+            "label": "Forest / land cover type",
+            "type": "select",
+            "required": True,
+            "options": [
+                {"value": "natural_forest", "label": "Natural forest"},
+                {"value": "plantation", "label": "Planted forest / plantation"},
+                {"value": "mangrove", "label": "Mangrove / coastal"},
+                {"value": "urban_green", "label": "Urban green / Nagar Van"},
+                {"value": "agroforestry", "label": "Agro-forestry / farm forestry"},
+                {"value": "degraded_scrub", "label": "Degraded / scrub land"},
+            ],
+        },
+        {
+            "key": "total_area_ha",
+            "label": "Total estate area (hectares)",
+            "type": "number",
+            "required": True,
+            "min": 1,
+            "help_text": "Total area under watch. Split large estates into 10–500 ha work-area blocks.",
+        },
+        {
+            "key": "baseline_year",
+            "label": "Monitoring baseline year",
+            "type": "number",
+            "required": True,
+            "min": 2000,
+            "max": 2030,
+            "help_text": "Year from which satellite NDVI baseline is measured.",
+        },
+        {
+            "key": "monitoring_objective",
+            "label": "Primary monitoring objective",
+            "type": "select",
+            "required": True,
+            "options": [
+                {"value": "health_watch", "label": "Canopy health watch"},
+                {"value": "post_planting", "label": "Post-planting watch (no tree census)"},
+                {"value": "encroachment", "label": "Encroachment / integrity watch"},
+                {"value": "fire_drought", "label": "Fire / drought stress watch"},
+                {"value": "compliance", "label": "Scheme compliance reporting"},
+            ],
+        },
+        {
+            "key": "parent_scheme_code",
+            "label": "Linked planting scheme (optional)",
+            "type": "text",
+            "required": False,
+            "placeholder": "campa_ca",
+            "help_text": "If this watch follows a CAMPA, Nagar Van, or GIM planting phase.",
+        },
+        {
+            "key": "parent_project_ref",
+            "label": "Parent project reference (optional)",
+            "type": "text",
+            "required": False,
+            "help_text": "PCA number, Nagar Van ID, or internal project code from the planting phase.",
+        },
+    ],
 }
 
 
@@ -407,11 +489,17 @@ def metadata_sections_for_scheme(scheme_code: str) -> list[dict[str, Any]]:
     fields = SCHEME_METADATA_FIELDS.get(scheme_code, [])
     if not fields:
         return []
+    title = "Estate details" if scheme_code == "estate_monitoring" else "Scheme references"
+    description = (
+        "Basic estate identity and monitoring objective — no tree census required."
+        if scheme_code == "estate_monitoring"
+        else "Government scheme identifiers required for audit and fund convergence."
+    )
     return [
         {
             "id": "scheme_refs",
-            "title": "Scheme references",
-            "description": "Government scheme identifiers required for audit and fund convergence.",
+            "title": title,
+            "description": description,
             "fields": fields,
         }
     ]

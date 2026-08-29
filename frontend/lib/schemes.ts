@@ -20,9 +20,17 @@ export type CentralScheme = {
     survival_pct_min?: number | null;
     geo_tagged_pct_min?: number | null;
     min_trees?: number | null;
+    scan_coverage_pct_min?: number | null;
+    max_days_since_scan?: number | null;
   };
   metadata_sections: Record<string, unknown>[];
 };
+
+export const MONITORING_SCHEME_CODES = new Set(["estate_monitoring"]);
+
+export function isMonitoringScheme(code: string | null | undefined): boolean {
+  return Boolean(code && MONITORING_SCHEME_CODES.has(code));
+}
 
 export const SCHEME_GROUP_LABEL: Record<CentralSchemeGroup, string> = {
   central: "Central government schemes",

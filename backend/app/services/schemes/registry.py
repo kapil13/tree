@@ -218,6 +218,31 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "active": True,
         "metadata_sections": [],
     },
+    "estate_monitoring": {
+        "code": "estate_monitoring",
+        "label": "Estate & Forest Watch — Existing Cover",
+        "description": (
+            "Satellite and AI monitoring of existing forest, plantation, or urban green "
+            "estates without mandatory tree census. Draw work-area boundaries, run NDVI "
+            "and SAR integrity scans, and track health alerts over 5–20 year watch programmes."
+        ),
+        "ministry": "MoEFCC / State Forest",
+        "group": "central",
+        "program_codes": ["government_nhai", "ngo_community", "corporate_esg"],
+        "default_segment": "estate_monitoring",
+        "default_compliance_mode": "guided",
+        "default_template_code": "estate_monitoring_v1",
+        "checklist_codes": ["estate_monitoring"],
+        "framework_profiles": ["esg_general"],
+        "convergence_allowed": ["campa_ca", "nagar_van", "gim_restoration"],
+        "legacy_plantation_category": None,
+        "kpi_targets": {
+            "scan_coverage_pct_min": 80.0,
+            "max_days_since_scan": 35,
+        },
+        "active": True,
+        "metadata_sections": [],
+    },
 }
 
 PROGRAMS_REQUIRING_SCHEME = frozenset({"government_nhai", "ngo_community"})

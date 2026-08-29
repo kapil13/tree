@@ -11,6 +11,8 @@ class SchemeKpiTargets(TypedDict, total=False):
     survival_pct_min: float
     geo_tagged_pct_min: float
     min_trees: int
+    scan_coverage_pct_min: float
+    max_days_since_scan: int
 
 
 class CentralSchemeDefinition(TypedDict):

@@ -24,6 +24,7 @@ ChecklistCode = Literal[
     "undp_ses",
     "sbti_flag",
     "eudr_supplier_mrv",
+    "estate_monitoring",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -937,6 +938,64 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 question="Is a stakeholder engagement log maintained?",
                 guidance="Track consultations with gram sabha, cooperatives, or implementing agencies.",
                 auto_key="safeguards_stakeholder_log",
+            ),
+        ),
+    ),
+    "estate_monitoring": ComplianceChecklist(
+        code="estate_monitoring",
+        title="Estate Monitoring Readiness",
+        short_label="Estate monitoring",
+        framework_reference="Satellite MRV — existing cover watch",
+        description=(
+            "Readiness for monitoring existing forest and plantation estates via satellite "
+            "and AI alerts without mandatory tree census."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="estate_boundaries",
+                category="Boundary",
+                question="Are estate boundaries drawn as work-area polygons on the map?",
+                guidance=(
+                    "Draw 10–500 ha blocks. Estates up to 1,000 km² should be split into "
+                    "~200 blocks for reliable NDVI and SAR scans."
+                ),
+                auto_key="has_work_areas",
+            ),
+            ChecklistItemDef(
+                id="baseline_metadata",
+                category="Governance",
+                question=(
+                    "Are estate name, managing agency, forest type, and baseline year recorded?"
+                ),
+                guidance="Required estate details support 5–20 year watch programmes and audit exports.",
+            ),
+            ChecklistItemDef(
+                id="initial_satellite_scan",
+                category="Monitoring",
+                question="Has an initial NDVI satellite scan been run for all work areas?",
+                guidance="Run monthly NDVI from the Satellite page or per work-area scan action.",
+                auto_key="work_area_scan_coverage",
+            ),
+            ChecklistItemDef(
+                id="sar_integrity_watch",
+                category="Monitoring",
+                question="Is SAR forest-integrity monitoring active for at-risk seasons?",
+                guidance="Weekly SAR at-risk alerts complement monthly NDVI for encroachment and moisture stress.",
+                auto_key="sar_permanence_risk",
+            ),
+            ChecklistItemDef(
+                id="alert_review_cadence",
+                category="Operations",
+                question="Is there a process to review AI health alerts within 14 days?",
+                guidance="Executive dashboard and in-app alerts flag NDVI drops and integrity risks.",
+            ),
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are there no open blocking compliance violations?",
+                guidance="Resolve boundary and data-quality violations before external reporting.",
+                auto_key="no_block_violations",
             ),
         ),
     ),

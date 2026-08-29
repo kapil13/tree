@@ -784,6 +784,7 @@ export type ProjectSegment =
   | "nagar_van_urban"
   | "sahakar_van_coop"
   | "ngo_watershed"
+  | "estate_monitoring"
   | "general";
 
 export type ComplianceMode = "open" | "guided" | "strict";
@@ -806,6 +807,8 @@ export type CentralScheme = {
     survival_pct_min?: number | null;
     geo_tagged_pct_min?: number | null;
     min_trees?: number | null;
+    scan_coverage_pct_min?: number | null;
+    max_days_since_scan?: number | null;
   };
   metadata_sections: Record<string, unknown>[];
 };
