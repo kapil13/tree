@@ -191,17 +191,7 @@ class AppDrawer extends ConsumerWidget {
                                   onTap: () {
                                     Navigator.pop(context);
                                     if (item.route == currentLocation) return;
-                                    if (item.route == '/home' ||
-                                        item.route == '/trees' ||
-                                        item.route == '/map' ||
-                                        item.route == '/notifications' ||
-                                        item.route == '/monitoring' ||
-                                        item.route == '/projects' ||
-                                        item.route == '/profile') {
-                                      context.go(item.route);
-                                    } else {
-                                      context.push(item.route);
-                                    }
+                                    context.go(item.route);
                                   },
                                 ),
                             ],

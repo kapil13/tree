@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../nav_access.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
@@ -39,6 +40,9 @@ class FieldOpsScreen extends ConsumerWidget {
           ),
         ),
         data: (summary) {
+          final l10n = AppLocalizations.of(context)!;
+          final user = ref.watch(userProvider).valueOrNull;
+          final canAdd = canAddTrees(user);
           final projects = List<dynamic>.from(summary['projects'] ?? []);
           final violations = List<dynamic>.from(summary['recent_violations'] ?? []);
           final withSurvival = projects
@@ -52,6 +56,26 @@ class FieldOpsScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                Text(l10n.fieldOpsQuickActions, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (canAdd)
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.registerTreeInField),
+                        onPressed: () => context.push('/trees/new'),
+                      ),
+                    ActionChip(
+                      avatar: const Icon(Icons.assignment_outlined, size: 18),
+                      label: Text(l10n.viewAllProjects),
+                      onPressed: () => context.go('/projects'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -82,7 +106,7 @@ class FieldOpsScreen extends ConsumerWidget {
                   for (final raw in withSurvival)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text((raw as Map)['name'] as String? ?? 'Project'),
+                      title: Text((raw as Map)['name'] as String? ?? l10n.projectFallback),
                       subtitle: Text('${raw['survival_due']} trees due · ${raw['segment'] ?? ''}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => context.push('/projects/${raw['id']}'),
@@ -154,7 +178,7 @@ class _ViolationTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(violation['message'] as String? ?? violation['violation_type'] as String? ?? 'Violation'),
+        title: Text(violation['message'] as String? ?? violation['violation_type'] as String? ?? AppLocalizations.of(context)!.violationFallback),
         subtitle: Text(
           '${violation['project_name'] ?? ''} · ${violation['severity'] ?? ''}',
         ),

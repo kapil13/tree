@@ -9,6 +9,7 @@ Scaffold stackRouteScaffold({
   required Widget body,
   Widget? floatingActionButton,
   Widget? bottomNavigationBar,
+  bool resizeToAvoidBottomInset = true,
 }) {
   return Scaffold(
     drawer: AppDrawer(currentLocation: location),
@@ -16,5 +17,6 @@ Scaffold stackRouteScaffold({
     body: body,
     floatingActionButton: floatingActionButton,
     bottomNavigationBar: bottomNavigationBar,
+    resizeToAvoidBottomInset: resizeToAvoidBottomInset,
   );
 }
