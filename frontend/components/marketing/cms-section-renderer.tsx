@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Leaf, Mic } from "lucide-react";
 import {
   BioacousticVisual,
   ComplianceOrbit,
@@ -82,6 +82,32 @@ function marketingSecondaryHref(href: string): string {
 }
 
 const REPORT_ACCENTS = ["#14532d", "#0e7490", "#3f6212", "#1e3a5f", "#854d0e", "#4c1d95"];
+
+const REPORT_GROUP_THEMES: Record<
+  string,
+  { icon: typeof Mic; accent: string; cardClass: string }
+> = {
+  bio: { icon: Mic, accent: "#0d9488", cardClass: "marketing-report-group--bio" },
+  ghg: { icon: Leaf, accent: "#15803d", cardClass: "marketing-report-group--ghg" },
+};
+
+type ReportGroup = {
+  id?: string;
+  theme?: string;
+  title?: string;
+  subtitle?: string;
+  items?: Array<Record<string, string>>;
+};
+
+function reportGroupsFromContent(c: Record<string, unknown>): ReportGroup[] {
+  const raw = c.groups;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw as ReportGroup[];
+  }
+  const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+  if (items.length === 0) return [];
+  return [{ id: "legacy", title: "", items }];
+}
 
 function complianceGroups(items: Array<Record<string, string>>) {
   const india = items.filter((i) =>
@@ -306,7 +332,8 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
     }
 
     case "reports": {
-      const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
+      const groups = reportGroupsFromContent(c as Record<string, unknown>);
+      const footerLink = c.footer_link as { label?: string; href?: string } | undefined;
       return (
         <section id={section.anchor_id || undefined} className="marketing-reports">
           <div className="mx-auto max-w-7xl px-6 py-20">
@@ -315,18 +342,58 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
               <h2 className="marketing-section-title font-display">{String(c.title || "")}</h2>
               <p className="marketing-section-copy">{String(c.copy || "")}</p>
             </div>
-            <div className="marketing-report-gallery">
-              {items.map((item, i) => (
-                <ReportPaper
-                  key={item.title}
-                  tag={item.tag || "EXPORT"}
-                  title={item.title}
-                  description={item.description}
-                  formats={item.formats || "PDF · XLSX"}
-                  accent={REPORT_ACCENTS[i % REPORT_ACCENTS.length] ?? "#14532d"}
-                />
-              ))}
+            <div className="marketing-report-groups">
+              {groups.map((group, groupIndex) => {
+                const themeKey = String(group.theme || (groupIndex === 0 ? "bio" : "ghg"));
+                const theme = REPORT_GROUP_THEMES[themeKey] ?? REPORT_GROUP_THEMES.bio!;
+                const GroupIcon = theme.icon;
+                const groupItems = Array.isArray(group.items) ? group.items : [];
+                return (
+                  <div
+                    key={group.id || group.title || groupIndex}
+                    className={`marketing-report-group ${theme.cardClass}`}
+                  >
+                    {group.title ? (
+                      <header className="marketing-report-group-head">
+                        <span className="marketing-report-group-icon" aria-hidden>
+                          <GroupIcon className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="marketing-report-group-title font-display">{group.title}</h3>
+                          {group.subtitle ? (
+                            <p className="marketing-report-group-subtitle">{group.subtitle}</p>
+                          ) : null}
+                        </div>
+                      </header>
+                    ) : null}
+                    <div className="marketing-report-gallery">
+                      {groupItems.map((item, i) => (
+                        <ReportPaper
+                          key={item.title}
+                          tag={item.tag || "EXPORT"}
+                          title={item.title}
+                          description={item.description}
+                          formats={item.formats || "PDF · XLSX"}
+                          accent={
+                            item.accent ||
+                            REPORT_ACCENTS[(groupIndex * 3 + i) % REPORT_ACCENTS.length] ||
+                            theme.accent
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            {footerLink?.label && footerLink?.href ? (
+              <p className="marketing-reports-footer">
+                <Link href={footerLink.href} className="marketing-reports-footer-link">
+                  {footerLink.label}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </p>
+            ) : null}
           </div>
         </section>
       );

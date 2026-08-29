@@ -230,36 +230,111 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
         "sort_order": 25,
         "content": {
             "eyebrow": "Reports",
-            "title": "Sixteen live exports. One evidence graph.",
+            "title": "Two evidence streams. One plantation record.",
             "copy": (
-                "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, "
-                "Paris/NDC, ETF/BTR handoff, SBTi FLAG, GBF, EUDR, ISO 14064-1 org inventory, "
-                "Green Credit, inventory, carbon, biodiversity, ESG, executive digest, "
-                "and signed evidence — generated from the same plantation record. Assurance packs, "
-                "not credit issuance."
+                "Nature and climate intelligence are reported separately — bioacoustic biodiversity "
+                "on one side, GHG and methane signals with tree carbon absorption and site boundaries "
+                "on the other — all generated from the same geo-tagged planting evidence."
             ),
-            "items": [
-                {"icon": "FileText", "tag": "BRSR", "title": "BRSR assurance pack", "description": "SEBI-aligned Principle 6 export with plantation KPIs and evidence references.", "formats": "PDF · XLSX"},
-                {"icon": "Scale", "tag": "ISO 14064-2", "title": "ISO 14064-2 project report", "description": "Project boundary, monitoring plan, and quantification sections pre-structured.", "formats": "PDF · XLSX"},
-                {"icon": "Leaf", "tag": "TNFD", "title": "TNFD LEAP disclosure", "description": "Locate–Evaluate–Assess–Prepare narrative from satellite and bioacoustic layers.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "GHG Protocol", "title": "GHG land-sector inventory", "description": "Land-sector removals and emissions structured for corporate GHG Protocol reporting.", "formats": "PDF · XLSX"},
-                {"icon": "Bird", "tag": "Darwin Core", "title": "Darwin Core occurrence pack", "description": "Species occurrence archive for biodiversity partners and scientific reuse.", "formats": "ZIP · JSON"},
-                {"icon": "FileCheck2", "tag": "VM0047", "title": "Carbon credit ledger", "description": "Serial tracking, verifier sampling, and NPRT buffer assessments per project.", "formats": "PDF · XLSX"},
-                {"icon": "Award", "tag": "Gold Standard", "title": "Gold Standard LUF report", "description": "Land Use & Forests framework-mapped PDF and Excel for voluntary verification prep.", "formats": "PDF · XLSX"},
-                {"icon": "Trees", "tag": "REDD+", "title": "REDD+ MRV report", "description": "Baseline, permanence, and leakage sections structured for REDD+ program review.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "Paris / NDC", "title": "Paris Agreement traceability", "description": "NDC-aligned planting ledger export with Article 6 cooperative-approaches context.", "formats": "PDF · XLSX"},
-                {"icon": "Globe2", "tag": "ETF / BTR", "title": "National inventory handoff", "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.", "formats": "CSV · XLSX"},
-                {"icon": "Target", "tag": "SBTi FLAG", "title": "FLAG land-sector worksheet", "description": "Land-related removals vs target boundary linked to VM0047 and GHG exports.", "formats": "XLSX"},
-                {"icon": "Dna", "tag": "GBF", "title": "GBF indicator mapping", "description": "Kunming-Montreal Targets 2 & 3 metrics bridged to TNFD nature disclosures.", "formats": "XLSX"},
-                {"icon": "MapPin", "tag": "EUDR", "title": "Supplier geo due diligence", "description": "WGS84 coordinate pack with BRSR value-chain linkage for corporate buyers.", "formats": "XLSX · ZIP"},
-                {"icon": "Scale", "tag": "ISO 14064-1", "title": "Organizational GHG inventory", "description": "Org-level inventory complementing ISO 14064-2 project quantification reports.", "formats": "JSON · XLSX · ZIP"},
-                {"icon": "BadgeCheck", "tag": "Green Credit", "title": "Green Credit India pack", "description": "MoEFCC Green Credit Programme evidence with land bank and survival KPIs.", "formats": "PDF · XLSX"},
-                {"icon": "TreePine", "tag": "Inventory", "title": "Tree inventory", "description": "Species, survival, geotag status, and chainage for compliance packs.", "formats": "PDF · XLSX"},
-                {"icon": "BarChart3", "tag": "Carbon", "title": "Carbon stock estimate", "description": "Modelled biomass and CO₂e with IPCC-aligned defaults — not a credit issuance.", "formats": "PDF · XLSX"},
-                {"icon": "Mic", "tag": "Biodiversity", "title": "Biodiversity soundscape", "description": "BirdNET richness and habitat signals for a fenced plantation site.", "formats": "PDF · XLSX"},
-                {"icon": "ShieldCheck", "tag": "ESG", "title": "ESG stakeholder summary", "description": "Combined carbon, biodiversity, and NDVI narrative for boards and buyers.", "formats": "PDF · XLSX"},
-                {"icon": "Radar", "tag": "Executive", "title": "Portfolio health digest", "description": "NDVI trends, SAR threats, and compliance completion scores for leadership.", "formats": "PDF"},
-                {"icon": "Shield", "tag": "Evidence", "title": "Signed evidence bundle", "description": "Tamper-evident ZIP with Ed25519 audit-chain verification for third-party review.", "formats": "ZIP"},
+            "footer_link": {
+                "label": "View all compliance framework exports",
+                "href": "/auth?mode=signin&next=/reports",
+            },
+            "groups": [
+                {
+                    "id": "bioacoustic",
+                    "theme": "bio",
+                    "title": "Bioacoustic & biodiversity",
+                    "subtitle": (
+                        "Soundscape monitoring, species richness, and nature disclosures "
+                        "from BirdNET and habitat layers at your planted sites."
+                    ),
+                    "items": [
+                        {
+                            "icon": "Mic",
+                            "tag": "Soundscape",
+                            "title": "Biodiversity soundscape report",
+                            "description": "BirdNET species detections, acoustic richness scores, and seasonal trends for a fenced plantation site.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#0d9488",
+                        },
+                        {
+                            "icon": "Bird",
+                            "tag": "Darwin Core",
+                            "title": "Darwin Core occurrence pack",
+                            "description": "Standardized species occurrence archive for biodiversity partners, TNFD reviewers, and scientific reuse.",
+                            "formats": "ZIP · JSON",
+                            "accent": "#0f766e",
+                        },
+                        {
+                            "icon": "Leaf",
+                            "tag": "TNFD",
+                            "title": "TNFD LEAP nature disclosure",
+                            "description": "Locate–Evaluate–Assess–Prepare narrative weaving bioacoustic richness with NDVI habitat signals.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#115e59",
+                        },
+                        {
+                            "icon": "Radar",
+                            "tag": "Acoustic trends",
+                            "title": "Multi-taxa acoustic digest",
+                            "description": "Week-over-week soundscape health, key species presence, and alert-linked field verification notes.",
+                            "formats": "PDF",
+                            "accent": "#134e4a",
+                        },
+                    ],
+                },
+                {
+                    "id": "ghg-carbon",
+                    "theme": "ghg",
+                    "title": "GHG, methane & carbon at planted sites",
+                    "subtitle": (
+                        "Atmospheric methane and land-sector GHG context, modelled tree absorption, "
+                        "and geofenced site area identification for every planting boundary."
+                    ),
+                    "items": [
+                        {
+                            "icon": "Globe2",
+                            "tag": "Methane",
+                            "title": "Site methane & atmospheric GHG",
+                            "description": "TROPOMI-fused CH₄ and regional GHG context overlaid on plantation fences — not a credit issuance.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#15803d",
+                        },
+                        {
+                            "icon": "BarChart3",
+                            "tag": "Carbon",
+                            "title": "Tree absorption & carbon stock",
+                            "description": "Modelled biomass and CO₂e removals by species and plot with IPCC-aligned defaults and uncertainty bands.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#166534",
+                        },
+                        {
+                            "icon": "MapPin",
+                            "tag": "Site boundary",
+                            "title": "Plantation site boundary & area",
+                            "description": "Geofenced planting area, hectare totals, fence validation, and WGS84 coordinates for auditors and buyers.",
+                            "formats": "PDF · XLSX · GeoJSON",
+                            "accent": "#14532d",
+                        },
+                        {
+                            "icon": "TreePine",
+                            "tag": "Inventory",
+                            "title": "Geo-tagged tree inventory",
+                            "description": "Species, survival, chainage, and geotag completeness — the field baseline for carbon and compliance exports.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#3f6212",
+                        },
+                        {
+                            "icon": "Globe2",
+                            "tag": "GHG Protocol",
+                            "title": "GHG land-sector inventory",
+                            "description": "Land-sector removals and emissions structured for corporate GHG Protocol and ISO 14064-2 project reporting.",
+                            "formats": "PDF · XLSX",
+                            "accent": "#1e3a5f",
+                        },
+                    ],
+                },
             ],
         },
     },

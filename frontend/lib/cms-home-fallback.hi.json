@@ -385,120 +385,100 @@
       "sort_order": 25,
       "content": {
         "eyebrow": "रिपोर्ट",
-        "title": "सोलह लाइव निर्यात। एक प्रमाण ग्राफ।",
-        "copy": "BRSR, ISO, TNFD, GHG Protocol, Darwin Core, VM0047, Gold Standard, REDD+, Paris/NDC, Green Credit, इन्वेंटरी, कार्बन, जैव विविधता, ESG, कार्यकारी डाइजेस्ट और हस्ताक्षरित प्रमाण — एक ही रोपण रिकॉर्ड से। आश्वासन पैक, क्रेडिट जारी नहीं।",
-        "items": [
+        "title": "Two evidence streams. One plantation record.",
+        "copy": "Nature and climate intelligence are reported separately — bioacoustic biodiversity on one side, GHG and methane signals with tree carbon absorption and site boundaries on the other — all generated from the same geo-tagged planting evidence.",
+        "footer_link": {
+          "label": "View all compliance framework exports",
+          "href": "/auth?mode=signin&next=/reports"
+        },
+        "groups": [
           {
-            "icon": "FileText",
-            "tag": "BRSR",
-            "title": "BRSR आश्वासन पैक",
-            "description": "रोपण KPI और प्रमाण संदर्भ के साथ SEBI-संरेखित सिद्धांत 6 निर्यात।",
-            "formats": "PDF · XLSX"
+            "id": "bioacoustic",
+            "theme": "bio",
+            "title": "Bioacoustic & biodiversity",
+            "subtitle": "Soundscape monitoring, species richness, and nature disclosures from BirdNET and habitat layers at your planted sites.",
+            "items": [
+              {
+                "icon": "Mic",
+                "tag": "Soundscape",
+                "title": "Biodiversity soundscape report",
+                "description": "BirdNET species detections, acoustic richness scores, and seasonal trends for a fenced plantation site.",
+                "formats": "PDF · XLSX",
+                "accent": "#0d9488"
+              },
+              {
+                "icon": "Bird",
+                "tag": "Darwin Core",
+                "title": "Darwin Core occurrence पैक",
+                "description": "Standardized species occurrence archive for biodiversity partners, TNFD reviewers, and scientific reuse.",
+                "formats": "ZIP · JSON",
+                "accent": "#0f766e"
+              },
+              {
+                "icon": "Leaf",
+                "tag": "TNFD",
+                "title": "TNFD LEAP nature disclosure",
+                "description": "Locate–Evaluate–Assess–Prepare narrative weaving bioacoustic richness with NDVI habitat signals.",
+                "formats": "PDF · XLSX",
+                "accent": "#115e59"
+              },
+              {
+                "icon": "Radar",
+                "tag": "Acoustic trends",
+                "title": "Multi-taxa acoustic digest",
+                "description": "Week-over-week soundscape health, key species presence, and alert-linked field verification notes.",
+                "formats": "PDF",
+                "accent": "#134e4a"
+              }
+            ]
           },
           {
-            "icon": "Scale",
-            "tag": "ISO 14064-2",
-            "title": "ISO 14064-2 परियोजना रिपोर्ट",
-            "description": "परियोजना सीमा, निगरानी योजना और मात्रा अनुभाग पूर्व-संरचित।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Leaf",
-            "tag": "TNFD",
-            "title": "TNFD LEAP प्रकटीकरण",
-            "description": "उपग्रह और जैव ध्वनि परतों से Locate–Evaluate–Assess–Prepare कथा।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Globe2",
-            "tag": "GHG Protocol",
-            "title": "GHG भू-क्षेत्र इन्वेंटरी",
-            "description": "कॉर्पोरेट GHG Protocol रिपोर्टिंग के लिए संरचित भू-क्षेत्र निष्कासन और उत्सर्जन।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Bird",
-            "tag": "Darwin Core",
-            "title": "Darwin Core occurrence पैक",
-            "description": "जैव विविधता партнёров और वैज्ञानिक पुन: उपयोग के लिए प्रजाति occurrence संग्रह।",
-            "formats": "ZIP · JSON"
-          },
-          {
-            "icon": "FileCheck2",
-            "tag": "VM0047",
-            "title": "कार्बन क्रेडिट लेजर",
-            "description": "प्रति परियोजना सीरियल ट्रैकिंग, सत्यापनकर्ता नमूनाकरण और NPRT बफर मूल्यांकन।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Award",
-            "tag": "Gold Standard",
-            "title": "Gold Standard LUF रिपोर्ट",
-            "description": "स्वैच्छिक सत्यापन तैयारी के लिए Land Use & Forests फ्रेमवर्क-मैप PDF और Excel।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Trees",
-            "tag": "REDD+",
-            "title": "REDD+ MRV रिपोर्ट",
-            "description": "REDD+ कार्यक्रम समीक्षा के लिए संरचित आधार रेखा, स्थायित्व और रिसाव अनुभाग।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Globe2",
-            "tag": "Paris / NDC",
-            "title": "पेरिस समझौता ट्रेसेबिलिटी",
-            "description": "अनुच्छेद 6 सहकारी दृष्टिकोण संदर्भ के साथ NDC-संरेखित रोपण लेजर निर्यात।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "BadgeCheck",
-            "tag": "Green Credit",
-            "title": "Green Credit India पैक",
-            "description": "भूमि बैंक और अवशेष KPI के साथ MoEFCC Green Credit Programme प्रमाण।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "TreePine",
-            "tag": "Inventory",
-            "title": "पेड़ इन्वेंटरी",
-            "description": "अनुपालन पैक के लिए प्रजाति, अवशेष, जियोटैग स्थिति और चेनेज।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "BarChart3",
-            "tag": "Carbon",
-            "title": "कार्बन स्टॉक अनुमान",
-            "description": "IPCC-संरेखित डिफ़ॉल्ट के साथ मॉडल बायोमास और CO₂e — क्रेडिट जारी नहीं।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Mic",
-            "tag": "Biodiversity",
-            "title": "जैव विविधता ध्वनि-दृश्य",
-            "description": "बाड़बंद रोपण स्थल के लिए BirdNET समृद्धि और आवास संकेत।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "ShieldCheck",
-            "tag": "ESG",
-            "title": "ESG हितधारक सारांश",
-            "description": "बोर्ड और खरीदारों के लिए संयुक्त कार्बन, जैव विविधता और NDVI कथा।",
-            "formats": "PDF · XLSX"
-          },
-          {
-            "icon": "Radar",
-            "tag": "Executive",
-            "title": "पोर्टफोलियो स्वास्थ्य डाइजेस्ट",
-            "description": "नेतृत्व के लिए NDVI रुझान, SAR खतरे और अनुपालन पूर्णता स्कोर।",
-            "formats": "PDF"
-          },
-          {
-            "icon": "Shield",
-            "tag": "Evidence",
-            "title": "हस्ताक्षरित प्रमाण बंडल",
-            "description": "तीसरे पक्ष समीक्षा के लिए Ed25519 ऑडिट-श्रृंखला सत्यापन वाला छेड़छाड़-प्रूफ ZIP।",
-            "formats": "ZIP"
+            "id": "ghg-carbon",
+            "theme": "ghg",
+            "title": "GHG, methane & carbon at planted sites",
+            "subtitle": "Atmospheric methane and land-sector GHG context, modelled tree absorption, and geofenced site area identification for every planting boundary.",
+            "items": [
+              {
+                "icon": "Globe2",
+                "tag": "Methane",
+                "title": "Site methane & atmospheric GHG",
+                "description": "TROPOMI-fused CH₄ and regional GHG context overlaid on plantation fences — not a credit issuance.",
+                "formats": "PDF · XLSX",
+                "accent": "#15803d"
+              },
+              {
+                "icon": "BarChart3",
+                "tag": "Carbon",
+                "title": "Tree absorption & carbon stock",
+                "description": "Modelled biomass and CO₂e removals by species and plot with IPCC-aligned defaults and uncertainty bands.",
+                "formats": "PDF · XLSX",
+                "accent": "#166534"
+              },
+              {
+                "icon": "MapPin",
+                "tag": "Site boundary",
+                "title": "Plantation site boundary & area",
+                "description": "Geofenced planting area, hectare totals, fence validation, and WGS84 coordinates for auditors and buyers.",
+                "formats": "PDF · XLSX · GeoJSON",
+                "accent": "#14532d"
+              },
+              {
+                "icon": "TreePine",
+                "tag": "Inventory",
+                "title": "Geo-tagged tree inventory",
+                "description": "Species, survival, chainage, and geotag completeness — the field baseline for carbon and compliance exports.",
+                "formats": "PDF · XLSX",
+                "accent": "#3f6212"
+              },
+              {
+                "icon": "Globe2",
+                "tag": "GHG Protocol",
+                "title": "GHG भू-क्षेत्र इन्वेंटरी",
+                "description": "Land-sector removals and emissions structured for corporate GHG Protocol and ISO 14064-2 project reporting.",
+                "formats": "PDF · XLSX",
+                "accent": "#1e3a5f"
+              }
+            ]
           }
         ]
       }
