@@ -28,7 +28,7 @@ import {
   type PlantingProject,
   type StandardTemplate,
 } from "@/lib/api";
-import { schemeByCode } from "@/lib/schemes";
+import { schemeByCode, isMonitoringScheme } from "@/lib/schemes";
 import { wizardRulesDifferFromBase } from "@/lib/rule-template-fields";
 import {
   deriveTreeRegistrationDefaults,
@@ -102,6 +102,7 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
   });
 
   const scheme = schemeByCode(schemes, project?.scheme_code);
+  const monitoringMode = isMonitoringScheme(project?.scheme_code);
   const hasSchemeRefsStep = Boolean(project?.scheme_code && scheme);
 
   const schemeRefFields = useMemo(() => {
@@ -231,11 +232,15 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
   async function saveSchemeRefsStep(): Promise<boolean> {
     if (!project) return false;
     const errors = validateSchemeRefs(schemeRefFields, schemeRefs);
-    const defaultErrors = validateTreeRegistrationDefaults(treeDefaults);
+    const defaultErrors = monitoringMode ? {} : validateTreeRegistrationDefaults(treeDefaults);
     if (Object.keys(errors).length > 0 || Object.keys(defaultErrors).length > 0) {
       setRefErrors(errors);
       setTreeDefaultErrors(defaultErrors);
-      setError("Fill all required scheme references and tree registration defaults.");
+      setError(
+        monitoringMode
+          ? "Fill all required estate details."
+          : "Fill all required scheme references and tree registration defaults.",
+      );
       return false;
     }
     setBusy(true);
@@ -246,12 +251,14 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
           Object.entries(schemeRefs).map(([k, v]) => [k, v.trim() === "" ? null : v.trim()]),
         ),
       });
-      await plantingProjects.update(project.id, {
-        metadata: {
-          ...project.metadata,
-          tree_registration_defaults: treeDefaultsToMetadata(treeDefaults),
-        },
-      });
+      if (!monitoringMode) {
+        await plantingProjects.update(project.id, {
+          metadata: {
+            ...project.metadata,
+            tree_registration_defaults: treeDefaultsToMetadata(treeDefaults),
+          },
+        });
+      }
       await qc.invalidateQueries({ queryKey: ["planting-project", project.id] });
       setRefErrors({});
       setTreeDefaultErrors({});
@@ -430,27 +437,37 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
           )}
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="label">Target trees (optional)</label>
-              <input
-                className="field-input mt-1"
-                type="number"
-                min={1}
-                value={targetTrees}
-                onChange={(e) => setTargetTrees(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label">Survival survey interval</label>
-              <select
-                className="input mt-1"
-                value={surveyIntervalDays}
-                onChange={(e) => setSurveyIntervalDays(Number(e.target.value) as 15 | 30)}
-              >
-                <option value={15}>Every 15 days</option>
-                <option value={30}>Every 30 days</option>
-              </select>
-            </div>
+            {!monitoringMode && (
+              <>
+                <div>
+                  <label className="label">Target trees (optional)</label>
+                  <input
+                    className="field-input mt-1"
+                    type="number"
+                    min={1}
+                    value={targetTrees}
+                    onChange={(e) => setTargetTrees(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label">Survival survey interval</label>
+                  <select
+                    className="input mt-1"
+                    value={surveyIntervalDays}
+                    onChange={(e) => setSurveyIntervalDays(Number(e.target.value) as 15 | 30)}
+                  >
+                    <option value={15}>Every 15 days</option>
+                    <option value={30}>Every 30 days</option>
+                  </select>
+                </div>
+              </>
+            )}
+            {monitoringMode && (
+              <div className="sm:col-span-2 rounded-lg border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-sky-950">
+                Satellite NDVI scans run monthly on work-area polygons. Tree registration and
+                survival surveys are optional for plot-based ground truth.
+              </div>
+            )}
           </div>
 
           {!hasSchemeRefsStep && project.program_code === "government_nhai" && (
@@ -496,10 +513,14 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
           className="space-y-6 rounded-2xl border border-stone-200/90 bg-white p-6 shadow-sm sm:p-8"
         >
           <div>
-            <h2 className="text-sm font-medium text-stone-900">Government reference IDs</h2>
+            <h2 className="text-sm font-medium text-stone-900">
+              {monitoringMode ? "Estate details" : "Government reference IDs"}
+            </h2>
             <p className="mt-1 text-sm text-stone-500">
-              {scheme?.label} · {scheme?.ministry}. These flow into tree registration and audit
-              exports — edit here anytime during setup.
+              {scheme?.label} · {scheme?.ministry}.{" "}
+              {monitoringMode
+                ? "Basic estate identity for satellite monitoring exports — no tree census required."
+                : "These flow into tree registration and audit exports — edit here anytime during setup."}
             </p>
           </div>
 
@@ -517,18 +538,20 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
             }}
           />
 
-          <TreeRegistrationDefaultsForm
-            values={treeDefaults}
-            errors={treeDefaultErrors}
-            onChange={(key, value) => {
-              setTreeDefaults((prev) => ({ ...prev, [key]: value }));
-              setTreeDefaultErrors((prev) => {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-              });
-            }}
-          />
+          {!monitoringMode && (
+            <TreeRegistrationDefaultsForm
+              values={treeDefaults}
+              errors={treeDefaultErrors}
+              onChange={(key, value) => {
+                setTreeDefaults((prev) => ({ ...prev, [key]: value }));
+                setTreeDefaultErrors((prev) => {
+                  const next = { ...prev };
+                  delete next[key];
+                  return next;
+                });
+              }}
+            />
+          )}
 
           {error && (
             <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p>

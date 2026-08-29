@@ -154,6 +154,36 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
 
     signals["has_trees"] = "yes" if tree_count > 0 else "no"
     signals["has_work_areas"] = "yes" if work_areas > 0 else "no"
+
+    from app.services.schemes.monitoring import is_monitoring_scheme
+    from app.services.schemes.kpis import scan_coverage_metrics
+    from app.services.schemes.registry import get_scheme
+
+    if is_monitoring_scheme(getattr(project, "scheme_code", None)) and work_areas > 0:
+        fences = list(
+            (
+                await db.execute(
+                    select(PlantationFence).where(PlantationFence.project_id == project.id)
+                )
+            ).scalars().all()
+        )
+        max_days = 35
+        scheme = get_scheme(project.scheme_code) if project.scheme_code else None
+        if scheme:
+            max_days = int((scheme.get("kpi_targets") or {}).get("max_days_since_scan") or 35)
+        coverage = scan_coverage_metrics(fences, max_days_since_scan=max_days)
+        pct = coverage["scan_coverage_pct"]
+        if pct >= 80:
+            signals["work_area_scan_coverage"] = "yes"
+        elif pct >= 40:
+            signals["work_area_scan_coverage"] = "partial"
+        else:
+            signals["work_area_scan_coverage"] = "no"
+    elif work_areas > 0:
+        signals["work_area_scan_coverage"] = "partial"
+    else:
+        signals["work_area_scan_coverage"] = "no"
+
     signals["no_block_violations"] = "no" if block_open else "yes"
     signals["no_open_violations"] = "no" if open_violations else "yes"
     signals["active_standard_attached"] = "yes" if standard is not None else "no"

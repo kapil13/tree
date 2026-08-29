@@ -12,11 +12,12 @@ from app.services.schemes.resolution import apply_scheme_defaults, validate_sche
 
 def test_registry_has_nine_plus_schemes():
     codes = scheme_codes()
-    assert len(codes) >= 9
+    assert len(codes) >= 10
     assert "campa_ca" in codes
     assert "nhai_highway" in codes
     assert "sahakar_van" in codes
     assert "green_credit_india" in codes
+    assert "estate_monitoring" in codes
 
 
 def test_get_scheme_unknown():
@@ -106,3 +107,21 @@ def test_validate_scheme_accepts_matching_program():
     )
     assert scheme is not None
     assert scheme["code"] == "mishti_mangrove"
+
+
+def test_estate_monitoring_scheme_defaults():
+    scheme = get_scheme("estate_monitoring")
+    assert scheme is not None
+    assert scheme["default_segment"] == "estate_monitoring"
+    assert scheme["default_template_code"] == "estate_monitoring_v1"
+    assert scheme["default_compliance_mode"] == "guided"
+    assert scheme["kpi_targets"]["scan_coverage_pct_min"] == 80.0
+    assert "corporate_esg" in scheme["program_codes"]
+
+
+def test_estate_monitoring_template():
+    tpl = get_template("estate_monitoring_v1")
+    assert tpl is not None
+    assert tpl["segment"] == "estate_monitoring"
+    assert tpl["rules"]["monitoring_only"] is True
+    assert tpl["rules"]["tree_registration_optional"] is True

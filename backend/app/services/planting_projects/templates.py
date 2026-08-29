@@ -217,6 +217,38 @@ def _open_rules() -> dict[str, Any]:
     }
 
 
+def _estate_monitoring_rules() -> dict[str, Any]:
+    return {
+        "monitoring_only": True,
+        "tree_registration_optional": True,
+        "spacing_m": None,
+        "pit_size_cm": None,
+        "max_gps_accuracy_m": 25.0,
+        "min_photos": 0,
+        "guard_type_required": False,
+        "layout_pattern": "existing_cover",
+        "allowed_species": None,
+        "species_native_pct_min": None,
+        "planting_density_per_ha": None,
+        "require_pit_photo": False,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "estate_block",
+            "compartment",
+            "buffer_zone",
+            "corridor_strip",
+            "watch_tower_radius",
+        ],
+        "satellite_scan_cadence_days": 30,
+        "sar_scan_cadence_days": 30,
+        "plot_based_monitoring_recommended": True,
+        "max_work_area_ha": 500,
+        "min_work_area_ha": 10,
+        "recommended_work_area_ha": 100,
+    }
+
+
 STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
     "nhai_highway_v1": {
         "code": "nhai_highway_v1",
@@ -313,6 +345,19 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "open",
         "recommended_program_codes": ["byot"],
         "rules": _open_rules(),
+    },
+    "estate_monitoring_v1": {
+        "code": "estate_monitoring_v1",
+        "name": "Estate & Forest Watch",
+        "segment": "estate_monitoring",
+        "description": (
+            "Satellite-first monitoring of existing forest and plantation cover. "
+            "No pit/spacing rules — draw 10–500 ha work-area blocks, run monthly NDVI "
+            "and SAR integrity scans, optional plot-based ground truth."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community", "corporate_esg"],
+        "rules": _estate_monitoring_rules(),
     },
 }
 

@@ -11,6 +11,8 @@ class SchemeKpiTargetsOut(BaseModel):
     survival_pct_min: float | None = None
     geo_tagged_pct_min: float | None = None
     min_trees: int | None = None
+    scan_coverage_pct_min: float | None = None
+    max_days_since_scan: int | None = None
 
 
 class CentralSchemeOut(BaseModel):

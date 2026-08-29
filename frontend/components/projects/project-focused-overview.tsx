@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Leaf, MapPin, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Leaf, MapPin, Satellite, ShieldCheck } from "lucide-react";
 import { ProjectSetupChecklist } from "@/components/projects/project-setup-checklist";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
 import { projectSecondaryHref, projectSetupHref } from "@/lib/project-focused-ui";
 import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
-import { schemeByCode } from "@/lib/schemes";
+import { schemeByCode, isMonitoringScheme } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
 
 type SurvivalDue = {
@@ -22,9 +22,11 @@ type SurvivalDue = {
 function ProgrammeStandardAside({
   project,
   surveyDays,
+  monitoringMode,
 }: {
   project: PlantingProject;
   surveyDays: number;
+  monitoringMode: boolean;
 }) {
   const rules = project.active_standard?.rules ?? {};
   const spacing = rules.spacing_m as { min?: number } | null | undefined;
@@ -35,25 +37,46 @@ function ProgrammeStandardAside({
   const pitLabel = pitSize
     ? [pitSize.length, pitSize.width, pitSize.depth].filter(Boolean).join("×")
     : null;
+  const scanCadence = rules.satellite_scan_cadence_days as number | undefined;
+  const maxBlockHa = rules.max_work_area_ha as number | undefined;
+  const recommendedHa = rules.recommended_work_area_ha as number | undefined;
 
   return (
     <aside className="card space-y-4">
       <div className="flex items-center gap-2 text-sm font-medium">
         <ShieldCheck className="h-4 w-4 text-forest-700" />
-        Programme standard
+        {monitoringMode ? "Monitoring programme" : "Programme standard"}
       </div>
       {project.active_standard ? (
         <div className="space-y-2 text-sm text-stone-700">
           <p className="font-medium">{project.active_standard.name}</p>
-          {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
-          {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
-          {Boolean(rules.guard_type_required) && <p>Tree guard required</p>}
-          {rules.species_native_pct_min != null && (
-            <p>Native species min: {String(rules.species_native_pct_min)}%</p>
+          {monitoringMode ? (
+            <>
+              {scanCadence != null && <p>NDVI scan cadence: every {scanCadence} days</p>}
+              {recommendedHa != null && (
+                <p>Recommended block size: ~{recommendedHa} ha</p>
+              )}
+              {maxBlockHa != null && <p>Max work area: {maxBlockHa} ha per polygon</p>}
+              {Boolean(rules.plot_based_monitoring_recommended) && (
+                <p>Plot-based ground truth recommended for large estates</p>
+              )}
+              <p className="text-xs text-stone-500">
+                Tree registration is optional — satellite scans run on work-area boundaries.
+              </p>
+            </>
+          ) : (
+            <>
+              {spacing?.min != null && <p>Min spacing: {spacing.min} m</p>}
+              {pitLabel ? <p>Pit: {pitLabel} cm</p> : null}
+              {Boolean(rules.guard_type_required) && <p>Tree guard required</p>}
+              {rules.species_native_pct_min != null && (
+                <p>Native species min: {String(rules.species_native_pct_min)}%</p>
+              )}
+              <p className="text-xs text-stone-500">
+                Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
+              </p>
+            </>
           )}
-          <p className="text-xs text-stone-500">
-            Re-geotag / survival check every {surveyDays} days (alerts sent automatically).
-          </p>
         </div>
       ) : (
         <p className="text-sm text-stone-500">No standard attached.</p>
@@ -104,6 +127,7 @@ export function ProjectFocusedOverview({
   });
 
   const scheme = schemeByCode(schemes, project.scheme_code);
+  const monitoringMode = isMonitoringScheme(project.scheme_code);
 
   const upNextHref = useMemo(() => {
     const suggested = registrationContext?.suggested_next;
@@ -125,8 +149,12 @@ export function ProjectFocusedOverview({
       const incomplete = setupStatus.steps.find((s) => s.required && !s.complete);
       if (incomplete?.id === "scheme_refs") {
         return {
-          title: "Add scheme references",
-          description: incomplete.description ?? "Government IDs are required before tree registration.",
+          title: monitoringMode ? "Complete estate details" : "Add scheme references",
+          description:
+            incomplete.description ??
+            (monitoringMode
+              ? "Estate name, agency, and baseline year are required before monitoring."
+              : "Government IDs are required before tree registration."),
           href: projectSetupHref(projectId, 3),
           label: "Open setup wizard",
           icon: ShieldCheck,
@@ -145,20 +173,40 @@ export function ProjectFocusedOverview({
       }
       if (incomplete?.id === "work_areas") {
         return {
-          title: "Draw a work area",
-          description: "Search your site, use GPS, then draw a polygon or corridor on the map below.",
+          title: monitoringMode ? "Draw estate work areas" : "Draw a work area",
+          description: monitoringMode
+            ? "Search your estate, then draw 10–500 ha block polygons for satellite monitoring."
+            : "Search your site, use GPS, then draw a polygon or corridor on the map below.",
           href: projectSetupHref(projectId, 4),
-          label: "Draw work areas",
+          label: monitoringMode ? "Draw estate blocks" : "Draw work areas",
           icon: MapPin,
         };
       }
       if (incomplete?.id === "planting_standard") {
         return {
-          title: "Attach planting standard",
-          description: "No compliance standard is linked to this project.",
+          title: monitoringMode ? "Attach monitoring standard" : "Attach planting standard",
+          description: monitoringMode
+            ? "No monitoring standard is linked to this estate watch."
+            : "No compliance standard is linked to this project.",
           href: projectSetupHref(projectId, 2),
           label: "Open setup wizard",
           icon: ShieldCheck,
+        };
+      }
+    }
+    if (monitoringMode && workAreaCount > 0) {
+      const scanPct = schemeKpis?.metrics?.scan_coverage_pct as number | undefined;
+      const maxDays = schemeKpis?.metrics?.max_days_since_scan as number | undefined;
+      const needsScan =
+        scanPct == null || scanPct < 80 || (maxDays != null && maxDays > 35);
+      if (needsScan) {
+        return {
+          title: "Run satellite scan",
+          description:
+            "Initial NDVI scan establishes your baseline. Monthly scans track canopy health without tree census.",
+          href: "/satellite",
+          label: "Open satellite monitoring",
+          icon: Satellite,
         };
       }
     }
@@ -189,7 +237,7 @@ export function ProjectFocusedOverview({
         icon: MapPin,
       };
     }
-    if (treeCount === 0) {
+    if (treeCount === 0 && !monitoringMode) {
       return {
         title: "Register the first tree",
         description: "Tag a tree with GPS and photos to start tracking.",
@@ -208,6 +256,8 @@ export function ProjectFocusedOverview({
     projectId,
     registerHref,
     setupStatus,
+    monitoringMode,
+    schemeKpis,
   ]);
 
   return (
@@ -223,7 +273,7 @@ export function ProjectFocusedOverview({
         <ProjectSetupChecklist status={setupStatus} />
       )}
 
-      {setupStatus?.setupComplete && treeCount === 0 && workAreaCount > 0 && (
+      {setupStatus?.setupComplete && !monitoringMode && treeCount === 0 && workAreaCount > 0 && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -261,7 +311,7 @@ export function ProjectFocusedOverview({
         </div>
       )}
 
-      {registrationContext?.suggested_next && workAreaCount > 0 && (
+      {registrationContext?.suggested_next && workAreaCount > 0 && !monitoringMode && (
         <div className="rounded-xl border border-forest-200 bg-forest-50/60 px-4 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
@@ -304,36 +354,90 @@ export function ProjectFocusedOverview({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="card">
-          <p className="kpi-label">Trees planted</p>
-          <p className="text-2xl font-semibold">{project.summary?.tree_count ?? 0}</p>
-        </div>
-        <div className="card">
-          <p className="kpi-label">Work areas</p>
-          <p className="text-2xl font-semibold">{project.summary?.work_area_count ?? 0}</p>
-        </div>
-        <Link
-          href={projectSecondaryHref(projectId, "compliance")}
-          className="card block transition hover:border-amber-200"
-        >
-          <p className="kpi-label">Open violations</p>
-          <p className="text-2xl font-semibold">{openViolations}</p>
-          {openViolations > 0 && <p className="mt-1 text-xs text-forest-700">View & fix →</p>}
-        </Link>
-        <div className="card">
-          <p className="kpi-label">Geotag due</p>
-          <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
-        </div>
+        {monitoringMode ? (
+          <>
+            <div className="card">
+              <p className="kpi-label">Work areas</p>
+              <p className="text-2xl font-semibold">{project.summary?.work_area_count ?? 0}</p>
+            </div>
+            <div className="card">
+              <p className="kpi-label">Scan coverage</p>
+              <p className="text-2xl font-semibold">
+                {schemeKpis?.metrics?.scan_coverage_pct != null
+                  ? `${schemeKpis.metrics.scan_coverage_pct}%`
+                  : "—"}
+              </p>
+            </div>
+            <div className="card">
+              <p className="kpi-label">Mean NDVI</p>
+              <p className="text-2xl font-semibold">
+                {schemeKpis?.metrics?.mean_ndvi != null
+                  ? String(schemeKpis.metrics.mean_ndvi)
+                  : "—"}
+              </p>
+            </div>
+            <Link
+              href={projectSecondaryHref(projectId, "compliance")}
+              className="card block transition hover:border-amber-200"
+            >
+              <p className="kpi-label">Open violations</p>
+              <p className="text-2xl font-semibold">{openViolations}</p>
+              {openViolations > 0 && <p className="mt-1 text-xs text-forest-700">View & fix →</p>}
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="card">
+              <p className="kpi-label">Trees planted</p>
+              <p className="text-2xl font-semibold">{project.summary?.tree_count ?? 0}</p>
+            </div>
+            <div className="card">
+              <p className="kpi-label">Work areas</p>
+              <p className="text-2xl font-semibold">{project.summary?.work_area_count ?? 0}</p>
+            </div>
+            <Link
+              href={projectSecondaryHref(projectId, "compliance")}
+              className="card block transition hover:border-amber-200"
+            >
+              <p className="kpi-label">Open violations</p>
+              <p className="text-2xl font-semibold">{openViolations}</p>
+              {openViolations > 0 && <p className="mt-1 text-xs text-forest-700">View & fix →</p>}
+            </Link>
+            <div className="card">
+              <p className="kpi-label">Geotag due</p>
+              <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
+            </div>
+          </>
+        )}
         {schemeKpis && schemeKpis.scheme_code && (
           <div className="card sm:col-span-2 lg:col-span-4">
             <p className="kpi-label">Scheme KPI — {schemeKpis.scheme_label}</p>
             <div className="mt-2 flex flex-wrap gap-4 text-sm">
-              <span>
-                Survival: <strong>{schemeKpis.metrics.survival_pct ?? 0}%</strong>
-              </span>
-              <span>
-                Geo-tagged: <strong>{schemeKpis.metrics.geo_tagged_pct ?? 0}%</strong>
-              </span>
+              {monitoringMode ? (
+                <>
+                  <span>
+                    Scanned blocks:{" "}
+                    <strong>
+                      {schemeKpis.metrics.scanned_work_areas ?? 0}/
+                      {schemeKpis.metrics.work_area_count ?? 0}
+                    </strong>
+                  </span>
+                  {schemeKpis.metrics.max_days_since_scan != null && (
+                    <span>
+                      Oldest scan: <strong>{schemeKpis.metrics.max_days_since_scan}d ago</strong>
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span>
+                    Survival: <strong>{schemeKpis.metrics.survival_pct ?? 0}%</strong>
+                  </span>
+                  <span>
+                    Geo-tagged: <strong>{schemeKpis.metrics.geo_tagged_pct ?? 0}%</strong>
+                  </span>
+                </>
+              )}
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
@@ -341,7 +445,8 @@ export function ProjectFocusedOverview({
                   schemeKpis.status === "at_risk" && "bg-amber-50 text-amber-900",
                   schemeKpis.status === "off_track" && "bg-rose-50 text-rose-800",
                   (schemeKpis.status === "not_applicable" ||
-                    schemeKpis.status === "not_configured") &&
+                    schemeKpis.status === "not_configured" ||
+                    schemeKpis.status === "not_started") &&
                     "bg-stone-100 text-stone-600",
                 )}
               >
@@ -351,6 +456,24 @@ export function ProjectFocusedOverview({
           </div>
         )}
       </div>
+
+      {monitoringMode && setupStatus?.setupComplete && workAreaCount > 0 && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-sky-950">Estate watch active</p>
+              <p className="mt-1 text-sm text-sky-900/90">
+                Satellite monitoring runs on your work-area polygons. Tree registration is optional
+                for plot-based ground truth.
+              </p>
+            </div>
+            <Link href="/satellite" className="btn-primary w-full shrink-0 sm:w-auto">
+              <Satellite className="h-4 w-4" />
+              Satellite dashboard
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div id="work-areas" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1fr_300px]">
         <div className="card space-y-4">
@@ -364,7 +487,11 @@ export function ProjectFocusedOverview({
             }
           />
         </div>
-        <ProgrammeStandardAside project={project} surveyDays={surveyDays} />
+        <ProgrammeStandardAside
+          project={project}
+          surveyDays={surveyDays}
+          monitoringMode={monitoringMode}
+        />
       </div>
 
       <div className="card">

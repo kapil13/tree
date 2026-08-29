@@ -70,4 +70,50 @@ describe("evaluateProjectSetup", () => {
       metadata_sections: [{ fields: [{ key: "forest_diversion_id", required: true }] }],
     } as never : null)).toContain("forest_diversion_id");
   });
+
+  it("skips tree defaults for estate monitoring scheme", () => {
+    const monitoringProject = {
+      id: "p2",
+      code: "EST-1",
+      scheme_code: "estate_monitoring",
+      compliance_mode: "guided",
+      active_standard: { name: "Estate Watch v1", rules: { monitoring_only: true } },
+      metadata: {
+        scheme_refs: {
+          estate_name: "Block A",
+          managing_agency: "Forest Dept",
+          state_name: "Rajasthan",
+          forest_type: "natural_forest",
+          total_area_ha: 100,
+          baseline_year: 2024,
+          monitoring_objective: "health_watch",
+        },
+      },
+    } as unknown as PlantingProject;
+
+    const status = evaluateProjectSetup({
+      project: monitoringProject,
+      workAreas: [workArea],
+      scheme: {
+        code: "estate_monitoring",
+        metadata_sections: [
+          {
+            fields: [
+              { key: "estate_name", required: true },
+              { key: "managing_agency", required: true },
+              { key: "state_name", required: true },
+              { key: "forest_type", required: true },
+              { key: "total_area_ha", required: true },
+              { key: "baseline_year", required: true },
+              { key: "monitoring_objective", required: true },
+            ],
+          },
+        ],
+      } as never,
+    });
+
+    expect(status.monitoringMode).toBe(true);
+    expect(status.steps.some((s) => s.id === "tree_defaults")).toBe(false);
+    expect(status.setupComplete).toBe(true);
+  });
 });
