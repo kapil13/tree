@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   ArrowRight,
   ChevronDown,
@@ -28,58 +29,41 @@ type ReportsHubProps = {
   footerLink?: { label?: string; href?: string };
 };
 
-const STREAMS: Array<{
+const STREAM_META: Array<{
+  id: ReportCategoryId;
+  icon: typeof Leaf;
+  tone: string;
+}> = [
+  { id: "carbon", icon: Leaf, tone: "#15803d" },
+  { id: "biodiversity", icon: Sprout, tone: "#0d9488" },
+  { id: "disclosure", icon: Trees, tone: "#4d7c0f" },
+  { id: "compliance", icon: Scale, tone: "#1e3a5f" },
+];
+
+const PREVIEW_COUNT = 3;
+
+type StreamConfig = {
   id: ReportCategoryId;
   label: string;
   headline: string;
   description: string;
   icon: typeof Leaf;
   tone: string;
-}> = [
-  {
-    id: "carbon",
-    label: "Carbon & GHG",
-    headline: "Land-sector inventories, methane fusion, and credit ledgers",
-    description: "GHG Protocol, TROPOMI context, VM0047 ledger, and ISO 14064-1 org roll-ups.",
-    icon: Leaf,
-    tone: "#15803d",
-  },
-  {
-    id: "biodiversity",
-    label: "Biodiversity & Nature",
-    headline: "Soundscapes, species evidence, and habitat narratives",
-    description: "Bioacoustic engine outputs, Darwin Core packs, and TNFD-ready nature summaries.",
-    icon: Sprout,
-    tone: "#0d9488",
-  },
-  {
-    id: "disclosure",
-    label: "Climate / ESG / Disclosure",
-    headline: "Voluntary standards and national programme packs",
-    description: "TNFD LEAP, Green Credit India, REDD+, Paris traceability, and Gold Standard LUF.",
-    icon: Trees,
-    tone: "#4d7c0f",
-  },
-  {
-    id: "compliance",
-    label: "Compliance / Inventory",
-    headline: "Assurance, inventory handoff, and signed evidence",
-    description: "BRSR, ISO 14064-2, ETF/BTR, SBTi FLAG, EUDR geo packs, and Ed25519 bundles.",
-    icon: Scale,
-    tone: "#1e3a5f",
-  },
-];
+};
 
-const PREVIEW_COUNT = 3;
-
-function actionLabel(action: MarketingReportItem["action"]) {
-  if (action === "download") return "Download";
-  if (action === "view") return "View";
-  return "Generate";
-}
-
-function ExportLink({ item }: { item: MarketingReportItem }) {
+function ExportLink({
+  item,
+  actionLabels,
+  signedLabel,
+}: {
+  item: MarketingReportItem;
+  actionLabels: { generate: string; download: string; view: string };
+  signedLabel: string;
+}) {
   const ActionIcon = item.action === "download" ? Download : FileText;
+  const action =
+    item.action === "download" ? actionLabels.download : item.action === "view" ? actionLabels.view : actionLabels.generate;
+
   return (
     <Link
       href={item.href || "/auth?mode=signin&next=/reports"}
@@ -93,13 +77,13 @@ function ExportLink({ item }: { item: MarketingReportItem }) {
         {item.signed ? (
           <>
             <ShieldCheck className="h-3 w-3" aria-hidden />
-            Signed
+            {signedLabel}
           </>
         ) : null}
       </span>
       <span className="marketing-reports-export-link-action">
         <ActionIcon className="h-3.5 w-3.5" aria-hidden />
-        {actionLabel(item.action)}
+        {action}
       </span>
     </Link>
   );
@@ -110,11 +94,21 @@ function StreamPanel({
   items,
   expanded,
   onToggle,
+  actionLabels,
+  signedLabel,
+  showFewerLabel,
+  viewAllLabel,
+  exportCountLabel,
 }: {
-  stream: (typeof STREAMS)[number];
+  stream: StreamConfig;
   items: MarketingReportItem[];
   expanded: boolean;
   onToggle: () => void;
+  actionLabels: { generate: string; download: string; view: string };
+  signedLabel: string;
+  showFewerLabel: string;
+  viewAllLabel: string;
+  exportCountLabel: string;
 }) {
   const Icon = stream.icon;
   const preview = items.slice(0, PREVIEW_COUNT);
@@ -135,18 +129,18 @@ function StreamPanel({
           <h3 className="font-display">{stream.headline}</h3>
           <p>{stream.description}</p>
         </div>
-        <span className="marketing-reports-stream-count">{items.length} exports</span>
+        <span className="marketing-reports-stream-count">{exportCountLabel}</span>
       </header>
 
       <div className="marketing-reports-stream-list">
         {(expanded ? items : preview).map((item) => (
-          <ExportLink key={item.title} item={item} />
+          <ExportLink key={item.title} item={item} actionLabels={actionLabels} signedLabel={signedLabel} />
         ))}
       </div>
 
       {hiddenCount > 0 ? (
         <button type="button" className="marketing-reports-stream-toggle" onClick={onToggle}>
-          {expanded ? "Show fewer" : `View all ${items.length} exports`}
+          {expanded ? showFewerLabel : viewAllLabel}
           <ChevronDown className={`h-4 w-4${expanded ? " is-flipped" : ""}`} aria-hidden />
         </button>
       ) : null}
@@ -155,9 +149,30 @@ function StreamPanel({
 }
 
 export function MarketingReportsHub({ eyebrow, title, copy, content, footerLink }: ReportsHubProps) {
+  const t = useTranslations("marketing.home.reports");
   const items = useMemo(() => normalizeReportItems(content), [content]);
   const [query, setQuery] = useState("");
   const [expandedStream, setExpandedStream] = useState<ReportCategoryId | null>(null);
+
+  const streams = useMemo<StreamConfig[]>(
+    () =>
+      STREAM_META.map((meta) => ({
+        ...meta,
+        label: t(`streams.${meta.id}.label`),
+        headline: t(`streams.${meta.id}.headline`),
+        description: t(`streams.${meta.id}.description`),
+      })),
+    [t],
+  );
+
+  const actionLabels = useMemo(
+    () => ({
+      generate: t("actionGenerate"),
+      download: t("actionDownload"),
+      view: t("actionView"),
+    }),
+    [t],
+  );
 
   const q = query.trim().toLowerCase();
 
@@ -179,7 +194,7 @@ export function MarketingReportsHub({ eyebrow, title, copy, content, footerLink 
     return map;
   }, [items, q]);
 
-  const visibleStreams = STREAMS.filter((stream) => (filteredByStream[stream.id]?.length ?? 0) > 0);
+  const visibleStreams = streams.filter((stream) => (filteredByStream[stream.id]?.length ?? 0) > 0);
   const totalVisible = visibleStreams.reduce((sum, stream) => sum + (filteredByStream[stream.id]?.length ?? 0), 0);
   const signedCount = items.filter((item) => item.signed).length;
 
@@ -198,53 +213,61 @@ export function MarketingReportsHub({ eyebrow, title, copy, content, footerLink 
             </p>
           </div>
 
-          <dl className="marketing-reports-stats" aria-label="Export catalog summary">
+          <dl className="marketing-reports-stats" aria-label={t("statsAria")}>
             <div>
-              <dt>Live exports</dt>
+              <dt>{t("liveExports")}</dt>
               <dd>{items.length}</dd>
             </div>
             <div>
-              <dt>Evidence streams</dt>
+              <dt>{t("evidenceStreams")}</dt>
               <dd>4</dd>
             </div>
             <div>
-              <dt>Signed bundles</dt>
+              <dt>{t("signedBundles")}</dt>
               <dd>{signedCount}</dd>
             </div>
             <div>
-              <dt>Source record</dt>
-              <dd>1 graph</dd>
+              <dt>{t("sourceRecord")}</dt>
+              <dd>{t("sourceGraph")}</dd>
             </div>
           </dl>
         </div>
 
         <div className="marketing-reports-hub-toolbar">
-          <p>Browse by stream — expand any lane for the full catalog.</p>
+          <p>{t("toolbarHint")}</p>
           <div className="marketing-reports-hub-search">
             <Search className="h-4 w-4" aria-hidden />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search exports…"
-              aria-label="Search exports"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchAria")}
             />
           </div>
         </div>
 
         {totalVisible === 0 ? (
-          <p className="marketing-reports-hub-empty">No exports match your search.</p>
+          <p className="marketing-reports-hub-empty">{t("empty")}</p>
         ) : (
           <div className="marketing-reports-streams">
-            {visibleStreams.map((stream) => (
-              <StreamPanel
-                key={stream.id}
-                stream={stream}
-                items={filteredByStream[stream.id] ?? []}
-                expanded={expandedStream === stream.id}
-                onToggle={() => setExpandedStream((current) => (current === stream.id ? null : stream.id))}
-              />
-            ))}
+            {visibleStreams.map((stream) => {
+              const streamItems = filteredByStream[stream.id] ?? [];
+              return (
+                <StreamPanel
+                  key={stream.id}
+                  stream={stream}
+                  items={streamItems}
+                  expanded={expandedStream === stream.id}
+                  onToggle={() => setExpandedStream((current) => (current === stream.id ? null : stream.id))}
+                  actionLabels={actionLabels}
+                  signedLabel={t("signed")}
+                  showFewerLabel={t("showFewer")}
+                  viewAllLabel={t("viewAllExports", { count: streamItems.length })}
+                  exportCountLabel={t("exportCount", { count: streamItems.length })}
+                />
+              );
+            })}
           </div>
         )}
 

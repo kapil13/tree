@@ -10,11 +10,11 @@
         "href": "#intelligence"
       },
       {
-        "label": "Biodiversity",
+        "label": "जैव विविधता",
         "href": "#biodiversity"
       },
       {
-        "label": "Carbon",
+        "label": "कार्बन",
         "href": "#carbon-intelligence"
       },
       {
@@ -280,35 +280,35 @@
     {
       "section_type": "biodiversity_intelligence",
       "anchor_id": "biodiversity",
-      "title": "Biodiversity Intelligence",
+      "title": "जैव विविधता बुद्धिमत्ता",
       "sort_order": 16,
       "content": {
-        "eyebrow": "Biodiversity Intelligence",
-        "title": "Listen to the landscape",
-        "copy": "Turn field sound into biodiversity evidence.",
+        "eyebrow": "जैव विविधता बुद्धिमत्ता",
+        "title": "परिदृश्य को सुनें",
+        "copy": "फील्ड ध्वनि को जैव विविधता प्रमाण में बदलें।",
         "cta": {
-          "label": "Open bioacoustic workspace",
+          "label": "जैव ध्वनि कार्यक्षेत्र खोलें",
           "href": "/auth?mode=signin&next=/bioacoustic"
         },
         "pipeline_steps": [
-          "Field recording",
-          "Bioacoustic engine",
-          "Species model",
-          "Verified evidence"
+          "फील्ड रिकॉर्डिंग",
+          "जैव ध्वनि इंजन",
+          "प्रजाति मॉडल",
+          "सत्यापित प्रमाण"
         ]
       }
     },
     {
       "section_type": "ghg_intelligence",
       "anchor_id": "carbon-intelligence",
-      "title": "Project Carbon Intelligence",
+      "title": "परियोजना कार्बन बुद्धिमत्ता",
       "sort_order": 17,
       "content": {
-        "eyebrow": "Project Carbon Intelligence",
-        "title": "Project GHG emissions within your boundary",
-        "copy": "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, registered sources, dispersion modelling, and fusion inside the project work area.",
+        "eyebrow": "परियोजना कार्बन बुद्धिमत्ता",
+        "title": "आपकी सीमा के भीतर परियोजना GHG उत्सर्जन",
+        "copy": "रोपण स्थलों के लिए स्थानिक ग्रीनहाउस गैस बुद्धिमत्ता — उपग्रह मीथेन संदर्भ, पंजीकृत स्रोत, प्रसरण मॉडलिंग, और परियोजना कार्य क्षेत्र के भीतर फ्यूजन।",
         "cta": {
-          "label": "Open emissions workspace",
+          "label": "उत्सर्जन कार्यक्षेत्र खोलें",
           "href": "/auth?mode=signin&next=/projects"
         }
       }
@@ -374,44 +374,44 @@
           {
             "icon": "Globe2",
             "code": "Article 6",
-            "title": "Article 6 readiness",
-            "description": "Cooperative approaches checklist with corresponding adjustment refs and serial traceability."
+            "title": "अनुच्छेद 6 तैयारी",
+            "description": "समकक्ष समायोजन संदर्भ और सीरियल ट्रेसेबिलिटी के साथ सहकारी दृष्टिकोण चेकलिस्ट।"
           },
           {
             "icon": "Globe2",
             "code": "ETF / BTR",
-            "title": "National inventory handoff",
+            "title": "राष्ट्रीय इन्वेंटरी हैंडऑफ",
             "description": "IPCC-aligned org roll-up for Enhanced Transparency Framework and BTR preparation."
           },
           {
             "icon": "Landmark",
             "code": "World Bank ESF",
-            "title": "ESF safeguard screening",
-            "description": "PS5 land/tenure and PS6 biodiversity evidence packs for DFI-backed corridors."
+            "title": "ESF सुरक्षा स्क्रीनिंग",
+            "description": "DFI-समर्थित गलियारों के लिए PS5 भूमि/अधिकार और PS6 जैव विविधता प्रमाण पैक।"
           },
           {
             "icon": "Handshake",
             "code": "UNDP SES",
-            "title": "UNDP SES screening",
-            "description": "Social and environmental risk screening with stakeholder engagement exports."
+            "title": "UNDP SES स्क्रीनिंग",
+            "description": "हितधारक सहभागिता निर्यात के साथ सामाजिक और पर्यावरण जोखिम स्क्रीनिंग।"
           },
           {
             "icon": "Target",
             "code": "SBTi FLAG",
-            "title": "Land-sector targets",
-            "description": "FLAG removals worksheet linked to VM0047 and GHG Protocol single source of truth."
+            "title": "भू-क्षेत्र लक्ष्य",
+            "description": "VM0047 और GHG Protocol एकल सत्य स्रोत से जुड़ा FLAG निष्कासन वर्कशीट।"
           },
           {
             "icon": "Globe2",
             "code": "GBF",
-            "title": "Global Biodiversity Framework",
-            "description": "Targets 2 & 3 indicator mapping bridged to TNFD LEAP disclosures."
+            "title": "वैश्विक जैव विविधता ढांचा",
+            "description": "लक्ष्य 2 और 3 संकेतक मैपिंग TNFD LEAP प्रकटीकरण से जुड़ी।"
           },
           {
             "icon": "MapPin",
             "code": "EUDR",
-            "title": "Supplier geo MRV",
-            "description": "Geo-coordinate due diligence for corporate buyers and BRSR value-chain linkage."
+            "title": "आपूर्तिकर्ता जियो MRV",
+            "description": "कॉर्पोरेट खरीदारों और BRSR मूल्य-श्रृंखला लिंकेज के लिए जियो-निर्देशांक due diligence।"
           },
           {
             "icon": "Scale",
@@ -477,10 +477,10 @@
       "sort_order": 25,
       "content": {
         "eyebrow": "रिपोर्ट",
-        "title": "Sixteen live exports. One evidence graph.",
-        "copy": "Framework-mapped assurance packs generated from the same plantation record — carbon, biodiversity, disclosure, and compliance exports for auditors, program officers, and ESG teams. Assurance packs, not credit issuance.",
+        "title": "सोलह लाइव निर्यात। एक प्रमाण ग्राफ।",
+        "copy": "एक ही रोपण रिकॉर्ड से फ्रेमवर्क-मैप आश्वासन पैक — कार्बन, जैव विविधता, प्रकटीकरण और अनुपालन निर्यात ऑडिटर, कार्यक्रम अधिकारी और ESG टीमों के लिए। आश्वासन पैक, क्रेडिट जारी नहीं।",
         "footer_link": {
-          "label": "Open full reports workspace",
+          "label": "पूर्ण रिपोर्ट कार्यक्षेत्र खोलें",
           "href": "/auth?mode=signin&next=/reports"
         },
         "items": [
@@ -491,7 +491,7 @@
             "description": "कॉर्पोरेट GHG Protocol रिपोर्टिंग के लिए संरचित भू-क्षेत्र निष्कासन और उत्सर्जन।",
             "formats": "PDF · XLSX",
             "featured": true,
-            "evidence_hint": "Org + project roll-up",
+            "evidence_hint": "संगठन + परियोजना रोल-अप",
             "action": "generate",
             "accent": "#15803d",
             "href": "/auth?mode=signin&next=/reports",
@@ -499,12 +499,12 @@
           },
           {
             "category": "carbon",
-            "tag": "Carbon",
-            "title": "Carbon stock & tree absorption",
-            "description": "Modelled biomass and CO₂e removals by species and plot with IPCC-aligned defaults.",
+            "tag": "कार्बन",
+            "title": "कार्बन स्टॉक और पेड़ अवशोषण",
+            "description": "IPCC-संरेखित डिफ़ॉल्ट के साथ प्रजाति और प्लॉट द्वारा मॉडल बायोमास और CO₂e निष्कासन।",
             "formats": "PDF · XLSX",
             "featured": true,
-            "evidence_hint": "Per plantation site",
+            "evidence_hint": "प्रति रोपण स्थल",
             "action": "generate",
             "accent": "#166534",
             "href": "/auth?mode=signin&next=/reports",
@@ -514,9 +514,9 @@
             "category": "carbon",
             "tag": "Methane",
             "title": "साइट मीथेन और वायुमंडलीय GHG",
-            "description": "TROPOMI-fused CH₄ context overlaid on project work areas with dispersion and fusion review.",
+            "description": "प्रसरण और फ्यूजन समीक्षा के साथ परियोजना कार्य क्षेत्रों पर TROPOMI-फ्यूज़ CH₄ संदर्भ।",
             "formats": "PDF · XLSX",
-            "evidence_hint": "Satellite + source fusion",
+            "evidence_hint": "उपग्रह + स्रोत फ्यूजन",
             "action": "generate",
             "accent": "#0e7490",
             "href": "/auth?mode=signin&next=/reports",
@@ -536,8 +536,8 @@
           {
             "category": "carbon",
             "tag": "ISO 14064-1",
-            "title": "Organizational GHG inventory",
-            "description": "Org-level inventory export complementing ISO 14064-2 project quantification reports.",
+            "title": "संगठनात्मक GHG इन्वेंटरी",
+            "description": "ISO 14064-2 परियोजना मात्रा रिपोर्टों को पूरक संगठन-स्तर इन्वेंटरी निर्यात।",
             "formats": "JSON · XLSX · ZIP",
             "action": "generate",
             "accent": "#1e3a5f",
@@ -548,10 +548,10 @@
             "category": "biodiversity",
             "tag": "Soundscape",
             "title": "जैव विविधता ध्वनि-दृश्य रिपोर्ट",
-            "description": "BirdNET species detections, acoustic richness scores, and seasonal trends for a fenced site.",
+            "description": "बाड़बंद स्थल के लिए BirdNET प्रजाति पहचान, ध्वनिक समृद्धि स्कोर और मौसमी रुझान।",
             "formats": "PDF · XLSX",
             "featured": true,
-            "evidence_hint": "Bioacoustic engine",
+            "evidence_hint": "जैव ध्वनि इंजन",
             "action": "generate",
             "accent": "#0d9488",
             "href": "/auth?mode=signin&next=/reports",
@@ -561,7 +561,7 @@
             "category": "biodiversity",
             "tag": "Darwin Core",
             "title": "Darwin Core occurrence पैक",
-            "description": "Standardized species occurrence archive for biodiversity partners and scientific reuse.",
+            "description": "जैव विविधता партнёров और वैज्ञानिक पुन: उपयोग के लिए मानकीकृत प्रजाति occurrence संग्रह।",
             "formats": "ZIP · JSON",
             "action": "download",
             "accent": "#0f766e",
@@ -570,9 +570,9 @@
           },
           {
             "category": "biodiversity",
-            "tag": "Biodiversity",
-            "title": "Biodiversity evidence summary",
-            "description": "Species richness, habitat signals, and acoustic health for a plantation fence boundary.",
+            "tag": "जैव विविधता",
+            "title": "जैव विविधता प्रमाण सारांश",
+            "description": "रोपण बाड़ सीमा के लिए प्रजाति समृद्धि, आवास संकेत और ध्वनिक स्वास्थ्य।",
             "formats": "PDF · XLSX",
             "action": "generate",
             "accent": "#115e59",
@@ -582,8 +582,8 @@
           {
             "category": "biodiversity",
             "tag": "ESG",
-            "title": "ESG nature narrative",
-            "description": "Combined biodiversity, NDVI habitat, and acoustic richness narrative for stakeholders.",
+            "title": "ESG प्रकृति कथा",
+            "description": "हितधारकों के लिए संयुक्त जैव विविधता, NDVI आवास और ध्वनिक समृद्धि कथा।",
             "formats": "PDF · XLSX",
             "action": "generate",
             "accent": "#134e4a",
@@ -672,8 +672,8 @@
           {
             "category": "compliance",
             "tag": "ETF / BTR",
-            "title": "National inventory handoff",
-            "description": "Org-level IPCC activity tables with leakage, buffer, and SAR integrity flags for ETF/BTR pilots.",
+            "title": "राष्ट्रीय इन्वेंटरी हैंडऑफ",
+            "description": "ETF/BTR पायलट के लिए रिसाव, बफर और SAR अखंडता फ्लैग के साथ संगठन-स्तर IPCC गतिविधि तालिकाएँ।",
             "formats": "CSV · XLSX",
             "action": "download",
             "accent": "#1e3a5f",
@@ -683,8 +683,8 @@
           {
             "category": "compliance",
             "tag": "SBTi FLAG",
-            "title": "FLAG land-sector worksheet",
-            "description": "Land-related removals vs target boundary linked to VM0047 and GHG exports.",
+            "title": "FLAG भू-क्षेत्र वर्कशीट",
+            "description": "VM0047 और GHG निर्यात से जुड़े लक्ष्य सीमा के विरुद्ध भू-संबंधित निष्कासन।",
             "formats": "XLSX",
             "action": "download",
             "accent": "#4c1d95",
@@ -694,8 +694,8 @@
           {
             "category": "compliance",
             "tag": "EUDR",
-            "title": "Supplier geo due diligence",
-            "description": "WGS84 coordinate pack with BRSR value-chain linkage for corporate buyers.",
+            "title": "आपूर्तिकर्ता जियो due diligence",
+            "description": "कॉर्पोरेट खरीदारों के लिए BRSR मूल्य-श्रृंखला लिंकेज के साथ WGS84 निर्देशांक पैक।",
             "formats": "XLSX · ZIP",
             "action": "download",
             "accent": "#44403c",
@@ -706,7 +706,7 @@
             "category": "compliance",
             "tag": "Inventory",
             "title": "जियो-टैग पेड़ इन्वेंटरी",
-            "description": "Species, survival, chainage, and geotag completeness for compliance packs.",
+            "description": "अनुपालन पैक के लिए प्रजाति, अवशेष, चेनेज और जियोटैग पूर्णता।",
             "formats": "PDF · XLSX",
             "action": "generate",
             "accent": "#3f6212",

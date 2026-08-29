@@ -763,7 +763,103 @@
     "mobilePrimaryNav": "मोबाइल मुख्य",
     "openMenu": "मेनू खोलें",
     "closeMenu": "मेनू बंद करें",
-    "learnMore": "और जानें"
+    "learnMore": "और जानें",
+    "home": {
+      "bio": {
+        "demoBadge": "नमूना इंटरफ़ेस — लाइव रिकॉर्डिंग विश्लेषण के लिए साइन इन करें",
+        "liveSoundMonitoring": "लाइव ध्वनि निगरानी",
+        "projectSoundscape": "परियोजना ध्वनि-दृश्य · डेमो साइट",
+        "recording": "रिकॉर्डिंग",
+        "standby": "स्टैंडबाय",
+        "stopDemo": "डेमो रोकें",
+        "startDemo": "डेमो रिकॉर्डिंग शुरू करें",
+        "duration": "अवधि",
+        "audioLevel": "ऑडियो स्तर",
+        "location": "स्थान",
+        "demoLocation": "डेमो रोपण बाड़",
+        "consoleNote": "फील्ड टीम वेब या मोबाइल पर 60–180 सेकंड रिकॉर्डिंग कैप्चर करती हैं। BirdNET विश्लेषण अपलोड के बाद सर्वर-पक्ष चलता है।",
+        "speciesDetection": "प्रजाति पहचान",
+        "speciesDetectionSub": "जैव ध्वनि इंजन से दर्शावी परिणाम",
+        "verifiedDetection": "सत्यापित पहचान",
+        "needsReview": "समीक्षा आवश्यक",
+        "acousticMatched": "ध्वनिक हस्ताक्षर मेल",
+        "speciesDetected": "पहचानी गई प्रजातियाँ",
+        "uniqueSpecies": "अद्वितीय प्रजातियाँ",
+        "recordingsAnalysed": "विश्लेषित रिकॉर्डिंग",
+        "meanConfidence": "औसत विश्वास",
+        "pipelineAria": "जैव विविधता बुद्धिमत्ता कैसे काम करती है"
+      },
+      "ghg": {
+        "demoBadge": "नमूना डैशबोर्ड — साइन इन के बाद परियोजना डेटा लोड होता है",
+        "projectLabel": "नमूना रोपण गलियारा",
+        "monitoringPeriod": "पिछले 90 दिन",
+        "areaMonitored": "{ha} ha निगरानी",
+        "dataStatus": "डेमो इंटरफ़ेस",
+        "totalEmissions": "कुल परियोजना उत्सर्जन",
+        "deltaVsPrevious": "पिछली अवधि से +{pct}%",
+        "emissionIntensity": "उत्सर्जन तीव्रता",
+        "estimatedRemovals": "अनुमानित निष्कासन",
+        "netBalance": "शुद्ध GHG संतुलन",
+        "emissionSources": "उत्सर्जन स्रोत",
+        "trend90Day": "90-दिन रुझान",
+        "siteIntensity": "साइट उत्सर्जन तीव्रता",
+        "siteLead": "परियोजना सीमा, TROPOMI स्कैन संदर्भ और फ्यूजन क्षेत्रों के साथ कार्य-क्षेत्र ग्रिड।",
+        "zoneA": "क्षेत्र A · CH₄ सुसंगत",
+        "zoneB": "क्षेत्र B · उच्च विसंगति",
+        "legendLow": "निम्न",
+        "legendElevated": "उच्च",
+        "legendHotspot": "हॉटस्पॉट",
+        "mapNote": "साइन-इन परियोजनाएँ कार्य-क्षेत्र मानचित्र पर लाइव प्ल्यूम कंटूर और पंजीकृत स्रोत दिखाती हैं।",
+        "tooltipEmissions": "उत्सर्जन",
+        "sourceBiomass": "बायोमास हानि",
+        "sourceAgriculture": "कृषि",
+        "sourceLivestock": "पशुधन",
+        "sourceEnergy": "ऊर्जा / परिवहन",
+        "sourceFire": "आग / क्षरण",
+        "sourceOther": "अन्य"
+      },
+      "reports": {
+        "statsAria": "निर्यात कैटलॉग सारांश",
+        "liveExports": "लाइव निर्यात",
+        "evidenceStreams": "प्रमाण धाराएँ",
+        "signedBundles": "हस्ताक्षरित बंडल",
+        "sourceRecord": "स्रोत रिकॉर्ड",
+        "sourceGraph": "1 ग्राफ",
+        "toolbarHint": "धारा के अनुसार ब्राउज़ करें — पूर्ण कैटलॉग के लिए किसी भी लेन को विस्तृत करें।",
+        "searchPlaceholder": "निर्यात खोजें…",
+        "searchAria": "निर्यात खोजें",
+        "empty": "आपकी खोज से कोई निर्यात मेल नहीं खाता।",
+        "signed": "हस्ताक्षरित",
+        "actionGenerate": "जनरेट",
+        "actionDownload": "डाउनलोड",
+        "actionView": "देखें",
+        "showFewer": "कम दिखाएँ",
+        "viewAllExports": "सभी {count} निर्यात देखें",
+        "exportCount": "{count} निर्यात",
+        "streams": {
+          "carbon": {
+            "label": "कार्बन और GHG",
+            "headline": "भू-क्षेत्र इन्वेंटरी, मीथेन फ्यूजन और क्रेडिट लेजर",
+            "description": "GHG Protocol, TROPOMI संदर्भ, VM0047 लेजर और ISO 14064-1 संगठन रोल-अप।"
+          },
+          "biodiversity": {
+            "label": "जैव विविधता और प्रकृति",
+            "headline": "ध्वनि-दृश्य, प्रजाति प्रमाण और आवास कथाएँ",
+            "description": "जैव ध्वनि इंजन आउटपुट, Darwin Core पैक और TNFD-तैयार प्रकृति सारांश।"
+          },
+          "disclosure": {
+            "label": "जलवायु / ESG / प्रकटीकरण",
+            "headline": "स्वैच्छिक मानक और राष्ट्रीय कार्यक्रम पैक",
+            "description": "TNFD LEAP, Green Credit India, REDD+, Paris ट्रेसेबिलिटी और Gold Standard LUF।"
+          },
+          "compliance": {
+            "label": "अनुपालन / इन्वेंटरी",
+            "headline": "आश्वासन, इन्वेंटरी हैंडऑफ और हस्ताक्षरित प्रमाण",
+            "description": "BRSR, ISO 14064-2, ETF/BTR, SBTi FLAG, EUDR जियो पैक और Ed25519 बंडल।"
+          }
+        }
+      }
+    }
   },
   "stewardshipPanel": {
     "loading": "संरक्षण लोड हो रहा है…",
