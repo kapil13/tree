@@ -8,9 +8,9 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.planting_project import PlantingProject
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.schemes.monitoring import is_monitoring_scheme
 from app.services.schemes.registry import get_scheme
