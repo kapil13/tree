@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Cloud, MapPin, TrendingUp } from "lucide-react";
+import { ArrowRight, Cloud, TrendingUp } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -20,29 +20,58 @@ type GhgIntelligenceProps = {
   cta?: { label?: string; href?: string };
 };
 
-function HotspotMap() {
+/** NDVI-style intensity tiles for demo spatial view — not live geospatial data. */
+function SiteIntensityGrid() {
+  const cells = [
+    0.18, 0.22, 0.28, 0.34, 0.42, 0.38, 0.31, 0.26,
+    0.24, 0.36, 0.52, 0.68, 0.74, 0.61, 0.48, 0.33,
+    0.29, 0.44, 0.58, 0.82, 0.88, 0.72, 0.55, 0.41,
+    0.21, 0.32, 0.46, 0.59, 0.64, 0.51, 0.37, 0.25,
+  ];
+
+  function fill(v: number) {
+    if (v < 0.35) return "#e7e5e4";
+    if (v < 0.5) return "#bbf7d0";
+    if (v < 0.65) return "#86efac";
+    if (v < 0.8) return "#4ade80";
+    return "#15803d";
+  }
+
   return (
-    <svg viewBox="0 0 320 180" className="marketing-ghg-hotspot-map" aria-hidden>
-      <rect width="320" height="180" rx="12" fill="#f5faf7" />
-      <path
-        d="M36 132 C72 92 108 118 144 84 C180 58 216 96 252 72 L284 58"
-        fill="none"
-        stroke="#166534"
-        strokeWidth="2"
-        strokeDasharray="5 4"
-      />
-      <circle cx="118" cy="96" r="28" fill="#15803d" opacity="0.12" />
-      <circle cx="118" cy="96" r="14" fill="#15803d" opacity="0.28" />
-      <circle cx="118" cy="96" r="5" fill="#14532d" />
-      <circle cx="206" cy="78" r="18" fill="#b45309" opacity="0.18" />
-      <circle cx="206" cy="78" r="7" fill="#b45309" />
-      <text x="16" y="24" fill="#14532d" fontSize="11" fontFamily="ui-sans-serif, system-ui" fontWeight="700">
-        Emission hotspots
-      </text>
-      <text x="16" y="164" fill="#57534e" fontSize="10" fontFamily="ui-sans-serif, system-ui">
-        Demo project boundary · TROPOMI + dispersion fusion in workspace
-      </text>
-    </svg>
+    <div className="marketing-ghg-site-grid-wrap">
+      <div className="marketing-ghg-site-grid" aria-hidden>
+        {cells.map((value, i) => (
+          <span key={i} style={{ background: fill(value), opacity: value < 0.35 ? 0.55 : 0.95 }} />
+        ))}
+      </div>
+      <svg viewBox="0 0 360 200" className="marketing-ghg-site-overlay" aria-hidden>
+        <polygon
+          points="28,156 84,48 168,36 248,62 320,88 332,148 260,172 120,178"
+          fill="none"
+          stroke="#14532d"
+          strokeWidth="2"
+          strokeDasharray="6 4"
+        />
+        <rect x="132" y="88" width="44" height="36" rx="4" fill="none" stroke="#fff" strokeWidth="2" opacity="0.9" />
+      </svg>
+      <ul className="marketing-ghg-site-legend">
+        <li><i className="tone-low" /> Low signal</li>
+        <li><i className="tone-med" /> Elevated</li>
+        <li><i className="tone-high" /> Hotspot zone</li>
+      </ul>
+      <div className="marketing-ghg-site-callouts">
+        <div>
+          <span>Zone A</span>
+          <strong>CH₄ consistent</strong>
+          <em>TROPOMI + source fusion</em>
+        </div>
+        <div className="is-alert">
+          <span>Zone B</span>
+          <strong>Elevated anomaly</strong>
+          <em>Field verification suggested</em>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -103,57 +132,59 @@ export function MarketingGhgIntelligence({
             </dl>
           </div>
 
-          <div className="marketing-ghg-dashboard-grid">
-            <div className="marketing-ghg-panel">
-              <h3>Emission source breakdown</h3>
-              <ul className="marketing-ghg-sources">
-                {demo.sources.map((source) => (
-                  <li key={source.label}>
-                    <div className="marketing-ghg-source-row">
-                      <span>{source.label}</span>
-                      <strong>{source.tco2e} tCO₂e</strong>
-                    </div>
-                    <div className="marketing-ghg-source-bar">
-                      <i style={{ width: `${source.pct}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="marketing-ghg-dashboard-split">
+            <div className="marketing-ghg-analytics">
+              <div className="marketing-ghg-panel">
+                <h3>Emission sources</h3>
+                <ul className="marketing-ghg-sources marketing-ghg-sources--compact">
+                  {demo.sources.slice(0, 4).map((source) => (
+                    <li key={source.label}>
+                      <div className="marketing-ghg-source-row">
+                        <span>{source.label}</span>
+                        <strong>{source.pct}%</strong>
+                      </div>
+                      <div className="marketing-ghg-source-bar">
+                        <i style={{ width: `${source.pct}%` }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-            <div className="marketing-ghg-panel">
-              <h3>Emission trend</h3>
-              <div className="marketing-ghg-chart">
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={demo.trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="ghgTrend" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#15803d" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#15803d" stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="#e7e5e4" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} width={42} />
-                    <Tooltip
-                      formatter={(value: number) => [`${value.toLocaleString()} tCO₂e`, "Emissions"]}
-                      contentStyle={{ borderRadius: 10, borderColor: "#d6d3d1", fontSize: 12 }}
-                    />
-                    <Area type="monotone" dataKey="value" stroke="#166534" strokeWidth={2} fill="url(#ghgTrend)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="marketing-ghg-panel">
+                <h3>90-day trend</h3>
+                <div className="marketing-ghg-chart">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <AreaChart data={demo.trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="ghgTrend" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#15803d" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="#15803d" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid stroke="#e7e5e4" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#57534e" }} axisLine={false} tickLine={false} width={42} />
+                      <Tooltip
+                        formatter={(value: number) => [`${value.toLocaleString()} tCO₂e`, "Emissions"]}
+                        contentStyle={{ borderRadius: 10, borderColor: "#d6d3d1", fontSize: 12 }}
+                      />
+                      <Area type="monotone" dataKey="value" stroke="#166534" strokeWidth={2} fill="url(#ghgTrend)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            <div className="marketing-ghg-panel marketing-ghg-panel--map">
-              <h3>
-                <MapPin className="h-4 w-4" aria-hidden />
-                Spatial hotspot view
-              </h3>
-              <HotspotMap />
+            <div className="marketing-ghg-panel marketing-ghg-panel--site">
+              <h3>Site emission intensity</h3>
+              <p className="marketing-ghg-site-lead">
+                Work-area grid with project boundary, TROPOMI scan context, and fusion zones.
+              </p>
+              <SiteIntensityGrid />
               <p className="marketing-ghg-map-note">
                 {/* TODO: reuse EmissionsPlumeMap when a public demo project + auth-free preview route exists. */}
-                Signed-in projects overlay TROPOMI scans, registered sources, and dispersion contours on the work-area map.
+                Signed-in projects render live plume contours and registered sources on the work-area map.
               </p>
             </div>
           </div>
