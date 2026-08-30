@@ -25,6 +25,7 @@ from app.schemas.plantation_fence import (
     PlantationSatelliteRecordOut,
     PlantationSatelliteSeries,
 )
+from app.schemas.scan_history import ScanHistoryOut, ScanHistoryRowOut
 from app.schemas.weather import WeatherForecast
 from app.services.bioacoustic.correlation import (
     aggregate_fence_bioacoustic,
@@ -38,6 +39,7 @@ from app.services.geo import (
     polygon_coordinates,
 )
 from app.services.intelligence.satellite_fusion import build_fence_satellite_fusion
+from app.services.monitoring.scan_history import build_fence_scan_history
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.satellite.plantation import (
     ndvi_image_for_polygon,
@@ -299,6 +301,40 @@ async def fence_satellite_series(
         points=points,
         latest=PlantationSatelliteRecordOut.model_validate(latest) if latest else None,
         ndvi_image_url=f"/api/v1/plantation-fences/{fence.id}/ndvi-image",
+    )
+
+
+@router.get("/{fence_id}/scan-history", response_model=ScanHistoryOut)
+async def fence_scan_history(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    limit: int = Query(48, ge=1, le=120),
+) -> ScanHistoryOut:
+    """Unified NDVI + SAR + Forest Integrity scan rows for one work area."""
+    fence = await _load_fence(fence_id, user, db)
+    rows = await build_fence_scan_history(db, fence, limit=limit)
+    return ScanHistoryOut(
+        fence_id=fence.id,
+        rows=[
+            ScanHistoryRowOut(
+                scan_date=r.scan_date,
+                fence_id=r.fence_id,
+                fence_name=r.fence_name,
+                ndvi_mean=r.ndvi_mean,
+                ndvi_change_vs_baseline=r.ndvi_change_vs_baseline,
+                cloud_cover_pct=r.cloud_cover_pct,
+                ndvi_provider=r.ndvi_provider,
+                sar_provider=r.sar_provider,
+                forest_integrity_score=r.forest_integrity_score,
+                integrity_grade=r.integrity_grade,
+                sar_monitoring_mode=r.sar_monitoring_mode,
+                sar_ground_status=r.sar_ground_status,
+                sar_risk_level=r.sar_risk_level,
+                scene_ids=r.scene_ids,
+            )
+            for r in rows
+        ],
     )
 
 

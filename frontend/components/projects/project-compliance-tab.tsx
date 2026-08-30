@@ -201,6 +201,14 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportMonitoringDossier = useMutation({
+    mutationFn: () => plantingProjects.exportMonitoringDossier(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-monitoring-dossier.pdf`);
+    },
+  });
+
   const exportFramework = useMutation({
     mutationFn: (format: "pdf" | "xlsx") =>
       plantingProjects.exportFrameworkReport(projectId, frameworkProfile, format),
@@ -305,6 +313,7 @@ export function ProjectComplianceTab({
   const busy =
     exportMrv.isPending ||
     exportBundle.isPending ||
+    exportMonitoringDossier.isPending ||
     exportFramework.isPending ||
     exportGreenCreditPortal.isPending ||
     exportCampaState.isPending ||
@@ -423,10 +432,12 @@ export function ProjectComplianceTab({
               selectedFramework={selectedFramework}
               onFrameworkChange={setFrameworkProfile}
               monitoringMode={monitoringMode}
+              satelliteWatchEnabled={satelliteWatchEnabled}
               exports={{
                 busy,
                 exportMrv,
                 exportBundle,
+                exportMonitoringDossier,
                 exportFramework,
                 exportGreenCreditPortal,
                 exportCampaState,

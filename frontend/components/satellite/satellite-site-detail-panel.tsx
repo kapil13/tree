@@ -6,6 +6,7 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { PlantationNdviPreview } from "@/components/plantation-ndvi-preview";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
+import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
 import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
 import { BhoonidhiFenceCatalogPanel } from "@/components/satellite/bhoonidhi-fence-catalog-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast";
@@ -175,6 +176,8 @@ export function SatelliteSiteDetailPanel({
         <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
           <SarGroundPanel fenceId={fence.id} />
         </section>
+
+        <ScanHistoryGrid fenceId={fence.id} title="Scan history" className="border-0 shadow-none" />
 
         <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-900">
           <PestIntelPanel kind="work-area" targetId={fence.id} />
