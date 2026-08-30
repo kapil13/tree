@@ -11,7 +11,6 @@ import argparse
 import asyncio
 import csv
 import json
-import sys
 from pathlib import Path
 
 from sqlalchemy import delete, func, select

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from app.api.v1.deps import CurrentUser, DB
+from app.api.v1.deps import DB, CurrentUser
 from app.services.india_admin.service import IndiaAdminService
 
 router = APIRouter(prefix="/india-admin", tags=["india-admin"])
