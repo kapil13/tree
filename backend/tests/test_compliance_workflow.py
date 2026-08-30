@@ -91,6 +91,75 @@ async def test_build_compliance_workflow_returns_steps(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_build_monitoring_compliance_workflow(monkeypatch):
+    project = SimpleNamespace(
+        id=uuid.uuid4(),
+        segment="estate_monitoring",
+        scheme_code="estate_monitoring",
+        compliance_mode="guided",
+        metadata_={"scheme_refs": {"estate_name": "Block A"}},
+        organization_id=uuid.uuid4(),
+    )
+
+    async def fake_auto_signals(db, proj):
+        return {
+            "estate_metadata_complete": "partial",
+            "active_standard_attached": "yes",
+            "has_work_areas": "yes",
+            "work_area_scan_coverage": "partial",
+            "sar_permanence_risk": "no",
+            "no_block_violations": "yes",
+        }
+
+    async def fake_summaries(db, proj):
+        return [
+            {
+                "code": "estate_monitoring",
+                "title": "Estate",
+                "short_label": "Estate",
+                "completion_pct": 40,
+                "score_pct": 40,
+                "eligibility_status": "in_progress",
+                "updated_at": None,
+            }
+        ]
+
+    async def fake_metrics(db, proj):
+        return {
+            "tree_count": 0,
+            "geo_tagged_count": 0,
+            "satellite_verified_count": 0,
+            "open_violations": 0,
+            "blocking_violations": 0,
+            "work_area_count": 2,
+        }
+
+    monkeypatch.setattr(
+        "app.services.compliance.workflow.build_auto_signals",
+        fake_auto_signals,
+    )
+    monkeypatch.setattr(
+        "app.services.compliance.workflow.list_project_checklist_summaries",
+        fake_summaries,
+    )
+    monkeypatch.setattr(
+        "app.services.compliance.workflow._project_metrics",
+        fake_metrics,
+    )
+
+    result = await build_compliance_workflow(AsyncMock(), project)
+
+    assert result["monitoring_mode"] is True
+    assert result["recommended_checklist"] == "estate_monitoring"
+    step_ids = [s["id"] for s in result["steps"]]
+    assert "register_trees" not in step_ids
+    assert "initial_satellite_scan" in step_ids
+    assert "estate_details" in step_ids
+    scan = next(s for s in result["steps"] if s["id"] == "initial_satellite_scan")
+    assert scan["action_href"].startswith("/satellite?project=")
+
+
+@pytest.mark.asyncio
 async def test_build_auto_signals_survival_saved():
     from app.services.compliance.evaluator import build_auto_signals
 

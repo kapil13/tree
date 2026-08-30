@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import {
   resolveComplianceGapAction,
+  type GapContext,
   type ProjectTab,
 } from "@/lib/compliance-gap-actions";
 
@@ -18,15 +19,23 @@ type ComplianceGap = {
 export function ComplianceGapList({
   gaps,
   projectId,
+  gapContext,
   onNavigateTab,
   onScrollToAnchor,
 }: {
   gaps: ComplianceGap[];
   projectId: string;
+  gapContext?: Partial<GapContext>;
   onNavigateTab?: (tab: ProjectTab) => void;
   onScrollToAnchor?: (anchor: string) => void;
 }) {
   if (!gaps.length) return null;
+
+  const ctx: GapContext = {
+    projectId,
+    primaryWorkAreaId: gapContext?.primaryWorkAreaId,
+    monitoringMode: gapContext?.monitoringMode,
+  };
 
   function handleAction(action: ReturnType<typeof resolveComplianceGapAction>) {
     if (action.tab && onNavigateTab) {
@@ -42,7 +51,7 @@ export function ComplianceGapList({
       <p className="text-sm font-medium text-amber-900">Gaps to address</p>
       <ul className="mt-3 space-y-3">
         {gaps.map((gap) => {
-          const action = resolveComplianceGapAction(gap, { projectId });
+          const action = resolveComplianceGapAction(gap, ctx);
           return (
             <li
               key={gap.item_id}

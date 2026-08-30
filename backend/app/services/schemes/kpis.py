@@ -78,6 +78,38 @@ async def _latest_ndvi_by_fence(
     return ndvi_by_fence
 
 
+async def _sar_integrity_metrics(
+    db: AsyncSession, project_id: Any, fence_ids: list[Any]
+) -> dict[str, int]:
+    """Count SAR-scored work areas and at-risk integrity grades for a project."""
+    if not fence_ids:
+        return {"sar_scored_areas": 0, "sar_at_risk_areas": 0}
+
+    from app.models.plantation_satellite_record import PlantationSatelliteRecord
+    from app.services.satellite.sar_service import is_sar_provider_record
+
+    sar_res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id.in_(fence_ids))
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+    )
+    sar_at_risk = 0
+    sar_scored = 0
+    seen_fences: set[str] = set()
+    for rec in sar_res.scalars().all():
+        fid = str(rec.fence_id)
+        if fid in seen_fences or not is_sar_provider_record(rec.provider):
+            continue
+        seen_fences.add(fid)
+        fusion = (rec.raw_metadata or {}).get("sar_fusion") or {}
+        if fusion.get("forest_integrity_score") is not None:
+            sar_scored += 1
+        if fusion.get("integrity_grade") in {"at_risk", "critical"}:
+            sar_at_risk += 1
+
+    return {"sar_scored_areas": sar_scored, "sar_at_risk_areas": sar_at_risk}
+
+
 async def _compute_estate_monitoring_kpis(
     db: AsyncSession,
     project: PlantingProject,
@@ -100,12 +132,16 @@ async def _compute_estate_monitoring_kpis(
     mean_ndvi = round(sum(ndvi_values) / len(ndvi_values), 3) if ndvi_values else None
     coverage["mean_ndvi"] = mean_ndvi
 
+    sar = await _sar_integrity_metrics(db, project.id, [f.id for f in fences])
+
     metrics = {
         "work_area_count": coverage["work_area_count"],
         "scanned_work_areas": coverage["scanned_work_areas"],
         "scan_coverage_pct": coverage["scan_coverage_pct"],
         "max_days_since_scan": coverage["max_days_since_scan_observed"],
         "mean_ndvi": mean_ndvi,
+        "sar_scored_areas": sar["sar_scored_areas"],
+        "sar_at_risk_areas": sar["sar_at_risk_areas"],
         "tree_count": 0,
     }
 
@@ -116,6 +152,8 @@ async def _compute_estate_monitoring_kpis(
         )
     if coverage["work_area_count"] > 0 and coverage["max_days_since_scan_observed"] is not None:
         checks["scan_freshness"] = coverage["max_days_since_scan_observed"] <= max_days
+    if coverage["work_area_count"] > 0:
+        checks["sar_integrity"] = sar["sar_at_risk_areas"] == 0 and sar["sar_scored_areas"] > 0
 
     if coverage["work_area_count"] == 0:
         overall = "not_started"
