@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { bhoonidhi } from "@/lib/api";
+import { downloadBlob } from "@/lib/download-blob";
+import { showToast } from "@/components/toast";
 
 export function BhoonidhiFenceCatalogPanel({
   fenceId,
@@ -12,6 +16,7 @@ export function BhoonidhiFenceCatalogPanel({
   fenceName: string;
   configured?: boolean;
 }) {
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["bhoonidhi-catalog", fenceId],
     queryFn: () => bhoonidhi.fenceCatalog(fenceId, { days_back: 90, limit: 12 }),
@@ -19,6 +24,27 @@ export function BhoonidhiFenceCatalogPanel({
   });
 
   if (!fenceId) return null;
+
+  async function handleDownload(scene: {
+    id: string;
+    collection: string | null;
+    download_path: string | null;
+  }) {
+    if (!scene.download_path || !scene.collection) return;
+    const key = `${scene.collection}-${scene.id}`;
+    setDownloadingKey(key);
+    try {
+      const { blob, filename } = await bhoonidhi.downloadScene({
+        id: scene.id,
+        collection: scene.collection,
+      });
+      downloadBlob(blob, filename);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Bhoonidhi download failed");
+    } finally {
+      setDownloadingKey(null);
+    }
+  }
 
   return (
     <div className="card border-forest-200/60 dark:border-forest-900">
@@ -70,15 +96,22 @@ export function BhoonidhiFenceCatalogPanel({
                   {scene.online ? ` · online ${scene.online}` : ""}
                 </div>
               </div>
-              {scene.download_path && (
-                <a
-                  href={scene.download_path}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-forest-700 hover:underline"
+              {scene.download_path && scene.collection && (
+                <button
+                  type="button"
+                  className="text-xs text-forest-700 hover:underline disabled:opacity-50"
+                  disabled={downloadingKey === `${scene.collection}-${scene.id}`}
+                  onClick={() => void handleDownload(scene)}
                 >
-                  Download
-                </a>
+                  {downloadingKey === `${scene.collection}-${scene.id}` ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Downloading…
+                    </span>
+                  ) : (
+                    "Download"
+                  )}
+                </button>
               )}
             </li>
           ))}

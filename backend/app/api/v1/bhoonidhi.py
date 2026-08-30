@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from app.api.v1.deps import DB, CurrentUser
 from app.api.v1.plantation_fences import _load_fence
@@ -95,6 +95,34 @@ async def search_catalog(
     return _to_search_out(raw, client)
 
 
+@router.get("/download")
+async def download_bhoonidhi_scene(
+    user: CurrentUser,
+    id: str = Query(..., min_length=1, description="Bhoonidhi STAC item id"),
+    collection: str = Query(..., min_length=1, description="Bhoonidhi collection id"),
+) -> Response:
+    """Stream a Bhoonidhi product download using the server-side JWT session.
+
+    Browsers cannot call ``bhoonidhi-api.nrsc.gov.in/download`` directly — NRSC requires
+    ``Authorization: Bearer <token>`` from ``/auth/token``.
+    """
+    client = _require_client()
+    try:
+        resp = await client.download_product(item_id=id, collection=collection)
+    except Exception as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    content_type = resp.headers.get("content-type") or "application/octet-stream"
+    headers: dict[str, str] = {}
+    if disposition := resp.headers.get("content-disposition"):
+        headers["Content-Disposition"] = disposition
+    else:
+        safe_name = id.replace("/", "_")[:120]
+        headers["Content-Disposition"] = f'attachment; filename="{safe_name}.zip"'
+
+    return Response(content=resp.content, media_type=content_type, headers=headers)
+
+
 @router.get("/plantation-fences/{fence_id}/catalog", response_model=BhoonidhiFenceCatalogOut)
 async def fence_bhoonidhi_catalog(
     fence_id: uuid.UUID,
@@ -134,7 +162,7 @@ def _to_search_out(raw: dict, client) -> BhoonidhiSearchOut:
         item_id = row.get("id")
         download_path = None
         if coll and item_id:
-            download_path = client.download_url(item_id=item_id, collection=coll)
+            download_path = client.proxy_download_path(item_id=item_id, collection=coll)
         scenes.append(
             BhoonidhiSceneOut(
                 id=item_id or "",

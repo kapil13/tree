@@ -73,6 +73,42 @@ def test_summarize_stac_features():
     assert rows[0]["id"] == "scene-1"
 
 
+def test_proxy_download_path_uses_aranyix_api_not_nrsc():
+    client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://bhoonidhi-api.nrsc.gov.in")
+    path = client.proxy_download_path(
+        item_id="RA314AUG2026050256009500052PSANSTUCSRHTDF",
+        collection="ResourceSat-2A_LISS3_BOA",
+    )
+    assert path.startswith("/v1/bhoonidhi/download?")
+    assert "bhoonidhi-api.nrsc.gov.in" not in path
+    assert "RA314AUG2026050256009500052PSANSTUCSRHTDF" in path
+
+
+@pytest.mark.asyncio
+async def test_download_product_uses_bearer_token():
+    client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://example.test")
+    client._access_token = "tok"
+    client._token_expires_at = 9999999999.0
+
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.content = b"zip-bytes"
+    mock_resp.headers = {"content-type": "application/zip"}
+
+    with patch.object(client, "_request", new=AsyncMock(return_value=mock_resp)) as mock_request:
+        resp = await client.download_product(
+            item_id="scene-1",
+            collection="ResourceSat-2A_LISS3_BOA",
+        )
+
+    assert resp.content == b"zip-bytes"
+    mock_request.assert_awaited_once_with(
+        "GET",
+        "/download",
+        params={"id": "scene-1", "collection": "ResourceSat-2A_LISS3_BOA"},
+    )
+
+
 @pytest.mark.asyncio
 async def test_authenticate_stores_token():
     client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://example.test")
