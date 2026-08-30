@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
 from app.core.security import Permission, has_permission
@@ -490,6 +491,7 @@ async def update_project(
         merged = dict(project.metadata_ or {})
         merged.update(payload.metadata)
         project.metadata_ = merged
+        flag_modified(project, "metadata_")
 
     await record_audit(
         db,

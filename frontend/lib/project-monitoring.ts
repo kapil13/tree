@@ -19,3 +19,29 @@ export function isSatelliteWatchEnabled(
   if (isMonitoringScheme(project.scheme_code)) return true;
   return Boolean(project.metadata?.[SATELLITE_WATCH_METADATA_KEY]);
 }
+
+export function buildProjectMetadata(
+  project: Pick<PlantingProject, "metadata">,
+  {
+    surveyDays,
+    satelliteWatch,
+    monitoringMode,
+  }: {
+    surveyDays: string;
+    satelliteWatch: boolean;
+    monitoringMode: boolean;
+  },
+): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {
+    ...project.metadata,
+    survey_interval_days: Number(surveyDays) === 15 ? 15 : 30,
+  };
+  if (!monitoringMode) {
+    if (satelliteWatch) {
+      metadata[SATELLITE_WATCH_METADATA_KEY] = true;
+    } else {
+      delete metadata[SATELLITE_WATCH_METADATA_KEY];
+    }
+  }
+  return metadata;
+}

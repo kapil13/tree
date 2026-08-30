@@ -35,3 +35,12 @@ def test_set_satellite_watch_enabled():
     meta = set_satellite_watch_enabled(meta, False)
     assert SATELLITE_WATCH_METADATA_KEY not in meta
     assert meta["foo"] == "bar"
+
+
+def test_metadata_merge_preserves_satellite_watch_key():
+    existing = {"survey_interval_days": 30, "scheme_refs": {"district": "Pune"}}
+    payload = {SATELLITE_WATCH_METADATA_KEY: True, "survey_interval_days": 30}
+    merged = dict(existing)
+    merged.update(payload)
+    assert merged[SATELLITE_WATCH_METADATA_KEY] is True
+    assert merged["scheme_refs"]["district"] == "Pune"

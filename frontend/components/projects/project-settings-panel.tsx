@@ -2,14 +2,14 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
 import { ProjectRuleOverridePanel } from "@/components/projects/project-rule-override-panel";
 import { projectSetupHref } from "@/lib/project-focused-ui";
 import {
-  isMonitoringOnlyProject,
+  buildProjectMetadata,
   isSatelliteWatchEnabled,
   SATELLITE_WATCH_METADATA_KEY,
 } from "@/lib/project-monitoring";
@@ -40,34 +40,57 @@ export function ProjectSettingsPanel({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    setName(project.name);
+    setDescription(project.description || "");
+    setStatus(project.status);
+    setComplianceMode(project.compliance_mode);
+    setTargetTrees(project.target_tree_count != null ? String(project.target_tree_count) : "");
+    setSurveyDays(String((project.metadata?.survey_interval_days as number) ?? 30));
+    setSatelliteWatch(isSatelliteWatchEnabled(project));
+  }, [project]);
+
+  async function updateProject(payload: Parameters<typeof plantingProjects.update>[1]) {
+    const updated = await plantingProjects.update(project.id, payload);
+    qc.setQueryData(["planting-project", project.id], updated);
+    qc.invalidateQueries({ queryKey: ["planting-project", project.id] });
+    return updated;
+  }
+
   const save = useMutation({
-    mutationFn: () => {
-      const metadata: Record<string, unknown> = {
-        ...project.metadata,
-        survey_interval_days: Number(surveyDays) === 15 ? 15 : 30,
-      };
-      if (!monitoringMode) {
-        if (satelliteWatch) {
-          metadata[SATELLITE_WATCH_METADATA_KEY] = true;
-        } else {
-          delete metadata[SATELLITE_WATCH_METADATA_KEY];
-        }
-      }
-      return plantingProjects.update(project.id, {
+    mutationFn: () =>
+      updateProject({
         name,
         description,
         status: status as PlantingProject["status"],
         compliance_mode: complianceMode as PlantingProject["compliance_mode"],
         target_tree_count: targetTrees ? Number(targetTrees) : undefined,
-        metadata,
-      });
-    },
+        metadata: buildProjectMetadata(project, { surveyDays, satelliteWatch, monitoringMode }),
+      }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["planting-project", project.id] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
     onError: (err) => setError(errorMessage(err)),
+  });
+
+  const toggleSatelliteWatch = useMutation({
+    mutationFn: (enabled: boolean) =>
+      updateProject({
+        metadata: buildProjectMetadata(project, {
+          surveyDays,
+          satelliteWatch: enabled,
+          monitoringMode,
+        }),
+      }),
+    onMutate: (enabled) => {
+      setSatelliteWatch(enabled);
+      setError(null);
+    },
+    onError: (err, enabled) => {
+      setSatelliteWatch(!enabled);
+      setError(errorMessage(err));
+    },
   });
 
   const rules = project.active_standard?.rules ?? {};
@@ -90,7 +113,7 @@ export function ProjectSettingsPanel({
         </Link>
       </div>
 
-      <div className="card space-y-4">
+      <div className="card space-y-4 lg:col-span-2">
         <h2 className="text-sm font-medium">Project settings</h2>
         <div className="space-y-3 text-sm">
           <div>
@@ -172,11 +195,42 @@ export function ProjectSettingsPanel({
               </div>
             )}
           </div>
+
+          {!monitoringMode ? (
+            <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
+              <h3 className="text-sm font-medium">Satellite watch programme</h3>
+              <label className="mt-3 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={satelliteWatch}
+                  disabled={toggleSatelliteWatch.isPending}
+                  onChange={(e) => toggleSatelliteWatch.mutate(e.target.checked)}
+                />
+                <span>
+                  <span className="font-medium text-stone-900">Enable satellite watch on work areas</span>
+                  <span className="mt-1 block text-stone-600">
+                    Run monthly NDVI and SAR integrity scans on drawn polygons alongside planting or
+                    post-planting monitoring. Works for CAMPA, Nagar Van, NHAI, Green Credit, and other
+                    schemes — not only Estate &amp; Forest Watch.
+                  </span>
+                  {toggleSatelliteWatch.isPending ? (
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs text-stone-500">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Saving satellite watch…
+                    </span>
+                  ) : satelliteWatch ? (
+                    <span className="mt-2 block text-xs font-medium text-emerald-800">Satellite watch enabled</span>
+                  ) : null}
+                </span>
+              </label>
+            </div>
+          ) : null}
+
           {error && <p className="text-rose-700">{error}</p>}
           <button
             type="button"
             className="btn-primary"
-            disabled={save.isPending}
+            disabled={save.isPending || toggleSatelliteWatch.isPending}
             onClick={() => {
               setError(null);
               save.mutate();
@@ -194,28 +248,6 @@ export function ProjectSettingsPanel({
           </button>
         </div>
       </div>
-
-      {!monitoringMode ? (
-        <div className="card space-y-3 lg:col-span-2">
-          <h2 className="text-sm font-medium">Satellite watch programme</h2>
-          <label className="flex cursor-pointer items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={satelliteWatch}
-              onChange={(e) => setSatelliteWatch(e.target.checked)}
-            />
-            <span>
-              <span className="font-medium text-stone-900">Enable satellite watch on work areas</span>
-              <span className="mt-1 block text-stone-600">
-                Run monthly NDVI and SAR integrity scans on drawn polygons alongside planting or
-                post-planting monitoring. Works for CAMPA, Nagar Van, NHAI, Green Credit, and other
-                schemes — not only Estate &amp; Forest Watch.
-              </span>
-            </span>
-          </label>
-        </div>
-      ) : null}
 
       <ProjectRuleOverridePanel project={project} />
 
