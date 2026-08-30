@@ -3431,3 +3431,83 @@ export const audit = {
     ).data;
   },
 };
+
+export type IndiaAdminOption = {
+  code: string;
+  name: string;
+  lgd?: number;
+  state_code?: string;
+  state_name?: string;
+  district_code?: string;
+  block_code?: string;
+  gram_panchayat_code?: string;
+};
+
+export type IndiaAdminListResponse<T extends IndiaAdminOption = IndiaAdminOption> = {
+  items: T[];
+  manual_fallback?: boolean;
+  hint?: string | null;
+};
+
+export const indiaAdmin = {
+  async financialYears() {
+    return (await api.get<{ items: string[]; current: string }>("/v1/india-admin/financial-years"))
+      .data;
+  },
+  async states() {
+    return (await api.get<{ items: IndiaAdminOption[] }>("/v1/india-admin/states")).data;
+  },
+  async districts(stateCode: string) {
+    return (
+      await api.get<{ items: IndiaAdminOption[] }>("/v1/india-admin/districts", {
+        params: { state_code: stateCode },
+      })
+    ).data;
+  },
+  async cities(stateCode: string) {
+    return (
+      await api.get<{ items: IndiaAdminOption[] }>("/v1/india-admin/cities", {
+        params: { state_code: stateCode },
+      })
+    ).data;
+  },
+  async blocks(stateCode: string, districtCode: string) {
+    return (
+      await api.get<IndiaAdminListResponse>("/v1/india-admin/blocks", {
+        params: { state_code: stateCode, district_code: districtCode },
+      })
+    ).data;
+  },
+  async gramPanchayats(params: {
+    blockCode: string;
+    districtCode?: string;
+    stateCode?: string;
+  }) {
+    return (
+      await api.get<IndiaAdminListResponse>("/v1/india-admin/gram-panchayats", {
+        params: {
+          block_code: params.blockCode,
+          district_code: params.districtCode,
+          state_code: params.stateCode,
+        },
+      })
+    ).data;
+  },
+  async villages(params: {
+    blockCode?: string;
+    gramPanchayatCode?: string;
+    districtCode?: string;
+    stateCode?: string;
+  }) {
+    return (
+      await api.get<IndiaAdminListResponse>("/v1/india-admin/villages", {
+        params: {
+          block_code: params.blockCode,
+          gram_panchayat_code: params.gramPanchayatCode,
+          district_code: params.districtCode,
+          state_code: params.stateCode,
+        },
+      })
+    ).data;
+  },
+};

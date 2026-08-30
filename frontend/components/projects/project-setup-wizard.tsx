@@ -16,6 +16,7 @@ import {
   SiteRuleAdjustmentsPanel,
 } from "@/components/projects/site-rule-adjustments-panel";
 import { TreeRegistrationDefaultsForm } from "@/components/projects/tree-registration-defaults-form";
+import { ProjectLocationFields } from "@/components/projects/project-location-fields";
 import {
   SchemeRefsFields,
   validateSchemeRefs,
@@ -40,6 +41,14 @@ import {
 } from "@/lib/tree-registration-defaults";
 import { evaluateProjectSetup } from "@/lib/project-setup-readiness";
 import { projectOverviewHref } from "@/lib/project-focused-ui";
+import {
+  EMPTY_PROJECT_LOCATION,
+  locationFromProject,
+  projectLocationToMetadata,
+  syncSchemeRefsFromLocation,
+  validateProjectLocation,
+  type ProjectLocation,
+} from "@/lib/project-location";
 
 function resumeStepSubtitle(step: ProjectWizardStep, hasSchemeRefsStep: boolean): string {
   if (step === 1) {
@@ -125,6 +134,8 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
     deriveTreeRegistrationDefaults({}),
   );
   const [treeDefaultErrors, setTreeDefaultErrors] = useState<Record<string, string>>({});
+  const [location, setLocation] = useState<ProjectLocation>(() => ({ ...EMPTY_PROJECT_LOCATION }));
+  const [locationErrors, setLocationErrors] = useState<Record<string, string>>({});
   const [siteAdjustments, setSiteAdjustments] = useState(() =>
     initialSiteRuleAdjustments({}),
   );
@@ -147,6 +158,7 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
     }
     setSchemeRefs(initialRefs);
     setTreeDefaults(treeRegistrationDefaultsFromProject(project));
+    setLocation(locationFromProject(project));
   }, [project, schemeRefFields]);
 
   useEffect(() => {
@@ -175,16 +187,23 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
     setTreeDefaults(
       deriveTreeRegistrationDefaults({
         schemeCode: project.scheme_code ?? undefined,
-        schemeRefs,
+        schemeRefs: syncSchemeRefsFromLocation(schemeRefs, location),
         projectCode: project.code,
         projectName: name.trim() || project.name,
         existing: treeRegistrationDefaultsFromProject(project),
       }),
     );
-  }, [project, schemeRefs, name]);
+  }, [project, schemeRefs, name, location]);
 
   async function saveDetailsStep(): Promise<boolean> {
     if (!project) return false;
+    const locErrors = validateProjectLocation(location);
+    if (Object.keys(locErrors).length > 0) {
+      setLocationErrors(locErrors);
+      setError("Complete the project location fields before continuing.");
+      return false;
+    }
+    setLocationErrors({});
     if (
       siteAdjustments.enabled &&
       project.active_standard?.rules &&
@@ -203,6 +222,7 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
         metadata: {
           ...project.metadata,
           survey_interval_days: surveyIntervalDays,
+          location: projectLocationToMetadata(location),
         },
       });
 
@@ -410,6 +430,18 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+
+          <ProjectLocationFields
+            value={location}
+            errors={locationErrors}
+            onChange={(next) => {
+              setLocation(next);
+              setLocationErrors({});
+              if (hasSchemeRefsStep) {
+                setSchemeRefs((prev) => syncSchemeRefsFromLocation(prev, next));
+              }
+            }}
+          />
 
           {activeStandardTemplate ? (
             <div className="space-y-3">
