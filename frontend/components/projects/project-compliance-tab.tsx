@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bug, CheckCircle, Link2 } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
@@ -25,6 +26,7 @@ import {
   verification,
   type WorkArea,
 } from "@/lib/api";
+import { isMonitoringScheme } from "@/lib/schemes";
 
 const SEVERITY_CLASS: Record<string, string> = {
   block: "bg-rose-100 text-rose-900",
@@ -44,7 +46,24 @@ function downloadBlob(blob: Blob, filename: string) {
 function anchorToSection(anchor: string): ComplianceSection | null {
   if (anchor === "checklist") return "checklist";
   if (anchor === "violations") return "issues";
+  if (anchor === "exports") return "exports";
   return null;
+}
+
+function parseComplianceSectionParam(value: string | null): ComplianceSection | null {
+  if (!value) return null;
+  const allowed: ComplianceSection[] = [
+    "overview",
+    "checklist",
+    "safeguards",
+    "integrity",
+    "emissions",
+    "pest_intel",
+    "exports",
+    "share",
+    "issues",
+  ];
+  return allowed.includes(value as ComplianceSection) ? (value as ComplianceSection) : null;
 }
 
 type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
@@ -55,6 +74,7 @@ export function ProjectComplianceTab({
   projectMetadata,
   schemeCode,
   workAreas = [],
+  monitoringMode: monitoringModeProp,
   onNavigateTab,
 }: {
   projectId: string;
@@ -62,10 +82,15 @@ export function ProjectComplianceTab({
   projectMetadata?: Record<string, unknown>;
   schemeCode?: string | null;
   workAreas?: WorkArea[];
+  monitoringMode?: boolean;
   onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
-  const [section, setSection] = useState<ComplianceSection>("overview");
+  const searchParams = useSearchParams();
+  const monitoringMode = monitoringModeProp ?? isMonitoringScheme(schemeCode);
+  const [section, setSection] = useState<ComplianceSection>(
+    monitoringMode ? "checklist" : "overview",
+  );
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const pestAreaId = useMemo(
     () => selectedAreaId ?? workAreas[0]?.id ?? null,
@@ -89,6 +114,22 @@ export function ProjectComplianceTab({
   });
 
   useEffect(() => {
+    const fromUrl = parseComplianceSectionParam(searchParams.get("section"));
+    if (fromUrl) setSection(fromUrl);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!monitoringMode) return;
+    if (section === "overview") {
+      setSection("checklist");
+      return;
+    }
+    if (section === "integrity" || section === "emissions" || section === "safeguards") {
+      setSection("checklist");
+    }
+  }, [monitoringMode, section]);
+
+  useEffect(() => {
     if (workflow?.recommended_checklist) {
       setChecklistCode(workflow.recommended_checklist as ChecklistCode);
     }
@@ -96,9 +137,9 @@ export function ProjectComplianceTab({
 
   useEffect(() => {
     if (section === "pest_intel" && !showPestIntel) {
-      setSection("overview");
+      setSection(monitoringMode ? "checklist" : "overview");
     }
-  }, [section, showPestIntel]);
+  }, [section, showPestIntel, monitoringMode]);
 
   useEffect(() => {
     const profileFromScheme = scheme?.framework_profiles?.[0] as FrameworkProfileCode | undefined;
@@ -276,6 +317,7 @@ export function ProjectComplianceTab({
         onChange={setSection}
         openViolations={violations.length}
         showPestIntel={showPestIntel}
+        monitoringMode={monitoringMode}
       />
 
       <div className="min-w-0 space-y-4">
@@ -355,6 +397,7 @@ export function ProjectComplianceTab({
               frameworks={frameworks}
               selectedFramework={selectedFramework}
               onFrameworkChange={setFrameworkProfile}
+              monitoringMode={monitoringMode}
               exports={{
                 busy,
                 exportMrv,

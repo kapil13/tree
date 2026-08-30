@@ -19,7 +19,9 @@ export function ProjectSetupChecklist({
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
         <p className="font-semibold">Setup complete</p>
         <p className="mt-1 text-emerald-900/90">
-          Scheme references, planting standard, and work areas are ready. You can register trees.
+          {status.monitoringMode
+            ? "Estate details, monitoring standard, and work areas are ready. Run satellite scans on your polygons."
+            : "Scheme references, planting standard, and work areas are ready. You can register trees."}
         </p>
       </div>
     );
@@ -34,7 +36,9 @@ export function ProjectSetupChecklist({
     >
       <p className="font-semibold text-amber-950">Finish project setup</p>
       <p className="mt-1 text-xs text-amber-900/90">
-        Complete these steps before registering trees
+        {status.monitoringMode
+          ? "Complete these steps before running estate monitoring"
+          : "Complete these steps before registering trees"}
         {status.blockReason ? `: ${status.blockReason}` : "."}
       </p>
       <ul className="mt-3 space-y-2">

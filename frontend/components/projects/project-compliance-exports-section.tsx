@@ -25,6 +25,7 @@ export function ProjectComplianceExportsSection({
   frameworks,
   selectedFramework,
   onFrameworkChange,
+  monitoringMode = false,
   exports: ex,
 }: {
   schemeCode?: string | null;
@@ -42,24 +43,28 @@ export function ProjectComplianceExportsSection({
     disclaimer?: string;
   };
   onFrameworkChange: (code: FrameworkProfileCode) => void;
+  monitoringMode?: boolean;
   exports: ExportMutations;
 }) {
   const showIndiaPortal =
-    schemeCode === "green_credit_india" ||
-    schemeCode === "campa_ca" ||
-    schemeCode === "nhai_highway";
+    !monitoringMode &&
+    (schemeCode === "green_credit_india" ||
+      schemeCode === "campa_ca" ||
+      schemeCode === "nhai_highway");
   const showMultilateral =
-    schemeCode === "dfi_green_corridor" ||
-    schemeCode === "nhai_highway" ||
-    schemeCode === "campa_ca";
+    !monitoringMode &&
+    (schemeCode === "dfi_green_corridor" ||
+      schemeCode === "nhai_highway" ||
+      schemeCode === "campa_ca");
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-stone-900">Audit exports</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Download MRV packs, framework-mapped reports, and scheme-specific handoffs for third-party
-          review — not certification or issuance.
+          {monitoringMode
+            ? "Download MRV reports and signed evidence bundles for estate monitoring audits."
+            : "Download MRV packs, framework-mapped reports, and scheme-specific handoffs for third-party review — not certification or issuance."}
         </p>
       </div>
 
@@ -93,56 +98,58 @@ export function ProjectComplianceExportsSection({
         </div>
       </ExportGroup>
 
-      <ExportGroup
-        title="Framework-mapped report"
-        description="Profile-specific PDF or Excel aligned to VM0047, GS, REDD+, Paris/NDC, Green Credit, and more."
-      >
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px]">
-            <label className="label text-xs">Framework profile</label>
-            <select
-              className="input text-sm"
-              value={frameworkProfile}
-              onChange={(e) => onFrameworkChange(e.target.value as FrameworkProfileCode)}
-            >
-              {frameworks.map((f) => (
-                <option key={f.code} value={f.code}>
-                  {f.short_label}
-                </option>
-              ))}
-            </select>
+      {!monitoringMode ? (
+        <ExportGroup
+          title="Framework-mapped report"
+          description="Profile-specific PDF or Excel aligned to VM0047, GS, REDD+, Paris/NDC, Green Credit, and more."
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[220px]">
+              <label className="label text-xs">Framework profile</label>
+              <select
+                className="input text-sm"
+                value={frameworkProfile}
+                onChange={(e) => onFrameworkChange(e.target.value as FrameworkProfileCode)}
+              >
+                {frameworks.map((f) => (
+                  <option key={f.code} value={f.code}>
+                    {f.short_label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-        {selectedFramework ? (
-          <div className="space-y-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-xs text-stone-600">
-            <p>{selectedFramework.description}</p>
-            <p>
-              <span className="font-medium text-stone-800">Reference:</span>{" "}
-              {selectedFramework.reference}
-            </p>
-            {selectedFramework.disclaimer ? (
-              <p className="leading-relaxed text-stone-500">{selectedFramework.disclaimer}</p>
-            ) : null}
+          {selectedFramework ? (
+            <div className="space-y-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-xs text-stone-600">
+              <p>{selectedFramework.description}</p>
+              <p>
+                <span className="font-medium text-stone-800">Reference:</span>{" "}
+                {selectedFramework.reference}
+              </p>
+              {selectedFramework.disclaimer ? (
+                <p className="leading-relaxed text-stone-500">{selectedFramework.disclaimer}</p>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <ExportButton
+              primary
+              disabled={ex.busy}
+              pending={ex.exportFramework.isPending}
+              pendingLabel="Exporting…"
+              label="Framework PDF"
+              onClick={() => ex.exportFramework.mutate("pdf")}
+            />
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportFramework.isPending}
+              pendingLabel="Exporting…"
+              label="Framework Excel"
+              onClick={() => ex.exportFramework.mutate("xlsx")}
+            />
           </div>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
-          <ExportButton
-            primary
-            disabled={ex.busy}
-            pending={ex.exportFramework.isPending}
-            pendingLabel="Exporting…"
-            label="Framework PDF"
-            onClick={() => ex.exportFramework.mutate("pdf")}
-          />
-          <ExportButton
-            disabled={ex.busy}
-            pending={ex.exportFramework.isPending}
-            pendingLabel="Exporting…"
-            label="Framework Excel"
-            onClick={() => ex.exportFramework.mutate("xlsx")}
-          />
-        </div>
-      </ExportGroup>
+        </ExportGroup>
+      ) : null}
 
       {showIndiaPortal ? (
         <ExportGroup
@@ -213,35 +220,37 @@ export function ProjectComplianceExportsSection({
         </ExportGroup>
       ) : null}
 
-      <ExportGroup
-        title="Science & buyer due diligence"
-        description="SBTi FLAG worksheet and EUDR geo-coordinate pack with BRSR value-chain linkage."
-        accent="teal"
-      >
-        <div className="flex flex-wrap gap-2">
-          <ExportButton
-            disabled={ex.busy}
-            pending={ex.exportSbtiFlag.isPending}
-            pendingLabel="Exporting…"
-            label="SBTi FLAG worksheet (.xlsx)"
-            onClick={() => ex.exportSbtiFlag.mutate()}
-          />
-          <ExportButton
-            disabled={ex.busy}
-            pending={ex.exportEudrDueDiligence.isPending}
-            pendingLabel="Exporting…"
-            label="EUDR geo due diligence (.xlsx)"
-            onClick={() => ex.exportEudrDueDiligence.mutate("xlsx")}
-          />
-          <ExportButton
-            disabled={ex.busy}
-            pending={ex.exportEudrDueDiligence.isPending}
-            pendingLabel="Building…"
-            label="EUDR pack (.zip)"
-            onClick={() => ex.exportEudrDueDiligence.mutate("zip")}
-          />
-        </div>
-      </ExportGroup>
+      {!monitoringMode ? (
+        <ExportGroup
+          title="Science & buyer due diligence"
+          description="SBTi FLAG worksheet and EUDR geo-coordinate pack with BRSR value-chain linkage."
+          accent="teal"
+        >
+          <div className="flex flex-wrap gap-2">
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportSbtiFlag.isPending}
+              pendingLabel="Exporting…"
+              label="SBTi FLAG worksheet (.xlsx)"
+              onClick={() => ex.exportSbtiFlag.mutate()}
+            />
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportEudrDueDiligence.isPending}
+              pendingLabel="Exporting…"
+              label="EUDR geo due diligence (.xlsx)"
+              onClick={() => ex.exportEudrDueDiligence.mutate("xlsx")}
+            />
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportEudrDueDiligence.isPending}
+              pendingLabel="Building…"
+              label="EUDR pack (.zip)"
+              onClick={() => ex.exportEudrDueDiligence.mutate("zip")}
+            />
+          </div>
+        </ExportGroup>
+      ) : null}
     </div>
   );
 }

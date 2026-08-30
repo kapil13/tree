@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getProjectWorkspaceNav,
   parseProjectSecondarySegment,
   parseProjectSecondaryTab,
   PROJECT_FOCUSED_LAYOUT_MARKER,
@@ -40,5 +41,13 @@ describe("project-focused-ui", () => {
 
   it("exposes a stable layout marker for deploy checks", () => {
     expect(PROJECT_FOCUSED_LAYOUT_MARKER).toBe("project-focused-layout-v3");
+  });
+
+  it("renames credits tab for monitoring programmes", () => {
+    const plantingNav = getProjectWorkspaceNav(false);
+    const monitoringNav = getProjectWorkspaceNav(true);
+    expect(plantingNav.find((item) => item.id === "credits")?.label).toBe("Credits & reports");
+    expect(monitoringNav.find((item) => item.id === "credits")?.label).toBe("Reports & sampling");
+    expect(monitoringNav.find((item) => item.id === "credits")?.shortLabel).toBe("Reports");
   });
 });

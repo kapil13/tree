@@ -20,10 +20,12 @@ export function ProjectTreesByArea({
   projectId,
   workAreas,
   surveyIntervalDays = 30,
+  monitoringMode = false,
 }: {
   projectId: string;
   workAreas: WorkArea[];
   surveyIntervalDays?: number;
+  monitoringMode?: boolean;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["project-trees-all", projectId],
@@ -37,13 +39,21 @@ export function ProjectTreesByArea({
   if (!workAreas.length) {
     return (
       <p className="text-sm text-stone-600">
-        Draw a work area first, then register trees inside it.
+        {monitoringMode
+          ? "Draw work areas first. Satellite scans run on those polygons; trees are optional for plot sampling."
+          : "Draw a work area first, then register trees inside it."}
       </p>
     );
   }
 
   return (
     <div className="space-y-6">
+      {monitoringMode && trees.length === 0 ? (
+        <p className="text-sm text-stone-600">
+          No ground-truth trees yet. Add trees only if you need plot-based field sampling alongside
+          satellite monitoring.
+        </p>
+      ) : null}
       {workAreas.map((area) => {
         const areaTrees = trees.filter((t) => t.work_area_id === area.id);
         return (
@@ -60,7 +70,7 @@ export function ProjectTreesByArea({
                 href={`/trees/new?project=${projectId}&work_area=${area.id}`}
                 className="text-sm text-forest-700 hover:underline"
               >
-                Add tree here
+                {monitoringMode ? "Add optional tree" : "Add tree here"}
               </Link>
             </div>
             <TreeMiniTable trees={areaTrees} surveyIntervalDays={surveyIntervalDays} />

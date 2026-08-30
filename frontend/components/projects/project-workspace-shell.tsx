@@ -165,6 +165,7 @@ export function ProjectWorkspaceShell({
         projectId={projectId}
         active={activeSection}
         openViolations={openViolations}
+        monitoringMode={monitoringMode}
       />
 
       {children}
