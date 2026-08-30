@@ -53,6 +53,8 @@ export function ProjectWorkspacePage({
       registerHref={registerHref}
       canRegisterTree={setupStatus?.canRegisterTree ?? true}
       registerBlockReason={setupStatus?.blockReason}
+      monitoringMode={setupStatus?.monitoringMode ?? false}
+      primaryWorkAreaId={workAreas[0]?.id}
       activeSection={section}
       openViolations={openViolations}
     >
