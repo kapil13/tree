@@ -1448,7 +1448,9 @@ export const plantingProjects = {
   },
   async exportMonitoringDossier(projectId: string) {
     const response = await api.get(`/v1/planting-projects/${projectId}/monitoring-dossier`, {
+      params: { _t: Date.now() },
       responseType: "blob",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
     });
     return response.data as Blob;
   },

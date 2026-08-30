@@ -17,11 +17,44 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
 from app.models.plantation_fence import PlantationFence
+from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.models.satellite_health_analysis import SatelliteHealthAnalysis
+from app.services.monitoring.sar_sweep import serialize_sar_record
 from app.services.monitoring.scan_history import build_project_scan_history
+from app.services.satellite.sar_service import is_sar_provider_record
 from app.services.schemes.monitoring import is_satellite_watch_enabled
 from app.services.schemes.registry import get_scheme
+
+
+async def _latest_optical_record(
+    db: AsyncSession, fence_id: uuid.UUID
+) -> PlantationSatelliteRecord | None:
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(12)
+    )
+    for row in res.scalars().all():
+        if not is_sar_provider_record(row.provider) and row.ndvi_mean is not None:
+            return row
+    return None
+
+
+async def _latest_sar_record(
+    db: AsyncSession, fence_id: uuid.UUID
+) -> PlantationSatelliteRecord | None:
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(PlantationSatelliteRecord.fence_id == fence_id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(20)
+    )
+    for row in res.scalars().all():
+        if is_sar_provider_record(row.provider):
+            return row
+    return None
 
 
 async def build_monitoring_dossier_context(
@@ -42,6 +75,7 @@ async def build_monitoring_dossier_context(
     )
 
     scan_rows = await build_project_scan_history(db, project, limit=60)
+    fence_ids = {str(f.id) for f in fences}
     work_area_snapshots: list[dict[str, Any]] = []
     for fence in fences:
         health_res = await db.execute(
@@ -54,16 +88,36 @@ async def build_monitoring_dossier_context(
         llm = None
         if health and health.raw_output:
             llm = health.raw_output.get("llm_narrative")
-        latest_ndvi = health.ndvi_current if health and health.ndvi_current is not None else None
+        optical = await _latest_optical_record(db, fence.id)
+        sar_rec = await _latest_sar_record(db, fence.id)
+        sar_data = serialize_sar_record(sar_rec) if sar_rec else {}
+        sar_fusion = sar_data.get("fusion") or {}
+        sar_analysis = sar_data.get("analysis") or {}
+
+        latest_ndvi = (
+            float(optical.ndvi_mean)
+            if optical and optical.ndvi_mean is not None
+            else (float(health.ndvi_current) if health and health.ndvi_current is not None else None)
+        )
+        last_scan_at = (
+            optical.scene_acquired_at.isoformat()
+            if optical and optical.scene_acquired_at
+            else (fence.last_satellite_at.isoformat() if fence.last_satellite_at else None)
+        )
         work_area_snapshots.append(
             {
                 "id": str(fence.id),
                 "name": fence.name,
                 "area_ha": float(fence.area_ha) if fence.area_ha is not None else None,
-                "last_satellite_at": fence.last_satellite_at.isoformat()
-                if fence.last_satellite_at
+                "last_satellite_at": last_scan_at,
+                "latest_ndvi": latest_ndvi,
+                "ndvi_change_vs_baseline": float(optical.change_vs_baseline)
+                if optical and optical.change_vs_baseline is not None
                 else None,
-                "latest_ndvi": float(latest_ndvi) if latest_ndvi is not None else None,
+                "forest_integrity_score": sar_fusion.get("forest_integrity_score"),
+                "integrity_grade": sar_fusion.get("integrity_grade"),
+                "sar_monitoring_mode": sar_fusion.get("monitoring_mode"),
+                "sar_ground_status": sar_analysis.get("ground_status"),
                 "health_status": health.health_status if health else None,
                 "risk_level": health.risk_level if health else None,
                 "health_summary": health.summary if health else None,
@@ -77,10 +131,11 @@ async def build_monitoring_dossier_context(
             select(Alert)
             .where(Alert.user_id == owner_user_id)
             .order_by(Alert.created_at.desc())
-            .limit(40)
+            .limit(60)
         )
         monitoring_kinds = {
             "ndvi_degradation",
+            "health_roundup",
             "satellite_health",
             "satellite_health_digest",
             "sar_integrity_drop",
@@ -98,7 +153,9 @@ async def build_monitoring_dossier_context(
             if alert.kind not in monitoring_kinds:
                 continue
             payload = alert.payload or {}
-            if payload.get("project_id") not in (None, project_id_str):
+            alert_project = payload.get("project_id")
+            alert_fence = payload.get("fence_id")
+            if alert_project not in (None, project_id_str) and alert_fence not in fence_ids:
                 continue
             alert_rows.append(
                 {
@@ -158,7 +215,7 @@ def render_monitoring_dossier_pdf(ctx: dict[str, Any]) -> bytes:
         Paragraph(
             f"<b>{project.get('name', 'Project')}</b> ({project.get('code', '')}) · "
             f"{project.get('scheme_label') or 'Planting programme'} · "
-            f"generated {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
+            f"generated {(ctx.get('generated_at') or datetime.now(UTC).isoformat()).replace('T', ' ')[:19]} UTC",
             body,
         )
     )
@@ -193,8 +250,24 @@ def render_monitoring_dossier_pdf(ctx: dict[str, Any]) -> bytes:
     story.append(meta_table)
     story.append(Spacer(1, 6 * mm))
 
+    generated_at = ctx.get("generated_at") or datetime.now(UTC).isoformat()
     story.append(Paragraph("Work area snapshot", h2))
-    wa_header = ["Work area", "Area (ha)", "Last scan", "NDVI", "Health", "Risk"]
+    story.append(
+        Paragraph(
+            f"<i>Live scan data as of {generated_at.replace('T', ' ')[:19]} UTC</i>",
+            small,
+        )
+    )
+    wa_header = [
+        "Work area",
+        "Area (ha)",
+        "Last scan",
+        "NDVI",
+        "Integrity",
+        "SAR mode",
+        "Health",
+        "Risk",
+    ]
     wa_data = [wa_header]
     for wa in ctx.get("work_areas") or []:
         last = wa.get("last_satellite_at") or "—"
@@ -206,13 +279,20 @@ def render_monitoring_dossier_pdf(ctx: dict[str, Any]) -> bytes:
                 f"{wa.get('area_ha'):.2f}" if wa.get("area_ha") is not None else "—",
                 last,
                 f"{wa.get('latest_ndvi'):.2f}" if wa.get("latest_ndvi") is not None else "—",
+                str(wa.get("forest_integrity_score"))
+                if wa.get("forest_integrity_score") is not None
+                else "—",
+                wa.get("sar_monitoring_mode") or "—",
                 wa.get("health_status") or "—",
                 wa.get("risk_level") or "—",
             ]
         )
     if len(wa_data) == 1:
-        wa_data.append(["—", "—", "—", "—", "—", "—"])
-    wa_table = Table(wa_data, colWidths=[42 * mm, 22 * mm, 28 * mm, 18 * mm, 28 * mm, 22 * mm])
+        wa_data.append(["—", "—", "—", "—", "—", "—", "—", "—"])
+    wa_table = Table(
+        wa_data,
+        colWidths=[34 * mm, 18 * mm, 22 * mm, 16 * mm, 18 * mm, 22 * mm, 22 * mm, 18 * mm],
+    )
     wa_table.setStyle(
         TableStyle(
             [
