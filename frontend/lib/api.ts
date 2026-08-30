@@ -2032,6 +2032,28 @@ export const bhoonidhi = {
       };
     };
   },
+  async downloadScene(params: { id: string; collection: string }) {
+    const res = await api.get("/v1/bhoonidhi/download", {
+      params: { id: params.id, collection: params.collection },
+      responseType: "blob",
+    });
+    const blob = res.data as Blob;
+    if (blob.type.includes("json")) {
+      const text = await blob.text();
+      let message = "Bhoonidhi download failed";
+      try {
+        const payload = JSON.parse(text) as { detail?: string; Description?: string };
+        message = payload.detail || payload.Description || message;
+      } catch {
+        message = text.slice(0, 200) || message;
+      }
+      throw new Error(message);
+    }
+    const disposition = res.headers["content-disposition"] as string | undefined;
+    const match = disposition?.match(/filename=\"?([^\";]+)\"?/i);
+    const filename = match?.[1] || `${params.id}.zip`;
+    return { blob, filename };
+  },
 };
 
 export type SarStatus = {

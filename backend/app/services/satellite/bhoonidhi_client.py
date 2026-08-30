@@ -237,6 +237,23 @@ class BhoonidhiClient:
         qs = urlencode({"id": item_id, "collection": collection})
         return f"{self._base}/download?{qs}"
 
+    def proxy_download_path(self, *, item_id: str, collection: str) -> str:
+        """Relative Aranyix API path — browser must not call Bhoonidhi /download directly."""
+        from urllib.parse import urlencode
+
+        qs = urlencode({"id": item_id, "collection": collection})
+        return f"/v1/bhoonidhi/download?{qs}"
+
+    async def download_product(self, *, item_id: str, collection: str) -> httpx.Response:
+        """Download a catalog product using the server JWT session."""
+        resp = await self._request(
+            "GET",
+            "/download",
+            params={"id": item_id, "collection": collection},
+        )
+        resp.raise_for_status()
+        return resp
+
     async def logout(self) -> None:
         if not self._refresh_token:
             return
