@@ -23,6 +23,7 @@ const SEGMENT_LABEL: Record<string, string> = {
   nagar_van_urban: "Nagar Van / Urban forest",
   sahakar_van_coop: "Sahakar Van / Cooperative forest",
   ngo_watershed: "NGO / Watershed",
+  estate_monitoring: "Estate / forest watch",
   general: "General",
 };
 

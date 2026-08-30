@@ -12,7 +12,7 @@ from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
-from app.services.schemes.monitoring import is_monitoring_scheme
+from app.services.schemes.monitoring import is_monitoring_scheme, is_satellite_watch_enabled
 from app.services.schemes.registry import get_scheme
 
 
@@ -110,6 +110,36 @@ async def _sar_integrity_metrics(
     return {"sar_scored_areas": sar_scored, "sar_at_risk_areas": sar_at_risk}
 
 
+async def _compute_satellite_watch_metrics(
+    db: AsyncSession,
+    project: PlantingProject,
+    *,
+    max_days_since_scan: int = 35,
+) -> dict[str, Any]:
+    """NDVI scan coverage and SAR integrity for any project with work areas."""
+    fences = list(
+        (
+            await db.execute(
+                select(PlantationFence).where(PlantationFence.project_id == project.id)
+            )
+        ).scalars().all()
+    )
+    coverage = scan_coverage_metrics(fences, max_days_since_scan=max_days_since_scan)
+    ndvi_by_fence = await _latest_ndvi_by_fence(db, [f.id for f in fences])
+    ndvi_values = list(ndvi_by_fence.values())
+    mean_ndvi = round(sum(ndvi_values) / len(ndvi_values), 3) if ndvi_values else None
+    sar = await _sar_integrity_metrics(db, project.id, [f.id for f in fences])
+    return {
+        "work_area_count": coverage["work_area_count"],
+        "scanned_work_areas": coverage["scanned_work_areas"],
+        "scan_coverage_pct": coverage["scan_coverage_pct"],
+        "max_days_since_scan": coverage["max_days_since_scan_observed"],
+        "mean_ndvi": mean_ndvi,
+        "sar_scored_areas": sar["sar_scored_areas"],
+        "sar_at_risk_areas": sar["sar_at_risk_areas"],
+    }
+
+
 async def _compute_estate_monitoring_kpis(
     db: AsyncSession,
     project: PlantingProject,
@@ -118,44 +148,23 @@ async def _compute_estate_monitoring_kpis(
     targets = dict(scheme.get("kpi_targets") or {})
     max_days = int(targets.get("max_days_since_scan") or 35)
 
-    fences = list(
-        (
-            await db.execute(
-                select(PlantationFence).where(PlantationFence.project_id == project.id)
-            )
-        ).scalars().all()
-    )
-
-    coverage = scan_coverage_metrics(fences, max_days_since_scan=max_days)
-    ndvi_by_fence = await _latest_ndvi_by_fence(db, [f.id for f in fences])
-    ndvi_values = list(ndvi_by_fence.values())
-    mean_ndvi = round(sum(ndvi_values) / len(ndvi_values), 3) if ndvi_values else None
-    coverage["mean_ndvi"] = mean_ndvi
-
-    sar = await _sar_integrity_metrics(db, project.id, [f.id for f in fences])
-
-    metrics = {
-        "work_area_count": coverage["work_area_count"],
-        "scanned_work_areas": coverage["scanned_work_areas"],
-        "scan_coverage_pct": coverage["scan_coverage_pct"],
-        "max_days_since_scan": coverage["max_days_since_scan_observed"],
-        "mean_ndvi": mean_ndvi,
-        "sar_scored_areas": sar["sar_scored_areas"],
-        "sar_at_risk_areas": sar["sar_at_risk_areas"],
-        "tree_count": 0,
-    }
+    metrics = await _compute_satellite_watch_metrics(db, project, max_days_since_scan=max_days)
+    coverage_work_areas = metrics["work_area_count"]
+    metrics["tree_count"] = 0
 
     checks: dict[str, bool] = {}
-    if "scan_coverage_pct_min" in targets and coverage["work_area_count"] > 0:
-        checks["scan_coverage"] = coverage["scan_coverage_pct"] >= float(
+    if "scan_coverage_pct_min" in targets and coverage_work_areas > 0:
+        checks["scan_coverage"] = metrics["scan_coverage_pct"] >= float(
             targets["scan_coverage_pct_min"]
         )
-    if coverage["work_area_count"] > 0 and coverage["max_days_since_scan_observed"] is not None:
-        checks["scan_freshness"] = coverage["max_days_since_scan_observed"] <= max_days
-    if coverage["work_area_count"] > 0:
-        checks["sar_integrity"] = sar["sar_at_risk_areas"] == 0 and sar["sar_scored_areas"] > 0
+    if coverage_work_areas > 0 and metrics["max_days_since_scan"] is not None:
+        checks["scan_freshness"] = metrics["max_days_since_scan"] <= max_days
+    if coverage_work_areas > 0:
+        checks["sar_integrity"] = (
+            metrics["sar_at_risk_areas"] == 0 and metrics["sar_scored_areas"] > 0
+        )
 
-    if coverage["work_area_count"] == 0:
+    if coverage_work_areas == 0:
         overall = "not_started"
     elif not checks:
         overall = "not_configured"
@@ -175,6 +184,7 @@ async def _compute_estate_monitoring_kpis(
         "checks": checks,
         "status": overall,
         "monitoring_mode": True,
+        "satellite_watch": True,
     }
 
 
@@ -227,7 +237,7 @@ async def compute_scheme_kpis(db: AsyncSession, project: PlantingProject) -> dic
     else:
         overall = "off_track"
 
-    return {
+    result = {
         "scheme_code": scheme["code"],
         "scheme_label": scheme["label"],
         "ministry": scheme["ministry"],
@@ -236,3 +246,17 @@ async def compute_scheme_kpis(db: AsyncSession, project: PlantingProject) -> dic
         "checks": checks,
         "status": overall,
     }
+
+    if is_satellite_watch_enabled(project):
+        watch = await _compute_satellite_watch_metrics(db, project)
+        result["metrics"] = {**result["metrics"], **watch}
+        result["satellite_watch"] = True
+        if watch["work_area_count"] > 0:
+            result["checks"] = {
+                **result["checks"],
+                "scan_coverage": watch["scan_coverage_pct"] >= 80,
+            }
+            if watch["max_days_since_scan"] is not None:
+                result["checks"]["scan_freshness"] = watch["max_days_since_scan"] <= 35
+
+    return result

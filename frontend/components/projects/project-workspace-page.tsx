@@ -54,6 +54,7 @@ export function ProjectWorkspacePage({
       canRegisterTree={setupStatus?.canRegisterTree ?? true}
       registerBlockReason={setupStatus?.blockReason}
       monitoringMode={setupStatus?.monitoringMode ?? false}
+      satelliteWatchEnabled={setupStatus?.satelliteWatchEnabled ?? false}
       primaryWorkAreaId={workAreas[0]?.id}
       activeSection={section}
       openViolations={openViolations}

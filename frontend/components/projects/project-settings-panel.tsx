@@ -8,13 +8,20 @@ import { plantingProjects, type PlantingProject } from "@/lib/api";
 import { errorMessage } from "@/lib/api";
 import { ProjectRuleOverridePanel } from "@/components/projects/project-rule-override-panel";
 import { projectSetupHref } from "@/lib/project-focused-ui";
+import {
+  isMonitoringOnlyProject,
+  isSatelliteWatchEnabled,
+  SATELLITE_WATCH_METADATA_KEY,
+} from "@/lib/project-monitoring";
 
 export function ProjectSettingsPanel({
   project,
   monitoringMode = false,
+  satelliteWatchEnabled = false,
 }: {
   project: PlantingProject;
   monitoringMode?: boolean;
+  satelliteWatchEnabled?: boolean;
 }) {
   const qc = useQueryClient();
   const [name, setName] = useState(project.name);
@@ -27,22 +34,34 @@ export function ProjectSettingsPanel({
   const [surveyDays, setSurveyDays] = useState(
     String((project.metadata?.survey_interval_days as number) ?? 30),
   );
+  const [satelliteWatch, setSatelliteWatch] = useState(
+    satelliteWatchEnabled || Boolean(project.metadata?.[SATELLITE_WATCH_METADATA_KEY]),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
-    mutationFn: () =>
-      plantingProjects.update(project.id, {
+    mutationFn: () => {
+      const metadata: Record<string, unknown> = {
+        ...project.metadata,
+        survey_interval_days: Number(surveyDays) === 15 ? 15 : 30,
+      };
+      if (!monitoringMode) {
+        if (satelliteWatch) {
+          metadata[SATELLITE_WATCH_METADATA_KEY] = true;
+        } else {
+          delete metadata[SATELLITE_WATCH_METADATA_KEY];
+        }
+      }
+      return plantingProjects.update(project.id, {
         name,
         description,
         status: status as PlantingProject["status"],
         compliance_mode: complianceMode as PlantingProject["compliance_mode"],
         target_tree_count: targetTrees ? Number(targetTrees) : undefined,
-        metadata: {
-          ...project.metadata,
-          survey_interval_days: Number(surveyDays) === 15 ? 15 : 30,
-        },
-      }),
+        metadata,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["planting-project", project.id] });
       setSaved(true);
@@ -175,6 +194,28 @@ export function ProjectSettingsPanel({
           </button>
         </div>
       </div>
+
+      {!monitoringMode ? (
+        <div className="card space-y-3 lg:col-span-2">
+          <h2 className="text-sm font-medium">Satellite watch programme</h2>
+          <label className="flex cursor-pointer items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={satelliteWatch}
+              onChange={(e) => setSatelliteWatch(e.target.checked)}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Enable satellite watch on work areas</span>
+              <span className="mt-1 block text-stone-600">
+                Run monthly NDVI and SAR integrity scans on drawn polygons alongside planting or
+                post-planting monitoring. Works for CAMPA, Nagar Van, NHAI, Green Credit, and other
+                schemes — not only Estate &amp; Forest Watch.
+              </span>
+            </span>
+          </label>
+        </div>
+      ) : null}
 
       <ProjectRuleOverridePanel project={project} />
 

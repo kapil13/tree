@@ -5,7 +5,7 @@ describe("compliance-gap-actions", () => {
   const ctx = {
     projectId: "proj-1",
     primaryWorkAreaId: "fence-a",
-    monitoringMode: true,
+    satelliteWatchEnabled: true,
   };
 
   it("deep-links NDVI scan gaps to project satellite workspace", () => {

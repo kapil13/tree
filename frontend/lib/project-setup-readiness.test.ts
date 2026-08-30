@@ -115,5 +115,23 @@ describe("evaluateProjectSetup", () => {
     expect(status.monitoringMode).toBe(true);
     expect(status.steps.some((s) => s.id === "tree_defaults")).toBe(false);
     expect(status.setupComplete).toBe(true);
+    expect(status.satelliteWatchEnabled).toBe(true);
+  });
+
+  it("detects satellite watch opt-in on planting projects", () => {
+    const watched = {
+      ...campaProject,
+      metadata: {
+        ...campaProject.metadata,
+        satellite_watch_enabled: true,
+      },
+    } as unknown as PlantingProject;
+    const status = evaluateProjectSetup({
+      project: watched,
+      workAreas: [workArea],
+      scheme: { code: "campa_ca", metadata_sections: [{ fields: [] }] } as never,
+    });
+    expect(status.monitoringMode).toBe(false);
+    expect(status.satelliteWatchEnabled).toBe(true);
   });
 });

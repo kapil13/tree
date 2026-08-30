@@ -26,7 +26,7 @@ import {
   verification,
   type WorkArea,
 } from "@/lib/api";
-import { isMonitoringScheme } from "@/lib/schemes";
+import { isMonitoringOnlyProject, isSatelliteWatchEnabled } from "@/lib/project-monitoring";
 
 const SEVERITY_CLASS: Record<string, string> = {
   block: "bg-rose-100 text-rose-900",
@@ -75,6 +75,7 @@ export function ProjectComplianceTab({
   schemeCode,
   workAreas = [],
   monitoringMode: monitoringModeProp,
+  satelliteWatchEnabled: satelliteWatchProp,
   onNavigateTab,
 }: {
   projectId: string;
@@ -83,11 +84,19 @@ export function ProjectComplianceTab({
   schemeCode?: string | null;
   workAreas?: WorkArea[];
   monitoringMode?: boolean;
+  satelliteWatchEnabled?: boolean;
   onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
   const searchParams = useSearchParams();
-  const monitoringMode = monitoringModeProp ?? isMonitoringScheme(schemeCode);
+  const monitoringMode =
+    monitoringModeProp ?? isMonitoringOnlyProject({ scheme_code: schemeCode ?? null });
+  const satelliteWatchEnabled =
+    satelliteWatchProp ??
+    isSatelliteWatchEnabled({
+      scheme_code: schemeCode ?? null,
+      metadata: projectMetadata,
+    });
   const [section, setSection] = useState<ComplianceSection>(
     monitoringMode ? "checklist" : "overview",
   );
@@ -350,7 +359,7 @@ export function ProjectComplianceTab({
                 onNavigateTab={onNavigateTab}
                 onScrollToAnchor={navigateToAnchor}
                 gapContext={{
-                  monitoringMode,
+                  satelliteWatchEnabled,
                   primaryWorkAreaId: workAreas[0]?.id,
                 }}
                 onSaved={() => {

@@ -13,7 +13,7 @@ from app.models.tree import Tree
 from app.services.compliance.evaluator import build_auto_signals, list_project_checklist_summaries
 from app.services.planting_projects.survival_survey import survey_interval_days
 from app.services.schemes.compliance import checklists_for_project
-from app.services.schemes.monitoring import is_monitoring_scheme
+from app.services.schemes.monitoring import is_monitoring_scheme, is_satellite_watch_enabled
 
 WorkflowStepStatus = Literal["done", "partial", "pending", "skipped"]
 
@@ -430,6 +430,26 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
         },
     ]
 
+    if is_satellite_watch_enabled(project):
+        project_id = str(project.id)
+        scan_signal = signals.get("work_area_scan_coverage")
+        for step in steps:
+            if step["id"] == "satellite_monitoring":
+                step["title"] = "Run NDVI scan on work areas"
+                step["description"] = (
+                    "Monthly NDVI on work-area polygons tracks canopy health alongside field work."
+                )
+                step["status"] = _step_status(scan_signal)
+                step["action_label"] = "Open satellite monitoring"
+                step["action_href"] = f"/satellite?project={project_id}"
+                step["optional"] = False
+                step["metric"] = {
+                    "yes": "All blocks scanned within cadence",
+                    "partial": "Some blocks need a fresh NDVI scan",
+                    "no": "Run initial NDVI scan on all blocks",
+                }.get(scan_signal or "no")
+                break
+
     required_steps = [s for s in steps if not s.get("optional")]
     done_count = sum(1 for s in required_steps if s["status"] == "done")
     partial_count = sum(1 for s in required_steps if s["status"] == "partial")
@@ -449,4 +469,5 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
         },
         "auto_signals": signals,
         "checklist_summaries": checklist_summaries,
+        "satellite_watch": is_satellite_watch_enabled(project),
     }

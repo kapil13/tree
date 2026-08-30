@@ -44,6 +44,10 @@ Lifecycle: use planting schemes (CAMPA, Nagar Van, GIM) during the planting phas
 `estate_monitoring` for 5–20 year post-planting watch. Link via optional `parent_scheme_code`
 in estate metadata.
 
+**Cross-scheme satellite watch:** Any planting project can enable `metadata.satellite_watch_enabled`
+in Project admin → Satellite watch programme. This turns on NDVI/SAR KPIs, compliance workflow scan
+steps, and deep links to `/satellite?project=` without switching to the estate-only UX shell.
+
 ## API
 
 - `GET /api/v1/schemes` — list schemes (`?program_code=government_nhai`)

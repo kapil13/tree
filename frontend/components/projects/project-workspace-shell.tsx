@@ -17,6 +17,7 @@ type ProjectWorkspaceShellProps = {
   canRegisterTree?: boolean;
   registerBlockReason?: string;
   monitoringMode?: boolean;
+  satelliteWatchEnabled?: boolean;
   primaryWorkAreaId?: string | null;
   activeSection: "overview" | ProjectSecondaryTab;
   openViolations?: number;
@@ -76,6 +77,7 @@ export function ProjectWorkspaceShell({
   canRegisterTree = true,
   registerBlockReason,
   monitoringMode = false,
+  satelliteWatchEnabled = false,
   primaryWorkAreaId,
   activeSection,
   openViolations = 0,
@@ -88,8 +90,9 @@ export function ProjectWorkspaceShell({
     : plantingStatus(openViolations, progress);
   const satelliteLink = satelliteHref({
     fenceId: primaryWorkAreaId,
-    projectId: monitoringMode ? projectId : undefined,
+    projectId: satelliteWatchEnabled ? projectId : undefined,
   });
+  const showSatellitePrimary = monitoringMode || (satelliteWatchEnabled && openViolations === 0);
 
   return (
     <div className="space-y-5 md:space-y-6" data-project-layout={PROJECT_FOCUSED_LAYOUT_MARKER}>
@@ -102,6 +105,11 @@ export function ProjectWorkspaceShell({
           openViolations > 0 ? (
             <Link href={`/projects/${projectId}/compliance`} className="btn-secondary text-xs">
               Review compliance
+            </Link>
+          ) : showSatellitePrimary && !canRegisterTree && !monitoringMode ? (
+            <Link href={satelliteLink} className="btn-primary text-xs">
+              <Satellite className="h-3.5 w-3.5" />
+              Satellite monitoring
             </Link>
           ) : monitoringMode ? (
             <Link href={satelliteLink} className="btn-primary text-xs">
@@ -136,29 +144,42 @@ export function ProjectWorkspaceShell({
                 ? ` · ${progress.toFixed(0)}% registered`
                 : ""}
             {!monitoringMode ? ` · survival survey every ${surveyDays} days` : ""}
+            {satelliteWatchEnabled && !monitoringMode ? " · satellite watch on" : ""}
           </p>
         </div>
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
         {monitoringMode ? (
           <Link href={satelliteLink} className="btn-primary w-full shrink-0 sm:w-auto">
             <Satellite className="h-4 w-4" />
             Satellite monitoring
           </Link>
-        ) : canRegisterTree && openViolations === 0 ? (
-          <Link href={registerHref} className="btn-primary w-full shrink-0 sm:w-auto">
-            <Leaf className="h-4 w-4" />
-            Register tree
-          </Link>
-        ) : !canRegisterTree ? (
-          <span
-            className={cn(
-              "inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-stone-200 px-4 py-2.5 text-sm font-medium text-stone-500 sm:w-auto",
-            )}
-            title={registerBlockReason}
-          >
-            <Leaf className="h-4 w-4" />
-            Register tree
-          </span>
-        ) : null}
+        ) : (
+          <>
+            {satelliteWatchEnabled && openViolations === 0 ? (
+              <Link href={satelliteLink} className="btn-secondary w-full shrink-0 sm:w-auto">
+                <Satellite className="h-4 w-4" />
+                Satellite monitoring
+              </Link>
+            ) : null}
+            {canRegisterTree && openViolations === 0 ? (
+              <Link href={registerHref} className="btn-primary w-full shrink-0 sm:w-auto">
+                <Leaf className="h-4 w-4" />
+                Register tree
+              </Link>
+            ) : !canRegisterTree ? (
+              <span
+                className={cn(
+                  "inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-stone-200 px-4 py-2.5 text-sm font-medium text-stone-500 sm:w-auto",
+                )}
+                title={registerBlockReason}
+              >
+                <Leaf className="h-4 w-4" />
+                Register tree
+              </span>
+            ) : null}
+          </>
+        )}
+        </div>
       </div>
 
       <ProjectWorkspaceNav

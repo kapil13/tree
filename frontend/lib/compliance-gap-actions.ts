@@ -19,7 +19,8 @@ export type ComplianceGapAction = {
 export type GapContext = {
   projectId: string;
   primaryWorkAreaId?: string | null;
-  monitoringMode?: boolean;
+  /** When true, satellite gap actions deep-link to this project's map workspace. */
+  satelliteWatchEnabled?: boolean;
 };
 
 export function projectTabHref(
@@ -41,7 +42,7 @@ export function projectTabHref(
 function monitoringSatelliteHref(ctx: GapContext): string {
   return satelliteHref({
     fenceId: ctx.primaryWorkAreaId,
-    projectId: ctx.monitoringMode ? ctx.projectId : undefined,
+    projectId: ctx.satelliteWatchEnabled ? ctx.projectId : undefined,
   });
 }
 
@@ -64,7 +65,7 @@ const AUTO_KEY_ACTIONS: Record<
   satellite_coverage: {
     label: "Run satellite scan",
     href: (ctx) =>
-      ctx.monitoringMode ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
   },
   work_area_scan_coverage: {
     label: "Run NDVI scan",
@@ -99,7 +100,7 @@ const AUTO_KEY_ACTIONS: Record<
   sar_permanence_risk: {
     label: "Review SAR integrity",
     href: (ctx) =>
-      ctx.monitoringMode ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
   },
   estate_metadata_complete: {
     label: "Complete estate details",

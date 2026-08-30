@@ -34,7 +34,7 @@ export function ComplianceGapList({
   const ctx: GapContext = {
     projectId,
     primaryWorkAreaId: gapContext?.primaryWorkAreaId,
-    monitoringMode: gapContext?.monitoringMode,
+    satelliteWatchEnabled: gapContext?.satelliteWatchEnabled,
   };
 
   function handleAction(action: ReturnType<typeof resolveComplianceGapAction>) {
