@@ -115,6 +115,24 @@ def bbox_wgs84_around_point(lat: float, lon: float, buffer_m: float = 15.0) -> l
     return [lon - dlon, lat - dlat, lon + dlon, lat + dlat]
 
 
+def resolution_degrees(lat: float, *, meters: float = 10.0) -> float:
+    """CRS84 degree step for ~10 m Sentinel-2 statistics grid cells."""
+    return meters / (111_320.0 * max(0.1, math.cos(math.radians(lat))))
+
+
+def _bounds_centroid_lat(bounds: dict[str, Any]) -> float:
+    geom = bounds.get("geometry")
+    if isinstance(geom, dict) and geom.get("type") == "Polygon":
+        ring = geom.get("coordinates") or [[]]
+        coords = ring[0] if ring else []
+        if coords:
+            return sum(float(c[1]) for c in coords) / len(coords)
+    bbox = bounds.get("bbox")
+    if bbox and len(bbox) >= 4:
+        return (float(bbox[1]) + float(bbox[3])) / 2.0
+    return 0.0
+
+
 def _parse_iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))
 
@@ -212,6 +230,7 @@ class SentinelHubClient:
         time_to: datetime,
         interval: str,
     ) -> dict[str, Any]:
+        res = resolution_degrees(_bounds_centroid_lat(bounds))
         return {
             "input": {
                 "bounds": bounds,
@@ -232,8 +251,8 @@ class SentinelHubClient:
                 },
                 "aggregationInterval": {"of": interval},
                 "evalscript": NDVI_EVALSCRIPT,
-                "resx": 10,
-                "resy": 10,
+                "resx": res,
+                "resy": res,
             },
         }
 
@@ -380,6 +399,7 @@ class SentinelHubClient:
         time_from: datetime,
         time_to: datetime,
     ) -> dict[str, Any]:
+        res = resolution_degrees(_bounds_centroid_lat(bounds))
         return {
             "input": {
                 "bounds": bounds,
@@ -403,8 +423,8 @@ class SentinelHubClient:
                 },
                 "aggregationInterval": {"of": "P1D"},
                 "evalscript": S1_SAR_EVALSCRIPT,
-                "resx": 10,
-                "resy": 10,
+                "resx": res,
+                "resy": res,
             },
         }
 
