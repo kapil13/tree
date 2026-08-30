@@ -33,7 +33,9 @@ const HEALTH_FILTERS = [
   { value: "unknown", label: "Unknown" },
 ] as const;
 
-const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
+import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
+
+const DEFAULT_CENTER = FALLBACK_MAP_CENTER;
 const CLUSTER_ZOOM_THRESHOLD = 13;
 
 function markerIcon(color: string, size = 24): string {
