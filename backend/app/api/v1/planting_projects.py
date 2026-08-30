@@ -40,7 +40,6 @@ from app.schemas.planting_project import (
     WorkAreaOut,
     WorkAreaUpdate,
 )
-from app.schemas.scan_history import ScanHistoryOut, ScanHistoryRowOut
 from app.schemas.project_member import (
     FieldOpsSummaryOut,
     MonitoringSummaryOut,
@@ -49,6 +48,7 @@ from app.schemas.project_member import (
 )
 from app.schemas.project_risk import ProjectRiskAssessmentCreate
 from app.schemas.rule_template import ProjectRuleOverrideUpdate
+from app.schemas.scan_history import ScanHistoryOut, ScanHistoryRowOut
 from app.schemas.tree import TreeListItem
 from app.schemas.vm0047 import (
     AdditionalityCreate,
@@ -59,10 +59,12 @@ from app.schemas.vm0047 import (
 from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
-from app.services.monitoring.scan_history import build_portfolio_scan_history, build_project_scan_history
 from app.services.monitoring.satellite_sweep import run_project_satellite_scan
+from app.services.monitoring.scan_history import (
+    build_portfolio_scan_history,
+    build_project_scan_history,
+)
 from app.services.monitoring.summary import build_monitoring_summary
-from app.services.schemes.monitoring import is_satellite_watch_enabled
 from app.services.planting_projects.access import (
     can_manage_project,
     load_project,
@@ -95,6 +97,7 @@ from app.services.planting_projects.work_area_geometry import (
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.monitoring import is_satellite_watch_enabled
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 from app.services.schemes.validation import merge_scheme_metadata, validate_scheme_metadata
 

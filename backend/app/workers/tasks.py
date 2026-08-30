@@ -136,11 +136,7 @@ def monthly_sar_sweep() -> dict:
     async def _run() -> dict:
         from datetime import UTC, datetime
 
-        from sqlalchemy import select
-
         from app.core.database import AsyncSessionLocal
-        from app.models.plantation_fence import PlantationFence
-        from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
         from app.services.monitoring.sar_sweep_health import (
             classify_sar_provider,
@@ -200,11 +196,8 @@ def weekly_sar_integrity_watch() -> dict:
     log.info("worker.weekly_sar_integrity_watch")
 
     async def _run() -> dict:
-        from sqlalchemy import select
 
         from app.core.database import AsyncSessionLocal
-        from app.models.plantation_fence import PlantationFence
-        from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
         from app.services.monitoring.sar_sweep_health import (
