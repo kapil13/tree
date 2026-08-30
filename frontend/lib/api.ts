@@ -3479,7 +3479,8 @@ export const indiaAdmin = {
     ).data;
   },
   async gramPanchayats(params: {
-    blockCode: string;
+    blockCode?: string;
+    blockLgd?: number;
     districtCode?: string;
     stateCode?: string;
   }) {
@@ -3487,6 +3488,7 @@ export const indiaAdmin = {
       await api.get<IndiaAdminListResponse>("/v1/india-admin/gram-panchayats", {
         params: {
           block_code: params.blockCode,
+          block_lgd: params.blockLgd,
           district_code: params.districtCode,
           state_code: params.stateCode,
         },
@@ -3495,6 +3497,7 @@ export const indiaAdmin = {
   },
   async villages(params: {
     blockCode?: string;
+    blockLgd?: number;
     gramPanchayatCode?: string;
     districtCode?: string;
     stateCode?: string;
@@ -3503,6 +3506,7 @@ export const indiaAdmin = {
       await api.get<IndiaAdminListResponse>("/v1/india-admin/villages", {
         params: {
           block_code: params.blockCode,
+          block_lgd: params.blockLgd,
           gram_panchayat_code: params.gramPanchayatCode,
           district_code: params.districtCode,
           state_code: params.stateCode,

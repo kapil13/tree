@@ -54,13 +54,17 @@ async def list_blocks(
 @router.get("/gram-panchayats")
 async def list_gram_panchayats(
     user: CurrentUser,
-    block_code: str = Query(..., min_length=1, max_length=16),
+    block_code: str | None = Query(None, max_length=16),
+    block_lgd: int | None = Query(None, ge=1),
     district_code: str | None = Query(None, max_length=16),
     state_code: str | None = Query(None, max_length=8),
 ) -> dict:
     del user
+    if block_lgd is None and not block_code:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="block_lgd_or_block_code_required")
     return await _service.gram_panchayats(
         block_code=block_code,
+        block_lgd=block_lgd,
         district_code=district_code,
         state_code=state_code,
     )
@@ -70,13 +74,20 @@ async def list_gram_panchayats(
 async def list_villages(
     user: CurrentUser,
     block_code: str | None = Query(None, max_length=16),
+    block_lgd: int | None = Query(None, ge=1),
     gram_panchayat_code: str | None = Query(None, max_length=32),
     district_code: str | None = Query(None, max_length=16),
     state_code: str | None = Query(None, max_length=8),
 ) -> dict:
     del user
+    if not gram_panchayat_code and block_lgd is None and not block_code:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="gram_panchayat_code_or_block_required",
+        )
     return await _service.villages(
         block_code=block_code,
+        block_lgd=block_lgd,
         gram_panchayat_code=gram_panchayat_code,
         district_code=district_code,
         state_code=state_code,

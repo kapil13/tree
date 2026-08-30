@@ -9,6 +9,7 @@ export type ProjectLocation = {
   district_name: string;
   block_code: string;
   block_name: string;
+  block_lgd: string;
   gram_panchayat_code: string;
   gram_panchayat_name: string;
   village_code: string;
@@ -24,6 +25,7 @@ export const EMPTY_PROJECT_LOCATION: ProjectLocation = {
   district_name: "",
   block_code: "",
   block_name: "",
+  block_lgd: "",
   gram_panchayat_code: "",
   gram_panchayat_name: "",
   village_code: "",

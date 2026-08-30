@@ -152,14 +152,16 @@ export function ProjectLocationFields({
       location.state_code,
       location.district_code,
       location.block_code,
+      location.block_lgd,
     ],
     queryFn: () =>
       indiaAdmin.gramPanchayats({
-        blockCode: location.block_code,
+        blockCode: location.block_code || undefined,
+        blockLgd: location.block_lgd ? Number(location.block_lgd) : undefined,
         districtCode: location.district_code,
         stateCode: location.state_code,
       }),
-    enabled: Boolean(location.block_code),
+    enabled: Boolean(location.block_lgd || location.block_code),
   });
 
   const { data: villagesData, isLoading: villagesLoading } = useQuery({
@@ -177,7 +179,7 @@ export function ProjectLocationFields({
         districtCode: location.district_code,
         stateCode: location.state_code,
       }),
-    enabled: Boolean(location.block_code || location.gram_panchayat_code),
+    enabled: Boolean(location.gram_panchayat_code),
   });
 
   const stateOptions = useMemo(
@@ -193,7 +195,12 @@ export function ProjectLocationFields({
     [citiesData],
   );
   const blockOptions = useMemo(
-    () => (blocksData?.items ?? []).map((b) => ({ code: b.code, name: b.name })),
+    () =>
+      (blocksData?.items ?? []).map((b) => ({
+        code: b.code,
+        name: b.name,
+        lgd: b.lgd,
+      })),
     [blocksData],
   );
   const gpOptions = useMemo(
@@ -308,6 +315,7 @@ export function ProjectLocationFields({
                 district_name: opt?.name ?? "",
                 block_code: "",
                 block_name: "",
+                block_lgd: "",
                 gram_panchayat_code: "",
                 gram_panchayat_name: "",
                 village_code: "",
@@ -338,20 +346,23 @@ export function ProjectLocationFields({
           error={errors?.block_code}
           manualFallback={blocksData?.manual_fallback}
           manualValue={location.block_name}
-          onSelect={(code, name) =>
+          onSelect={(code, name) => {
+            const opt = blockOptions.find((b) => b.code === code);
             patch({
               block_code: code,
               block_name: name,
+              block_lgd: opt?.lgd != null ? String(opt.lgd) : "",
               gram_panchayat_code: "",
               gram_panchayat_name: "",
               village_code: "",
               village_name: "",
-            })
-          }
+            });
+          }}
           onManualChange={(name) =>
             patch({
               block_code: "",
               block_name: name,
+              block_lgd: "",
               gram_panchayat_code: "",
               gram_panchayat_name: "",
               village_code: "",

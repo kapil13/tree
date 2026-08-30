@@ -35,6 +35,27 @@ def test_cities_filtered_by_state():
 
 
 @pytest.mark.asyncio
+async def test_gram_panchayats_from_lgd_bundle():
+    svc = IndiaAdminService()
+    result = await svc.gram_panchayats(block_lgd=7473)
+    assert result["manual_fallback"] is False
+    assert result["source"] == "lgd_bundle"
+    assert len(result["items"]) >= 10
+    assert any("Nawapura" in gp["name"] or "Bakhasar" in gp["name"] for gp in result["items"])
+
+
+@pytest.mark.asyncio
+async def test_villages_from_lgd_bundle():
+    svc = IndiaAdminService()
+    gp = await svc.gram_panchayats(block_lgd=7473)
+    gp_code = gp["items"][0]["code"]
+    result = await svc.villages(gram_panchayat_code=gp_code)
+    assert result["manual_fallback"] is False
+    assert result["source"] == "lgd_bundle"
+    assert len(result["items"]) >= 1
+
+
+@pytest.mark.asyncio
 async def test_blocks_for_rajasthan_district(monkeypatch):
     svc = IndiaAdminService()
 

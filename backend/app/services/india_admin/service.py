@@ -9,6 +9,7 @@ from typing import Any
 
 from app.services.india_admin.bharatlas_client import query_layer
 from app.services.india_admin.financial_years import current_financial_year, list_financial_years
+from app.services.india_admin.lgd_index import gps_for_block, villages_for_gp
 
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -66,10 +67,16 @@ class IndiaAdminService:
     async def gram_panchayats(
         self,
         *,
-        block_code: str,
+        block_code: str | None = None,
+        block_lgd: int | None = None,
         district_code: str | None = None,
         state_code: str | None = None,
     ) -> dict[str, Any]:
+        if block_lgd is not None:
+            items = gps_for_block(block_lgd=block_lgd)
+            if items:
+                return {"items": items, "manual_fallback": False, "hint": None, "source": "lgd_bundle"}
+
         params: dict[str, str | int] = {}
         if block_code:
             params["blkcode11"] = block_code
@@ -77,7 +84,7 @@ class IndiaAdminService:
             params["stcode11"] = state_code.zfill(2)
             params["dtcode11"] = district_code.lstrip("0") or district_code
         else:
-            return {"items": [], "manual_fallback": True, "hint": "missing_parent"}
+            return {"items": [], "manual_fallback": True, "hint": "missing_parent", "source": "none"}
 
         rows, err = await query_layer("lgd_panchayats", params=params, limit=2000)
         seen: set[str] = set()
@@ -94,26 +101,45 @@ class IndiaAdminService:
             items.append({"code": code, "name": name, "block_code": block_code})
         items.sort(key=lambda x: x["name"].lower())
         manual = bool(err) or len(items) == 0
-        return {"items": items, "manual_fallback": manual, "hint": err}
+        return {
+            "items": items,
+            "manual_fallback": manual,
+            "hint": err,
+            "source": "bharatlas" if items else "none",
+        }
 
     async def villages(
         self,
         *,
         block_code: str | None = None,
+        block_lgd: int | None = None,
         gram_panchayat_code: str | None = None,
         district_code: str | None = None,
         state_code: str | None = None,
     ) -> dict[str, Any]:
+        if gram_panchayat_code:
+            items = villages_for_gp(gp_code=gram_panchayat_code)
+            if items:
+                return {
+                    "items": items,
+                    "manual_fallback": False,
+                    "hint": None,
+                    "source": "lgd_bundle",
+                }
+
         params: dict[str, str | int] = {}
         if gram_panchayat_code:
             params["gp_code"] = gram_panchayat_code
         elif block_code:
             params["blkcode11"] = block_code
+        elif block_lgd is not None:
+            # Bharatlas villages layer may accept block_lgd; try bundled GP path first above.
+            params["block_lgd"] = block_lgd
         elif district_code and state_code:
             params["stcode11"] = state_code.zfill(2)
             params["dtcode11"] = district_code.lstrip("0") or district_code
         else:
-            return {"items": [], "manual_fallback": True, "hint": "missing_parent"}
+            return {"items": [], "manual_fallback": True, "hint": "missing_parent", "source": "none"}
 
         rows, err = await query_layer("lgd_villages", params=params, limit=3000)
         seen: set[str] = set()
@@ -137,4 +163,9 @@ class IndiaAdminService:
             )
         items.sort(key=lambda x: x["name"].lower())
         manual = bool(err) or len(items) == 0
-        return {"items": items, "manual_fallback": manual, "hint": err}
+        return {
+            "items": items,
+            "manual_fallback": manual,
+            "hint": err,
+            "source": "bharatlas" if items else "none",
+        }
