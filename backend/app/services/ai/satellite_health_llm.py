@@ -1,4 +1,4 @@
-"""Optional OpenAI narrative enrichment for satellite NDVI health results."""
+"""Optional LLM narrative enrichment for satellite NDVI health results."""
 
 from __future__ import annotations
 
@@ -13,7 +13,20 @@ from app.services.ai.satellite_health_types import NdviObservation, SatelliteHea
 log = get_logger("satellite_health_llm")
 
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
-MODEL = "gpt-4o-mini"
+OPENAI_MODEL = "gpt-4o-mini"
+GEMINI_MODELS = (
+    "gemini-2.5-flash",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+)
+
+SYSTEM_PROMPT = (
+    "You are an agronomist advising farmers from Sentinel-2 NDVI satellite data. "
+    "Write 2–4 clear sentences summarizing crop/tree health, likely causes, and "
+    "whether pest or disease treatment is needed. Add a short bullet list (max 3) "
+    "of immediate actions. Be practical, region-agnostic, and cautious — recommend "
+    "ground scouting before chemicals. Do not invent data beyond the JSON provided."
+)
 
 
 def _build_prompt(
@@ -55,30 +68,10 @@ def _build_prompt(
     return json.dumps(payload, indent=2)
 
 
-async def enrich_satellite_health_narrative(
-    result: SatelliteHealthResult,
-    observations: list[NdviObservation],
-    *,
-    species_hint: str | None = None,
-    target_label: str = "plantation area",
-) -> str | None:
-    """Return farmer-facing narrative when OPENAI_API_KEY is set; else None."""
+async def _call_openai(user_content: str) -> str | None:
     api_key = settings.openai_api_key
     if not api_key:
         return None
-
-    system = (
-        "You are an agronomist advising farmers from Sentinel-2 NDVI satellite data. "
-        "Write 2–4 clear sentences summarizing crop/tree health, likely causes, and "
-        "whether pest or disease treatment is needed. Add a short bullet list (max 3) "
-        "of immediate actions. Be practical, region-agnostic, and cautious — recommend "
-        "ground scouting before chemicals. Do not invent data beyond the JSON provided."
-    )
-    user_content = (
-        "Analyse this satellite health JSON and respond in plain language for the farmer:\n\n"
-        + _build_prompt(result, observations, species_hint=species_hint, target_label=target_label)
-    )
-
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(
@@ -88,20 +81,72 @@ async def enrich_satellite_health_narrative(
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": MODEL,
+                    "model": OPENAI_MODEL,
                     "temperature": 0.35,
                     "max_tokens": 450,
                     "messages": [
-                        {"role": "system", "content": system},
+                        {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_content},
                     ],
                 },
             )
             resp.raise_for_status()
-            data = resp.json()
-            text = data["choices"][0]["message"]["content"].strip()
-            if text:
-                return text[:1900]
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return text[:1900] if text else None
     except Exception as exc:
-        log.warning("satellite_health_llm.failed", error=str(exc))
+        log.warning("satellite_health_llm.openai_failed", error=str(exc))
+        return None
+
+
+async def _call_gemini(user_content: str) -> str | None:
+    api_key = settings.gemini_api_key
+    if not api_key:
+        return None
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        for model in GEMINI_MODELS:
+            url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model}:generateContent"
+            )
+            try:
+                resp = await client.post(
+                    url,
+                    params={"key": api_key},
+                    json={
+                        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                        "contents": [{"role": "user", "parts": [{"text": user_content}]}],
+                        "generationConfig": {
+                            "temperature": 0.35,
+                            "maxOutputTokens": 512,
+                        },
+                    },
+                )
+                resp.raise_for_status()
+                text = resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                if text:
+                    return text[:1900]
+            except Exception as exc:
+                log.warning("satellite_health_llm.gemini_failed", model=model, error=str(exc))
     return None
+
+
+async def enrich_satellite_health_narrative(
+    result: SatelliteHealthResult,
+    observations: list[NdviObservation],
+    *,
+    species_hint: str | None = None,
+    target_label: str = "plantation area",
+) -> str | None:
+    """Return farmer-facing narrative when OPENAI_API_KEY or GEMINI_API_KEY is set."""
+    if not settings.openai_api_key and not settings.gemini_api_key:
+        return None
+
+    user_content = (
+        "Analyse this satellite health JSON and respond in plain language for the farmer:\n\n"
+        + _build_prompt(result, observations, species_hint=species_hint, target_label=target_label)
+    )
+
+    text = await _call_openai(user_content)
+    if text:
+        return text
+    return await _call_gemini(user_content)

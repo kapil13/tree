@@ -8,6 +8,7 @@ type ExportMutations = {
   busy: boolean;
   exportMrv: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportBundle: { mutate: () => void; isPending: boolean };
+  exportMonitoringDossier?: { mutate: () => void; isPending: boolean };
   exportFramework: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportGreenCreditPortal: { mutate: () => void; isPending: boolean };
   exportCampaState: { mutate: () => void; isPending: boolean };
@@ -26,6 +27,7 @@ export function ProjectComplianceExportsSection({
   selectedFramework,
   onFrameworkChange,
   monitoringMode = false,
+  satelliteWatchEnabled = false,
   exports: ex,
 }: {
   schemeCode?: string | null;
@@ -44,6 +46,7 @@ export function ProjectComplianceExportsSection({
   };
   onFrameworkChange: (code: FrameworkProfileCode) => void;
   monitoringMode?: boolean;
+  satelliteWatchEnabled?: boolean;
   exports: ExportMutations;
 }) {
   const showIndiaPortal =
@@ -95,6 +98,15 @@ export function ProjectComplianceExportsSection({
             label="Evidence bundle (.zip)"
             onClick={() => ex.exportBundle.mutate()}
           />
+          {(monitoringMode || satelliteWatchEnabled) && ex.exportMonitoringDossier ? (
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportMonitoringDossier.isPending}
+              pendingLabel="Exporting…"
+              label="Monitoring dossier PDF"
+              onClick={() => ex.exportMonitoringDossier!.mutate()}
+            />
+          ) : null}
         </div>
       </ExportGroup>
 

@@ -48,6 +48,7 @@ from app.schemas.project_member import (
 )
 from app.schemas.project_risk import ProjectRiskAssessmentCreate
 from app.schemas.rule_template import ProjectRuleOverrideUpdate
+from app.schemas.scan_history import ScanHistoryOut, ScanHistoryRowOut
 from app.schemas.tree import TreeListItem
 from app.schemas.vm0047 import (
     AdditionalityCreate,
@@ -59,6 +60,10 @@ from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.satellite_sweep import run_project_satellite_scan
+from app.services.monitoring.scan_history import (
+    build_portfolio_scan_history,
+    build_project_scan_history,
+)
 from app.services.monitoring.summary import build_monitoring_summary
 from app.services.planting_projects.access import (
     can_manage_project,
@@ -92,6 +97,7 @@ from app.services.planting_projects.work_area_geometry import (
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.monitoring import is_satellite_watch_enabled
 from app.services.schemes.resolution import apply_scheme_defaults, validate_scheme_selection
 from app.services.schemes.validation import merge_scheme_metadata, validate_scheme_metadata
 
@@ -228,6 +234,44 @@ async def monitoring_summary(user: CurrentUser, db: DB) -> MonitoringSummaryOut:
     return MonitoringSummaryOut.model_validate(await build_monitoring_summary(db, user))
 
 
+@router.get("/scan-history", response_model=ScanHistoryOut)
+async def portfolio_scan_history(
+    user: CurrentUser,
+    db: DB,
+    limit: int = Query(96, ge=1, le=200),
+) -> ScanHistoryOut:
+    """Portfolio-wide scan history for satellite-watch-enabled projects."""
+    stmt = select(PlantingProject)
+    stmt = project_list_filter(user, stmt)
+    projects = [
+        p
+        for p in (await db.execute(stmt)).scalars().all()
+        if is_satellite_watch_enabled(p)
+    ]
+    rows = await build_portfolio_scan_history(db, projects, limit=limit)
+    return ScanHistoryOut(
+        rows=[
+            ScanHistoryRowOut(
+                scan_date=r.scan_date,
+                fence_id=r.fence_id,
+                fence_name=r.fence_name,
+                ndvi_mean=r.ndvi_mean,
+                ndvi_change_vs_baseline=r.ndvi_change_vs_baseline,
+                cloud_cover_pct=r.cloud_cover_pct,
+                ndvi_provider=r.ndvi_provider,
+                sar_provider=r.sar_provider,
+                forest_integrity_score=r.forest_integrity_score,
+                integrity_grade=r.integrity_grade,
+                sar_monitoring_mode=r.sar_monitoring_mode,
+                sar_ground_status=r.sar_ground_status,
+                sar_risk_level=r.sar_risk_level,
+                scene_ids=r.scene_ids,
+            )
+            for r in rows
+        ],
+    )
+
+
 @router.get("/field-ops-summary", response_model=FieldOpsSummaryOut)
 async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
     return FieldOpsSummaryOut.model_validate(await build_field_ops_summary(db, user))
@@ -248,6 +292,93 @@ async def trigger_project_satellite_scan(
     if not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return await run_project_satellite_scan(db, project_id)
+
+
+@router.get("/{project_id}/scan-history", response_model=ScanHistoryOut)
+async def project_scan_history(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    fence_id: uuid.UUID | None = None,
+    limit: int = Query(96, ge=1, le=200),
+) -> ScanHistoryOut:
+    """Unified scan history across project work areas (date × NDVI × SAR × integrity)."""
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    rows = await build_project_scan_history(
+        db, project, fence_id=fence_id, limit=limit
+    )
+    return ScanHistoryOut(
+        project_id=project.id,
+        fence_id=fence_id,
+        rows=[
+            ScanHistoryRowOut(
+                scan_date=r.scan_date,
+                fence_id=r.fence_id,
+                fence_name=r.fence_name,
+                ndvi_mean=r.ndvi_mean,
+                ndvi_change_vs_baseline=r.ndvi_change_vs_baseline,
+                cloud_cover_pct=r.cloud_cover_pct,
+                ndvi_provider=r.ndvi_provider,
+                sar_provider=r.sar_provider,
+                forest_integrity_score=r.forest_integrity_score,
+                integrity_grade=r.integrity_grade,
+                sar_monitoring_mode=r.sar_monitoring_mode,
+                sar_ground_status=r.sar_ground_status,
+                sar_risk_level=r.sar_risk_level,
+                scene_ids=r.scene_ids,
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.get("/{project_id}/monitoring-dossier")
+async def export_monitoring_dossier(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    """PDF monitoring dossier — scan history, health narratives, and alerts for one project."""
+    from app.services.reports.monitoring_dossier import (
+        build_monitoring_dossier_context,
+        render_monitoring_dossier_pdf,
+    )
+
+    await assert_org_feature_enabled(db, user, "reports")
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not is_satellite_watch_enabled(project):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="satellite_watch_not_enabled",
+        )
+
+    ctx = await build_monitoring_dossier_context(db, project, owner_user_id=user.id)
+    pdf = render_monitoring_dossier_pdf(ctx)
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="monitoring.dossier_export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"project_code": project.code},
+    )
+    await db.commit()
+
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-monitoring-dossier.pdf"'
+        },
+    )
 
 
 @router.get("", response_model=Page[PlantingProjectOut])

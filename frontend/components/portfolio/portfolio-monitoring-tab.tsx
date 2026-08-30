@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
+import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -329,6 +330,8 @@ export function PortfolioMonitoringTab() {
           </tbody>
         </table>
       </section>
+
+      <ScanHistoryGrid portfolio title="Recent scan history" limit={40} />
 
       <section className="card overflow-hidden p-0">
         <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">

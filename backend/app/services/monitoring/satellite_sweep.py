@@ -13,12 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
-from app.models.planting_project import PlantingProject
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 
 log = get_logger("monitoring.satellite")
@@ -231,20 +231,12 @@ async def scan_and_persist_tree(
 
 
 async def run_monthly_satellite_sweep(db: AsyncSession) -> dict[str, Any]:
-    """Scan all work areas on active planting projects."""
+    """Scan work areas on satellite-watch-enabled projects only."""
     scanned = 0
     failed = 0
     skipped = 0
 
-    projects_res = await db.execute(
-        select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
-    )
-    project_ids = {p.id for p in projects_res.scalars().all()}
-
-    fences_res = await db.execute(
-        select(PlantationFence).where(PlantationFence.project_id.isnot(None))
-    )
-    fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+    fences = await fetch_satellite_watch_fences(db)
 
     for fence in fences:
         if fence.last_satellite_at:
@@ -259,7 +251,13 @@ async def run_monthly_satellite_sweep(db: AsyncSession) -> dict[str, Any]:
             failed += 1
 
     await db.commit()
-    result = {"scanned": scanned, "failed": failed, "skipped": skipped, "total": len(fences)}
+    result = {
+        "scanned": scanned,
+        "failed": failed,
+        "skipped": skipped,
+        "total": len(fences),
+        "watch_gated": True,
+    }
     log.info("monthly_satellite_sweep.complete", **result)
     return result
 

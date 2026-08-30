@@ -136,29 +136,19 @@ def monthly_sar_sweep() -> dict:
     async def _run() -> dict:
         from datetime import UTC, datetime
 
-        from sqlalchemy import select
-
         from app.core.database import AsyncSessionLocal
-        from app.models.plantation_fence import PlantationFence
-        from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
         from app.services.monitoring.sar_sweep_health import (
             classify_sar_provider,
             notify_project_owners_sweep_health,
             summarize_sweep_counts,
         )
+        from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 
         scanned = failed = skipped = stub_scans = live_scans = 0
         touched_projects: set = set()
         async with AsyncSessionLocal() as db:
-            projects_res = await db.execute(
-                select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
-            )
-            project_ids = {p.id for p in projects_res.scalars().all()}
-            fences_res = await db.execute(
-                select(PlantationFence).where(PlantationFence.project_id.isnot(None))
-            )
-            fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+            fences = await fetch_satellite_watch_fences(db)
 
             for fence in fences:
                 if fence.last_satellite_at:
@@ -195,6 +185,7 @@ def monthly_sar_sweep() -> dict:
             **outcome,
             "skipped": skipped,
             "total": len(fences),
+            "watch_gated": True,
         }
 
     return _execute_recorded("monthly_sar_sweep", _run)
@@ -205,11 +196,8 @@ def weekly_sar_integrity_watch() -> dict:
     log.info("worker.weekly_sar_integrity_watch")
 
     async def _run() -> dict:
-        from sqlalchemy import select
 
         from app.core.database import AsyncSessionLocal
-        from app.models.plantation_fence import PlantationFence
-        from app.models.planting_project import PlantingProject
         from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
         from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
         from app.services.monitoring.sar_sweep_health import (
@@ -217,18 +205,12 @@ def weekly_sar_integrity_watch() -> dict:
             notify_project_owners_sweep_health,
             summarize_sweep_counts,
         )
+        from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 
         scanned = failed = stub_scans = live_scans = 0
         touched_projects: set = set()
         async with AsyncSessionLocal() as db:
-            projects_res = await db.execute(
-                select(PlantingProject).where(PlantingProject.status.in_(("active", "planning")))
-            )
-            project_ids = {p.id for p in projects_res.scalars().all()}
-            fences_res = await db.execute(
-                select(PlantationFence).where(PlantationFence.project_id.isnot(None))
-            )
-            fences = [f for f in fences_res.scalars().all() if f.project_id in project_ids]
+            fences = await fetch_satellite_watch_fences(db)
             at_risk_ids = await list_at_risk_fence_ids(db, [f.id for f in fences], limit=20)
             fence_by_id = {f.id: f for f in fences}
             for fence_id in at_risk_ids:
@@ -263,6 +245,7 @@ def weekly_sar_integrity_watch() -> dict:
         return {
             **outcome,
             "candidates": len(at_risk_ids),
+            "watch_gated": True,
         }
 
     return _execute_recorded("weekly_sar_integrity_watch", _run)

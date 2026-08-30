@@ -458,6 +458,29 @@ export type PlantationFence = {
   ndvi_image_url?: string;
 };
 
+export type ScanHistoryRow = {
+  scan_date: string;
+  fence_id: string;
+  fence_name: string;
+  ndvi_mean: number | null;
+  ndvi_change_vs_baseline: number | null;
+  cloud_cover_pct: number | null;
+  ndvi_provider: string | null;
+  sar_provider: string | null;
+  forest_integrity_score: number | null;
+  integrity_grade: string | null;
+  sar_monitoring_mode: string | null;
+  sar_ground_status: string | null;
+  sar_risk_level: string | null;
+  scene_ids: string[];
+};
+
+export type ScanHistoryResponse = {
+  project_id?: string | null;
+  fence_id?: string | null;
+  rows: ScanHistoryRow[];
+};
+
 export type PlantationSatelliteRecord = {
   id: string;
   fence_id: string;
@@ -1410,6 +1433,25 @@ export const plantingProjects = {
     });
     return response.data as Blob;
   },
+  async scanHistory(
+    projectId: string,
+    opts?: { fenceId?: string; limit?: number },
+  ) {
+    return (
+      await api.get<ScanHistoryResponse>(`/v1/planting-projects/${projectId}/scan-history`, {
+        params: {
+          fence_id: opts?.fenceId,
+          limit: opts?.limit,
+        },
+      })
+    ).data;
+  },
+  async exportMonitoringDossier(projectId: string) {
+    const response = await api.get(`/v1/planting-projects/${projectId}/monitoring-dossier`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
   async exportEmissionsCompliance(projectId: string, workAreaId: string) {
     const response = await api.get(`/v1/planting-projects/${projectId}/emissions-export`, {
       params: { work_area_id: workAreaId, format: "pdf" },
@@ -1584,6 +1626,13 @@ export const plantingProjects = {
           created_at: string | null;
         }>;
       }>("/v1/planting-projects/field-ops-summary")
+    ).data;
+  },
+  async scanHistoryPortfolio(limit = 96) {
+    return (
+      await api.get<ScanHistoryResponse>("/v1/planting-projects/scan-history", {
+        params: { limit },
+      })
     ).data;
   },
   async monitoringSummary() {
@@ -2140,6 +2189,13 @@ export const plantationFences = {
   async satellite(id: string) {
     return (
       await api.get<PlantationSatelliteSeries>(`/v1/plantation-fences/${id}/satellite-monitoring`)
+    ).data;
+  },
+  async scanHistory(id: string, limit = 48) {
+    return (
+      await api.get<ScanHistoryResponse>(`/v1/plantation-fences/${id}/scan-history`, {
+        params: { limit },
+      })
     ).data;
   },
   async weather(id: string, days = 5) {
