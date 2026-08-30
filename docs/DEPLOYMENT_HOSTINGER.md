@@ -118,11 +118,42 @@ After login, the app top bar shows the deployed git short SHA (e.g. `802de9e`). 
 
 First start runs **Alembic migrations** automatically (via `backend/docker-entrypoint.sh`).
 
+### Database migrations (manual)
+
+From `infrastructure/hostinger/` (after `./deploy.sh` or when the stack is already up):
+
+```bash
+make migrate-db
+```
+
+Or from the repo root (auto-detects the production Docker stack):
+
+```bash
+cd /opt/aranyix
+make migrate-db
+```
+
+### India admin geography (project location dropdowns)
+
+After migration `0060_india_admin_geography`, load LGD data **once**:
+
+1. Download the official `villages_by_blocks` CSV from [ramSeraph/opendata releases](https://github.com/ramSeraph/opendata/releases).
+2. Place it on the VPS, e.g. `/opt/aranyix/data/lgd/villages_by_blocks.csv`.
+3. Run:
+
+```bash
+cd /opt/aranyix/infrastructure/hostinger
+make import-india-admin
+# or with a custom path:
+# LGD_CSV=/path/to/villages_by_blocks.csv make import-india-admin
+```
+
+Without this import, state/district/block/GP/village dropdowns stay empty.
+
 ### Seed demo user (optional)
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production \
-  exec backend python -m app.scripts.seed_demo
+make seed-demo
 ```
 
 ## 8. Verify
@@ -147,6 +178,7 @@ flutter build apk --release --dart-define=BYOT_API=https://api.byot.earth
 infrastructure/hostinger/
 ├── docker-compose.prod.yml    # Full production stack
 ├── .env.production.example    # Copy → .env.production
+├── Makefile                   # migrate-db, import-india-admin, deploy
 ├── Caddyfile                  # HTTPS routing
 ├── deploy.sh                  # Build + start + health check
 └── worker-entrypoint.sh       # Celery wait-for-postgres
