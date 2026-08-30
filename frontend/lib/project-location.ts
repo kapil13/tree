@@ -4,11 +4,11 @@ export type ProjectLocation = {
   financial_year: string;
   state_code: string;
   state_name: string;
-  city: string;
   district_code: string;
   district_name: string;
   block_code: string;
   block_name: string;
+  block_lgd: string;
   gram_panchayat_code: string;
   gram_panchayat_name: string;
   village_code: string;
@@ -19,11 +19,11 @@ export const EMPTY_PROJECT_LOCATION: ProjectLocation = {
   financial_year: "",
   state_code: "",
   state_name: "",
-  city: "",
   district_code: "",
   district_name: "",
   block_code: "",
   block_name: "",
+  block_lgd: "",
   gram_panchayat_code: "",
   gram_panchayat_name: "",
   village_code: "",
@@ -34,12 +34,13 @@ export function projectLocationFromMetadata(
   metadata: Record<string, unknown> | null | undefined,
 ): ProjectLocation {
   const raw = (metadata?.location as Partial<ProjectLocation> | undefined) ?? {};
-  return {
+  const next = {
     ...EMPTY_PROJECT_LOCATION,
     ...Object.fromEntries(
       Object.entries(raw).map(([key, value]) => [key, value == null ? "" : String(value)]),
     ),
   } as ProjectLocation;
+  return next;
 }
 
 export function projectLocationToMetadata(location: ProjectLocation): Record<string, string> {
@@ -72,7 +73,6 @@ export function validateProjectLocation(location: ProjectLocation): Record<strin
   const errors: Record<string, string> = {};
   if (!location.financial_year.trim()) errors.financial_year = "Select a financial year";
   if (!location.state_code.trim()) errors.state_code = "Select a state";
-  if (!location.city.trim()) errors.city = "Select or enter a city";
   if (!location.district_code.trim()) errors.district_code = "Select a district";
   if (!location.block_name.trim()) errors.block_code = "Select or enter a block";
   if (!location.gram_panchayat_name.trim()) {

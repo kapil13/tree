@@ -3478,35 +3478,17 @@ export const indiaAdmin = {
       })
     ).data;
   },
-  async gramPanchayats(params: {
-    blockCode: string;
-    districtCode?: string;
-    stateCode?: string;
-  }) {
+  async gramPanchayats(params: { blockLgd: number }) {
     return (
       await api.get<IndiaAdminListResponse>("/v1/india-admin/gram-panchayats", {
-        params: {
-          block_code: params.blockCode,
-          district_code: params.districtCode,
-          state_code: params.stateCode,
-        },
+        params: { block_lgd: params.blockLgd },
       })
     ).data;
   },
-  async villages(params: {
-    blockCode?: string;
-    gramPanchayatCode?: string;
-    districtCode?: string;
-    stateCode?: string;
-  }) {
+  async villages(params: { gramPanchayatCode: string }) {
     return (
       await api.get<IndiaAdminListResponse>("/v1/india-admin/villages", {
-        params: {
-          block_code: params.blockCode,
-          gram_panchayat_code: params.gramPanchayatCode,
-          district_code: params.districtCode,
-          state_code: params.stateCode,
-        },
+        params: { gram_panchayat_code: params.gramPanchayatCode },
       })
     ).data;
   },

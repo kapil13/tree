@@ -92,7 +92,8 @@ function AdminSelect({
       )}
       {manualFallback && (
         <p className="mt-1 text-xs text-amber-700">
-          Live directory unavailable — type the official name manually.
+          Directory not loaded in database — type the official name manually, or ask your admin to
+          run <code className="text-[11px]">python -m app.scripts.import_india_admin</code>.
         </p>
       )}
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
@@ -134,12 +135,6 @@ export function ProjectLocationFields({
     enabled: Boolean(location.state_code),
   });
 
-  const { data: citiesData } = useQuery({
-    queryKey: ["india-admin-cities", location.state_code],
-    queryFn: () => indiaAdmin.cities(location.state_code),
-    enabled: Boolean(location.state_code),
-  });
-
   const { data: blocksData, isLoading: blocksLoading } = useQuery({
     queryKey: ["india-admin-blocks", location.state_code, location.district_code],
     queryFn: () => indiaAdmin.blocks(location.state_code, location.district_code),
@@ -147,37 +142,16 @@ export function ProjectLocationFields({
   });
 
   const { data: gpData, isLoading: gpLoading } = useQuery({
-    queryKey: [
-      "india-admin-gp",
-      location.state_code,
-      location.district_code,
-      location.block_code,
-    ],
-    queryFn: () =>
-      indiaAdmin.gramPanchayats({
-        blockCode: location.block_code,
-        districtCode: location.district_code,
-        stateCode: location.state_code,
-      }),
-    enabled: Boolean(location.block_code),
+    queryKey: ["india-admin-gp", location.block_lgd],
+    queryFn: () => indiaAdmin.gramPanchayats({ blockLgd: Number(location.block_lgd) }),
+    enabled: Boolean(location.block_lgd),
   });
 
   const { data: villagesData, isLoading: villagesLoading } = useQuery({
-    queryKey: [
-      "india-admin-villages",
-      location.state_code,
-      location.district_code,
-      location.block_code,
-      location.gram_panchayat_code,
-    ],
+    queryKey: ["india-admin-villages", location.gram_panchayat_code],
     queryFn: () =>
-      indiaAdmin.villages({
-        blockCode: location.block_code || undefined,
-        gramPanchayatCode: location.gram_panchayat_code || undefined,
-        districtCode: location.district_code,
-        stateCode: location.state_code,
-      }),
-    enabled: Boolean(location.block_code || location.gram_panchayat_code),
+      indiaAdmin.villages({ gramPanchayatCode: location.gram_panchayat_code }),
+    enabled: Boolean(location.gram_panchayat_code),
   });
 
   const stateOptions = useMemo(
@@ -188,12 +162,13 @@ export function ProjectLocationFields({
     () => (districtsData?.items ?? []).map((d) => ({ code: d.code, name: d.name })),
     [districtsData],
   );
-  const cityOptions = useMemo(
-    () => (citiesData?.items ?? []).map((c) => ({ code: c.name, name: c.name })),
-    [citiesData],
-  );
   const blockOptions = useMemo(
-    () => (blocksData?.items ?? []).map((b) => ({ code: b.code, name: b.name })),
+    () =>
+      (blocksData?.items ?? []).map((b) => ({
+        code: b.code,
+        name: b.name,
+        lgd: b.lgd,
+      })),
     [blocksData],
   );
   const gpOptions = useMemo(
@@ -264,34 +239,6 @@ export function ProjectLocationFields({
         </div>
 
         <div>
-          <label className="label">City *</label>
-          {cityOptions.length > 0 ? (
-            <select
-              className="input mt-1"
-              disabled={!location.state_code}
-              value={location.city}
-              onChange={(e) => patch({ city: e.target.value })}
-            >
-              <option value="">Select city…</option>
-              {cityOptions.map((c) => (
-                <option key={c.code} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              className="field-input mt-1"
-              disabled={!location.state_code}
-              placeholder="Enter nearest city"
-              value={location.city}
-              onChange={(e) => patch({ city: e.target.value })}
-            />
-          )}
-          {errors?.city && <p className="mt-1 text-xs text-rose-600">{errors.city}</p>}
-        </div>
-
-        <div>
           <label className="label">District *</label>
           <select
             className="input mt-1"
@@ -300,7 +247,6 @@ export function ProjectLocationFields({
             onChange={(e) => {
               const opt = districtOptions.find((d) => d.code === e.target.value);
               patch({
-                city: location.city,
                 financial_year: location.financial_year,
                 state_code: location.state_code,
                 state_name: location.state_name,
@@ -308,6 +254,7 @@ export function ProjectLocationFields({
                 district_name: opt?.name ?? "",
                 block_code: "",
                 block_name: "",
+                block_lgd: "",
                 gram_panchayat_code: "",
                 gram_panchayat_name: "",
                 village_code: "",
@@ -338,20 +285,23 @@ export function ProjectLocationFields({
           error={errors?.block_code}
           manualFallback={blocksData?.manual_fallback}
           manualValue={location.block_name}
-          onSelect={(code, name) =>
+          onSelect={(code, name) => {
+            const opt = blockOptions.find((b) => b.code === code);
             patch({
               block_code: code,
               block_name: name,
+              block_lgd: opt?.lgd != null ? String(opt.lgd) : "",
               gram_panchayat_code: "",
               gram_panchayat_name: "",
               village_code: "",
               village_name: "",
-            })
-          }
+            });
+          }}
           onManualChange={(name) =>
             patch({
               block_code: "",
               block_name: name,
+              block_lgd: "",
               gram_panchayat_code: "",
               gram_panchayat_name: "",
               village_code: "",
@@ -366,7 +316,7 @@ export function ProjectLocationFields({
           value={location.gram_panchayat_code}
           options={gpOptions}
           loading={gpLoading}
-          disabled={!location.block_name.trim()}
+          disabled={!location.block_lgd}
           placeholder="Select gram panchayat…"
           error={errors?.gram_panchayat_code}
           manualFallback={gpData?.manual_fallback}
@@ -395,7 +345,7 @@ export function ProjectLocationFields({
           value={location.village_code}
           options={villageOptions}
           loading={villagesLoading}
-          disabled={!location.gram_panchayat_name.trim()}
+          disabled={!location.gram_panchayat_code}
           placeholder="Select village…"
           error={errors?.village_code}
           manualFallback={villagesData?.manual_fallback}
