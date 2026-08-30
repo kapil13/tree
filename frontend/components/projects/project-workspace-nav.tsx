@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
-  PROJECT_WORKSPACE_NAV,
+  getProjectWorkspaceNav,
   projectOverviewHref,
   projectSecondaryHref,
   type ProjectSecondaryTab,
@@ -30,13 +30,16 @@ type ProjectWorkspaceNavProps = {
   projectId: string;
   active: ProjectWorkspaceSection;
   openViolations?: number;
+  monitoringMode?: boolean;
 };
 
 export function ProjectWorkspaceNav({
   projectId,
   active,
   openViolations = 0,
+  monitoringMode = false,
 }: ProjectWorkspaceNavProps) {
+  const navItems = getProjectWorkspaceNav(monitoringMode);
   return (
     <nav
       className="sticky top-0 z-20 -mx-4 border-b border-stone-200/90 bg-white/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 md:-mx-6 md:px-6 dark:border-stone-800 dark:bg-stone-950/95"
@@ -46,7 +49,7 @@ export function ProjectWorkspaceNav({
         className="flex gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
       >
-        {PROJECT_WORKSPACE_NAV.map((item) => {
+        {navItems.map((item) => {
           const isActive = active === item.id;
           const href =
             item.id === "overview"

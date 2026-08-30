@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Leaf, MapPin, Satellite, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, Leaf, MapPin, Satellite, ShieldCheck } from "lucide-react";
 import { ProjectSetupChecklist } from "@/components/projects/project-setup-checklist";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
@@ -501,11 +501,32 @@ export function ProjectFocusedOverview({
       </div>
 
       <div className="card">
-        <ProjectTreesByArea
-          projectId={projectId}
-          workAreas={workAreas}
-          surveyIntervalDays={surveyDays}
-        />
+        {monitoringMode ? (
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-stone-900 [&::-webkit-details-marker]:hidden">
+              <span>Optional ground-truth trees</span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-stone-500 transition group-open:rotate-180" />
+            </summary>
+            <p className="mt-2 text-sm text-stone-600">
+              Tree registration is optional for plot-based ground truth. Satellite monitoring runs on
+              work-area boundaries.
+            </p>
+            <div className="mt-4">
+              <ProjectTreesByArea
+                projectId={projectId}
+                workAreas={workAreas}
+                surveyIntervalDays={surveyDays}
+                monitoringMode
+              />
+            </div>
+          </details>
+        ) : (
+          <ProjectTreesByArea
+            projectId={projectId}
+            workAreas={workAreas}
+            surveyIntervalDays={surveyDays}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProjectComplianceTab } from "@/components/projects/project-compliance-tab";
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
@@ -19,6 +20,7 @@ import {
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
 import type { ProjectTab } from "@/lib/compliance-gap-actions";
+import { isMonitoringScheme } from "@/lib/schemes";
 
 export function ProjectSecondarySection({
   tab,
@@ -32,6 +34,7 @@ export function ProjectSecondarySection({
   workAreas: WorkArea[];
 }) {
   const router = useRouter();
+  const monitoringMode = isMonitoringScheme(project.scheme_code);
 
   function navigateProjectTab(next: ProjectTab) {
     if (next === "overview" || next === "trees") {
@@ -52,11 +55,39 @@ export function ProjectSecondarySection({
           projectMetadata={project.metadata}
           schemeCode={project.scheme_code}
           workAreas={workAreas}
+          monitoringMode={monitoringMode}
           onNavigateTab={navigateProjectTab}
         />
       )}
 
-      {tab === "credits" && (
+      {tab === "credits" && monitoringMode && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+            <h2 className="text-sm font-semibold text-emerald-950">Reports &amp; sampling</h2>
+            <p className="mt-1 text-sm text-emerald-900/85">
+              Tier-4 plot monitoring and field sampling for this estate watch programme. Carbon credit
+              issuance and NPRT are not part of this monitoring-only scheme.
+            </p>
+          </div>
+          <div className="card">
+            <ProjectPlotMonitoringPanel projectId={projectId} />
+          </div>
+          <div className="card space-y-2">
+            <h3 className="text-sm font-medium text-stone-900">Evidence exports</h3>
+            <p className="text-sm text-stone-600">
+              MRV and audit packs for this project are under Compliance → Exports.
+            </p>
+            <Link
+              href={`/projects/${projectId}/compliance?section=exports`}
+              className="inline-flex text-sm font-medium text-forest-700 hover:underline"
+            >
+              Open compliance exports →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {tab === "credits" && !monitoringMode && (
         <div className="space-y-4">
           <div className="card">
             <ProjectVm0047Panel projectId={projectId} />
@@ -90,7 +121,7 @@ export function ProjectSecondarySection({
 
       {tab === "settings" && (
         <div className="space-y-6">
-          <ProjectSettingsPanel project={project} />
+          <ProjectSettingsPanel project={project} monitoringMode={monitoringMode} />
           <ProjectImpactSharePanel projectId={projectId} />
         </div>
       )}

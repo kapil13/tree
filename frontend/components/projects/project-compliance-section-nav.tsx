@@ -36,7 +36,34 @@ type SectionDef = {
 export function complianceSectionDefs(
   openViolations: number,
   showPestIntel = false,
+  monitoringMode = false,
 ): SectionDef[] {
+  if (monitoringMode) {
+    const sections: SectionDef[] = [
+      { id: "checklist", label: "Monitoring checklist", shortLabel: "Checklist", icon: ClipboardCheck },
+    ];
+    if (showPestIntel) {
+      sections.push({
+        id: "pest_intel",
+        label: "Pest & disease watch",
+        shortLabel: "Pest intel",
+        icon: Bug,
+      });
+    }
+    sections.push(
+      { id: "exports", label: "Audit exports", shortLabel: "Exports", icon: Download },
+      { id: "share", label: "Verification link", shortLabel: "Share", icon: Link2 },
+      {
+        id: "issues",
+        label: "Open violations",
+        shortLabel: "Issues",
+        icon: AlertTriangle,
+        badge: openViolations > 0 ? openViolations : undefined,
+      },
+    );
+    return sections;
+  }
+
   const sections: SectionDef[] = [
     { id: "overview", label: "Readiness overview", shortLabel: "Overview", icon: ListChecks },
     { id: "checklist", label: "Eligibility checklist", shortLabel: "Checklist", icon: ClipboardCheck },
@@ -71,13 +98,15 @@ export function ProjectComplianceSectionNav({
   onChange,
   openViolations = 0,
   showPestIntel = false,
+  monitoringMode = false,
 }: {
   active: ComplianceSection;
   onChange: (section: ComplianceSection) => void;
   openViolations?: number;
   showPestIntel?: boolean;
+  monitoringMode?: boolean;
 }) {
-  const sections = complianceSectionDefs(openViolations, showPestIntel);
+  const sections = complianceSectionDefs(openViolations, showPestIntel, monitoringMode);
 
   return (
     <nav aria-label="Compliance sections" className="space-y-3">

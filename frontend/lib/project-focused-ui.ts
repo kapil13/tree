@@ -95,5 +95,18 @@ export const PROJECT_WORKSPACE_NAV: Array<{
   },
 ];
 
+const MONITORING_CREDITS_LABEL = "Reports & sampling";
+const MONITORING_CREDITS_SHORT = "Reports";
+
+/** Project sub-nav tuned for estate monitoring vs planting programmes. */
+export function getProjectWorkspaceNav(monitoringMode = false): typeof PROJECT_WORKSPACE_NAV {
+  if (!monitoringMode) return PROJECT_WORKSPACE_NAV;
+  return PROJECT_WORKSPACE_NAV.map((item) =>
+    item.id === "credits"
+      ? { ...item, label: MONITORING_CREDITS_LABEL, shortLabel: MONITORING_CREDITS_SHORT }
+      : item,
+  );
+}
+
 /** Marker string embedded in the focused layout for deploy verification. */
 export const PROJECT_FOCUSED_LAYOUT_MARKER = "project-focused-layout-v3";
