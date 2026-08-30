@@ -156,10 +156,10 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     signals["has_work_areas"] = "yes" if work_areas > 0 else "no"
 
     from app.services.schemes.kpis import scan_coverage_metrics
-    from app.services.schemes.monitoring import is_monitoring_scheme
+    from app.services.schemes.monitoring import is_monitoring_scheme, is_satellite_watch_enabled
     from app.services.schemes.registry import get_scheme
 
-    if is_monitoring_scheme(getattr(project, "scheme_code", None)) and work_areas > 0:
+    if is_satellite_watch_enabled(project) and work_areas > 0:
         fences = list(
             (
                 await db.execute(

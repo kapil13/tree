@@ -51,7 +51,7 @@ export function ProjectComplianceChecklistPanel({
   onSaved?: () => void;
   onNavigateTab?: (tab: ProjectTab) => void;
   onScrollToAnchor?: (anchor: string) => void;
-  gapContext?: { primaryWorkAreaId?: string | null; monitoringMode?: boolean };
+  gapContext?: { primaryWorkAreaId?: string | null; satelliteWatchEnabled?: boolean };
 }) {
   const qc = useQueryClient();
   const [checklistCode, setChecklistCode] = useState<ChecklistCode>(

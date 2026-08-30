@@ -93,6 +93,7 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
                     "name": fence.name,
                     "project_id": str(fence.project_id) if fence.project_id else None,
                     "project_name": project.name if project else None,
+                    "scheme_code": project.scheme_code if project else None,
                     "segment": project.segment if project else None,
                     "last_satellite_at": fence.last_satellite_at.isoformat()
                     if fence.last_satellite_at

@@ -20,7 +20,7 @@ import {
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
 import type { ProjectTab } from "@/lib/compliance-gap-actions";
-import { isMonitoringScheme } from "@/lib/schemes";
+import { isMonitoringOnlyProject, isSatelliteWatchEnabled } from "@/lib/project-monitoring";
 
 export function ProjectSecondarySection({
   tab,
@@ -34,7 +34,8 @@ export function ProjectSecondarySection({
   workAreas: WorkArea[];
 }) {
   const router = useRouter();
-  const monitoringMode = isMonitoringScheme(project.scheme_code);
+  const monitoringMode = isMonitoringOnlyProject(project);
+  const satelliteWatchEnabled = isSatelliteWatchEnabled(project);
 
   function navigateProjectTab(next: ProjectTab) {
     if (next === "overview" || next === "trees") {
@@ -56,6 +57,7 @@ export function ProjectSecondarySection({
           schemeCode={project.scheme_code}
           workAreas={workAreas}
           monitoringMode={monitoringMode}
+          satelliteWatchEnabled={satelliteWatchEnabled}
           onNavigateTab={navigateProjectTab}
         />
       )}
@@ -121,7 +123,11 @@ export function ProjectSecondarySection({
 
       {tab === "settings" && (
         <div className="space-y-6">
-          <ProjectSettingsPanel project={project} monitoringMode={monitoringMode} />
+          <ProjectSettingsPanel
+            project={project}
+            monitoringMode={monitoringMode}
+            satelliteWatchEnabled={satelliteWatchEnabled}
+          />
           <ProjectImpactSharePanel projectId={projectId} />
         </div>
       )}

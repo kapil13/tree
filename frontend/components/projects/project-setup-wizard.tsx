@@ -29,6 +29,7 @@ import {
   type StandardTemplate,
 } from "@/lib/api";
 import { schemeByCode, isMonitoringScheme } from "@/lib/schemes";
+import { isMonitoringOnlyProject } from "@/lib/project-monitoring";
 import { wizardRulesDifferFromBase } from "@/lib/rule-template-fields";
 import {
   deriveTreeRegistrationDefaults,
@@ -102,7 +103,7 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
   });
 
   const scheme = schemeByCode(schemes, project?.scheme_code);
-  const monitoringMode = isMonitoringScheme(project?.scheme_code);
+  const monitoringMode = isMonitoringOnlyProject(project ?? { scheme_code: null });
   const hasSchemeRefsStep = Boolean(project?.scheme_code && scheme);
 
   const schemeRefFields = useMemo(() => {

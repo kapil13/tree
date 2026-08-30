@@ -11,7 +11,8 @@ import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea }
 import { projectSecondaryHref, projectSetupHref } from "@/lib/project-focused-ui";
 import { satelliteHref } from "@/lib/satellite-links";
 import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
-import { schemeByCode, isMonitoringScheme } from "@/lib/schemes";
+import { schemeByCode } from "@/lib/schemes";
+import { isMonitoringOnlyProject, isSatelliteWatchEnabled } from "@/lib/project-monitoring";
 import { cn } from "@/lib/cn";
 
 type SurvivalDue = {
@@ -128,11 +129,12 @@ export function ProjectFocusedOverview({
   });
 
   const scheme = schemeByCode(schemes, project.scheme_code);
-  const monitoringMode = isMonitoringScheme(project.scheme_code);
+  const monitoringMode = isMonitoringOnlyProject(project);
+  const satelliteWatchEnabled = isSatelliteWatchEnabled(project);
   const primaryWorkAreaId = workAreas[0]?.id;
   const satelliteDashboardHref = satelliteHref({
     fenceId: primaryWorkAreaId,
-    projectId: monitoringMode ? projectId : undefined,
+    projectId: satelliteWatchEnabled ? projectId : undefined,
   });
 
   const upNextHref = useMemo(() => {
@@ -200,7 +202,7 @@ export function ProjectFocusedOverview({
         };
       }
     }
-    if (monitoringMode && workAreaCount > 0) {
+    if (satelliteWatchEnabled && workAreaCount > 0) {
       const scanPct = schemeKpis?.metrics?.scan_coverage_pct as number | undefined;
       const maxDays = schemeKpis?.metrics?.max_days_since_scan as number | undefined;
       const sarAtRisk = schemeKpis?.metrics?.sar_at_risk_areas as number | undefined;
@@ -282,8 +284,7 @@ export function ProjectFocusedOverview({
     projectId,
     registerHref,
     setupStatus,
-    monitoringMode,
-    schemeKpis,
+    satelliteWatchEnabled,
     satelliteDashboardHref,
     setupStatus?.setupComplete,
   ]);
@@ -291,9 +292,24 @@ export function ProjectFocusedOverview({
   return (
     <div className="space-y-4 md:space-y-6">
       {scheme && (
-        <p className="inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
-          {scheme.label}
-          <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
+        <p className="inline-flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-900 ring-1 ring-forest-100">
+            {scheme.label}
+            <span className="ml-2 text-forest-700">· {scheme.ministry}</span>
+          </span>
+          {monitoringMode &&
+          (project.metadata?.scheme_refs as Record<string, string> | undefined)?.parent_scheme_code ? (
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-900 ring-1 ring-sky-200">
+              Continues{" "}
+              {String(
+                (project.metadata?.scheme_refs as Record<string, string>).parent_scheme_code,
+              ).replace(/_/g, " ")}
+              {(project.metadata?.scheme_refs as Record<string, string> | undefined)
+                ?.parent_project_ref
+                ? ` · ${(project.metadata?.scheme_refs as Record<string, string>).parent_project_ref}`
+                : ""}
+            </span>
+          ) : null}
         </p>
       )}
 
@@ -378,6 +394,59 @@ export function ProjectFocusedOverview({
           <strong>{survivalDue.trees_due}</strong> of {survivalDue.trees_total} trees are due
           for re-geotagging (every {survivalDue.survey_interval_days} days). See the tree list
           below or open individual tree records to update GPS and survival status.
+        </div>
+      )}
+
+      {satelliteWatchEnabled && !monitoringMode && workAreaCount > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="card">
+            <p className="kpi-label">Scan coverage</p>
+            <p className="text-2xl font-semibold">
+              {schemeKpis?.metrics?.scan_coverage_pct != null
+                ? `${schemeKpis.metrics.scan_coverage_pct}%`
+                : "—"}
+            </p>
+          </div>
+          <div className="card">
+            <p className="kpi-label">Mean NDVI</p>
+            <p className="text-2xl font-semibold">
+              {schemeKpis?.metrics?.mean_ndvi != null
+                ? String(schemeKpis.metrics.mean_ndvi)
+                : "—"}
+            </p>
+          </div>
+          <Link href={satelliteDashboardHref} className="card block transition hover:border-sky-200">
+            <p className="kpi-label">SAR at risk</p>
+            <p className="text-2xl font-semibold">
+              {schemeKpis?.metrics?.sar_at_risk_areas != null
+                ? String(schemeKpis.metrics.sar_at_risk_areas)
+                : "—"}
+            </p>
+          </Link>
+          <Link href={satelliteDashboardHref} className="card block transition hover:border-sky-200">
+            <p className="kpi-label">Satellite dashboard</p>
+            <p className="mt-1 text-sm text-forest-700">Open map →</p>
+          </Link>
+        </div>
+      )}
+
+      {!satelliteWatchEnabled && !monitoringMode && workAreaCount > 0 && setupStatus?.setupComplete && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-sky-950">Add satellite monitoring</p>
+              <p className="mt-1 text-sm text-sky-900/90">
+                CAMPA, Nagar Van, NHAI, and other planting projects can run NDVI/SAR scans on work-area
+                polygons — enable satellite watch in project settings.
+              </p>
+            </div>
+            <Link
+              href={projectSecondaryHref(projectId, "settings")}
+              className="btn-primary w-full shrink-0 text-xs sm:w-auto"
+            >
+              Enable in settings
+            </Link>
+          </div>
         </div>
       )}
 
@@ -494,6 +563,11 @@ export function ProjectFocusedOverview({
                   <span>
                     Geo-tagged: <strong>{schemeKpis.metrics.geo_tagged_pct ?? 0}%</strong>
                   </span>
+                  {satelliteWatchEnabled && schemeKpis.metrics.scan_coverage_pct != null && (
+                    <span>
+                      Scan coverage: <strong>{schemeKpis.metrics.scan_coverage_pct}%</strong>
+                    </span>
+                  )}
                 </>
               )}
               <span

@@ -4,7 +4,7 @@ import {
   validateTreeRegistrationDefaults,
 } from "@/lib/tree-registration-defaults";
 import { projectSetupHref } from "@/lib/project-focused-ui";
-import { isMonitoringScheme } from "@/lib/schemes";
+import { isMonitoringOnlyProject, isSatelliteWatchEnabled } from "@/lib/project-monitoring";
 
 export type SetupStepId =
   | "scheme_refs"
@@ -27,6 +27,7 @@ export type ProjectSetupStatus = {
   setupComplete: boolean;
   canRegisterTree: boolean;
   monitoringMode: boolean;
+  satelliteWatchEnabled: boolean;
   blockReason?: string;
 };
 
@@ -66,7 +67,8 @@ export function evaluateProjectSetup({
   workAreas,
   scheme,
 }: ReadinessInput): ProjectSetupStatus {
-  const monitoringMode = isMonitoringScheme(project.scheme_code);
+  const monitoringMode = isMonitoringOnlyProject(project);
+  const satelliteWatchEnabled = isSatelliteWatchEnabled(project);
   const missingRefs = missingSchemeRefKeys(project, scheme);
   const hasSchemeRefs = project.scheme_code ? missingRefs.length === 0 : true;
   const treeDefaults = treeRegistrationDefaultsFromProject(project);
@@ -172,6 +174,7 @@ export function evaluateProjectSetup({
     setupComplete,
     canRegisterTree,
     monitoringMode,
+    satelliteWatchEnabled,
     blockReason,
   };
 }
