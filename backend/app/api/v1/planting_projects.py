@@ -342,6 +342,8 @@ async def export_monitoring_dossier(
     db: DB,
 ) -> Response:
     """PDF monitoring dossier — scan history, health narratives, and alerts for one project."""
+    from datetime import UTC, datetime
+
     from app.services.reports.monitoring_dossier import (
         build_monitoring_dossier_context,
         render_monitoring_dossier_pdf,
@@ -360,6 +362,7 @@ async def export_monitoring_dossier(
     ctx = await build_monitoring_dossier_context(db, project, owner_user_id=user.id)
     pdf = render_monitoring_dossier_pdf(ctx)
     safe_code = project.code.replace("/", "-")
+    stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
 
     await record_audit(
         db,
@@ -368,7 +371,7 @@ async def export_monitoring_dossier(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff={"project_code": project.code},
+        diff={"project_code": project.code, "generated_at": ctx.get("generated_at")},
     )
     await db.commit()
 
@@ -376,7 +379,11 @@ async def export_monitoring_dossier(
         content=pdf,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="{safe_code}-monitoring-dossier.pdf"'
+            "Content-Disposition": (
+                f'attachment; filename="{safe_code}-monitoring-dossier-{stamp}.pdf"'
+            ),
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
         },
     )
 

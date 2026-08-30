@@ -205,7 +205,8 @@ export function ProjectComplianceTab({
     mutationFn: () => plantingProjects.exportMonitoringDossier(projectId),
     onSuccess: (blob) => {
       const code = (projectCode || "project").replace(/\//g, "-");
-      downloadBlob(blob, `${code}-monitoring-dossier.pdf`);
+      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+      downloadBlob(blob, `${code}-monitoring-dossier-${stamp}.pdf`);
     },
   });
 
