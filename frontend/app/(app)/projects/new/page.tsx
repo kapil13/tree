@@ -17,6 +17,7 @@ import {
   SiteRuleAdjustmentsPanel,
 } from "@/components/projects/site-rule-adjustments-panel";
 import { TreeRegistrationDefaultsForm } from "@/components/projects/tree-registration-defaults-form";
+import { ProjectLocationFields } from "@/components/projects/project-location-fields";
 import {
   SchemeRefsFields,
   validateSchemeRefs,
@@ -44,6 +45,13 @@ import {
   validateTreeRegistrationDefaults,
   type TreeRegistrationDefaults,
 } from "@/lib/tree-registration-defaults";
+import {
+  EMPTY_PROJECT_LOCATION,
+  projectLocationToMetadata,
+  syncSchemeRefsFromLocation,
+  validateProjectLocation,
+  type ProjectLocation,
+} from "@/lib/project-location";
 
 const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
   {
@@ -125,6 +133,8 @@ export default function NewProjectPage() {
     deriveTreeRegistrationDefaults({}),
   );
   const [treeDefaultErrors, setTreeDefaultErrors] = useState<Record<string, string>>({});
+  const [location, setLocation] = useState<ProjectLocation>(() => ({ ...EMPTY_PROJECT_LOCATION }));
+  const [locationErrors, setLocationErrors] = useState<Record<string, string>>({});
   const [createdProject, setCreatedProject] = useState<PlantingProject | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,12 +204,12 @@ export default function NewProjectPage() {
     setTreeDefaults(
       deriveTreeRegistrationDefaults({
         schemeCode: selectedScheme?.code,
-        schemeRefs,
+        schemeRefs: syncSchemeRefsFromLocation(schemeRefs, location),
         projectCode: code.trim(),
         projectName: name.trim(),
       }),
     );
-  }, [selectedScheme?.code, schemeRefs, code, name, programCode]);
+  }, [selectedScheme?.code, schemeRefs, code, name, programCode, location]);
 
   useEffect(() => {
     if (templates.length > 0 && selectedTemplate) {
@@ -246,6 +256,13 @@ export default function NewProjectPage() {
       setError("Project code and name are required.");
       return false;
     }
+    const locErrors = validateProjectLocation(location);
+    if (Object.keys(locErrors).length > 0) {
+      setLocationErrors(locErrors);
+      setError("Complete the project location fields before continuing.");
+      return false;
+    }
+    setLocationErrors({});
     if (templates.length > 0 && !standardConfirmed) {
       setError("Confirm the planting standard before continuing.");
       return false;
@@ -269,13 +286,17 @@ export default function NewProjectPage() {
       const metadata: Record<string, unknown> = {
         survey_interval_days: surveyIntervalDays,
         setup_started_at: new Date().toISOString(),
+        location: projectLocationToMetadata(location),
         ...(selectedScheme?.legacy_plantation_category
           ? { plantation_category: selectedScheme.legacy_plantation_category }
           : {}),
       };
       if (hasSchemeRefsStep && Object.keys(schemeRefs).length > 0) {
         metadata.scheme_refs = Object.fromEntries(
-          Object.entries(schemeRefs).map(([k, v]) => [k, v.trim() === "" ? null : v.trim()]),
+          Object.entries(syncSchemeRefsFromLocation(schemeRefs, location)).map(([k, v]) => [
+            k,
+            v.trim() === "" ? null : v.trim(),
+          ]),
         );
       }
       if (programCode === "government_nhai" || selectedScheme) {
@@ -455,6 +476,18 @@ export default function NewProjectPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+
+          <ProjectLocationFields
+            value={location}
+            errors={locationErrors}
+            onChange={(next) => {
+              setLocation(next);
+              setLocationErrors({});
+              if (hasSchemeRefsStep) {
+                setSchemeRefs((prev) => syncSchemeRefsFromLocation(prev, next));
+              }
+            }}
+          />
 
           {templates.length > 0 && (
             <div className="space-y-3">
