@@ -135,7 +135,7 @@ async def _build_monitoring_compliance_workflow(
             "yes": "All blocks scanned within cadence",
             "partial": "Some blocks need a fresh NDVI scan",
             "no": "Run initial NDVI scan on all blocks",
-        }.get(scan_signal, None)
+        }.get(scan_signal)
 
     sar_signal = signals.get("sar_permanence_risk")
     sar_metric = {
