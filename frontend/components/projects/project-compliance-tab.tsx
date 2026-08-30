@@ -332,16 +332,32 @@ export function ProjectComplianceTab({
         )}
 
         {section === "checklist" && (
-          <div className="card space-y-4" id="compliance-checklist">
-            <ProjectComplianceChecklistPanel
-              projectId={projectId}
-              initialChecklistCode={checklistCode}
-              onNavigateTab={onNavigateTab}
-              onScrollToAnchor={navigateToAnchor}
-              onSaved={() => {
-                qc.invalidateQueries({ queryKey: ["compliance-workflow", projectId] });
-              }}
-            />
+          <div className="space-y-4">
+            {monitoringMode && (
+              <ProjectComplianceWorkflowPanel
+                projectId={projectId}
+                projectMetadata={projectMetadata}
+                monitoringMode
+                onNavigateTab={onNavigateTab}
+                onScrollToAnchor={navigateToAnchor}
+                onSelectChecklist={selectChecklist}
+              />
+            )}
+            <div className="card space-y-4" id="compliance-checklist">
+              <ProjectComplianceChecklistPanel
+                projectId={projectId}
+                initialChecklistCode={checklistCode}
+                onNavigateTab={onNavigateTab}
+                onScrollToAnchor={navigateToAnchor}
+                gapContext={{
+                  monitoringMode,
+                  primaryWorkAreaId: workAreas[0]?.id,
+                }}
+                onSaved={() => {
+                  qc.invalidateQueries({ queryKey: ["compliance-workflow", projectId] });
+                }}
+              />
+            </div>
           </div>
         )}
 

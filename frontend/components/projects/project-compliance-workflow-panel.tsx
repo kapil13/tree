@@ -38,12 +38,14 @@ type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "se
 export function ProjectComplianceWorkflowPanel({
   projectId,
   projectMetadata,
+  monitoringMode = false,
   onNavigateTab,
   onScrollToAnchor,
   onSelectChecklist,
 }: {
   projectId: string;
   projectMetadata?: Record<string, unknown>;
+  monitoringMode?: boolean;
   onNavigateTab?: (tab: ProjectTab) => void;
   onScrollToAnchor?: (anchor: string) => void;
   onSelectChecklist?: (code: string) => void;
@@ -105,11 +107,22 @@ export function ProjectComplianceWorkflowPanel({
         <div>
           <div className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-forest-700" />
-            <h2 className="text-lg font-semibold text-stone-900">Compliance readiness</h2>
+            <h2 className="text-lg font-semibold text-stone-900">
+              {monitoringMode ? "Estate watch readiness" : "Compliance readiness"}
+            </h2>
           </div>
           <p className="mt-1 text-sm text-stone-600">
-            {data.progress.done} of {data.progress.total} required steps complete
-            {data.progress.partial > 0 ? ` · ${data.progress.partial} in progress` : ""}
+            {monitoringMode
+              ? "Satellite scan coverage, SAR integrity, and checklist steps for this estate watch programme."
+              : `${data.progress.done} of ${data.progress.total} required steps complete`}
+            {!monitoringMode && data.progress.partial > 0
+              ? ` · ${data.progress.partial} in progress`
+              : monitoringMode
+                ? ` · ${data.progress.done} of ${data.progress.total} required steps complete`
+                : ""}
+            {data.progress.partial > 0 && monitoringMode
+              ? ` · ${data.progress.partial} in progress`
+              : ""}
             {" · "}
             Recommended: <strong>{data.recommended_checklist_label}</strong>
           </p>

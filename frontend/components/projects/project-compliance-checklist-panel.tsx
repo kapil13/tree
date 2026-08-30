@@ -44,12 +44,14 @@ export function ProjectComplianceChecklistPanel({
   onSaved,
   onNavigateTab,
   onScrollToAnchor,
+  gapContext,
 }: {
   projectId: string;
   initialChecklistCode?: ChecklistCode;
   onSaved?: () => void;
   onNavigateTab?: (tab: ProjectTab) => void;
   onScrollToAnchor?: (anchor: string) => void;
+  gapContext?: { primaryWorkAreaId?: string | null; monitoringMode?: boolean };
 }) {
   const qc = useQueryClient();
   const [checklistCode, setChecklistCode] = useState<ChecklistCode>(
@@ -252,6 +254,7 @@ export function ProjectComplianceChecklistPanel({
         <ComplianceGapList
           gaps={state.gaps}
           projectId={projectId}
+          gapContext={gapContext}
           onNavigateTab={onNavigateTab}
           onScrollToAnchor={onScrollToAnchor}
         />

@@ -2,8 +2,10 @@ import {
   parseProjectSecondaryTab,
   projectOverviewHref,
   projectSecondaryHref,
+  projectSetupHref,
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
+import { satelliteHref } from "@/lib/satellite-links";
 
 export type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
 
@@ -14,8 +16,10 @@ export type ComplianceGapAction = {
   href?: string;
 };
 
-type GapContext = {
+export type GapContext = {
   projectId: string;
+  primaryWorkAreaId?: string | null;
+  monitoringMode?: boolean;
 };
 
 export function projectTabHref(
@@ -34,14 +38,24 @@ export function projectTabHref(
   return projectOverviewHref(projectId);
 }
 
-const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { href?: string | ((ctx: GapContext) => string) }> = {
+function monitoringSatelliteHref(ctx: GapContext): string {
+  return satelliteHref({
+    fenceId: ctx.primaryWorkAreaId,
+    projectId: ctx.monitoringMode ? ctx.projectId : undefined,
+  });
+}
+
+const AUTO_KEY_ACTIONS: Record<
+  string,
+  Omit<ComplianceGapAction, "href"> & { href?: string | ((ctx: GapContext) => string) }
+> = {
   has_trees: {
     label: "Register tree",
     href: (ctx) => `/trees/new?project=${ctx.projectId}`,
   },
   has_work_areas: {
     label: "Draw work areas",
-    tab: "overview",
+    href: (ctx) => projectSetupHref(ctx.projectId, 4),
   },
   geo_tagged_majority: {
     label: "Review trees",
@@ -49,7 +63,12 @@ const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { hre
   },
   satellite_coverage: {
     label: "Run satellite scan",
-    href: "/portfolio-health?tab=monitoring",
+    href: (ctx) =>
+      ctx.monitoringMode ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+  },
+  work_area_scan_coverage: {
+    label: "Run NDVI scan",
+    href: (ctx) => monitoringSatelliteHref(ctx),
   },
   no_block_violations: {
     label: "Fix violations",
@@ -78,8 +97,13 @@ const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { hre
     tab: "credits",
   },
   sar_permanence_risk: {
-    label: "Review satellite integrity",
-    href: "/portfolio-health?tab=monitoring",
+    label: "Review SAR integrity",
+    href: (ctx) =>
+      ctx.monitoringMode ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+  },
+  estate_metadata_complete: {
+    label: "Complete estate details",
+    href: (ctx) => projectSetupHref(ctx.projectId, 3),
   },
   ca_ref_documented: {
     label: "Retire serial with CA ref",
@@ -104,6 +128,7 @@ const AUTO_KEY_ACTIONS: Record<string, Omit<ComplianceGapAction, "href"> & { hre
   active_standard_attached: {
     label: "Review planting standard",
     tab: "overview",
+    href: (ctx) => projectSetupHref(ctx.projectId, 2),
   },
   native_species_tracked: {
     label: "Register native species",
@@ -120,6 +145,8 @@ const ITEM_ID_ACTIONS: Record<string, ComplianceGapAction> = {
   geo_tagged_records: { label: "Review trees", tab: "trees" },
   no_blocking_violations: { label: "Fix violations", tab: "compliance", anchor: "violations" },
   survival_monitoring: { label: "Project settings", tab: "settings" },
+  alert_review_cadence: { label: "Review alerts", href: "/alerts" },
+  baseline_metadata: { label: "Complete estate details", tab: "overview" },
 };
 
 export function resolveComplianceGapAction(
@@ -143,9 +170,16 @@ export function resolveComplianceGapAction(
 
   if (ITEM_ID_ACTIONS[gap.item_id]) {
     const action = ITEM_ID_ACTIONS[gap.item_id];
+    const href =
+      gap.item_id === "baseline_metadata"
+        ? projectSetupHref(ctx.projectId, 3)
+        : action.href ??
+          (action.tab ? projectTabHref(ctx.projectId, action.tab, action.anchor) : undefined);
     return {
-      ...action,
-      href: projectTabHref(ctx.projectId, action.tab!, action.anchor),
+      label: action.label,
+      tab: action.tab,
+      anchor: action.anchor,
+      href,
     };
   }
 

@@ -240,6 +240,28 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
         signals[signal_key] = "yes" if doc_type in doc_types else "no"
 
     refs = (project.metadata_ or {}).get("scheme_refs") or {}
+    if is_monitoring_scheme(getattr(project, "scheme_code", None)):
+        required_meta = (
+            "estate_name",
+            "managing_agency",
+            "state_name",
+            "forest_type",
+            "total_area_ha",
+            "baseline_year",
+            "monitoring_objective",
+        )
+        filled = sum(
+            1 for key in required_meta if refs.get(key) not in (None, "", [])
+        )
+        if filled >= len(required_meta):
+            signals["estate_metadata_complete"] = "yes"
+        elif filled >= 3:
+            signals["estate_metadata_complete"] = "partial"
+        else:
+            signals["estate_metadata_complete"] = "no"
+    else:
+        signals["estate_metadata_complete"] = "na"
+
     signals["land_bank_registered"] = (
         "yes" if refs.get("green_credit_land_bank_id") else "no"
     )

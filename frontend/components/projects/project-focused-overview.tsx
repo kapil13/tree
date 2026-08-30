@@ -203,6 +203,7 @@ export function ProjectFocusedOverview({
     if (monitoringMode && workAreaCount > 0) {
       const scanPct = schemeKpis?.metrics?.scan_coverage_pct as number | undefined;
       const maxDays = schemeKpis?.metrics?.max_days_since_scan as number | undefined;
+      const sarAtRisk = schemeKpis?.metrics?.sar_at_risk_areas as number | undefined;
       const needsScan =
         scanPct == null || scanPct < 80 || (maxDays != null && maxDays > 35);
       if (needsScan) {
@@ -213,6 +214,25 @@ export function ProjectFocusedOverview({
           href: satelliteDashboardHref,
           label: "Open satellite monitoring",
           icon: Satellite,
+        };
+      }
+      if (sarAtRisk != null && sarAtRisk > 0) {
+        return {
+          title: "Review SAR integrity alerts",
+          description: `${sarAtRisk} work area${sarAtRisk === 1 ? "" : "s"} flagged at risk — review encroachment and moisture stress signals.`,
+          href: satelliteDashboardHref,
+          label: "Review on satellite map",
+          icon: AlertTriangle,
+        };
+      }
+      if (setupStatus?.setupComplete) {
+        return {
+          title: "Configure plot sampling (optional)",
+          description:
+            "Stratified field plots complement satellite monitoring for large estates. Tier-4 plot design lives under Reports & sampling.",
+          href: projectSecondaryHref(projectId, "credits"),
+          label: "Open reports & sampling",
+          icon: MapPin,
         };
       }
     }
@@ -264,6 +284,8 @@ export function ProjectFocusedOverview({
     setupStatus,
     monitoringMode,
     schemeKpis,
+    satelliteDashboardHref,
+    setupStatus?.setupComplete,
   ]);
 
   return (
@@ -383,8 +405,29 @@ export function ProjectFocusedOverview({
               </p>
             </div>
             <Link
+              href={satelliteDashboardHref}
+              className={cn(
+                "card block transition",
+                (schemeKpis?.metrics?.sar_at_risk_areas as number | undefined) != null &&
+                  (schemeKpis?.metrics?.sar_at_risk_areas as number) > 0
+                  ? "border-amber-200 hover:border-amber-300"
+                  : "hover:border-sky-200",
+              )}
+            >
+              <p className="kpi-label">SAR at risk</p>
+              <p className="text-2xl font-semibold">
+                {schemeKpis?.metrics?.sar_at_risk_areas != null
+                  ? String(schemeKpis.metrics.sar_at_risk_areas)
+                  : "—"}
+              </p>
+              {(schemeKpis?.metrics?.sar_at_risk_areas as number | undefined) != null &&
+                (schemeKpis?.metrics?.sar_at_risk_areas as number) > 0 && (
+                  <p className="mt-1 text-xs text-amber-800">Review integrity →</p>
+                )}
+            </Link>
+            <Link
               href={projectSecondaryHref(projectId, "compliance")}
-              className="card block transition hover:border-amber-200"
+              className="card block transition hover:border-amber-200 sm:col-span-2 lg:col-span-1"
             >
               <p className="kpi-label">Open violations</p>
               <p className="text-2xl font-semibold">{openViolations}</p>
@@ -431,6 +474,15 @@ export function ProjectFocusedOverview({
                   {schemeKpis.metrics.max_days_since_scan != null && (
                     <span>
                       Oldest scan: <strong>{schemeKpis.metrics.max_days_since_scan}d ago</strong>
+                    </span>
+                  )}
+                  {schemeKpis.metrics.sar_scored_areas != null && (
+                    <span>
+                      SAR scored:{" "}
+                      <strong>
+                        {schemeKpis.metrics.sar_scored_areas}/
+                        {schemeKpis.metrics.work_area_count ?? 0}
+                      </strong>
                     </span>
                   )}
                 </>

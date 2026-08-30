@@ -969,6 +969,7 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                     "Are estate name, managing agency, forest type, and baseline year recorded?"
                 ),
                 guidance="Required estate details support 5–20 year watch programmes and audit exports.",
+                auto_key="estate_metadata_complete",
             ),
             ChecklistItemDef(
                 id="initial_satellite_scan",

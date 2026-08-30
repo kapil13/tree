@@ -13,6 +13,7 @@ from app.models.tree import Tree
 from app.services.compliance.evaluator import build_auto_signals, list_project_checklist_summaries
 from app.services.planting_projects.survival_survey import survey_interval_days
 from app.services.schemes.compliance import checklists_for_project
+from app.services.schemes.monitoring import is_monitoring_scheme
 
 WorkflowStepStatus = Literal["done", "partial", "pending", "skipped"]
 
@@ -24,6 +25,7 @@ SEGMENT_RECOMMENDED_CHECKLIST: dict[str, str] = {
     "nagar_van_urban": "nagar_van_urban",
     "sahakar_van_coop": "sahakar_van_coop",
     "general": "esg_general",
+    "estate_monitoring": "estate_monitoring",
 }
 
 SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
@@ -43,6 +45,7 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "article6_readiness": "Article 6",
     "world_bank_esf": "World Bank ESF",
     "undp_ses": "UNDP SES",
+    "estate_monitoring": "Estate monitoring",
 }
 
 
@@ -95,8 +98,184 @@ async def _project_metrics(db: AsyncSession, project: PlantingProject) -> dict[s
     }
 
 
+async def _build_monitoring_compliance_workflow(
+    db: AsyncSession, project: PlantingProject
+) -> dict[str, Any]:
+    """Estate watch readiness workflow — satellite-first, no tree census."""
+    metrics = await _project_metrics(db, project)
+    signals = await build_auto_signals(db, project)
+    checklist_summaries = await list_project_checklist_summaries(db, project)
+    scheme_checklists = checklists_for_project(project)
+    recommended_code = (
+        scheme_checklists[0]
+        if scheme_checklists
+        else SEGMENT_RECOMMENDED_CHECKLIST.get(project.segment, "estate_monitoring")
+    )
+    recommended = next(
+        (c for c in checklist_summaries if c["code"] == recommended_code),
+        checklist_summaries[0] if checklist_summaries else None,
+    )
+
+    work_area_count = metrics["work_area_count"]
+    open_violations = metrics["open_violations"]
+    blocking_violations = metrics["blocking_violations"]
+
+    checklist_done = False
+    checklist_partial = False
+    if recommended:
+        status = recommended.get("eligibility_status", "not_started")
+        completion = float(recommended.get("completion_pct") or 0)
+        checklist_done = status in ("eligible", "gaps_identified") and completion >= 100
+        checklist_partial = completion > 0 or status == "in_progress"
+
+    scan_signal = signals.get("work_area_scan_coverage")
+    scan_metric = None
+    if work_area_count > 0 and scan_signal:
+        scan_metric = {
+            "yes": "All blocks scanned within cadence",
+            "partial": "Some blocks need a fresh NDVI scan",
+            "no": "Run initial NDVI scan on all blocks",
+        }.get(scan_signal)
+
+    sar_signal = signals.get("sar_permanence_risk")
+    sar_metric = {
+        "yes": "SAR integrity active",
+        "partial": "At-risk blocks need review",
+        "no": "Awaiting SAR integrity scores",
+    }.get(sar_signal or "no", None)
+
+    project_id = str(project.id)
+    satellite_href = f"/satellite?project={project_id}"
+
+    steps: list[dict[str, Any]] = [
+        {
+            "id": "estate_details",
+            "title": "Record estate details",
+            "description": "Estate name, managing agency, forest type, baseline year, and monitoring objective.",
+            "status": _step_status(signals.get("estate_metadata_complete")),
+            "action_label": "Open setup wizard",
+            "action_tab": "overview",
+            "action_href": f"/projects/{project_id}/setup?step=3",
+            "metric": None,
+            "optional": False,
+        },
+        {
+            "id": "monitoring_standard",
+            "title": "Attach monitoring standard",
+            "description": "Link the estate monitoring template so scan cadence and block-size rules apply.",
+            "status": _step_status(signals.get("active_standard_attached")),
+            "action_label": "Open setup wizard",
+            "action_tab": "overview",
+            "action_href": f"/projects/{project_id}/setup?step=2",
+            "metric": None,
+            "optional": False,
+        },
+        {
+            "id": "work_areas",
+            "title": "Draw estate work areas",
+            "description": "Map 10–500 ha block polygons for NDVI and SAR scans.",
+            "status": _step_status(signals.get("has_work_areas")),
+            "action_label": "Draw work areas",
+            "action_tab": "overview",
+            "action_href": f"/projects/{project_id}/setup?step=4",
+            "metric": (
+                f"{work_area_count} block{'s' if work_area_count != 1 else ''}"
+                if work_area_count
+                else None
+            ),
+            "optional": False,
+        },
+        {
+            "id": "initial_satellite_scan",
+            "title": "Run initial NDVI scan",
+            "description": "Establish a canopy baseline on every work-area polygon (target ≥80% coverage).",
+            "status": _step_status(signals.get("work_area_scan_coverage")),
+            "action_label": "Open satellite monitoring",
+            "action_tab": "overview",
+            "action_href": satellite_href,
+            "metric": scan_metric,
+            "optional": False,
+        },
+        {
+            "id": "sar_integrity",
+            "title": "Review SAR forest integrity",
+            "description": "Weekly SAR alerts flag encroachment and moisture stress alongside monthly NDVI.",
+            "status": _step_status(signals.get("sar_permanence_risk"), optional=True),
+            "action_label": "Review integrity",
+            "action_tab": "overview",
+            "action_href": satellite_href,
+            "metric": sar_metric,
+            "optional": True,
+        },
+        {
+            "id": "resolve_violations",
+            "title": "Clear blocking violations",
+            "description": "Resolve boundary or data-quality issues before external reporting.",
+            "status": _step_status(signals.get("no_block_violations")),
+            "action_label": "View violations",
+            "action_tab": "compliance",
+            "action_anchor": "violations",
+            "metric": (
+                f"{blocking_violations} blocking · {open_violations} open"
+                if open_violations
+                else "None open"
+            ),
+            "optional": False,
+        },
+        {
+            "id": "review_checklist",
+            "title": "Complete estate monitoring checklist",
+            "description": "Review auto-suggested answers, confirm alert review process, and save.",
+            "status": (
+                "done"
+                if checklist_done
+                else "partial"
+                if checklist_partial
+                else "pending"
+            ),
+            "action_label": "Open checklist",
+            "action_tab": "compliance",
+            "action_anchor": "checklist",
+            "metric": (
+                f"{recommended['completion_pct']:.0f}% complete · {recommended['eligibility_status'].replace('_', ' ')}"
+                if recommended
+                else None
+            ),
+            "optional": False,
+            "recommended_checklist": recommended_code,
+        },
+    ]
+
+    required_steps = [s for s in steps if not s.get("optional")]
+    done_count = sum(1 for s in required_steps if s["status"] == "done")
+    partial_count = sum(1 for s in required_steps if s["status"] == "partial")
+
+    return {
+        "project_id": project_id,
+        "segment": project.segment,
+        "compliance_mode": project.compliance_mode,
+        "monitoring_mode": True,
+        "recommended_checklist": recommended_code,
+        "recommended_checklist_label": SEGMENT_CHECKLIST_LABEL.get(
+            recommended_code, recommended_code
+        ),
+        "steps": steps,
+        "progress": {
+            "done": done_count,
+            "partial": partial_count,
+            "total": len(required_steps),
+            "pct": round(100 * done_count / len(required_steps), 1) if required_steps else 0,
+        },
+        "auto_signals": signals,
+        "checklist_summaries": checklist_summaries,
+    }
+
+
 async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) -> dict[str, Any]:
     """Return step-by-step compliance readiness for a planting project."""
+    if is_monitoring_scheme(getattr(project, "scheme_code", None)):
+        return await _build_monitoring_compliance_workflow(db, project)
+
     metrics = await _project_metrics(db, project)
     signals = await build_auto_signals(db, project)
     checklist_summaries = await list_project_checklist_summaries(db, project)
