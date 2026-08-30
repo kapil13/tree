@@ -1,4 +1,4 @@
-.PHONY: help dev-start dev-stop dev-status setup-native setup-bioacoustic dev-bioacoustic-worker migrate-native seed-native test lint
+.PHONY: help dev-start dev-stop dev-status setup-native setup-bioacoustic dev-bioacoustic-worker migrate-native seed-native import-india-admin test lint
 .PHONY: up down logs migrate seed docker-legacy migrate-db
 
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  make migrate-native   Run Alembic migrations"
 	@echo "  make migrate-db       Smart migrate (auto-detect Docker vs native)"
 	@echo "  make seed-native      Seed demo user"
+	@echo "  make import-india-admin  Load LGD state/district/block/GP/village into DB"
 	@echo "  make test             Run backend tests"
 	@echo "  make lint             Lint backend and frontend"
 	@echo "  make mobile-apk       Build Android release APK (requires Flutter)"
@@ -49,6 +50,9 @@ migrate: migrate-db
 
 seed-native:
 	cd backend && . .venv/bin/activate && python -m app.scripts.seed_demo
+
+import-india-admin:
+	cd backend && . .venv/bin/activate && python -m app.scripts.import_india_admin --csv /tmp/lgd/villages_by_blocks.28Aug2026.csv
 
 test:
 	cd backend && . .venv/bin/activate && pytest -q

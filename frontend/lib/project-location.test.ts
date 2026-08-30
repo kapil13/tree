@@ -7,11 +7,12 @@ import {
 } from "@/lib/project-location";
 
 describe("project-location", () => {
-  it("validates required hierarchy fields", () => {
+  it("validates required hierarchy fields without city", () => {
     const errors = validateProjectLocation({ ...EMPTY_PROJECT_LOCATION });
     expect(errors.financial_year).toBeTruthy();
     expect(errors.state_code).toBeTruthy();
     expect(errors.district_code).toBeTruthy();
+    expect(errors.city).toBeUndefined();
   });
 
   it("syncs scheme refs from location", () => {
