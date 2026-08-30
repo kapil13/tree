@@ -9,6 +9,7 @@ import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area"
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
 import { projectSecondaryHref, projectSetupHref } from "@/lib/project-focused-ui";
+import { satelliteHref } from "@/lib/satellite-links";
 import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
 import { schemeByCode, isMonitoringScheme } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
@@ -128,6 +129,11 @@ export function ProjectFocusedOverview({
 
   const scheme = schemeByCode(schemes, project.scheme_code);
   const monitoringMode = isMonitoringScheme(project.scheme_code);
+  const primaryWorkAreaId = workAreas[0]?.id;
+  const satelliteDashboardHref = satelliteHref({
+    fenceId: primaryWorkAreaId,
+    projectId: monitoringMode ? projectId : undefined,
+  });
 
   const upNextHref = useMemo(() => {
     const suggested = registrationContext?.suggested_next;
@@ -204,7 +210,7 @@ export function ProjectFocusedOverview({
           title: "Run satellite scan",
           description:
             "Initial NDVI scan establishes your baseline. Monthly scans track canopy health without tree census.",
-          href: "/satellite",
+          href: satelliteDashboardHref,
           label: "Open satellite monitoring",
           icon: Satellite,
         };
@@ -467,7 +473,7 @@ export function ProjectFocusedOverview({
                 for plot-based ground truth.
               </p>
             </div>
-            <Link href="/satellite" className="btn-primary w-full shrink-0 sm:w-auto">
+            <Link href={satelliteDashboardHref} className="btn-primary w-full shrink-0 sm:w-auto">
               <Satellite className="h-4 w-4" />
               Satellite dashboard
             </Link>

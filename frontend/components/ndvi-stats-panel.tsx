@@ -17,6 +17,7 @@ type Props = {
   latest: NdviSatelliteRecord | null | undefined;
   resolutionLabel?: string;
   className?: string;
+  size?: "default" | "lg";
 };
 
 function fmt(v: number | null | undefined, digits = 2): string {
@@ -68,22 +69,48 @@ function NdviRangeBar({
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  large,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  large?: boolean;
+}) {
   return (
-    <div className="rounded-lg bg-stone-50 px-2 py-1.5">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
+    <div className={large ? "rounded-xl bg-stone-50 px-3 py-3" : "rounded-lg bg-stone-50 px-2 py-1.5"}>
+      <div
+        className={
+          large
+            ? "text-xs font-medium uppercase tracking-wide text-stone-500"
+            : "text-[10px] font-medium uppercase tracking-wide text-stone-500"
+        }
+      >
         {label}
       </div>
-      <div className="text-sm font-semibold text-stone-900">{value}</div>
-      {hint && <div className="text-[10px] text-stone-400">{hint}</div>}
+      <div className={large ? "text-xl font-semibold text-stone-900" : "text-sm font-semibold text-stone-900"}>
+        {value}
+      </div>
+      {hint && <div className={large ? "text-xs text-stone-400" : "text-[10px] text-stone-400"}>{hint}</div>}
     </div>
   );
 }
 
-export function NdviStatsPanel({ latest, resolutionLabel = "10 m", className = "" }: Props) {
+export function NdviStatsPanel({
+  latest,
+  resolutionLabel = "10 m",
+  className = "",
+  size = "default",
+}: Props) {
+  const large = size === "lg";
   if (!latest) {
     return (
-      <div className={`rounded-lg border border-dashed border-stone-200 p-3 text-sm text-stone-500 ${className}`}>
+      <div
+        className={`rounded-lg border border-dashed border-stone-200 p-3 text-sm text-stone-500 ${className} ${large ? "p-6 text-base" : ""}`}
+      >
         No satellite scan yet — run NDVI scan to see vegetation indices.
       </div>
     );
@@ -99,17 +126,13 @@ export function NdviStatsPanel({ latest, resolutionLabel = "10 m", className = "
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Stat label="NDVI mean" value={fmt(latest.ndvi_mean)} hint={`Sentinel-2 · ${resolutionLabel}`} />
-        <Stat label="NDVI min" value={fmt(latest.ndvi_min)} />
-        <Stat label="NDVI max" value={fmt(latest.ndvi_max)} />
-        <Stat label="EVI mean" value={fmt(latest.evi_mean)} hint="Enhanced Vegetation Index" />
-        <Stat label="Cloud cover" value={fmtPct(latest.cloud_cover_pct)} />
-        <Stat
-          label="Δ vs baseline"
-          value={changeStr}
-          hint="12-month trailing change"
-        />
+      <div className={large ? "grid grid-cols-2 gap-3 xl:grid-cols-3" : "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
+        <Stat label="NDVI mean" value={fmt(latest.ndvi_mean)} hint={`Sentinel-2 · ${resolutionLabel}`} large={large} />
+        <Stat label="NDVI min" value={fmt(latest.ndvi_min)} large={large} />
+        <Stat label="NDVI max" value={fmt(latest.ndvi_max)} large={large} />
+        <Stat label="EVI mean" value={fmt(latest.evi_mean)} hint="Enhanced Vegetation Index" large={large} />
+        <Stat label="Cloud cover" value={fmtPct(latest.cloud_cover_pct)} large={large} />
+        <Stat label="Δ vs baseline" value={changeStr} hint="12-month trailing change" large={large} />
       </div>
 
       <NdviRangeBar

@@ -23,6 +23,7 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { SarGroundPanel } from "@/components/satellite/sar-ground-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast";
+import { MapViewportController } from "@/components/map/map-viewport-controller";
 import { showToast } from "@/components/toast";
 import {
   estimatePolygonAreaHa,
@@ -31,8 +32,12 @@ import {
   FENCE_AREA_WARN_HA,
   polygonBBoxKm,
 } from "@/lib/geo";
-
-const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
+import {
+  centroidFromPaths,
+  geoJsonToPaths,
+  zoomForPaths,
+} from "@/lib/map-geometry";
+import { DEFAULT_MAP_ZOOM, FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
@@ -58,12 +63,6 @@ function pathsToGeoJson(paths: google.maps.LatLngLiteral[]): {
     ring.push(first);
   }
   return { type: "Polygon", coordinates: [ring] };
-}
-
-function geoJsonToPaths(boundary: PlantationFence["boundary"]): google.maps.LatLngLiteral[] {
-  const ring = boundary.coordinates[0] ?? [];
-  const open = ring.length > 1 ? ring.slice(0, -1) : ring;
-  return open.map(([lng, lat]) => ({ lat, lng }));
 }
 
 function FenceDrawingLayer({
@@ -105,6 +104,10 @@ type Props = {
   className?: string;
   selectedFenceId?: string | null;
   onFenceSelect?: (fenceId: string | null) => void;
+  /** Hide the cramped sidebar — use with external SatelliteSiteDetailPanel */
+  hideSidebar?: boolean;
+  /** Limit visible fences (e.g. project work areas) */
+  restrictToFenceIds?: string[];
 };
 
 export function PlantationFenceMap({
@@ -113,6 +116,8 @@ export function PlantationFenceMap({
   className = "",
   selectedFenceId = null,
   onFenceSelect,
+  hideSidebar = false,
+  restrictToFenceIds,
 }: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const qc = useQueryClient();
@@ -123,6 +128,7 @@ export function PlantationFenceMap({
   const [pendingName, setPendingName] = useState("");
   const [pendingPaths, setPendingPaths] = useState<google.maps.LatLngLiteral[] | null>(null);
   const [confirmLargeFence, setConfirmLargeFence] = useState(false);
+  const [panKey, setPanKey] = useState(0);
 
   const pendingAreaHa = useMemo(
     () => (pendingPaths ? estimatePolygonAreaHa(pendingPaths) : 0),
@@ -144,7 +150,12 @@ export function PlantationFenceMap({
     queryFn: () => trees.list({ page_size: 100 }),
   });
 
-  const fences = fencePage?.items ?? [];
+  const fences = useMemo(() => {
+    const all = fencePage?.items ?? [];
+    if (!restrictToFenceIds?.length) return all;
+    const allowed = new Set(restrictToFenceIds);
+    return all.filter((f) => allowed.has(f.id));
+  }, [fencePage?.items, restrictToFenceIds]);
   const treeItems = treePage?.items ?? [];
 
   useEffect(() => {
@@ -164,30 +175,47 @@ export function PlantationFenceMap({
   const activeFenceId =
     selectedId ?? (fences.length === 1 ? fences[0]?.id ?? null : null);
 
+  const activeFence = fences.find((f) => f.id === activeFenceId) ?? null;
+
+  const mapViewport = useMemo(() => {
+    if (activeFence) {
+      const paths = geoJsonToPaths(activeFence.boundary);
+      const center = centroidFromPaths(paths);
+      if (center) {
+        return { center, zoom: zoomForPaths(paths) };
+      }
+    }
+    const scopeFences = fences.length ? fences : [];
+    if (scopeFences.length) {
+      const all = scopeFences.flatMap((f) => geoJsonToPaths(f.boundary));
+      const center = centroidFromPaths(all);
+      if (center) {
+        return { center, zoom: zoomForPaths(all) };
+      }
+    }
+    if (treeItems.length) {
+      return {
+        center: {
+          lat: treeItems.reduce((s, t) => s + t.latitude, 0) / treeItems.length,
+          lng: treeItems.reduce((s, t) => s + t.longitude, 0) / treeItems.length,
+        },
+        zoom: DEFAULT_MAP_ZOOM,
+      };
+    }
+    return { center: FALLBACK_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM };
+  }, [activeFence, fences, treeItems]);
+
+  useEffect(() => {
+    if (activeFenceId) {
+      setPanKey((k) => k + 1);
+    }
+  }, [activeFenceId]);
+
   const { data: selectedSat } = useQuery({
     queryKey: ["fence-sat", activeFenceId],
     queryFn: () => plantationFences.satellite(activeFenceId!),
     enabled: !!activeFenceId,
   });
-
-  const center = useMemo(() => {
-    if (fences.length) {
-      const all = fences.flatMap((f) => geoJsonToPaths(f.boundary));
-      if (all.length) {
-        return {
-          lat: all.reduce((s, p) => s + p.lat, 0) / all.length,
-          lng: all.reduce((s, p) => s + p.lng, 0) / all.length,
-        };
-      }
-    }
-    if (treeItems.length) {
-      return {
-        lat: treeItems.reduce((s, t) => s + t.latitude, 0) / treeItems.length,
-        lng: treeItems.reduce((s, t) => s + t.longitude, 0) / treeItems.length,
-      };
-    }
-    return DEFAULT_CENTER;
-  }, [fences, treeItems]);
 
   const scanFence = useMutation({
     mutationFn: (id: string) => plantationFences.scan(id),
@@ -263,7 +291,9 @@ export function PlantationFenceMap({
   const selected = fences.find((f) => f.id === selectedId) ?? null;
 
   return (
-    <div className={`grid gap-4 lg:grid-cols-[1fr_320px] ${className}`}>
+    <div
+      className={`grid gap-4 ${hideSidebar ? "" : "lg:grid-cols-[1fr_320px]"} ${className}`}
+    >
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -384,12 +414,15 @@ export function PlantationFenceMap({
 
         <div
           className="overflow-hidden rounded-xl border border-stone-200"
-          style={{ height }}
+          style={{
+            height: height === "100%" ? "100%" : height,
+            minHeight: height === "100%" ? "420px" : undefined,
+          }}
         >
           <APIProvider apiKey={apiKey}>
             <Map
-              defaultCenter={center}
-              defaultZoom={14}
+              defaultCenter={mapViewport.center}
+              defaultZoom={mapViewport.zoom}
               mapTypeId={mapType}
               gestureHandling="greedy"
               fullscreenControl
@@ -397,6 +430,11 @@ export function PlantationFenceMap({
               streetViewControl={false}
               style={{ width: "100%", height: "100%" }}
             >
+              <MapViewportController
+                center={mapViewport.center}
+                zoom={mapViewport.zoom}
+                panKey={panKey}
+              />
               <FenceDrawingLayer
                 enabled={drawMode}
                 draftPaths={draftPaths}
@@ -431,6 +469,7 @@ export function PlantationFenceMap({
         </div>
       </div>
 
+      {!hideSidebar && (
       <aside className="card max-h-[80vh] space-y-3 overflow-y-auto">
         <h2 className="text-sm font-medium">Plantation fences</h2>
         {fencesLoading ? (
@@ -516,6 +555,7 @@ export function PlantationFenceMap({
           </ul>
         )}
       </aside>
+      )}
     </div>
   );
 }
