@@ -19,6 +19,7 @@ help:
 	@echo ""
 	@echo "Production (Hostinger KVM 4): see docs/DEPLOYMENT_HOSTINGER.md"
 	@echo "  cd infrastructure/hostinger && cp .env.production.example .env.production && ./deploy.sh"
+	@echo "  cd infrastructure/hostinger && make migrate-db && make import-india-admin"
 	@echo ""
 	@echo "Docker (optional, not needed for Mac dev): make docker-legacy"
 
