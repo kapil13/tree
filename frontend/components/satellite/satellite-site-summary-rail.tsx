@@ -7,7 +7,7 @@ import { NdviStatsPanel } from "@/components/ndvi-stats-panel";
 import { showToast } from "@/components/toast";
 import { errorMessage, plantationFences, sar, type PlantationFence } from "@/lib/api";
 import { formatAreaHa, FENCE_AREA_WARN_HA } from "@/lib/geo";
-import { daysSinceIso } from "@/lib/map-geometry";
+import { centroidFromPaths, daysSinceIso, geoJsonToPaths } from "@/lib/map-geometry";
 import { SAR_GROUND_STATUS_LABEL } from "@/lib/sar-labels";
 import { cn } from "@/lib/cn";
 
@@ -37,6 +37,7 @@ export function SatelliteSiteSummaryRail({ fence, onScanComplete, onDelete }: Pr
   const scanDays = daysSinceIso(fence.last_satellite_at);
   const freshness = scanFreshnessLabel(scanDays);
   const ndviValue = fence.latest_ndvi_mean ?? null;
+  const siteCentroid = centroidFromPaths(geoJsonToPaths(fence.boundary));
 
   const { data: satelliteSeries } = useQuery({
     queryKey: ["fence-sat", fence.id],
@@ -104,6 +105,14 @@ export function SatelliteSiteSummaryRail({ fence, onScanComplete, onDelete }: Pr
           <span className={cn("rounded-full px-2 py-0.5 font-medium", freshness.tone)}>
             {freshness.label}
           </span>
+          {siteCentroid ? (
+            <span
+              className="font-mono text-[10px] text-stone-500"
+              title="Stored boundary centroid used for NDVI/SAR/weather scans"
+            >
+              {siteCentroid.lat.toFixed(5)}°N, {siteCentroid.lng.toFixed(5)}°E
+            </span>
+          ) : null}
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>

@@ -37,7 +37,13 @@ import {
   geoJsonToPaths,
   zoomForPaths,
 } from "@/lib/map-geometry";
-import { DEFAULT_MAP_ZOOM, FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
+import {
+  DEFAULT_MAP_ZOOM,
+  FALLBACK_MAP_CENTER,
+  LOCATION_MAP_ZOOM,
+  type MapLatLng,
+} from "@/lib/map-defaults";
+import { useMapGeolocation } from "@/lib/use-map-geolocation";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
@@ -129,6 +135,9 @@ export function PlantationFenceMap({
   const [pendingPaths, setPendingPaths] = useState<google.maps.LatLngLiteral[] | null>(null);
   const [confirmLargeFence, setConfirmLargeFence] = useState(false);
   const [panKey, setPanKey] = useState(0);
+  const [geoCenter, setGeoCenter] = useState<MapLatLng | null>(null);
+  const [geoInitialized, setGeoInitialized] = useState(false);
+  const { locate } = useMapGeolocation();
 
   const pendingAreaHa = useMemo(
     () => (pendingPaths ? estimatePolygonAreaHa(pendingPaths) : 0),
@@ -177,6 +186,23 @@ export function PlantationFenceMap({
 
   const activeFence = fences.find((f) => f.id === activeFenceId) ?? null;
 
+  useEffect(() => {
+    if (fences.length || geoInitialized) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await locate();
+      if (cancelled) return;
+      if (result) {
+        setGeoCenter(result.center);
+        setPanKey((k) => k + 1);
+      }
+      setGeoInitialized(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fences.length, geoInitialized, locate]);
+
   const mapViewport = useMemo(() => {
     if (activeFence) {
       const paths = geoJsonToPaths(activeFence.boundary);
@@ -193,17 +219,11 @@ export function PlantationFenceMap({
         return { center, zoom: zoomForPaths(all) };
       }
     }
-    if (treeItems.length) {
-      return {
-        center: {
-          lat: treeItems.reduce((s, t) => s + t.latitude, 0) / treeItems.length,
-          lng: treeItems.reduce((s, t) => s + t.longitude, 0) / treeItems.length,
-        },
-        zoom: DEFAULT_MAP_ZOOM,
-      };
+    if (geoCenter) {
+      return { center: geoCenter, zoom: LOCATION_MAP_ZOOM };
     }
     return { center: FALLBACK_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM };
-  }, [activeFence, fences, treeItems]);
+  }, [activeFence, fences, geoCenter]);
 
   useEffect(() => {
     if (activeFenceId) {
