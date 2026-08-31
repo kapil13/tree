@@ -55,6 +55,9 @@ seed-native:
 import-india-admin:
 	cd backend && . .venv/bin/activate && python -m app.scripts.import_india_admin --csv /tmp/lgd/villages_by_blocks.28Aug2026.csv
 
+import-india-admin-basics:
+	cd backend && . .venv/bin/activate && python -m app.scripts.import_india_admin --basics-only --if-empty
+
 test:
 	cd backend && . .venv/bin/activate && pytest -q
 

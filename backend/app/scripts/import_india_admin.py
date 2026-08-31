@@ -1,7 +1,7 @@
 """Import India admin geography into PostgreSQL from bundled LGD source files.
 
 Usage:
-    python -m app.scripts.import_india_admin
+    python -m app.scripts.import_india_admin --basics-only
     python -m app.scripts.import_india_admin --csv /path/to/villages_by_blocks.csv
 """
 
@@ -35,6 +35,18 @@ def _norm_state(code: str) -> str:
 
 def _norm_district(code: str) -> str:
     return str(code).strip()
+
+
+async def _state_count(db) -> int:
+    res = await db.execute(select(func.count()).select_from(IndiaState))
+    return int(res.scalar_one())
+
+
+async def _clear_basics(db) -> None:
+    await db.execute(delete(IndiaCity))
+    await db.execute(delete(IndiaDistrict))
+    await db.execute(delete(IndiaState))
+    await db.commit()
 
 
 async def _clear_all(db) -> None:
@@ -146,7 +158,40 @@ async def _import_lgd_csv(db, csv_path: Path) -> None:
     print(f"Imported {len(village_rows)} villages")
 
 
-async def import_all(*, csv_path: Path | None = None, reset: bool = True) -> None:
+async def _print_counts(db) -> None:
+    counts = {}
+    for model, label in [
+        (IndiaState, "states"),
+        (IndiaDistrict, "districts"),
+        (IndiaBlock, "blocks"),
+        (IndiaGramPanchayat, "gps"),
+        (IndiaVillage, "villages"),
+        (IndiaCity, "cities"),
+    ]:
+        res = await db.execute(select(func.count()).select_from(model))
+        counts[label] = res.scalar_one()
+    print("Final counts:", counts)
+
+
+async def import_basics(*, reset: bool = False, if_empty: bool = False) -> None:
+    async with AsyncSessionLocal() as db:
+        if if_empty and await _state_count(db) > 0:
+            print("States already present — skipping basics import.")
+            await _print_counts(db)
+            return
+        if reset:
+            print("Clearing state/district/city tables…")
+            await _clear_basics(db)
+        await _import_json_basics(db)
+        await _print_counts(db)
+
+
+async def import_all(
+    *,
+    csv_path: Path | None = None,
+    reset: bool = True,
+    if_empty: bool = False,
+) -> None:
     csv_file = csv_path or Path("/tmp/lgd/villages_by_blocks.28Aug2026.csv")
     if not csv_file.exists():
         raise SystemExit(
@@ -154,32 +199,40 @@ async def import_all(*, csv_path: Path | None = None, reset: bool = True) -> Non
         )
 
     async with AsyncSessionLocal() as db:
+        if if_empty and await _state_count(db) > 0:
+            block_res = await db.execute(select(func.count()).select_from(IndiaBlock))
+            if block_res.scalar_one() > 0:
+                print("Geography already seeded — skipping full import.")
+                await _print_counts(db)
+                return
         if reset:
             print("Clearing existing india admin tables…")
             await _clear_all(db)
         await _import_json_basics(db)
         await _import_lgd_csv(db, csv_file)
-
-        counts = {}
-        for model, label in [
-            (IndiaState, "states"),
-            (IndiaDistrict, "districts"),
-            (IndiaBlock, "blocks"),
-            (IndiaGramPanchayat, "gps"),
-            (IndiaVillage, "villages"),
-            (IndiaCity, "cities"),
-        ]:
-            res = await db.execute(select(func.count()).select_from(model))
-            counts[label] = res.scalar_one()
-        print("Final counts:", counts)
+        await _print_counts(db)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Import India admin geography into PostgreSQL")
     parser.add_argument("--csv", type=Path, help="Path to LGD villages_by_blocks CSV")
+    parser.add_argument(
+        "--basics-only",
+        action="store_true",
+        help="Load bundled state/district/city JSON only (no LGD CSV required)",
+    )
+    parser.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="Skip import when states are already present",
+    )
     parser.add_argument("--no-reset", action="store_true", help="Skip clearing tables first")
     args = parser.parse_args()
-    asyncio.run(import_all(csv_path=args.csv, reset=not args.no_reset))
+    reset = not args.no_reset
+    if args.basics_only:
+        asyncio.run(import_basics(reset=reset, if_empty=args.if_empty))
+    else:
+        asyncio.run(import_all(csv_path=args.csv, reset=reset, if_empty=args.if_empty))
 
 
 if __name__ == "__main__":

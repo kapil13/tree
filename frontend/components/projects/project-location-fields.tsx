@@ -124,7 +124,7 @@ export function ProjectLocationFields({
     queryFn: () => indiaAdmin.financialYears(),
   });
 
-  const { data: statesData } = useQuery({
+  const { data: statesData, isError: statesError, isLoading: statesLoading } = useQuery({
     queryKey: ["india-admin-states"],
     queryFn: () => indiaAdmin.states(),
   });
@@ -226,13 +226,26 @@ export function ProjectLocationFields({
               });
             }}
           >
-            <option value="">Select state…</option>
+            <option value="">
+              {statesLoading ? "Loading…" : "Select state…"}
+            </option>
             {stateOptions.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.name}
               </option>
             ))}
           </select>
+          {statesError && (
+            <p className="mt-1 text-xs text-rose-600">
+              Could not load states — check you are logged in and the API is up.
+            </p>
+          )}
+          {!statesLoading && !statesError && stateOptions.length === 0 && (
+            <p className="mt-1 text-xs text-amber-700">
+              No states in database — run{" "}
+              <code className="text-[11px]">make import-india-admin-basics</code> on the server.
+            </p>
+          )}
           {errors?.state_code && (
             <p className="mt-1 text-xs text-rose-600">{errors.state_code}</p>
           )}
