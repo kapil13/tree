@@ -113,6 +113,13 @@ const NAV_GROUPS: NavGroup[] = [
         audience: ["professional", "field_supervisor"],
         children: [
           {
+            href: "/reports",
+            labelKey: "reportComplianceExports",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+            exact: true,
+          },
+          {
             href: "/reports/plantation/project-wise",
             labelKey: "reportProjectWise",
             icon: FileText,
@@ -174,8 +181,16 @@ function NavItemLink({
   const t = useTranslations("nav");
   const tReports = useTranslations("plantationReports");
   const label =
-    item.labelKey.startsWith("report") && item.href.startsWith("/reports/plantation")
-      ? tReports(item.labelKey as "reportProjectWise")
+    item.labelKey.startsWith("report") &&
+    (item.href.startsWith("/reports/plantation") || item.href === "/reports")
+      ? tReports(
+          item.labelKey as
+            | "reportProjectWise"
+            | "reportFyWise"
+            | "reportReGeotag"
+            | "reportTotalRecords"
+            | "reportComplianceExports",
+        )
       : t(item.labelKey);
   const Icon = item.icon;
 
@@ -355,18 +370,22 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950 md:block">
-      <Link href="/dashboard" className="mb-6 flex items-center gap-2.5">
-        <AranyixMark className="h-8 w-8 shrink-0" />
-        <div className="min-w-0">
-          <div className="text-base font-bold leading-tight text-forest-900">Aranyix</div>
-          <div className="truncate text-[10px] font-medium text-stone-400">
-            Environmental intelligence platform
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950 md:flex md:max-h-screen">
+      <div className="shrink-0 p-4 pb-0">
+        <Link href="/dashboard" className="mb-6 flex items-center gap-2.5">
+          <AranyixMark className="h-8 w-8 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-base font-bold leading-tight text-forest-900">Aranyix</div>
+            <div className="truncate text-[10px] font-medium text-stone-400">
+              Environmental intelligence platform
+            </div>
           </div>
-        </div>
-      </Link>
-      <NavLinks />
-      <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
+        </Link>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4">
+        <NavLinks />
+      </div>
+      <div className="shrink-0 border-t border-stone-100 p-4 pt-4 dark:border-stone-800">
         <LanguageSwitcher variant="compact" />
       </div>
     </aside>

@@ -278,6 +278,7 @@
   },
   "plantationReports": {
     "navLabel": "Plantation reports",
+    "reportComplianceExports": "Compliance & framework exports",
     "reportProjectWise": "Project-wise plantation",
     "reportFyWise": "FY-wise report",
     "reportReGeotag": "Re-geotag report",
@@ -335,6 +336,7 @@
     "breadcrumbAlerts": "Alerts",
     "breadcrumbExports": "Exports",
     "breadcrumbPlantationReports": "Plantation reports",
+    "reportComplianceExports": "Compliance & framework exports",
     "reportProjectWise": "Project-wise plantation",
     "reportFyWise": "FY-wise report",
     "reportReGeotag": "Re-geotag report",
