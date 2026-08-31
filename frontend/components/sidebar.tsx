@@ -143,6 +143,78 @@ const NAV_GROUPS: NavGroup[] = [
             icon: FileText,
             audience: ["professional", "field_supervisor"],
           },
+          {
+            href: "/reports/plantation/species-wise",
+            labelKey: "reportSpeciesWise",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/work-area",
+            labelKey: "reportWorkArea",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/survival-mortality",
+            labelKey: "reportSurvivalMortality",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/compliance-violations",
+            labelKey: "reportComplianceViolations",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/satellite-health",
+            labelKey: "reportSatelliteHealth",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/scheme-kpi",
+            labelKey: "reportSchemeKpi",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/field-team",
+            labelKey: "reportFieldTeam",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/carbon-stock",
+            labelKey: "reportCarbonStock",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/photo-evidence",
+            labelKey: "reportPhotoEvidence",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/district-block",
+            labelKey: "reportDistrictBlock",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/pending-registration",
+            labelKey: "reportPendingRegistration",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/out-of-fence",
+            labelKey: "reportOutOfFence",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
         ],
       },
       { href: "/assistant", labelKey: "aiAssistant", icon: Sparkles, audience: "all" },
@@ -183,14 +255,7 @@ function NavItemLink({
   const label =
     item.labelKey.startsWith("report") &&
     (item.href.startsWith("/reports/plantation") || item.href === "/reports")
-      ? tReports(
-          item.labelKey as
-            | "reportProjectWise"
-            | "reportFyWise"
-            | "reportReGeotag"
-            | "reportTotalRecords"
-            | "reportComplianceExports",
-        )
+      ? tReports(item.labelKey as never)
       : t(item.labelKey);
   const Icon = item.icon;
 
