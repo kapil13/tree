@@ -1,84 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  DistrictFilter,
+  FinancialYearFilter,
+  SchemeFilter,
+  SegmentFilter,
+  StateFilter,
+  usePlantationReportOptions,
+} from "@/components/reports/plantation-report-filters";
+import {
+  FilterField,
+  PlantationReportExport,
+  PlantationReportFilters,
+  filterSelectClassName,
+} from "@/components/reports/plantation-report-toolbar";
 import { PageHeader } from "@/components/ui";
 import { fmtNum } from "@/components/dashboard/format";
-import { plantingProjects } from "@/lib/api";
-import { downloadCsv, projectFinancialYear, projectLocationLabel } from "@/lib/plantation-reports";
-import { useTranslations } from "next-intl";
+import { plantationReportApi, type ProjectWiseFilters } from "@/lib/plantation-report-api";
 
-type FieldOpsProject = {
-  id: string;
-  code: string;
-  name: string;
+type Row = {
+  project_id: string;
+  project_code: string;
+  project_name: string;
+  financial_year: string;
+  location: string;
   segment: string;
-  scheme_code: string | null;
-  compliance_mode: string;
+  scheme_code: string;
   status: string;
-  open_violations: number;
-  survival_due: number;
-  tree_count: number;
   target_tree_count: number | null;
+  registered_trees: number;
   progress_pct: number | null;
+  survival_due: number;
+  open_violations: number;
 };
+
+const EMPTY: ProjectWiseFilters = {};
 
 export default function ProjectWisePlantationReportPage() {
   const t = useTranslations("plantationReports");
+  const opts = usePlantationReportOptions();
+  const [filters, setFilters] = useState<ProjectWiseFilters>(EMPTY);
 
-  const { data: summary, isLoading, isError } = useQuery({
-    queryKey: ["field-ops-summary"],
-    queryFn: () => plantingProjects.fieldOpsSummary(),
-  });
-
-  const { data: projectsDetail } = useQuery({
-    queryKey: ["planting-projects-report"],
-    queryFn: () => plantingProjects.list({ page_size: 200 }),
-  });
-
-  const locationById = new Map(
-    (projectsDetail?.items ?? []).map((p) => [p.id, projectLocationLabel(p)]),
-  );
-  const fyById = new Map(
-    (projectsDetail?.items ?? []).map((p) => [p.id, projectFinancialYear(p)]),
+  const queryParams = useMemo(
+    () => ({
+      ...filters,
+      survival_due_only: filters.survival_due_only || undefined,
+      violations_only: filters.violations_only || undefined,
+    }),
+    [filters],
   );
 
-  const rows = (summary?.projects ?? []) as FieldOpsProject[];
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["plantation-report-project-wise", queryParams],
+    queryFn: async () => {
+      const res = await plantationReportApi.projectWise(queryParams);
+      return res as { items: Row[]; total: number };
+    },
+  });
 
-  function exportCsv() {
-    downloadCsv(
-      "project-wise-plantation-report.csv",
-      [
-        "Project code",
-        "Project name",
-        "Financial year",
-        "Location",
-        "Segment",
-        "Scheme",
-        "Status",
-        "Target trees",
-        "Registered trees",
-        "Progress %",
-        "Survival due",
-        "Open violations",
-      ],
-      rows.map((r) => [
-        r.code,
-        r.name,
-        fyById.get(r.id) ?? "—",
-        locationById.get(r.id) ?? "—",
-        r.segment,
-        r.scheme_code ?? "",
-        r.status,
-        String(r.target_tree_count ?? ""),
-        String(r.tree_count),
-        r.progress_pct != null ? String(Math.round(r.progress_pct)) : "",
-        String(r.survival_due),
-        String(r.open_violations),
-      ]),
-    );
-  }
+  const rows = data?.items ?? [];
 
   return (
     <div>
@@ -86,12 +71,76 @@ export default function ProjectWisePlantationReportPage() {
         title={t("reportProjectWise")}
         description={t("reportProjectWiseDesc")}
         actions={
-          <button type="button" className="btn-secondary text-sm" onClick={exportCsv} disabled={!rows.length}>
-            <Download className="mr-1.5 inline h-4 w-4" aria-hidden />
-            Export CSV
-          </button>
+          <PlantationReportExport
+            filenameStem="project-wise-plantation-report"
+            disabled={!rows.length}
+            onExport={(format) =>
+              plantationReportApi.projectWise({ ...queryParams, format }) as Promise<Blob>
+            }
+          />
         }
       />
+
+      <PlantationReportFilters onReset={() => setFilters(EMPTY)}>
+        <FinancialYearFilter
+          years={opts.financialYears}
+          value={filters.financial_year ?? ""}
+          onChange={(financial_year) => setFilters((f) => ({ ...f, financial_year }))}
+        />
+        <StateFilter
+          states={opts.states}
+          value={filters.state_code ?? ""}
+          onChange={(state_code) => setFilters((f) => ({ ...f, state_code, district_code: "" }))}
+        />
+        <DistrictFilter
+          stateCode={filters.state_code ?? ""}
+          value={filters.district_code ?? ""}
+          onChange={(district_code) => setFilters((f) => ({ ...f, district_code }))}
+        />
+        <SegmentFilter
+          segments={opts.segments}
+          value={filters.segment ?? ""}
+          onChange={(segment) => setFilters((f) => ({ ...f, segment }))}
+        />
+        <SchemeFilter
+          schemes={opts.schemes}
+          value={filters.scheme_code ?? ""}
+          onChange={(scheme_code) => setFilters((f) => ({ ...f, scheme_code }))}
+        />
+        <FilterField label="Project status">
+          <select
+            className={filterSelectClassName()}
+            value={filters.status ?? ""}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
+          >
+            <option value="">All statuses</option>
+            <option value="planning">Planning</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </FilterField>
+        <FilterField label="Re-geotag backlog">
+          <label className="mt-2 flex items-center gap-2 text-sm text-stone-700">
+            <input
+              type="checkbox"
+              checked={Boolean(filters.survival_due_only)}
+              onChange={(e) => setFilters((f) => ({ ...f, survival_due_only: e.target.checked }))}
+            />
+            Only projects with trees due
+          </label>
+        </FilterField>
+        <FilterField label="Compliance">
+          <label className="mt-2 flex items-center gap-2 text-sm text-stone-700">
+            <input
+              type="checkbox"
+              checked={Boolean(filters.violations_only)}
+              onChange={(e) => setFilters((f) => ({ ...f, violations_only: e.target.checked }))}
+            />
+            Only projects with open violations
+          </label>
+        </FilterField>
+      </PlantationReportFilters>
 
       {isLoading ? (
         <p className="text-sm text-stone-500">{t("loading")}</p>
@@ -116,17 +165,17 @@ export default function ProjectWisePlantationReportPage() {
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-900">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-stone-50/80 dark:hover:bg-stone-900/40">
+                <tr key={row.project_id} className="hover:bg-stone-50/80 dark:hover:bg-stone-900/40">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-stone-900 dark:text-stone-100">{row.name}</div>
-                    <div className="text-xs text-stone-500">{row.code}</div>
+                    <div className="font-medium text-stone-900 dark:text-stone-100">{row.project_name}</div>
+                    <div className="text-xs text-stone-500">{row.project_code}</div>
                   </td>
-                  <td className="px-4 py-3 text-stone-600">{fyById.get(row.id) ?? "—"}</td>
-                  <td className="max-w-[200px] truncate px-4 py-3 text-stone-600" title={locationById.get(row.id)}>
-                    {locationById.get(row.id) ?? "—"}
+                  <td className="px-4 py-3 text-stone-600">{row.financial_year}</td>
+                  <td className="max-w-[200px] truncate px-4 py-3 text-stone-600" title={row.location}>
+                    {row.location}
                   </td>
                   <td className="px-4 py-3">
-                    {fmtNum(row.tree_count)}
+                    {fmtNum(row.registered_trees)}
                     {row.target_tree_count ? (
                       <span className="text-stone-400"> / {fmtNum(row.target_tree_count)}</span>
                     ) : null}
@@ -144,7 +193,7 @@ export default function ProjectWisePlantationReportPage() {
                   <td className="px-4 py-3">{row.open_violations > 0 ? row.open_violations : "0"}</td>
                   <td className="px-4 py-3 text-right">
                     <Link
-                      href={`/projects/${row.id}`}
+                      href={`/projects/${row.project_id}`}
                       className="inline-flex items-center gap-1 text-xs font-medium text-forest-700 hover:underline"
                     >
                       Open

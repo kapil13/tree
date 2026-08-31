@@ -1,97 +1,49 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  FinancialYearFilter,
+  SchemeFilter,
+  SegmentFilter,
+  StateFilter,
+  usePlantationReportOptions,
+} from "@/components/reports/plantation-report-filters";
+import {
+  PlantationReportExport,
+  PlantationReportFilters,
+} from "@/components/reports/plantation-report-toolbar";
 import { PageHeader } from "@/components/ui";
 import { fmtNum } from "@/components/dashboard/format";
-import { plantingProjects } from "@/lib/api";
-import { downloadCsv, projectFinancialYear } from "@/lib/plantation-reports";
-import { useTranslations } from "next-intl";
+import { plantationReportApi, type FyWiseFilters } from "@/lib/plantation-report-api";
 
-type FyRow = {
-  financialYear: string;
-  projectCount: number;
-  targetTrees: number;
-  registeredTrees: number;
-  survivalDue: number;
-  openViolations: number;
+type Row = {
+  financial_year: string;
+  project_count: number;
+  target_trees: number;
+  registered_trees: number;
+  achievement_pct: number | null;
+  survival_due: number;
+  open_violations: number;
 };
+
+const EMPTY: FyWiseFilters = {};
 
 export default function FyWisePlantationReportPage() {
   const t = useTranslations("plantationReports");
+  const opts = usePlantationReportOptions();
+  const [filters, setFilters] = useState<FyWiseFilters>(EMPTY);
 
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["field-ops-summary"],
-    queryFn: () => plantingProjects.fieldOpsSummary(),
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["plantation-report-fy-wise", filters],
+    queryFn: async () => {
+      const res = await plantationReportApi.fyWise(filters);
+      return res as { items: Row[]; total: number };
+    },
   });
 
-  const { data: projects, isLoading: projectsLoading } = useQuery({
-    queryKey: ["planting-projects-report"],
-    queryFn: () => plantingProjects.list({ page_size: 200 }),
-  });
-
-  const fyRows = useMemo(() => {
-    const opsById = new Map(
-      (summary?.projects ?? []).map((p) => [
-        p.id as string,
-        p as {
-          tree_count: number;
-          target_tree_count: number | null;
-          survival_due: number;
-          open_violations: number;
-        },
-      ]),
-    );
-
-    const grouped = new Map<string, FyRow>();
-    for (const project of projects?.items ?? []) {
-      const fy = projectFinancialYear(project);
-      const ops = opsById.get(project.id);
-      const existing = grouped.get(fy) ?? {
-        financialYear: fy,
-        projectCount: 0,
-        targetTrees: 0,
-        registeredTrees: 0,
-        survivalDue: 0,
-        openViolations: 0,
-      };
-      existing.projectCount += 1;
-      existing.targetTrees += ops?.target_tree_count ?? project.target_tree_count ?? 0;
-      existing.registeredTrees += ops?.tree_count ?? project.summary?.tree_count ?? 0;
-      existing.survivalDue += ops?.survival_due ?? 0;
-      existing.openViolations += ops?.open_violations ?? 0;
-      grouped.set(fy, existing);
-    }
-
-    return [...grouped.values()].sort((a, b) => b.financialYear.localeCompare(a.financialYear));
-  }, [projects?.items, summary?.projects]);
-
-  const isLoading = summaryLoading || projectsLoading;
-
-  function exportCsv() {
-    downloadCsv(
-      "fy-wise-plantation-report.csv",
-      [
-        "Financial year",
-        "Projects",
-        "Target trees",
-        "Registered trees",
-        "Achievement %",
-        "Re-geotag due",
-        "Open violations",
-      ],
-      fyRows.map((r) => [
-        r.financialYear,
-        String(r.projectCount),
-        String(r.targetTrees),
-        String(r.registeredTrees),
-        r.targetTrees > 0 ? String(Math.round((r.registeredTrees / r.targetTrees) * 100)) : "",
-        String(r.survivalDue),
-        String(r.openViolations),
-      ]),
-    );
-  }
+  const rows = data?.items ?? [];
 
   return (
     <div>
@@ -99,16 +51,42 @@ export default function FyWisePlantationReportPage() {
         title={t("reportFyWise")}
         description={t("reportFyWiseDesc")}
         actions={
-          <button type="button" className="btn-secondary text-sm" onClick={exportCsv} disabled={!fyRows.length}>
-            <Download className="mr-1.5 inline h-4 w-4" aria-hidden />
-            Export CSV
-          </button>
+          <PlantationReportExport
+            filenameStem="fy-wise-plantation-report"
+            disabled={!rows.length}
+            onExport={(format) => plantationReportApi.fyWise({ ...filters, format }) as Promise<Blob>}
+          />
         }
       />
 
+      <PlantationReportFilters onReset={() => setFilters(EMPTY)}>
+        <FinancialYearFilter
+          years={opts.financialYears}
+          value={filters.financial_year ?? ""}
+          onChange={(financial_year) => setFilters((f) => ({ ...f, financial_year }))}
+        />
+        <StateFilter
+          states={opts.states}
+          value={filters.state_code ?? ""}
+          onChange={(state_code) => setFilters((f) => ({ ...f, state_code }))}
+        />
+        <SegmentFilter
+          segments={opts.segments}
+          value={filters.segment ?? ""}
+          onChange={(segment) => setFilters((f) => ({ ...f, segment }))}
+        />
+        <SchemeFilter
+          schemes={opts.schemes}
+          value={filters.scheme_code ?? ""}
+          onChange={(scheme_code) => setFilters((f) => ({ ...f, scheme_code }))}
+        />
+      </PlantationReportFilters>
+
       {isLoading ? (
         <p className="text-sm text-stone-500">{t("loading")}</p>
-      ) : fyRows.length === 0 ? (
+      ) : isError ? (
+        <p className="text-sm text-rose-600">{t("loadError")}</p>
+      ) : rows.length === 0 ? (
         <p className="text-sm text-stone-500">{t("noFyData")}</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950">
@@ -125,19 +103,17 @@ export default function FyWisePlantationReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-900">
-              {fyRows.map((row) => (
-                <tr key={row.financialYear}>
-                  <td className="px-4 py-3 font-medium">{row.financialYear}</td>
-                  <td className="px-4 py-3">{fmtNum(row.projectCount)}</td>
-                  <td className="px-4 py-3">{fmtNum(row.targetTrees)}</td>
-                  <td className="px-4 py-3">{fmtNum(row.registeredTrees)}</td>
+              {rows.map((row) => (
+                <tr key={row.financial_year}>
+                  <td className="px-4 py-3 font-medium">{row.financial_year}</td>
+                  <td className="px-4 py-3">{fmtNum(row.project_count)}</td>
+                  <td className="px-4 py-3">{fmtNum(row.target_trees)}</td>
+                  <td className="px-4 py-3">{fmtNum(row.registered_trees)}</td>
                   <td className="px-4 py-3">
-                    {row.targetTrees > 0
-                      ? `${Math.round((row.registeredTrees / row.targetTrees) * 100)}%`
-                      : "—"}
+                    {row.achievement_pct != null ? `${row.achievement_pct}%` : "—"}
                   </td>
-                  <td className="px-4 py-3">{fmtNum(row.survivalDue)}</td>
-                  <td className="px-4 py-3">{fmtNum(row.openViolations)}</td>
+                  <td className="px-4 py-3">{fmtNum(row.survival_due)}</td>
+                  <td className="px-4 py-3">{fmtNum(row.open_violations)}</td>
                 </tr>
               ))}
             </tbody>

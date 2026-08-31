@@ -28,6 +28,7 @@ from app.api.v1 import (
     plantation_fences,
     planting_programs,
     planting_projects,
+    plantation_reports,
     platform,
     plot_monitoring,
     privacy,
@@ -61,6 +62,7 @@ api_router.include_router(plantation_fences.router)
 api_router.include_router(planting_programs.router)
 api_router.include_router(schemes.router)
 api_router.include_router(planting_projects.router)
+api_router.include_router(plantation_reports.router)
 api_router.include_router(emissions.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
