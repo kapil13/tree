@@ -8,8 +8,8 @@ from datetime import datetime
 from fastapi import APIRouter, Query, Request, Response
 
 from app.api.v1.deps import DB, CurrentUser
-from app.services.audit.service import record_audit
-from app.services.org_features import assert_org_feature_enabled
+from app.services.audit import record_audit
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.reports.plantation_reports import (
     ExportFormat,
     build_fy_wise_report,
@@ -60,7 +60,7 @@ async def _export_response(
     return _file_response(data, media, f"{filename_stem}.{ext}")
 
 
-@router.get("/project-wise")
+@router.get("/project-wise", response_model=None)
 async def project_wise_report(
     request: Request,
     user: CurrentUser,
@@ -100,7 +100,7 @@ async def project_wise_report(
     )
 
 
-@router.get("/fy-wise")
+@router.get("/fy-wise", response_model=None)
 async def fy_wise_report(
     request: Request,
     user: CurrentUser,
@@ -132,7 +132,7 @@ async def fy_wise_report(
     )
 
 
-@router.get("/re-geotag")
+@router.get("/re-geotag", response_model=None)
 async def regeotag_report(
     request: Request,
     user: CurrentUser,
@@ -166,7 +166,7 @@ async def regeotag_report(
     )
 
 
-@router.get("/total-records")
+@router.get("/total-records", response_model=None)
 async def total_records_report(
     request: Request,
     user: CurrentUser,
