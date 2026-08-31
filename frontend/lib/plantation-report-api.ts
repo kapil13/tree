@@ -94,6 +94,54 @@ export const plantationReportApi = {
     const { format = "json", ...filters } = params;
     return fetchReport("/v1/plantation-reports/total-records", filters, format);
   },
+  async speciesWise(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/species-wise", filters, format);
+  },
+  async workAreaSite(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/work-area-site", filters, format);
+  },
+  async survivalMortality(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/survival-mortality", filters, format);
+  },
+  async complianceViolations(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/compliance-violations", filters, format);
+  },
+  async satelliteHealth(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/satellite-health", filters, format);
+  },
+  async schemeKpi(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/scheme-kpi", filters, format);
+  },
+  async fieldTeamPerformance(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/field-team-performance", filters, format);
+  },
+  async carbonStock(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/carbon-stock", filters, format);
+  },
+  async photoEvidence(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/photo-evidence", filters, format);
+  },
+  async districtBlockAdmin(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/district-block-admin", filters, format);
+  },
+  async pendingRegistration(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/pending-registration", filters, format);
+  },
+  async outOfFence(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
+    const { format = "json", ...filters } = params;
+    return fetchReport("/v1/plantation-reports/out-of-fence", filters, format);
+  },
   async download(
     blob: Blob,
     filename: string,

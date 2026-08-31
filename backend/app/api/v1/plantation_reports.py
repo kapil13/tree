@@ -10,6 +10,32 @@ from fastapi import APIRouter, Query, Request, Response
 from app.api.v1.deps import DB, CurrentUser
 from app.services.audit import record_audit
 from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.plantation_extended_reports import (
+    build_carbon_stock_report,
+    build_compliance_violations_report,
+    build_district_block_admin_report,
+    build_field_team_performance_report,
+    build_out_of_fence_report,
+    build_pending_registration_report,
+    build_photo_evidence_report,
+    build_satellite_health_report,
+    build_scheme_kpi_report,
+    build_species_wise_report,
+    build_survival_mortality_report,
+    build_work_area_site_report,
+    export_carbon_stock,
+    export_compliance_violations,
+    export_district_block_admin,
+    export_field_team_performance,
+    export_out_of_fence,
+    export_pending_registration,
+    export_photo_evidence,
+    export_satellite_health,
+    export_scheme_kpi,
+    export_species_wise,
+    export_survival_mortality,
+    export_work_area_site,
+)
 from app.services.reports.plantation_reports import (
     ExportFormat,
     build_fy_wise_report,
@@ -215,4 +241,234 @@ async def total_records_report(
         ctx=ctx,
         export_fn=export_total_records,
         filename_stem="total-plantation-records",
+    )
+
+
+@router.get("/species-wise", response_model=None)
+async def species_wise_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+    state_code: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_species_wise_report(
+        db, user, project_id=project_id, financial_year=financial_year, state_code=state_code
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="species_wise", fmt=format,
+        ctx=ctx, export_fn=export_species_wise, filename_stem="species-wise-report",
+    )
+
+
+@router.get("/work-area-site", response_model=None)
+async def work_area_site_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+    state_code: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_work_area_site_report(
+        db, user, project_id=project_id, financial_year=financial_year, state_code=state_code
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="work_area_site", fmt=format,
+        ctx=ctx, export_fn=export_work_area_site, filename_stem="work-area-site-report",
+    )
+
+
+@router.get("/survival-mortality", response_model=None)
+async def survival_mortality_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+    scheme_code: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_survival_mortality_report(
+        db, user, project_id=project_id, financial_year=financial_year, scheme_code=scheme_code
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="survival_mortality", fmt=format,
+        ctx=ctx, export_fn=export_survival_mortality, filename_stem="survival-mortality-report",
+    )
+
+
+@router.get("/compliance-violations", response_model=None)
+async def compliance_violations_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    resolved: bool | None = None,
+    severity: str | None = Query(None, pattern="^(info|warn|block)$"),
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_compliance_violations_report(
+        db, user, project_id=project_id, resolved=resolved, severity=severity
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="compliance_violations", fmt=format,
+        ctx=ctx, export_fn=export_compliance_violations, filename_stem="compliance-violations-report",
+    )
+
+
+@router.get("/satellite-health", response_model=None)
+async def satellite_health_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_satellite_health_report(
+        db, user, project_id=project_id, financial_year=financial_year
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="satellite_health", fmt=format,
+        ctx=ctx, export_fn=export_satellite_health, filename_stem="satellite-health-report",
+    )
+
+
+@router.get("/scheme-kpi", response_model=None)
+async def scheme_kpi_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    scheme_code: str | None = None,
+    financial_year: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_scheme_kpi_report(db, user, scheme_code=scheme_code, financial_year=financial_year)
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="scheme_kpi", fmt=format,
+        ctx=ctx, export_fn=export_scheme_kpi, filename_stem="scheme-kpi-report",
+    )
+
+
+@router.get("/field-team-performance", response_model=None)
+async def field_team_performance_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_field_team_performance_report(
+        db, user, project_id=project_id, financial_year=financial_year
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="field_team_performance", fmt=format,
+        ctx=ctx, export_fn=export_field_team_performance, filename_stem="field-team-performance-report",
+    )
+
+
+@router.get("/carbon-stock", response_model=None)
+async def carbon_stock_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    financial_year: str | None = None,
+    state_code: str | None = None,
+    group_by: str = Query("project", pattern="^(project|fy)$"),
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_carbon_stock_report(
+        db, user, financial_year=financial_year, state_code=state_code, group_by=group_by
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="carbon_stock", fmt=format,
+        ctx=ctx, export_fn=export_carbon_stock, filename_stem="carbon-stock-report",
+    )
+
+
+@router.get("/photo-evidence", response_model=None)
+async def photo_evidence_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+    financial_year: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_photo_evidence_report(
+        db, user, project_id=project_id, financial_year=financial_year
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="photo_evidence", fmt=format,
+        ctx=ctx, export_fn=export_photo_evidence, filename_stem="photo-evidence-pack",
+    )
+
+
+@router.get("/district-block-admin", response_model=None)
+async def district_block_admin_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    state_code: str | None = None,
+    district_code: str | None = None,
+    financial_year: str | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_district_block_admin_report(
+        db, user, state_code=state_code, district_code=district_code, financial_year=financial_year
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="district_block_admin", fmt=format,
+        ctx=ctx, export_fn=export_district_block_admin, filename_stem="district-block-admin-report",
+    )
+
+
+@router.get("/pending-registration", response_model=None)
+async def pending_registration_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    financial_year: str | None = None,
+    state_code: str | None = None,
+    min_gap: int = Query(1, ge=1),
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_pending_registration_report(
+        db, user, financial_year=financial_year, state_code=state_code, min_gap=min_gap
+    )
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="pending_registration", fmt=format,
+        ctx=ctx, export_fn=export_pending_registration, filename_stem="pending-registration-report",
+    )
+
+
+@router.get("/out-of-fence", response_model=None)
+async def out_of_fence_report(
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+    format: ExportFormat = Query("json", alias="format"),
+    project_id: uuid.UUID | None = None,
+) -> Response | dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    ctx = await build_out_of_fence_report(db, user, project_id=project_id)
+    return await _export_response(
+        db=db, user=user, request=request, report_kind="out_of_fence", fmt=format,
+        ctx=ctx, export_fn=export_out_of_fence, filename_stem="out-of-fence-trees-report",
     )
