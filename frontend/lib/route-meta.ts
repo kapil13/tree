@@ -108,6 +108,114 @@ const ROUTE_KEYS: Record<string, RouteKeyMeta> = {
       { labelKey: "reportTotalRecords" },
     ],
   },
+  "/reports/plantation/species-wise": {
+    titleKey: "reportSpeciesWise",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportSpeciesWise" },
+    ],
+  },
+  "/reports/plantation/work-area": {
+    titleKey: "reportWorkArea",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportWorkArea" },
+    ],
+  },
+  "/reports/plantation/survival-mortality": {
+    titleKey: "reportSurvivalMortality",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportSurvivalMortality" },
+    ],
+  },
+  "/reports/plantation/compliance-violations": {
+    titleKey: "reportComplianceViolations",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportComplianceViolations" },
+    ],
+  },
+  "/reports/plantation/satellite-health": {
+    titleKey: "reportSatelliteHealth",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportSatelliteHealth" },
+    ],
+  },
+  "/reports/plantation/scheme-kpi": {
+    titleKey: "reportSchemeKpi",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportSchemeKpi" },
+    ],
+  },
+  "/reports/plantation/field-team": {
+    titleKey: "reportFieldTeam",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportFieldTeam" },
+    ],
+  },
+  "/reports/plantation/carbon-stock": {
+    titleKey: "reportCarbonStock",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportCarbonStock" },
+    ],
+  },
+  "/reports/plantation/photo-evidence": {
+    titleKey: "reportPhotoEvidence",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportPhotoEvidence" },
+    ],
+  },
+  "/reports/plantation/district-block": {
+    titleKey: "reportDistrictBlock",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportDistrictBlock" },
+    ],
+  },
+  "/reports/plantation/pending-registration": {
+    titleKey: "reportPendingRegistration",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportPendingRegistration" },
+    ],
+  },
+  "/reports/plantation/out-of-fence": {
+    titleKey: "reportOutOfFence",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportOutOfFence" },
+    ],
+  },
   "/assistant": {
     titleKey: "routeAiAssistant",
     sectionKey: "sectionReports",
