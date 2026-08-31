@@ -26,6 +26,7 @@ from app.api.v1 import (
     organizations,
     payments,
     plantation_fences,
+    plantation_reports,
     planting_programs,
     planting_projects,
     platform,
@@ -61,6 +62,7 @@ api_router.include_router(plantation_fences.router)
 api_router.include_router(planting_programs.router)
 api_router.include_router(schemes.router)
 api_router.include_router(planting_projects.router)
+api_router.include_router(plantation_reports.router)
 api_router.include_router(emissions.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)

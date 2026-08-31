@@ -72,6 +72,42 @@ const ROUTE_KEYS: Record<string, RouteKeyMeta> = {
     sectionKey: "sectionReports",
     breadcrumbs: [{ labelKey: "sectionReports" }, { labelKey: "breadcrumbExports" }],
   },
+  "/reports/plantation/project-wise": {
+    titleKey: "reportProjectWise",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportProjectWise" },
+    ],
+  },
+  "/reports/plantation/fy-wise": {
+    titleKey: "reportFyWise",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportFyWise" },
+    ],
+  },
+  "/reports/plantation/re-geotag": {
+    titleKey: "reportReGeotag",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportReGeotag" },
+    ],
+  },
+  "/reports/plantation/total-records": {
+    titleKey: "reportTotalRecords",
+    sectionKey: "sectionReports",
+    breadcrumbs: [
+      { labelKey: "sectionReports", href: "/reports" },
+      { labelKey: "breadcrumbPlantationReports" },
+      { labelKey: "reportTotalRecords" },
+    ],
+  },
   "/assistant": {
     titleKey: "routeAiAssistant",
     sectionKey: "sectionReports",
