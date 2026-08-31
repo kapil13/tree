@@ -1110,7 +1110,13 @@ export const plantingProjects = {
       })
     ).data;
   },
-  async list(params?: { page?: number; segment?: string; scheme_code?: string; status?: string }) {
+  async list(params?: {
+    page?: number;
+    page_size?: number;
+    segment?: string;
+    scheme_code?: string;
+    status?: string;
+  }) {
     return (
       await api.get<{ items: PlantingProject[]; total: number }>("/v1/planting-projects", {
         params,

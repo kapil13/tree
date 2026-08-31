@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Bell,
+  ChevronDown,
   FileText,
   ClipboardList,
   FolderKanban,
@@ -34,6 +36,7 @@ export type NavItem = {
   audience?: NavAudience | NavAudience[];
   excludeViewers?: boolean;
   exact?: boolean;
+  children?: NavItem[];
 };
 
 type NavGroup = {
@@ -108,6 +111,32 @@ const NAV_GROUPS: NavGroup[] = [
         labelKey: "reports",
         icon: FileText,
         audience: ["professional", "field_supervisor"],
+        children: [
+          {
+            href: "/reports/plantation/project-wise",
+            labelKey: "reportProjectWise",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/fy-wise",
+            labelKey: "reportFyWise",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/re-geotag",
+            labelKey: "reportReGeotag",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+          {
+            href: "/reports/plantation/total-records",
+            labelKey: "reportTotalRecords",
+            icon: FileText,
+            audience: ["professional", "field_supervisor"],
+          },
+        ],
       },
       { href: "/assistant", labelKey: "aiAssistant", icon: Sparkles, audience: "all" },
     ],
@@ -121,6 +150,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 function isActive(path: string | null, item: NavItem): boolean {
   if (!path) return false;
+  if (item.children?.some((child) => isActive(path, child))) return true;
   if (item.exact) return path === item.href;
   if (item.href === "/dashboard") return path === "/dashboard";
   if (item.href === "/portfolio-health") return path === "/portfolio-health";
@@ -128,6 +158,123 @@ function isActive(path: string | null, item: NavItem): boolean {
     return path === "/trees" || (path.startsWith("/trees/") && !path.startsWith("/trees/new"));
   }
   return path === item.href || path.startsWith(`${item.href}/`);
+}
+
+function NavItemLink({
+  item,
+  active,
+  onNavigate,
+  nested,
+}: {
+  item: NavItem;
+  active: boolean;
+  onNavigate?: () => void;
+  nested?: boolean;
+}) {
+  const t = useTranslations("nav");
+  const tReports = useTranslations("plantationReports");
+  const label =
+    item.labelKey.startsWith("report") && item.href.startsWith("/reports/plantation")
+      ? tReports(item.labelKey as "reportProjectWise")
+      : t(item.labelKey);
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      title={label}
+      className={cn(
+        "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
+        nested ? "pl-9 pr-3" : "px-3",
+        active
+          ? "bg-forest-100 text-forest-800 dark:bg-forest-950/50 dark:text-forest-200"
+          : "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-900 dark:hover:text-stone-50",
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-4 w-4 shrink-0",
+          active ? "text-forest-700 dark:text-forest-300" : "text-stone-400",
+        )}
+        aria-hidden
+      />
+      {label}
+    </Link>
+  );
+}
+
+function ReportsNavDropdown({
+  item,
+  path,
+  onNavigate,
+}: {
+  item: NavItem;
+  path: string | null;
+  onNavigate?: () => void;
+}) {
+  const t = useTranslations("nav");
+  const children = item.children ?? [];
+  const sectionActive = isActive(path, item);
+  const [open, setOpen] = useState(sectionActive);
+
+  useEffect(() => {
+    if (sectionActive) setOpen(true);
+  }, [sectionActive]);
+
+  const parentActive = path === item.href;
+
+  return (
+    <div>
+      <div className="flex items-center gap-0.5">
+        <Link
+          href={item.href}
+          onClick={onNavigate}
+          aria-current={parentActive ? "page" : undefined}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            parentActive
+              ? "bg-forest-100 text-forest-800 dark:bg-forest-950/50 dark:text-forest-200"
+              : sectionActive
+                ? "text-forest-800 dark:text-forest-200"
+                : "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-900 dark:hover:text-stone-50",
+          )}
+        >
+          <item.icon
+            className={cn(
+              "h-4 w-4 shrink-0",
+              sectionActive ? "text-forest-700 dark:text-forest-300" : "text-stone-400",
+            )}
+            aria-hidden
+          />
+          <span className="truncate">{t(item.labelKey)}</span>
+        </Link>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={t("reportsMenuToggle")}
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-lg p-2 text-stone-400 hover:bg-stone-50 hover:text-stone-700 dark:hover:bg-stone-900"
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+        </button>
+      </div>
+      {open ? (
+        <div className="mt-0.5 space-y-0.5">
+          {children.map((child) => (
+            <NavItemLink
+              key={child.href}
+              item={child}
+              active={isActive(path, child)}
+              onNavigate={onNavigate}
+              nested
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -178,32 +325,25 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             </div>
           ) : null}
           <div className="space-y-0.5">
-            {group.items.map(({ href, labelKey, icon: Icon, exact, audience }) => {
-              const active = isActive(path, { href, labelKey, icon: Icon, exact, audience });
-              const label = t(labelKey);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={onNavigate}
-                  aria-current={active ? "page" : undefined}
-                  title={label}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
-                    active
-                      ? "bg-forest-100 text-forest-800 dark:bg-forest-950/50 dark:text-forest-200"
-                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-900 dark:hover:text-stone-50",
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      active ? "text-forest-700 dark:text-forest-300" : "text-stone-400",
-                    )}
-                    aria-hidden
+            {group.items.map((item) => {
+              if (item.children?.length) {
+                return (
+                  <ReportsNavDropdown
+                    key={item.href}
+                    item={item}
+                    path={path}
+                    onNavigate={onNavigate}
                   />
-                  {label}
-                </Link>
+                );
+              }
+              const active = isActive(path, item);
+              return (
+                <NavItemLink
+                  key={item.href}
+                  item={item}
+                  active={active}
+                  onNavigate={onNavigate}
+                />
               );
             })}
           </div>
