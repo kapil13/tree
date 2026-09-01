@@ -325,20 +325,20 @@
   },
   "chrome": {
     "sectionOverview": "Overview",
-    "sectionOperate": "Operate",
-    "sectionIntelligence": "Intelligence",
-    "sectionReports": "Reports",
+    "sectionOperate": "Set up & plant",
+    "sectionIntelligence": "Monitor & learn",
+    "sectionReports": "Report & prove",
     "sectionAccount": "Account",
     "sectionAdministration": "Administration",
-    "routeCommandCenter": "Command center",
+    "routeCommandCenter": "Dashboard",
     "routeStewardship": "Stewardship",
-    "routePlantingProjects": "Planting projects",
-    "routeTreeRegistry": "Tree registry",
-    "routeGeospatialMap": "Geospatial map",
-    "routeFieldOperations": "Field operations",
-    "routePortfolioIntelligence": "Portfolio intelligence",
-    "routeSatelliteMonitoring": "Satellite monitoring",
-    "routeBioacoustic": "Bioacoustic monitoring",
+    "routePlantingProjects": "Projects",
+    "routeTreeRegistry": "Trees",
+    "routeGeospatialMap": "Map",
+    "routeFieldOperations": "Field ops",
+    "routePortfolioIntelligence": "Portfolio health",
+    "routeSatelliteMonitoring": "Satellite",
+    "routeBioacoustic": "Biodiversity",
     "routeMonitoring": "Monitoring",
     "routeIntelligenceSummary": "Intelligence summary",
     "routeAlertsSignals": "Alerts & signals",
@@ -352,7 +352,7 @@
     "breadcrumbProjects": "Projects",
     "breadcrumbMap": "Map",
     "breadcrumbFieldOps": "Field ops",
-    "breadcrumbPortfolio": "Portfolio",
+    "breadcrumbPortfolio": "Portfolio health",
     "breadcrumbSatellite": "Satellite",
     "breadcrumbBiodiversity": "Biodiversity",
     "breadcrumbMonitoring": "Monitoring",
@@ -437,9 +437,22 @@
     "ngo_watershed": "NGO / Watershed",
     "general": "General"
   },
+  "projectWorkspace": {
+    "moduleLinksAria": "Related modules",
+    "moduleLinksTitle": "Connected modules",
+    "moduleLinksDesc": "Jump to field operations, portfolio compliance, satellite, and monitoring without leaving your project context.",
+    "moduleFieldOps": "Field ops",
+    "moduleFieldOpsDesc": "Survival surveys, attention queue, and field tasks",
+    "modulePortfolioCompliance": "Portfolio compliance",
+    "modulePortfolioComplianceDesc": "Org-wide readiness and open violations",
+    "moduleSatellite": "Satellite",
+    "moduleSatelliteDesc": "NDVI and SAR scans for this project",
+    "moduleMonitoring": "Monitoring",
+    "moduleMonitoringDesc": "Portfolio monitoring view for this project"
+  },
   "projects": {
-    "purpose": "Operate · Planting programs",
-    "title": "Planting projects",
+    "purpose": "Set up & plant · Projects",
+    "title": "Projects",
     "description": "Understand compliance posture first, then open a project to register trees, run monitoring, and export audit evidence.",
     "newProject": "New project",
     "keyInsight": "Key insight",
@@ -481,8 +494,8 @@
     "compliance": "Compliance"
   },
   "fieldOps": {
-    "purpose": "Operate · Field",
-    "title": "Field operations",
+    "purpose": "Set up & plant · Field ops",
+    "title": "Field ops",
     "description": "Today's priorities across packages, green belts, and society blocks.",
     "newProject": "New project",
     "registerTree": "Register tree",
@@ -501,8 +514,8 @@
     "open": "Open"
   },
   "alerts": {
-    "purpose": "Intelligence · Signals",
-    "title": "Alerts & signals",
+    "purpose": "Monitor & learn · Alerts",
+    "title": "Alerts",
     "description": "Operational signals from satellite, compliance, weather, and field monitoring — triage unread items first.",
     "inboxClear": "Inbox clear",
     "noAlerts": "No alerts right now",
@@ -541,8 +554,8 @@
     "kind_emission_fusion_misaligned": "Methane check"
   },
   "satellite": {
-    "purpose": "Intelligence · Earth observation",
-    "title": "Satellite monitoring",
+    "purpose": "Monitor & learn · Satellite",
+    "title": "Satellite",
     "description": "Select a work area, interpret canopy health first, then open radar or catalog tools for deeper investigation.",
     "ndviActive": "NDVI · Active",
     "ndviReady": "NDVI · Ready",
@@ -557,7 +570,7 @@
     "staleSites": "Stale sites"
   },
   "assistant": {
-    "purpose": "Intelligence · Analyst",
+    "purpose": "Report & prove · AI assistant",
     "title": "AI assistant",
     "description": "Ask portfolio, carbon, weather, and compliance questions — answers combine live data with analyst rules.",
     "suggestedQuestions": "Suggested questions",
@@ -580,8 +593,8 @@
     "opsLlmErrorSummary": "Falling back to rules-based answers until the LLM connection is restored."
   },
   "bioacoustic": {
-    "purpose": "Intelligence · Biodiversity",
-    "title": "Bioacoustic monitoring",
+    "purpose": "Monitor & learn · Biodiversity",
+    "title": "Biodiversity",
     "description": "Record ambient soundscapes to detect species, track threatened taxa, and score site biodiversity health.",
     "fieldRecording": "Field recording",
     "regionalFauna": "Regional fauna & diversity indices",
@@ -590,6 +603,7 @@
     "noAssessments": "No assessments yet"
   },
   "map": {
+    "purpose": "Set up & plant · Map",
     "title": "Map",
     "description": "Tap a tree for actions (AI, survival survey, passport). Clusters appear when zoomed out — green = healthy, amber = moderate, red = unhealthy.",
     "loading": "Loading map…"
@@ -600,8 +614,8 @@
     "caughtUp": "You're caught up"
   },
   "portfolio": {
-    "purpose": "Intelligence · Portfolio",
-    "title": "Portfolio intelligence",
+    "purpose": "Monitor & learn · Portfolio health",
+    "title": "Portfolio health",
     "description": "Start with overall posture, then drill into compliance risk, threats, satellite monitoring, and biodiversity signals across all projects.",
     "tabOverview": "Overview",
     "tabCompliance": "Compliance",
@@ -611,11 +625,11 @@
     "tabMonitorShort": "Monitor",
     "tabBiodiversity": "Biodiversity",
     "tabBioShort": "Bio",
-    "ariaSections": "Portfolio intelligence sections"
+    "ariaSections": "Portfolio health sections"
   },
   "treesPage": {
-    "purpose": "Operate · Registry",
-    "title": "Tree registry",
+    "purpose": "Set up & plant · Trees",
+    "title": "Trees",
     "description": "Search, filter, and audit every registered tree — health, geotag, satellite verification, and project linkage.",
     "registerTree": "Register tree",
     "all": "All",
