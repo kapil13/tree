@@ -86,6 +86,10 @@ async def test_build_compliance_workflow_returns_steps(monkeypatch):
     step_ids = [s["id"] for s in result["steps"]]
     assert "survey_cadence" in step_ids
     assert "review_checklist" in step_ids
+    violations = next(s for s in result["steps"] if s["id"] == "resolve_violations")
+    assert violations["action_href"].endswith("/compliance?section=issues")
+    checklist = next(s for s in result["steps"] if s["id"] == "review_checklist")
+    assert checklist["action_href"].endswith("/compliance?section=checklist")
     survey = next(s for s in result["steps"] if s["id"] == "survey_cadence")
     assert survey["status"] == "done"
 
@@ -157,6 +161,8 @@ async def test_build_monitoring_compliance_workflow(monkeypatch):
     assert "estate_details" in step_ids
     scan = next(s for s in result["steps"] if s["id"] == "initial_satellite_scan")
     assert scan["action_href"].startswith("/satellite?project=")
+    violations = next(s for s in result["steps"] if s["id"] == "resolve_violations")
+    assert violations["action_href"].endswith("/compliance?section=issues")
 
 
 @pytest.mark.asyncio

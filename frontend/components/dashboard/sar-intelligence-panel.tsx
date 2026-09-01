@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Download, FileText, Radar } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { SarIntegrityTrendChart } from "@/components/satellite/sar-integrity-trend-chart";
 
 export function SarIntelligencePanel() {
@@ -84,7 +85,7 @@ export function SarIntelligencePanel() {
             <Download className="h-3 w-3" />
             CSV
           </button>
-          <Link href="/portfolio-health?tab=monitoring" className="dash-link">
+          <Link href={portfolioMonitoringHref()} className="dash-link">
             Monitoring <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>

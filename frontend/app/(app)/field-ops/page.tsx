@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
@@ -22,6 +24,7 @@ import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused
 import { cn } from "@/lib/cn";
 
 export default function FieldOpsPage() {
+  const searchParams = useSearchParams();
   const tf = useTranslations("fieldOps");
   const ts = useTranslations("segments");
   const to = useTranslations("opsStatus");
@@ -43,6 +46,12 @@ export default function FieldOpsPage() {
     queryKey: ["field-ops-summary"],
     queryFn: () => plantingProjects.fieldOpsSummary(),
   });
+
+  useEffect(() => {
+    if (searchParams.get("section") !== "attention") return;
+    const el = document.getElementById("attention");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [searchParams, data]);
 
   if (isLoading || !data) {
     return (

@@ -6,6 +6,8 @@ import {
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
 import { complianceAnchorToSection, projectComplianceHref } from "@/lib/compliance-links";
+import { alertsHref } from "@/lib/alerts-links";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { satelliteHref } from "@/lib/satellite-links";
 
 export type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
@@ -70,7 +72,7 @@ const AUTO_KEY_ACTIONS: Record<
   satellite_coverage: {
     label: "Run satellite scan",
     href: (ctx) =>
-      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : portfolioMonitoringHref(ctx.projectId),
   },
   work_area_scan_coverage: {
     label: "Run NDVI scan",
@@ -105,7 +107,7 @@ const AUTO_KEY_ACTIONS: Record<
   sar_permanence_risk: {
     label: "Review SAR integrity",
     href: (ctx) =>
-      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : "/portfolio-health?tab=monitoring",
+      ctx.satelliteWatchEnabled ? monitoringSatelliteHref(ctx) : portfolioMonitoringHref(ctx.projectId),
   },
   estate_metadata_complete: {
     label: "Complete estate details",
@@ -125,7 +127,7 @@ const AUTO_KEY_ACTIONS: Record<
   },
   ps6_biodiversity_evidence: {
     label: "Run bioacoustic / satellite monitoring",
-    href: "/portfolio-health?tab=monitoring",
+    href: (ctx) => portfolioMonitoringHref(ctx.projectId),
   },
   ses_risk_screened: {
     label: "Upload safeguard documents",
@@ -151,7 +153,7 @@ const ITEM_ID_ACTIONS: Record<string, ComplianceGapAction> = {
   geo_tagged_records: { label: "Review trees", tab: "trees" },
   no_blocking_violations: { label: "Fix violations", tab: "compliance", anchor: "violations" },
   survival_monitoring: { label: "Project settings", tab: "settings" },
-  alert_review_cadence: { label: "Review alerts", href: "/alerts" },
+  alert_review_cadence: { label: "Review alerts", href: alertsHref() },
   baseline_metadata: { label: "Complete estate details", tab: "overview" },
 };
 

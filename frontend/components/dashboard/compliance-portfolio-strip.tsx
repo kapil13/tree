@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 import { compliance } from "@/lib/api";
+import { portfolioComplianceHref } from "@/lib/compliance-links";
+import { fieldOpsHref } from "@/lib/field-ops-links";
 import { reportTabHref, type ReportTab } from "@/lib/report-tabs";
 import { scopedKey } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-store";
@@ -38,7 +40,7 @@ export function CompliancePortfolioStrip({ className }: { className?: string }) 
             {data.project_count === 1 ? "" : "s"}
           </p>
         </div>
-        <Link href="/portfolio-health?tab=compliance" className="dash-link">
+        <Link href={portfolioComplianceHref()} className="dash-link">
           Portfolio compliance <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -48,28 +50,28 @@ export function CompliancePortfolioStrip({ className }: { className?: string }) 
           {
             label: "Avg readiness",
             value: fmtPct(data.avg_readiness_pct),
-            href: "/portfolio-health?tab=compliance",
+            href: portfolioComplianceHref(),
             icon: ShieldCheck,
             warn: warnReadiness,
           },
           {
             label: "Open violations",
             value: fmtNum(data.open_violations),
-            href: "/portfolio-health?tab=compliance",
+            href: portfolioComplianceHref(),
             icon: ShieldAlert,
             warn: warnViolations,
           },
           {
             label: "Blocking",
             value: fmtNum(data.blocking_violations),
-            href: "/field-ops#attention",
+            href: fieldOpsHref({ section: "attention" }),
             icon: ShieldAlert,
             warn: warnBlocking,
           },
           {
             label: "Safeguard gaps",
             value: fmtNum(data.safeguard_gap_count),
-            href: "/portfolio-health?tab=compliance",
+            href: portfolioComplianceHref(),
             icon: ShieldCheck,
             warn: warnSafeguards,
           },

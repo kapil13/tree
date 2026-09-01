@@ -78,6 +78,9 @@ import {
   trees,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { alertsHref } from "@/lib/alerts-links";
+import { fieldOpsHref } from "@/lib/field-ops-links";
+import { portfolioComplianceHref, portfolioHealthHref, portfolioThreatsHref } from "@/lib/portfolio-health-links";
 import { canGenerateReports, canWriteInApp } from "@/lib/nav-access";
 import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
@@ -217,7 +220,7 @@ export function ExecutiveDashboard() {
       id: "violations",
       title: te("openComplianceItems", { count: openViolations }),
       detail: te("resolveViolations"),
-      href: "/field-ops#attention",
+      href: fieldOpsHref({ section: "attention" }),
       tone: "critical",
     });
   }
@@ -226,7 +229,7 @@ export function ExecutiveDashboard() {
       id: "alerts",
       title: te("unreadAlertItems", { count: unreadAlerts.length }),
       detail: unreadAlerts[0]?.title ?? te("reviewInbox"),
-      href: "/alerts",
+      href: alertsHref(),
       tone: criticalAlerts.length > 0 ? "critical" : "warn",
     });
   }
@@ -244,7 +247,7 @@ export function ExecutiveDashboard() {
       id: "brief",
       title: brief.priority_alert.title,
       detail: brief.priority_alert.work_area_name || te("fromBrief"),
-      href: "/portfolio-health?tab=threats",
+      href: portfolioThreatsHref(),
       tone: "info",
     });
   }
@@ -270,7 +273,7 @@ export function ExecutiveDashboard() {
               {priorityItems[0].title}
             </Link>
           ) : (
-            <Link href="/portfolio-health" className="btn-secondary text-xs">
+            <Link href={portfolioHealthHref()} className="btn-secondary text-xs">
               {te("portfolioIntelligence")}
             </Link>
           )
@@ -335,7 +338,7 @@ export function ExecutiveDashboard() {
               <h2 className="dash-panel-title">Today&apos;s priorities</h2>
               <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
             </div>
-            <Link href="/portfolio-health?tab=compliance" className="dash-link">
+            <Link href={portfolioComplianceHref()} className="dash-link">
               Full monitoring <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -372,14 +375,14 @@ export function ExecutiveDashboard() {
           {
             label: te("openViolations"),
             value: fmtNum(openViolations),
-            href: "/field-ops",
+            href: fieldOpsHref(),
             icon: ShieldAlert,
             warn: openViolations > 0,
           },
           {
             label: te("unreadAlerts"),
             value: fmtNum(unreadAlerts.length),
-            href: "/alerts",
+            href: alertsHref(),
             icon: Bell,
             warn: unreadAlerts.length > 0,
           },
@@ -392,7 +395,7 @@ export function ExecutiveDashboard() {
           {
             label: te("survivalDue"),
             value: fmtNum(fieldOps?.survival_due ?? 0),
-            href: "/field-ops",
+            href: fieldOpsHref(),
             icon: ClipboardList,
             warn: (fieldOps?.survival_due ?? 0) > 0,
           },
@@ -830,8 +833,8 @@ export function ExecutiveDashboard() {
               ...(canWrite
                 ? [{ href: "/trees/new", icon: Sprout, label: te("registerTree"), sub: te("guidedWizard") }]
               : []),
-              { href: "/portfolio-health?tab=compliance", icon: ShieldCheck, label: te("portfolioCompliance"), sub: te("readinessSafeguards") },
-              { href: "/portfolio-health", icon: Radar, label: te("portfolioHealth"), sub: te("threatsMonitoring") },
+              { href: portfolioComplianceHref(), icon: ShieldCheck, label: te("portfolioCompliance"), sub: te("readinessSafeguards") },
+              { href: portfolioHealthHref(), icon: Radar, label: te("portfolioHealth"), sub: te("threatsMonitoring") },
               { href: "/satellite", icon: Satellite, label: te("satelliteScan"), sub: te("ndviHealth") },
               { href: "/bioacoustic", icon: Bird, label: te("recordBiodiversity"), sub: te("soundscape") },
               { href: "/assistant", icon: Sparkles, label: te("askAiAnalyst"), sub: te("carbonTips") },

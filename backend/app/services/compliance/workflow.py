@@ -49,6 +49,25 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
 }
 
 
+def _project_compliance_href(project_id: str, section: str | None = None) -> str:
+    base = f"/projects/{project_id}/compliance"
+    return f"{base}?section={section}" if section else base
+
+
+def _project_tab_href(project_id: str, tab: str) -> str:
+    return f"/projects/{project_id}/{tab}"
+
+
+def _project_setup_href(project_id: str, step: int) -> str:
+    return f"/projects/{project_id}/setup?step={step}"
+
+
+def _portfolio_monitoring_href(project_id: str | None = None) -> str:
+    if project_id:
+        return f"/portfolio-health?tab=monitoring&project={project_id}"
+    return "/portfolio-health?tab=monitoring"
+
+
 def _step_status(signal: str | None, *, optional: bool = False) -> WorkflowStepStatus:
     if signal == "yes":
         return "done"
@@ -215,6 +234,7 @@ async def _build_monitoring_compliance_workflow(
             "action_label": "View violations",
             "action_tab": "compliance",
             "action_anchor": "violations",
+            "action_href": _project_compliance_href(project_id, "issues"),
             "metric": (
                 f"{blocking_violations} blocking · {open_violations} open"
                 if open_violations
@@ -236,6 +256,7 @@ async def _build_monitoring_compliance_workflow(
             "action_label": "Open checklist",
             "action_tab": "compliance",
             "action_anchor": "checklist",
+            "action_href": _project_compliance_href(project_id, "checklist"),
             "metric": (
                 f"{recommended['completion_pct']:.0f}% complete · {recommended['eligibility_status'].replace('_', ' ')}"
                 if recommended
@@ -313,6 +334,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
         checklist_partial = completion > 0 or status == "in_progress"
 
     credit_optional = project.segment == "nhai_highway" or recommended_code == "ngt_campa"
+    project_id = str(project.id)
 
     steps: list[dict[str, Any]] = [
         {
@@ -322,6 +344,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": _step_status(signals.get("active_standard_attached")),
             "action_label": "Review standard",
             "action_tab": "overview",
+            "action_href": _project_setup_href(str(project.id), 2),
             "metric": None,
             "optional": False,
         },
@@ -332,6 +355,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": _step_status(signals.get("has_work_areas")),
             "action_label": "Open overview map",
             "action_tab": "overview",
+            "action_href": _project_setup_href(str(project.id), 4),
             "metric": f"{work_area_count} area{'s' if work_area_count != 1 else ''}" if work_area_count else None,
             "optional": project.segment == "general",
         },
@@ -342,6 +366,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": "done" if survey_saved else "partial" if interval in (15, 30) else "pending",
             "action_label": "Save in settings",
             "action_tab": "settings",
+            "action_href": _project_tab_href(str(project.id), "settings"),
             "metric": f"{interval}-day interval" + (" · saved" if survey_saved else " · not saved"),
             "optional": False,
             "quick_fix": None if survey_saved else {"survey_interval_days": interval},
@@ -364,6 +389,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": _step_status(signals.get("geo_tagged_majority")),
             "action_label": "Review trees",
             "action_tab": "trees",
+            "action_href": f"/projects/{project.id}",
             "metric": f"{geo_tagged_count}/{tree_count} geotagged ({geo_pct}%)" if tree_count else None,
             "optional": False,
         },
@@ -374,7 +400,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "status": _step_status(signals.get("satellite_coverage"), optional=True),
             "action_label": "Open satellite view",
             "action_tab": "overview",
-            "action_href": "/portfolio-health?tab=monitoring",
+            "action_href": _portfolio_monitoring_href(str(project.id)),
             "metric": f"{satellite_verified_count}/{tree_count} verified ({sat_pct}%)" if tree_count else None,
             "optional": True,
         },
@@ -386,6 +412,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "action_label": "View violations",
             "action_tab": "compliance",
             "action_anchor": "violations",
+            "action_href": _project_compliance_href(project_id, "issues"),
             "metric": (
                 f"{blocking_violations} blocking · {open_violations} open"
                 if open_violations
@@ -403,6 +430,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             ),
             "action_label": "Open credits tab",
             "action_tab": "credits",
+            "action_href": _project_tab_href(str(project.id), "credits"),
             "metric": None,
             "optional": credit_optional,
         },
@@ -420,6 +448,7 @@ async def build_compliance_workflow(db: AsyncSession, project: PlantingProject) 
             "action_label": "Open checklist",
             "action_tab": "compliance",
             "action_anchor": "checklist",
+            "action_href": _project_compliance_href(project_id, "checklist"),
             "metric": (
                 f"{recommended['completion_pct']:.0f}% complete · {recommended['eligibility_status'].replace('_', ' ')}"
                 if recommended

@@ -3,6 +3,7 @@
 import { ArrowRight, Radar } from "lucide-react";
 import Link from "next/link";
 import type { SarFusion } from "@/lib/api";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { cn } from "@/lib/cn";
 import {
   SAR_GRADE_LABEL,
@@ -126,7 +127,7 @@ export function SarProductStoryBanner() {
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
           <Link
-            href="/portfolio-health?tab=monitoring"
+            href={portfolioMonitoringHref()}
             className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium text-white ring-1 ring-white/25 hover:bg-white/20"
           >
             Portfolio SAR dashboard

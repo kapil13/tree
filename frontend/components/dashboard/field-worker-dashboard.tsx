@@ -22,6 +22,7 @@ import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InsightPanel, MetricGrid, OperationalStatusBar } from "@/components/ui";
 import { plantingProjects, trees } from "@/lib/api";
+import { fieldOpsHref } from "@/lib/field-ops-links";
 import { useAuth } from "@/lib/auth-store";
 import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
@@ -122,7 +123,7 @@ export function FieldWorkerDashboard() {
       id: "survival-summary",
       title: tf("survivalSummary", { count: fieldOps.survival_due }),
       detail: tf("survivalSummaryDetail"),
-      href: "/field-ops#attention",
+      href: fieldOpsHref({ section: "attention" }),
       tone: "warn",
     });
   }

@@ -14,6 +14,8 @@ import {
   Server,
 } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
+import { alertsHref } from "@/lib/alerts-links";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
 
@@ -57,7 +59,7 @@ const SAR_MODE_LABEL: Record<string, string> = {
   sar_stress: "Stress",
 };
 
-export function PortfolioMonitoringTab() {
+export function PortfolioMonitoringTab({ projectId }: { projectId?: string | null }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["monitoring-summary"],
@@ -78,7 +80,13 @@ export function PortfolioMonitoringTab() {
     (a, b) => a + b,
     0,
   );
-  const openFieldTasks = data.open_sar_field_verifications ?? [];
+  const openFieldTasks = (data.open_sar_field_verifications ?? []).filter(
+    (task) => !projectId || task.project_id === projectId,
+  );
+  const workAreas = projectId
+    ? data.work_area_monitoring.filter((wa) => wa.project_id === projectId)
+    : data.work_area_monitoring;
+  const filteredProject = projectId ? data.projects.find((p) => p.id === projectId) : undefined;
 
   const handleExport = async () => {
     const blob = new Blob([await sar.portfolioExport()], { type: "text/csv" });
@@ -102,6 +110,18 @@ export function PortfolioMonitoringTab() {
 
   return (
     <div className="space-y-6">
+      {filteredProject ? (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+          Showing monitoring for{" "}
+          <Link href={`/projects/${filteredProject.id}`} className="font-semibold hover:underline">
+            {filteredProject.name}
+          </Link>
+          .{" "}
+          <Link href={portfolioMonitoringHref()} className="font-medium text-sky-900 hover:underline">
+            View all projects
+          </Link>
+        </div>
+      ) : null}
       <p className="text-sm text-stone-600">
         Check which sites need a fresh satellite scan, review alerts, and open field follow-ups.
         Greenness (NDVI) is the everyday signal; radar (SAR) fills in during clouds and monsoon.
@@ -176,7 +196,7 @@ export function PortfolioMonitoringTab() {
             {Object.entries(data.unread_sar_alerts_by_kind ?? {}).map(([kind, count]) => (
               <Link
                 key={kind}
-                href={`/alerts?sar=${kind}`}
+                href={alertsHref({ sar: kind })}
                 className="rounded-full bg-amber-50 px-3 py-1 text-sm text-amber-900 hover:bg-amber-100"
               >
                 {ALERT_KIND_LABEL[kind] ?? kind}: {count}
@@ -235,7 +255,7 @@ export function PortfolioMonitoringTab() {
             {Object.entries(data.unread_alerts_by_kind).map(([kind, count]) => (
               <Link
                 key={kind}
-                href="/alerts"
+                href={alertsHref()}
                 className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200"
               >
                 {ALERT_KIND_LABEL[kind] ?? kind}: {count}
@@ -264,7 +284,7 @@ export function PortfolioMonitoringTab() {
             </tr>
           </thead>
           <tbody>
-            {data.work_area_monitoring.map((wa) => (
+            {workAreas.map((wa) => (
               <tr key={wa.id} className="border-t border-stone-100">
                 <td className="px-4 py-2 font-medium">{wa.name}</td>
                 <td className="px-4 py-2">
