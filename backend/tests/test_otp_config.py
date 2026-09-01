@@ -15,9 +15,8 @@ async def test_otp_config_exposes_readiness_without_secrets(monkeypatch):
     monkeypatch.setattr(settings, "msg91_auth_key", "secret-key")
     monkeypatch.setattr(settings, "msg91_otp_template_id", "tpl-123")
     monkeypatch.setattr(settings, "auth_otp_email_enabled", True)
-    monkeypatch.setattr(settings, "ses_sender", "noreply@example.com")
-    monkeypatch.setattr(settings, "aws_access_key_id", "AKIAEXAMPLE")
-    monkeypatch.setattr(settings, "aws_secret_access_key", "secret")
+    monkeypatch.setattr(settings, "resend_api_key", "re_test_key")
+    monkeypatch.setattr(settings, "resend_from_email", "no-reply@aranyix.tech")
     monkeypatch.setattr(settings, "auth_org_invite_sms_enabled", False)
 
     transport = ASGITransport(app=app)
@@ -40,9 +39,8 @@ async def test_otp_config_when_sms_disabled(monkeypatch):
     monkeypatch.setattr(settings, "auth_otp_sms_enabled", False)
     monkeypatch.setattr(settings, "msg91_auth_key", None)
     monkeypatch.setattr(settings, "auth_otp_email_enabled", False)
-    monkeypatch.setattr(settings, "ses_sender", "no-reply@byot.earth")
-    monkeypatch.setattr(settings, "aws_access_key_id", None)
-    monkeypatch.setattr(settings, "aws_secret_access_key", None)
+    monkeypatch.setattr(settings, "resend_api_key", None)
+    monkeypatch.setattr(settings, "resend_from_email", "no-reply@aranyix.tech")
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

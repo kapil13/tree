@@ -1,4 +1,4 @@
-"""Send transactional email via Gmail API (Google Workspace domain delegation)."""
+"""Send transactional email via Gmail API (legacy fallback) or Resend."""
 
 from __future__ import annotations
 
@@ -10,6 +10,21 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.email.config import (
+    invite_email_configured,
+    program_access_email_configured,
+    resend_configured,
+)
+from app.services.email.exceptions import EmailSendError
+from app.services.email.service import (
+    send_organization_invitation as resend_send_org_invite,
+)
+from app.services.email.service import (
+    send_program_access_admin_email as resend_send_program_access_admin,
+)
+from app.services.email.service import (
+    send_program_access_decision_email as resend_send_program_access_decision,
+)
 
 log = get_logger("auth.gmail")
 
@@ -22,28 +37,20 @@ class GmailSendError(Exception):
         super().__init__(code)
 
 
+def _gmail_credentials_configured() -> bool:
+    return bool(settings.gmail_sender and settings.google_service_account_json)
+
+
 def gmail_otp_configured() -> bool:
-    return bool(
-        settings.auth_otp_email_enabled
-        and settings.gmail_sender
-        and settings.google_service_account_json
-    )
+    return False
 
 
 def gmail_invite_configured() -> bool:
-    return bool(
-        settings.auth_org_invite_email_enabled
-        and settings.gmail_sender
-        and settings.google_service_account_json
-    )
+    return invite_email_configured()
 
 
 def gmail_program_access_configured() -> bool:
-    return bool(
-        settings.auth_program_access_email_enabled
-        and settings.gmail_sender
-        and settings.google_service_account_json
-    )
+    return program_access_email_configured()
 
 
 def _load_service_account_info() -> dict:
@@ -95,55 +102,6 @@ def _send_email_sync(*, to: str, subject: str, body: str) -> None:
         raise GmailSendError("gmail_send_failed") from exc
 
 
-def _otp_email_body(code: str) -> str:
-    return (
-        f"Your Aranyix verification code is {code}.\n\n"
-        "This code expires in 10 minutes. If you did not request this, you can ignore this email."
-    )
-
-
-async def send_auth_otp_email(*, to: str, code: str) -> None:
-    """Login / sign-in email OTP (same template as signup OTP)."""
-    if not gmail_otp_configured():
-        raise GmailSendError("gmail_not_configured")
-    await asyncio.to_thread(
-        _send_email_sync,
-        to=to,
-        subject="Your Aranyix sign-in code",
-        body=_otp_email_body(code),
-    )
-    log.info("gmail.auth_otp_sent", to=_redact_email(to))
-
-
-async def send_signup_otp_email(*, to: str, code: str) -> None:
-    if not gmail_otp_configured():
-        raise GmailSendError("gmail_not_configured")
-    await asyncio.to_thread(
-        _send_email_sync,
-        to=to,
-        subject="Your Aranyix verification code",
-        body=_otp_email_body(code),
-    )
-    log.info("gmail.otp_sent", to=_redact_email(to))
-
-
-async def send_password_reset_otp_email(*, to: str, code: str) -> None:
-    if not gmail_otp_configured():
-        raise GmailSendError("gmail_not_configured")
-    body = (
-        f"Your Aranyix password reset code is {code}.\n\n"
-        "This code expires in 10 minutes. If you did not request a password reset, "
-        "you can ignore this email."
-    )
-    await asyncio.to_thread(
-        _send_email_sync,
-        to=to,
-        subject="Reset your Aranyix password",
-        body=body,
-    )
-    log.info("gmail.password_reset_sent", to=_redact_email(to))
-
-
 async def send_org_invite_email(
     *,
     to: str,
@@ -152,8 +110,22 @@ async def send_org_invite_email(
     invite_link: str,
     full_name: str,
 ) -> None:
-    if not gmail_invite_configured():
+    if resend_configured() and settings.auth_org_invite_email_enabled:
+        try:
+            await resend_send_org_invite(
+                to=to,
+                org_name=org_name,
+                org_role=org_role,
+                invite_link=invite_link,
+                full_name=full_name,
+            )
+            return
+        except EmailSendError as exc:
+            raise GmailSendError(exc.code) from exc
+
+    if not _gmail_credentials_configured():
         raise GmailSendError("gmail_not_configured")
+
     role_label = org_role.replace("_", " ").title()
     body = (
         f"Hello {full_name},\n\n"
@@ -179,8 +151,23 @@ async def send_program_access_admin_email(
     organization_name: str | None,
     queue_url: str,
 ) -> None:
-    if not gmail_program_access_configured():
+    if resend_configured() and settings.auth_program_access_email_enabled:
+        try:
+            await resend_send_program_access_admin(
+                to=to,
+                applicant_name=applicant_name,
+                applicant_email=applicant_email,
+                program_name=program_name,
+                organization_name=organization_name,
+                queue_url=queue_url,
+            )
+            return
+        except EmailSendError as exc:
+            raise GmailSendError(exc.code) from exc
+
+    if not _gmail_credentials_configured():
         raise GmailSendError("gmail_not_configured")
+
     org_line = f"Organization: {organization_name}\n" if organization_name else ""
     body = (
         "A new professional program access request is waiting for review on Aranyix.\n\n"
@@ -208,8 +195,24 @@ async def send_program_access_decision_email(
     dashboard_url: str,
     pending_url: str,
 ) -> None:
-    if not gmail_program_access_configured():
+    if resend_configured() and settings.auth_program_access_email_enabled:
+        try:
+            await resend_send_program_access_decision(
+                to=to,
+                applicant_name=applicant_name,
+                program_name=program_name,
+                action=action,
+                admin_note=admin_note,
+                dashboard_url=dashboard_url,
+                pending_url=pending_url,
+            )
+            return
+        except EmailSendError as exc:
+            raise GmailSendError(exc.code) from exc
+
+    if not _gmail_credentials_configured():
         raise GmailSendError("gmail_not_configured")
+
     if action == "approve":
         subject = f"Your {program_name} access was approved"
         body = (

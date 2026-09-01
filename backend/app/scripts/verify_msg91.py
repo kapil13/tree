@@ -57,9 +57,9 @@ def print_config_report() -> int:
             settings.auth_otp_email_enabled,
         ),
         _status_line(
-            "SES_SENDER + AWS credentials",
+            "Resend email (RESEND_API_KEY + RESEND_FROM_EMAIL)",
             ses_otp_configured(),
-            settings.ses_sender or "empty",
+            settings.resend_from_email or "empty",
         ),
         _status_line("dev_otp_allowed", settings.allow_dev_otp),
     ]
