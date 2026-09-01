@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, Leaf, MapPin, Satellite, ShieldCheck } from "lucide-react";
+import { ProjectModuleLinks } from "@/components/projects/project-module-links";
 import { ProjectSetupChecklist } from "@/components/projects/project-setup-checklist";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
@@ -333,6 +334,12 @@ export function ProjectFocusedOverview({
           </div>
         </div>
       )}
+
+      <ProjectModuleLinks
+        projectId={projectId}
+        satelliteHref={satelliteDashboardHref}
+        openViolations={openViolations}
+      />
 
       {nextAction && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">

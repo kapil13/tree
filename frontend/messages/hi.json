@@ -324,20 +324,20 @@
   },
   "chrome": {
     "sectionOverview": "अवलोकन",
-    "sectionOperate": "संचालन",
-    "sectionIntelligence": "बुद्धिमत्ता",
-    "sectionReports": "रिपोर्ट",
+    "sectionOperate": "सेटअप और रोपण",
+    "sectionIntelligence": "निगरानी और विश्लेषण",
+    "sectionReports": "रिपोर्ट और प्रमाण",
     "sectionAccount": "खाता",
     "sectionAdministration": "प्रशासन",
-    "routeCommandCenter": "कमांड सेंटर",
+    "routeCommandCenter": "डैशबोर्ड",
     "routeStewardship": "संरक्षण",
-    "routePlantingProjects": "रोपण परियोजनाएँ",
-    "routeTreeRegistry": "पेड़ रजिस्ट्री",
-    "routeGeospatialMap": "भू-स्थानिक मानचित्र",
-    "routeFieldOperations": "फील्ड संचालन",
-    "routePortfolioIntelligence": "पोर्टफोलियो बुद्धिमत्ता",
-    "routeSatelliteMonitoring": "उपग्रह निगरानी",
-    "routeBioacoustic": "जैव ध्वनिक निगरानी",
+    "routePlantingProjects": "परियोजनाएँ",
+    "routeTreeRegistry": "पेड़",
+    "routeGeospatialMap": "मानचित्र",
+    "routeFieldOperations": "फील्ड कार्य",
+    "routePortfolioIntelligence": "पोर्टफोलियो स्वास्थ्य",
+    "routeSatelliteMonitoring": "उपग्रह",
+    "routeBioacoustic": "जैव विविधता",
     "routeMonitoring": "निगरानी",
     "routeIntelligenceSummary": "बुद्धिमत्ता सारांश",
     "routeAlertsSignals": "अलर्ट और संकेत",
@@ -351,7 +351,7 @@
     "breadcrumbProjects": "परियोजनाएँ",
     "breadcrumbMap": "मानचित्र",
     "breadcrumbFieldOps": "फील्ड कार्य",
-    "breadcrumbPortfolio": "पोर्टफोलियो",
+    "breadcrumbPortfolio": "पोर्टफोलियो स्वास्थ्य",
     "breadcrumbSatellite": "उपग्रह",
     "breadcrumbBiodiversity": "जैव विविधता",
     "breadcrumbMonitoring": "निगरानी",
@@ -436,9 +436,22 @@
     "ngo_watershed": "NGO / जलग्रहण",
     "general": "सामान्य"
   },
+  "projectWorkspace": {
+    "moduleLinksAria": "संबंधित मॉड्यूल",
+    "moduleLinksTitle": "जुड़े मॉड्यूल",
+    "moduleLinksDesc": "फील्ड कार्य, पोर्टफोलियो अनुपालन, उपग्रह और निगरानी पर बिना संदर्भ खोए जाएँ।",
+    "moduleFieldOps": "फील्ड कार्य",
+    "moduleFieldOpsDesc": "अवशेष सर्वे, ध्यान कतार और फील्ड कार्य",
+    "modulePortfolioCompliance": "पोर्टफोलियो अनुपालन",
+    "modulePortfolioComplianceDesc": "संगठन-स्तरीय तैयारी और खुले उल्लंघन",
+    "moduleSatellite": "उपग्रह",
+    "moduleSatelliteDesc": "इस परियोजना के लिए NDVI और SAR स्कैन",
+    "moduleMonitoring": "निगरानी",
+    "moduleMonitoringDesc": "इस परियोजना के लिए पोर्टफोलियो निगरानी दृश्य"
+  },
   "projects": {
-    "purpose": "संचालन · रोपण कार्यक्रम",
-    "title": "रोपण परियोजनाएँ",
+    "purpose": "सेटअप और रोपण · परियोजनाएँ",
+    "title": "परियोजनाएँ",
     "description": "पहले अनुपालन स्थिति समझें, फिर पेड़ पंजीकरण, निगरानी और ऑडिट निर्यात के लिए परियोजना खोलें।",
     "newProject": "नई परियोजना",
     "keyInsight": "मुख्य अंतर्दृष्टि",
@@ -480,8 +493,8 @@
     "compliance": "अनुपालन"
   },
   "fieldOps": {
-    "purpose": "संचालन · फील्ड",
-    "title": "फील्ड संचालन",
+    "purpose": "सेटअप और रोपण · फील्ड कार्य",
+    "title": "फील्ड कार्य",
     "description": "पैकेज, ग्रीन बेल्ट और सोसाइटी ब्लॉकों में आज की प्राथमिकताएँ।",
     "newProject": "नई परियोजना",
     "registerTree": "पेड़ पंजीकृत करें",
@@ -500,8 +513,8 @@
     "open": "खोलें"
   },
   "alerts": {
-    "purpose": "बुद्धिमत्ता · संकेत",
-    "title": "अलर्ट और संकेत",
+    "purpose": "निगरानी और विश्लेषण · सूचनाएँ",
+    "title": "सूचनाएँ",
     "description": "उपग्रह, अनुपालन, मौसम और फील्ड निगरानी से परिचालन संकेत — पहले अपठित आइटम ट्रायज करें।",
     "inboxClear": "इनबॉक्स स्पष्ट",
     "noAlerts": "अभी कोई अलर्ट नहीं",
@@ -540,8 +553,8 @@
     "kind_emission_fusion_misaligned": "मीथेन जाँच"
   },
   "satellite": {
-    "purpose": "बुद्धिमत्ता · पृथ्वी अवलोकन",
-    "title": "उपग्रह निगरानी",
+    "purpose": "निगरानी और विश्लेषण · उपग्रह",
+    "title": "उपग्रह",
     "description": "कार्य क्षेत्र चुनें, पहले वनस्पति स्वास्थ्य समझें, फिर गहन जाँच के लिए रडार या कैटलॉग उपकरण खोलें।",
     "ndviActive": "NDVI · सक्रिय",
     "ndviReady": "NDVI · तैयार",
@@ -579,8 +592,8 @@
     "opsLlmErrorSummary": "LLM कनेक्शन बहाल होने तक नियम-आधारित उत्तरों पर वापस।"
   },
   "bioacoustic": {
-    "purpose": "बुद्धिमत्ता · जैव विविधता",
-    "title": "जैव ध्वनिक निगरानी",
+    "purpose": "निगरानी और विश्लेषण · जैव विविधता",
+    "title": "जैव विविधता",
     "description": "प्रजाति पहचान, संकटग्रस्त taxa और स्थल जैव विविधता स्वास्थ्य के लिए परिवेश ध्वनि रिकॉर्ड करें।",
     "fieldRecording": "फील्ड रिकॉर्डिंग",
     "regionalFauna": "क्षेत्रीय fauna और विविधता सूचकांक",
@@ -589,6 +602,7 @@
     "noAssessments": "अभी कोई मूल्यांकन नहीं"
   },
   "map": {
+    "purpose": "सेटअप और रोपण · मानचित्र",
     "title": "मानचित्र",
     "description": "कार्य के लिए पेड़ टैप करें (AI, अवशेष सर्वे, पासपोर्ट)। ज़ूम आउट पर क्लस्टर — हरा = स्वस्थ, पीला = मध्यम, लाल = अस्वस्थ।",
     "loading": "मानचित्र लोड हो रहा है…"
@@ -599,8 +613,8 @@
     "caughtUp": "आप अप-टू-डेट हैं"
   },
   "portfolio": {
-    "purpose": "बुद्धिमत्ता · पोर्टफोलियो",
-    "title": "पोर्टफोलियो बुद्धिमत्ता",
+    "purpose": "निगरानी और विश्लेषण · पोर्टफोलियो स्वास्थ्य",
+    "title": "पोर्टफोलियो स्वास्थ्य",
     "description": "समग्र स्थिति से शुरू करें, फिर अनुपालन जोखिम, खतरे, उपग्रह निगरानी और जैव विविधता संकेतों में गहराई से जाएँ।",
     "tabOverview": "अवलोकन",
     "tabCompliance": "अनुपालन",
@@ -610,11 +624,11 @@
     "tabMonitorShort": "निगरानी",
     "tabBiodiversity": "जैव विविधता",
     "tabBioShort": "जैव",
-    "ariaSections": "पोर्टफोलियो बुद्धिमत्ता अनुभाग"
+    "ariaSections": "पोर्टफोलियो स्वास्थ्य अनुभाग"
   },
   "treesPage": {
-    "purpose": "संचालन · रजिस्ट्री",
-    "title": "पेड़ रजिस्ट्री",
+    "purpose": "सेटअप और रोपण · पेड़",
+    "title": "पेड़",
     "description": "हर पंजीकृत पेड़ खोजें, फ़िल्टर करें और ऑडिट करें — स्वास्थ्य, जियोटैग, उपग्रह सत्यापन और परियोजना लिंक।",
     "registerTree": "पेड़ पंजीकृत करें",
     "all": "सभी",

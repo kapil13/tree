@@ -28,6 +28,7 @@ export default function MapPage() {
   return (
     <div className="space-y-4">
       <PageHeader
+        purpose={tm("purpose")}
         title={tm("title")}
         description={tm("description")}
         breadcrumbs={[{ label: tc("sectionOperate") }, { label: tc("breadcrumbMap") }]}
