@@ -5,6 +5,7 @@ import {
   projectSetupHref,
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
+import { complianceAnchorToSection, projectComplianceHref } from "@/lib/compliance-links";
 import { satelliteHref } from "@/lib/satellite-links";
 
 export type ProjectTab = "overview" | "compliance" | "credits" | "trees" | "team" | "settings";
@@ -33,6 +34,10 @@ export function projectTabHref(
     return anchor ? `${base}#${anchor}` : base;
   }
   if (parseProjectSecondaryTab(tab)) {
+    if (tab === "compliance") {
+      const section = anchor ? complianceAnchorToSection(anchor) ?? anchor : undefined;
+      return projectComplianceHref(projectId, section ?? undefined);
+    }
     const base = projectSecondaryHref(projectId, tab as ProjectSecondaryTab);
     return anchor ? `${base}#${anchor}` : base;
   }

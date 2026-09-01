@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bug, CheckCircle, Link2 } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
+import { ComplianceHubLinks } from "@/components/compliance/compliance-hub-links";
 import { ProjectComplianceChecklistPanel } from "@/components/projects/project-compliance-checklist-panel";
 import { ProjectComplianceExportsSection } from "@/components/projects/project-compliance-exports-section";
 import {
@@ -27,6 +28,7 @@ import {
   type WorkArea,
 } from "@/lib/api";
 import { isMonitoringOnlyProject, isSatelliteWatchEnabled } from "@/lib/project-monitoring";
+import { projectComplianceHref } from "@/lib/compliance-links";
 
 const SEVERITY_CLASS: Record<string, string> = {
   block: "bg-rose-100 text-rose-900",
@@ -88,6 +90,7 @@ export function ProjectComplianceTab({
   onNavigateTab?: (tab: ProjectTab) => void;
 }) {
   const qc = useQueryClient();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const monitoringMode =
     monitoringModeProp ?? isMonitoringOnlyProject({ scheme_code: schemeCode ?? null });
@@ -301,14 +304,19 @@ export function ProjectComplianceTab({
     },
   });
 
+  function selectSection(next: ComplianceSection) {
+    setSection(next);
+    router.replace(`${projectComplianceHref(projectId)}?section=${next}`, { scroll: false });
+  }
+
   function navigateToAnchor(anchor: string) {
     const next = anchorToSection(anchor);
-    if (next) setSection(next);
+    if (next) selectSection(next);
   }
 
   function selectChecklist(code: string) {
     setChecklistCode(code as ChecklistCode);
-    setSection("checklist");
+    selectSection("checklist");
   }
 
   const busy =
@@ -330,10 +338,12 @@ export function ProjectComplianceTab({
   if (isLoading) return <p className="text-sm text-stone-500">Loading compliance records…</p>;
 
   return (
-    <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)] lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className="space-y-4">
+      <ComplianceHubLinks projectId={projectId} />
+      <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)] lg:grid-cols-[14rem_minmax(0,1fr)]">
       <ProjectComplianceSectionNav
         active={section}
-        onChange={setSection}
+        onChange={selectSection}
         openViolations={violations.length}
         showPestIntel={showPestIntel}
         monitoringMode={monitoringMode}
@@ -554,6 +564,7 @@ export function ProjectComplianceTab({
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
