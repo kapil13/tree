@@ -11,10 +11,12 @@ from app.services.auth.msg91_sender import (
     _normalize_mobile,
     msg91_public_config,
     send_auth_otp_sms,
+    send_signup_otp_sms,
     send_transactional_sms,
     sms_auth_configured,
     sms_auth_template_configured,
     sms_invites_configured,
+    sms_signup_otp_configured,
 )
 
 
@@ -39,15 +41,28 @@ def test_sms_auth_template_configured():
         assert sms_auth_template_configured() is False
 
 
+def test_sms_signup_otp_configured():
+    with patch("app.services.auth.msg91_sender.settings") as mock_settings:
+        mock_settings.auth_otp_sms_enabled = True
+        mock_settings.msg91_auth_key = "secret"
+        mock_settings.msg91_signup_otp_template_id = "signup-tpl-1"
+        assert sms_signup_otp_configured() is True
+
+        mock_settings.msg91_signup_otp_template_id = None
+        assert sms_signup_otp_configured() is False
+
+
 def test_msg91_public_config():
     with patch("app.services.auth.msg91_sender.settings") as mock_settings:
         mock_settings.auth_otp_sms_enabled = True
         mock_settings.msg91_auth_key = "secret"
         mock_settings.msg91_otp_template_id = "tpl"
+        mock_settings.msg91_signup_otp_template_id = "signup-tpl"
         mock_settings.auth_org_invite_sms_enabled = True
         cfg = msg91_public_config()
     assert cfg["sms_configured"] is True
     assert cfg["sms_template_configured"] is True
+    assert cfg["sms_signup_template_configured"] is True
     assert cfg["invite_sms_configured"] is True
 
 
@@ -128,6 +143,28 @@ async def test_send_auth_otp_sms_includes_template_id():
 
     payload = mock_client.post.await_args.kwargs["json"]
     assert payload["template_id"] == "otp-template-99"
+
+
+@pytest.mark.asyncio
+async def test_send_signup_otp_sms_uses_signup_template_id():
+    mock_response = MagicMock(status_code=200, text="ok")
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("app.services.auth.msg91_sender.sms_auth_configured", return_value=True),
+        patch("app.services.auth.msg91_sender.settings") as mock_settings,
+        patch("app.services.auth.msg91_sender.httpx.AsyncClient", return_value=mock_client),
+    ):
+        mock_settings.msg91_auth_key = "key"
+        mock_settings.msg91_signup_otp_template_id = "signup-template-42"
+        mock_settings.msg91_sender_id = "ARANYX"
+        await send_signup_otp_sms(phone="9876543210", code="222222")
+
+    payload = mock_client.post.await_args.kwargs["json"]
+    assert payload["template_id"] == "signup-template-42"
 
 
 @pytest.mark.asyncio

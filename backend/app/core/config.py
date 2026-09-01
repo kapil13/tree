@@ -115,6 +115,7 @@ class Settings(BaseSettings):
     msg91_auth_key: str | None = None
     msg91_sender_id: str | None = None
     msg91_otp_template_id: str | None = None
+    msg91_signup_otp_template_id: str | None = None
     msg91_invite_template_id: str | None = None
 
     # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
