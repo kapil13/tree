@@ -58,6 +58,7 @@ from app.services.auth.msg91_sender import (
     msg91_public_config,
     send_auth_otp_sms,
     sms_auth_configured,
+    sms_signup_otp_configured,
 )
 from app.services.auth.oauth_state import consume_oauth_state, issue_oauth_state
 from app.services.auth.org_access import assert_user_may_authenticate
@@ -141,6 +142,7 @@ async def otp_config() -> OtpConfigOut:
         sms_enabled=msg91["sms_enabled"],
         sms_configured=msg91["sms_configured"],
         sms_template_configured=msg91["sms_template_configured"],
+        sms_signup_template_configured=msg91["sms_signup_template_configured"],
         email_enabled=settings.auth_otp_email_enabled,
         email_configured=ses_otp_configured(),
         invite_sms_enabled=msg91["invite_sms_enabled"],
@@ -382,7 +384,7 @@ async def signup_start(payload: SignupStartRequest, request: Request, db: DB) ->
     return SignupStartOut(
         signup_token=token,
         dev_hint=dev_hint,
-        sms_enabled=sms_auth_configured(),
+        sms_enabled=sms_signup_otp_configured(),
     )
 
 

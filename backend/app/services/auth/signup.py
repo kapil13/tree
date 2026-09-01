@@ -11,7 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import hash_password
 from app.models.user import User
-from app.services.auth.msg91_sender import SmsSendError, send_auth_otp_sms, sms_auth_configured
+from app.services.auth.msg91_sender import (
+    SmsSendError,
+    send_signup_otp_sms,
+    sms_signup_otp_configured,
+)
 from app.services.auth.otp import normalize_phone, otp_dev_hint, phone_placeholder_email
 from app.services.auth.otp_store import (
     check_otp,
@@ -86,13 +90,13 @@ async def start_signup(
             else None,
         },
     )
-    if not sms_auth_configured() and not settings.allow_dev_otp:
+    if not sms_signup_otp_configured() and not settings.allow_dev_otp:
         raise SignupError("sms_not_configured")
 
     dev_code = await issue_otp("signup_phone", token)
-    if sms_auth_configured():
+    if sms_signup_otp_configured():
         try:
-            await send_auth_otp_sms(phone=normalized_phone, code=dev_code)
+            await send_signup_otp_sms(phone=normalized_phone, code=dev_code)
             return token, None
         except SmsSendError as exc:
             if not settings.allow_dev_otp:
@@ -214,13 +218,13 @@ async def start_citizen_fast_signup(
             "citizen_fast": True,
         },
     )
-    if not sms_auth_configured() and not settings.allow_dev_otp:
+    if not sms_signup_otp_configured() and not settings.allow_dev_otp:
         raise SignupError("sms_not_configured")
 
     dev_code = await issue_otp("signup_phone", token)
-    if sms_auth_configured():
+    if sms_signup_otp_configured():
         try:
-            await send_auth_otp_sms(phone=normalized_phone, code=dev_code)
+            await send_signup_otp_sms(phone=normalized_phone, code=dev_code)
             return token, None
         except SmsSendError as exc:
             if not settings.allow_dev_otp:

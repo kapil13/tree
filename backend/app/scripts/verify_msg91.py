@@ -15,7 +15,9 @@ from app.services.auth.msg91_sender import (
     _validate_msg91_mobile,
     msg91_public_config,
     send_auth_otp_sms,
+    send_signup_otp_sms,
     sms_auth_configured,
+    sms_signup_otp_configured,
 )
 from app.services.auth.ses_email_sender import ses_otp_configured
 
@@ -41,9 +43,14 @@ def print_config_report() -> int:
             "set" if settings.msg91_auth_key else "empty",
         ),
         _status_line(
-            "MSG91_OTP_TEMPLATE_ID",
+            "MSG91_OTP_TEMPLATE_ID (login)",
             bool(settings.msg91_otp_template_id),
             settings.msg91_otp_template_id or "empty (recommended for India DLT)",
+        ),
+        _status_line(
+            "MSG91_SIGNUP_OTP_TEMPLATE_ID (signup)",
+            bool(settings.msg91_signup_otp_template_id),
+            settings.msg91_signup_otp_template_id or "empty (required for signup phone OTP)",
         ),
         _status_line(
             "MSG91_SENDER_ID",
@@ -52,6 +59,7 @@ def print_config_report() -> int:
         ),
         _status_line("sms_configured (ready to send)", msg91["sms_configured"]),
         _status_line("sms_template_configured", msg91["sms_template_configured"]),
+        _status_line("sms_signup_template_configured", msg91["sms_signup_template_configured"]),
         _status_line(
             "AUTH_OTP_EMAIL_ENABLED",
             settings.auth_otp_email_enabled,
@@ -72,7 +80,12 @@ def print_config_report() -> int:
         return 1
     if msg91["sms_configured"] and not msg91["sms_template_configured"]:
         print(
-            "\nWARN: MSG91_OTP_TEMPLATE_ID is empty — India DLT may reject OTP sends without a template.",
+            "\nWARN: MSG91_OTP_TEMPLATE_ID is empty — login phone OTP may fail India DLT checks.",
+            file=sys.stderr,
+        )
+    if msg91["sms_configured"] and not msg91["sms_signup_template_configured"]:
+        print(
+            "\nWARN: MSG91_SIGNUP_OTP_TEMPLATE_ID is empty — signup phone OTP will fail until set.",
             file=sys.stderr,
         )
     return 0
@@ -99,22 +112,31 @@ def _validate_test_phone(phone: str) -> str:
     return mobile
 
 
-async def send_test_otp(phone: str) -> int:
-    if not sms_auth_configured():
-        print("ERROR: SMS not configured — run config report first.", file=sys.stderr)
-        return 1
+async def send_test_otp(phone: str, *, signup: bool = False) -> int:
+    if signup:
+        if not sms_signup_otp_configured():
+            print("ERROR: Signup SMS not configured — set MSG91_SIGNUP_OTP_TEMPLATE_ID.", file=sys.stderr)
+            return 1
+        sender = send_signup_otp_sms
+        label = "signup"
+    else:
+        if not sms_auth_configured():
+            print("ERROR: SMS not configured — run config report first.", file=sys.stderr)
+            return 1
+        sender = send_auth_otp_sms
+        label = "login"
     mobile = _validate_test_phone(phone)
     code = os.environ.get("MSG91_VERIFY_OTP", "123456")
-    print(f"Sending test OTP to {mobile} (code={code})...")
+    print(f"Sending test {label} OTP to {mobile} (code={code})...")
     try:
-        sent = await send_auth_otp_sms(phone=phone, code=code)
+        sent = await sender(phone=phone, code=code)
     except SmsSendError as exc:
         print(f"ERROR: MSG91 send failed: {exc.code}", file=sys.stderr)
         return 1
     if sent:
-        print("OK: MSG91 accepted the OTP request (check phone and backend logs for msg91.otp_sent).")
+        print(f"OK: MSG91 accepted the {label} OTP request (check phone and backend logs).")
         return 0
-    print("WARN: send_auth_otp_sms returned False (stub mode).", file=sys.stderr)
+    print(f"WARN: send_{label}_otp_sms returned False (stub mode).", file=sys.stderr)
     return 1
 
 
@@ -123,7 +145,12 @@ def main() -> int:
     parser.add_argument(
         "--send-test",
         metavar="PHONE",
-        help="Send a test OTP to this phone (e.g. 9876543210 or +919876543210)",
+        help="Send a test login OTP to this phone (e.g. 9876543210 or +919876543210)",
+    )
+    parser.add_argument(
+        "--send-signup-test",
+        metavar="PHONE",
+        help="Send a test signup OTP using MSG91_SIGNUP_OTP_TEMPLATE_ID",
     )
     parser.add_argument("--json", action="store_true", help="Print otp-config JSON only")
     args = parser.parse_args()
@@ -148,6 +175,8 @@ def main() -> int:
         return code
     if args.send_test:
         return asyncio.run(send_test_otp(args.send_test))
+    if args.send_signup_test:
+        return asyncio.run(send_test_otp(args.send_signup_test, signup=True))
     return 0
 
 

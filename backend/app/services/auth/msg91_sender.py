@@ -29,6 +29,10 @@ def sms_auth_template_configured() -> bool:
     return bool(sms_auth_configured() and settings.msg91_otp_template_id)
 
 
+def sms_signup_otp_configured() -> bool:
+    return bool(sms_auth_configured() and settings.msg91_signup_otp_template_id)
+
+
 def sms_invites_configured() -> bool:
     return bool(settings.auth_org_invite_sms_enabled and settings.msg91_auth_key)
 
@@ -39,6 +43,7 @@ def msg91_public_config() -> dict[str, bool]:
         "sms_enabled": settings.auth_otp_sms_enabled,
         "sms_configured": sms_auth_configured(),
         "sms_template_configured": sms_auth_template_configured(),
+        "sms_signup_template_configured": sms_signup_otp_configured(),
         "invite_sms_enabled": settings.auth_org_invite_sms_enabled,
         "invite_sms_configured": sms_invites_configured(),
     }
@@ -77,8 +82,13 @@ def _parse_msg91_otp_response(body: str) -> dict:
     return data
 
 
-async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
-    """Send login/signup OTP. Returns True when dispatched, False in dev/stub mode."""
+async def _send_otp_sms(
+    *,
+    phone: str,
+    code: str,
+    template_id: str | None,
+    log_event: str,
+) -> bool:
     if not sms_auth_configured():
         log.info("msg91.otp_stub", phone=_redact_phone(phone))
         return False
@@ -91,8 +101,8 @@ async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
         "otp": code,
         "otp_length": len(code),
     }
-    if settings.msg91_otp_template_id:
-        payload["template_id"] = settings.msg91_otp_template_id
+    if template_id:
+        payload["template_id"] = template_id
     if settings.msg91_sender_id:
         payload["sender"] = settings.msg91_sender_id
 
@@ -105,7 +115,7 @@ async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
         parsed = _parse_msg91_otp_response(res.text)
         request_id = parsed.get("request_id") or parsed.get("requestId")
         log.info(
-            "msg91.otp_sent",
+            log_event,
             phone=_redact_phone(phone),
             mobile_suffix=mobile[-4:],
             request_id=request_id,
@@ -115,6 +125,26 @@ async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
     except httpx.HTTPError as exc:
         log.warning("msg91.otp_http_error", error=str(exc))
         raise SmsSendError("msg91_unreachable") from exc
+
+
+async def send_auth_otp_sms(*, phone: str, code: str) -> bool:
+    """Send login OTP using the login DLT template."""
+    return await _send_otp_sms(
+        phone=phone,
+        code=code,
+        template_id=settings.msg91_otp_template_id,
+        log_event="msg91.login_otp_sent",
+    )
+
+
+async def send_signup_otp_sms(*, phone: str, code: str) -> bool:
+    """Send signup phone OTP using the signup DLT template."""
+    return await _send_otp_sms(
+        phone=phone,
+        code=code,
+        template_id=settings.msg91_signup_otp_template_id,
+        log_event="msg91.signup_otp_sent",
+    )
 
 
 async def send_transactional_sms(*, phone: str, message: str) -> bool:

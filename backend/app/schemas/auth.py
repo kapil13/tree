@@ -129,6 +129,7 @@ class OtpConfigOut(BaseModel):
     sms_enabled: bool = False
     sms_configured: bool = False
     sms_template_configured: bool = False
+    sms_signup_template_configured: bool = False
     email_enabled: bool = False
     email_configured: bool = False
     invite_sms_enabled: bool = False

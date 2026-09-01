@@ -43,7 +43,8 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
 from app.core.config import settings
 print('AUTH_OTP_SMS_ENABLED=', settings.auth_otp_sms_enabled)
 print('MSG91_AUTH_KEY=', 'set' if settings.msg91_auth_key else 'MISSING')
-print('MSG91_OTP_TEMPLATE_ID=', settings.msg91_otp_template_id or 'MISSING')
+print('MSG91_OTP_TEMPLATE_ID (login)=', settings.msg91_otp_template_id or 'MISSING')
+print('MSG91_SIGNUP_OTP_TEMPLATE_ID (signup)=', settings.msg91_signup_otp_template_id or 'MISSING')
 print('MSG91_SENDER_ID=', settings.msg91_sender_id or 'MISSING')
 "
 

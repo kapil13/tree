@@ -14,6 +14,7 @@ async def test_otp_config_exposes_readiness_without_secrets(monkeypatch):
     monkeypatch.setattr(settings, "auth_otp_sms_enabled", True)
     monkeypatch.setattr(settings, "msg91_auth_key", "secret-key")
     monkeypatch.setattr(settings, "msg91_otp_template_id", "tpl-123")
+    monkeypatch.setattr(settings, "msg91_signup_otp_template_id", "signup-tpl-456")
     monkeypatch.setattr(settings, "auth_otp_email_enabled", True)
     monkeypatch.setattr(settings, "resend_api_key", "re_test_key")
     monkeypatch.setattr(settings, "resend_from_email", "no-reply@aranyix.tech")
@@ -28,6 +29,7 @@ async def test_otp_config_exposes_readiness_without_secrets(monkeypatch):
     assert body["sms_enabled"] is True
     assert body["sms_configured"] is True
     assert body["sms_template_configured"] is True
+    assert body["sms_signup_template_configured"] is True
     assert body["email_enabled"] is True
     assert body["email_configured"] is True
     assert "auth_key" not in res.text
