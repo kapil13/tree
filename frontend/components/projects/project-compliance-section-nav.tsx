@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   Bug,
@@ -27,8 +28,8 @@ export type ComplianceSection =
 
 type SectionDef = {
   id: ComplianceSection;
-  label: string;
-  shortLabel: string;
+  labelKey: string;
+  shortLabelKey: string;
   icon: LucideIcon;
   badge?: number;
 };
@@ -40,23 +41,23 @@ export function complianceSectionDefs(
 ): SectionDef[] {
   if (monitoringMode) {
     const sections: SectionDef[] = [
-      { id: "checklist", label: "Monitoring checklist", shortLabel: "Checklist", icon: ClipboardCheck },
+      { id: "checklist", labelKey: "sectionChecklistMonitoring", shortLabelKey: "sectionChecklistShort", icon: ClipboardCheck },
     ];
     if (showPestIntel) {
       sections.push({
         id: "pest_intel",
-        label: "Pest & disease watch",
-        shortLabel: "Pest intel",
+        labelKey: "sectionPestIntel",
+        shortLabelKey: "sectionPestIntelShort",
         icon: Bug,
       });
     }
     sections.push(
-      { id: "exports", label: "Audit exports", shortLabel: "Exports", icon: Download },
-      { id: "share", label: "Verification link", shortLabel: "Share", icon: Link2 },
+      { id: "exports", labelKey: "sectionExports", shortLabelKey: "sectionExportsShort", icon: Download },
+      { id: "share", labelKey: "sectionShare", shortLabelKey: "sectionShareShort", icon: Link2 },
       {
         id: "issues",
-        label: "Open violations",
-        shortLabel: "Issues",
+        labelKey: "sectionIssues",
+        shortLabelKey: "sectionIssuesShort",
         icon: AlertTriangle,
         badge: openViolations > 0 ? openViolations : undefined,
       },
@@ -65,27 +66,27 @@ export function complianceSectionDefs(
   }
 
   const sections: SectionDef[] = [
-    { id: "overview", label: "Readiness overview", shortLabel: "Overview", icon: ListChecks },
-    { id: "checklist", label: "Eligibility checklist", shortLabel: "Checklist", icon: ClipboardCheck },
-    { id: "safeguards", label: "Safeguards & tenure", shortLabel: "Safeguards", icon: Shield },
-    { id: "integrity", label: "Carbon integrity", shortLabel: "Integrity", icon: TrendingDown },
-    { id: "emissions", label: "GHG emissions", shortLabel: "GHG", icon: Wind },
+    { id: "overview", labelKey: "sectionOverview", shortLabelKey: "sectionOverviewShort", icon: ListChecks },
+    { id: "checklist", labelKey: "sectionChecklist", shortLabelKey: "sectionChecklistShort", icon: ClipboardCheck },
+    { id: "safeguards", labelKey: "sectionSafeguards", shortLabelKey: "sectionSafeguardsShort", icon: Shield },
+    { id: "integrity", labelKey: "sectionIntegrity", shortLabelKey: "sectionIntegrityShort", icon: TrendingDown },
+    { id: "emissions", labelKey: "sectionEmissions", shortLabelKey: "sectionEmissionsShort", icon: Wind },
   ];
   if (showPestIntel) {
     sections.push({
       id: "pest_intel",
-      label: "Pest & disease watch",
-      shortLabel: "Pest intel",
+      labelKey: "sectionPestIntel",
+      shortLabelKey: "sectionPestIntelShort",
       icon: Bug,
     });
   }
   sections.push(
-    { id: "exports", label: "Audit exports", shortLabel: "Exports", icon: Download },
-    { id: "share", label: "Verification link", shortLabel: "Share", icon: Link2 },
+    { id: "exports", labelKey: "sectionExports", shortLabelKey: "sectionExportsShort", icon: Download },
+    { id: "share", labelKey: "sectionShare", shortLabelKey: "sectionShareShort", icon: Link2 },
     {
       id: "issues",
-      label: "Open violations",
-      shortLabel: "Issues",
+      labelKey: "sectionIssues",
+      shortLabelKey: "sectionIssuesShort",
       icon: AlertTriangle,
       badge: openViolations > 0 ? openViolations : undefined,
     },
@@ -106,10 +107,11 @@ export function ProjectComplianceSectionNav({
   showPestIntel?: boolean;
   monitoringMode?: boolean;
 }) {
+  const t = useTranslations("projectCompliance");
   const sections = complianceSectionDefs(openViolations, showPestIntel, monitoringMode);
 
   return (
-    <nav aria-label="Compliance sections" className="space-y-3">
+    <nav aria-label={t("sectionsAria")} className="space-y-3">
       {/* Mobile: horizontal scroll */}
       <div
         className="flex gap-1 overflow-x-auto rounded-xl border border-stone-200 bg-stone-100/80 p-1 md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -119,6 +121,8 @@ export function ProjectComplianceSectionNav({
           <SectionTab
             key={item.id}
             item={item}
+            label={t(item.labelKey)}
+            shortLabel={t(item.shortLabelKey)}
             active={active === item.id}
             compact
             onSelect={() => onChange(item.id)}
@@ -135,6 +139,8 @@ export function ProjectComplianceSectionNav({
           <SectionTab
             key={item.id}
             item={item}
+            label={t(item.labelKey)}
+            shortLabel={t(item.shortLabelKey)}
             active={active === item.id}
             onSelect={() => onChange(item.id)}
           />
@@ -146,11 +152,15 @@ export function ProjectComplianceSectionNav({
 
 function SectionTab({
   item,
+  label,
+  shortLabel,
   active,
   compact = false,
   onSelect,
 }: {
   item: SectionDef;
+  label: string;
+  shortLabel: string;
   active: boolean;
   compact?: boolean;
   onSelect: () => void;
@@ -180,7 +190,7 @@ function SectionTab({
         aria-hidden
       />
       <span className={cn("whitespace-nowrap", !compact && "flex-1")}>
-        {compact ? item.shortLabel : item.label}
+        {compact ? shortLabel : label}
       </span>
       {item.badge != null && item.badge > 0 ? (
         <span

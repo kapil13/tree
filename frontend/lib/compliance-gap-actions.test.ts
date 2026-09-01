@@ -34,4 +34,12 @@ describe("compliance-gap-actions", () => {
     expect(action.label).toBe("Complete estate details");
     expect(action.href).toBe("/projects/proj-1/setup?step=3");
   });
+
+  it("deep-links violation gaps to compliance issues section", () => {
+    const action = resolveComplianceGapAction(
+      { item_id: "open_violations", auto_key: "no_open_violations" },
+      ctx,
+    );
+    expect(action.href).toBe("/projects/proj-1/compliance?section=issues");
+  });
 });

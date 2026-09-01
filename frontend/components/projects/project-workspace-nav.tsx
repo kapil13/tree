@@ -9,6 +9,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import {
   getProjectWorkspaceNav,
@@ -26,6 +27,22 @@ const SECTION_ICONS: Record<ProjectWorkspaceSection, LucideIcon> = {
   settings: Settings2,
 };
 
+const NAV_LABEL_KEYS: Record<ProjectWorkspaceSection, string> = {
+  overview: "navOverview",
+  compliance: "navCompliance",
+  credits: "navCredits",
+  team: "navTeam",
+  settings: "navSettings",
+};
+
+const NAV_SHORT_LABEL_KEYS: Record<ProjectWorkspaceSection, string> = {
+  overview: "navOverviewShort",
+  compliance: "navComplianceShort",
+  credits: "navCreditsShort",
+  team: "navTeamShort",
+  settings: "navSettingsShort",
+};
+
 type ProjectWorkspaceNavProps = {
   projectId: string;
   active: ProjectWorkspaceSection;
@@ -39,6 +56,7 @@ export function ProjectWorkspaceNav({
   openViolations = 0,
   monitoringMode = false,
 }: ProjectWorkspaceNavProps) {
+  const t = useTranslations("projectWorkspace");
   const navItems = getProjectWorkspaceNav(monitoringMode);
   return (
     <nav
@@ -57,6 +75,12 @@ export function ProjectWorkspaceNav({
               : projectSecondaryHref(projectId, item.id as ProjectSecondaryTab);
           const Icon = SECTION_ICONS[item.id];
           const showViolationBadge = item.id === "compliance" && openViolations > 0;
+          const labelKey =
+            item.id === "credits" && monitoringMode ? "navCreditsMonitoring" : NAV_LABEL_KEYS[item.id];
+          const shortLabelKey =
+            item.id === "credits" && monitoringMode
+              ? "navCreditsMonitoringShort"
+              : NAV_SHORT_LABEL_KEYS[item.id];
 
           return (
             <Link
@@ -81,8 +105,8 @@ export function ProjectWorkspaceNav({
                 )}
                 aria-hidden
               />
-              <span className="whitespace-nowrap sm:hidden">{item.shortLabel}</span>
-              <span className="hidden whitespace-nowrap sm:inline">{item.label}</span>
+              <span className="whitespace-nowrap sm:hidden">{t(shortLabelKey)}</span>
+              <span className="hidden whitespace-nowrap sm:inline">{t(labelKey)}</span>
               {showViolationBadge && (
                 <span
                   className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-rose-800 ring-1 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:ring-rose-900"

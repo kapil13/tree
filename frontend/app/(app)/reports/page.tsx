@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
@@ -13,27 +14,18 @@ import { ProjectFrameworkExportPanel } from "@/components/reports/project-framew
 import { SbtiFlagExportPanel } from "@/components/reports/sbti-flag-export-panel";
 import { reportsOperationalStatus } from "@/components/dashboard/command-center-shell";
 import { fmtNum } from "@/components/dashboard/format";
-import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
+import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader, SectionNav } from "@/components/ui";
 import { api, errorMessage, plantationFences } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canGenerateReports } from "@/lib/nav-access";
-import { Award, BadgeCheck, Bird, Dna, FileText, Globe2, Leaf, Scale, Target, Trees } from "lucide-react";
-
-type ReportTab =
-  | "standard"
-  | "brsr"
-  | "iso14064"
-  | "tnfd"
-  | "ghg"
-  | "darwin"
-  | "goldStandard"
-  | "reddPlus"
-  | "parisNdc"
-  | "greenCredit"
-  | "etfHandoff"
-  | "sbtiFlag"
-  | "gbf"
-  | "iso14064Org";
+import {
+  FRAMEWORK_REPORT_TABS,
+  parseReportTab,
+  reportTabHref,
+  STANDARD_REPORT_TABS,
+  type ReportTab,
+} from "@/lib/report-tabs";
+import { Award, BadgeCheck, Bird, Dna, FileText, Globe2, Leaf, Trees } from "lucide-react";
 
 const REPORT_TYPES: { value: string; label: string; description: string; needsFence?: boolean }[] = [
   {
@@ -76,6 +68,8 @@ type ReportRow = {
 
 export default function ReportsPage() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const tr = useTranslations("reports");
   const to = useTranslations("opsStatus");
@@ -119,6 +113,53 @@ export default function ReportsPage() {
     failedCount,
     canGenerate,
   });
+
+  useEffect(() => {
+    const requested = parseReportTab(searchParams.get("tab"));
+    if (requested) setTab(requested);
+  }, [searchParams]);
+
+  function selectTab(next: ReportTab) {
+    setTab(next);
+    router.replace(reportTabHref(next), { scroll: false });
+  }
+
+  const standardTabs = STANDARD_REPORT_TABS.map((id) => ({
+    id,
+    label: tr(
+      id === "standard"
+        ? "standardTab"
+        : id === "brsr"
+          ? "brsrTab"
+          : id === "iso14064"
+            ? "iso14064Tab"
+            : id === "tnfd"
+              ? "tnfdTab"
+              : id === "ghg"
+                ? "ghgTab"
+                : "darwinTab",
+    ),
+  }));
+
+  const frameworkTabs = FRAMEWORK_REPORT_TABS.map((id) => ({
+    id,
+    label:
+      id === "goldStandard"
+        ? tr("goldStandardTab")
+        : id === "reddPlus"
+          ? tr("reddPlusTab")
+          : id === "parisNdc"
+            ? tr("parisNdcTab")
+            : id === "greenCredit"
+              ? tr("greenCreditTab")
+              : id === "etfHandoff"
+                ? tr("etfHandoffTab")
+                : id === "sbtiFlag"
+                  ? "SBTi FLAG"
+                  : id === "gbf"
+                    ? "GBF"
+                    : "ISO 14064-1",
+  }));
 
   async function queue() {
     setBusy(true);
@@ -175,59 +216,19 @@ export default function ReportsPage() {
         ]}
       />
 
-      <div className="space-y-2 border-b border-stone-200 pb-2">
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label={tr("title")}>
-          {(
-            [
-              ["standard", tr("standardTab")],
-              ["brsr", tr("brsrTab")],
-              ["iso14064", tr("iso14064Tab")],
-              ["tnfd", tr("tnfdTab")],
-              ["ghg", tr("ghgTab")],
-              ["darwin", tr("darwinTab")],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={tab === id}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                tab === id ? "bg-forest-100 text-forest-900" : "text-stone-600 hover:bg-stone-100"
-              }`}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label={tr("frameworkTabsLabel")}>
-          {(
-            [
-              ["goldStandard", tr("goldStandardTab")],
-              ["reddPlus", tr("reddPlusTab")],
-              ["parisNdc", tr("parisNdcTab")],
-              ["greenCredit", tr("greenCreditTab")],
-              ["etfHandoff", tr("etfHandoffTab")],
-              ["sbtiFlag", "SBTi FLAG"],
-              ["gbf", "GBF"],
-              ["iso14064Org", "ISO 14064-1"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={tab === id}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-                tab === id ? "bg-emerald-100 text-emerald-900" : "text-stone-600 hover:bg-stone-100"
-              }`}
-              onClick={() => setTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="space-y-2 border-b border-stone-200 pb-2 dark:border-stone-800">
+        <SectionNav
+          ariaLabel={tr("title")}
+          items={standardTabs}
+          active={tab}
+          onSelect={(id) => selectTab(id as ReportTab)}
+        />
+        <SectionNav
+          ariaLabel={tr("frameworkTabsLabel")}
+          items={frameworkTabs}
+          active={tab}
+          onSelect={(id) => selectTab(id as ReportTab)}
+        />
       </div>
 
       {tab === "etfHandoff" ? (

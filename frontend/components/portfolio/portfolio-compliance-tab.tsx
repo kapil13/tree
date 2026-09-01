@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ComplianceHubLinks } from "@/components/compliance/compliance-hub-links";
 import { compliance } from "@/lib/api";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
+import { reportTabHref } from "@/lib/report-tabs";
 import { cn } from "@/lib/cn";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 
@@ -49,6 +51,7 @@ export function PortfolioComplianceTab() {
 
   return (
     <div className="space-y-6">
+      <ComplianceHubLinks />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PortfolioKpiCard
           icon={ShieldCheck}
@@ -92,7 +95,7 @@ export function PortfolioComplianceTab() {
           {data.report_links.map((link) => (
             <Link
               key={link.tab}
-              href={`/reports?tab=${link.tab}`}
+              href={reportTabHref(link.tab as Parameters<typeof reportTabHref>[0])}
               className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-700 transition hover:border-forest-200 hover:bg-forest-50 hover:text-forest-800"
             >
               {link.label}

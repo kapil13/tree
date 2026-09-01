@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 import { compliance } from "@/lib/api";
+import { reportTabHref, type ReportTab } from "@/lib/report-tabs";
 import { scopedKey } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
@@ -94,7 +95,7 @@ export function CompliancePortfolioStrip({ className }: { className?: string }) 
         {data.report_links.map((link) => (
           <Link
             key={link.tab}
-            href={`/reports?tab=${link.tab}`}
+            href={reportTabHref(link.tab as ReportTab)}
             className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-600 transition hover:border-forest-200 hover:text-forest-800"
           >
             <FileText className="h-3 w-3 opacity-60" />

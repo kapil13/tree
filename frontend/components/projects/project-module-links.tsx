@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Activity, ClipboardList, Satellite, ShieldCheck } from "lucide-react";
+import { Activity, ClipboardCheck, ClipboardList, Satellite, ShieldCheck } from "lucide-react";
+import { portfolioComplianceHref, projectComplianceHref } from "@/lib/compliance-links";
 import { cn } from "@/lib/cn";
 
 type ProjectModuleLinksProps = {
@@ -28,11 +29,17 @@ export function ProjectModuleLinks({
       description: t("moduleFieldOpsDesc"),
     },
     {
-      href: "/portfolio-health?tab=compliance",
+      href: projectComplianceHref(projectId),
+      icon: ClipboardCheck,
+      label: t("moduleProjectCompliance"),
+      description: t("moduleProjectComplianceDesc"),
+      badge: openViolations > 0 ? openViolations : undefined,
+    },
+    {
+      href: portfolioComplianceHref(),
       icon: ShieldCheck,
       label: t("modulePortfolioCompliance"),
       description: t("modulePortfolioComplianceDesc"),
-      badge: openViolations > 0 ? openViolations : undefined,
     },
     {
       href: satelliteHref,
@@ -55,7 +62,7 @@ export function ProjectModuleLinks({
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{t("moduleLinksTitle")}</p>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{t("moduleLinksDesc")}</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {links.map((link) => {
           const Icon = link.icon;
           return (
