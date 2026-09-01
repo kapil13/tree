@@ -97,9 +97,13 @@ class Settings(BaseSettings):
     expose_metrics: bool | None = None
     # Expose /docs /redoc /openapi.json (default off in staging/production)
     expose_api_docs: bool | None = None
-    # Email OTP — Amazon SES (login, signup, password reset)
+    # Email OTP — Resend (login, signup, password reset)
     auth_otp_email_enabled: bool = False
-    # Gmail API — org invites and program-access notifications only
+    # Resend transactional email (https://resend.com)
+    resend_api_key: str | None = None
+    resend_from_email: str = "no-reply@aranyix.tech"
+    resend_from_name: str = "Aranyix"
+    # Gmail API — legacy fallback for org invites and program-access notifications
     gmail_sender: str | None = None
     google_service_account_json: str | None = None
     # Org invite notifications (independent toggles — enable when keys are ready)

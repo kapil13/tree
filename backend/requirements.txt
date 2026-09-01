@@ -24,6 +24,7 @@ shapely==2.0.6
 pyproj==3.6.1
 numpy==2.0.2
 boto3==1.35.24
+resend==2.6.0
 python-dotenv==1.0.1
 email-validator==2.2.0
 prometheus-fastapi-instrumentator==7.0.0

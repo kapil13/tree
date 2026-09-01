@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify Amazon SES auth email wiring on VPS — config flags + optional live send test.
+# Verify Resend auth email wiring on VPS — config flags + optional live send test.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,7 +20,7 @@ if [[ -n "$SEND_TEST" ]]; then
 fi
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Missing $ENV_FILE — copy from .env.production.example and set SES/AWS keys."
+  echo "Missing $ENV_FILE — copy from .env.production.example and set RESEND_API_KEY."
   exit 1
 fi
 
@@ -35,24 +35,24 @@ OTP_JSON="$(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T bac
 echo "$OTP_JSON" | python3 -m json.tool 2>/dev/null || echo "$OTP_JSON"
 
 echo ""
-echo "==> SES env inside backend container"
+echo "==> Resend env inside backend container"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
   python3 -c "
 from app.core.config import settings
 print('AUTH_OTP_EMAIL_ENABLED=', settings.auth_otp_email_enabled)
-print('SES_SENDER=', settings.ses_sender or 'MISSING')
-print('AWS_ACCESS_KEY_ID=', 'set' if settings.aws_access_key_id else 'MISSING')
-print('AWS_REGION=', settings.aws_region)
+print('RESEND_FROM_EMAIL=', settings.resend_from_email or 'MISSING')
+print('RESEND_API_KEY=', 'set' if (settings.resend_api_key or '').strip() else 'MISSING')
+print('RESEND_FROM_NAME=', settings.resend_from_name)
 "
 
 echo ""
-echo "==> Detailed verify_ses report"
+echo "==> Detailed verify_resend report"
 VERIFY_ARGS=()
 if [[ -n "$SEND_TEST" ]]; then
   VERIFY_ARGS=(--send-test "$SEND_TEST")
 fi
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
-  python3 -m app.scripts.verify_ses "${VERIFY_ARGS[@]}"
+  python3 -m app.scripts.verify_resend "${VERIFY_ARGS[@]}"
 
 echo ""
 echo "Done. Signup email OTP: POST /api/v1/auth/signup/send-email-otp"
