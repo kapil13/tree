@@ -195,7 +195,20 @@ async def transition_project_credit_ledger(
             registry_reference=payload.registry_reference,
             project=project,
         )
-    except ValueError as exc:
+    except Exception as exc:
+        from app.services.integrity.credit_gating import IntegrityGateError
+
+        if isinstance(exc, IntegrityGateError):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "code": exc.code,
+                    "message": "Project integrity fusion gate not met for this transition.",
+                    "integrity_fusion": exc.summary,
+                },
+            ) from exc
+        if not isinstance(exc, ValueError):
+            raise
         code = str(exc)
         if code.startswith("invalid_transition"):
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code) from exc

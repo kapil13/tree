@@ -1300,6 +1300,49 @@ async def get_project_carbon_integrity(
     return await build_carbon_integrity_envelope(db, project)
 
 
+@router.get("/{project_id}/integrity-fusion")
+async def get_project_integrity_fusion(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    from app.services.integrity.credit_gating import integrity_gate_detail
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await integrity_gate_detail(db, project.id)
+
+
+@router.post("/{project_id}/integrity-fusion/refresh")
+async def refresh_project_integrity_fusion(
+    project_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> dict:
+    from app.services.integrity.project_refresh import refresh_project_integrity
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    result = await refresh_project_integrity(db, project.id)
+    await record_audit(
+        db,
+        actor=user,
+        action="integrity_fusion.refresh",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"refreshed_count": result.get("refreshed_count", 0)},
+    )
+    await db.commit()
+    return result
+
+
 @router.get("/{project_id}/leakage-worksheet")
 async def export_leakage_worksheet(
     project_id: uuid.UUID,
