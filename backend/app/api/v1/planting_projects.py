@@ -277,6 +277,42 @@ async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
     return FieldOpsSummaryOut.model_validate(await build_field_ops_summary(db, user))
 
 
+@router.post("/integrity-fusion/backfill")
+async def backfill_integrity_fusion_projects(
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+    limit: int = Query(50, ge=1, le=500),
+    async_: bool = Query(False, alias="async"),
+) -> dict:
+    from app.services.integrity.project_refresh import backfill_integrity_fusion
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import backfill_integrity_fusion as backfill_task
+
+    if user.role != "admin" and user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    if async_:
+        task_id = try_enqueue(backfill_task, None, limit)
+        return {"status": "queued", "task_id": task_id, "limit_projects": limit}
+
+    result = await backfill_integrity_fusion(db, limit_projects=limit)
+    await record_audit(
+        db,
+        actor=user,
+        action="integrity_fusion.backfill",
+        resource_type="planting_project",
+        resource_id=user.organization_id,
+        request=request,
+        diff={
+            "projects_processed": result.get("projects_processed", 0),
+            "trees_refreshed": result.get("trees_refreshed", 0),
+        },
+    )
+    await db.commit()
+    return result
+
+
 @router.post("/{project_id}/satellite-scan")
 async def trigger_project_satellite_scan(
     project_id: uuid.UUID,
@@ -1320,14 +1356,21 @@ async def refresh_project_integrity_fusion(
     request: Request,
     user: WriteAccess,
     db: DB,
+    async_: bool = Query(False, alias="async"),
 ) -> dict:
     from app.services.integrity.project_refresh import refresh_project_integrity
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import refresh_project_integrity_fusion as refresh_task
 
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     if not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    if async_:
+        task_id = try_enqueue(refresh_task, str(project.id))
+        return {"status": "queued", "task_id": task_id, "project_id": str(project.id)}
 
     result = await refresh_project_integrity(db, project.id)
     await record_audit(

@@ -508,3 +508,47 @@ def publish_daily_audit_root() -> dict:
             return await run_daily_audit_root_publish(db)
 
     return _execute_recorded("publish_daily_audit_root", _run)
+
+
+@celery_app.task(name="app.workers.tasks.refresh_project_integrity_fusion")
+def refresh_project_integrity_fusion(project_id: str) -> dict:
+    log.info("worker.refresh_project_integrity_fusion", project_id=project_id)
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.integrity.project_refresh import refresh_project_integrity
+
+        async with AsyncSessionLocal() as db:
+            result = await refresh_project_integrity(db, uuid.UUID(project_id))
+            await db.commit()
+            return result
+
+    return _execute_recorded("refresh_project_integrity_fusion", _run)
+
+
+@celery_app.task(name="app.workers.tasks.backfill_integrity_fusion")
+def backfill_integrity_fusion(
+    project_id: str | None = None,
+    limit_projects: int = 50,
+) -> dict:
+    log.info(
+        "worker.backfill_integrity_fusion",
+        project_id=project_id,
+        limit_projects=limit_projects,
+    )
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.integrity.project_refresh import backfill_integrity_fusion as run_backfill
+
+        async with AsyncSessionLocal() as db:
+            project_ids = [uuid.UUID(project_id)] if project_id else None
+            result = await run_backfill(
+                db,
+                project_ids=project_ids,
+                limit_projects=limit_projects if project_ids is None else None,
+            )
+            await db.commit()
+            return result
+
+    return _execute_recorded("backfill_integrity_fusion", _run)
