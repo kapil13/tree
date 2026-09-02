@@ -265,9 +265,16 @@ async def register_claim(
             scheme_code=payload.scheme_code,
             claim_type=payload.claim_type,
             exclusive=payload.exclusive,
+            require_credit_eligible=True,
         )
     except ValueError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        code = str(exc)
+        if code.startswith("registry_gate_failed"):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": code, "message": "Tree is not credit-eligible for registry claims."},
+            ) from exc
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=code) from exc
     except IntegrityError as exc:
         await db.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, detail="exclusive_claim_conflict") from exc

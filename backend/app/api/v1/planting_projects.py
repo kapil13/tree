@@ -1343,6 +1343,20 @@ async def refresh_project_integrity_fusion(
     return result
 
 
+@router.get("/{project_id}/registry-readiness")
+async def get_project_registry_readiness(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> dict:
+    from app.services.integrity.registry_integration import registry_readiness
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    return await registry_readiness(db, project.id)
+
+
 @router.get("/{project_id}/leakage-worksheet")
 async def export_leakage_worksheet(
     project_id: uuid.UUID,

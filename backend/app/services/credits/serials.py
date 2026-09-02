@@ -13,8 +13,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.models.claim_registry import ClaimRegistry
 from app.models.credit_ledger import CreditLedgerEvent, ProjectCreditLedger
 from app.models.credit_serial import CreditSerial
 from app.models.credit_transfer import CreditTransfer
@@ -55,6 +55,7 @@ async def mint_serial_for_issue(
     ledger: ProjectCreditLedger,
     ledger_event: CreditLedgerEvent,
     project: PlantingProject,
+    integrity_snapshot: dict[str, Any] | None = None,
 ) -> CreditSerial:
     vintage = vintage_year_for_ledger(ledger)
     state = _state_code(project)
@@ -67,6 +68,7 @@ async def mint_serial_for_issue(
         vintage_year=vintage,
         tco2e_amount=float(ledger.issued_credits_tco2e or ledger.net_credits_tco2e),
         status="available",
+        integrity_snapshot=integrity_snapshot,
     )
     db.add(serial)
     await db.flush()
@@ -78,23 +80,44 @@ async def register_project_tree_claims(
     *,
     project: PlantingProject,
     ledger_event: CreditLedgerEvent,
-) -> list[ClaimRegistry]:
+) -> dict[str, Any]:
     if not project.scheme_code:
-        return []
+        return {"registered": [], "skipped": [], "skipped_details": []}
+
     trees_res = await db.execute(
-        select(Tree).where(Tree.project_id == project.id, Tree.status != "removed")
+        select(Tree)
+        .where(Tree.project_id == project.id, Tree.status != "removed")
+        .options(selectinload(Tree.risk_score))
     )
     trees = list(trees_res.scalars().all())
-    claims: list[ClaimRegistry] = []
+    registered: list[str] = []
+    skipped: list[str] = []
+    skipped_details: list[dict[str, Any]] = []
     for tree in trees:
-        claim = await register_tree_claim(
+        risk = tree.risk_score
+        if risk is None or not risk.credit_eligible:
+            skipped.append(tree.public_code)
+            skipped_details.append(
+                {
+                    "public_code": tree.public_code,
+                    "fusion_score": float(risk.fusion_score) if risk and risk.fusion_score else None,
+                    "reason": "not_credit_eligible",
+                }
+            )
+            continue
+        await register_tree_claim(
             db,
             tree_id=tree.id,
             scheme_code=project.scheme_code,
             ledger_event_id=ledger_event.id,
+            require_credit_eligible=True,
         )
-        claims.append(claim)
-    return claims
+        registered.append(tree.public_code)
+    return {
+        "registered": registered,
+        "skipped": skipped,
+        "skipped_details": skipped_details,
+    }
 
 
 async def retire_serial(
@@ -173,6 +196,7 @@ def serial_to_dict(serial: CreditSerial) -> dict[str, Any]:
         "retirement_reason": serial.retirement_reason,
         "paris_article6": serial.paris_article6,
         "corresponding_adjustment_ref": serial.corresponding_adjustment_ref,
+        "integrity_snapshot": serial.integrity_snapshot or {},
         "created_at": serial.created_at.isoformat(),
     }
 

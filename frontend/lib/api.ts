@@ -1563,6 +1563,11 @@ export const plantingProjects = {
       )
     ).data;
   },
+  async registryReadiness(projectId: string) {
+    return (
+      await api.get<RegistryReadiness>(`/v1/planting-projects/${projectId}/registry-readiness`)
+    ).data;
+  },
   async exportLeakageWorksheet(projectId: string) {
     const response = await api.get(
       `/v1/planting-projects/${projectId}/leakage-worksheet`,
@@ -2833,6 +2838,21 @@ export const bioacoustic = {
   },
 };
 
+export type RegistryReadiness = {
+  tree_count: number;
+  credit_eligible_count: number;
+  audit_ready_count: number;
+  eligible_pct: number;
+  audit_ready_pct: number;
+  avg_fusion_score: number | null;
+  verified_ready: boolean;
+  issued_ready: boolean;
+  claimable_tree_count: number;
+  registry_issue_ready: boolean;
+  blocking_trees: IntegrityFusionDetail["blocking_trees"];
+  message: string;
+};
+
 export type CreditLedgerStatus = "estimated" | "verified" | "buffered" | "issued";
 
 export type IntegrityFusionDetail = {
@@ -2844,6 +2864,8 @@ export type IntegrityFusionDetail = {
   avg_fusion_score: number | null;
   verified_ready: boolean;
   issued_ready: boolean;
+  claimable_tree_count?: number;
+  registry_issue_ready?: boolean;
   verified_requirements: { min_eligible_pct: number; min_avg_fusion: number };
   issued_requirements: { min_audit_ready_pct: number; min_avg_fusion: number };
   blocking_trees: Array<{
@@ -2904,6 +2926,7 @@ export type CreditLedger = {
     status: string;
     beneficiary?: string | null;
     retired_at?: string | null;
+    integrity_snapshot?: Record<string, unknown>;
   }>;
 };
 

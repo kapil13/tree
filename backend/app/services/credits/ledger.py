@@ -247,8 +247,16 @@ async def transition_ledger_status(
 
     if to_status == "issued" and project is not None:
         from app.services.credits.serials import mint_serial_for_issue, register_project_tree_claims
+        from app.services.integrity.registry_integration import build_issue_integrity_snapshot
 
-        await mint_serial_for_issue(db, ledger=ledger, ledger_event=event, project=project)
+        snapshot = await build_issue_integrity_snapshot(db, project.id)
+        await mint_serial_for_issue(
+            db,
+            ledger=ledger,
+            ledger_event=event,
+            project=project,
+            integrity_snapshot=snapshot,
+        )
         await register_project_tree_claims(db, project=project, ledger_event=event)
 
     return ledger

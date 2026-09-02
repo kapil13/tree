@@ -72,6 +72,15 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
             <p className="text-xs text-stone-500">
               Vintage {serial.vintage_year} · {Number(serial.tco2e_amount).toFixed(4)} tCO₂e
             </p>
+            {serial.integrity_snapshot &&
+              typeof serial.integrity_snapshot.avg_fusion_score === "number" && (
+                <p className="text-xs text-stone-600">
+                  Issued at avg fusion {Math.round(serial.integrity_snapshot.avg_fusion_score)}/100
+                  {" · "}
+                  {String(serial.integrity_snapshot.credit_eligible_count ?? "—")}/
+                  {String(serial.integrity_snapshot.tree_count ?? "—")} trees eligible
+                </p>
+              )}
             {serial.status === "available" && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {activeSerial === serial.id ? (
