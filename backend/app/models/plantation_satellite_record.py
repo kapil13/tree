@@ -34,6 +34,7 @@ class PlantationSatelliteRecord(UUIDPKMixin, Base):
     change_vs_baseline: Mapped[float | None] = mapped_column(Numeric(6, 4))
     thumbnail_s3_key: Mapped[str | None] = mapped_column(String(1024))
     raw_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    indices: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False

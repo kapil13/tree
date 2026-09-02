@@ -136,9 +136,14 @@ async def scan_and_persist_work_area(
         evi_mean=sample.evi_mean,
         presence_confirmed=sample.presence_confirmed,
         change_vs_baseline=change,
+        indices=sample.indices,
     )
     db.add(rec)
     fence.last_satellite_at = datetime.now(UTC)
+    meta = dict(fence.metadata_ or {})
+    if sample.indices and not meta.get("baseline_indices"):
+        meta["baseline_indices"] = sample.indices
+        fence.metadata_ = meta
     await db.flush()
 
     if change is not None and change <= NDVI_DEGRADATION_THRESHOLD:

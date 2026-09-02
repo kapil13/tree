@@ -29,6 +29,9 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     species_text: Mapped[str | None] = mapped_column(String(255))
 
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    verification_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="registered"
+    )
     planted_at: Mapped[date | None] = mapped_column(Date)
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
@@ -91,6 +94,12 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
         back_populates="tree",
         cascade="all, delete-orphan",
         order_by="TreeMeasurement.measured_at.desc()",
+    )
+    risk_score = relationship(
+        "TreeRiskScore",
+        back_populates="tree",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     __table_args__ = (

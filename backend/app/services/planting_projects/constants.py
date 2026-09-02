@@ -27,6 +27,7 @@ ViolationType = Literal[
     "outside_boundary",
     "work_area_required",
     "spacing_too_close",
+    "duplicate_coordinate",
     "gps_accuracy_poor",
     "species_not_allowed",
     "density_out_of_range",

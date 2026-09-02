@@ -17,7 +17,6 @@ from app.models.tree import Tree
 from app.services.geo import chainage_km_along_line
 from app.services.planting_projects.constants import ComplianceMode
 
-
 @dataclass
 class ComplianceIssue:
     violation_type: str
@@ -192,6 +191,7 @@ async def evaluate_tree_placement(
     photo_count: int,
     metadata: dict[str, Any] | None = None,
     exclude_tree_id: uuid.UUID | None = None,
+    program_code: str | None = None,
 ) -> ComplianceResult:
     issues: list[ComplianceIssue] = []
     metadata = dict(metadata or {})
@@ -227,6 +227,33 @@ async def evaluate_tree_placement(
             )
         )
 
+    # Phase 0: block duplicate coordinates within 5 m in the same work area
+    min_separation = float(rules.get("min_separation_m", 5.0))
+    spacing = rules.get("spacing_m") or {}
+    min_spacing = spacing.get("min")
+    warn_below = spacing.get("warn_below", min_spacing)
+    nearest: float | None = None
+    if min_separation is not None or min_spacing is not None:
+        nearest = await nearest_tree_distance_m(
+            db,
+            work_area_id=work_area.id,
+            lon=longitude,
+            lat=latitude,
+            exclude_tree_id=exclude_tree_id,
+        )
+    if nearest is not None and nearest < min_separation:
+        issues.append(
+            ComplianceIssue(
+                "duplicate_coordinate",
+                _issue_severity(compliance_mode),
+                (
+                    f"Another tree is {nearest:.1f} m away; "
+                    f"minimum separation is {min_separation:.0f} m."
+                ),
+                {"nearest_m": nearest, "min_separation_m": min_separation},
+            )
+        )
+
     max_acc = rules.get("max_gps_accuracy_m")
     if max_acc is not None and accuracy_m is not None and accuracy_m > float(max_acc):
         issues.append(
@@ -237,37 +264,41 @@ async def evaluate_tree_placement(
                 {"accuracy_m": accuracy_m, "max_gps_accuracy_m": max_acc},
             )
         )
-
-    spacing = rules.get("spacing_m") or {}
-    min_spacing = spacing.get("min")
-    warn_below = spacing.get("warn_below", min_spacing)
-    if min_spacing is not None:
-        nearest = await nearest_tree_distance_m(
-            db,
-            work_area_id=work_area.id,
-            lon=longitude,
-            lat=latitude,
-            exclude_tree_id=exclude_tree_id,
+    elif (
+        program_code in ("government_nhai", "corporate_esg")
+        and compliance_mode == "strict"
+        and accuracy_m is not None
+        and accuracy_m > 20.0
+        and (max_acc is None or float(max_acc) > 20.0)
+    ):
+        issues.append(
+            ComplianceIssue(
+                "gps_accuracy_poor",
+                _issue_severity(compliance_mode),
+                f"GPS accuracy {accuracy_m:.1f} m exceeds strict program limit of 20 m.",
+                {"accuracy_m": accuracy_m, "max_gps_accuracy_m": 20.0},
+            )
         )
-        if nearest is not None:
-            if nearest < float(min_spacing):
-                issues.append(
-                    ComplianceIssue(
-                        "spacing_too_close",
-                        _issue_severity(compliance_mode),
-                        f"Nearest tree is {nearest:.1f} m away; minimum spacing is {min_spacing} m.",
-                        {"nearest_m": nearest, "min_spacing_m": min_spacing},
-                    )
+
+    if min_spacing is not None and nearest is not None:
+        if nearest < float(min_spacing):
+            issues.append(
+                ComplianceIssue(
+                    "spacing_too_close",
+                    _issue_severity(compliance_mode),
+                    f"Nearest tree is {nearest:.1f} m away; minimum spacing is {min_spacing} m.",
+                    {"nearest_m": nearest, "min_spacing_m": min_spacing},
                 )
-            elif warn_below is not None and nearest < float(warn_below):
-                issues.append(
-                    ComplianceIssue(
-                        "spacing_too_close",
-                        "warn",
-                        f"Nearest tree is {nearest:.1f} m away; recommended spacing is {min_spacing} m.",
-                        {"nearest_m": nearest, "min_spacing_m": min_spacing},
-                    )
+            )
+        elif warn_below is not None and nearest < float(warn_below):
+            issues.append(
+                ComplianceIssue(
+                    "spacing_too_close",
+                    "warn",
+                    f"Nearest tree is {nearest:.1f} m away; recommended spacing is {min_spacing} m.",
+                    {"nearest_m": nearest, "min_spacing_m": min_spacing},
                 )
+            )
 
     allowed_species = rules.get("allowed_species")
     effective_species = species_text

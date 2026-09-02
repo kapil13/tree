@@ -35,6 +35,47 @@ function evaluatePixel(samples) {
 }
 """
 
+MULTI_INDEX_EVALSCRIPT = """//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B02", "B03", "B04", "B08", "B11", "SCL", "dataMask"] }],
+    output: [
+      { id: "ndvi", bands: 1 },
+      { id: "evi", bands: 1 },
+      { id: "savi", bands: 1 },
+      { id: "ndmi", bands: 1 },
+      { id: "ndwi", bands: 1 },
+      { id: "bsi", bands: 1 },
+      { id: "dataMask", bands: 1 }
+    ]
+  };
+}
+function isValid(samples) {
+  if (!samples.dataMask) return 0;
+  if (samples.B08 + samples.B04 == 0) return 0;
+  if (samples.SCL == 6 || samples.SCL == 8 || samples.SCL == 9 || samples.SCL == 10) return 0;
+  return 1;
+}
+function evaluatePixel(samples) {
+  var valid = isValid(samples);
+  var ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
+  var evi = 2.5 * (samples.B08 - samples.B04) / (samples.B08 + 6 * samples.B04 - 7.5 * samples.B02 + 1);
+  var savi = 1.5 * (samples.B08 - samples.B04) / (samples.B08 + samples.B04 + 0.5);
+  var ndmi = (samples.B08 - samples.B11) / (samples.B08 + samples.B11);
+  var ndwi = (samples.B03 - samples.B08) / (samples.B03 + samples.B08);
+  var bsi = ((samples.B11 + samples.B04) - (samples.B08 + samples.B02)) / ((samples.B11 + samples.B04) + (samples.B08 + samples.B02));
+  return {
+    ndvi: [ndvi],
+    evi: [evi],
+    savi: [savi],
+    ndmi: [ndmi],
+    ndwi: [ndwi],
+    bsi: [bsi],
+    dataMask: [samples.dataMask * valid]
+  };
+}
+"""
+
 NDVI_IMAGE_EVALSCRIPT = """//VERSION=3
 function setup() {
   return {
@@ -167,6 +208,35 @@ def _band_mean_from_entry(entry: dict[str, Any], output_id: str) -> float | None
     return float(mean)
 
 
+def _mask_sample_count_from_entry(entry: dict[str, Any]) -> float | None:
+    try:
+        bands = entry["outputs"]["dataMask"]["bands"]["B0"]["stats"]
+    except (KeyError, TypeError):
+        return None
+    count = bands.get("sampleCount")
+    if count is None:
+        return None
+    return float(count)
+
+
+def _multi_index_from_entry(entry: dict[str, Any]) -> dict[str, float] | None:
+    index_ids = ("ndvi", "evi", "savi", "ndmi", "ndwi", "bsi")
+    out: dict[str, float] = {}
+    for idx in index_ids:
+        mean = _band_mean_from_entry(entry, idx)
+        if mean is None:
+            return None
+        out[f"{idx}_mean"] = round(mean, 4)
+    valid_count = _mask_sample_count_from_entry(entry)
+    if valid_count is not None:
+        out["valid_pixel_count"] = valid_count
+        out["valid_pixel_pct"] = round(min(100.0, valid_count), 2)
+    out["min"] = out["ndvi_mean"]
+    out["max"] = out["ndvi_mean"]
+    out["mean"] = out["ndvi_mean"]
+    return out
+
+
 def _linear_to_db(linear: float | None) -> float | None:
     if linear is None or linear <= 0:
         return None
@@ -229,6 +299,7 @@ class SentinelHubClient:
         time_from: datetime,
         time_to: datetime,
         interval: str,
+        evalscript: str = NDVI_EVALSCRIPT,
     ) -> dict[str, Any]:
         res = resolution_degrees(_bounds_centroid_lat(bounds))
         return {
@@ -250,7 +321,7 @@ class SentinelHubClient:
                     "to": time_to.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 },
                 "aggregationInterval": {"of": interval},
-                "evalscript": NDVI_EVALSCRIPT,
+                "evalscript": evalscript,
                 "resx": res,
                 "resy": res,
             },
@@ -263,10 +334,15 @@ class SentinelHubClient:
         time_from: datetime,
         time_to: datetime,
         interval: str = "P1M",
+        evalscript: str = NDVI_EVALSCRIPT,
     ) -> list[dict[str, Any]]:
         token = await self._get_token()
         body = self._build_statistics_request(
-            bounds, time_from=time_from, time_to=time_to, interval=interval
+            bounds,
+            time_from=time_from,
+            time_to=time_to,
+            interval=interval,
+            evalscript=evalscript,
         )
         async with httpx.AsyncClient(timeout=90.0) as client:
             resp = await client.post(
@@ -326,6 +402,35 @@ class SentinelHubClient:
         candidates: list[tuple[datetime, dict[str, float]]] = []
         for entry in entries:
             stats = _stats_from_entry(entry)
+            if not stats:
+                continue
+            interval = entry.get("interval") or {}
+            ts_raw = interval.get("from") or interval.get("to")
+            if not ts_raw:
+                continue
+            candidates.append((_parse_iso(ts_raw), stats))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: x[0])
+        return candidates[-1]
+
+    async def fetch_polygon_latest_multi_index(
+        self, polygon_coords: list[list[float]], *, when: datetime | None = None
+    ) -> tuple[datetime, dict[str, float]] | None:
+        anchor = when or datetime.now(UTC)
+        time_from = anchor - timedelta(days=45)
+        time_to = anchor + timedelta(days=1)
+        bounds = self._bounds_from_polygon(polygon_coords)
+        entries = await self.fetch_statistics(
+            bounds,
+            time_from=time_from,
+            time_to=time_to,
+            interval="P1D",
+            evalscript=MULTI_INDEX_EVALSCRIPT,
+        )
+        candidates: list[tuple[datetime, dict[str, float]]] = []
+        for entry in entries:
+            stats = _multi_index_from_entry(entry)
             if not stats:
                 continue
             interval = entry.get("interval") or {}

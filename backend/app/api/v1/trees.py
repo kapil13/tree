@@ -30,6 +30,7 @@ from app.schemas.tree import (
     TreePassport,
     TreeRegeotag,
     TreeRegeotagOut,
+    TreeRiskOut,
     TreeUpdate,
 )
 from app.schemas.tree_measurement import (
@@ -54,6 +55,14 @@ from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.registration_context import merge_project_into_tree_metadata
 from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
+from app.services.integrity.image_loader import load_exif_for_upload_key
+from app.services.integrity.tree_risk import (
+    apply_exif_to_image,
+    assess_coordinate_duplicate,
+    assess_from_registration,
+    persist_tree_risk_score,
+    resolve_verification_status,
+)
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
 from app.services.trees.measurements import create_measurement, list_measurements
@@ -96,6 +105,22 @@ def _image_out(img: TreeImage) -> TreeImageOut:
         cdn_url=cdn_url,
         is_primary=img.is_primary,
         created_at=img.created_at,
+        taken_at=img.taken_at,
+    )
+
+
+def _risk_out(tree: Tree) -> TreeRiskOut | None:
+    score = tree.risk_score
+    if score is None:
+        return None
+    return TreeRiskOut(
+        gps_photo_match=bool(score.gps_photo_match),
+        duplicate_photo=bool(score.duplicate_photo),
+        duplicate_coordinate=bool(score.duplicate_coordinate),
+        ai_confidence_low=bool(score.ai_confidence_low),
+        regeotag_mismatch=bool(score.regeotag_mismatch),
+        composite_risk=float(score.composite_risk or 0),
+        details=score.details or {},
     )
 
 
@@ -123,6 +148,7 @@ def _to_out(tree: Tree) -> TreeOut:
         species_id=tree.species_id,
         species_text=tree.species_text,
         status=tree.status,
+        verification_status=tree.verification_status,
         planted_at=tree.planted_at,
         registered_at=tree.registered_at,
         latitude=latitude,
@@ -139,6 +165,7 @@ def _to_out(tree: Tree) -> TreeOut:
         last_satellite_at=tree.last_satellite_at,
         metadata=tree.metadata_ or {},
         images=images,
+        risk_score=_risk_out(tree),
         plantation_id=tree.plantation_id,
         project_id=tree.project_id,
         last_geotag_at=tree.last_geotag_at,
@@ -251,6 +278,7 @@ async def create_tree(
         species_id=core_values.get("species_id"),
         photo_count=len(payload.photo_keys),
         metadata=metadata,
+        program_code=program.code,
     )
 
     if not compliance.passed:
@@ -315,15 +343,46 @@ async def create_tree(
             tree_id=tree.id,
         )
 
+    primary_exif = None
+    image_rows: list[TreeImage] = []
     for idx, key in enumerate(payload.photo_keys):
-        db.add(
-            TreeImage(
-                tree_id=tree.id,
-                s3_key=key,
-                is_primary=(idx == 0),
-                uploaded_by=user.id,
-            )
+        exif = load_exif_for_upload_key(key) if idx == 0 else None
+        if idx == 0:
+            primary_exif = exif
+        img = TreeImage(
+            tree_id=tree.id,
+            s3_key=key,
+            is_primary=(idx == 0),
+            uploaded_by=user.id,
         )
+        if exif is not None:
+            apply_exif_to_image(img, exif)
+        image_rows.append(img)
+        db.add(img)
+    await db.flush()
+
+    dup_coord, nearest_m = await assess_coordinate_duplicate(
+        db,
+        work_area_id=work_area_id,
+        lat=float(core_values["latitude"]),
+        lon=float(core_values["longitude"]),
+        exclude_tree_id=tree.id,
+    )
+    assessment = assess_from_registration(
+        tree_lat=float(core_values["latitude"]),
+        tree_lon=float(core_values["longitude"]),
+        accuracy_m=core_values.get("accuracy_m"),
+        compliance_mode=compliance_mode,  # type: ignore[arg-type]
+        program_code=program.code,
+        rules_max_accuracy_m=float(rules["max_gps_accuracy_m"])
+        if rules.get("max_gps_accuracy_m") is not None
+        else None,
+        duplicate_coordinate=dup_coord,
+        nearest_m=nearest_m,
+        primary_exif=primary_exif,
+    )
+    tree.verification_status = resolve_verification_status(assessment)
+    await persist_tree_risk_score(db, tree=tree, assessment=assessment)
 
     initial = payload.initial_measurement or TreeInitialMeasurement()
     photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
@@ -364,7 +423,8 @@ async def create_tree(
 
         await record_tree_created(db, user)
     await db.commit()
-    await db.refresh(tree, attribute_names=["planting_program"])
+    await db.refresh(tree, attribute_names=["planting_program", "risk_score"])
+    await db.refresh(tree, attribute_names=["images"])
     return _to_out(tree)
 
 
