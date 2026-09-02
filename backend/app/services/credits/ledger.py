@@ -122,7 +122,13 @@ async def sync_project_ledger(
     project: PlantingProject,
     *,
     methodology: MethodologyCode = "VERRA_VM0047",
+    refresh_integrity: bool = True,
 ) -> ProjectCreditLedger:
+    if refresh_integrity:
+        from app.services.integrity.project_refresh import maybe_refresh_integrity_before_ledger
+
+        await maybe_refresh_integrity_before_ledger(db, project, refresh_integrity=True)
+
     trees_res = await db.execute(
         select(Tree).where(Tree.project_id == project.id, Tree.status != "removed")
     )

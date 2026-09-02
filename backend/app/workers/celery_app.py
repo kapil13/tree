@@ -35,6 +35,8 @@ celery_app.conf.update(
         "app.workers.tasks.weekly_sar_integrity_watch": {"queue": "satellite"},
         "app.workers.tasks.daily_sar_sweep_health": {"queue": "satellite"},
         "app.workers.tasks.recalc_carbon": {"queue": "carbon"},
+        "app.workers.tasks.refresh_project_integrity_fusion": {"queue": "carbon"},
+        "app.workers.tasks.backfill_integrity_fusion": {"queue": "carbon"},
         "app.workers.tasks.send_notification": {"queue": "notifications"},
         "app.workers.tasks.deliver_webhook": {"queue": "notifications"},
         "app.workers.tasks.run_bioacoustic_analysis": {"queue": "bioacoustic"},
@@ -87,6 +89,11 @@ celery_app.conf.update(
         "daily-audit-root-publish": {
             "task": "app.workers.tasks.publish_daily_audit_root",
             "schedule": crontab(hour="0", minute="5"),
+        },
+        "nightly-integrity-fusion-backfill": {
+            "task": "app.workers.tasks.backfill_integrity_fusion",
+            "schedule": crontab(hour="3", minute="45"),
+            "kwargs": {"limit_projects": 50},
         },
     },
 )
