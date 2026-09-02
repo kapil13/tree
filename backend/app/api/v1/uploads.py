@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.api.v1.deps import DB, WriteAccess
 from app.schemas.bioacoustic import PresignUploadRequest, PresignUploadResponse

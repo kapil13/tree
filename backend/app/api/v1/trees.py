@@ -40,6 +40,14 @@ from app.schemas.tree_measurement import (
 )
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
+from app.services.integrity.image_loader import load_exif_for_upload_key
+from app.services.integrity.tree_risk import (
+    apply_exif_to_image,
+    assess_coordinate_duplicate,
+    assess_from_registration,
+    persist_tree_risk_score,
+    resolve_verification_status,
+)
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
     get_program_by_code,
@@ -55,14 +63,6 @@ from app.services.planting_projects.constants import PROGRAM_DEFAULT_COMPLIANCE
 from app.services.planting_projects.registration_context import merge_project_into_tree_metadata
 from app.services.planting_projects.rule_engine import get_effective_rules, resolve_compliance_mode
 from app.services.planting_projects.service import get_active_standard
-from app.services.integrity.image_loader import load_exif_for_upload_key
-from app.services.integrity.tree_risk import (
-    apply_exif_to_image,
-    assess_coordinate_duplicate,
-    assess_from_registration,
-    persist_tree_risk_score,
-    resolve_verification_status,
-)
 from app.services.storage import get_storage
 from app.services.storage.key_ownership import assert_owned_upload_key
 from app.services.trees.measurements import create_measurement, list_measurements

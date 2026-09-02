@@ -94,7 +94,7 @@ def extract_exif_from_bytes(data: bytes) -> ExifExtract | None:
                     continue
                 if tag in ("DateTimeOriginal", "DateTime") and isinstance(value, str):
                     taken_at = _parse_exif_datetime(value) or taken_at
-                if isinstance(value, (str, int, float)):
+                if isinstance(value, str | int | float):
                     raw[str(tag)] = value
             gps = _parse_gps_info(gps_info) if gps_info else None
             return ExifExtract(

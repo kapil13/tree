@@ -17,6 +17,7 @@ from app.models.tree import Tree
 from app.services.geo import chainage_km_along_line
 from app.services.planting_projects.constants import ComplianceMode
 
+
 @dataclass
 class ComplianceIssue:
     violation_type: str
