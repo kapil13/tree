@@ -222,6 +222,11 @@ async def transition_ledger_status(
     if to_status not in allowed:
         raise ValueError(f"invalid_transition:{from_status}->{to_status}")
 
+    if to_status in ("verified", "issued"):
+        from app.services.integrity.credit_gating import assert_credit_transition_allowed
+
+        await assert_credit_transition_allowed(db, ledger.project_id, to_status=to_status)
+
     if to_status == "issued":
         if not registry_reference or not registry_reference.strip():
             raise ValueError("registry_reference_required")

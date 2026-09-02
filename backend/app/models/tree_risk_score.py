@@ -26,6 +26,11 @@ class TreeRiskScore(UUIDPKMixin, TimestampMixin, Base):
     ai_confidence_low: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     regeotag_mismatch: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     composite_risk: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False, default=0)
+    field_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    satellite_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    fusion_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    credit_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    fusion_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
     tree = relationship("Tree", back_populates="risk_score")

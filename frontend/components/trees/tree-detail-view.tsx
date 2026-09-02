@@ -460,6 +460,28 @@ export function TreeDetailView() {
                       label="Integrity risk"
                       value={`${Math.round(tree.risk_score.composite_risk * 100)}%`}
                     />
+                    {tree.risk_score.fusion_score != null && (
+                      <Field
+                        label="Fusion score"
+                        value={`${Math.round(tree.risk_score.fusion_score)}/100`}
+                      />
+                    )}
+                    {tree.risk_score.field_score != null && (
+                      <Field
+                        label="Field / satellite"
+                        value={`${Math.round(tree.risk_score.field_score)} / ${Math.round(tree.risk_score.satellite_score ?? 0)}`}
+                      />
+                    )}
+                    <Field
+                      label="Credit eligible"
+                      value={
+                        tree.risk_score.credit_eligible ? (
+                          <span className="text-emerald-700">Yes</span>
+                        ) : (
+                          <span className="text-amber-700">No</span>
+                        )
+                      }
+                    />
                     <Field label="Integrity flags" value={integrityFlags(tree.risk_score)} />
                   </>
                 )}

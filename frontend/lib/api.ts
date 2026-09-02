@@ -402,6 +402,11 @@ export type TreeRiskScore = {
   ai_confidence_low: boolean;
   regeotag_mismatch: boolean;
   composite_risk: number;
+  field_score?: number | null;
+  satellite_score?: number | null;
+  fusion_score?: number | null;
+  credit_eligible?: boolean;
+  fusion_details?: Record<string, unknown>;
   details: Record<string, unknown>;
 };
 
