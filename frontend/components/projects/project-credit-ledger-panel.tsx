@@ -10,11 +10,14 @@ import { cn } from "@/lib/cn";
 
 function gateFailureMessage(err: unknown): string | null {
   if (!isApiError(err)) return null;
-  const detail = err.response?.data?.detail;
+  const data = err.response?.data as
+    | {
+        detail?: string | { integrity_fusion?: { message?: string } };
+      }
+    | undefined;
+  const detail = data?.detail;
   if (!detail || typeof detail === "string") return null;
-  if (!("integrity_fusion" in detail) || !detail.integrity_fusion) return null;
-  const fusion = detail.integrity_fusion as { message?: string };
-  return fusion.message ?? null;
+  return detail.integrity_fusion?.message ?? null;
 }
 
 function num(value: number | string | null | undefined): number {
