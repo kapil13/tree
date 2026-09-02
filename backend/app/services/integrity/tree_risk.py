@@ -394,11 +394,37 @@ async def apply_integrity_to_tree(
     tree: Tree,
     assessment: RiskAssessment,
 ) -> None:
-    await persist_tree_risk_score(db, tree=tree, assessment=assessment)
-    tree.verification_status = resolve_verification_status(
+    from app.services.integrity.fusion import compute_tree_fusion
+    from app.services.integrity.satellite_context import satellite_context_for_tree
+
+    sat_ctx = await satellite_context_for_tree(db, tree.id, tree.plantation_id)
+    overall_confidence = (assessment.details or {}).get("overall_confidence")
+    if overall_confidence is not None:
+        overall_confidence = float(overall_confidence)
+
+    verification_status = resolve_verification_status(
         assessment,
         satellite_verified=bool(tree.satellite_verified),
     )
+    fusion = compute_tree_fusion(
+        tree,
+        assessment,
+        ndvi_mean=sat_ctx.get("ndvi_mean"),
+        presence_confirmed=sat_ctx.get("presence_confirmed"),
+        change_vs_baseline=sat_ctx.get("change_vs_baseline"),
+        work_area_ndvi_baseline=sat_ctx.get("baseline"),
+        overall_confidence=overall_confidence,
+        verification_status=verification_status,
+    )
+
+    row = await persist_tree_risk_score(db, tree=tree, assessment=assessment)
+    row.field_score = fusion.field_score
+    row.satellite_score = fusion.satellite_score
+    row.fusion_score = fusion.fusion_score
+    row.credit_eligible = fusion.credit_eligible
+    row.fusion_details = fusion.details
+    tree.verification_status = verification_status
+    await db.flush()
 
 
 def apply_exif_to_image(image: TreeImage, exif: ExifExtract | None) -> None:

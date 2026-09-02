@@ -73,6 +73,10 @@ async def _ledger_with_events(db: DB, ledger: ProjectCreditLedger) -> dict:
     else:
         data["buffer_from_nprt"] = False
 
+    from app.services.integrity.credit_gating import project_fusion_stats
+
+    data["integrity_fusion"] = await project_fusion_stats(db, ledger.project_id)
+
     serials = (
         await db.execute(
             select(CreditSerial)
@@ -197,6 +201,11 @@ async def transition_project_credit_ledger(
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code) from exc
         if code == "registry_reference_required":
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=code) from exc
+        if code.startswith("integrity_gate_failed"):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": code, "message": "Project integrity fusion gate not met for this transition."},
+            ) from exc
         if code.startswith("exclusive_claim_conflict"):
             raise HTTPException(status.HTTP_409_CONFLICT, detail=code) from exc
         raise

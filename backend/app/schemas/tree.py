@@ -56,6 +56,11 @@ class TreeRiskOut(BaseModel):
     ai_confidence_low: bool
     regeotag_mismatch: bool
     composite_risk: float
+    field_score: float | None = None
+    satellite_score: float | None = None
+    fusion_score: float | None = None
+    credit_eligible: bool = False
+    fusion_details: dict[str, Any] = Field(default_factory=dict)
     details: dict[str, Any] = Field(default_factory=dict)
 
 

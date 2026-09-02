@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -49,12 +49,21 @@ def test_compute_strata_groups_species_and_age():
 async def test_transition_requires_registry_for_issued():
     ledger = SimpleNamespace(
         id=uuid.uuid4(),
+        project_id=uuid.uuid4(),
         status="buffered",
         net_credits_tco2e=1.5,
         issued_credits_tco2e=None,
         registry_reference=None,
     )
+    rows = [
+        (
+            SimpleNamespace(public_code=f"T-{i}", verification_status="audit_ready"),
+            SimpleNamespace(fusion_score=80.0, credit_eligible=True),
+        )
+        for i in range(10)
+    ]
     db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(all=MagicMock(return_value=rows)))
     with pytest.raises(ValueError, match="registry_reference_required"):
         await transition_ledger_status(
             db,
@@ -81,4 +90,25 @@ async def test_invalid_transition_raises():
             to_status="issued",
             actor_user_id=uuid.uuid4(),
             registry_reference="VCS-123",
+        )
+
+
+@pytest.mark.asyncio
+async def test_transition_verified_calls_integrity_gate():
+    ledger = SimpleNamespace(
+        id=uuid.uuid4(),
+        project_id=uuid.uuid4(),
+        status="estimated",
+        net_credits_tco2e=1.0,
+        issued_credits_tco2e=None,
+        registry_reference=None,
+    )
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(all=MagicMock(return_value=[])))
+    with pytest.raises(ValueError, match="integrity_gate_failed"):
+        await transition_ledger_status(
+            db,
+            ledger,
+            to_status="verified",
+            actor_user_id=uuid.uuid4(),
         )

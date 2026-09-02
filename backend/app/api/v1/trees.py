@@ -131,6 +131,11 @@ def _risk_out(tree: Tree) -> TreeRiskOut | None:
         ai_confidence_low=bool(score.ai_confidence_low),
         regeotag_mismatch=bool(score.regeotag_mismatch),
         composite_risk=float(score.composite_risk or 0),
+        field_score=float(score.field_score) if score.field_score is not None else None,
+        satellite_score=float(score.satellite_score) if score.satellite_score is not None else None,
+        fusion_score=float(score.fusion_score) if score.fusion_score is not None else None,
+        credit_eligible=bool(score.credit_eligible),
+        fusion_details=score.fusion_details or {},
         details=score.details or {},
     )
 
