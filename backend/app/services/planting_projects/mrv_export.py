@@ -184,6 +184,14 @@ async def build_project_mrv_context(
     scheme_refs = meta.get("scheme_refs") if isinstance(meta.get("scheme_refs"), dict) else {}
     scheme_kpis = await compute_scheme_kpis(db, project)
 
+    integrity_fusion: dict[str, Any] | None = None
+    try:
+        from app.services.integrity.export import build_integrity_fusion_export
+
+        integrity_fusion = await build_integrity_fusion_export(db, project)
+    except Exception:
+        integrity_fusion = None
+
     return {
         "project": {
             "code": project.code,
@@ -235,4 +243,5 @@ async def build_project_mrv_context(
         "work_areas": work_area_rows,
         "trees": tree_rows,
         "violations": violation_rows,
+        "integrity_fusion": integrity_fusion,
     }

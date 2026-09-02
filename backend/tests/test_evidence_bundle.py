@@ -10,6 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import app.models.tree_measurement  # noqa: F401 — register TreeMeasurement for Tree mapper
+
 from app.services.evidence.bundle import build_project_evidence_bundle
 
 
@@ -31,6 +33,12 @@ async def test_build_project_evidence_bundle_contains_manifest():
         "trees": [],
         "violations": [],
         "work_areas": [],
+        "integrity_fusion": {
+            "export_version": "aranyix-integrity-fusion-1.0.0",
+            "summary": {"tree_count": 0, "credit_eligible_count": 0},
+            "trees": [],
+            "gates": {"verified_ready": False, "issued_ready": False},
+        },
     }
 
     with (
@@ -64,8 +72,9 @@ async def test_build_project_evidence_bundle_contains_manifest():
         names = set(zf.namelist())
         assert "manifest.json" in names
         assert "mrv-context.json" in names
+        assert "integrity-fusion.json" in names
         assert "mrv-compliance.pdf" in names
         assert "carbon-summary.json" in names
         manifest = json.loads(zf.read("manifest.json"))
-        assert manifest["bundle_version"] == "aranyix-evidence-1.1.0"
+        assert manifest["bundle_version"] == "aranyix-evidence-1.2.0"
         assert manifest["file_count"] >= 4
