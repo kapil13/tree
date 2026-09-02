@@ -6,6 +6,7 @@ import { ProjectComplianceTab } from "@/components/projects/project-compliance-t
 import { ProjectCreditLedgerPanel } from "@/components/projects/project-credit-ledger-panel";
 import { ProjectGreenCreditPanel } from "@/components/projects/project-green-credit-panel";
 import { ProjectImpactSharePanel } from "@/components/projects/project-impact-share-panel";
+import { ProjectIntegrityFusionPanel } from "@/components/projects/project-integrity-fusion-panel";
 import { ProjectNprtAssessmentPanel } from "@/components/projects/project-nprt-assessment-panel";
 import { ProjectPlotMonitoringPanel } from "@/components/projects/project-plot-monitoring-panel";
 import { ProjectSettingsPanel } from "@/components/projects/project-settings-panel";
@@ -101,6 +102,9 @@ export function ProjectSecondarySection({
           )}
           <div className="card">
             <ProjectNprtAssessmentPanel projectId={projectId} />
+          </div>
+          <div className="card">
+            <ProjectIntegrityFusionPanel projectId={projectId} />
           </div>
           <div className="card">
             <ProjectCreditLedgerPanel projectId={projectId} />

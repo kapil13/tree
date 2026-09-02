@@ -8,6 +8,18 @@ import { ProjectCreditSerialsPanel } from "@/components/projects/project-credit-
 import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
+function gateFailureMessage(err: unknown): string | null {
+  if (!isApiError(err)) return null;
+  const data = err.response?.data as
+    | {
+        detail?: string | { integrity_fusion?: { message?: string } };
+      }
+    | undefined;
+  const detail = data?.detail;
+  if (!detail || typeof detail === "string") return null;
+  return detail.integrity_fusion?.message ?? null;
+}
+
 function num(value: number | string | null | undefined): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -150,6 +162,26 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
         {ledger.disclaimer}
       </p>
 
+      {ledger.integrity_fusion && (
+        <div className="rounded-lg border border-stone-200 bg-stone-50/60 px-3 py-3 text-xs text-stone-700 space-y-2">
+          <p className="font-medium text-stone-900">Integrity fusion gates</p>
+          <p>{ledger.integrity_fusion.message}</p>
+          <div className="flex flex-wrap gap-3 font-mono">
+            <span>
+              Eligible: {ledger.integrity_fusion.credit_eligible_count}/
+              {ledger.integrity_fusion.tree_count} ({ledger.integrity_fusion.eligible_pct}%)
+            </span>
+            <span>
+              Audit ready: {ledger.integrity_fusion.audit_ready_count}/
+              {ledger.integrity_fusion.tree_count} ({ledger.integrity_fusion.audit_ready_pct}%)
+            </span>
+            {ledger.integrity_fusion.avg_fusion_score != null && (
+              <span>Avg fusion: {Math.round(ledger.integrity_fusion.avg_fusion_score)}</span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Gross credits"
@@ -227,9 +259,12 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
       )}
 
       {(sync.error || transition.error) && (
-        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-          {errorMessage(sync.error ?? transition.error)}
-        </p>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 space-y-1">
+          <p>{errorMessage(sync.error ?? transition.error)}</p>
+          {gateFailureMessage(transition.error) && (
+            <p className="text-rose-700">{gateFailureMessage(transition.error)}</p>
+          )}
+        </div>
       )}
 
       {strata.length > 0 && (

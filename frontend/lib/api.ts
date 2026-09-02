@@ -1552,6 +1552,17 @@ export const plantingProjects = {
       )
     ).data;
   },
+  async integrityFusion(projectId: string) {
+    return (await api.get<IntegrityFusionDetail>(`/v1/planting-projects/${projectId}/integrity-fusion`))
+      .data;
+  },
+  async refreshIntegrityFusion(projectId: string) {
+    return (
+      await api.post<IntegrityFusionDetail & { refreshed_count: number }>(
+        `/v1/planting-projects/${projectId}/integrity-fusion/refresh`,
+      )
+    ).data;
+  },
   async exportLeakageWorksheet(projectId: string) {
     const response = await api.get(
       `/v1/planting-projects/${projectId}/leakage-worksheet`,
@@ -2824,6 +2835,32 @@ export const bioacoustic = {
 
 export type CreditLedgerStatus = "estimated" | "verified" | "buffered" | "issued";
 
+export type IntegrityFusionDetail = {
+  tree_count: number;
+  credit_eligible_count: number;
+  audit_ready_count: number;
+  eligible_pct: number;
+  audit_ready_pct: number;
+  avg_fusion_score: number | null;
+  verified_ready: boolean;
+  issued_ready: boolean;
+  verified_requirements: { min_eligible_pct: number; min_avg_fusion: number };
+  issued_requirements: { min_audit_ready_pct: number; min_avg_fusion: number };
+  blocking_trees: Array<{
+    tree_id: string;
+    public_code: string;
+    verification_status: string;
+    fusion_score: number | null;
+    credit_eligible: boolean;
+    reasons: string[];
+  }>;
+  message: string;
+  passed_for_verified?: boolean;
+  passed_for_issued?: boolean;
+  blocking_sample?: string[];
+  refreshed_count?: number;
+};
+
 export type CreditLedger = {
   id: string;
   project_id: string;
@@ -2850,6 +2887,7 @@ export type CreditLedger = {
   disclaimer: string;
   buffer_from_nprt?: boolean;
   nprt_score?: number;
+  integrity_fusion?: IntegrityFusionDetail;
   events: Array<{
     id: string;
     from_status: string | null;
