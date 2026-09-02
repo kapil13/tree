@@ -31,6 +31,7 @@ class SatelliteSample:
     presence_confirmed: bool
     change_vs_baseline: float
     thumbnail_s3_key: str | None = None
+    indices: dict[str, float] | None = None
 
 
 class SatelliteService(Protocol):
@@ -76,6 +77,15 @@ class StubSatelliteService:
             evi_mean=evi,
             presence_confirmed=ndvi >= 0.25,
             change_vs_baseline=round(rng.uniform(-0.08, 0.08), 4),
+            indices={
+                "ndvi_mean": ndvi,
+                "evi_mean": evi,
+                "savi_mean": round(1.5 * ndvi / (ndvi + 0.5), 4),
+                "ndmi_mean": round(ndvi * 0.6, 4),
+                "ndwi_mean": round(-0.2 + ndvi * 0.3, 4),
+                "bsi_mean": round(max(0.0, 0.4 - ndvi * 0.5), 4),
+                "valid_pixel_pct": 92.0,
+            },
         )
 
     async def series(self, lat: float, lon: float, *, months: int = 12) -> list[SatelliteSample]:

@@ -46,6 +46,17 @@ class TreeImageOut(BaseModel):
     cdn_url: str | None
     is_primary: bool
     created_at: datetime
+    taken_at: datetime | None = None
+
+
+class TreeRiskOut(BaseModel):
+    gps_photo_match: bool
+    duplicate_photo: bool
+    duplicate_coordinate: bool
+    ai_confidence_low: bool
+    regeotag_mismatch: bool
+    composite_risk: float
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class TreeOut(BaseModel):
@@ -60,6 +71,7 @@ class TreeOut(BaseModel):
     species_id: uuid.UUID | None
     species_text: str | None
     status: str
+    verification_status: str = "registered"
     planted_at: date | None
     registered_at: datetime
     latitude: float | None = None
@@ -76,6 +88,7 @@ class TreeOut(BaseModel):
     last_satellite_at: datetime | None
     metadata: dict[str, Any] = Field(default_factory=dict)
     images: list[TreeImageOut] = Field(default_factory=list)
+    risk_score: TreeRiskOut | None = None
     plantation_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     last_geotag_at: datetime | None = None

@@ -244,6 +244,11 @@ def test_esg_density_max_blocks():
                 return_value=True,
             ),
             patch(
+                "app.services.planting_projects.compliance.nearest_tree_distance_m",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch(
                 "app.services.planting_projects.compliance.work_area_tree_count",
                 new_callable=AsyncMock,
                 return_value=120,

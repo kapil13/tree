@@ -25,6 +25,19 @@ def _evi_from_ndvi(ndvi: float) -> float:
     return round(2.5 * (ndvi - 0.2) / (ndvi + 1.0), 4)
 
 
+def _synthetic_indices_from_ndvi(ndvi: float) -> dict[str, float]:
+    evi = _evi_from_ndvi(ndvi)
+    return {
+        "ndvi_mean": round(ndvi, 4),
+        "evi_mean": evi,
+        "savi_mean": round(1.5 * (ndvi) / (ndvi + 0.5), 4),
+        "ndmi_mean": round(ndvi * 0.6, 4),
+        "ndwi_mean": round(-0.2 + ndvi * 0.3, 4),
+        "bsi_mean": round(max(0.0, 0.4 - ndvi * 0.5), 4),
+        "valid_pixel_pct": 92.0,
+    }
+
+
 def _sample_from_stats(
     lat: float,
     lon: float,
@@ -33,18 +46,30 @@ def _sample_from_stats(
     *,
     change_vs_baseline: float = 0.0,
 ) -> SatelliteSample:
-    ndvi_mean = round(stats["mean"], 4)
+    if "ndvi_mean" in stats:
+        ndvi_mean = round(stats["ndvi_mean"], 4)
+        evi_mean = round(stats.get("evi_mean", _evi_from_ndvi(ndvi_mean)), 4)
+        indices = {
+            k: round(v, 4)
+            for k, v in stats.items()
+            if k.endswith("_mean") or k in ("valid_pixel_pct", "valid_pixel_count")
+        }
+    else:
+        ndvi_mean = round(stats["mean"], 4)
+        evi_mean = _evi_from_ndvi(ndvi_mean)
+        indices = _synthetic_indices_from_ndvi(ndvi_mean)
     return SatelliteSample(
         provider="sentinel-2",
         scene_id=f"S2_{ts.strftime('%Y%m%d')}_{abs(int(lat * 100))}_{abs(int(lon * 100))}",
         scene_acquired_at=ts,
         cloud_cover_pct=0.0,
         ndvi_mean=ndvi_mean,
-        ndvi_max=round(stats["max"], 4),
-        ndvi_min=round(stats["min"], 4),
-        evi_mean=_evi_from_ndvi(ndvi_mean),
+        ndvi_max=round(stats.get("max", ndvi_mean), 4),
+        ndvi_min=round(stats.get("min", ndvi_mean), 4),
+        evi_mean=evi_mean,
         presence_confirmed=ndvi_mean >= PRESENCE_NDVI_THRESHOLD,
         change_vs_baseline=round(change_vs_baseline, 4),
+        indices=indices,
     )
 
 
@@ -78,7 +103,9 @@ async def scan_plantation_polygon(
 
     if has_sentinel_credentials():
         try:
-            latest = await _sentinel_client().fetch_polygon_latest_sample(coords)
+            latest = await _sentinel_client().fetch_polygon_latest_multi_index(coords)
+            if latest is None:
+                latest = await _sentinel_client().fetch_polygon_latest_sample(coords)
             if latest is not None:
                 ts, stats = latest
                 sample = _sample_from_stats(lat, lon, ts, stats)
@@ -96,6 +123,8 @@ async def scan_plantation_polygon(
             log.warning("sentinel_scan_failed_using_stub", error=str(exc))
 
     sample = await get_satellite_service().sample(lat, lon)
+    if sample.indices is None:
+        sample.indices = _synthetic_indices_from_ndvi(sample.ndvi_mean)
     return PlantationScanResult(sample=sample, provider=sample.provider)
 
 

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from app.api.v1.deps import DB, WriteAccess
 from app.schemas.bioacoustic import PresignUploadRequest, PresignUploadResponse
+from app.services.integrity.exif import extract_exif_from_bytes
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.storage import get_storage
 from app.services.storage.images import ImageUploadError, persist_image_bytes
@@ -29,6 +30,9 @@ _ALLOWED_AUDIO = {
 class ImageUploadResponse(BaseModel):
     s3_key: str
     content_type: str
+    exif_gps_latitude: float | None = None
+    exif_gps_longitude: float | None = None
+    exif_taken_at: str | None = None
 
 
 @router.post("/image", response_model=ImageUploadResponse)
@@ -59,7 +63,14 @@ async def upload_image(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="storage_upload_failed",
         ) from exc
-    return ImageUploadResponse(s3_key=key, content_type=content_type)
+    exif = extract_exif_from_bytes(data)
+    return ImageUploadResponse(
+        s3_key=key,
+        content_type=content_type,
+        exif_gps_latitude=exif.gps.latitude if exif and exif.gps else None,
+        exif_gps_longitude=exif.gps.longitude if exif and exif.gps else None,
+        exif_taken_at=exif.taken_at.isoformat() if exif and exif.taken_at else None,
+    )
 
 
 @router.post("/presign", response_model=PresignUploadResponse)
