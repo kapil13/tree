@@ -160,6 +160,10 @@ async def _run_tree_analysis(
     if tree.status == "pending":
         tree.status = "active"
 
+    from app.services.integrity.refresh import refresh_tree_integrity
+
+    await refresh_tree_integrity(db, tree, overall_confidence=result.overall_confidence)
+
     if (
         meter_before.tier == "byot_metered"
         and meter_before.complimentary_used >= meter_before.complimentary_limit

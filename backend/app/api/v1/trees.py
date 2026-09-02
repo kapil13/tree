@@ -40,13 +40,15 @@ from app.schemas.tree_measurement import (
 )
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
-from app.services.integrity.image_loader import load_exif_for_upload_key
+from app.services.integrity.image_loader import load_exif_for_upload_key, load_image_bytes
+from app.services.integrity.photo_dedup import find_photo_duplicate
+from app.services.integrity.refresh import refresh_tree_integrity
 from app.services.integrity.tree_risk import (
     apply_exif_to_image,
+    apply_hashes_to_image_from_bytes,
+    apply_integrity_to_tree,
     assess_coordinate_duplicate,
     assess_from_registration,
-    persist_tree_risk_score,
-    resolve_verification_status,
 )
 from app.services.passport import generate_passport_pdf, generate_qr_png
 from app.services.planting_programs.enrollment import (
@@ -344,7 +346,8 @@ async def create_tree(
         )
 
     primary_exif = None
-    image_rows: list[TreeImage] = []
+    photo_duplicate = None
+    storage = get_storage()
     for idx, key in enumerate(payload.photo_keys):
         exif = load_exif_for_upload_key(key) if idx == 0 else None
         if idx == 0:
@@ -357,7 +360,47 @@ async def create_tree(
         )
         if exif is not None:
             apply_exif_to_image(img, exif)
-        image_rows.append(img)
+        image_bytes = load_image_bytes(key) or storage.get_bytes(key)
+        if image_bytes:
+            hashes = apply_hashes_to_image_from_bytes(img, image_bytes)
+            if idx == 0 and hashes is not None:
+                photo_duplicate = await find_photo_duplicate(
+                    db,
+                    hashes=hashes,
+                    organization_id=user.organization_id,
+                    exclude_tree_id=tree.id,
+                )
+                if (
+                    photo_duplicate.duplicate_photo
+                    and compliance_mode == "strict"
+                    and (
+                        photo_duplicate.exact_match
+                        or program.code in ("government_nhai", "corporate_esg")
+                    )
+                ):
+                    raise HTTPException(
+                        status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail={
+                            "compliance_errors": [
+                                {
+                                    "violation_type": "duplicate_photo",
+                                    "severity": "block",
+                                    "message": (
+                                        "This photo matches an existing tree registration"
+                                        + (
+                                            f" ({photo_duplicate.matched_tree_code})."
+                                            if photo_duplicate.matched_tree_code
+                                            else "."
+                                        )
+                                    ),
+                                    "metadata": {
+                                        "matched_tree_code": photo_duplicate.matched_tree_code,
+                                        "exact_match": photo_duplicate.exact_match,
+                                    },
+                                }
+                            ],
+                        },
+                    )
         db.add(img)
     await db.flush()
 
@@ -380,9 +423,17 @@ async def create_tree(
         duplicate_coordinate=dup_coord,
         nearest_m=nearest_m,
         primary_exif=primary_exif,
+        duplicate_photo=bool(photo_duplicate and photo_duplicate.duplicate_photo),
+        photo_duplicate_details={
+            "exact_match": photo_duplicate.exact_match,
+            "near_match": photo_duplicate.near_match,
+            "matched_tree_code": photo_duplicate.matched_tree_code,
+            "hamming_distance": photo_duplicate.hamming_distance,
+        }
+        if photo_duplicate and photo_duplicate.duplicate_photo
+        else None,
     )
-    tree.verification_status = resolve_verification_status(assessment)
-    await persist_tree_risk_score(db, tree=tree, assessment=assessment)
+    await apply_integrity_to_tree(db, tree, assessment)
 
     initial = payload.initial_measurement or TreeInitialMeasurement()
     photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
@@ -692,6 +743,9 @@ async def regeotag_tree(
         from app.services.citizen.gamification import record_stewardship_checkin
 
         gamification = await record_stewardship_checkin(db, user=user, tree=tree)
+
+    await refresh_tree_integrity(db, tree)
+
     await record_audit(
         db,
         actor=user,
@@ -707,7 +761,7 @@ async def regeotag_tree(
         },
     )
     await db.commit()
-    await db.refresh(tree, attribute_names=["planting_program", "images"])
+    await db.refresh(tree, attribute_names=["planting_program", "images", "risk_score"])
     base = _to_out(tree)
     return TreeRegeotagOut(
         **base.model_dump(),

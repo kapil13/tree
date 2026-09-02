@@ -70,6 +70,10 @@ async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> Satellite
     tree.last_satellite_at = datetime.now(UTC)
     await db.flush()
 
+    from app.services.integrity.refresh import refresh_tree_integrity
+
+    await refresh_tree_integrity(db, tree)
+
     await maybe_alert_tree_ndvi_decline(
         db,
         tree=tree,

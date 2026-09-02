@@ -77,6 +77,21 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function verificationLabel(status: string) {
+  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function integrityFlags(risk: import("@/lib/api").TreeRiskScore | null) {
+  if (!risk) return "—";
+  const flags: string[] = [];
+  if (risk.gps_photo_match) flags.push("GPS match");
+  if (risk.duplicate_photo) flags.push("Duplicate photo");
+  if (risk.duplicate_coordinate) flags.push("Duplicate coordinate");
+  if (risk.ai_confidence_low) flags.push("Low AI confidence");
+  if (risk.regeotag_mismatch) flags.push("Re-geotag mismatch");
+  return flags.length ? flags.join(", ") : "No flags";
+}
+
 function healthBadge(h: string) {
   const cls =
     h === "healthy"
@@ -435,6 +450,19 @@ export function TreeDetailView() {
               <dl>
                 <Field label="Health" value={healthBadge(tree.current_health)} />
                 <Field label="Status" value={tree.status} />
+                <Field
+                  label="Verification"
+                  value={verificationLabel(tree.verification_status || "registered")}
+                />
+                {tree.risk_score && (
+                  <>
+                    <Field
+                      label="Integrity risk"
+                      value={`${Math.round(tree.risk_score.composite_risk * 100)}%`}
+                    />
+                    <Field label="Integrity flags" value={integrityFlags(tree.risk_score)} />
+                  </>
+                )}
                 <Field label="Program" value={tree.program_code?.replace(/_/g, " ") || "—"} />
                 {tree.project_id && (
                   <Field
