@@ -225,6 +225,10 @@ async def scan_and_persist_tree(
     tree.satellite_verified = bool(sample.presence_confirmed)
     await db.flush()
 
+    from app.services.integrity.refresh import refresh_tree_integrity
+
+    await refresh_tree_integrity(db, tree)
+
     await maybe_alert_tree_ndvi_decline(
         db,
         tree=tree,

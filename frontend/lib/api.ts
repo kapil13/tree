@@ -392,6 +392,17 @@ export type TreeImage = {
   cdn_url: string | null;
   is_primary: boolean;
   created_at: string;
+  taken_at?: string | null;
+};
+
+export type TreeRiskScore = {
+  gps_photo_match: boolean;
+  duplicate_photo: boolean;
+  duplicate_coordinate: boolean;
+  ai_confidence_low: boolean;
+  regeotag_mismatch: boolean;
+  composite_risk: number;
+  details: Record<string, unknown>;
 };
 
 export type TreeDetail = {
@@ -401,6 +412,7 @@ export type TreeDetail = {
   program_code: string | null;
   species_text: string | null;
   status: string;
+  verification_status: string;
   planted_at: string | null;
   registered_at: string;
   latitude: number | null;
@@ -420,6 +432,7 @@ export type TreeDetail = {
   last_geotag_at: string | null;
   metadata: Record<string, unknown>;
   images: TreeImage[];
+  risk_score: TreeRiskScore | null;
   created_at: string;
   compliance?: {
     passed: boolean;

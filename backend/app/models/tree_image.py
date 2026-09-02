@@ -29,6 +29,8 @@ class TreeImage(UUIDPKMixin, Base):
     height_px: Mapped[int | None] = mapped_column(Integer)
     size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     exif: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    content_sha256: Mapped[str | None] = mapped_column(String(64))
+    perceptual_hash: Mapped[str | None] = mapped_column(String(32))
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     uploaded_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id")
