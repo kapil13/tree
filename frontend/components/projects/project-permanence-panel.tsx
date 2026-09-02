@@ -78,9 +78,9 @@ export function ProjectPermanencePanel({
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-sky-800" />
           <div>
-            <h3 className="text-sm font-medium text-stone-800">Permanence & leakage</h3>
+            <h3 className="text-sm font-medium text-stone-800">Permanence &amp; leakage</h3>
             <p className="text-xs text-stone-600">
-              Cross-framework view for VM0047, REDD+, Gold Standard, and Article 6 prep.
+              SAR forest integrity, NPRT buffer, and leakage — not per-tree credit fusion scores.
             </p>
           </div>
         </div>

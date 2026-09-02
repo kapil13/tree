@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Activity, CheckCircle2, CreditCard, Loader2, Server, Webhook, XCircle, Zap } from "lucide-react";
+import { Activity, CheckCircle2, CreditCard, Loader2, Server, ShieldCheck, Webhook, XCircle, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { StepUpModal } from "@/components/platform/step-up-modal";
 import { notifyPlatformAction, notifyPlatformError } from "@/lib/platform-admin-feedback";
+import { plantingProjects } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { cn } from "@/lib/cn";
 
@@ -38,6 +39,8 @@ export default function PlatformOpsPage() {
   const [tab, setTab] = useState<OpsTab>("health");
   const [apoCsv, setApoCsv] = useState("");
   const [triggerJobName, setTriggerJobName] = useState(TRIGGERABLE_JOBS[0]?.value ?? "");
+  const [backfillLimit, setBackfillLimit] = useState(50);
+  const [backfillAsync, setBackfillAsync] = useState(false);
   const [stepUpOpen, setStepUpOpen] = useState(false);
   const [stepUpAction, setStepUpAction] = useState<StepUpAction | null>(null);
 
@@ -81,6 +84,26 @@ export default function PlatformOpsPage() {
       refetchSchemes();
       setApoCsv("");
       notifyPlatformAction("APO import complete.");
+    },
+    onError: (err) => notifyPlatformError(err),
+  });
+
+  const integrityBackfill = useMutation({
+    mutationFn: () =>
+      plantingProjects.backfillIntegrityFusion({
+        limit: backfillLimit,
+        async: backfillAsync,
+      }),
+    onSuccess: (result) => {
+      if (result.status === "queued") {
+        notifyPlatformAction(
+          `Integrity fusion backfill queued (task ${result.task_id ?? "—"}, limit ${result.limit_projects ?? backfillLimit}).`,
+        );
+      } else {
+        notifyPlatformAction(
+          `Integrity fusion backfill complete: ${result.projects_processed ?? 0} projects, ${result.trees_refreshed ?? 0} trees refreshed.`,
+        );
+      }
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -387,6 +410,7 @@ export default function PlatformOpsPage() {
             ) : null}
 
             {tab === "jobs" ? (
+              <div className="space-y-6">
               <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -467,6 +491,58 @@ export default function PlatformOpsPage() {
                   </p>
                 ) : null}
               </section>
+
+              <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-forest-700" />
+                    <div>
+                      <h2 className="text-lg font-semibold">Integrity fusion backfill</h2>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Recompute fusion scores for projects with trees missing scores. Nightly beat
+                        runs automatically; use this for manual catch-up after deploy.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="kpi-label">Project limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      className="input mt-1 w-28 text-sm"
+                      value={backfillLimit}
+                      onChange={(e) => setBackfillLimit(Number(e.target.value) || 50)}
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 pb-2 text-sm text-stone-600">
+                    <input
+                      type="checkbox"
+                      checked={backfillAsync}
+                      onChange={(e) => setBackfillAsync(e.target.checked)}
+                    />
+                    Queue via Celery
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={integrityBackfill.isPending}
+                    onClick={() => integrityBackfill.mutate()}
+                  >
+                    {integrityBackfill.isPending ? "Running…" : "Run backfill"}
+                  </button>
+                </div>
+                {integrityBackfill.data ? (
+                  <p className="mt-3 text-xs text-stone-600">
+                    {integrityBackfill.data.status === "queued"
+                      ? `Queued task ${integrityBackfill.data.task_id ?? "—"}`
+                      : `Processed ${integrityBackfill.data.projects_processed ?? 0} projects · ${integrityBackfill.data.trees_refreshed ?? 0} trees refreshed`}
+                  </p>
+                ) : null}
+              </section>
+              </div>
             ) : null}
 
             {tab === "schemes" ? (

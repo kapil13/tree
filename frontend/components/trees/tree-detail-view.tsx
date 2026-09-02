@@ -454,7 +454,7 @@ export function TreeDetailView() {
                   label="Verification"
                   value={verificationLabel(tree.verification_status || "registered")}
                 />
-                {tree.risk_score && (
+                {tree.risk_score ? (
                   <>
                     <Field
                       label="Integrity risk"
@@ -484,7 +484,22 @@ export function TreeDetailView() {
                     />
                     <Field label="Integrity flags" value={integrityFlags(tree.risk_score)} />
                   </>
-                )}
+                ) : tree.project_id ? (
+                  <Field
+                    label="Integrity fusion"
+                    value={
+                      <span className="text-sm text-stone-600">
+                        Not computed yet.{" "}
+                        <Link
+                          href={`/projects/${tree.project_id}/credits`}
+                          className="font-medium text-forest-700 hover:underline"
+                        >
+                          Recalculate on project
+                        </Link>
+                      </span>
+                    }
+                  />
+                ) : null}
                 <Field label="Program" value={tree.program_code?.replace(/_/g, " ") || "—"} />
                 {tree.project_id && (
                   <Field

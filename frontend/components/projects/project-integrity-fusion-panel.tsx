@@ -29,11 +29,16 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
     queryKey: ["integrity-fusion", projectId],
     queryFn: () => plantingProjects.integrityFusion(projectId),
   });
+  const registry = useQuery({
+    queryKey: ["registry-readiness", projectId],
+    queryFn: () => plantingProjects.registryReadiness(projectId),
+  });
 
   const refresh = useMutation({
     mutationFn: () => plantingProjects.refreshIntegrityFusion(projectId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["integrity-fusion", projectId] });
+      qc.invalidateQueries({ queryKey: ["registry-readiness", projectId] });
       qc.invalidateQueries({ queryKey: ["credit-ledger", projectId] });
     },
   });
@@ -52,7 +57,11 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
 
   if (!data) return null;
 
-  const blocking = data.blocking_trees ?? [];
+  const registryData = registry.data;
+  const registryReady = registryData?.registry_issue_ready ?? data.issued_ready;
+  const claimableCount =
+    registryData?.claimable_tree_count ?? data.claimable_tree_count ?? data.credit_eligible_count;
+  const blocking = registryData?.blocking_trees ?? data.blocking_trees ?? [];
 
   return (
     <div className="space-y-4">
@@ -62,6 +71,10 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
             <ShieldCheck className="h-5 w-5 text-forest-700" />
             <h2 className="text-lg font-semibold">Integrity fusion</h2>
           </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Per-tree fusion scores and credit gate readiness for registry claims and ledger
+            transitions.
+          </p>
           <p className="mt-1 text-xs text-stone-500">{data.message}</p>
         </div>
         <button
@@ -78,15 +91,54 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
       <div className="flex flex-wrap gap-2">
         <GateBadge ready={data.verified_ready} label="Verified gate" />
         <GateBadge ready={data.issued_ready} label="Issued gate" />
-        <GateBadge ready={data.issued_ready} label="Registry issue" />
+        <GateBadge ready={registryReady} label="Registry issue" />
+      </div>
+
+      <div className="rounded-lg border border-forest-200 bg-forest-50/50 p-4 space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-forest-950">Registry readiness</h3>
+            <p className="mt-1 text-xs text-stone-600">
+              Trees that can be registered as claims and serials when the ledger reaches{" "}
+              <strong>issued</strong>.
+            </p>
+          </div>
+          {registry.isLoading ? (
+            <span className="text-xs text-stone-500">Loading…</span>
+          ) : registry.error ? (
+            <span className="text-xs text-rose-700">{errorMessage(registry.error)}</span>
+          ) : registryData ? (
+            <GateBadge ready={registryData.registry_issue_ready} label="Registry issue" />
+          ) : null}
+        </div>
+        {registryData ? (
+          <>
+            <p className="text-sm text-stone-700">{registryData.message}</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Stat
+                label="Claimable trees"
+                value={String(registryData.claimable_tree_count)}
+                hint="Credit-eligible for registry claims"
+              />
+              <Stat
+                label="Credit eligible"
+                value={`${registryData.credit_eligible_count} (${registryData.eligible_pct}%)`}
+              />
+              <Stat
+                label="Audit ready"
+                value={`${registryData.audit_ready_count} (${registryData.audit_ready_pct}%)`}
+              />
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Trees" value={String(data.tree_count)} />
         <Stat
           label="Claimable trees"
-          value={String(data.claimable_tree_count ?? data.credit_eligible_count)}
-          hint="Credit-eligible for registry claims"
+          value={String(claimableCount)}
+          hint="Same as registry readiness claimable count"
         />
         <Stat
           label="Credit eligible"

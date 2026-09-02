@@ -1568,6 +1568,22 @@ export const plantingProjects = {
       await api.get<RegistryReadiness>(`/v1/planting-projects/${projectId}/registry-readiness`)
     ).data;
   },
+  async backfillIntegrityFusion(params?: { limit?: number; async?: boolean }) {
+    return (
+      await api.post<{
+        status?: string;
+        task_id?: string;
+        limit_projects?: number;
+        projects_processed?: number;
+        trees_refreshed?: number;
+      }>("/v1/planting-projects/integrity-fusion/backfill", null, {
+        params: {
+          limit: params?.limit ?? 50,
+          async: params?.async ?? false,
+        },
+      })
+    ).data;
+  },
   async exportLeakageWorksheet(projectId: string) {
     const response = await api.get(
       `/v1/planting-projects/${projectId}/leakage-worksheet`,
