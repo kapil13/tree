@@ -394,6 +394,21 @@ def render_compliance_mrv_pdf(ctx: dict[str, Any]) -> bytes:
     story.append(t)
     story.append(Spacer(1, 6 * mm))
 
+    integrity = ctx.get("integrity_fusion") or {}
+    integrity_summary = integrity.get("summary") or {}
+    if integrity_summary:
+        story.append(Paragraph("Integrity fusion (credit gates)", h2))
+        gate_rows = [
+            ["Credit eligible", f"{integrity_summary.get('credit_eligible_count', '—')}/{integrity_summary.get('tree_count', '—')}"],
+            ["Eligible %", integrity_summary.get("eligible_pct", "—")],
+            ["Audit ready %", integrity_summary.get("audit_ready_pct", "—")],
+            ["Avg fusion score", integrity_summary.get("avg_fusion_score", "—")],
+            ["Verified gate", "ready" if (integrity.get("gates") or {}).get("verified_ready") else "blocked"],
+            ["Issued gate", "ready" if (integrity.get("gates") or {}).get("issued_ready") else "blocked"],
+        ]
+        story.append(Table(gate_rows, colWidths=[80 * mm, 80 * mm]))
+        story.append(Spacer(1, 6 * mm))
+
     rules = ctx.get("rules_summary") or {}
     if any(rules.values()):
         story.append(Paragraph("Active compliance rules", h2))
@@ -526,6 +541,33 @@ def render_compliance_mrv_xlsx(ctx: dict[str, Any]) -> bytes:
                 v.get("created_at"),
             ]
         )
+
+    integrity = ctx.get("integrity_fusion") or {}
+    if integrity.get("trees"):
+        ws5 = wb.create_sheet("Integrity fusion")
+        ws5.append(
+            [
+                "public_code",
+                "verification_status",
+                "fusion_score",
+                "field_score",
+                "satellite_score",
+                "credit_eligible",
+                "composite_risk",
+            ]
+        )
+        for row in integrity.get("trees") or []:
+            ws5.append(
+                [
+                    row.get("public_code"),
+                    row.get("verification_status"),
+                    row.get("fusion_score"),
+                    row.get("field_score"),
+                    row.get("satellite_score"),
+                    row.get("credit_eligible"),
+                    row.get("composite_risk"),
+                ]
+            )
 
     buf = io.BytesIO()
     wb.save(buf)
