@@ -30,6 +30,10 @@ def test_build_project_mrv_context_empty_project(monkeypatch):
         "app.services.planting_projects.mrv_export.get_active_standard",
         AsyncMock(return_value=None),
     )
+    monkeypatch.setattr(
+        "app.services.integrity.export.build_integrity_fusion_export",
+        AsyncMock(return_value=None),
+    )
 
     ctx = asyncio.run(build_project_mrv_context(db, project))
 
