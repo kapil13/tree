@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -393,10 +394,26 @@ export function ProjectComplianceTab({
         {section === "safeguards" && <ProjectSafeguardsPanel projectId={projectId} />}
 
         {section === "integrity" && (
-          <ProjectPermanencePanel
-            projectId={projectId}
-            onNavigateCredits={onNavigateTab ? () => onNavigateTab("credits") : undefined}
-          />
+          <div className="space-y-4">
+            <div className="rounded-lg border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950">
+              <p className="font-medium">SAR permanence &amp; leakage — not credit fusion scores</p>
+              <p className="mt-1 text-xs text-sky-900/90">
+                This section covers satellite forest integrity, NPRT buffer, and leakage accounts.
+                For per-tree fusion scores, credit gates, and registry claimability, open{" "}
+                <Link
+                  href={`/projects/${projectId}/credits`}
+                  className="font-medium text-forest-800 underline-offset-2 hover:underline"
+                >
+                  Credits &amp; reports → Integrity fusion
+                </Link>
+                .
+              </p>
+            </div>
+            <ProjectPermanencePanel
+              projectId={projectId}
+              onNavigateCredits={onNavigateTab ? () => onNavigateTab("credits") : undefined}
+            />
+          </div>
         )}
 
         {section === "emissions" && (
