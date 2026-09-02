@@ -1,9 +1,7 @@
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
+import { portfolioComplianceHref, portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 
-/** Org-wide compliance rollup in portfolio health. */
-export function portfolioComplianceHref(): string {
-  return "/portfolio-health?tab=compliance";
-}
+export { portfolioComplianceHref, portfolioMonitoringHref };
 
 /** Project compliance workspace with optional section deep-link. */
 export function projectComplianceHref(

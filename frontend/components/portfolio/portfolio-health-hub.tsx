@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Activity, Bird, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
 import { PageHeader, SectionNav } from "@/components/ui";
+import {
+  parsePortfolioHealthTab,
+  portfolioHealthHref,
+  type PortfolioHealthTab,
+} from "@/lib/portfolio-health-links";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
 import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
@@ -12,7 +17,8 @@ import { PortfolioOverviewTab } from "./portfolio-overview-tab";
 import { PortfolioThreatsTab } from "./portfolio-threats-tab";
 
 const TAB_IDS = ["overview", "compliance", "threats", "monitoring", "biodiversity"] as const;
-export type PortfolioHealthTab = (typeof TAB_IDS)[number];
+
+export type { PortfolioHealthTab } from "@/lib/portfolio-health-links";
 
 export function PortfolioHealthHub() {
   const router = useRouter();
@@ -20,6 +26,7 @@ export function PortfolioHealthHub() {
   const tp = useTranslations("portfolio");
   const tc = useTranslations("chrome");
   const [tab, setTab] = useState<PortfolioHealthTab>("overview");
+  const projectId = searchParams.get("project");
 
   const TABS = [
     { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },
@@ -30,15 +37,13 @@ export function PortfolioHealthHub() {
   ];
 
   useEffect(() => {
-    const requested = searchParams.get("tab");
-    if (requested && TAB_IDS.includes(requested as PortfolioHealthTab)) {
-      setTab(requested as PortfolioHealthTab);
-    }
+    const requested = parsePortfolioHealthTab(searchParams.get("tab"));
+    if (requested) setTab(requested);
   }, [searchParams]);
 
   function selectTab(next: PortfolioHealthTab) {
     setTab(next);
-    router.replace(`/portfolio-health?tab=${next}`, { scroll: false });
+    router.replace(portfolioHealthHref(next, { projectId }), { scroll: false });
   }
 
   return (
@@ -65,7 +70,7 @@ export function PortfolioHealthHub() {
       {tab === "overview" && <PortfolioOverviewTab onSelectTab={selectTab} />}
       {tab === "compliance" && <PortfolioComplianceTab />}
       {tab === "threats" && <PortfolioThreatsTab />}
-      {tab === "monitoring" && <PortfolioMonitoringTab />}
+      {tab === "monitoring" && <PortfolioMonitoringTab projectId={projectId} />}
       {tab === "biodiversity" && <PortfolioBiodiversityTab />}
     </div>
   );

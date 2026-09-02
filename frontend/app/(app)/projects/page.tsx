@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import { projectsOperationalStatus } from "@/components/dashboard/command-center-shell";
 import { centralSchemes, plantingProjects } from "@/lib/api";
+import { portfolioComplianceHref } from "@/lib/compliance-links";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { schemeByCode } from "@/lib/schemes";
 import { cn } from "@/lib/cn";
@@ -122,7 +123,7 @@ export default function ProjectsPage() {
               icon={ops.tone === "healthy" ? ShieldCheck : AlertTriangle}
               action={
                 portfolioStats.flagged > 0 ? (
-                  <Link href="/portfolio-health?tab=compliance" className="btn-secondary text-xs">
+                  <Link href={portfolioComplianceHref()} className="btn-secondary text-xs">
                     {tp("portfolioCompliance")}
                   </Link>
                 ) : undefined

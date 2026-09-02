@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Activity, ClipboardCheck, ClipboardList, Satellite, ShieldCheck } from "lucide-react";
 import { portfolioComplianceHref, projectComplianceHref } from "@/lib/compliance-links";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { cn } from "@/lib/cn";
 
 type ProjectModuleLinksProps = {
@@ -48,7 +49,7 @@ export function ProjectModuleLinks({
       description: t("moduleSatelliteDesc"),
     },
     {
-      href: `/portfolio-health?tab=monitoring&project=${projectId}`,
+      href: portfolioMonitoringHref(projectId),
       icon: Activity,
       label: t("moduleMonitoring"),
       description: t("moduleMonitoringDesc"),
