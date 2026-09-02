@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -36,6 +37,7 @@ class CreditSerial(UUIDPKMixin, Base):
     retirement_reason: Mapped[str | None] = mapped_column(Text)
     paris_article6: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     corresponding_adjustment_ref: Mapped[str | None] = mapped_column(String(255))
+    integrity_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

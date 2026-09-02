@@ -78,10 +78,16 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
       <div className="flex flex-wrap gap-2">
         <GateBadge ready={data.verified_ready} label="Verified gate" />
         <GateBadge ready={data.issued_ready} label="Issued gate" />
+        <GateBadge ready={data.issued_ready} label="Registry issue" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Trees" value={String(data.tree_count)} />
+        <Stat
+          label="Claimable trees"
+          value={String(data.claimable_tree_count ?? data.credit_eligible_count)}
+          hint="Credit-eligible for registry claims"
+        />
         <Stat
           label="Credit eligible"
           value={`${data.credit_eligible_count} (${data.eligible_pct}%)`}

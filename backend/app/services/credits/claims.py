@@ -61,7 +61,14 @@ async def register_tree_claim(
     claim_type: str = "carbon",
     exclusive: bool = True,
     ledger_event_id: uuid.UUID | None = None,
+    require_credit_eligible: bool = False,
 ) -> ClaimRegistry:
+    fusion_score: float | None = None
+    if require_credit_eligible:
+        from app.services.integrity.registry_integration import assert_tree_registry_eligible
+
+        eligibility = await assert_tree_registry_eligible(db, tree_id)
+        fusion_score = eligibility.fusion_score
     await check_exclusive_claim_conflict(
         db, tree_id=tree_id, scheme_code=scheme_code, exclusive=exclusive
     )
@@ -73,6 +80,7 @@ async def register_tree_claim(
         exclusive=exclusive,
         valid_from=datetime.now(UTC),
         ledger_event_id=ledger_event_id,
+        fusion_score=fusion_score,
     )
     db.add(claim)
     await db.flush()
@@ -88,6 +96,7 @@ def claim_to_dict(claim: ClaimRegistry, tree: Tree | None = None) -> dict[str, A
         "scheme_family": claim.scheme_family,
         "claim_type": claim.claim_type,
         "exclusive": claim.exclusive,
+        "fusion_score": float(claim.fusion_score) if claim.fusion_score is not None else None,
         "valid_from": claim.valid_from.isoformat(),
         "valid_to": claim.valid_to.isoformat() if claim.valid_to else None,
     }
