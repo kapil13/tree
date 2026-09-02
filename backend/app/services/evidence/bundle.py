@@ -36,6 +36,7 @@ Contents:
 - carbon-summary.json Aggregated carbon metrics from registered trees
 - scheme-summary.json Central govt scheme refs, convergence, and KPI status
 - green-credit-summary.json MoEFCC Green Credit estimate (when scheme applies)
+- integrity-fusion.json  Per-tree fusion scores and credit gate readiness
 - photos/manifest.json Photo metadata (S3 keys, tree linkage)
 - photos/*            Up to 50 primary tree photos when storage is available
 
@@ -68,6 +69,14 @@ async def build_project_evidence_bundle(
 ) -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
     """Build a zip evidence bundle and return (zip_bytes, summary, signature)."""
     ctx = await build_project_mrv_context(db, project)
+    integrity_fusion = ctx.get("integrity_fusion")
+    if integrity_fusion is None:
+        try:
+            from app.services.integrity.export import build_integrity_fusion_export
+
+            integrity_fusion = await build_integrity_fusion_export(db, project)
+        except Exception:
+            integrity_fusion = None
     scheme_summary = await compute_scheme_kpis(db, project)
     meta = project.metadata_ or {}
     scheme_summary["scheme_refs"] = meta.get("scheme_refs") or {}
@@ -138,6 +147,13 @@ async def build_project_evidence_bundle(
                 json.dumps(green_credit_summary, indent=2, default=str).encode("utf-8"),
                 manifest_files,
             )
+        if integrity_fusion is not None:
+            _add_file(
+                zf,
+                "integrity-fusion.json",
+                json.dumps(integrity_fusion, indent=2, default=str).encode("utf-8"),
+                manifest_files,
+            )
         pdf = render_compliance_mrv_pdf(ctx)
         _add_file(zf, "mrv-compliance.pdf", pdf, manifest_files)
 
@@ -174,7 +190,7 @@ async def build_project_evidence_bundle(
             )
 
         bundle_manifest = {
-            "bundle_version": "aranyix-evidence-1.1.0",
+            "bundle_version": "aranyix-evidence-1.2.0",
             "project_id": str(project.id),
             "project_code": project.code,
             "generated_at": datetime.now(UTC).isoformat(),

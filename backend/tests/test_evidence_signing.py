@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import app.models.tree_measurement  # noqa: F401 — register TreeMeasurement for Tree mapper
 from app.services.evidence.bundle import build_project_evidence_bundle
 from app.services.evidence.signing import sign_evidence_zip, verify_evidence_zip, zip_content_hash
 
@@ -32,6 +33,12 @@ async def test_build_project_evidence_bundle_hashes_zip_bytes():
         "trees": [],
         "violations": [],
         "work_areas": [],
+        "integrity_fusion": {
+            "export_version": "aranyix-integrity-fusion-1.0.0",
+            "summary": {"tree_count": 0},
+            "trees": [],
+            "gates": {},
+        },
     }
 
     with (
@@ -65,7 +72,7 @@ async def test_build_project_evidence_bundle_hashes_zip_bytes():
 
     with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
         manifest = json.loads(zf.read("manifest.json"))
-        assert manifest["bundle_version"] == "aranyix-evidence-1.1.0"
+        assert manifest["bundle_version"] == "aranyix-evidence-1.2.0"
 
 
 def test_modified_zip_fails_verification():
