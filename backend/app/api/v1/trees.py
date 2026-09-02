@@ -71,6 +71,12 @@ from app.services.trees.measurements import create_measurement, list_measurement
 
 router = APIRouter(prefix="/trees", tags=["trees"])
 
+_TREE_DETAIL_LOAD = (
+    selectinload(Tree.images),
+    selectinload(Tree.planting_program),
+    selectinload(Tree.risk_score),
+)
+
 
 def _require_measurement_write(user: User) -> None:
     if not has_permission(user.role, Permission.TREE_UPDATE):
@@ -112,7 +118,10 @@ def _image_out(img: TreeImage) -> TreeImageOut:
 
 
 def _risk_out(tree: Tree) -> TreeRiskOut | None:
-    score = tree.risk_score
+    # Avoid async lazy-load (MissingGreenlet): only read when eager-loaded.
+    if "risk_score" not in tree.__dict__:
+        return None
+    score = tree.__dict__["risk_score"]
     if score is None:
         return None
     return TreeRiskOut(
@@ -150,7 +159,7 @@ def _to_out(tree: Tree) -> TreeOut:
         species_id=tree.species_id,
         species_text=tree.species_text,
         status=tree.status,
-        verification_status=tree.verification_status,
+        verification_status=getattr(tree, "verification_status", None) or "registered",
         planted_at=tree.planted_at,
         registered_at=tree.registered_at,
         latitude=latitude,
@@ -564,7 +573,7 @@ async def get_tree_by_public_code(public_code: str, user: CurrentUser, db: DB) -
     res = await db.execute(
         select(Tree)
         .where(Tree.public_code == public_code)
-        .options(selectinload(Tree.images), selectinload(Tree.planting_program))
+        .options(*_TREE_DETAIL_LOAD)
     )
     tree = res.scalar_one_or_none()
     if tree is None:
@@ -578,7 +587,7 @@ async def _get_owned_tree(tree_id: uuid.UUID, user, db) -> Tree:
     res = await db.execute(
         select(Tree)
         .where(Tree.id == tree_id)
-        .options(selectinload(Tree.images), selectinload(Tree.planting_program))
+        .options(*_TREE_DETAIL_LOAD)
     )
     tree = res.scalar_one_or_none()
     if tree is None:
