@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 import app.models.tree_measurement  # noqa: F401 — register TreeMeasurement for Tree mapper
-
 from app.services.evidence.bundle import build_project_evidence_bundle
 from app.services.evidence.signing import sign_evidence_zip, verify_evidence_zip, zip_content_hash
 
