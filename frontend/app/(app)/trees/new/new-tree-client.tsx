@@ -543,6 +543,7 @@ export function NewTreePageClient() {
           !!project &&
           (project.compliance_mode === "strict" || !!project.scheme_code)
         }
+        cameraOnly={project?.compliance_mode === "strict"}
       />
     </div>
   );

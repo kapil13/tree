@@ -166,6 +166,12 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
         <div className="rounded-lg border border-stone-200 bg-stone-50/60 px-3 py-3 text-xs text-stone-700 space-y-2">
           <p className="font-medium text-stone-900">Integrity fusion gates</p>
           <p>{ledger.integrity_fusion.message}</p>
+          {ledger.integrity_fusion.monitoring_gate &&
+          !(ledger.integrity_fusion.monitoring_ready ?? ledger.integrity_fusion.monitoring_gate.passed) ? (
+            <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-900">
+              Monitoring blocked: {ledger.integrity_fusion.monitoring_gate.message}
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-3 font-mono">
             <span>
               Eligible: {ledger.integrity_fusion.credit_eligible_count}/

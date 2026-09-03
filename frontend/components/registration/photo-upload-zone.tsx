@@ -12,6 +12,8 @@ type PhotoUploadZoneProps = {
   onAdd: (files: FileList) => Promise<void>;
   onRemove: (index: number) => void;
   disabled?: boolean;
+  /** Strict compliance: camera capture only (no gallery upload or drag-drop). */
+  cameraOnly?: boolean;
 };
 
 export function PhotoUploadZone({
@@ -22,6 +24,7 @@ export function PhotoUploadZone({
   onAdd,
   onRemove,
   disabled = false,
+  cameraOnly = false,
 }: PhotoUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -33,6 +36,7 @@ export function PhotoUploadZone({
 
   return (
     <div className="space-y-5">
+      {!cameraOnly ? (
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -103,6 +107,41 @@ export function PhotoUploadZone({
           />
         </div>
       </div>
+      ) : (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50/80 p-6 text-center dark:border-amber-900/40 dark:bg-amber-950/20">
+          <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+            Strict compliance: use your device camera only (gallery uploads disabled).
+          </p>
+          <p className="mt-2 text-xs text-amber-900/80 dark:text-amber-200/80">
+            Photos must include GPS and a recent timestamp from the camera.
+          </p>
+          <button
+            type="button"
+            className="btn-primary mt-4"
+            disabled={busy || disabled}
+            onClick={() => {
+              if (!inputRef.current) return;
+              inputRef.current.setAttribute("capture", "environment");
+              inputRef.current.click();
+              inputRef.current.removeAttribute("capture");
+            }}
+          >
+            <Camera className="h-4 w-4" />
+            Take photo
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              void handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-sm">
         <span className="text-stone-600 dark:text-stone-300">
