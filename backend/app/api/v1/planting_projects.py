@@ -35,6 +35,7 @@ from app.schemas.planting_project import (
     SafeguardDocumentOut,
     SchemeKpiOut,
     SchemeMetadataUpdate,
+    SpeciesSuggestionsOut,
     StandardTemplateOut,
     WorkAreaCreate,
     WorkAreaOut,
@@ -89,6 +90,7 @@ from app.services.planting_projects.service import (
     get_active_standard,
     project_summary,
 )
+from app.services.planting_projects.species_recommendations import recommend_for_project
 from app.services.planting_projects.templates import get_template, list_templates
 from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
@@ -563,6 +565,32 @@ async def get_registration_context(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     payload = await build_registration_context(db, project, work_area_id=work_area_id)
     return RegistrationContextOut.model_validate(payload)
+
+
+@router.get("/{project_id}/species-suggestions", response_model=SpeciesSuggestionsOut)
+async def get_species_suggestions(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    state_code: str | None = Query(None, max_length=8),
+    state_name: str | None = Query(None, max_length=128),
+    district_code: str | None = Query(None, max_length=16),
+    district_name: str | None = Query(None, max_length=128),
+) -> SpeciesSuggestionsOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    standard = await get_active_standard(db, project)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    payload = recommend_for_project(
+        project,
+        rules=effective_rules,
+        state_code=state_code,
+        state_name=state_name,
+        district_code=district_code,
+        district_name=district_name,
+    )
+    return SpeciesSuggestionsOut.model_validate(payload)
 
 
 @router.get("/{project_id}/rule-override")

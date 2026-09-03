@@ -17,6 +17,7 @@ import {
 } from "@/components/projects/site-rule-adjustments-panel";
 import { TreeRegistrationDefaultsForm } from "@/components/projects/tree-registration-defaults-form";
 import { ProjectLocationFields } from "@/components/projects/project-location-fields";
+import { SuggestedSpeciesPanel } from "@/components/projects/suggested-species-panel";
 import {
   SchemeRefsFields,
   validateSchemeRefs,
@@ -442,6 +443,18 @@ export function ProjectSetupWizard({ projectId }: { projectId: string }) {
               }
             }}
           />
+
+          {location.state_code ? (
+            <SuggestedSpeciesPanel
+              projectId={project.id}
+              location={{
+                state_code: location.state_code,
+                state_name: location.state_name,
+                district_code: location.district_code,
+                district_name: location.district_name,
+              }}
+            />
+          ) : null}
 
           {activeStandardTemplate ? (
             <div className="space-y-3">
