@@ -172,6 +172,7 @@ def resolve_audit_ready_status(
     satellite_verified: bool,
     satellite_scene_at: Any | None,
     fusion_score: float | None,
+    strict_photo_evidence: bool = False,
 ) -> str:
     from app.services.integrity.audit_readiness import meets_audit_ready_criteria
 
@@ -187,6 +188,7 @@ def resolve_audit_ready_status(
         base_verification_status=base_verification_status,
         ai_confidence_low=assessment.ai_confidence_low,
         regeotag_mismatch=assessment.regeotag_mismatch,
+        strict_photo_evidence=strict_photo_evidence,
     ):
         return VERIFICATION_AUDIT_READY
     return base_verification_status
@@ -420,6 +422,8 @@ async def apply_integrity_to_tree(
     db: AsyncSession,
     tree: Tree,
     assessment: RiskAssessment,
+    *,
+    strict_photo_evidence: bool = False,
 ) -> None:
     from app.services.integrity.audit_readiness import audit_ready_blockers, photo_span_days
     from app.services.integrity.fusion import compute_tree_fusion
@@ -451,6 +455,7 @@ async def apply_integrity_to_tree(
         satellite_verified=bool(tree.satellite_verified),
         satellite_scene_at=sat_ctx.get("scene_acquired_at"),
         fusion_score=fusion.fusion_score,
+        strict_photo_evidence=strict_photo_evidence,
     )
     if verification_status != base_verification:
         fusion = compute_tree_fusion(
@@ -482,6 +487,7 @@ async def apply_integrity_to_tree(
             base_verification_status=base_verification,
             ai_confidence_low=assessment.ai_confidence_low,
             regeotag_mismatch=assessment.regeotag_mismatch,
+            strict_photo_evidence=strict_photo_evidence,
         )
     row.fusion_details = {
         **(fusion.details or {}),

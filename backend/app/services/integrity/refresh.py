@@ -61,4 +61,9 @@ async def refresh_tree_integrity(
         rules_max_accuracy_m=rules_max_acc,
         overall_confidence=overall_confidence,
     )
-    await apply_integrity_to_tree(db, tree, assessment)
+    await apply_integrity_to_tree(
+        db,
+        tree,
+        assessment,
+        strict_photo_evidence=compliance_mode == "strict",
+    )

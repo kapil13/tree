@@ -50,6 +50,12 @@ async def tree_registry_eligibility(
     reasons: list[str] = []
     if risk is None or risk.fusion_score is None:
         reasons.append("integrity_not_computed")
+    if tree.verification_status != "audit_ready":
+        reasons.append("not_audit_ready")
+    fusion_details = (getattr(risk, "fusion_details", None) or {}) if risk else {}
+    for blocker in fusion_details.get("audit_ready_blockers") or []:
+        if blocker not in reasons:
+            reasons.append(str(blocker))
     if risk is not None and not risk.credit_eligible and not reasons:
         reasons.append("not_credit_eligible")
     if risk is not None:
@@ -86,6 +92,8 @@ async def build_issue_integrity_snapshot(
         "avg_fusion_score": detail["avg_fusion_score"],
         "verified_ready": detail["verified_ready"],
         "issued_ready": detail["issued_ready"],
+        "monitoring_ready": detail.get("monitoring_ready"),
+        "monitoring_gate": detail.get("monitoring_gate"),
     }
 
 
@@ -100,7 +108,8 @@ async def registry_readiness(db: AsyncSession, project_id: uuid.UUID) -> dict[st
         "avg_fusion_score": detail["avg_fusion_score"],
         "verified_ready": detail["verified_ready"],
         "issued_ready": detail["issued_ready"],
-        "claimable_tree_count": detail["credit_eligible_count"],
+        "monitoring_ready": detail.get("monitoring_ready"),
+        "claimable_tree_count": detail["audit_ready_count"],
         "registry_issue_ready": detail["issued_ready"],
         "blocking_trees": detail["blocking_trees"][:20],
         "message": detail["message"],

@@ -98,6 +98,26 @@ function auditReadyBlockers(risk: import("@/lib/api").TreeRiskScore | null): str
   return blockers.filter((item): item is string => typeof item === "string");
 }
 
+function auditBlockerLabel(reason: string): string {
+  const labels: Record<string, string> = {
+    insufficient_photos: "Need at least 2 photos",
+    photo_span_too_short: "Photos must span 30+ days",
+    satellite_scan_stale: "Satellite scan older than 90 days",
+    fusion_below_audit_minimum: "Fusion score below 75",
+    missing_exif: "Missing camera EXIF",
+    missing_photo_gps: "Photo missing GPS",
+    missing_photo_timestamp: "Photo missing timestamp",
+    photo_timestamp_stale: "Photo older than 7 days",
+    not_satellite_corroborated: "Not satellite corroborated",
+    duplicate_photo: "Duplicate photo",
+    duplicate_coordinate: "Duplicate coordinate",
+    satellite_not_verified: "Satellite not verified",
+    ai_confidence_low: "Low AI confidence",
+    regeotag_mismatch: "Re-geotag mismatch",
+  };
+  return labels[reason] ?? reason.replace(/_/g, " ");
+}
+
 function healthBadge(h: string) {
   const cls =
     h === "healthy"
@@ -495,7 +515,7 @@ export function TreeDetailView() {
                         value={
                           <ul className="list-disc pl-4 text-sm text-amber-800">
                             {auditReadyBlockers(tree.risk_score).map((blocker) => (
-                              <li key={blocker}>{blocker.replace(/_/g, " ")}</li>
+                              <li key={blocker}>{auditBlockerLabel(blocker)}</li>
                             ))}
                           </ul>
                         }

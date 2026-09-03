@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import app.models.tree_measurement  # noqa: F401 — register TreeMeasurement mapper
 from app.services.credits.claims import register_tree_claim
 from app.services.credits.serials import mint_serial_for_issue, register_project_tree_claims
 from app.services.integrity.registry_integration import (
@@ -29,8 +30,12 @@ async def test_tree_registry_eligibility_not_computed():
 
 @pytest.mark.asyncio
 async def test_tree_registry_eligibility_credit_eligible():
-    tree = SimpleNamespace(id=uuid.uuid4(), verification_status="field_verified", public_code="T-2")
-    risk = SimpleNamespace(credit_eligible=True, fusion_score=78.0)
+    tree = SimpleNamespace(id=uuid.uuid4(), verification_status="audit_ready", public_code="T-2")
+    risk = SimpleNamespace(
+        credit_eligible=True,
+        fusion_score=78.0,
+        fusion_details={"audit_ready_blockers": []},
+    )
     db = AsyncMock()
     db.execute = AsyncMock(return_value=MagicMock(first=MagicMock(return_value=(tree, risk))))
     result = await tree_registry_eligibility(db, tree.id)
@@ -39,9 +44,24 @@ async def test_tree_registry_eligibility_credit_eligible():
 
 
 @pytest.mark.asyncio
+async def test_tree_registry_eligibility_requires_audit_ready():
+    tree = SimpleNamespace(id=uuid.uuid4(), verification_status="field_verified", public_code="T-2b")
+    risk = SimpleNamespace(
+        credit_eligible=True,
+        fusion_score=78.0,
+        fusion_details={},
+    )
+    db = AsyncMock()
+    db.execute = AsyncMock(return_value=MagicMock(first=MagicMock(return_value=(tree, risk))))
+    result = await tree_registry_eligibility(db, tree.id)
+    assert result.eligible is False
+    assert "not_audit_ready" in result.reasons
+
+
+@pytest.mark.asyncio
 async def test_assert_tree_registry_eligible_raises():
     tree = SimpleNamespace(id=uuid.uuid4(), verification_status="registered", public_code="T-3")
-    risk = SimpleNamespace(credit_eligible=False, fusion_score=40.0)
+    risk = SimpleNamespace(credit_eligible=False, fusion_score=40.0, fusion_details={})
     db = AsyncMock()
     db.execute = AsyncMock(return_value=MagicMock(first=MagicMock(return_value=(tree, risk))))
     with pytest.raises(ValueError, match="registry_gate_failed"):
@@ -70,10 +90,20 @@ async def test_register_project_tree_claims_skips_ineligible():
             )
         )
     )
-    with patch(
-        "app.services.credits.serials.register_tree_claim",
-        new_callable=AsyncMock,
-    ) as mock_claim:
+    with (
+        patch(
+            "app.services.integrity.registry_integration.tree_registry_eligibility",
+            new_callable=AsyncMock,
+            side_effect=[
+                SimpleNamespace(eligible=True, fusion_score=80.0, reasons=[]),
+                SimpleNamespace(eligible=False, fusion_score=30.0, reasons=["not_audit_ready"]),
+            ],
+        ),
+        patch(
+            "app.services.credits.serials.register_tree_claim",
+            new_callable=AsyncMock,
+        ) as mock_claim,
+    ):
         result = await register_project_tree_claims(db, project=project, ledger_event=event)
     assert result["registered"] == ["ELIG-1"]
     assert result["skipped"] == ["INEL-1"]
