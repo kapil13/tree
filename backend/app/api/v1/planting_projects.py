@@ -547,31 +547,6 @@ async def create_project(
     return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
-@router.get("/{project_id}", response_model=PlantingProjectOut)
-async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> PlantingProjectOut:
-    project = await load_project(project_id, user, db)
-    if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
-    standard = await get_active_standard(db, project)
-    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
-    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
-
-
-@router.get("/{project_id}/registration-context", response_model=RegistrationContextOut)
-async def get_registration_context(
-    project_id: uuid.UUID,
-    user: CurrentUser,
-    db: DB,
-    work_area_id: uuid.UUID | None = None,
-) -> RegistrationContextOut:
-    project = await load_project(project_id, user, db)
-    if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    payload = await build_registration_context(db, project, work_area_id=work_area_id)
-    return RegistrationContextOut.model_validate(payload)
-
-
 @router.get("/climate-zone", response_model=ClimateZoneOut)
 async def get_climate_zone(
     user: CurrentUser,
@@ -612,6 +587,31 @@ async def preview_species_suggestions(
         rules=rules,
     )
     return SpeciesSuggestionsOut.model_validate(payload)
+
+
+@router.get("/{project_id}", response_model=PlantingProjectOut)
+async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> PlantingProjectOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
+    standard = await get_active_standard(db, project)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
+@router.get("/{project_id}/registration-context", response_model=RegistrationContextOut)
+async def get_registration_context(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID | None = None,
+) -> RegistrationContextOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    payload = await build_registration_context(db, project, work_area_id=work_area_id)
+    return RegistrationContextOut.model_validate(payload)
 
 
 @router.get("/{project_id}/species-suggestions", response_model=SpeciesSuggestionsOut)
