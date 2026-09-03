@@ -761,6 +761,44 @@ async def regeotag_tree(
             recorder=user,
         )
 
+    if payload.photo_key:
+        try:
+            assert_owned_upload_key(user.id, payload.photo_key, folders=("images",))
+        except ValueError as exc:
+            code = str(exc)
+            if code == "s3_key_forbidden":
+                raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
+
+        compliance_mode, program_code = await resolve_tree_compliance_context(db, tree)
+        for existing in tree.images or []:
+            existing.is_primary = False
+
+        survey_img = TreeImage(
+            tree_id=tree.id,
+            s3_key=payload.photo_key,
+            is_primary=True,
+            uploaded_by=user.id,
+        )
+        processed = await process_tree_image_upload(
+            db,
+            tree=tree,
+            image=survey_img,
+            s3_key=payload.photo_key,
+            organization_id=user.organization_id,
+            compliance_mode=compliance_mode,  # type: ignore[arg-type]
+            validate_strict_exif=compliance_mode == "strict",
+            check_duplicates=True,
+        )
+        if processed.duplicate and should_block_duplicate_photo(
+            processed.duplicate,
+            compliance_mode=compliance_mode,  # type: ignore[arg-type]
+            program_code=program_code,
+        ):
+            raise duplicate_photo_http_error(processed.duplicate)
+        db.add(survey_img)
+        await db.flush()
+
     gamification = None
     if tree.project_id is None:
         from app.services.citizen.gamification import record_stewardship_checkin

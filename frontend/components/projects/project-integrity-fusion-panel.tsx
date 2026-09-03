@@ -2,27 +2,14 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { Download, RefreshCw, ShieldCheck } from "lucide-react";
 import { errorMessage, plantingProjects } from "@/lib/api";
 import { cn } from "@/lib/cn";
-
-function reasonLabel(reason: string): string {
-  return reason.replace(/_/g, " ");
-}
-
-function auditBlockerLabel(reason: string): string {
-  const labels: Record<string, string> = {
-    insufficient_photos: "Need at least 2 photos",
-    photo_span_too_short: "Photos must span 30+ days",
-    satellite_scan_stale: "Satellite scan older than 90 days",
-    fusion_below_audit_minimum: "Fusion score below 75",
-    missing_exif: "Missing camera EXIF",
-    missing_photo_gps: "Photo missing GPS",
-    missing_photo_timestamp: "Photo missing timestamp",
-    photo_timestamp_stale: "Photo older than 7 days",
-  };
-  return labels[reason] ?? reasonLabel(reason);
-}
+import {
+  monitoringGateReasonLabel,
+  resolveIntegrityRemediation,
+  resolveMonitoringGateRemediation,
+} from "@/lib/integrity-remediation";
 
 function GateBadge({ ready, label }: { ready: boolean; label: string }) {
   return (
@@ -56,6 +43,23 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
       qc.invalidateQueries({ queryKey: ["credit-ledger", projectId] });
     },
   });
+
+  const exportFusion = useMutation({
+    mutationFn: () => plantingProjects.exportIntegrityFusion(projectId),
+    onSuccess: (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `integrity-fusion-${projectId.slice(0, 8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  const remediationCtx = {
+    projectId,
+    satelliteWatchEnabled: true,
+  };
 
   if (isLoading) {
     return <p className="text-sm text-stone-500">Loading integrity fusion…</p>;
@@ -100,6 +104,15 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
           <RefreshCw className="h-3.5 w-3.5" />
           {refresh.isPending ? "Refreshing…" : "Recalculate all trees"}
         </button>
+        <button
+          type="button"
+          className="btn-secondary text-xs"
+          disabled={exportFusion.isPending}
+          onClick={() => exportFusion.mutate()}
+        >
+          <Download className="h-3.5 w-3.5" />
+          {exportFusion.isPending ? "Exporting…" : "Export JSON"}
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -119,9 +132,24 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
           <p className="font-medium">Monitoring gate blocked</p>
           <p className="mt-1">{data.monitoring_gate.message}</p>
           {data.monitoring_gate.reasons?.length ? (
-            <p className="mt-1">
-              Reasons: {data.monitoring_gate.reasons.map(reasonLabel).join(", ")}
-            </p>
+            <ul className="mt-2 space-y-1">
+              {data.monitoring_gate.reasons.map((reason) => {
+                const action = resolveMonitoringGateRemediation(reason, remediationCtx);
+                return (
+                  <li key={reason} className="flex flex-wrap items-center justify-between gap-2">
+                    <span>{monitoringGateReasonLabel(reason)}</span>
+                    {action.href ? (
+                      <Link
+                        href={action.href}
+                        className="font-medium text-forest-800 hover:underline"
+                      >
+                        {action.actionLabel ?? "Remediate"}
+                      </Link>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
           ) : null}
         </div>
       ) : null}
@@ -224,7 +252,27 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
                     {row.fusion_score != null ? Math.round(row.fusion_score) : "—"}
                   </td>
                   <td className="px-4 py-2 text-xs text-stone-600">
-                    {row.reasons.map(reasonLabel).join(", ")}
+                    <ul className="space-y-1">
+                      {row.reasons.map((reason) => {
+                        const action = resolveIntegrityRemediation(reason, {
+                          ...remediationCtx,
+                          treeId: row.tree_id,
+                        });
+                        return (
+                          <li key={reason} className="flex flex-wrap items-center gap-2">
+                            <span>{action.label}</span>
+                            {action.href ? (
+                              <Link
+                                href={action.href}
+                                className="font-medium text-forest-700 hover:underline"
+                              >
+                                {action.actionLabel ?? "Fix"}
+                              </Link>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </td>
                 </tr>
               ))}

@@ -26,11 +26,13 @@ import { SatelliteHealthPanel } from "@/components/satellite-health-panel";
 import { SarTreePanel } from "@/components/satellite/sar-tree-panel";
 import { TreePhoto } from "@/components/trees/tree-photo";
 import { TreeMeasurementsPanel } from "@/components/trees/tree-measurements-panel";
+import { PhotoUploadZone } from "@/components/registration/photo-upload-zone";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrustChip, trustToneFromProvider } from "@/components/ui/trust-chip";
-import { trees, aiScans, errorMessage, intelligence } from "@/lib/api";
+import { trees, aiScans, errorMessage, intelligence, plantingProjects, uploads } from "@/lib/api";
 import { citizen } from "@/lib/citizen-api";
 import { useAuth } from "@/lib/auth-store";
+import { resolveIntegrityRemediation } from "@/lib/integrity-remediation";
 import { canWriteInApp, userHasProfessionalAccess, viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 
@@ -98,26 +100,6 @@ function auditReadyBlockers(risk: import("@/lib/api").TreeRiskScore | null): str
   return blockers.filter((item): item is string => typeof item === "string");
 }
 
-function auditBlockerLabel(reason: string): string {
-  const labels: Record<string, string> = {
-    insufficient_photos: "Need at least 2 photos",
-    photo_span_too_short: "Photos must span 30+ days",
-    satellite_scan_stale: "Satellite scan older than 90 days",
-    fusion_below_audit_minimum: "Fusion score below 75",
-    missing_exif: "Missing camera EXIF",
-    missing_photo_gps: "Photo missing GPS",
-    missing_photo_timestamp: "Photo missing timestamp",
-    photo_timestamp_stale: "Photo older than 7 days",
-    not_satellite_corroborated: "Not satellite corroborated",
-    duplicate_photo: "Duplicate photo",
-    duplicate_coordinate: "Duplicate coordinate",
-    satellite_not_verified: "Satellite not verified",
-    ai_confidence_low: "Low AI confidence",
-    regeotag_mismatch: "Re-geotag mismatch",
-  };
-  return labels[reason] ?? reason.replace(/_/g, " ");
-}
-
 function healthBadge(h: string) {
   const cls =
     h === "healthy"
@@ -139,12 +121,28 @@ export function TreeDetailView() {
   const [survivalStatus, setSurvivalStatus] = useState("live");
   const [complianceNote, setComplianceNote] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
+  const [followUpPreviews, setFollowUpPreviews] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const { data: tree, isLoading, error } = useQuery({
     queryKey: ["tree", id],
     queryFn: () => trees.get(id),
     enabled: !!id,
   });
+
+  const { data: project } = useQuery({
+    queryKey: ["planting-project", tree?.project_id],
+    queryFn: () => plantingProjects.get(tree!.project_id!),
+    enabled: Boolean(tree?.project_id),
+  });
+
+  const cameraOnly = project?.compliance_mode === "strict";
+  const remediationCtx = {
+    treeId: id,
+    projectId: tree?.project_id ?? undefined,
+    workAreaId: tree?.plantation_id ?? undefined,
+    satelliteWatchEnabled: Boolean(tree?.project_id),
+  };
 
   const { data: stewardship } = useQuery({
     queryKey: ["citizen-stewardship"],
@@ -268,13 +266,33 @@ export function TreeDetailView() {
   useEffect(() => {
     const applyHash = () => {
       const hash = typeof window !== "undefined" ? window.location.hash : "";
-      if (hash === "#survival") setTab("field");
+      if (hash === "#survival" || hash === "#follow-up-photo") setTab("field");
       if (hash === "#ai-analysis") setTab("intelligence");
     };
     applyHash();
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
   }, []);
+
+  async function addFollowUpPhoto(files: FileList) {
+    setUploadingPhoto(true);
+    try {
+      for (const file of Array.from(files)) {
+        const s3Key = await uploads.uploadImage(file);
+        await trees.addImage(id, s3Key);
+        setFollowUpPreviews((prev) => [...prev, URL.createObjectURL(file)]);
+      }
+      showToast("Follow-up photo added");
+      qc.invalidateQueries({ queryKey: ["tree", id] });
+      if (tree?.project_id) {
+        qc.invalidateQueries({ queryKey: ["integrity-fusion", tree.project_id] });
+      }
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   function handleRegeotag() {
     if (!navigator.geolocation) return;
@@ -513,10 +531,23 @@ export function TreeDetailView() {
                       <Field
                         label="Audit-ready blockers"
                         value={
-                          <ul className="list-disc pl-4 text-sm text-amber-800">
-                            {auditReadyBlockers(tree.risk_score).map((blocker) => (
-                              <li key={blocker}>{auditBlockerLabel(blocker)}</li>
-                            ))}
+                          <ul className="space-y-2 text-sm text-amber-800">
+                            {auditReadyBlockers(tree.risk_score).map((blocker) => {
+                              const action = resolveIntegrityRemediation(blocker, remediationCtx);
+                              return (
+                                <li key={blocker} className="flex flex-wrap items-start justify-between gap-2">
+                                  <span>{action.label}</span>
+                                  {action.actionLabel && action.href && canWrite ? (
+                                    <Link
+                                      href={action.href}
+                                      className="shrink-0 text-xs font-medium text-forest-700 hover:underline"
+                                    >
+                                      {action.actionLabel}
+                                    </Link>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
                           </ul>
                         }
                       />
@@ -709,6 +740,29 @@ export function TreeDetailView() {
               <p className="mt-2 text-xs text-stone-500">
                 Compliance rules are re-checked on re-geotag for project-linked trees.
               </p>
+            )}
+          </div>
+
+          <div id="follow-up-photo" className="card scroll-mt-20">
+            <h2 className="mb-1 text-sm font-medium text-stone-700">Follow-up photos</h2>
+            <p className="mb-3 text-xs text-stone-500">
+              Add dated field photos to clear audit-ready blockers (minimum 2 photos spanning 30+
+              days). {cameraOnly ? "Strict mode requires camera capture with GPS EXIF." : ""}
+            </p>
+            {canWrite ? (
+              <PhotoUploadZone
+                minPhotos={0}
+                photoKeys={[]}
+                previews={followUpPreviews}
+                busy={uploadingPhoto}
+                onAdd={addFollowUpPhoto}
+                onRemove={(index) =>
+                  setFollowUpPreviews((prev) => prev.filter((_, i) => i !== index))
+                }
+                cameraOnly={cameraOnly}
+              />
+            ) : (
+              <p className="text-sm text-stone-500">Sign in with write access to add photos.</p>
             )}
           </div>
 

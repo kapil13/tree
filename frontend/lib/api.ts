@@ -1563,6 +1563,13 @@ export const plantingProjects = {
       )
     ).data;
   },
+  async exportIntegrityFusion(projectId: string) {
+    const response = await api.get(
+      `/v1/planting-projects/${projectId}/integrity-fusion/export`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
   async registryReadiness(projectId: string) {
     return (
       await api.get<RegistryReadiness>(`/v1/planting-projects/${projectId}/registry-readiness`)
@@ -1975,8 +1982,10 @@ export const trees = {
       latitude: number;
       longitude: number;
       accuracy_m?: number;
+      altitude_m?: number;
       survival_status?: string;
       remarks?: string;
+      photo_key?: string;
       dbh_cm?: number;
       height_m?: number;
       canopy_m?: number;
@@ -1985,6 +1994,16 @@ export const trees = {
     },
   ) {
     return (await api.post<TreeDetail>(`/v1/trees/${id}/regeotag`, payload)).data;
+  },
+  async addImage(treeId: string, s3Key: string, options?: { isPrimary?: boolean }) {
+    return (
+      await api.post<TreeImage>(`/v1/trees/${treeId}/images`, null, {
+        params: {
+          s3_key: s3Key,
+          is_primary: options?.isPrimary ?? false,
+        },
+      })
+    ).data;
   },
   async measurements(id: string, params?: { page?: number; page_size?: number }) {
     return (await api.get(`/v1/trees/${id}/measurements`, { params })).data as {

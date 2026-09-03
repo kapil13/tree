@@ -214,6 +214,14 @@ export function ProjectComplianceTab({
     },
   });
 
+  const exportIntegrityFusion = useMutation({
+    mutationFn: () => plantingProjects.exportIntegrityFusion(projectId),
+    onSuccess: (blob) => {
+      const code = (projectCode || "project").replace(/\//g, "-");
+      downloadBlob(blob, `${code}-integrity-fusion.json`);
+    },
+  });
+
   const exportFramework = useMutation({
     mutationFn: (format: "pdf" | "xlsx") =>
       plantingProjects.exportFrameworkReport(projectId, frameworkProfile, format),
@@ -466,6 +474,7 @@ export function ProjectComplianceTab({
                 exportMrv,
                 exportBundle,
                 exportMonitoringDossier,
+                exportIntegrityFusion,
                 exportFramework,
                 exportGreenCreditPortal,
                 exportCampaState,
