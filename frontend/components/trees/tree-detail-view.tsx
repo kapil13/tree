@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download, ExternalLink, Heart, MapPin, Satellite, Sparkles } from "lucide-react";
+import { Download, ExternalLink, Heart, MapPin, Satellite, Sparkles, Camera } from "lucide-react";
 import { PestIntelPanel } from "@/components/pest-intel-panel";
 import { DataTrustBadge, isSatelliteProviderLive, isTrustModeLive } from "@/components/data-trust-badge";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
@@ -123,6 +123,10 @@ export function TreeDetailView() {
   const [tab, setTab] = useState<Tab>("overview");
   const [followUpPreviews, setFollowUpPreviews] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [surveyPhotoKey, setSurveyPhotoKey] = useState<string | null>(null);
+  const [surveyPhotoPreview, setSurveyPhotoPreview] = useState<string | null>(null);
+  const [surveyPhotoBusy, setSurveyPhotoBusy] = useState(false);
+  const surveyPhotoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tree, isLoading, error } = useQuery({
     queryKey: ["tree", id],
@@ -232,9 +236,12 @@ export function TreeDetailView() {
       longitude: number;
       accuracy_m?: number;
       survival_status?: string;
+      photo_key?: string;
     }) => trees.regeotag(id, payload),
     onSuccess: (data) => {
       setComplianceNote(null);
+      setSurveyPhotoKey(null);
+      setSurveyPhotoPreview(null);
       if (data.compliance?.issues?.length) {
         const msgs = data.compliance.issues.map((i) => i.message).join(" · ");
         setComplianceNote(
@@ -274,6 +281,21 @@ export function TreeDetailView() {
     return () => window.removeEventListener("hashchange", applyHash);
   }, []);
 
+  async function captureSurveyPhoto(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    setSurveyPhotoBusy(true);
+    try {
+      const s3Key = await uploads.uploadImage(file);
+      setSurveyPhotoKey(s3Key);
+      setSurveyPhotoPreview(URL.createObjectURL(file));
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      setSurveyPhotoBusy(false);
+    }
+  }
+
   async function addFollowUpPhoto(files: FileList) {
     setUploadingPhoto(true);
     try {
@@ -303,6 +325,7 @@ export function TreeDetailView() {
           longitude: pos.coords.longitude,
           accuracy_m: pos.coords.accuracy,
           survival_status: survivalStatus,
+          photo_key: surveyPhotoKey ?? undefined,
         });
       },
       () => undefined,
@@ -718,15 +741,68 @@ export function TreeDetailView() {
               </select>
             </div>
             {canWrite ? (
-              <button
-                type="button"
-                className="btn-secondary mt-4"
-                disabled={regeotag.isPending}
-                onClick={handleRegeotag}
-              >
-                <MapPin className="h-4 w-4" />
-                {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
-              </button>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-3">
+                  <p className="text-xs font-medium text-stone-700">Survey photo (optional)</p>
+                  <p className="mt-1 text-xs text-stone-500">
+                    Attach a camera photo with GPS to clear re-geotag mismatch in strict projects.
+                  </p>
+                  {surveyPhotoPreview ? (
+                    <div className="mt-3 flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={surveyPhotoPreview}
+                        alt="Survey photo preview"
+                        className="h-16 w-16 rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        className="text-xs text-rose-700 hover:underline"
+                        onClick={() => {
+                          setSurveyPhotoKey(null);
+                          setSurveyPhotoPreview(null);
+                        }}
+                      >
+                        Remove photo
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-secondary mt-3 text-xs"
+                      disabled={surveyPhotoBusy || regeotag.isPending}
+                      onClick={() => {
+                        if (!surveyPhotoInputRef.current) return;
+                        surveyPhotoInputRef.current.setAttribute("capture", "environment");
+                        surveyPhotoInputRef.current.click();
+                        surveyPhotoInputRef.current.removeAttribute("capture");
+                      }}
+                    >
+                      <Camera className="h-4 w-4" />
+                      {surveyPhotoBusy ? "Uploading photo…" : "Add survey photo"}
+                    </button>
+                  )}
+                  <input
+                    ref={surveyPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      void captureSurveyPhoto(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={regeotag.isPending}
+                  onClick={handleRegeotag}
+                >
+                  <MapPin className="h-4 w-4" />
+                  {regeotag.isPending ? "Updating GPS…" : "Re-geotag for survival survey"}
+                </button>
+              </div>
             ) : null}
             {regeotag.error && (
               <p className="mt-2 text-sm text-rose-700">{errorMessage(regeotag.error)}</p>

@@ -188,3 +188,37 @@ export function resolveMonitoringGateRemediation(
 ): IntegrityRemediationAction {
   return resolveIntegrityRemediation(reason, ctx);
 }
+
+export type IntegrityGateFailureDetail = {
+  message?: string;
+  blocking_trees?: Array<{
+    tree_id: string;
+    public_code: string;
+    verification_status: string;
+    fusion_score: number | null;
+    credit_eligible: boolean;
+    reasons: string[];
+  }>;
+  monitoring_gate?: {
+    passed?: boolean;
+    reasons?: string[];
+    message?: string;
+  };
+};
+
+export function parseIntegrityGateFailure(err: unknown): IntegrityGateFailureDetail | null {
+  if (!err || typeof err !== "object") return null;
+  const response = (err as { response?: { data?: { detail?: unknown } } }).response;
+  const detail = response?.data?.detail;
+  if (!detail || typeof detail !== "object" || detail === null) return null;
+  const fusion = (detail as { integrity_fusion?: IntegrityGateFailureDetail }).integrity_fusion;
+  if (!fusion || typeof fusion !== "object") return null;
+  return {
+    message: typeof fusion.message === "string" ? fusion.message : undefined,
+    blocking_trees: Array.isArray(fusion.blocking_trees) ? fusion.blocking_trees : undefined,
+    monitoring_gate:
+      fusion.monitoring_gate && typeof fusion.monitoring_gate === "object"
+        ? fusion.monitoring_gate
+        : undefined,
+  };
+}

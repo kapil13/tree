@@ -86,9 +86,7 @@ String? _messageFromResponse(Response<dynamic>? response) {
   if (detail is Map) {
     final compliance = detail['compliance_errors'];
     if (compliance is List) {
-      return compliance
-          .map((c) => c is Map ? (c['message'] ?? c['violation_type']) : c.toString())
-          .join('\n');
+      return formatComplianceErrors(compliance);
     }
     final validation = detail['validation_errors'];
     if (validation is List && validation.isNotEmpty) {
@@ -126,4 +124,52 @@ String _humanizeValidationErrors(List<String> errors) {
         return code.replaceAll('_', ' ');
       })
       .join('\n');
+}
+
+const _complianceViolationLabels = <String, String>{
+  'missing_exif': 'Photo is missing camera EXIF metadata.',
+  'missing_photo_gps': 'Photo is missing GPS coordinates.',
+  'missing_photo_timestamp': 'Photo is missing a capture timestamp.',
+  'photo_timestamp_stale': 'Photo is older than 7 days — take a fresh camera capture.',
+  'duplicate_photo': 'This photo matches an existing tree registration.',
+  'photo_span_too_short': 'Follow-up photos must span at least 30 days.',
+  'insufficient_photos': 'At least 2 field photos are required.',
+};
+
+String complianceViolationLabel(String violationType) {
+  return _complianceViolationLabels[violationType] ??
+      violationType.replaceAll('_', ' ');
+}
+
+String formatComplianceErrors(List<dynamic> compliance) {
+  return compliance
+      .map((item) {
+        if (item is! Map) return item.toString();
+        final type = item['violation_type']?.toString() ?? '';
+        final message = item['message']?.toString();
+        if (message != null && message.isNotEmpty) return message;
+        if (type.isNotEmpty) return complianceViolationLabel(type);
+        return item.toString();
+      })
+      .join('\n');
+}
+
+String formatComplianceSyncError(Object err) {
+  final message = apiErrorMessage(err);
+  if (message.contains('compliance') || message.contains('EXIF') || message.contains('photo')) {
+    return message;
+  }
+  if (err is DioException) {
+    final data = err.response?.data;
+    if (data is Map) {
+      final detail = data['detail'];
+      if (detail is Map) {
+        final compliance = detail['compliance_errors'];
+        if (compliance is List && compliance.isNotEmpty) {
+          return 'Strict compliance blocked sync:\n${formatComplianceErrors(compliance)}';
+        }
+      }
+    }
+  }
+  return 'Offline tree sync failed: $message';
 }

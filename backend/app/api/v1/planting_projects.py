@@ -1356,10 +1356,12 @@ async def export_integrity_fusion(
     request: Request,
     user: CurrentUser,
     db: DB,
+    export_format: str = Query("json", alias="format", pattern="^(json|csv)$"),
 ) -> Response:
-    import json
-
-    from app.services.integrity.export import build_integrity_fusion_export
+    from app.services.integrity.export import (
+        build_integrity_fusion_export,
+        render_integrity_fusion_export,
+    )
 
     project = await load_project(project_id, user, db)
     if project is None:
@@ -1367,7 +1369,7 @@ async def export_integrity_fusion(
 
     payload = await build_integrity_fusion_export(db, project)
     safe_code = project.code.replace("/", "-")
-    body = json.dumps(payload, indent=2, default=str).encode("utf-8")
+    body, media_type, ext = render_integrity_fusion_export(payload, export_format=export_format)
 
     await record_audit(
         db,
@@ -1376,15 +1378,18 @@ async def export_integrity_fusion(
         resource_type="planting_project",
         resource_id=project.id,
         request=request,
-        diff={"tree_count": payload.get("summary", {}).get("tree_count")},
+        diff={
+            "tree_count": payload.get("summary", {}).get("tree_count"),
+            "format": export_format,
+        },
     )
     await db.commit()
 
     return Response(
         content=body,
-        media_type="application/json",
+        media_type=media_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{safe_code}-integrity-fusion.json"'
+            "Content-Disposition": f'attachment; filename="{safe_code}-integrity-fusion.{ext}"'
         },
     )
 

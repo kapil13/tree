@@ -215,10 +215,10 @@ export function ProjectComplianceTab({
   });
 
   const exportIntegrityFusion = useMutation({
-    mutationFn: () => plantingProjects.exportIntegrityFusion(projectId),
-    onSuccess: (blob) => {
+    mutationFn: (format: "json" | "csv") => plantingProjects.exportIntegrityFusion(projectId, format),
+    onSuccess: (blob, format) => {
       const code = (projectCode || "project").replace(/\//g, "-");
-      downloadBlob(blob, `${code}-integrity-fusion.json`);
+      downloadBlob(blob, `${code}-integrity-fusion.${format}`);
     },
   });
 

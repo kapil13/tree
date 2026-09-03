@@ -588,6 +588,11 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> getIntegrityFusion(String projectId) async =>
+      Map<String, dynamic>.from(
+        (await _dio.get('/planting-projects/$projectId/integrity-fusion')).data,
+      );
+
   Future<Map<String, dynamic>> listTreeMeasurements(
     String treeId, {
     int page = 1,

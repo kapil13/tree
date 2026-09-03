@@ -45,12 +45,12 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
   });
 
   const exportFusion = useMutation({
-    mutationFn: () => plantingProjects.exportIntegrityFusion(projectId),
-    onSuccess: (blob) => {
+    mutationFn: (format: "json" | "csv") => plantingProjects.exportIntegrityFusion(projectId, format),
+    onSuccess: (blob, format) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `integrity-fusion-${projectId.slice(0, 8)}.json`;
+      a.download = `integrity-fusion-${projectId.slice(0, 8)}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
     },
@@ -108,10 +108,19 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
           type="button"
           className="btn-secondary text-xs"
           disabled={exportFusion.isPending}
-          onClick={() => exportFusion.mutate()}
+          onClick={() => exportFusion.mutate("json")}
         >
           <Download className="h-3.5 w-3.5" />
           {exportFusion.isPending ? "Exporting…" : "Export JSON"}
+        </button>
+        <button
+          type="button"
+          className="btn-secondary text-xs"
+          disabled={exportFusion.isPending}
+          onClick={() => exportFusion.mutate("csv")}
+        >
+          <Download className="h-3.5 w-3.5" />
+          {exportFusion.isPending ? "Exporting…" : "Export CSV"}
         </button>
       </div>
 

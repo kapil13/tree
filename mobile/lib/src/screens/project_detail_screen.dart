@@ -19,6 +19,7 @@ class ProjectDetailScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final projectAsync = ref.watch(plantingProjectProvider(projectId));
     final workAreasAsync = ref.watch(workAreasProvider(projectId));
+    final integrityAsync = ref.watch(integrityFusionProvider(projectId));
 
     return stackRouteScaffold(
       location: '/projects/$projectId',
@@ -55,6 +56,12 @@ class ProjectDetailScreen extends ConsumerWidget {
                   if ((summary?['open_violations'] ?? 0) > 0)
                     _chip(l10n.violationsLabel, '${summary?['open_violations']}', warn: true),
                 ],
+              ),
+              const SizedBox(height: 16),
+              integrityAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text(apiErrorMessage(e)),
+                data: (integrity) => _IntegrityMonitoringCard(integrity: integrity),
               ),
               const SizedBox(height: 24),
               Text(l10n.workAreas, style: Theme.of(context).textTheme.titleMedium),
@@ -134,6 +141,99 @@ class ProjectDetailScreen extends ConsumerWidget {
     return Chip(
       label: Text('$label: $value'),
       backgroundColor: warn ? Colors.orange.shade100 : null,
+    );
+  }
+}
+
+class _IntegrityMonitoringCard extends StatelessWidget {
+  const _IntegrityMonitoringCard({required this.integrity});
+
+  final Map<String, dynamic> integrity;
+
+  String _gateLabel(String code) {
+    const labels = {
+      'sar_integrity_below_minimum': 'SAR forest integrity below minimum',
+      'optical_scan_stale': 'Work area optical scan is stale',
+      'insufficient_photos': 'Need at least 2 photos',
+      'photo_span_too_short': 'Photos must span 30+ days',
+      'regeotag_mismatch': 'Re-geotag mismatch',
+      'fusion_below_minimum': 'Fusion score below minimum',
+      'not_credit_eligible': 'Not credit eligible',
+    };
+    return labels[code] ?? code.replaceAll('_', ' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final monitoringGate = integrity['monitoring_gate'] as Map<String, dynamic>?;
+    final monitoringReady = integrity['monitoring_ready'] == true ||
+        monitoringGate?['passed'] == true;
+    final reasons = (monitoringGate?['reasons'] as List?)?.whereType<String>().toList() ?? [];
+    final blocking = (integrity['blocking_trees'] as List?) ?? [];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  monitoringReady ? Icons.verified_user : Icons.warning_amber_rounded,
+                  color: monitoringReady ? Colors.green.shade700 : Colors.orange.shade800,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Integrity monitoring gate',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              monitoringReady
+                  ? 'Monitoring gate passed for credit transitions.'
+                  : 'Monitoring gate blocked for credit transitions.',
+            ),
+            if (monitoringGate?['message'] != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                monitoringGate!['message'] as String,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+            if (!monitoringReady && reasons.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...reasons.map(
+                (reason) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('• '),
+                      Expanded(child: Text(_gateLabel(reason))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'Eligible ${integrity['credit_eligible_count'] ?? 0}/${integrity['tree_count'] ?? 0} · '
+              'Audit ready ${integrity['audit_ready_count'] ?? 0}/${integrity['tree_count'] ?? 0}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            if (blocking.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${blocking.length} tree(s) with blocking issues',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

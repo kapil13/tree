@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   auditBlockerLabel,
+  parseIntegrityGateFailure,
   resolveIntegrityRemediation,
   resolveMonitoringGateRemediation,
 } from "./integrity-remediation";
@@ -38,5 +39,37 @@ describe("integrity-remediation", () => {
   it("deep-links optical scan stale to satellite workspace", () => {
     const action = resolveMonitoringGateRemediation("optical_scan_stale", ctx);
     expect(action.href).toBe("/satellite?fence=fence-a&project=proj-1");
+  });
+
+  it("parses integrity gate failure blocking trees from API errors", () => {
+    const err = {
+      response: {
+        data: {
+          detail: {
+            integrity_fusion: {
+              message: "Gate not met",
+              blocking_trees: [
+                {
+                  tree_id: "tree-9",
+                  public_code: "T-009",
+                  verification_status: "satellite_corroborated",
+                  fusion_score: 70,
+                  credit_eligible: false,
+                  reasons: ["insufficient_photos"],
+                },
+              ],
+              monitoring_gate: {
+                passed: false,
+                reasons: ["optical_scan_stale"],
+              },
+            },
+          },
+        },
+      },
+    };
+    const failure = parseIntegrityGateFailure(err);
+    expect(failure?.message).toBe("Gate not met");
+    expect(failure?.blocking_trees).toHaveLength(1);
+    expect(failure?.monitoring_gate?.reasons).toContain("optical_scan_stale");
   });
 });
