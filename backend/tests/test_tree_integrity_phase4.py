@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 import app.models.tree_measurement  # noqa: F401 — register TreeMeasurement mapper
-
 from app.services.credits.claims import register_tree_claim
 from app.services.credits.serials import mint_serial_for_issue, register_project_tree_claims
 from app.services.integrity.registry_integration import (
