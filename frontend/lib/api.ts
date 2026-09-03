@@ -1347,6 +1347,21 @@ export const plantingProjects = {
       )
     ).data;
   },
+  async speciesSuggestionsPreview(params?: {
+    state_code?: string;
+    state_name?: string;
+    district_code?: string;
+    district_name?: string;
+    scheme_code?: string;
+    segment?: string;
+    template_code?: string;
+  }) {
+    return (
+      await api.get<SpeciesSuggestions>(`/v1/planting-projects/species-suggestions/preview`, {
+        params,
+      })
+    ).data;
+  },
   async updateWorkArea(
     projectId: string,
     workAreaId: string,

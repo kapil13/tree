@@ -90,7 +90,10 @@ from app.services.planting_projects.service import (
     get_active_standard,
     project_summary,
 )
-from app.services.planting_projects.species_recommendations import recommend_for_project
+from app.services.planting_projects.species_recommendations import (
+    recommend_for_project,
+    recommend_species,
+)
 from app.services.planting_projects.templates import get_template, list_templates
 from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
@@ -565,6 +568,36 @@ async def get_registration_context(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     payload = await build_registration_context(db, project, work_area_id=work_area_id)
     return RegistrationContextOut.model_validate(payload)
+
+
+@router.get("/species-suggestions/preview", response_model=SpeciesSuggestionsOut)
+async def preview_species_suggestions(
+    user: CurrentUser,
+    state_code: str | None = Query(None, max_length=8),
+    state_name: str | None = Query(None, max_length=128),
+    district_code: str | None = Query(None, max_length=16),
+    district_name: str | None = Query(None, max_length=128),
+    scheme_code: str | None = Query(None, max_length=64),
+    segment: str = Query("general", max_length=64),
+    template_code: str | None = Query(None, max_length=64),
+) -> SpeciesSuggestionsOut:
+    rules: dict = {}
+    resolved_segment = segment
+    if template_code:
+        tpl = get_template(template_code)
+        if tpl:
+            rules = tpl.get("rules") or {}
+            resolved_segment = tpl.get("segment") or resolved_segment
+    payload = recommend_species(
+        state_code=state_code,
+        state_name=state_name,
+        district_code=district_code,
+        district_name=district_name,
+        segment=resolved_segment,
+        scheme_code=scheme_code,
+        rules=rules,
+    )
+    return SpeciesSuggestionsOut.model_validate(payload)
 
 
 @router.get("/{project_id}/species-suggestions", response_model=SpeciesSuggestionsOut)
