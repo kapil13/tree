@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../api/api_errors.dart';
 import '../location_helper.dart';
@@ -23,11 +24,14 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   final _remarks = TextEditingController();
   final _dbh = TextEditingController();
   final _height = TextEditingController();
+  final _picker = ImagePicker();
   LocationCaptureResult? _location;
   bool _locating = false;
   bool _submitting = false;
+  bool _photoBusy = false;
   String? _error;
   String? _locMessage;
+  String? _surveyPhotoKey;
   String _survivalStatus = 'live';
   String _measurementMethod = 'tape';
 
@@ -70,6 +74,24 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
     }
   }
 
+  Future<void> _captureSurveyPhoto() async {
+    setState(() {
+      _photoBusy = true;
+      _error = null;
+    });
+    try {
+      final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+      if (image == null) return;
+      final api = await ref.read(apiClientProvider.future);
+      final key = await api.uploadImageFile(image.path, filename: image.name);
+      if (mounted) setState(() => _surveyPhotoKey = key);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
   Future<void> _submit() async {
     final loc = _location;
     if (loc == null) {
@@ -89,6 +111,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
         accuracy: loc.accuracyMeters,
         remarks: _remarks.text.trim().isEmpty ? null : _remarks.text.trim(),
         survivalStatus: _survivalStatus,
+        photoKey: _surveyPhotoKey,
         dbhCm: double.tryParse(_dbh.text.trim()),
         heightM: double.tryParse(_height.text.trim()),
         method: _measurementMethod,
@@ -202,6 +225,16 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _photoBusy || _submitting ? null : _captureSurveyPhoto,
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: Text(
+              _surveyPhotoKey != null
+                  ? 'Survey photo attached'
+                  : (_photoBusy ? 'Capturing photo…' : 'Add survey photo (camera)'),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(

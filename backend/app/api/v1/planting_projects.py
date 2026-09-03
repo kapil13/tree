@@ -1350,6 +1350,45 @@ async def get_project_integrity_fusion(
     return await integrity_gate_detail(db, project.id)
 
 
+@router.get("/{project_id}/integrity-fusion/export")
+async def export_integrity_fusion(
+    project_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    import json
+
+    from app.services.integrity.export import build_integrity_fusion_export
+
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    payload = await build_integrity_fusion_export(db, project)
+    safe_code = project.code.replace("/", "-")
+    body = json.dumps(payload, indent=2, default=str).encode("utf-8")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="integrity_fusion.export",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"tree_count": payload.get("summary", {}).get("tree_count")},
+    )
+    await db.commit()
+
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_code}-integrity-fusion.json"'
+        },
+    )
+
+
 @router.post("/{project_id}/integrity-fusion/refresh")
 async def refresh_project_integrity_fusion(
     project_id: uuid.UUID,

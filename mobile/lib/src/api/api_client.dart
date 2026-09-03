@@ -550,6 +550,7 @@ class ApiClient {
     double? accuracy,
     String? remarks,
     String? survivalStatus,
+    String? photoKey,
     double? dbhCm,
     double? heightM,
     double? canopyM,
@@ -562,12 +563,28 @@ class ApiClient {
       if (accuracy != null) 'accuracy_m': accuracy,
       if (remarks != null) 'remarks': remarks,
       if (survivalStatus != null) 'survival_status': survivalStatus,
+      if (photoKey != null) 'photo_key': photoKey,
       if (dbhCm != null) 'dbh_cm': dbhCm,
       if (heightM != null) 'height_m': heightM,
       if (canopyM != null) 'canopy_m': canopyM,
       if (method != null) 'method': method,
       if (instrument != null) 'instrument': instrument,
     });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> addTreeImage(
+    String treeId,
+    String s3Key, {
+    bool isPrimary = false,
+  }) async {
+    final r = await _dio.post(
+      '/trees/$treeId/images',
+      queryParameters: {
+        's3_key': s3Key,
+        'is_primary': isPrimary,
+      },
+    );
     return Map<String, dynamic>.from(r.data);
   }
 

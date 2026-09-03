@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -21,12 +22,14 @@ class TreeDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
+  final _picker = ImagePicker();
   Map<String, dynamic>? tree;
   Map<String, dynamic>? satellite;
   String? _error;
   bool _loading = true;
   bool analyzing = false;
   bool satelliteBusy = false;
+  bool photoBusy = false;
 
   @override
   void initState() {
@@ -103,6 +106,59 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
 
   String _str(dynamic v) => v?.toString() ?? '—';
 
+  String _auditBlockerLabel(String code) {
+    const labels = {
+      'insufficient_photos': 'Need at least 2 photos',
+      'photo_span_too_short': 'Photos must span 30+ days',
+      'satellite_scan_stale': 'Satellite scan older than 90 days',
+      'fusion_below_audit_minimum': 'Fusion score below 75',
+      'missing_exif': 'Missing camera EXIF',
+      'missing_photo_gps': 'Photo missing GPS',
+      'missing_photo_timestamp': 'Photo missing timestamp',
+      'photo_timestamp_stale': 'Photo older than 7 days',
+      'regeotag_mismatch': 'Re-geotag mismatch',
+      'duplicate_photo': 'Duplicate photo',
+      'duplicate_coordinate': 'Duplicate coordinate',
+      'ai_confidence_low': 'Low AI confidence',
+    };
+    return labels[code] ?? code.replaceAll('_', ' ');
+  }
+
+  List<String> _auditBlockers(Map<String, dynamic>? risk) {
+    if (risk == null) return const [];
+    final details = risk['fusion_details'];
+    if (details is! Map) return const [];
+    final blockers = details['audit_ready_blockers'];
+    if (blockers is! List) return const [];
+    return blockers.whereType<String>().toList();
+  }
+
+  Future<void> _addFollowUpPhoto() async {
+    setState(() => photoBusy = true);
+    try {
+      final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+      if (image == null) return;
+      final api = await ref.read(apiClientProvider.future);
+      final key = await api.uploadImageFile(image.path, filename: image.name);
+      await api.addTreeImage(widget.id, key);
+      await _load();
+      ref.invalidate(treesProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Follow-up photo added')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => photoBusy = false);
+    }
+  }
+
   Future<void> _shareTree(String url) async {
     final l10n = AppLocalizations.of(context);
     final message = l10n?.shareTreeMessage(url) ?? 'View this tree on Aranyix: $url';
@@ -114,6 +170,8 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = tree;
+    final risk = t?['risk_score'] as Map<String, dynamic>?;
+    final blockers = _auditBlockers(risk);
     return stackRouteScaffold(
       location: '/trees/${widget.id}',
       appBar: ShellTopBar(title: t?['species_text'] ?? l10n.treeFallback, menuWithBack: true),
@@ -149,10 +207,51 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                             _row(l10n.dbhCmLabel, '${t['current_dbh_cm'] ?? '—'} cm'),
                             _row(l10n.heightMLabel, '${t['current_height_m'] ?? '—'} m'),
                             _row(l10n.satelliteLabel, t['satellite_verified'] == true ? '✓' : '—'),
+                            if (t['verification_status'] != null)
+                              _row('Verification', _str(t['verification_status']).replaceAll('_', ' ')),
+                            if (risk?['fusion_score'] != null)
+                              _row('Fusion score', '${risk!['fusion_score']}'),
+                            if (risk?['credit_eligible'] != null)
+                              _row(
+                                'Credit eligible',
+                                risk!['credit_eligible'] == true ? 'Yes' : 'No',
+                              ),
+                            if (risk?['regeotag_mismatch'] == true)
+                              _row('Integrity flag', 'Re-geotag mismatch'),
                           ],
                         ),
                       ),
                     ),
+                    if (blockers.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Audit-ready blockers',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              ...blockers.map(
+                                (b) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('• '),
+                                      Expanded(child: Text(_auditBlockerLabel(b))),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     if (satellite != null) ...[
                       const SizedBox(height: 12),
                       Card(
@@ -217,6 +316,12 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                         onPressed: () => context.push('/trees/${widget.id}/survival'),
                         icon: const Icon(Icons.my_location),
                         label: Text(l10n.survivalRegeotag),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: photoBusy ? null : _addFollowUpPhoto,
+                        icon: const Icon(Icons.add_a_photo_outlined),
+                        label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
                       ),
                       const SizedBox(height: 8),
                     ],

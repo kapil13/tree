@@ -124,6 +124,10 @@ class TreeRegeotag(BaseModel):
     longitude: float = Field(..., ge=-180, le=180)
     accuracy_m: float | None = Field(default=None, ge=0)
     altitude_m: float | None = None
+    photo_key: str | None = Field(
+        default=None,
+        description="Optional survey photo S3 key (camera capture with GPS for strict projects).",
+    )
     survival_status: str | None = Field(
         default=None, description="live | stressed | dead | replaced"
     )

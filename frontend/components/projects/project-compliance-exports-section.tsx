@@ -9,6 +9,7 @@ type ExportMutations = {
   exportMrv: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportBundle: { mutate: () => void; isPending: boolean };
   exportMonitoringDossier?: { mutate: () => void; isPending: boolean };
+  exportIntegrityFusion?: { mutate: () => void; isPending: boolean };
   exportFramework: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportGreenCreditPortal: { mutate: () => void; isPending: boolean };
   exportCampaState: { mutate: () => void; isPending: boolean };
@@ -105,6 +106,15 @@ export function ProjectComplianceExportsSection({
               pendingLabel="Exporting…"
               label="Monitoring dossier PDF"
               onClick={() => ex.exportMonitoringDossier!.mutate()}
+            />
+          ) : null}
+          {ex.exportIntegrityFusion ? (
+            <ExportButton
+              disabled={ex.busy}
+              pending={ex.exportIntegrityFusion.isPending}
+              pendingLabel="Exporting…"
+              label="Integrity fusion JSON"
+              onClick={() => ex.exportIntegrityFusion!.mutate()}
             />
           ) : null}
         </div>
