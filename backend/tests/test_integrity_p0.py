@@ -18,7 +18,10 @@ from app.services.integrity.audit_readiness import (
     photo_span_days,
     satellite_scan_within_days,
 )
-from app.services.integrity.credit_gating import IntegrityGateError, assert_credit_transition_allowed
+from app.services.integrity.credit_gating import (
+    IntegrityGateError,
+    assert_credit_transition_allowed,
+)
 from app.services.integrity.monitoring_gate import (
     VERIFIED_MAX_OPTICAL_STALE_DAYS,
     VERIFIED_MIN_SAR_INTEGRITY,
@@ -232,10 +235,12 @@ async def test_assert_credit_transition_verified_blocks_on_monitoring():
     ]
     db = AsyncMock()
     db.execute = AsyncMock(return_value=MagicMock(all=MagicMock(return_value=rows)))
-    with patch(
-        "app.services.integrity.credit_gating.project_monitoring_gate",
-        new_callable=AsyncMock,
-        return_value={"passed": False, "reasons": ["optical_scan_stale"], "message": "stale"},
+    with (
+        patch(
+            "app.services.integrity.credit_gating.project_monitoring_gate",
+            new_callable=AsyncMock,
+            return_value={"passed": False, "reasons": ["optical_scan_stale"], "message": "stale"},
+        ),
+        pytest.raises(IntegrityGateError, match="integrity_gate_failed:verified:optical_scan_stale"),
     ):
-        with pytest.raises(IntegrityGateError, match="integrity_gate_failed:verified:optical_scan_stale"):
-            await assert_credit_transition_allowed(db, uuid.uuid4(), to_status="verified")
+        await assert_credit_transition_allowed(db, uuid.uuid4(), to_status="verified")
