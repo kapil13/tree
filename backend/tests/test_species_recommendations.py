@@ -88,3 +88,22 @@ def test_recommend_for_project_uses_metadata_location():
     result = recommend_for_project(project, rules={"native_species_examples": ["Teak"]})
     names = [s["common_name"] for s in result["suggestions"]]
     assert "Khejri" in names
+
+
+def test_preview_campa_rajasthan_includes_teak_and_khejri():
+    from app.services.planting_projects.templates import get_template
+
+    tpl = get_template("campa_ca_v1")
+    assert tpl is not None
+    result = recommend_species(
+        state_code="08",
+        state_name="Rajasthan",
+        district_name="Alwar",
+        scheme_code="campa_ca",
+        segment=tpl["segment"],
+        rules=tpl["rules"],
+    )
+    names = [s["common_name"] for s in result["suggestions"]]
+    assert "Teak" in names
+    assert "Khejri" in names
+    assert len(names) >= 8

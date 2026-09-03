@@ -18,6 +18,7 @@ import {
 } from "@/components/projects/site-rule-adjustments-panel";
 import { TreeRegistrationDefaultsForm } from "@/components/projects/tree-registration-defaults-form";
 import { ProjectLocationFields } from "@/components/projects/project-location-fields";
+import { SuggestedSpeciesPanel } from "@/components/projects/suggested-species-panel";
 import {
   SchemeRefsFields,
   validateSchemeRefs,
@@ -488,6 +489,22 @@ export default function NewProjectPage() {
               }
             }}
           />
+
+          {(location.state_code || selectedTemplate) && (
+            <SuggestedSpeciesPanel
+              preview={{
+                scheme_code: selectedScheme?.code,
+                segment: selectedTemplate?.segment ?? segment,
+                template_code: selectedTemplate?.code,
+              }}
+              location={{
+                state_code: location.state_code,
+                state_name: location.state_name,
+                district_code: location.district_code,
+                district_name: location.district_name,
+              }}
+            />
+          )}
 
           {templates.length > 0 && (
             <div className="space-y-3">

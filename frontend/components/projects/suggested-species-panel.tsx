@@ -12,8 +12,15 @@ type LocationParams = {
   district_name?: string;
 };
 
+type PreviewParams = {
+  scheme_code?: string;
+  segment?: string;
+  template_code?: string;
+};
+
 type Props = {
-  projectId: string;
+  projectId?: string;
+  preview?: PreviewParams;
   location?: LocationParams;
   selectedSpecies?: string;
   onSelectSpecies?: (name: string) => void;
@@ -31,8 +38,14 @@ function locationKey(location?: LocationParams): string {
   ].join("|");
 }
 
+function previewKey(preview?: PreviewParams): string {
+  if (!preview) return "";
+  return [preview.scheme_code ?? "", preview.segment ?? "", preview.template_code ?? ""].join("|");
+}
+
 export function SuggestedSpeciesPanel({
   projectId,
+  preview,
   location,
   selectedSpecies,
   onSelectSpecies,
@@ -40,22 +53,38 @@ export function SuggestedSpeciesPanel({
   className,
 }: Props) {
   const locKey = locationKey(location);
+  const prevKey = previewKey(preview);
   const hasLocation = Boolean(location?.state_code?.trim());
+  const canFetch = Boolean(projectId || preview?.scheme_code || preview?.template_code || hasLocation);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["species-suggestions", projectId, locKey],
-    queryFn: () =>
-      plantingProjects.speciesSuggestions(projectId, {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["species-suggestions", projectId ?? "preview", locKey, prevKey],
+    queryFn: () => {
+      const params = {
         state_code: location?.state_code || undefined,
         state_name: location?.state_name || undefined,
         district_code: location?.district_code || undefined,
         district_name: location?.district_name || undefined,
-      }),
-    enabled: Boolean(projectId),
+      };
+      if (projectId) {
+        return plantingProjects.speciesSuggestions(projectId, params);
+      }
+      return plantingProjects.speciesSuggestionsPreview({
+        ...params,
+        scheme_code: preview?.scheme_code,
+        segment: preview?.segment,
+        template_code: preview?.template_code,
+      });
+    },
+    enabled: canFetch,
     staleTime: 60_000,
   });
 
   const suggestions = data?.suggestions ?? [];
+
+  if (!canFetch) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -70,8 +99,33 @@ export function SuggestedSpeciesPanel({
     );
   }
 
-  if (isError || suggestions.length === 0) {
-    return null;
+  if (isError) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-900",
+          className,
+        )}
+      >
+        Could not load species suggestions. Save the project and try again, or refresh the page.
+        {error instanceof Error && error.message ? (
+          <span className="mt-1 block text-xs text-amber-800">{error.message}</span>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (suggestions.length === 0) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-stone-200 bg-stone-50/60 p-4 text-sm text-stone-600",
+          className,
+        )}
+      >
+        No species suggestions yet. Select a state and planting standard to see local native options.
+      </div>
+    );
   }
 
   return (
@@ -90,7 +144,7 @@ export function SuggestedSpeciesPanel({
           <p className="mt-1 text-xs text-stone-600">
             {hasLocation
               ? `Based on ${location?.state_name || "state"}${location?.district_name ? `, ${location.district_name}` : ""} and your planting scheme.`
-              : "Based on your planting scheme. Add state and district in project setup for local natives."}
+              : "Based on your planting scheme. Select state and district above for local native species."}
           </p>
         </div>
       </div>
