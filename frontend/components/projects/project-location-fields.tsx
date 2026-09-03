@@ -9,6 +9,7 @@ import {
   type ProjectLocation,
 } from "@/lib/project-location";
 import { cn } from "@/lib/cn";
+import { ClimateZoneBadge } from "@/components/projects/climate-zone-badge";
 
 type ProjectLocationFieldsProps = {
   value: ProjectLocation;
@@ -188,6 +189,13 @@ export function ProjectLocationFields({
           State → district → block → gram panchayat → village. Used for APO matching, audit exports,
           and tree registration context.
         </p>
+        {location.state_code ? (
+          <ClimateZoneBadge
+            className="mt-3"
+            stateCode={location.state_code}
+            districtCode={location.district_code || undefined}
+          />
+        ) : null}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

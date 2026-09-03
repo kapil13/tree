@@ -46,9 +46,10 @@ STATE_NATIVE_SPECIES: dict[str, list[str]] = {
     "39": ["Neem", "Teak", "Bamboo", "Mahua", "Jamun", "Karanj"],
 }
 
-# Optional district-level refinements (district LGD codes from india_districts).
+# Optional district-level refinements ("{state_code}:{district_code}" from LGD).
 DISTRICT_NATIVE_SPECIES: dict[str, list[str]] = {
-    "08-01": ["Khejri", "Rohida", "Ber"],  # Ajmer, Rajasthan pattern (example)
+    "08:104": ["Khejri", "Rohida", "Ber", "Jamun"],  # Alwar
+    "08:119": ["Khejri", "Rohida", "Ber"],  # Ajmer
 }
 
 # Segment-specific species when templates lack native_species_examples.
@@ -83,7 +84,9 @@ def state_species(state_code: str | None) -> list[str]:
     return list(STATE_NATIVE_SPECIES.get(key, STATE_NATIVE_SPECIES.get("27", [])))
 
 
-def district_species(district_code: str | None) -> list[str]:
+def district_species(state_code: str | None, district_code: str | None) -> list[str]:
     if not district_code or not str(district_code).strip():
         return []
-    return list(DISTRICT_NATIVE_SPECIES.get(str(district_code).strip(), []))
+    norm_state = normalize_state_code(state_code)
+    key = f"{norm_state}:{str(district_code).strip()}" if norm_state else str(district_code).strip()
+    return list(DISTRICT_NATIVE_SPECIES.get(key, []))

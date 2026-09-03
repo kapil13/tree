@@ -21,6 +21,7 @@ from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.plantation_fence import GeoJsonPolygon
 from app.schemas.planting_project import (
+    ClimateZoneOut,
     ComplianceCheckOut,
     ComplianceCheckRequest,
     ComplianceIssueOut,
@@ -71,6 +72,7 @@ from app.services.planting_projects.access import (
     load_project,
     project_list_filter,
 )
+from app.services.planting_projects.climate_zones import resolve_climate_zone
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
@@ -545,29 +547,16 @@ async def create_project(
     return await _project_out_async(db, project, summary=summary, standard=standard)
 
 
-@router.get("/{project_id}", response_model=PlantingProjectOut)
-async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> PlantingProjectOut:
-    project = await load_project(project_id, user, db)
-    if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
-    standard = await get_active_standard(db, project)
-    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
-    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
-
-
-@router.get("/{project_id}/registration-context", response_model=RegistrationContextOut)
-async def get_registration_context(
-    project_id: uuid.UUID,
+@router.get("/climate-zone", response_model=ClimateZoneOut)
+async def get_climate_zone(
     user: CurrentUser,
-    db: DB,
-    work_area_id: uuid.UUID | None = None,
-) -> RegistrationContextOut:
-    project = await load_project(project_id, user, db)
-    if project is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    payload = await build_registration_context(db, project, work_area_id=work_area_id)
-    return RegistrationContextOut.model_validate(payload)
+    state_code: str = Query(..., min_length=1, max_length=8),
+    district_code: str | None = Query(None, max_length=16),
+) -> ClimateZoneOut:
+    climate = resolve_climate_zone(state_code=state_code, district_code=district_code)
+    if climate is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="climate_zone_not_found")
+    return ClimateZoneOut.model_validate(climate)
 
 
 @router.get("/species-suggestions/preview", response_model=SpeciesSuggestionsOut)
@@ -598,6 +587,31 @@ async def preview_species_suggestions(
         rules=rules,
     )
     return SpeciesSuggestionsOut.model_validate(payload)
+
+
+@router.get("/{project_id}", response_model=PlantingProjectOut)
+async def get_project(project_id: uuid.UUID, user: CurrentUser, db: DB) -> PlantingProjectOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
+    standard = await get_active_standard(db, project)
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    return _project_out(project, summary=summary, standard=standard, effective_rules=effective_rules)
+
+
+@router.get("/{project_id}/registration-context", response_model=RegistrationContextOut)
+async def get_registration_context(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    work_area_id: uuid.UUID | None = None,
+) -> RegistrationContextOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    payload = await build_registration_context(db, project, work_area_id=work_area_id)
+    return RegistrationContextOut.model_validate(payload)
 
 
 @router.get("/{project_id}/species-suggestions", response_model=SpeciesSuggestionsOut)

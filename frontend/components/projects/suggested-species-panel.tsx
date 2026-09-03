@@ -81,6 +81,7 @@ export function SuggestedSpeciesPanel({
   });
 
   const suggestions = data?.suggestions ?? [];
+  const context = data?.context;
 
   if (!canFetch) {
     return null;
@@ -142,9 +143,22 @@ export function SuggestedSpeciesPanel({
             Suggested species for this project
           </p>
           <p className="mt-1 text-xs text-stone-600">
-            {hasLocation
-              ? `Based on ${location?.state_name || "state"}${location?.district_name ? `, ${location.district_name}` : ""} and your planting scheme.`
-              : "Based on your planting scheme. Select state and district above for local native species."}
+            {context?.climate_zone_label ? (
+              <>
+                <span className="font-medium text-emerald-800">
+                  {context.climate_zone_label} zone
+                </span>
+                {hasLocation
+                  ? ` · ${location?.state_name || "state"}${location?.district_name ? `, ${location.district_name}` : ""}`
+                  : ""}
+                {" · "}
+                {context.scheme_label ?? "planting scheme"}
+              </>
+            ) : hasLocation ? (
+              `Based on ${location?.state_name || "state"}${location?.district_name ? `, ${location.district_name}` : ""} and your planting scheme.`
+            ) : (
+              "Based on your planting scheme. Select state and district above for local native species."
+            )}
           </p>
         </div>
       </div>

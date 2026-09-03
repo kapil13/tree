@@ -7,6 +7,14 @@ from typing import Any
 
 from app.models.planting_project import PlantingProject
 from app.services.carbon.species_catalog import by_name
+from app.services.planting_projects.climate_zones import (
+    ClimateZone,
+    is_excluded_in_zone,
+    resolve_climate_zone,
+    scheme_examples_for_zone,
+    segment_species_for_zone,
+    zone_species,
+)
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.species_geography import (
     SEGMENT_SPECIES,
@@ -68,7 +76,10 @@ def _accumulate(
     *,
     score: int,
     reason: str,
+    zone: ClimateZone | None = None,
 ) -> None:
+    if zone and is_excluded_in_zone(name, zone):
+        return
     key = name.strip().lower()
     if not key:
         return
@@ -83,6 +94,89 @@ def _accumulate(
     entry.score += score
     if reason not in entry.reasons:
         entry.reasons.append(reason)
+
+
+def _recommend_with_zone(
+    bucket: dict[str, SpeciesSuggestion],
+    *,
+    norm_state: str | None,
+    zone: ClimateZone,
+    zone_label: str,
+    geo_district_name: str,
+    district_code: str | None,
+    scheme_code: str | None,
+    scheme_label: str,
+    segment: str,
+    segment_label: str,
+) -> None:
+    for sp in zone_species(zone):
+        _accumulate(
+            bucket,
+            sp,
+            score=5,
+            reason=f"Native to {zone_label.lower()} zone",
+            zone=zone,
+        )
+
+    for sp in scheme_examples_for_zone(scheme_code, zone):
+        _accumulate(
+            bucket,
+            sp,
+            score=4,
+            reason=f"Recommended for {scheme_label} in {zone_label.lower()} areas",
+            zone=zone,
+        )
+
+    for sp in segment_species_for_zone(segment, zone):
+        _accumulate(
+            bucket,
+            sp,
+            score=2,
+            reason=f"Suited to {segment_label} in {zone_label.lower()} zone",
+            zone=zone,
+        )
+
+    for sp in district_species(norm_state, district_code):
+        _accumulate(
+            bucket,
+            sp,
+            score=2,
+            reason=f"Common in {geo_district_name}",
+            zone=zone,
+        )
+
+
+def _recommend_legacy(
+    bucket: dict[str, SpeciesSuggestion],
+    *,
+    norm_state: str | None,
+    geo_state_name: str,
+    geo_district_name: str,
+    district_code: str | None,
+    scheme_label: str,
+    segment: str,
+    segment_label: str,
+    rules: dict[str, Any],
+) -> None:
+    for sp in state_species(norm_state):
+        _accumulate(bucket, sp, score=3, reason=f"Native to {geo_state_name}")
+
+    for sp in district_species(norm_state, district_code):
+        _accumulate(bucket, sp, score=2, reason=f"Common in {geo_district_name}")
+
+    examples = rules.get("native_species_examples")
+    if isinstance(examples, list):
+        for raw in examples:
+            if isinstance(raw, str) and raw.strip():
+                _accumulate(
+                    bucket,
+                    raw,
+                    score=4,
+                    reason=f"Recommended for {scheme_label}",
+                )
+
+    for sp in SEGMENT_SPECIES.get(segment, SEGMENT_SPECIES.get("general", [])):
+        _accumulate(bucket, sp, score=2, reason=f"Suited to {segment_label} projects")
 
 
 def recommend_species(
@@ -103,42 +197,34 @@ def recommend_species(
     geo_district_name = (district_name or "").strip() or "this district"
     scheme_label = _scheme_label(scheme_code, segment)
     segment_label = _segment_label(segment)
+    climate = resolve_climate_zone(state_code=norm_state, district_code=district_code)
 
     bucket: dict[str, SpeciesSuggestion] = {}
 
-    for sp in state_species(norm_state):
-        _accumulate(
+    if climate:
+        _recommend_with_zone(
             bucket,
-            sp,
-            score=3,
-            reason=f"Native to {geo_state_name}",
+            norm_state=norm_state,
+            zone=climate["code"],
+            zone_label=climate["label"],
+            geo_district_name=geo_district_name,
+            district_code=district_code,
+            scheme_code=scheme_code,
+            scheme_label=scheme_label,
+            segment=segment,
+            segment_label=segment_label,
         )
-
-    for sp in district_species(district_code):
-        _accumulate(
+    else:
+        _recommend_legacy(
             bucket,
-            sp,
-            score=2,
-            reason=f"Common in {geo_district_name}",
-        )
-
-    examples = rules.get("native_species_examples")
-    if isinstance(examples, list):
-        for raw in examples:
-            if isinstance(raw, str) and raw.strip():
-                _accumulate(
-                    bucket,
-                    raw,
-                    score=4,
-                    reason=f"Recommended for {scheme_label}",
-                )
-
-    for sp in SEGMENT_SPECIES.get(segment, SEGMENT_SPECIES.get("general", [])):
-        _accumulate(
-            bucket,
-            sp,
-            score=2,
-            reason=f"Suited to {segment_label} projects",
+            norm_state=norm_state,
+            geo_state_name=geo_state_name,
+            geo_district_name=geo_district_name,
+            district_code=district_code,
+            scheme_label=scheme_label,
+            segment=segment,
+            segment_label=segment_label,
+            rules=rules,
         )
 
     ranked = sorted(bucket.values(), key=lambda s: (-s.score, s.common_name.lower()))
@@ -161,6 +247,9 @@ def recommend_species(
             "scheme_label": scheme_label,
             "segment_label": segment_label,
             "has_location": bool(norm_state),
+            "climate_zone": climate["code"] if climate else None,
+            "climate_zone_label": climate["label"] if climate else None,
+            "climate_zone_description": climate["description"] if climate else None,
         },
     }
 
