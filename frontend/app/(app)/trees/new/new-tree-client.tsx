@@ -37,6 +37,7 @@ import {
 import { enrichTreePayloadMetadata } from "@/lib/tree-registration-defaults";
 import { evaluateProjectSetup } from "@/lib/project-setup-readiness";
 import { formatTreeRegistrationError } from "@/lib/tree-validation-errors";
+import { projectLocationFromMetadata } from "@/lib/project-location";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -149,6 +150,17 @@ export function NewTreePageClient() {
     ((project?.active_standard?.rules as { allowed_species?: string[] } | undefined)
       ?.allowed_species ??
       null);
+  const speciesSuggestionsLocation = useMemo(() => {
+    if (!project?.metadata) return undefined;
+    const loc = projectLocationFromMetadata(project.metadata);
+    if (!loc.state_code) return undefined;
+    return {
+      state_code: loc.state_code,
+      state_name: loc.state_name,
+      district_code: loc.district_code,
+      district_name: loc.district_name,
+    };
+  }, [project?.metadata]);
   const chainageEnabled =
     registrationContext?.inherited_standard.chainage_enabled ??
     Boolean(
@@ -544,6 +556,8 @@ export function NewTreePageClient() {
           (project.compliance_mode === "strict" || !!project.scheme_code)
         }
         cameraOnly={project?.compliance_mode === "strict"}
+        speciesSuggestionsProjectId={project?.id ?? null}
+        speciesSuggestionsLocation={speciesSuggestionsLocation}
       />
     </div>
   );

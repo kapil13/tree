@@ -255,3 +255,29 @@ class SafeguardDocumentOut(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     uploaded_by_user_id: uuid.UUID | None = None
     created_at: datetime | None = None
+
+
+class SpeciesSuggestionOut(BaseModel):
+    common_name: str
+    scientific_name: str | None = None
+    score: int = 0
+    reasons: list[str] = Field(default_factory=list)
+
+
+class SpeciesSuggestionsContextOut(BaseModel):
+    state_code: str | None = None
+    state_name: str | None = None
+    district_code: str | None = None
+    district_name: str | None = None
+    segment: str
+    scheme_code: str | None = None
+    scheme_label: str | None = None
+    segment_label: str | None = None
+    has_location: bool = False
+
+
+class SpeciesSuggestionsOut(BaseModel):
+    suggestions: list[SpeciesSuggestionOut] = Field(default_factory=list)
+    binding: bool = False
+    disclaimer: str
+    context: SpeciesSuggestionsContextOut

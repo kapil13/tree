@@ -1115,6 +1115,30 @@ export type RegistrationContext = {
   }>;
 };
 
+export type SpeciesSuggestion = {
+  common_name: string;
+  scientific_name: string | null;
+  score: number;
+  reasons: string[];
+};
+
+export type SpeciesSuggestions = {
+  suggestions: SpeciesSuggestion[];
+  binding: boolean;
+  disclaimer: string;
+  context: {
+    state_code: string | null;
+    state_name: string | null;
+    district_code: string | null;
+    district_name: string | null;
+    segment: string;
+    scheme_code: string | null;
+    scheme_label: string | null;
+    segment_label: string | null;
+    has_location: boolean;
+  };
+};
+
 export const plantingProjects = {
   async segments() {
     return (await api.get<{ segments: { code: string; label: string }[] }>(
@@ -1304,6 +1328,22 @@ export const plantingProjects = {
       await api.get<RegistrationContext>(
         `/v1/planting-projects/${projectId}/registration-context`,
         { params: workAreaId ? { work_area_id: workAreaId } : undefined },
+      )
+    ).data;
+  },
+  async speciesSuggestions(
+    projectId: string,
+    params?: {
+      state_code?: string;
+      state_name?: string;
+      district_code?: string;
+      district_name?: string;
+    },
+  ) {
+    return (
+      await api.get<SpeciesSuggestions>(
+        `/v1/planting-projects/${projectId}/species-suggestions`,
+        { params },
       )
     ).data;
   },

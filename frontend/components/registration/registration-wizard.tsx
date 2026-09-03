@@ -16,6 +16,7 @@ import { viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
 import type { InheritedStandardPrefill } from "@/lib/tree-registration-prefill";
 import { uniqueSpeciesChips } from "@/lib/tree-registration-prefill";
+import { SuggestedSpeciesPanel } from "@/components/projects/suggested-species-panel";
 import { PlantationCategorySelector } from "@/components/government/plantation-category-selector";
 import {
   GOVERNMENT_PROGRAM_CODE,
@@ -69,6 +70,13 @@ type RegistrationWizardProps = {
   wizardResetKey?: number;
   showNbaFields?: boolean;
   cameraOnly?: boolean;
+  speciesSuggestionsProjectId?: string | null;
+  speciesSuggestionsLocation?: {
+    state_code?: string;
+    state_name?: string;
+    district_code?: string;
+    district_name?: string;
+  };
 };
 
 function contentSections(
@@ -125,6 +133,8 @@ export function RegistrationWizard({
   wizardResetKey = 0,
   showNbaFields = false,
   cameraOnly = false,
+  speciesSuggestionsProjectId = null,
+  speciesSuggestionsLocation,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -456,6 +466,9 @@ export function RegistrationWizard({
                   <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                     Approved species for this project
                   </p>
+                  <p className="mt-1 text-[11px] text-stone-500">
+                    These species are required by the planting standard for this project.
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {uniqueSpeciesChips(allowedSpecies).map((name) => (
                       <button
@@ -475,6 +488,15 @@ export function RegistrationWizard({
                     ))}
                   </div>
                 </div>
+              ) : null}
+              {speciesSuggestionsProjectId ? (
+                <SuggestedSpeciesPanel
+                  className="mt-4"
+                  projectId={speciesSuggestionsProjectId}
+                  location={speciesSuggestionsLocation}
+                  selectedSpecies={String(values.species_text ?? "")}
+                  onSelectSpecies={(name) => onValuesChange({ ...values, species_text: name })}
+                />
               ) : null}
               {showNbaFields ? (
                 <div className="mt-4 space-y-3 rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
