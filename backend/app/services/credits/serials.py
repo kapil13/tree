@@ -93,15 +93,17 @@ async def register_project_tree_claims(
     registered: list[str] = []
     skipped: list[str] = []
     skipped_details: list[dict[str, Any]] = []
+    from app.services.integrity.registry_integration import tree_registry_eligibility
+
     for tree in trees:
-        risk = tree.risk_score
-        if risk is None or not risk.credit_eligible:
+        eligibility = await tree_registry_eligibility(db, tree.id)
+        if not eligibility.eligible:
             skipped.append(tree.public_code)
             skipped_details.append(
                 {
                     "public_code": tree.public_code,
-                    "fusion_score": float(risk.fusion_score) if risk and risk.fusion_score else None,
-                    "reason": "not_credit_eligible",
+                    "fusion_score": eligibility.fusion_score,
+                    "reason": eligibility.reasons[0] if eligibility.reasons else "not_eligible",
                 }
             )
             continue

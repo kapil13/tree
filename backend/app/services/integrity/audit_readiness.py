@@ -6,12 +6,15 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from app.services.integrity.fusion import FUSION_ISSUE_MIN_SCORE
+from app.services.integrity.photo_evidence import strict_primary_photo_blockers
 from app.services.integrity.tree_risk import (
     VERIFICATION_SATELLITE_CORROBORATED,
 )
 
 if TYPE_CHECKING:
     from app.models.tree_image import TreeImage
+
+from app.services.integrity.exif import ExifExtract
 
 MIN_PHOTOS_FOR_AUDIT = 2
 MIN_PHOTO_SPAN_DAYS = 30
@@ -60,6 +63,40 @@ def satellite_scan_within_days(
     return age <= timedelta(days=max_age_days)
 
 
+def _primary_image(images: list[TreeImage]) -> TreeImage | None:
+    if not images:
+        return None
+    for image in images:
+        if image.is_primary:
+            return image
+    return images[0]
+
+
+def _primary_exif_from_image(primary: TreeImage | None) -> ExifExtract | None:
+    if primary is None:
+        return None
+    if primary.taken_at is None and primary.taken_location is None:
+        return None
+    gps = None
+    if primary.taken_location is not None:
+        try:
+            from geoalchemy2.shape import to_shape
+
+            from app.services.integrity.exif import ExifGps
+
+            pt = to_shape(primary.taken_location)
+            gps = ExifGps(latitude=pt.y, longitude=pt.x)
+        except Exception:
+            gps = None
+    return ExifExtract(
+        taken_at=primary.taken_at,
+        gps=gps,
+        width_px=primary.width_px,
+        height_px=primary.height_px,
+        raw=primary.exif or {},
+    )
+
+
 def audit_ready_blockers(
     *,
     duplicate_photo: bool,
@@ -71,6 +108,7 @@ def audit_ready_blockers(
     base_verification_status: str,
     ai_confidence_low: bool = False,
     regeotag_mismatch: bool = False,
+    strict_photo_evidence: bool = False,
 ) -> list[str]:
     """Return machine-readable reasons blocking audit-ready promotion."""
     if base_verification_status != VERIFICATION_SATELLITE_CORROBORATED:
@@ -97,6 +135,10 @@ def audit_ready_blockers(
         reasons.append("ai_confidence_low")
     if regeotag_mismatch:
         reasons.append("regeotag_mismatch")
+    if strict_photo_evidence:
+        for blocker in strict_primary_photo_blockers(_primary_exif_from_image(_primary_image(images))):
+            if blocker not in reasons:
+                reasons.append(blocker)
     return reasons
 
 

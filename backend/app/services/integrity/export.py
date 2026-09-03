@@ -32,6 +32,7 @@ async def build_integrity_fusion_export(
 
     tree_rows: list[dict[str, Any]] = []
     for tree, risk in rows:
+        fusion_details = (risk.fusion_details or {}) if risk else {}
         tree_rows.append(
             {
                 "public_code": tree.public_code,
@@ -46,6 +47,8 @@ async def build_integrity_fusion_export(
                 "duplicate_coordinate": bool(risk.duplicate_coordinate) if risk else False,
                 "ai_confidence_low": bool(risk.ai_confidence_low) if risk else False,
                 "regeotag_mismatch": bool(risk.regeotag_mismatch) if risk else False,
+                "audit_ready_blockers": fusion_details.get("audit_ready_blockers") or [],
+                "photo_span_days": fusion_details.get("photo_span_days"),
             }
         )
 
@@ -71,6 +74,8 @@ async def build_integrity_fusion_export(
         "gates": {
             "verified_ready": detail["verified_ready"],
             "issued_ready": detail["issued_ready"],
+            "monitoring_ready": detail.get("monitoring_ready"),
+            "monitoring_gate": detail.get("monitoring_gate"),
             "verified_requirements": detail["verified_requirements"],
             "issued_requirements": detail["issued_requirements"],
         },

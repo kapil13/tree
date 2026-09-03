@@ -41,7 +41,14 @@ from app.schemas.tree_measurement import (
 from app.services.audit import record_audit
 from app.services.data_scope import apply_tree_scope, can_access_tree, mvt_tree_scope_binds
 from app.services.integrity.image_loader import load_exif_for_upload_key, load_image_bytes
+from app.services.integrity.image_upload import (
+    duplicate_photo_http_error,
+    process_tree_image_upload,
+    resolve_tree_compliance_context,
+    should_block_duplicate_photo,
+)
 from app.services.integrity.photo_dedup import find_photo_duplicate
+from app.services.integrity.photo_evidence import strict_primary_photo_blockers
 from app.services.integrity.refresh import refresh_tree_integrity
 from app.services.integrity.tree_risk import (
     apply_exif_to_image,
@@ -307,8 +314,6 @@ async def create_tree(
         )
 
     if compliance_mode == "strict" and payload.photo_keys:
-        from app.services.integrity.photo_evidence import strict_primary_photo_blockers
-
         primary_exif_check = load_exif_for_upload_key(payload.photo_keys[0])
         photo_blockers = strict_primary_photo_blockers(primary_exif_check)
         if photo_blockers:
@@ -408,37 +413,12 @@ async def create_tree(
                     organization_id=user.organization_id,
                     exclude_tree_id=tree.id,
                 )
-                if (
-                    photo_duplicate.duplicate_photo
-                    and compliance_mode == "strict"
-                    and (
-                        photo_duplicate.exact_match
-                        or program.code in ("government_nhai", "corporate_esg")
-                    )
+                if should_block_duplicate_photo(
+                    photo_duplicate,
+                    compliance_mode=compliance_mode,  # type: ignore[arg-type]
+                    program_code=program.code,
                 ):
-                    raise HTTPException(
-                        status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail={
-                            "compliance_errors": [
-                                {
-                                    "violation_type": "duplicate_photo",
-                                    "severity": "block",
-                                    "message": (
-                                        "This photo matches an existing tree registration"
-                                        + (
-                                            f" ({photo_duplicate.matched_tree_code})."
-                                            if photo_duplicate.matched_tree_code
-                                            else "."
-                                        )
-                                    ),
-                                    "metadata": {
-                                        "matched_tree_code": photo_duplicate.matched_tree_code,
-                                        "exact_match": photo_duplicate.exact_match,
-                                    },
-                                }
-                            ],
-                        },
-                    )
+                    raise duplicate_photo_http_error(photo_duplicate)
         db.add(img)
     await db.flush()
 
@@ -471,7 +451,12 @@ async def create_tree(
         if photo_duplicate and photo_duplicate.duplicate_photo
         else None,
     )
-    await apply_integrity_to_tree(db, tree, assessment)
+    await apply_integrity_to_tree(
+        db,
+        tree,
+        assessment,
+        strict_photo_evidence=compliance_mode == "strict",
+    )
 
     initial = payload.initial_measurement or TreeInitialMeasurement()
     photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
@@ -876,11 +861,35 @@ async def add_image(
         if code == "s3_key_forbidden":
             raise HTTPException(status.HTTP_403_FORBIDDEN, detail=code) from exc
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
+
+    compliance_mode, program_code = await resolve_tree_compliance_context(db, tree)
+    if is_primary:
+        for existing in tree.images or []:
+            existing.is_primary = False
+
     img = TreeImage(
         tree_id=tree.id, s3_key=s3_key, is_primary=is_primary, uploaded_by=user.id
     )
+    processed = await process_tree_image_upload(
+        db,
+        tree=tree,
+        image=img,
+        s3_key=s3_key,
+        organization_id=user.organization_id,
+        compliance_mode=compliance_mode,  # type: ignore[arg-type]
+        validate_strict_exif=compliance_mode == "strict",
+        check_duplicates=True,
+    )
+    if processed.duplicate and should_block_duplicate_photo(
+        processed.duplicate,
+        compliance_mode=compliance_mode,  # type: ignore[arg-type]
+        program_code=program_code,
+    ):
+        raise duplicate_photo_http_error(processed.duplicate)
+
     db.add(img)
     await db.flush()
+    await refresh_tree_integrity(db, tree)
     await record_audit(
         db,
         actor=user,
