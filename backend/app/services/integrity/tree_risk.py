@@ -149,6 +149,7 @@ def resolve_verification_status(
     *,
     satellite_verified: bool = False,
 ) -> str:
+    """Resolve verification up to satellite_corroborated (audit_ready is applied after fusion)."""
     if assessment.composite_risk >= 0.5 or assessment.duplicate_coordinate:
         return VERIFICATION_REGISTERED
     if (
@@ -157,12 +158,38 @@ def resolve_verification_status(
         and not assessment.duplicate_photo
         and assessment.composite_risk < 0.25
     ):
-        if not assessment.ai_confidence_low and not assessment.regeotag_mismatch:
-            return VERIFICATION_AUDIT_READY
         return VERIFICATION_SATELLITE_CORROBORATED
     if assessment.gps_photo_match and assessment.composite_risk < 0.3:
         return VERIFICATION_FIELD_VERIFIED
     return VERIFICATION_REGISTERED
+
+
+def resolve_audit_ready_status(
+    assessment: RiskAssessment,
+    *,
+    base_verification_status: str,
+    images: list[TreeImage],
+    satellite_verified: bool,
+    satellite_scene_at: Any | None,
+    fusion_score: float | None,
+) -> str:
+    from app.services.integrity.audit_readiness import meets_audit_ready_criteria
+
+    if base_verification_status != VERIFICATION_SATELLITE_CORROBORATED:
+        return base_verification_status
+    if meets_audit_ready_criteria(
+        duplicate_photo=assessment.duplicate_photo,
+        duplicate_coordinate=assessment.duplicate_coordinate,
+        images=images,
+        satellite_verified=satellite_verified,
+        satellite_scene_at=satellite_scene_at,
+        fusion_score=fusion_score,
+        base_verification_status=base_verification_status,
+        ai_confidence_low=assessment.ai_confidence_low,
+        regeotag_mismatch=assessment.regeotag_mismatch,
+    ):
+        return VERIFICATION_AUDIT_READY
+    return base_verification_status
 
 
 def _tree_coordinates(tree: Tree) -> tuple[float, float] | None:
@@ -394,6 +421,7 @@ async def apply_integrity_to_tree(
     tree: Tree,
     assessment: RiskAssessment,
 ) -> None:
+    from app.services.integrity.audit_readiness import audit_ready_blockers, photo_span_days
     from app.services.integrity.fusion import compute_tree_fusion
     from app.services.integrity.satellite_context import satellite_context_for_tree
 
@@ -402,7 +430,7 @@ async def apply_integrity_to_tree(
     if overall_confidence is not None:
         overall_confidence = float(overall_confidence)
 
-    verification_status = resolve_verification_status(
+    base_verification = resolve_verification_status(
         assessment,
         satellite_verified=bool(tree.satellite_verified),
     )
@@ -414,8 +442,27 @@ async def apply_integrity_to_tree(
         change_vs_baseline=sat_ctx.get("change_vs_baseline"),
         work_area_ndvi_baseline=sat_ctx.get("baseline"),
         overall_confidence=overall_confidence,
-        verification_status=verification_status,
+        verification_status=base_verification,
     )
+    verification_status = resolve_audit_ready_status(
+        assessment,
+        base_verification_status=base_verification,
+        images=list(tree.images or []),
+        satellite_verified=bool(tree.satellite_verified),
+        satellite_scene_at=sat_ctx.get("scene_acquired_at"),
+        fusion_score=fusion.fusion_score,
+    )
+    if verification_status != base_verification:
+        fusion = compute_tree_fusion(
+            tree,
+            assessment,
+            ndvi_mean=sat_ctx.get("ndvi_mean"),
+            presence_confirmed=sat_ctx.get("presence_confirmed"),
+            change_vs_baseline=sat_ctx.get("change_vs_baseline"),
+            work_area_ndvi_baseline=sat_ctx.get("baseline"),
+            overall_confidence=overall_confidence,
+            verification_status=verification_status,
+        )
 
     row = await persist_tree_risk_score(db, tree=tree, assessment=assessment)
     row.field_score = fusion.field_score
@@ -423,6 +470,24 @@ async def apply_integrity_to_tree(
     row.fusion_score = fusion.fusion_score
     row.credit_eligible = fusion.credit_eligible
     row.fusion_details = fusion.details
+    audit_blockers: list[str] = []
+    if base_verification == VERIFICATION_SATELLITE_CORROBORATED:
+        audit_blockers = audit_ready_blockers(
+            duplicate_photo=assessment.duplicate_photo,
+            duplicate_coordinate=assessment.duplicate_coordinate,
+            images=list(tree.images or []),
+            satellite_verified=bool(tree.satellite_verified),
+            satellite_scene_at=sat_ctx.get("scene_acquired_at"),
+            fusion_score=fusion.fusion_score,
+            base_verification_status=base_verification,
+            ai_confidence_low=assessment.ai_confidence_low,
+            regeotag_mismatch=assessment.regeotag_mismatch,
+        )
+    row.fusion_details = {
+        **(fusion.details or {}),
+        "audit_ready_blockers": audit_blockers,
+        "photo_span_days": photo_span_days(list(tree.images or [])),
+    }
     tree.verification_status = verification_status
     await db.flush()
 
