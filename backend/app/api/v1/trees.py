@@ -306,6 +306,30 @@ async def create_tree(
             },
         )
 
+    if compliance_mode == "strict" and payload.photo_keys:
+        from app.services.integrity.photo_evidence import strict_primary_photo_blockers
+
+        primary_exif_check = load_exif_for_upload_key(payload.photo_keys[0])
+        photo_blockers = strict_primary_photo_blockers(primary_exif_check)
+        if photo_blockers:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "compliance_errors": [
+                        {
+                            "violation_type": blocker,
+                            "severity": "block",
+                            "message": (
+                                "Primary photo must be a recent live camera capture with GPS "
+                                "metadata (strict compliance)."
+                            ),
+                        }
+                        for blocker in photo_blockers
+                    ],
+                    "mode": compliance_mode,
+                },
+            )
+
     if (
         compliance_mode == "strict"
         and program.code in ("government_nhai", "corporate_esg")

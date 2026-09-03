@@ -2895,6 +2895,15 @@ export type IntegrityFusionDetail = {
   message: string;
   passed_for_verified?: boolean;
   passed_for_issued?: boolean;
+  monitoring_ready?: boolean;
+  monitoring_gate?: {
+    passed: boolean;
+    fence_count?: number;
+    sar_avg_forest_integrity?: number | null;
+    max_optical_stale_days?: number | null;
+    reasons?: string[];
+    message?: string;
+  };
   blocking_sample?: string[];
   refreshed_count?: number;
 };

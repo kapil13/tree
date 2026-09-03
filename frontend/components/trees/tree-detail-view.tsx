@@ -92,6 +92,12 @@ function integrityFlags(risk: import("@/lib/api").TreeRiskScore | null) {
   return flags.length ? flags.join(", ") : "No flags";
 }
 
+function auditReadyBlockers(risk: import("@/lib/api").TreeRiskScore | null): string[] {
+  const blockers = risk?.fusion_details?.audit_ready_blockers;
+  if (!Array.isArray(blockers)) return [];
+  return blockers.filter((item): item is string => typeof item === "string");
+}
+
 function healthBadge(h: string) {
   const cls =
     h === "healthy"
@@ -483,6 +489,24 @@ export function TreeDetailView() {
                       }
                     />
                     <Field label="Integrity flags" value={integrityFlags(tree.risk_score)} />
+                    {auditReadyBlockers(tree.risk_score).length > 0 ? (
+                      <Field
+                        label="Audit-ready blockers"
+                        value={
+                          <ul className="list-disc pl-4 text-sm text-amber-800">
+                            {auditReadyBlockers(tree.risk_score).map((blocker) => (
+                              <li key={blocker}>{blocker.replace(/_/g, " ")}</li>
+                            ))}
+                          </ul>
+                        }
+                      />
+                    ) : null}
+                    {typeof tree.risk_score.fusion_details?.photo_span_days === "number" ? (
+                      <Field
+                        label="Photo evidence span"
+                        value={`${Math.round(tree.risk_score.fusion_details.photo_span_days)} days`}
+                      />
+                    ) : null}
                   </>
                 ) : tree.project_id ? (
                   <Field

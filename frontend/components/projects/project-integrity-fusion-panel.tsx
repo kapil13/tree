@@ -10,6 +10,20 @@ function reasonLabel(reason: string): string {
   return reason.replace(/_/g, " ");
 }
 
+function auditBlockerLabel(reason: string): string {
+  const labels: Record<string, string> = {
+    insufficient_photos: "Need at least 2 photos",
+    photo_span_too_short: "Photos must span 30+ days",
+    satellite_scan_stale: "Satellite scan older than 90 days",
+    fusion_below_audit_minimum: "Fusion score below 75",
+    missing_exif: "Missing camera EXIF",
+    missing_photo_gps: "Photo missing GPS",
+    missing_photo_timestamp: "Photo missing timestamp",
+    photo_timestamp_stale: "Photo older than 7 days",
+  };
+  return labels[reason] ?? reasonLabel(reason);
+}
+
 function GateBadge({ ready, label }: { ready: boolean; label: string }) {
   return (
     <span
@@ -92,7 +106,25 @@ export function ProjectIntegrityFusionPanel({ projectId }: { projectId: string }
         <GateBadge ready={data.verified_ready} label="Verified gate" />
         <GateBadge ready={data.issued_ready} label="Issued gate" />
         <GateBadge ready={registryReady} label="Registry issue" />
+        {data.monitoring_gate ? (
+          <GateBadge
+            ready={data.monitoring_ready ?? data.monitoring_gate.passed}
+            label="Monitoring gate"
+          />
+        ) : null}
       </div>
+
+      {data.monitoring_gate && !(data.monitoring_ready ?? data.monitoring_gate.passed) ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <p className="font-medium">Monitoring gate blocked</p>
+          <p className="mt-1">{data.monitoring_gate.message}</p>
+          {data.monitoring_gate.reasons?.length ? (
+            <p className="mt-1">
+              Reasons: {data.monitoring_gate.reasons.map(reasonLabel).join(", ")}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="rounded-lg border border-forest-200 bg-forest-50/50 p-4 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-2">

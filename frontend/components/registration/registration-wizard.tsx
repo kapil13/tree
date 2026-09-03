@@ -68,6 +68,7 @@ type RegistrationWizardProps = {
   successMessage?: string | null;
   wizardResetKey?: number;
   showNbaFields?: boolean;
+  cameraOnly?: boolean;
 };
 
 function contentSections(
@@ -123,6 +124,7 @@ export function RegistrationWizard({
   successMessage,
   wizardResetKey = 0,
   showNbaFields = false,
+  cameraOnly = false,
 }: RegistrationWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -412,6 +414,7 @@ export function RegistrationWizard({
               onAdd={addPitPhoto}
               onRemove={() => onPitPhotoChange?.(null, null)}
               disabled={photosLocked}
+              cameraOnly={cameraOnly}
             />
           )}
 
@@ -424,6 +427,7 @@ export function RegistrationWizard({
               onAdd={addPhotos}
               onRemove={removePhoto}
               disabled={photosLocked}
+              cameraOnly={cameraOnly}
             />
           )}
 
