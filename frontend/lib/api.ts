@@ -1563,10 +1563,10 @@ export const plantingProjects = {
       )
     ).data;
   },
-  async exportIntegrityFusion(projectId: string) {
+  async exportIntegrityFusion(projectId: string, format: "json" | "csv" = "json") {
     const response = await api.get(
       `/v1/planting-projects/${projectId}/integrity-fusion/export`,
-      { responseType: "blob" },
+      { params: { format }, responseType: "blob" },
     );
     return response.data as Blob;
   },

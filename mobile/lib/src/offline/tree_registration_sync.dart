@@ -93,10 +93,10 @@ class TreeRegistrationSyncService extends ChangeNotifier {
           await _queue.updateStatus(
             item.id,
             status: TreeQueueStatus.failed,
-            errorMessage: apiErrorMessage(e),
+            errorMessage: formatComplianceSyncError(e),
             retryCount: item.retryCount + 1,
           );
-          _lastError = apiErrorMessage(e);
+          _lastError = formatComplianceSyncError(e);
         }
       }
     } finally {

@@ -9,7 +9,10 @@ type ExportMutations = {
   exportMrv: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportBundle: { mutate: () => void; isPending: boolean };
   exportMonitoringDossier?: { mutate: () => void; isPending: boolean };
-  exportIntegrityFusion?: { mutate: () => void; isPending: boolean };
+  exportIntegrityFusion?: {
+    mutate: (format: "json" | "csv") => void;
+    isPending: boolean;
+  };
   exportFramework: { mutate: (format: "pdf" | "xlsx") => void; isPending: boolean };
   exportGreenCreditPortal: { mutate: () => void; isPending: boolean };
   exportCampaState: { mutate: () => void; isPending: boolean };
@@ -109,13 +112,22 @@ export function ProjectComplianceExportsSection({
             />
           ) : null}
           {ex.exportIntegrityFusion ? (
-            <ExportButton
-              disabled={ex.busy}
-              pending={ex.exportIntegrityFusion.isPending}
-              pendingLabel="Exporting…"
-              label="Integrity fusion JSON"
-              onClick={() => ex.exportIntegrityFusion!.mutate()}
-            />
+            <>
+              <ExportButton
+                disabled={ex.busy}
+                pending={ex.exportIntegrityFusion.isPending}
+                pendingLabel="Exporting…"
+                label="Integrity fusion JSON"
+                onClick={() => ex.exportIntegrityFusion!.mutate("json")}
+              />
+              <ExportButton
+                disabled={ex.busy}
+                pending={ex.exportIntegrityFusion.isPending}
+                pendingLabel="Exporting…"
+                label="Integrity fusion CSV"
+                onClick={() => ex.exportIntegrityFusion!.mutate("csv")}
+              />
+            </>
           ) : null}
         </div>
       </ExportGroup>

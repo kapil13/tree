@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, RefreshCw } from "lucide-react";
@@ -7,17 +8,15 @@ import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
 import { ProjectCreditSerialsPanel } from "@/components/projects/project-credit-serials-panel";
 import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import {
+  parseIntegrityGateFailure,
+  resolveIntegrityRemediation,
+  resolveMonitoringGateRemediation,
+} from "@/lib/integrity-remediation";
 
 function gateFailureMessage(err: unknown): string | null {
-  if (!isApiError(err)) return null;
-  const data = err.response?.data as
-    | {
-        detail?: string | { integrity_fusion?: { message?: string } };
-      }
-    | undefined;
-  const detail = data?.detail;
-  if (!detail || typeof detail === "string") return null;
-  return detail.integrity_fusion?.message ?? null;
+  const failure = parseIntegrityGateFailure(err);
+  return failure?.message ?? null;
 }
 
 function num(value: number | string | null | undefined): number {
@@ -265,11 +264,17 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
       )}
 
       {(sync.error || transition.error) && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 space-y-1">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 space-y-2">
           <p>{errorMessage(sync.error ?? transition.error)}</p>
           {gateFailureMessage(transition.error) && (
             <p className="text-rose-700">{gateFailureMessage(transition.error)}</p>
           )}
+          {transition.error ? (
+            <IntegrityGateFailureLinks
+              err={transition.error}
+              projectId={projectId}
+            />
+          ) : null}
         </div>
       )}
 
@@ -321,6 +326,94 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
       )}
 
       <ProjectCreditSerialsPanel ledger={ledger} />
+    </div>
+  );
+}
+
+function IntegrityGateFailureLinks({
+  err,
+  projectId,
+}: {
+  err: unknown;
+  projectId: string;
+}) {
+  const failure = parseIntegrityGateFailure(err);
+  if (!failure) return null;
+
+  const remediationCtx = { projectId, satelliteWatchEnabled: true };
+  const monitoring = failure.monitoring_gate;
+  const monitoringBlocked = monitoring && monitoring.passed === false;
+
+  return (
+    <div className="space-y-2 border-t border-rose-200/80 pt-2">
+      {monitoringBlocked && monitoring.reasons?.length ? (
+        <div>
+          <p className="font-medium text-rose-900">Monitoring gate</p>
+          <ul className="mt-1 space-y-1">
+            {monitoring.reasons.map((reason) => {
+              const action = resolveMonitoringGateRemediation(reason, remediationCtx);
+              return (
+                <li key={reason} className="flex flex-wrap items-center gap-2">
+                  <span>{action.label}</span>
+                  {action.href ? (
+                    <Link href={action.href} className="font-medium text-forest-800 hover:underline">
+                      {action.actionLabel ?? "Remediate"}
+                    </Link>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+      {failure.blocking_trees && failure.blocking_trees.length > 0 ? (
+        <div>
+          <p className="font-medium text-rose-900">Blocking trees</p>
+          <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto">
+            {failure.blocking_trees.slice(0, 10).map((row) => (
+              <li key={row.tree_id} className="rounded border border-rose-100 bg-white/70 px-2 py-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Link
+                    href={`/trees/${row.tree_id}`}
+                    className="font-mono text-[11px] font-medium text-forest-800 hover:underline"
+                  >
+                    {row.public_code}
+                  </Link>
+                  <span className="text-[10px] text-stone-500 capitalize">
+                    {row.verification_status.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <ul className="mt-1 space-y-0.5">
+                  {row.reasons.slice(0, 3).map((reason) => {
+                    const action = resolveIntegrityRemediation(reason, {
+                      ...remediationCtx,
+                      treeId: row.tree_id,
+                    });
+                    return (
+                      <li key={reason} className="flex flex-wrap items-center gap-2 text-[10px]">
+                        <span>{action.label}</span>
+                        {action.href ? (
+                          <Link
+                            href={action.href}
+                            className="font-medium text-forest-700 hover:underline"
+                          >
+                            {action.actionLabel ?? "Fix"}
+                          </Link>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          {failure.blocking_trees.length > 10 ? (
+            <p className="mt-1 text-[10px] text-stone-600">
+              +{failure.blocking_trees.length - 10} more — see Integrity fusion panel above.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

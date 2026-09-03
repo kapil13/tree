@@ -49,6 +49,12 @@ final workAreasProvider = FutureProvider.autoDispose.family<List<dynamic>, Strin
   return api.listWorkAreas(projectId);
 });
 
+final integrityFusionProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, projectId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.getIntegrityFusion(projectId);
+});
+
 final dashboardProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.dashboard();
