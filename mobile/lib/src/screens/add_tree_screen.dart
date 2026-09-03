@@ -320,7 +320,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Future<void> _addPhoto() async {
-    final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    // P0 anti-fraud: strict compliance projects require live camera capture (no gallery).
+    final image = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
     if (image == null) return;
     setState(() {
       _busy = true;
@@ -965,6 +969,14 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(l10n.addTreePhotosHint, style: Theme.of(context).textTheme.bodyMedium),
+        if (_complianceMode == 'strict')
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Strict mode: photos must be taken with the camera (gallery uploads disabled).',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.orange.shade800),
+            ),
+          ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _busy ? null : _addPhoto,

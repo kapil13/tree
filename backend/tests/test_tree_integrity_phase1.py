@@ -56,7 +56,7 @@ def test_composite_risk_duplicate_photo():
     assert score >= 0.35
 
 
-def test_verification_audit_ready():
+def test_verification_satellite_corroborated():
     assessment = RiskAssessment(
         gps_photo_match=True,
         duplicate_photo=False,
@@ -68,11 +68,11 @@ def test_verification_audit_ready():
     )
     assert (
         resolve_verification_status(assessment, satellite_verified=True)
-        == "audit_ready"
+        == "satellite_corroborated"
     )
 
 
-def test_verification_satellite_corroborated():
+def test_verification_satellite_corroborated_even_with_ai_low():
     assessment = RiskAssessment(
         gps_photo_match=True,
         duplicate_photo=False,

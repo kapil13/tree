@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.tree import Tree
 from app.models.tree_risk_score import TreeRiskScore
 from app.services.integrity.fusion import FUSION_CREDIT_MIN_SCORE, FUSION_ISSUE_MIN_SCORE
+from app.services.integrity.monitoring_gate import project_monitoring_gate
 
 VERIFIED_MIN_ELIGIBLE_PCT = 80.0
 ISSUED_MIN_AUDIT_READY_PCT = 90.0
@@ -135,6 +136,11 @@ async def assert_credit_transition_allowed(
     if to_status == "verified":
         if detail["tree_count"] == 0:
             raise IntegrityGateError("integrity_gate_failed:no_trees", detail)
+        monitoring = await project_monitoring_gate(db, project_id)
+        detail = {**detail, "monitoring_gate": monitoring}
+        if not monitoring["passed"]:
+            reason = monitoring["reasons"][0] if monitoring["reasons"] else "monitoring"
+            raise IntegrityGateError(f"integrity_gate_failed:verified:{reason}", detail)
         if not detail["verified_ready"]:
             if detail["eligible_pct"] < VERIFIED_MIN_ELIGIBLE_PCT:
                 code = (

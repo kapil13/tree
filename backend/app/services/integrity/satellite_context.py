@@ -55,10 +55,17 @@ async def satellite_context_for_tree(
     sat = await latest_tree_satellite(db, tree_id)
     baseline = await work_area_ndvi_baseline(db, plantation_id)
     if sat is None:
-        return {"ndvi_mean": None, "presence_confirmed": None, "change_vs_baseline": None, "baseline": baseline}
+        return {
+            "ndvi_mean": None,
+            "presence_confirmed": None,
+            "change_vs_baseline": None,
+            "baseline": baseline,
+            "scene_acquired_at": None,
+        }
     return {
         "ndvi_mean": float(sat.ndvi_mean) if sat.ndvi_mean is not None else None,
         "presence_confirmed": sat.presence_confirmed,
         "change_vs_baseline": float(sat.change_vs_baseline) if sat.change_vs_baseline is not None else None,
         "baseline": baseline,
+        "scene_acquired_at": sat.scene_acquired_at,
     }
