@@ -274,6 +274,15 @@ class SpeciesSuggestionsContextOut(BaseModel):
     scheme_label: str | None = None
     segment_label: str | None = None
     has_location: bool = False
+    climate_zone: str | None = None
+    climate_zone_label: str | None = None
+    climate_zone_description: str | None = None
+
+
+class ClimateZoneOut(BaseModel):
+    code: str
+    label: str
+    description: str
 
 
 class SpeciesSuggestionsOut(BaseModel):

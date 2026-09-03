@@ -1136,7 +1136,16 @@ export type SpeciesSuggestions = {
     scheme_label: string | null;
     segment_label: string | null;
     has_location: boolean;
+    climate_zone: string | null;
+    climate_zone_label: string | null;
+    climate_zone_description: string | null;
   };
+};
+
+export type ClimateZone = {
+  code: string;
+  label: string;
+  description: string;
 };
 
 export const plantingProjects = {
@@ -1360,6 +1369,11 @@ export const plantingProjects = {
       await api.get<SpeciesSuggestions>(`/v1/planting-projects/species-suggestions/preview`, {
         params,
       })
+    ).data;
+  },
+  async climateZone(params: { state_code: string; district_code?: string }) {
+    return (
+      await api.get<ClimateZone>(`/v1/planting-projects/climate-zone`, { params })
     ).data;
   },
   async updateWorkArea(

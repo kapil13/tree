@@ -21,6 +21,7 @@ from app.models.user import User
 from app.schemas.common import Page
 from app.schemas.plantation_fence import GeoJsonPolygon
 from app.schemas.planting_project import (
+    ClimateZoneOut,
     ComplianceCheckOut,
     ComplianceCheckRequest,
     ComplianceIssueOut,
@@ -71,6 +72,7 @@ from app.services.planting_projects.access import (
     load_project,
     project_list_filter,
 )
+from app.services.planting_projects.climate_zones import resolve_climate_zone
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
 from app.services.planting_projects.field_ops import build_field_ops_summary
@@ -568,6 +570,18 @@ async def get_registration_context(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     payload = await build_registration_context(db, project, work_area_id=work_area_id)
     return RegistrationContextOut.model_validate(payload)
+
+
+@router.get("/climate-zone", response_model=ClimateZoneOut)
+async def get_climate_zone(
+    user: CurrentUser,
+    state_code: str = Query(..., min_length=1, max_length=8),
+    district_code: str | None = Query(None, max_length=16),
+) -> ClimateZoneOut:
+    climate = resolve_climate_zone(state_code=state_code, district_code=district_code)
+    if climate is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="climate_zone_not_found")
+    return ClimateZoneOut.model_validate(climate)
 
 
 @router.get("/species-suggestions/preview", response_model=SpeciesSuggestionsOut)
