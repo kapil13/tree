@@ -530,11 +530,13 @@ def refresh_project_integrity_fusion(project_id: str) -> dict:
 def backfill_integrity_fusion(
     project_id: str | None = None,
     limit_projects: int = 50,
+    organization_id: str | None = None,
 ) -> dict:
     log.info(
         "worker.backfill_integrity_fusion",
         project_id=project_id,
         limit_projects=limit_projects,
+        organization_id=organization_id,
     )
 
     async def _run() -> dict:
@@ -543,10 +545,12 @@ def backfill_integrity_fusion(
 
         async with AsyncSessionLocal() as db:
             project_ids = [uuid.UUID(project_id)] if project_id else None
+            org_uuid = uuid.UUID(organization_id) if organization_id else None
             result = await run_backfill(
                 db,
                 project_ids=project_ids,
                 limit_projects=limit_projects if project_ids is None else None,
+                organization_id=org_uuid if project_ids is None else None,
             )
             await db.commit()
             return result

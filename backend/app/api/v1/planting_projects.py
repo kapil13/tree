@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess, WriteProfessional
+from app.api.v1.deps import DB, CurrentUser, OrgAdmin, WriteAccess, WriteProfessional
 from app.core.security import Permission, has_permission
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
@@ -287,7 +287,7 @@ async def field_ops_summary(user: CurrentUser, db: DB) -> FieldOpsSummaryOut:
 @router.post("/integrity-fusion/backfill")
 async def backfill_integrity_fusion_projects(
     request: Request,
-    user: WriteAccess,
+    user: OrgAdmin,
     db: DB,
     limit: int = Query(50, ge=1, le=500),
     async_: bool = Query(False, alias="async"),
@@ -296,14 +296,29 @@ async def backfill_integrity_fusion_projects(
     from app.services.workers.enqueue import try_enqueue
     from app.workers.tasks import backfill_integrity_fusion as backfill_task
 
-    if user.role != "admin" and user.organization_id is None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    is_platform_admin = has_permission(user.role, Permission.ADMIN_ALL)
+    organization_id = None if is_platform_admin else user.organization_id
+    if organization_id is None and not is_platform_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_admin_required")
 
     if async_:
-        task_id = try_enqueue(backfill_task, None, limit)
-        return {"status": "queued", "task_id": task_id, "limit_projects": limit}
+        task_id = try_enqueue(
+            backfill_task,
+            limit_projects=limit,
+            organization_id=str(organization_id) if organization_id else None,
+        )
+        return {
+            "status": "queued",
+            "task_id": task_id,
+            "limit_projects": limit,
+            "organization_id": str(organization_id) if organization_id else None,
+        }
 
-    result = await backfill_integrity_fusion(db, limit_projects=limit)
+    result = await backfill_integrity_fusion(
+        db,
+        limit_projects=limit,
+        organization_id=organization_id,
+    )
     await record_audit(
         db,
         actor=user,
