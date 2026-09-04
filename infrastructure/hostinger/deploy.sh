@@ -28,6 +28,10 @@ for var in POSTGRES_PASSWORD JWT_SECRET MINIO_ROOT_PASSWORD APP_DOMAIN API_DOMAI
     exit 1
   fi
 done
+
+if [[ -x ./check-production-env.sh ]]; then
+  ./check-production-env.sh
+fi
 # NEXT_PUBLIC_API_URL is optional; empty = same-origin /api proxy (recommended)
 
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"

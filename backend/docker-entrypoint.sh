@@ -39,6 +39,16 @@ conn.close()
 done
 echo "[byot] postgres is ready"
 
+echo "[byot] validating production boot guards..."
+if ! python -c "from app.core.production_guards import validate_runtime_settings; validate_runtime_settings()"; then
+  echo "[byot] ERROR: production boot guard failed."
+  echo "[byot] Check .env.production: EVIDENCE_SIGNING_KEY (base64 32-byte seed),"
+  echo "[byot]   TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY, JWT_SECRET (32+ chars),"
+  echo "[byot]   AUTH_ALLOW_DEV_OTP=false, RAZORPAY_WEBHOOK_SECRET if Razorpay is enabled."
+  echo "[byot] On VPS run: infrastructure/hostinger/check-production-env.sh"
+  exit 1
+fi
+
 echo "[byot] running alembic migrations..."
 if ! alembic upgrade head 2>&1; then
   echo "[byot] ERROR: alembic upgrade failed"
