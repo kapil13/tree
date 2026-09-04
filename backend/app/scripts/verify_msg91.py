@@ -53,6 +53,16 @@ def print_config_report() -> int:
             settings.msg91_signup_otp_template_id or "empty (required for signup phone OTP)",
         ),
         _status_line(
+            "MSG91_OTP_TEMPLATE_VAR (login DLT var)",
+            bool(settings.msg91_otp_template_var),
+            settings.msg91_otp_template_var,
+        ),
+        _status_line(
+            "MSG91_SIGNUP_OTP_TEMPLATE_VAR (signup DLT var)",
+            bool(settings.msg91_signup_otp_template_var),
+            settings.msg91_signup_otp_template_var,
+        ),
+        _status_line(
             "MSG91_SENDER_ID",
             bool(settings.msg91_sender_id),
             settings.msg91_sender_id or "empty",
