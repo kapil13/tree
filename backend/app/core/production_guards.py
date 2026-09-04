@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+
 from app.core.config import settings
 
 _WEAK_JWT_SECRETS = frozenset(
@@ -62,4 +64,22 @@ def validate_runtime_settings() -> None:
         raise RuntimeError(
             "RAZORPAY_WEBHOOK_SECRET is required when Razorpay payments are "
             "configured in production/staging. Do not reuse RAZORPAY_KEY_SECRET."
+        )
+
+    evidence_raw = (settings.evidence_signing_key or "").strip()
+    if not evidence_raw or evidence_raw.upper().startswith("CHANGE_ME"):
+        raise RuntimeError(
+            "EVIDENCE_SIGNING_KEY is required in production/staging. "
+            "Set a base64-encoded 32-byte Ed25519 seed "
+            "(e.g. python -c \"import os,base64; print(base64.b64encode(os.urandom(32)).decode())\")."
+        )
+    try:
+        evidence_seed = base64.b64decode(evidence_raw)
+    except Exception as exc:
+        raise RuntimeError(
+            "EVIDENCE_SIGNING_KEY must be valid base64 encoding a 32-byte Ed25519 seed."
+        ) from exc
+    if len(evidence_seed) < 32:
+        raise RuntimeError(
+            "EVIDENCE_SIGNING_KEY must decode to at least 32 bytes for Ed25519 signing."
         )
