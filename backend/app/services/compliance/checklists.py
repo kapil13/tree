@@ -25,6 +25,7 @@ ChecklistCode = Literal[
     "sbti_flag",
     "eudr_supplier_mrv",
     "estate_monitoring",
+    "mining_reclamation",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -996,6 +997,70 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Compliance",
                 question="Are there no open blocking compliance violations?",
                 guidance="Resolve boundary and data-quality violations before external reporting.",
+                auto_key="no_block_violations",
+            ),
+        ),
+    ),
+    "mining_reclamation": ComplianceChecklist(
+        code="mining_reclamation",
+        title="Mining Reclamation — Progressive Closure Readiness",
+        short_label="Mine reclamation",
+        framework_reference="IBM / MMDR — Progressive Mine Closure Plan",
+        description=(
+            "Readiness for mine lease green belts, overburden dumps, and pit rehab under "
+            "IBM-approved progressive closure plans with native stocking and satellite MRV."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="mine_lease_linked",
+                category="Governance",
+                question="Is the IBM mine lease number recorded and linked to this project?",
+                guidance="Lease number ties reclamation blocks to the approved mining plan.",
+                auto_key="mine_lease_linked",
+            ),
+            ChecklistItemDef(
+                id="closure_plan_on_file",
+                category="Governance",
+                question="Is the IBM progressive closure plan reference on file?",
+                guidance="PMCP approval is required before reclamation credits or audits.",
+                auto_key="closure_plan_on_file",
+            ),
+            ChecklistItemDef(
+                id="reclamation_block_documented",
+                category="Boundary",
+                question="Is the reclamation block type (dump, pit wall, buffer, etc.) documented?",
+                guidance="Block type determines stocking density and species mix targets.",
+                auto_key="reclamation_block_documented",
+            ),
+            ChecklistItemDef(
+                id="closure_phase_recorded",
+                category="Operations",
+                question="Is the current progressive closure phase recorded?",
+                guidance="Phase I–III and final closure milestones drive audit expectations.",
+                auto_key="closure_phase_recorded",
+            ),
+            ChecklistItemDef(
+                id="native_stocking_target",
+                category="Eligibility",
+                question="Does the planting plan meet native species percentage targets?",
+                guidance="Mine green belts typically require 70–80% native species stocking.",
+                auto_key="native_stocking_target",
+            ),
+            ChecklistItemDef(
+                id="satellite_mrv_active",
+                category="Monitoring",
+                question="Is satellite NDVI monitoring active for reclamation blocks?",
+                guidance="Monthly scans support progressive closure evidence and encroachment watch.",
+                auto_key="satellite_mrv_active",
+                required=False,
+            ),
+            *_COMMON_MONITORING,
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are blocking compliance violations resolved?",
+                guidance="Open blocking issues should be cleared before IBM or state mining submission.",
                 auto_key="no_block_violations",
             ),
         ),

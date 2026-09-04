@@ -26,6 +26,7 @@ def test_normalize_audience_rejects_unknown():
 def test_list_schemes_filters_mining_audience():
     items = list_schemes(audience="mining")
     codes = {item["code"] for item in items}
+    assert "mining_reclamation" in codes
     assert "green_credit_india" in codes
     assert "estate_monitoring" in codes
     assert "campa_ca" not in codes
@@ -61,4 +62,4 @@ def test_audience_presets_include_all_codes():
     assert codes == {"mining", "corporate_esg", "government", "international", "general"}
     mining = get_audience_preset("mining")
     assert mining is not None
-    assert mining["recommended_template_code"] == "industrial_greenbelt_v1"
+    assert mining["recommended_template_code"] == "mining_reclamation_v1"

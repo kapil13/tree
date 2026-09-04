@@ -243,6 +243,56 @@ def _campa_ca_rules() -> dict[str, Any]:
     }
 
 
+def _mining_reclamation_rules() -> dict[str, Any]:
+    return {
+        **_industrial_rules(),
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "overburden_dump",
+            "pit_wall",
+            "buffer_zone",
+            "haul_road",
+            "tailings_pond",
+            "green_belt_strip",
+            "void_rehab",
+        ],
+        "progressive_closure_phases": [
+            "phase_i_dump_stabilization",
+            "phase_ii_greenbelt",
+            "phase_iii_ecorestoration",
+            "final_closure",
+        ],
+        "allowed_species": [
+            "Khejri",
+            "Neem",
+            "Ber",
+            "Babool",
+            "Jamun",
+            "Arjun",
+            "Karanj",
+            "Mahua",
+            "Palash",
+            "Rohida",
+            "Tecomella undulata",
+        ],
+        "species_native_pct_min": 80,
+        "planting_density_per_ha": {"min": 400, "max": 1200},
+        "dump_density_per_ha": {"min": 300, "max": 800},
+        "satellite_scan_cadence_days": 30,
+        "progressive_closure_tracking": True,
+        "native_species_examples": [
+            "Khejri",
+            "Neem",
+            "Ber",
+            "Babool",
+            "Jamun",
+            "Arjun",
+            "Karanj",
+            "Rohida",
+        ],
+    }
+
+
 def _open_rules() -> dict[str, Any]:
     return {
         "spacing_m": None,
@@ -323,6 +373,18 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
                 "Palash",
             ],
         },
+    },
+    "mining_reclamation_v1": {
+        "code": "mining_reclamation_v1",
+        "name": "Mining Reclamation — Progressive Closure",
+        "segment": "industrial_greenbelt",
+        "description": (
+            "IBM/MMDR mine lease green belts, overburden dumps, and pit rehab with "
+            "progressive closure phases, native stocking targets, and satellite MRV."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["corporate_esg", "government_nhai"],
+        "rules": _mining_reclamation_rules(),
     },
     "township_landscape_v1": {
         "code": "township_landscape_v1",
