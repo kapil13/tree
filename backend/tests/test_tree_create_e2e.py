@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
-from unittest.mock import patch
 
 from app.main import app
 
