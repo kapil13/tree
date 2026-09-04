@@ -98,7 +98,7 @@ async def test_send_auth_otp_sms_stub_logs_without_keys():
 
 @pytest.mark.asyncio
 async def test_send_auth_otp_sms_posts_when_configured():
-    mock_response = MagicMock(status_code=200, text="ok")
+    mock_response = MagicMock(status_code=200, text='{"type":"success"}')
     mock_client = AsyncMock()
     mock_client.post = AsyncMock(return_value=mock_response)
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -111,6 +111,7 @@ async def test_send_auth_otp_sms_posts_when_configured():
     ):
         mock_settings.msg91_auth_key = "key"
         mock_settings.msg91_otp_template_id = None
+        mock_settings.msg91_otp_template_var = "num"
         mock_settings.msg91_sender_id = "ARANYX"
         sent = await send_auth_otp_sms(phone="+919876543210", code="654321")
 
@@ -125,7 +126,7 @@ async def test_send_auth_otp_sms_posts_when_configured():
 
 @pytest.mark.asyncio
 async def test_send_auth_otp_sms_includes_template_id():
-    mock_response = MagicMock(status_code=200, text="ok")
+    mock_response = MagicMock(status_code=200, text='{"type":"success"}')
     mock_client = AsyncMock()
     mock_client.post = AsyncMock(return_value=mock_response)
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -138,6 +139,7 @@ async def test_send_auth_otp_sms_includes_template_id():
     ):
         mock_settings.msg91_auth_key = "key"
         mock_settings.msg91_otp_template_id = "otp-template-99"
+        mock_settings.msg91_otp_template_var = "num"
         mock_settings.msg91_sender_id = "ARANYX"
         await send_auth_otp_sms(phone="9876543210", code="111111")
 
@@ -147,7 +149,7 @@ async def test_send_auth_otp_sms_includes_template_id():
 
 @pytest.mark.asyncio
 async def test_send_signup_otp_sms_uses_signup_template_id():
-    mock_response = MagicMock(status_code=200, text="ok")
+    mock_response = MagicMock(status_code=200, text='{"type":"success"}')
     mock_client = AsyncMock()
     mock_client.post = AsyncMock(return_value=mock_response)
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -160,11 +162,65 @@ async def test_send_signup_otp_sms_uses_signup_template_id():
     ):
         mock_settings.msg91_auth_key = "key"
         mock_settings.msg91_signup_otp_template_id = "signup-template-42"
-        mock_settings.msg91_sender_id = "ARANYX"
+        mock_settings.msg91_signup_otp_template_var = "numeric"
+        mock_settings.msg91_sender_id = "AXTECP"
         await send_signup_otp_sms(phone="9876543210", code="222222")
 
     payload = mock_client.post.await_args.kwargs["json"]
     assert payload["template_id"] == "signup-template-42"
+    assert payload["recipients"][0]["mobiles"] == "919876543210"
+    assert payload["recipients"][0]["numeric"] == "222222"
+    assert mock_client.post.await_args.args[0] == "https://control.msg91.com/api/v5/flow/"
+
+
+@pytest.mark.asyncio
+async def test_send_auth_otp_sms_uses_login_template_var_via_flow():
+    mock_response = MagicMock(status_code=200, text='{"type":"success"}')
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("app.services.auth.msg91_sender.sms_auth_configured", return_value=True),
+        patch("app.services.auth.msg91_sender.settings") as mock_settings,
+        patch("app.services.auth.msg91_sender.httpx.AsyncClient", return_value=mock_client),
+    ):
+        mock_settings.msg91_auth_key = "key"
+        mock_settings.msg91_otp_template_id = "login-template-99"
+        mock_settings.msg91_otp_template_var = "num"
+        mock_settings.msg91_sender_id = "AXTECP"
+        await send_auth_otp_sms(phone="9876543210", code="111111")
+
+    payload = mock_client.post.await_args.kwargs["json"]
+    assert payload["template_id"] == "login-template-99"
+    assert payload["recipients"][0]["num"] == "111111"
+
+
+@pytest.mark.asyncio
+async def test_send_auth_otp_sms_falls_back_to_otp_api_when_flow_fails():
+    flow_error = MagicMock(status_code=400, text="flow rejected")
+    otp_ok = MagicMock(status_code=200, text='{"type":"success"}')
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(side_effect=[flow_error, otp_ok])
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("app.services.auth.msg91_sender.sms_auth_configured", return_value=True),
+        patch("app.services.auth.msg91_sender.settings") as mock_settings,
+        patch("app.services.auth.msg91_sender.httpx.AsyncClient", return_value=mock_client),
+    ):
+        mock_settings.msg91_auth_key = "key"
+        mock_settings.msg91_signup_otp_template_id = "signup-template-42"
+        mock_settings.msg91_signup_otp_template_var = "numeric"
+        mock_settings.msg91_sender_id = "AXTECP"
+        await send_signup_otp_sms(phone="9876543210", code="333333")
+
+    assert mock_client.post.await_count == 2
+    otp_payload = mock_client.post.await_args_list[1].kwargs["json"]
+    assert otp_payload["otp"] == "333333"
+    assert otp_payload["numeric"] == "333333"
 
 
 @pytest.mark.asyncio
@@ -182,6 +238,7 @@ async def test_send_auth_otp_sms_raises_on_msg91_error_body():
     ):
         mock_settings.msg91_auth_key = "key"
         mock_settings.msg91_otp_template_id = "tpl"
+        mock_settings.msg91_otp_template_var = "num"
         mock_settings.msg91_sender_id = "AXTECP"
         with pytest.raises(SmsSendError, match="msg91_otp_rejected"):
             await send_auth_otp_sms(phone="9876543210", code="123456")

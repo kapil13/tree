@@ -117,6 +117,9 @@ class Settings(BaseSettings):
     msg91_otp_template_id: str | None = None
     msg91_signup_otp_template_id: str | None = None
     msg91_invite_template_id: str | None = None
+    # DLT template variable names in MSG91 (must match panel: ##num## login, ##numeric## signup).
+    msg91_otp_template_var: str = "num"
+    msg91_signup_otp_template_var: str = "numeric"
 
     # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
     turnstile_site_key: str | None = None
