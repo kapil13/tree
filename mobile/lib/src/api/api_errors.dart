@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../auth/auth_messages.dart';
+import '../auth/signup_api.dart';
 
 /// Thrown when the session is no longer valid and the user must sign in again.
 class SessionExpiredException implements Exception {
@@ -31,6 +32,9 @@ bool isOfflineOrNetworkError(Object err) {
 
 /// User-facing message for API and network failures (mirrors web `errorMessage`).
 String apiErrorMessage(Object err) {
+  if (err is SignupResponseException) {
+    return err.message;
+  }
   if (err is SessionExpiredException) {
     return 'Session expired. Please sign in again.';
   }

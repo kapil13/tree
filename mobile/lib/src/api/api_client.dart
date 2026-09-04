@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/signup_api.dart';
 import 'api_base_url.dart';
 import 'api_errors.dart';
 import '../services/certificate_pinning.dart';
@@ -359,7 +360,7 @@ class ApiClient {
   Future<Map<String, dynamic>> captchaConfig() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/captcha-config')).data);
 
-  Future<Map<String, dynamic>> signupStart({
+  Future<SignupStartResult> signupStart({
     required String fullName,
     required String email,
     required String phone,
@@ -381,7 +382,7 @@ class ApiClient {
       },
       options: _publicAuthOptions(),
     );
-    return Map<String, dynamic>.from(r.data);
+    return parseSignupStartResponse(r.data);
   }
 
   Future<void> signupVerifyPhone({
@@ -399,7 +400,7 @@ class ApiClient {
     );
   }
 
-  Future<Map<String, dynamic>> signupSendEmailOtp(String signupToken) async {
+  Future<SignupEmailOtpResult> signupSendEmailOtp(String signupToken) async {
     _dio.options.headers.remove('Authorization');
     final r = await _dio.post(
       '/auth/signup/send-email-otp',
@@ -408,12 +409,13 @@ class ApiClient {
       },
       options: _publicAuthOptions(),
     );
-    return Map<String, dynamic>.from(r.data);
+    return parseSignupEmailOtpResponse(r.data);
   }
 
-  Future<Map<String, dynamic>> signupComplete({
+  Future<AuthTokenResult> signupComplete({
     required String signupToken,
     required String code,
+    required String signupCategory,
   }) async {
     _dio.options.headers.remove('Authorization');
     final r = await _dio.post(
@@ -421,10 +423,11 @@ class ApiClient {
       data: {
         'signup_token': signupToken,
         'code': code,
+        'signup_category': signupCategory,
       },
       options: _publicAuthOptions(),
     );
-    return Map<String, dynamic>.from(r.data);
+    return parseTokenResponse(r.data);
   }
 
   Future<Map<String, dynamic>> onboardingState() async =>
