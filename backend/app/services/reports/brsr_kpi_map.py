@@ -57,8 +57,10 @@ def build_core_kpi_sheet_rows(
     project_summaries: list[dict[str, Any]],
     open_violations_total: int,
     value_chain_projects: list[dict[str, Any]],
+    manual_kpis: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    manual = manual_kpis or {}
     for entry in CORE_KPI_REGISTRY:
         kpi_id = entry["kpi_id"]
         row: dict[str, Any] = {
@@ -69,7 +71,13 @@ def build_core_kpi_sheet_rows(
             "value_summary": None,
             "notes": entry.get("notes", ""),
         }
-        if kpi_id == "P6.E4" and ghg_inventory:
+        manual_entry = manual.get(kpi_id)
+        if manual_entry and manual_entry.get("value_summary"):
+            row["data_available"] = True
+            row["value_summary"] = manual_entry["value_summary"]
+            row["platform_source"] = manual_entry.get("source") or "manual_disclosure"
+            row["notes"] = "Manual disclosure entered in BRSR wizard."
+        elif kpi_id == "P6.E4" and ghg_inventory:
             row["data_available"] = True
             total = sum(float(line.get("amount_tco2e") or 0) for line in ghg_inventory)
             row["value_summary"] = f"{len(ghg_inventory)} inventory lines; {total:.2f} tCO₂e gross"
@@ -81,8 +89,11 @@ def build_core_kpi_sheet_rows(
             trees = sum(int(p.get("tree_count") or 0) for p in project_summaries)
             row["value_summary"] = f"{len(project_summaries)} projects; {trees} trees registered"
         elif kpi_id == "P6.E8" and value_chain_projects:
-            row["data_available"] = True
-            row["value_summary"] = f"{len(value_chain_projects)} linked supplier/site projects"
+            with_supplier = sum(1 for p in value_chain_projects if p.get("supplier_ref"))
+            row["data_available"] = with_supplier > 0
+            row["value_summary"] = (
+                f"{with_supplier} of {len(value_chain_projects)} projects with supplier linkage"
+            )
         rows.append(row)
     return rows
 

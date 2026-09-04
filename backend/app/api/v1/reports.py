@@ -14,7 +14,12 @@ from app.core.security import Permission
 from app.models.organization import Organization
 from app.models.report import Report
 from app.models.user import User
-from app.schemas.brsr import BrsrExportRequest
+from app.schemas.brsr import (
+    BrsrExportRequest,
+    BrsrProfileOut,
+    BrsrProfilePatchIn,
+    BrsrWizardStateOut,
+)
 from app.schemas.iso14064 import Iso14064ExportRequest
 from app.schemas.sprint11_reports import DarwinExportRequest, FrameworkExportRequest
 from app.services.audit import record_audit
@@ -36,6 +41,8 @@ from app.services.reports.brsr import (
     render_brsr_xlsx,
     render_brsr_zip,
 )
+from app.services.reports.brsr_profile import get_brsr_profile, profile_to_dict, save_brsr_profile
+from app.services.reports.brsr_readiness import build_brsr_readiness
 from app.services.reports.generator import build_and_store_report, generate_report_bytes
 from app.services.reports.iso14064 import (
     build_iso14064_context,
@@ -195,6 +202,83 @@ async def download_report(
     )
 
 
+async def _load_org_for_brsr(db: DB, user: CurrentUser) -> Organization:
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="org_member_required")
+    await assert_org_feature_enabled(db, user, "reports")
+    org = await db.get(Organization, user.organization_id)
+    if org is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+    return org
+
+
+@router.get("/brsr/readiness", response_model=BrsrWizardStateOut)
+async def brsr_readiness(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+) -> BrsrWizardStateOut:
+    """BRSR Principle 6 readiness preview for the disclosure wizard."""
+    org = await _load_org_for_brsr(db, user)
+    if project_id is not None:
+        from app.services.planting_projects.access import load_project
+
+        project = await load_project(project_id, user, db)
+        if project is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    state = await build_brsr_readiness(db, organization=org, project_id=project_id)
+    return BrsrWizardStateOut.model_validate(state)
+
+
+@router.get("/brsr/preview")
+async def brsr_preview(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+) -> dict:
+    """JSON preview of the BRSR export context without downloading a file."""
+    org = await _load_org_for_brsr(db, user)
+    if project_id is not None:
+        from app.services.planting_projects.access import load_project
+
+        project = await load_project(project_id, user, db)
+        if project is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    profile = get_brsr_profile(org)
+    return await build_brsr_context(
+        db,
+        organization=org,
+        project_id=project_id,
+        brsr_profile=profile,
+    )
+
+
+@router.patch("/brsr/profile", response_model=BrsrProfileOut)
+async def update_brsr_profile(
+    payload: BrsrProfilePatchIn,
+    request: Request,
+    user: CurrentUser,
+    db: DB,
+) -> BrsrProfileOut:
+    """Persist org-level BRSR disclosure profile for the wizard."""
+    org = await _load_org_for_brsr(db, user)
+    if user.org_role == "viewer":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="viewer_read_only")
+    profile = save_brsr_profile(org, payload)
+    await record_audit(
+        db,
+        actor=user,
+        action="report.brsr.profile_update",
+        resource_type="organization",
+        resource_id=org.id,
+        request=request,
+        diff={"reporting_year": profile.reporting_year, "cin": profile.cin},
+    )
+    await db.commit()
+    out = profile_to_dict(profile)
+    return BrsrProfileOut.model_validate(out)
+
+
 @router.post("/brsr")
 async def export_brsr_report(
     payload: BrsrExportRequest,
@@ -219,7 +303,15 @@ async def export_brsr_report(
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
     try:
-        ctx = await build_brsr_context(db, organization=org, project_id=payload.project_id)
+        profile = get_brsr_profile(org)
+        if payload.reporting_year is not None:
+            profile.reporting_year = payload.reporting_year
+        ctx = await build_brsr_context(
+            db,
+            organization=org,
+            project_id=payload.project_id,
+            brsr_profile=profile,
+        )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 

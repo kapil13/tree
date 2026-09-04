@@ -32,7 +32,7 @@ def test_brsr_core_kpi_mapping():
         ghg_inventory=[{"amount_tco2e": 1.5}],
         project_summaries=[{"tree_count": 10}],
         open_violations_total=0,
-        value_chain_projects=[{"project_code": "P1"}],
+        value_chain_projects=[{"project_code": "P1", "supplier_ref": "SUP-001"}],
     )
     assert any(r["kpi_id"] == "P6.E4" and r["data_available"] for r in rows)
     assert any(r["kpi_id"] == "P6.E8" and r["data_available"] for r in rows)

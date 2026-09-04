@@ -26,6 +26,7 @@ from app.services.reports.brsr_kpi_map import (
     build_core_kpi_sheet_rows,
     build_value_chain_annex,
 )
+from app.services.reports.brsr_profile import BrsrOrgProfile, get_brsr_profile, profile_to_dict
 
 BRSR_CORE_VERSION = "2024"
 PRINCIPLE = 6
@@ -164,7 +165,9 @@ async def build_brsr_context(
     *,
     organization: Organization,
     project_id: uuid.UUID | None = None,
+    brsr_profile: BrsrOrgProfile | None = None,
 ) -> dict[str, Any]:
+    profile = brsr_profile or get_brsr_profile(organization)
     projects = await _portfolio_projects(db, organization.id, project_id)
     project_ids = [p.id for p in projects]
 
@@ -192,11 +195,15 @@ async def build_brsr_context(
     assurance = await _assurance_pack(db, organization.id, project_ids)
     value_chain_annex = build_value_chain_annex(projects)
     open_violations_total = sum(int(p.get("open_violations") or 0) for p in project_summaries)
+    manual_kpis = {
+        key: val.model_dump() for key, val in profile.manual_kpis.items()
+    }
     core_kpi_rows = build_core_kpi_sheet_rows(
         ghg_inventory=ghg_inventory,
         project_summaries=project_summaries,
         open_violations_total=open_violations_total,
         value_chain_projects=value_chain_annex,
+        manual_kpis=manual_kpis,
     )
 
     essential_indicators = [
@@ -237,12 +244,13 @@ async def build_brsr_context(
         "principle_title": "Businesses should respect and make efforts to protect and restore the environment",
         "framework_reference": "SEBI BRSR Core 2024 — Principle 6 Essential Indicators",
         "generated_at": datetime.now(UTC).isoformat(),
-        "reporting_year": _reporting_year(),
+        "reporting_year": profile.reporting_year or _reporting_year(),
         "organization": {
             "id": str(organization.id),
             "name": organization.name,
             "slug": organization.slug,
         },
+        "disclosure_profile": profile_to_dict(profile),
         "scope": "single_project" if project_id else "organization_portfolio",
         "project_id": str(project_id) if project_id else None,
         "essential_indicators": essential_indicators,

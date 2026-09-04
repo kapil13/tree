@@ -9,10 +9,21 @@ import { isOrgViewer } from "@/lib/nav-access";
 
 type BrsrFormat = "json" | "xlsx" | "zip";
 
-export function BrsrExportPanel() {
+type BrsrExportPanelProps = {
+  defaultProjectId?: string;
+  defaultReportingYear?: number;
+};
+
+export function BrsrExportPanel({
+  defaultProjectId,
+  defaultReportingYear,
+}: BrsrExportPanelProps = {}) {
   const { user } = useAuth();
   const [format, setFormat] = useState<BrsrFormat>("zip");
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(defaultProjectId ?? "");
+  const [reportingYear, setReportingYear] = useState(
+    defaultReportingYear ?? new Date().getFullYear(),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +37,7 @@ export function BrsrExportPanel() {
         "/v1/reports/brsr",
         {
           project_id: projectId.trim() || null,
+          reporting_year: reportingYear,
           format,
         },
         { responseType: "blob" },
@@ -71,6 +83,17 @@ export function BrsrExportPanel() {
             <option value="json">JSON only</option>
             <option value="xlsx">Excel only</option>
           </select>
+        </div>
+        <div>
+          <label className="label">Reporting year</label>
+          <input
+            className="input w-28"
+            type="number"
+            min={2000}
+            max={2100}
+            value={reportingYear}
+            onChange={(e) => setReportingYear(Number(e.target.value))}
+          />
         </div>
         <div>
           <label className="label">Project ID (optional)</label>
