@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.v1.deps import DB, CurrentUser
 from app.api.v1.plantation_fences import _load_fence
@@ -17,6 +17,7 @@ from app.schemas.bhoonidhi import (
     BhoonidhiStatusOut,
 )
 from app.services.geo import geography_to_geojson_polygon
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.satellite.bhoonidhi_client import (
     DEFAULT_VEGETATION_COLLECTIONS,
     get_bhoonidhi_client,
@@ -24,7 +25,16 @@ from app.services.satellite.bhoonidhi_client import (
     summarize_stac_features,
 )
 
-router = APIRouter(prefix="/bhoonidhi", tags=["bhoonidhi"])
+
+async def _require_bhoonidhi_access(user: CurrentUser, db: DB) -> None:
+    await assert_org_feature_enabled(db, user, "satellite")
+
+
+router = APIRouter(
+    prefix="/bhoonidhi",
+    tags=["bhoonidhi"],
+    dependencies=[Depends(_require_bhoonidhi_access)],
+)
 
 
 def _require_client():

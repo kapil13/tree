@@ -86,6 +86,23 @@ async def list_effective_checklists(db: AsyncSession) -> list[dict[str, Any]]:
     return out
 
 
+async def list_effective_checklist_catalog(db: AsyncSession) -> list[dict[str, Any]]:
+    """Catalog metadata with CMS item overrides applied (no item payloads)."""
+    return [
+        {
+            "code": entry["code"],
+            "title": entry["title"],
+            "short_label": entry["short_label"],
+            "framework_reference": entry["framework_reference"],
+            "description": entry["description"],
+            "disclaimer": entry["disclaimer"],
+            "item_count": entry["item_count"],
+            "has_custom_items": entry.get("has_custom_items", False),
+        }
+        for entry in await list_effective_checklists(db)
+    ]
+
+
 def validate_checklist_override(item_overrides: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if not isinstance(item_overrides, dict):

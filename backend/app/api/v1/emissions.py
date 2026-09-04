@@ -64,8 +64,13 @@ from app.services.reports.emissions_compliance_report import render_emissions_co
 router = APIRouter(prefix="/planting-projects", tags=["emissions"])
 
 
+async def _require_emissions_access(user: CurrentUser, db: DB) -> None:
+    await assert_org_feature_enabled(db, user, "satellite")
+
+
 @router.get("/emissions-catalog", response_model=EmissionCatalogOut)
-async def get_emissions_catalog(user: CurrentUser) -> EmissionCatalogOut:
+async def get_emissions_catalog(user: CurrentUser, db: DB) -> EmissionCatalogOut:
+    await _require_emissions_access(user, db)
     return EmissionCatalogOut.model_validate(emission_catalog())
 
 
@@ -142,6 +147,7 @@ async def list_project_emission_sources(
     work_area_id: uuid.UUID | None = None,
     gas_type: str | None = None,
 ) -> list[EmissionSourceOut]:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -167,6 +173,7 @@ async def create_project_emission_source(
     user: WriteAccess,
     db: DB,
 ) -> EmissionSourceOut:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -189,6 +196,7 @@ async def update_project_emission_source(
     user: WriteAccess,
     db: DB,
 ) -> EmissionSourceOut:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -210,6 +218,7 @@ async def delete_project_emission_source(
     user: WriteAccess,
     db: DB,
 ) -> Response:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -230,6 +239,7 @@ async def run_project_dispersion(
     user: CurrentUser,
     db: DB,
 ) -> DispersionRunOut:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -297,6 +307,7 @@ async def get_latest_project_dispersion(
     db: DB,
     work_area_id: uuid.UUID,
 ) -> DispersionRunOut | None:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -329,6 +340,7 @@ async def run_work_area_satellite_scan(
     user: CurrentUser,
     db: DB,
 ) -> TropomiScanOut:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -379,6 +391,7 @@ async def list_work_area_satellite_scans(
     db: DB,
     limit: int = 10,
 ) -> list[TropomiScanOut]:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -417,6 +430,7 @@ async def run_work_area_emission_fusion(
     user: CurrentUser,
     db: DB,
 ) -> EmissionFusionOut:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
@@ -460,6 +474,7 @@ async def get_latest_work_area_emission_fusion(
     user: CurrentUser,
     db: DB,
 ) -> EmissionFusionOut | None:
+    await _require_emissions_access(user, db)
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")

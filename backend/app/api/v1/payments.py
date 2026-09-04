@@ -90,6 +90,7 @@ async def verify_payment(
 ) -> PaymentOrderOut:
     if not payments_enabled():
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="payments_not_configured")
+    await assert_org_feature_enabled(db, user, "payments")
     try:
         order = await verify_and_complete_payment(
             db,
@@ -126,6 +127,7 @@ async def verify_payment(
 
 @router.get("/orders", response_model=list[PaymentOrderOut])
 async def list_my_orders(user: CurrentUser, db: DB) -> list[PaymentOrderOut]:
+    await assert_org_feature_enabled(db, user, "payments")
     rows = (
         await db.execute(
             select(PaymentOrder)
@@ -139,6 +141,7 @@ async def list_my_orders(user: CurrentUser, db: DB) -> list[PaymentOrderOut]:
 
 @router.get("/orders/{order_id}", response_model=PaymentOrderOut)
 async def get_my_order(order_id: uuid.UUID, user: CurrentUser, db: DB) -> PaymentOrderOut:
+    await assert_org_feature_enabled(db, user, "payments")
     order = await get_order_for_user(db, user_id=user.id, order_id=order_id)
     if order is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="order_not_found")

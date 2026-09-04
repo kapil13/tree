@@ -1,75 +1,58 @@
-# BYOT — Security
+# BYOT — Security (current implementation)
+
+This document describes **what the codebase actually implements today** on the Hostinger VPS Docker stack. It is not a target-state AWS enterprise architecture doc.
 
 ## 1. Threat model (STRIDE summary)
 
-| Threat | Mitigation |
+| Threat | Mitigation (as implemented) |
 |---|---|
-| Spoofing | JWT (RS256), short-lived access (15 min) + rotating refresh; OAuth2 PKCE; OTP for high-risk actions |
-| Tampering | TLS 1.3 everywhere; signed S3 URLs; HMAC webhooks; DB row hashes for audit |
-| Repudiation | Append-only `audit_logs`; signed log batches archived to S3 Object Lock |
-| Information disclosure | RBAC + RLS; field-level encryption for PII; CloudTrail; PII scrubbing in logs |
-| DoS | API gateway rate limits; WAF; per-tenant Celery queue caps; CloudFront |
-| Elevation of privilege | Principle of least privilege IAM; SCPs; admin actions require MFA + step-up OTP |
+| Spoofing | Email/password (Argon2id) + Google OAuth + SMS/email OTP; JWT access tokens (HS256) + refresh rotation |
+| Tampering | TLS via Caddy; presigned MinIO uploads; HMAC Razorpay webhooks; audit log chain hashes |
+| Repudiation | Append-only `audit_logs` with actor, resource, and diff |
+| Information disclosure | RBAC + application-layer `organization_id` scoping on queries; org feature flags |
+| DoS | Redis token-bucket rate limits on auth routes (fail-closed in production when Redis is down) |
+| Elevation of privilege | Role-based permissions (`core/security.py`); org admin gates; platform module grants |
 
 ## 2. AuthN / AuthZ
 
-* **AuthN**: Email/password (Argon2id) + OAuth2 Google + OTP (TOTP / SMS).
-* **JWT**: RS256, `kid` rotation via JWKS; access TTL 15 min, refresh 30 d.
-* **AuthZ — RBAC**:
-  * roles: `user`, `farmer`, `ngo`, `corporate`, `government`, `admin`
-  * permissions encoded in `core/security.py:Permission` enum;
-    decorator `require(Permission.TREE_DELETE)` used in routes.
-* **AuthZ — Tenant isolation**: every query is scoped by `organization_id`
-  via SQLAlchemy session listener that sets PostgreSQL local settings used
-  by Row-Level Security policies.
+* **AuthN**: Email/password (Argon2id), Google OAuth, MSG91/Resend OTP flows, Cloudflare Turnstile CAPTCHA in production.
+* **JWT**: HS256 signed with `JWT_SECRET`; access + refresh tokens; denylist via Redis.
+* **Session cookie**: HttpOnly `byot_session` for Next.js middleware (signed with `SESSION_COOKIE_SECRET`).
+* **AuthZ — RBAC**: roles (`user`, `farmer`, `ngo`, `corporate`, `government`, `admin`, …) with `Permission` enum checks on sensitive routes.
+* **Tenant isolation**: queries filtered by `organization_id` in services/repositories — **not** PostgreSQL RLS.
+* **Org feature flags**: per-organization toggles for `ai_scan`, `satellite`, `bioacoustic`, `reports`, `payments` enforced on API routes and reflected in frontend nav.
 
 ## 3. Data protection
 
-* TLS 1.3 only; HSTS preload.
-* RDS encrypted at rest (KMS), S3 SSE-KMS, EBS encryption.
-* Field-level encryption for `users.phone`, `users.google_sub`, `audit_logs.ip`
-  using application-managed envelope encryption (AWS KMS DEK).
-* PII redaction in logs: structured logger drops `email`, `phone`, `ip`
-  unless explicitly opted-in for an audit context.
+* TLS terminated by Caddy (Let's Encrypt).
+* PostGIS and MinIO volumes on the VPS; MinIO SSE at rest when configured.
+* PII handled per DPDP privacy endpoints (`/privacy/*`); structured logging without automatic field encryption.
+* Evidence export bundles signed with Ed25519 (`EVIDENCE_SIGNING_KEY` required in production).
 
 ## 4. API hardening
 
-* Rate limits (Redis token bucket): default 1000/15 min/user; 60/min for
-  `/auth/*`; 10/min for `/auth/otp/*`.
-* Input validation: Pydantic v2 strict mode; geo bounds enforced (lat
-  −90..90, lon −180..180).
-* CORS: explicit allow-list; credentials only with allowed origins.
-* CSRF: not needed for pure JWT bearer APIs; cookies use `SameSite=Strict; Secure`.
-* File uploads: presigned PUT; max 25 MB; MIME sniff; ClamAV scan worker
-  before exposing the asset via CDN.
+* Rate limits (Redis): applied on `/auth/*` and OTP routes; production returns 503 if Redis is unavailable.
+* Input validation: Pydantic v2 on all request bodies.
+* CORS: explicit allow-list via `CORS_ORIGINS`.
+* File uploads: presigned PUT to MinIO; size/MIME checks in upload services.
+* Health probes: `/health` checks Postgres + Redis; `/health/workers` and `/health/integrations` require auth in production.
 
-## 5. OWASP ASVS coverage (selected)
+## 5. Production boot guards
 
-| ASVS § | Item | Status |
-|---|---|---|
-| 2.1.1 | Min 12-char passwords | Enforced |
-| 2.5.4 | Secure password storage (Argon2id) | Enforced |
-| 3.5.1 | Session fixation prevention | New refresh on login |
-| 5.2.5 | Output encoding | FastAPI + Next.js auto-escape |
-| 8.2.1 | TLS 1.2+ | TLS 1.3 enforced |
-| 9.1.1 | Cryptographic agility | JWKS rotation |
-| 10.3.1 | Trusted dependencies | Renovate + `pip-audit` + `npm audit` in CI |
+`validate_runtime_settings()` refuses to start when:
 
-## 6. Compliance roadmap
+* `JWT_SECRET` is weak or missing
+* `APP_DEBUG=true` in production
+* `AUTH_ALLOW_DEV_OTP=true`
+* Turnstile keys missing
+* Razorpay configured without `RAZORPAY_WEBHOOK_SECRET`
+* `EVIDENCE_SIGNING_KEY` missing or invalid
 
-* SOC 2 Type II — Year 1.
-* GDPR (DPA, SAR endpoint, EU region in AWS Ireland) — Year 1.
-* ISO 27001 — Year 2.
-* Verra/Gold-Standard registry integration audits.
+## 6. Deployment secrets
 
-## 7. Secret management
+Secrets live in `infrastructure/hostinger/.env.production` (not committed). See `docs/DEPLOYMENT_HOSTINGER.md` for the full required-variable table, including `REDIS_PASSWORD` (must be a literal value — Docker Compose does not expand shell substitutions).
 
-* AWS Secrets Manager + KMS.
-* No secrets in code or images; injected at pod start via External Secrets
-  Operator (ESO).
+## 7. Disclosure & response
 
-## 8. Disclosure & response
-
-* `security.txt` at root; bug bounty via independent platform.
-* Incident response runbook in `docs/incident-response.md` (to be authored
-  during onboarding sprint).
+* Security contact: configure `security.txt` at the site root (planned).
+* Incident response runbook: `docs/incident-response.md` (to be authored).

@@ -8,6 +8,7 @@ import {
   BarChart3,
   Bell,
   ChevronDown,
+  CloudOff,
   FileText,
   ClipboardList,
   FolderKanban,
@@ -25,8 +26,14 @@ import {
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { useAuth } from "@/lib/auth-store";
+import type { User } from "@/lib/api";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
 import { hasAnyPlatformAccess } from "@/lib/platform-access";
+import {
+  isOrgFeatureEnabled,
+  useOrgFeatureFlagMap,
+  type OrgFeatureFlagKey,
+} from "@/lib/use-org-feature-flags";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
@@ -36,6 +43,7 @@ export type NavItem = {
   audience?: NavAudience | NavAudience[];
   excludeViewers?: boolean;
   exact?: boolean;
+  featureFlag?: OrgFeatureFlagKey;
   children?: NavItem[];
 };
 
@@ -77,6 +85,13 @@ const NAV_GROUPS: NavGroup[] = [
         audience: ["professional", "field_supervisor"],
         excludeViewers: true,
       },
+      {
+        href: "/field-ops/offline-trees",
+        labelKey: "offlineTrees",
+        icon: CloudOff,
+        audience: ["professional", "field_supervisor"],
+        excludeViewers: true,
+      },
     ],
   },
   {
@@ -90,14 +105,16 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Activity,
         audience: ["professional", "field_supervisor"],
         exact: true,
+        featureFlag: "satellite",
       },
       {
         href: "/satellite",
         labelKey: "satellite",
         icon: Satellite,
         audience: ["professional", "field_supervisor"],
+        featureFlag: "satellite",
       },
-      { href: "/bioacoustic", labelKey: "biodiversity", icon: Mic, audience: "professional" },
+      { href: "/bioacoustic", labelKey: "biodiversity", icon: Mic, audience: "professional", featureFlag: "bioacoustic" },
       { href: "/alerts", labelKey: "alerts", icon: Bell, audience: "all" },
     ],
   },
@@ -111,6 +128,7 @@ const NAV_GROUPS: NavGroup[] = [
         labelKey: "reports",
         icon: FileText,
         audience: ["professional", "field_supervisor"],
+        featureFlag: "reports",
         children: [
           {
             href: "/reports",
@@ -357,9 +375,36 @@ function ReportsNavDropdown({
   );
 }
 
+function filterNavTree(
+  items: NavItem[],
+  user: User | null,
+  flags: ReturnType<typeof useOrgFeatureFlagMap>["flags"],
+  inheritedFlag?: OrgFeatureFlagKey,
+): NavItem[] {
+  const out: NavItem[] = [];
+  for (const item of items) {
+    if (!canSeeNavItem(user, item.audience ?? "all", { excludeViewers: item.excludeViewers })) {
+      continue;
+    }
+    const flag = item.featureFlag ?? inheritedFlag;
+    if (flag && !isOrgFeatureEnabled(flags, flag)) {
+      continue;
+    }
+    if (item.children?.length) {
+      const children = filterNavTree(item.children, user, flags, flag);
+      if (children.length === 0) continue;
+      out.push({ ...item, children });
+      continue;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const { user } = useAuth();
+  const { flags } = useOrgFeatureFlagMap();
   const t = useTranslations("nav");
 
   const adminItems: NavItem[] = [];
@@ -375,9 +420,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) =>
-      canSeeNavItem(user, item.audience ?? "all", { excludeViewers: item.excludeViewers }),
-    ),
+    items: filterNavTree(group.items, user, flags),
   })).filter((group) => group.items.length > 0);
 
   if (adminItems.length) {
