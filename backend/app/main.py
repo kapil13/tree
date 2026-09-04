@@ -101,7 +101,12 @@ async def http_exc(request: Request, exc: StarletteHTTPException) -> JSONRespons
 
 @app.exception_handler(RequestValidationError)
 async def validation_exc(request: Request, exc: RequestValidationError) -> JSONResponse:
-    return _err("validation_error", "Request validation failed", status.HTTP_422_UNPROCESSABLE_ENTITY, exc.errors())
+    return _err(
+        "validation_error",
+        "Request validation failed",
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        {"errors": exc.errors()},
+    )
 
 
 # ---------------------------------------------------------------------------

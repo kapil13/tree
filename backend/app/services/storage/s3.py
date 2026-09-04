@@ -17,11 +17,15 @@ from app.core.config import settings
 def _build_s3_client(endpoint_url: str | None) -> Any | None:
     if boto3 is None:
         return None
+    endpoint = (endpoint_url or "").strip() or None
+    has_aws_creds = bool(settings.aws_access_key_id and settings.aws_secret_access_key)
+    if endpoint is None and not has_aws_creds:
+        return None
     kwargs: dict[str, Any] = {"region_name": settings.aws_region}
-    if endpoint_url:
-        kwargs["endpoint_url"] = endpoint_url
+    if endpoint:
+        kwargs["endpoint_url"] = endpoint
         kwargs["config"] = Config(signature_version="s3v4")
-    if settings.aws_access_key_id and settings.aws_secret_access_key:
+    if has_aws_creds:
         kwargs["aws_access_key_id"] = settings.aws_access_key_id
         kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
     return boto3.client("s3", **kwargs)

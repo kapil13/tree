@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.tree_measurement import MeasurementMethod, TreeInitialMeasurement
 
@@ -27,6 +27,19 @@ class TreeCreate(BaseModel):
     photo_keys: list[str] = Field(default_factory=list, max_length=10)
     metadata: dict[str, Any] = Field(default_factory=dict)
     initial_measurement: TreeInitialMeasurement | None = None
+
+    @field_validator("planted_at", mode="before")
+    @classmethod
+    def normalize_planted_at(cls, value: Any) -> date | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str) and "T" in value:
+            return date.fromisoformat(value.split("T", 1)[0])
+        return value
 
 
 class TreeUpdate(BaseModel):

@@ -656,7 +656,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (dbh != null) 'dbh_cm': dbh,
       if (height != null) 'height_m': height,
     };
-    final plantedAt = DateTime.now().toUtc().toIso8601String();
+    final plantedAt = DateTime.now().toUtc().toIso8601String().split('T').first;
 
     try {
       final api = await ref.read(apiClientProvider.future);
