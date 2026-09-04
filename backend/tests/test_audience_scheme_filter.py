@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.onboarding.audience import AudienceError, normalize_audience, scheme_matches_audience
+from app.services.onboarding.audience import (
+    AudienceError,
+    normalize_audience,
+    scheme_matches_audience,
+)
 from app.services.onboarding.audience_presets import get_audience_preset, list_audience_presets
 from app.services.schemes.registry import get_scheme, list_schemes
 
