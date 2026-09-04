@@ -40,6 +40,14 @@ jobs:
       - name: Lint
         working-directory: backend
         run: ruff check .
+      - name: Migration smoke (alembic upgrade head)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://byot:byot@localhost:5432/byot_test
+          DATABASE_URL_SYNC: postgresql+psycopg2://byot:byot@localhost:5432/byot_test
+          JWT_SECRET: ci-only-secret-32-chars-minimum-xx
+          APP_ENV: test
+        run: alembic upgrade head
       - name: Test
         working-directory: backend
         env:
@@ -63,6 +71,9 @@ jobs:
       - name: Install
         working-directory: frontend
         run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
       - name: Typecheck
         working-directory: frontend
         run: npm run typecheck

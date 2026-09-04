@@ -80,24 +80,30 @@ nano .env.production
 Generate secrets:
 
 ```bash
-openssl rand -hex 32   # use for JWT_SECRET
-openssl rand -hex 32   # use for POSTGRES_PASSWORD
-openssl rand -hex 24   # use for MINIO_ROOT_PASSWORD
+openssl rand -hex 32   # JWT_SECRET, REDIS_PASSWORD, SESSION_COOKIE_SECRET
+openssl rand -hex 32   # POSTGRES_PASSWORD
+python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"  # EVIDENCE_SIGNING_KEY
+openssl rand -hex 24   # MINIO_ROOT_PASSWORD
 ```
 
 **Required values:**
 
-| Variable | Example |
-|----------|---------|
+| Variable | Example / notes |
+|----------|-----------------|
 | `APP_DOMAIN` | `byot.earth` |
 | `API_DOMAIN` | `api.byot.earth` |
-| `NEXT_PUBLIC_API_URL` | `https://api.byot.earth` |
+| `NEXT_PUBLIC_API_URL` | `https://api.byot.earth` (or same-origin empty on aranyix.tech) |
 | `CORS_ORIGINS` | `https://byot.earth,https://www.byot.earth` |
-| `POSTGRES_PASSWORD` | strong random |
-| `JWT_SECRET` | strong random |
+| `POSTGRES_PASSWORD` | strong random hex |
+| `JWT_SECRET` | strong random hex (≥32 chars) |
+| `REDIS_PASSWORD` | **literal** 64-char hex — Docker Compose does **not** expand `$(openssl …)` |
+| `SESSION_COOKIE_SECRET` | strong random hex |
+| `EVIDENCE_SIGNING_KEY` | base64-encoded 32-byte Ed25519 seed (required in production) |
+| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (required in production) |
 | `MINIO_ROOT_PASSWORD` | strong random |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | from Google Cloud Console |
 | `SENTINEL_HUB_CLIENT_ID` / `SECRET` | from Copernicus |
+| `RAZORPAY_WEBHOOK_SECRET` | required when Razorpay keys are set |
 
 ## 7. Deploy
 
@@ -150,6 +156,18 @@ make import-india-admin
 
 Without this import, state/district/block/GP/village dropdowns stay empty.
 
+### Urban cities (district-scoped ULBs)
+
+After migration `0065_india_cities_district_code`, the `india_cities` table is cleared and rebuilt with district-scoped urban local bodies. Re-run the import after upgrading:
+
+```bash
+cd /opt/aranyix/infrastructure/hostinger
+make migrate-db
+make import-india-admin
+```
+
+Without re-import, urban city dropdowns stay empty even when rural geography is loaded.
+
 ### Seed demo user (optional)
 
 ```bash
@@ -160,8 +178,11 @@ make seed-demo
 
 ```bash
 curl -fsS https://api.byot.earth/health
+# Expect HTTP 200 with "db":"ok" and "redis":"ok"
 # open https://byot.earth in browser
 ```
+
+If `/health` returns HTTP 503 with `"redis":"error"`, check that `REDIS_PASSWORD` in `.env.production` is a single literal hex value shared by backend, worker, and Redis containers.
 
 ## 9. Android APK
 
