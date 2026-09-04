@@ -64,8 +64,31 @@ df -h / 2>/dev/null || true
 docker system df 2>/dev/null || true
 
 echo ""
+echo "==> Production env preflight"
+if [[ -x ./check-production-env.sh ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+  ./check-production-env.sh || true
+else
+  echo "(check-production-env.sh not found)"
+fi
+
+echo ""
+echo "==> Boot-guard / migration errors in backend logs"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs backend --tail 200 2>&1 \
+  | grep -E 'EVIDENCE_SIGNING_KEY|TURNSTILE|JWT_SECRET|AUTH_ALLOW_DEV_OTP|RAZORPAY_WEBHOOK|boot guard|alembic upgrade failed|RuntimeError|ERROR:' \
+  || echo "(no matching lines)"
+
+echo ""
 echo "==> Common fixes"
-echo "  1. Disk 100+ GB with no data: ./cleanup-docker-disk.sh (old Docker images from deploys)"
+echo "  1. Backend unhealthy after P0 deploy — set in .env.production:"
+echo "     EVIDENCE_SIGNING_KEY=\$(python3 -c \"import os,base64; print(base64.b64encode(os.urandom(32)).decode())\")"
+echo "     TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY (Cloudflare Turnstile)"
+echo "     REDIS_PASSWORD=\$(openssl rand -hex 32)  # literal value, not \$(openssl ...) in the file"
+echo "     Then: ./check-production-env.sh && ./recover-backend.sh"
+echo "  2. Disk 100+ GB with no data: ./cleanup-docker-disk.sh (old Docker images from deploys)"
 echo "  2. OOM / unhealthy: rebuild slim API image (no TensorFlow on backend):"
 echo "     docker compose -f $COMPOSE_FILE --env-file $ENV_FILE build --no-cache backend worker"
 echo "  2. alembic head should be 0024_org_team_management — run: alembic upgrade head"

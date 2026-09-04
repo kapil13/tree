@@ -253,6 +253,9 @@ docker stats
 
 | Problem | Fix |
 |---------|-----|
+| `dependency failed to start: backend is unhealthy` | Run `./troubleshoot-deploy.sh` then `./check-production-env.sh`. After P0, backend requires `EVIDENCE_SIGNING_KEY`, Turnstile keys, and strong `JWT_SECRET`. See logs: `docker compose … logs backend --tail 80` |
+| `/health` returns 503, `"redis":"error"` | `REDIS_PASSWORD` must be a **literal** 64-char hex in `.env.production` (not `$(openssl …)`). Restart stack after fixing. |
+| `alembic upgrade failed` in backend logs | Run `make migrate-db` or `docker compose … exec backend alembic upgrade head`; see `troubleshoot-deploy.sh` for revision hints |
 | Caddy no certificate | DNS must point to VPS; ports 80/443 open |
 | `postgis` extension error | Image is `postgis/postgis:16-3.4` — should work |
 | OOM / restarts | `docker stats` — raise limits in compose or upgrade plan |

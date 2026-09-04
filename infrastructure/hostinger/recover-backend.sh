@@ -42,6 +42,17 @@ for var in POSTGRES_PASSWORD JWT_SECRET MINIO_ROOT_PASSWORD APP_DOMAIN API_DOMAI
   fi
 done
 
+if [[ -x ./check-production-env.sh ]]; then
+  echo ""
+  ./check-production-env.sh || true
+fi
+
+echo ""
+echo "==> Boot-guard errors in backend logs (P0 — common cause of unhealthy)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" logs backend --tail 200 2>/dev/null \
+  | grep -E 'EVIDENCE_SIGNING_KEY|TURNSTILE|JWT_SECRET|AUTH_ALLOW_DEV_OTP|RAZORPAY_WEBHOOK|boot guard|alembic upgrade failed|RuntimeError' \
+  || echo "  (no matching lines — see full logs above)"
+
 echo ""
 echo "==> Postgres reachable from backend network?"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T postgres \
