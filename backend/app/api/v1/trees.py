@@ -391,6 +391,7 @@ async def create_tree(
     primary_exif = None
     photo_duplicate = None
     storage = get_storage()
+    created_images: list[TreeImage] = []
     for idx, key in enumerate(payload.photo_keys):
         exif = load_exif_for_upload_key(key) if idx == 0 else None
         if idx == 0:
@@ -420,6 +421,7 @@ async def create_tree(
                 ):
                     raise duplicate_photo_http_error(photo_duplicate)
         db.add(img)
+        created_images.append(img)
     await db.flush()
 
     dup_coord, nearest_m = await assess_coordinate_duplicate(
@@ -456,6 +458,7 @@ async def create_tree(
         tree,
         assessment,
         strict_photo_evidence=compliance_mode == "strict",
+        images=created_images,
     )
 
     initial = payload.initial_measurement or TreeInitialMeasurement()

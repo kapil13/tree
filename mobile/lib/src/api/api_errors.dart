@@ -66,6 +66,22 @@ String apiErrorMessage(Object err) {
   return err.toString();
 }
 
+String _humanizePydanticErrors(List<dynamic> errors) {
+  final messages = <String>[];
+  for (final item in errors) {
+    if (item is! Map) continue;
+    final loc = item['loc'];
+    final msg = item['msg']?.toString() ?? 'Invalid value';
+    final field = loc is List && loc.isNotEmpty ? loc.last.toString() : 'field';
+    if (field == 'planted_at') {
+      messages.add('Planting date is invalid. Use YYYY-MM-DD.');
+    } else {
+      messages.add('${field.replaceAll('_', ' ')}: $msg');
+    }
+  }
+  return messages.isEmpty ? 'Request validation failed.' : messages.join('\n');
+}
+
 String? _messageFromResponse(Response<dynamic>? response) {
   final data = response?.data;
   if (data is! Map) return null;
@@ -76,6 +92,15 @@ String? _messageFromResponse(Response<dynamic>? response) {
     if (code is String && code.isNotEmpty) {
       if (code == 'invalid_refresh') {
         return 'Session expired. Please sign in again.';
+      }
+      if (code == 'validation_error') {
+        final details = error['details'];
+        if (details is Map) {
+          final errors = details['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            return _humanizePydanticErrors(errors);
+          }
+        }
       }
       return humanizeAuthError(code);
     }

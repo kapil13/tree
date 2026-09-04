@@ -392,7 +392,11 @@ async def persist_tree_risk_score(
     tree: Tree,
     assessment: RiskAssessment,
 ) -> TreeRiskScore:
-    existing = tree.risk_score
+    if "risk_score" in tree.__dict__:
+        existing = tree.__dict__["risk_score"]
+    else:
+        res = await db.execute(select(TreeRiskScore).where(TreeRiskScore.tree_id == tree.id))
+        existing = res.scalar_one_or_none()
     if existing is None:
         row = TreeRiskScore(
             tree_id=tree.id,
@@ -424,10 +428,19 @@ async def apply_integrity_to_tree(
     assessment: RiskAssessment,
     *,
     strict_photo_evidence: bool = False,
+    images: list[TreeImage] | None = None,
 ) -> None:
     from app.services.integrity.audit_readiness import audit_ready_blockers, photo_span_days
     from app.services.integrity.fusion import compute_tree_fusion
     from app.services.integrity.satellite_context import satellite_context_for_tree
+
+    if images is not None:
+        image_rows = images
+    elif "images" in tree.__dict__:
+        image_rows = list(tree.__dict__["images"] or [])
+    else:
+        res = await db.execute(select(TreeImage).where(TreeImage.tree_id == tree.id))
+        image_rows = list(res.scalars().all())
 
     sat_ctx = await satellite_context_for_tree(db, tree.id, tree.plantation_id)
     overall_confidence = (assessment.details or {}).get("overall_confidence")
@@ -451,7 +464,7 @@ async def apply_integrity_to_tree(
     verification_status = resolve_audit_ready_status(
         assessment,
         base_verification_status=base_verification,
-        images=list(tree.images or []),
+        images=image_rows,
         satellite_verified=bool(tree.satellite_verified),
         satellite_scene_at=sat_ctx.get("scene_acquired_at"),
         fusion_score=fusion.fusion_score,
@@ -480,7 +493,7 @@ async def apply_integrity_to_tree(
         audit_blockers = audit_ready_blockers(
             duplicate_photo=assessment.duplicate_photo,
             duplicate_coordinate=assessment.duplicate_coordinate,
-            images=list(tree.images or []),
+            images=image_rows,
             satellite_verified=bool(tree.satellite_verified),
             satellite_scene_at=sat_ctx.get("scene_acquired_at"),
             fusion_score=fusion.fusion_score,
@@ -492,7 +505,7 @@ async def apply_integrity_to_tree(
     row.fusion_details = {
         **(fusion.details or {}),
         "audit_ready_blockers": audit_blockers,
-        "photo_span_days": photo_span_days(list(tree.images or [])),
+        "photo_span_days": photo_span_days(image_rows),
     }
     tree.verification_status = verification_status
     await db.flush()

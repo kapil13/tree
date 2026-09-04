@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from app.schemas.tree import TreeImageOut, TreeOut
+from app.schemas.tree import TreeCreate, TreeImageOut, TreeOut
 
 
 def test_tree_out_accepts_images_list():
@@ -48,3 +48,15 @@ def test_tree_out_accepts_images_list():
     dumped = out.model_dump(mode="json")
     assert dumped["public_code"] == "BYOT-TEST-0001"
     assert len(dumped["images"]) == 1
+
+
+def test_tree_create_accepts_iso_datetime_planted_at():
+    payload = TreeCreate(
+        program_code="byot",
+        species_text="Neem",
+        latitude=26.87585,
+        longitude=75.74413,
+        planted_at="2026-09-04T14:59:00.000Z",
+        photo_keys=["images/demo/tree.jpg"],
+    )
+    assert payload.planted_at.isoformat() == "2026-09-04"
