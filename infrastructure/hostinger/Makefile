@@ -1,4 +1,4 @@
-.PHONY: help migrate-db import-india-admin deploy logs seed-demo
+.PHONY: help migrate-db import-india-admin import-india-admin-basics deploy logs seed-demo
 
 ENV_FILE := .env.production
 COMPOSE_FILE := docker-compose.prod.yml
@@ -9,7 +9,8 @@ help:
 	@echo "Hostinger production ops (run from infrastructure/hostinger/)"
 	@echo ""
 	@echo "  make migrate-db          Run Alembic migrations in backend container"
-	@echo "  make import-india-admin  Load LGD state/district/block/GP/village into DB"
+	@echo "  make import-india-admin         Load full LGD geography (needs CSV on host)"
+	@echo "  make import-india-admin-basics  Load state/district only (no CSV)"
 	@echo "  make deploy              Run ./deploy.sh (build, migrate, health checks)"
 	@echo "  make seed-demo           Seed demo user (optional)"
 	@echo "  make logs                Tail backend logs"
@@ -20,6 +21,10 @@ help:
 migrate-db:
 	@test -f "$(ENV_FILE)" || (echo "Missing $(ENV_FILE) — copy from .env.production.example" && exit 1)
 	$(COMPOSE) exec -T backend alembic upgrade head
+
+import-india-admin-basics:
+	@test -f "$(ENV_FILE)" || (echo "Missing $(ENV_FILE) — copy from .env.production.example" && exit 1)
+	$(COMPOSE) exec -T backend python -m app.scripts.import_india_admin --basics-only --if-empty
 
 import-india-admin:
 	@test -f "$(ENV_FILE)" || (echo "Missing $(ENV_FILE) — copy from .env.production.example" && exit 1)

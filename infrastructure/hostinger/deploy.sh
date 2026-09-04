@@ -144,6 +144,10 @@ fi
 echo "==> Running database migrations..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic upgrade head
 
+echo "==> Seeding India admin state/district data (if empty)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend \
+  python -m app.scripts.import_india_admin --basics-only --if-empty || true
+
 echo "==> Ensuring worker + beat are running..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d worker beat
 if [[ "$COMPOSE_PROFILES" == *bioacoustic* ]]; then
