@@ -184,6 +184,36 @@ curl -fsS https://api.byot.earth/health
 
 If `/health` returns HTTP 503 with `"redis":"error"`, check that `REDIS_PASSWORD` in `.env.production` is a single literal hex value shared by backend, worker, and Redis containers.
 
+### Backend unhealthy / restart loop
+
+```bash
+cd infrastructure/hostinger
+# Works even when backend is crash-looping (no exec needed):
+docker compose -f docker-compose.prod.yml --env-file .env.production logs backend --tail 120
+
+# One-shot diagnosis (no restart loop):
+./debug-backend-boot.sh
+# or: make debug-backend
+```
+
+Look for `[byot] boot guard failed:` or `alembic upgrade failed` in the output.
+
+**Required after P0 security merge** (add to `.env.production` if missing):
+
+```bash
+# JWT / Redis — literal hex values in the file (not $(openssl ...))
+openssl rand -hex 32
+
+# Evidence signing — base64-encoded 32-byte seed (NOT the same as openssl rand -hex)
+python3 -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
+
+# Cloudflare Turnstile (both required in production)
+TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
+```
+
+Preflight: `./check-production-env.sh`
+
 ## 9. Android APK
 
 Rebuild with your production API:
