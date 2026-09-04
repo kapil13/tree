@@ -449,17 +449,39 @@ export type TreeDetail = {
   } | null;
 };
 
+export type TreeAnalysisSpecies = {
+  scientific: string;
+  common: string;
+  confidence: number;
+};
+
+export type TreeAnalysisDisease = {
+  name: string;
+  confidence: number;
+  severity: string;
+};
+
+export type TreeAnalysisRecommendation = {
+  type: string;
+  text: string;
+  priority: string;
+};
+
 export type TreeAnalysis = {
   id: string;
   tree_id: string;
+  model_pipeline?: string;
   health: string | null;
   health_confidence: number | null;
   species_confidence: number | null;
+  species_topk: TreeAnalysisSpecies[] | null;
+  diseases_detected: TreeAnalysisDisease[] | null;
   estimated_height_m: number | null;
   estimated_dbh_cm: number | null;
+  estimated_canopy_m: number | null;
   estimated_biomass_kg: number | null;
   overall_confidence: number | null;
-  recommendations: Array<{ type: string; text: string; priority: string }> | null;
+  recommendations: TreeAnalysisRecommendation[] | null;
   created_at: string;
 };
 

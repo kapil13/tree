@@ -35,6 +35,7 @@ import { useAuth } from "@/lib/auth-store";
 import { resolveIntegrityRemediation } from "@/lib/integrity-remediation";
 import { canWriteInApp, userHasProfessionalAccess, viewerReadOnlyMessage } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
+import { formatAnalysisConfidence, formatAnalysisLabel } from "@/lib/tree-analysis-display";
 
 const TABS = ["overview", "field", "intelligence"] as const;
 type Tab = (typeof TABS)[number];
@@ -110,6 +111,137 @@ function healthBadge(h: string) {
           ? "badge-unhealthy"
           : "badge-unknown";
   return <span className={cls}>{h}</span>;
+}
+
+function priorityBadge(priority: string) {
+  const cls =
+    priority === "critical"
+      ? "bg-rose-100 text-rose-800"
+      : priority === "warning"
+        ? "bg-amber-100 text-amber-800"
+        : "bg-sky-100 text-sky-800";
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium uppercase", cls)}>
+      {priority}
+    </span>
+  );
+}
+
+function AnalysisDetailPanel({ analysis }: { analysis: import("@/lib/api").TreeAnalysis }) {
+  const species = analysis.species_topk ?? [];
+  const diseases = analysis.diseases_detected ?? [];
+  const recommendations = analysis.recommendations ?? [];
+
+  return (
+    <div className="border-t border-stone-100 px-3 py-4">
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <span className="text-stone-500">
+          {new Date(analysis.created_at).toLocaleString()}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="text-stone-500">Health</span>
+          {healthBadge(analysis.health ?? "unknown")}
+          {analysis.health_confidence != null ? (
+            <span className="text-xs text-stone-500">
+              ({formatAnalysisConfidence(analysis.health_confidence)})
+            </span>
+          ) : null}
+        </span>
+        <span className="text-stone-600">
+          DBH {analysis.estimated_dbh_cm != null ? `${analysis.estimated_dbh_cm} cm` : "—"}
+        </span>
+        <span className="text-stone-600">
+          Height {analysis.estimated_height_m != null ? `${analysis.estimated_height_m} m` : "—"}
+        </span>
+        <span className="text-stone-600">
+          Overall {formatAnalysisConfidence(analysis.overall_confidence)}
+        </span>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="rounded-lg border border-stone-200 bg-stone-50/60 p-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Species identification
+          </h3>
+          {species.length ? (
+            <ul className="space-y-2 text-sm">
+              {species.map((row, index) => (
+                <li
+                  key={`${row.scientific}-${index}`}
+                  className={cn(index === 0 && "font-medium text-stone-900")}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span>
+                      <span className="italic">{row.scientific}</span>
+                      {row.common ? (
+                        <span className="text-stone-600"> ({row.common})</span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-xs text-stone-500">
+                      {formatAnalysisConfidence(row.confidence)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-stone-500">
+              No species prediction recorded
+              {analysis.species_confidence != null
+                ? ` (${formatAnalysisConfidence(analysis.species_confidence)} confidence).`
+                : "."}
+            </p>
+          )}
+        </section>
+
+        {diseases.length > 0 ? (
+          <section className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800">
+              Possible diseases
+            </h3>
+            <ul className="space-y-2 text-sm text-stone-800">
+              {diseases.map((disease) => (
+                <li key={`${disease.name}-${disease.severity}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">{formatAnalysisLabel(disease.name)}</span>
+                    <span className="text-xs text-stone-500">
+                      {formatAnalysisLabel(disease.severity)} · {formatAnalysisConfidence(disease.confidence)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {recommendations.length > 0 ? (
+          <section
+            className={cn(
+              "rounded-lg border border-stone-200 bg-white p-3",
+              diseases.length === 0 && "lg:col-span-2",
+            )}
+          >
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Recommendations
+            </h3>
+            <ul className="space-y-3 text-sm">
+              {recommendations.map((rec, index) => (
+                <li key={`${rec.type}-${index}`} className="flex gap-2">
+                  <div className="mt-0.5 shrink-0">{priorityBadge(rec.priority)}</div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                      {formatAnalysisLabel(rec.type)}
+                    </p>
+                    <p className="text-stone-800">{rec.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function TreeDetailView() {
@@ -909,41 +1041,10 @@ export function TreeDetailView() {
                 No analysis yet. Run AI analysis to populate metrics.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-stone-200">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-stone-50 text-stone-600">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Date</th>
-                      <th className="px-3 py-2 text-left">Health</th>
-                      <th className="px-3 py-2 text-right">DBH</th>
-                      <th className="px-3 py-2 text-right">Height</th>
-                      <th className="px-3 py-2 text-right">Confidence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyses.map((a) => (
-                      <tr key={a.id} className="border-t border-stone-100">
-                        <td className="px-3 py-2">
-                          {new Date(a.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2">
-                          {healthBadge(a.health ?? "unknown")}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {a.estimated_dbh_cm ? `${a.estimated_dbh_cm} cm` : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {a.estimated_height_m ? `${a.estimated_height_m} m` : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {a.overall_confidence != null
-                            ? `${Math.round(a.overall_confidence * 100)}%`
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="overflow-hidden rounded-lg border border-stone-200">
+                {analyses.map((a) => (
+                  <AnalysisDetailPanel key={a.id} analysis={a} />
+                ))}
               </div>
             )}
           </div>
