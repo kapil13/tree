@@ -17,6 +17,7 @@ import { plantingProjects } from "@/lib/api";
 import {
   BRSR_WIZARD_STEPS,
   brsrApi,
+  type BrsrAssuranceLevel,
   type BrsrWizardStep,
 } from "@/lib/brsr";
 import { cn } from "@/lib/cn";
@@ -64,12 +65,19 @@ export function BrsrPrinciple6Wizard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    reporting_year: number;
+    listed_entity: boolean;
+    cin: string;
+    stock_exchange: string;
+    assurance_level: BrsrAssuranceLevel;
+    boundary_notes: string;
+  }>({
     reporting_year: new Date().getFullYear(),
     listed_entity: true,
     cin: "",
     stock_exchange: "NSE",
-    assurance_level: "limited" as const,
+    assurance_level: "limited",
     boundary_notes: "",
   });
 
@@ -251,7 +259,7 @@ export function BrsrPrinciple6Wizard() {
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    assurance_level: e.target.value as typeof form.assurance_level,
+                    assurance_level: e.target.value as BrsrAssuranceLevel,
                   }))
                 }
               >
