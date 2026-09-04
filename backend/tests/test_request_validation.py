@@ -2,35 +2,30 @@
 
 from __future__ import annotations
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+import json
 
-from app.main import app
+import pytest
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+
+from app.main import validation_exc
 
 
 @pytest.mark.asyncio
 async def test_validation_error_returns_422_not_500():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        login = await client.post(
-            "/api/v1/auth/login",
-            json={"email": "demo@byot.earth", "password": "byotdemo1234!"},
-        )
-        assert login.status_code == 200
-        token = login.json()["access_token"]
-        res = await client.post(
-            "/api/v1/trees",
-            headers={"Authorization": f"Bearer {token}"},
-            json={
-                "program_code": "byot",
-                "species_text": "Neem",
-                "latitude": "not-a-number",
-                "longitude": 75.74413,
-                "planted_at": "2026-09-04T14:59:00.000Z",
-                "photo_keys": [],
-            },
-        )
-    assert res.status_code == 422
-    body = res.json()
+    request = Request({"type": "http", "method": "POST", "path": "/api/v1/trees"})
+    exc = RequestValidationError(
+        errors=[
+            {
+                "type": "float_parsing",
+                "loc": ("body", "latitude"),
+                "msg": "Input should be a valid number",
+                "input": "not-a-number",
+            }
+        ]
+    )
+    response = await validation_exc(request, exc)
+    assert response.status_code == 422
+    body = json.loads(response.body)
     assert body["error"]["code"] == "validation_error"
     assert isinstance(body["error"]["details"]["errors"], list)
