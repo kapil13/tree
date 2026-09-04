@@ -23,6 +23,7 @@ from app.api.v1 import (
     india_admin,
     intelligence,
     ogc,
+    onboarding,
     organizations,
     payments,
     plantation_fences,
@@ -50,6 +51,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health.router)
 api_router.include_router(india_admin.router)
 api_router.include_router(auth.router)
+api_router.include_router(onboarding.router)
 api_router.include_router(audit.router)
 api_router.include_router(trees.router)
 api_router.include_router(analysis.router)

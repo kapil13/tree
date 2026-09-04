@@ -92,6 +92,10 @@ from app.services.auth.user_profile import (
     user_enrolled_program_codes,
     user_has_professional_program,
 )
+from app.services.onboarding.audience_storage import (
+    get_user_planting_audience,
+    user_needs_audience_onboarding,
+)
 from app.services.planting_programs.access_notifications import notify_admins_new_access_request
 from app.services.planting_programs.access_requests import AccessRequestError
 from app.services.planting_programs.enrollment import ensure_default_enrollment
@@ -614,6 +618,8 @@ def _user_out(
     onboarding_status: str = "active_byot",
     pending_program_code: str | None = None,
     pending_access_request_id: uuid.UUID | None = None,
+    audience: str | None = None,
+    audience_onboarding_required: bool = False,
 ) -> UserOut:
     codes = enrolled_program_codes or []
     return UserOut(
@@ -650,6 +656,8 @@ def _user_out(
         state=user.state,
         age=age_from_date_of_birth(user.date_of_birth),
         has_password=user.hashed_password is not None,
+        audience=audience,
+        audience_onboarding_required=audience_onboarding_required,
     )
 
 
@@ -666,6 +674,8 @@ async def _user_out_enriched(
         org = await db.get(Organization, user.organization_id)
         org_name = org.name if org else None
     onboarding = await get_user_onboarding_state(db, user.id)
+    planting_audience = await get_user_planting_audience(db, user)
+    audience_required = await user_needs_audience_onboarding(db, user, codes)
     return _user_out(
         user,
         platform_access=platform_access,
@@ -675,6 +685,8 @@ async def _user_out_enriched(
         onboarding_status=onboarding.status,
         pending_program_code=onboarding.program_code,
         pending_access_request_id=onboarding.access_request_id,
+        audience=planting_audience,
+        audience_onboarding_required=audience_required,
     )
 
 

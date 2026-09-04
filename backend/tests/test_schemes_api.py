@@ -59,6 +59,37 @@ async def test_list_schemes_filters_program(auth_client):
 
 
 @pytest.mark.asyncio
+async def test_list_schemes_filters_audience(auth_client):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/schemes",
+            params={"audience": "mining"},
+        )
+    assert response.status_code == 200
+    codes = {item["code"] for item in response.json()["items"]}
+    assert "green_credit_india" in codes
+    assert "campa_ca" not in codes
+
+
+@pytest.mark.asyncio
+async def test_audience_presets_endpoint(auth_client):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/onboarding/audience-presets")
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == 5
+    assert {item["code"] for item in items} == {
+        "mining",
+        "corporate_esg",
+        "government",
+        "international",
+        "general",
+    }
+
+
+@pytest.mark.asyncio
 async def test_get_scheme_detail(auth_client):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

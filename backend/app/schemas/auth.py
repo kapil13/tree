@@ -169,6 +169,8 @@ class UserOut(BaseModel):
     state: str | None = None
     age: int | None = None
     has_password: bool = False
+    audience: str | None = None
+    audience_onboarding_required: bool = False
 
 
 class ChangePasswordRequest(BaseModel):

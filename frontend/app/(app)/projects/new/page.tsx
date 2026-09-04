@@ -33,6 +33,8 @@ import {
   type PlantingProject,
   type ProjectSegment,
 } from "@/lib/api";
+import { PLANTING_AUDIENCE_LABEL, resolvePlantingAudience } from "@/lib/audience";
+import { useAuth } from "@/lib/auth-store";
 import {
   FLEX_PROJECT_OPTIONS,
   type CentralSchemeGroup,
@@ -111,6 +113,9 @@ function stepSubtitle(step: ProjectWizardStep, hasSchemeRefsStep: boolean): stri
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const plantingAudience = resolvePlantingAudience(user?.audience);
+  const [showAllSchemes, setShowAllSchemes] = useState(plantingAudience === "general");
   const [step, setStep] = useState<ProjectWizardStep>(1);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [schemeSearch, setSchemeSearch] = useState("");
@@ -141,8 +146,9 @@ export default function NewProjectPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: schemes = [], isLoading: schemesLoading } = useQuery({
-    queryKey: ["central-schemes"],
-    queryFn: () => centralSchemes.list(),
+    queryKey: ["central-schemes", showAllSchemes ? "all" : plantingAudience],
+    queryFn: () =>
+      centralSchemes.list(showAllSchemes ? undefined : { audience: plantingAudience }),
   });
 
   const selectedScheme = selection?.kind === "scheme" ? selection.scheme : null;
@@ -412,19 +418,39 @@ export default function NewProjectPage() {
       </header>
 
       {step === 1 ? (
-        <SchemePickerStep
-          schemes={schemes}
-          schemesByGroup={schemesByGroup}
-          schemesLoading={schemesLoading}
-          selectedScheme={selectedScheme}
-          search={schemeSearch}
-          onSearchChange={setSchemeSearch}
-          onSelectScheme={applyScheme}
-          flexOptions={FLEX_PROJECT_OPTIONS}
-          selectedFlexCode={selection?.kind === "flex" ? selection.code : null}
-          onSelectFlex={(c) => applyFlex(c as FlexProjectCode)}
-          onContinue={() => setStep(2)}
-        />
+        <>
+          {plantingAudience !== "general" ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-forest-100 bg-forest-50/70 px-4 py-3 text-sm text-stone-700">
+              <span>
+                Showing schemes for{" "}
+                <span className="font-medium text-forest-900">
+                  {PLANTING_AUDIENCE_LABEL[plantingAudience]}
+                </span>
+                .
+              </span>
+              <button
+                type="button"
+                className="font-medium text-forest-800 underline-offset-2 hover:underline"
+                onClick={() => setShowAllSchemes((value) => !value)}
+              >
+                {showAllSchemes ? "Show audience picks only" : "Show all schemes"}
+              </button>
+            </div>
+          ) : null}
+          <SchemePickerStep
+            schemes={schemes}
+            schemesByGroup={schemesByGroup}
+            schemesLoading={schemesLoading}
+            selectedScheme={selectedScheme}
+            search={schemeSearch}
+            onSearchChange={setSchemeSearch}
+            onSelectScheme={applyScheme}
+            flexOptions={FLEX_PROJECT_OPTIONS}
+            selectedFlexCode={selection?.kind === "flex" ? selection.code : null}
+            onSelectFlex={(c) => applyFlex(c as FlexProjectCode)}
+            onContinue={() => setStep(2)}
+          />
+        </>
       ) : step === 2 ? (
         <form
           onSubmit={handleDetailsContinue}
