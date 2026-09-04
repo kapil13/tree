@@ -5,11 +5,17 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import func, select
 
-from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.api.v1.deps import (
+    DB,
+    CurrentUser,
+    WriteProfessional,
+    require_bioacoustic_feature,
+    require_satellite_feature,
+)
 from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
@@ -210,7 +216,12 @@ async def delete_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> 
 
 
 @router.post("/{fence_id}/scan", response_model=PlantationSatelliteRecordOut)
-async def scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> PlantationSatelliteRecordOut:
+async def scan_fence(
+    fence_id: uuid.UUID,
+    user: WriteProfessional,
+    db: DB,
+    _satellite: None = Depends(require_satellite_feature),
+) -> PlantationSatelliteRecordOut:
     fence = await _load_fence(fence_id, user, db)
     boundary = geography_to_geojson_polygon(fence.boundary)
     try:
@@ -250,7 +261,11 @@ async def scan_fence(fence_id: uuid.UUID, user: WriteProfessional, db: DB) -> Pl
 
 @router.get("/{fence_id}/satellite-monitoring", response_model=PlantationSatelliteSeries)
 async def fence_satellite_series(
-    fence_id: uuid.UUID, user: CurrentUser, db: DB, months: int = 12
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    _satellite: None = Depends(require_satellite_feature),
+    months: int = 12,
 ) -> PlantationSatelliteSeries:
     fence = await _load_fence(fence_id, user, db)
     res = await db.execute(
@@ -309,6 +324,7 @@ async def fence_scan_history(
     fence_id: uuid.UUID,
     user: CurrentUser,
     db: DB,
+    _satellite: None = Depends(require_satellite_feature),
     limit: int = Query(48, ge=1, le=120),
 ) -> ScanHistoryOut:
     """Unified NDVI + SAR + Forest Integrity scan rows for one work area."""
@@ -343,6 +359,7 @@ async def fence_satellite_fusion(
     fence_id: uuid.UUID,
     user: CurrentUser,
     db: DB,
+    _satellite: None = Depends(require_satellite_feature),
     live_bhoonidhi: bool = Query(True),
 ) -> dict:
     """Fuse Sentinel NDVI history with Bhoonidhi catalog scenes for one work area."""
@@ -360,7 +377,12 @@ async def fence_satellite_fusion(
 
 
 @router.get("/{fence_id}/ndvi-image")
-async def fence_ndvi_image(fence_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+async def fence_ndvi_image(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    _satellite: None = Depends(require_satellite_feature),
+) -> Response:
     """False-color NDVI for the fenced plantation area (Copernicus Sentinel-2)."""
     fence = await _load_fence(fence_id, user, db)
     boundary = geography_to_geojson_polygon(fence.boundary)
@@ -412,7 +434,10 @@ async def fence_weather(
 
 @router.get("/{fence_id}/biodiversity", response_model=FenceBiodiversityOut)
 async def fence_biodiversity(
-    fence_id: uuid.UUID, user: CurrentUser, db: DB
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    _bioacoustic: None = Depends(require_bioacoustic_feature),
 ) -> FenceBiodiversityOut:
     """Bioacoustic biodiversity summary for a plantation fence (Phase 3)."""
     fence = await _load_fence(fence_id, user, db)
@@ -426,7 +451,10 @@ async def fence_biodiversity(
 
 @router.get("/{fence_id}/ecosystem-health", response_model=EcosystemHealthOut)
 async def fence_ecosystem_health(
-    fence_id: uuid.UUID, user: CurrentUser, db: DB
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    _satellite: None = Depends(require_satellite_feature),
 ) -> EcosystemHealthOut:
     """Bioacoustic + NDVI + satellite health correlation (Phase 3)."""
     fence = await _load_fence(fence_id, user, db)
@@ -446,6 +474,7 @@ async def fence_pest_intel(
     fence_id: uuid.UUID,
     user: CurrentUser,
     db: DB,
+    _satellite: None = Depends(require_satellite_feature),
     weather_days: int = Query(5, ge=1, le=7),
 ) -> dict:
     """Aggregated pest/disease, weather, NDVI, and tree health for a work area."""

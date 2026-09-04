@@ -1,0 +1,8 @@
+Contact: mailto:security@aranyix.tech
+Expires: 2027-09-04T00:00:00.000Z
+Preferred-Languages: en, hi
+Canonical: https://aranyix.tech/.well-known/security.txt
+Policy: https://aranyix.tech/docs/SECURITY.md
+Acknowledgments: https://github.com/kapil13/tree/blob/main/docs/SECURITY.md
+
+# Report security issues responsibly. Do not test against production without written approval.

@@ -54,5 +54,5 @@ Secrets live in `infrastructure/hostinger/.env.production` (not committed). See 
 
 ## 7. Disclosure & response
 
-* Security contact: configure `security.txt` at the site root (planned).
-* Incident response runbook: `docs/incident-response.md` (to be authored).
+* Security contact: `/.well-known/security.txt` (served from the frontend static bundle).
+* Incident response runbook: `docs/incident-response.md`.

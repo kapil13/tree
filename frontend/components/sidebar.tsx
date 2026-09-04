@@ -235,7 +235,7 @@ const NAV_GROUPS: NavGroup[] = [
           },
         ],
       },
-      { href: "/assistant", labelKey: "aiAssistant", icon: Sparkles, audience: "all" },
+      { href: "/assistant", labelKey: "aiAssistant", icon: Sparkles, audience: "all", featureFlag: "ai_scan" },
     ],
   },
   {
