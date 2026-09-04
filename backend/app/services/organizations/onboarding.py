@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.organization import Organization
 from app.models.planting_program import ProgramAccessRequest
 from app.models.user import User
+from app.services.onboarding.audience_storage import copy_audience_from_profile_to_org
 from app.services.planting_programs.enrollment import list_user_program_codes, set_user_programs
 
 ORG_ROLES = frozenset({"manager", "supervisor", "worker", "viewer"})
@@ -126,6 +127,7 @@ async def onboard_user_on_program_approval(
         codes.append(program_code)
     meta["program_codes"] = codes
     org.metadata_ = meta
+    copy_audience_from_profile_to_org(org, request.org_profile)
     if org.owner_user_id is None:
         org.owner_user_id = user.id
 

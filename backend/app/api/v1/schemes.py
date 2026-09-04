@@ -40,9 +40,10 @@ def _scheme_out(scheme: dict) -> CentralSchemeOut:
 async def list_central_schemes(
     user: CurrentUser,
     program_code: str | None = Query(None, max_length=64),
+    audience: str | None = Query(None, max_length=32),
 ) -> CentralSchemeListOut:
     del user  # auth gate only
-    schemes = list_schemes(program_code=program_code)
+    schemes = list_schemes(program_code=program_code, audience=audience)
     return CentralSchemeListOut(items=[_scheme_out(s) for s in schemes])
 
 

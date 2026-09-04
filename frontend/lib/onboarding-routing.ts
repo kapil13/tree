@@ -6,12 +6,19 @@ export function onboardingRedirectPath(user: User | null | undefined): string | 
   if (!user) return null;
   switch (user.onboarding_status) {
     case "profile_required":
+      if (user.audience_onboarding_required) {
+        return "/onboarding/audience";
+      }
       return "/onboarding/org-profile";
     case "pending_approval":
       return "/onboarding/pending";
     case "rejected":
       return "/onboarding/pending";
     default:
-      return null;
+      break;
   }
+  if (user.audience_onboarding_required) {
+    return "/onboarding/audience";
+  }
+  return null;
 }

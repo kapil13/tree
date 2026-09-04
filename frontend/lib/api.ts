@@ -303,6 +303,8 @@ export type User = {
   state?: string | null;
   age?: number | null;
   has_password?: boolean;
+  audience?: string | null;
+  audience_onboarding_required?: boolean;
 };
 
 export type PlantingProgram = {
@@ -855,15 +857,29 @@ export type CentralScheme = {
 };
 
 export const centralSchemes = {
-  async list(programCode?: string) {
+  async list(params?: { programCode?: string; audience?: string }) {
     return (
       await api.get<{ items: CentralScheme[] }>("/v1/schemes", {
-        params: programCode ? { program_code: programCode } : undefined,
+        params: {
+          program_code: params?.programCode,
+          audience: params?.audience,
+        },
       })
     ).data.items;
   },
   async get(code: string) {
     return (await api.get<CentralScheme>(`/v1/schemes/${code}`)).data;
+  },
+};
+
+export const audienceOnboarding = {
+  async presets() {
+    return (await api.get<{ items: import("@/lib/audience").AudiencePreset[] }>(
+      "/v1/onboarding/audience-presets",
+    )).data.items;
+  },
+  async select(audience: string) {
+    return (await api.post<{ audience: string }>("/v1/onboarding/audience", { audience })).data;
   },
 };
 

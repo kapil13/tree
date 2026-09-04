@@ -269,11 +269,17 @@ def get_scheme(code: str) -> CentralSchemeDefinition | None:
 def list_schemes(
     *,
     program_code: str | None = None,
+    audience: str | None = None,
     active_only: bool = True,
 ) -> list[CentralSchemeDefinition]:
+    from app.services.onboarding.audience import normalize_audience, scheme_matches_audience
+
     items = list(SCHEME_REGISTRY.values())
     if active_only:
         items = [s for s in items if s["active"]]
     if program_code:
         items = [s for s in items if program_code in s["program_codes"]]
+    if audience:
+        resolved = normalize_audience(audience)
+        items = [s for s in items if scheme_matches_audience(s, resolved)]
     return sorted(items, key=lambda s: (s["group"], s["label"]))
