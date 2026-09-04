@@ -27,6 +27,7 @@ def _scheme_out(scheme: dict) -> CentralSchemeOut:
         framework_profiles=list(scheme.get("framework_profiles") or []),
         convergence_allowed=list(scheme.get("convergence_allowed") or []),
         legacy_plantation_category=scheme.get("legacy_plantation_category"),
+        state_codes=list(scheme.get("state_codes") or []),
         kpi_targets=SchemeKpiTargetsOut(
             survival_pct_min=kpi.get("survival_pct_min"),
             geo_tagged_pct_min=kpi.get("geo_tagged_pct_min"),
@@ -41,9 +42,10 @@ async def list_central_schemes(
     user: CurrentUser,
     program_code: str | None = Query(None, max_length=64),
     audience: str | None = Query(None, max_length=32),
+    state_code: str | None = Query(None, max_length=8),
 ) -> CentralSchemeListOut:
     del user  # auth gate only
-    schemes = list_schemes(program_code=program_code, audience=audience)
+    schemes = list_schemes(program_code=program_code, audience=audience, state_code=state_code)
     return CentralSchemeListOut(items=[_scheme_out(s) for s in schemes])
 
 

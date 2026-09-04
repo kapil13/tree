@@ -32,6 +32,7 @@ const SCHEME_ICONS: Record<string, LucideIcon> = {
   green_credit_india: BadgeCheck,
   sahakar_van: Handshake,
   estate_monitoring: Satellite,
+  raj_amrit_poshan_vatika: Sprout,
 };
 
 const SCHEME_ACCENT: Record<string, string> = {
@@ -45,6 +46,7 @@ const SCHEME_ACCENT: Record<string, string> = {
   green_credit_india: "from-forest-500/15 to-emerald-600/5 text-forest-800 ring-forest-500/30",
   sahakar_van: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
   estate_monitoring: "from-sky-500/15 to-indigo-600/5 text-sky-900 ring-sky-500/30",
+  raj_amrit_poshan_vatika: "from-lime-500/15 to-green-600/5 text-lime-900 ring-lime-500/30",
 };
 
 const MINISTRY_TONE: Record<string, string> = {
@@ -306,7 +308,7 @@ export function SchemePickerStep({
     );
   }
 
-  const filteredGroups = (["central", "cooperative", "convergence", "corporate"] as CentralSchemeGroup[])
+  const filteredGroups = (["state", "central", "cooperative", "convergence", "corporate"] as CentralSchemeGroup[])
     .map((group) => ({
       group,
       items: schemesByGroup[group].filter(matchesScheme),

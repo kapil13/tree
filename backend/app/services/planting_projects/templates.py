@@ -171,6 +171,48 @@ def _ngo_rules() -> dict[str, Any]:
     }
 
 
+def _nutri_garden_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 2.5, "warn_below": 2.0},
+        "pit_size_cm": {"length": 30, "width": 30, "depth": 30},
+        "max_gps_accuracy_m": 15.0,
+        "min_photos": 2,
+        "guard_type_required": False,
+        "layout_pattern": "cluster",
+        "allowed_species": [
+            "Guava",
+            "Pomegranate",
+            "Amla",
+            "Jamun",
+            "Ber",
+            "Mango",
+            "Lemon",
+            "Karonda",
+            "Drumstick",
+            "Neem",
+        ],
+        "species_native_pct_min": 60,
+        "planting_density_per_ha": {"min": 400, "max": 2500},
+        "require_pit_photo": False,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "site_area_ha": {"min": 0.1, "max": 0.5},
+        "min_trees_project": 50,
+        "block_types": ["anganwadi_plot", "shg_garden", "panchayat_land"],
+        "fruit_medicinal_focus": True,
+        "native_species_examples": [
+            "Amla",
+            "Jamun",
+            "Ber",
+            "Guava",
+            "Pomegranate",
+            "Mango",
+            "Karonda",
+            "Drumstick",
+        ],
+    }
+
+
 def _campa_ca_rules() -> dict[str, Any]:
     return {
         "spacing_m": {"min": 3.0, "warn_below": 2.5},
@@ -358,6 +400,18 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "guided",
         "recommended_program_codes": ["government_nhai", "ngo_community", "corporate_esg"],
         "rules": _estate_monitoring_rules(),
+    },
+    "amrit_poshan_vatika_v1": {
+        "code": "amrit_poshan_vatika_v1",
+        "name": "Amrit Poshan Vatika Nutri-Garden",
+        "segment": "nutri_garden",
+        "description": (
+            "Rajasthan state nutri-garden sites on Anganwadi, SHG, and panchayat land "
+            "with fruit and medicinal species, 0.1–0.5 ha plots, and MGNREGS convergence."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _nutri_garden_rules(),
     },
 }
 
