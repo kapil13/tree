@@ -34,6 +34,7 @@ SCHEME_AUDIENCE_TAGS: dict[str, list[AudienceCode]] = {
     "mgnrega_convergence": ["government"],
     "jal_shakti_riparian": ["government", "international"],
     "green_credit_india": ["mining", "corporate_esg", "international"],
+    "mining_reclamation": ["mining", "corporate_esg", "international"],
     "sahakar_van": ["government", "international"],
     "dfi_green_corridor": ["government", "international"],
     "estate_monitoring": ["mining", "corporate_esg", "government", "international"],

@@ -7,6 +7,7 @@ import {
   Check,
   Droplets,
   Handshake,
+  HardHat,
   Leaf,
   Route,
   Search,
@@ -30,6 +31,7 @@ const SCHEME_ICONS: Record<string, LucideIcon> = {
   mgnrega_convergence: Users,
   jal_shakti_riparian: Droplets,
   green_credit_india: BadgeCheck,
+  mining_reclamation: HardHat,
   sahakar_van: Handshake,
   estate_monitoring: Satellite,
   raj_amrit_poshan_vatika: Sprout,
@@ -44,6 +46,7 @@ const SCHEME_ACCENT: Record<string, string> = {
   mgnrega_convergence: "from-amber-500/15 to-orange-600/5 text-amber-900 ring-amber-500/30",
   jal_shakti_riparian: "from-cyan-500/15 to-blue-500/5 text-cyan-800 ring-cyan-500/30",
   green_credit_india: "from-forest-500/15 to-emerald-600/5 text-forest-800 ring-forest-500/30",
+  mining_reclamation: "from-amber-500/15 to-orange-600/5 text-amber-900 ring-amber-500/30",
   sahakar_van: "from-orange-500/15 to-amber-600/5 text-orange-900 ring-orange-500/30",
   estate_monitoring: "from-sky-500/15 to-indigo-600/5 text-sky-900 ring-sky-500/30",
   raj_amrit_poshan_vatika: "from-lime-500/15 to-green-600/5 text-lime-900 ring-lime-500/30",
@@ -56,6 +59,7 @@ const MINISTRY_TONE: Record<string, string> = {
   "Jal Shakti": "bg-cyan-50 text-cyan-800 ring-cyan-100",
   "Rural Development": "bg-amber-50 text-amber-900 ring-amber-100",
   "Ministry of Cooperation": "bg-orange-50 text-orange-900 ring-orange-100",
+  "MoM / IBM": "bg-amber-50 text-amber-900 ring-amber-100",
 };
 
 function complianceLabel(mode: ComplianceMode): string {
@@ -316,12 +320,43 @@ export function SchemePickerStep({
     .filter((g) => g.items.length > 0);
 
   const hasSelection = Boolean(selectedScheme || selectedFlexCode);
+  const miningScheme = schemes.find((s) => s.code === "mining_reclamation");
   const monitoringScheme = schemes.find((s) => s.code === "estate_monitoring");
+  const showMiningCallout =
+    miningScheme && matchesScheme(miningScheme) && !query.includes("green credit");
   const showMonitoringCallout =
     monitoringScheme && matchesScheme(monitoringScheme) && !query.includes("campa");
 
   return (
     <div className="space-y-6">
+      {showMiningCallout && miningScheme && (
+        <section className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/90 via-white to-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-900">
+                Mine reclamation — progressive closure
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-stone-900">{miningScheme.label}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+                Register IBM lease details, reclamation block type, and closure phase. Draw dump or
+                green-belt polygons, track native stocking, and converge with Green Credit or
+                estate satellite watch when ready.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSelectScheme(miningScheme)}
+              className={cn(
+                "btn-primary shrink-0",
+                selectedScheme?.code === miningScheme.code && "ring-2 ring-amber-400 ring-offset-2",
+              )}
+            >
+              <HardHat className="h-4 w-4" />
+              Select mine reclamation
+            </button>
+          </div>
+        </section>
+      )}
       {showMonitoringCallout && monitoringScheme && (
         <section className="rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50/90 via-white to-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

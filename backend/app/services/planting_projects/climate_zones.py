@@ -215,6 +215,20 @@ SCHEME_ZONE_EXAMPLES: dict[str, dict[ClimateZone, list[str]]] = {
         "coastal": ["Coconut", "Mango", "Guava", "Jamun", "Lemon"],
         "himalayan": ["Amla", "Guava", "Pomegranate", "Walnut", "Apple"],
     },
+    "mining_reclamation": {
+        "arid": ["Khejri", "Rohida", "Ber", "Babool", "Neem", "Karanj", "Palash"],
+        "semi_arid": ["Neem", "Ber", "Khejri", "Jamun", "Arjun", "Karanj", "Babool", "Mahua"],
+        "moist": ["Neem", "Jamun", "Arjun", "Teak", "Mahua", "Palash", "Karanj"],
+        "coastal": ["Neem", "Pungam", "Jamun", "Casuarina", "Bamboo"],
+        "himalayan": ["Oak", "Willow", "Poplar", "Deodar", "Chir Pine"],
+    },
+    "green_credit_india": {
+        "arid": ["Khejri", "Neem", "Ber", "Babool", "Karanj", "Rohida"],
+        "semi_arid": ["Neem", "Ber", "Khejri", "Jamun", "Arjun", "Karanj", "Babool"],
+        "moist": ["Neem", "Jamun", "Arjun", "Teak", "Mahua", "Palash"],
+        "coastal": ["Neem", "Pungam", "Jamun", "Casuarina"],
+        "himalayan": ["Oak", "Willow", "Poplar", "Deodar"],
+    },
 }
 
 SEGMENT_ZONE_SPECIES: dict[str, dict[ClimateZone, list[str]]] = {
@@ -222,6 +236,7 @@ SEGMENT_ZONE_SPECIES: dict[str, dict[ClimateZone, list[str]]] = {
     "nagar_van_urban": SCHEME_ZONE_EXAMPLES["nagar_van"],
     "sahakar_van_coop": SCHEME_ZONE_EXAMPLES["sahakar_van"],
     "nutri_garden": SCHEME_ZONE_EXAMPLES["raj_amrit_poshan_vatika"],
+    "industrial_greenbelt": SCHEME_ZONE_EXAMPLES["mining_reclamation"],
     "general": {
         "arid": ["Khejri", "Neem", "Ber", "Babool"],
         "semi_arid": ["Neem", "Jamun", "Khejri", "Peepal"],

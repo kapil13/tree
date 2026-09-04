@@ -28,10 +28,14 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
             "native species targets, progressive closure tracking, and satellite MRV."
         ),
         "recommended_program_code": "corporate_esg",
-        "recommended_scheme_codes": ["green_credit_india", "estate_monitoring"],
-        "recommended_template_code": "industrial_greenbelt_v1",
+        "recommended_scheme_codes": [
+            "mining_reclamation",
+            "green_credit_india",
+            "estate_monitoring",
+        ],
+        "recommended_template_code": "mining_reclamation_v1",
         "recommended_segment": "industrial_greenbelt",
-        "checklist_codes": ["esg_general"],
+        "checklist_codes": ["mining_reclamation", "esg_general"],
         "dashboard_highlights": ["greenbelt", "closure", "satellite"],
     },
     "corporate_esg": {
