@@ -41,6 +41,9 @@ def project_location_meta(project: PlantingProject) -> dict[str, str]:
         "block_name": str(loc.get("block_name") or ""),
         "gram_panchayat_name": str(loc.get("gram_panchayat_name") or ""),
         "village_name": str(loc.get("village_name") or ""),
+        "area_type": str(loc.get("area_type") or "rural"),
+        "city_name": str(loc.get("city_name") or ""),
+        "urban_local_body": str(loc.get("urban_local_body") or ""),
     }
 
 
