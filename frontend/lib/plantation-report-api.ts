@@ -29,6 +29,53 @@ export type ReGeotagFilters = {
   min_days_overdue?: number;
 };
 
+export type DistrictRollupSchemeBucket = {
+  project_count: number;
+  registered_trees: number;
+  on_track: number;
+  at_risk: number;
+};
+
+export type DistrictRollupRow = {
+  state_code: string;
+  state_name: string;
+  district_code: string;
+  district_name: string;
+  block_name?: string | null;
+  project_count: number;
+  target_trees: number;
+  registered_trees: number;
+  gap: number;
+  achievement_pct: number | null;
+  survival_due: number;
+  open_violations: number;
+  scheme_on_track: number;
+  scheme_at_risk: number;
+  scheme_off_track: number;
+  avg_survival_pct: number | null;
+  avg_geo_tagged_pct: number | null;
+  by_scheme: Record<string, DistrictRollupSchemeBucket>;
+  by_site_type: Record<string, number>;
+};
+
+export type DistrictRollupResponse = {
+  report: string;
+  generated_at: string;
+  filters: Record<string, unknown>;
+  totals: DistrictRollupRow;
+  by_scheme: Record<string, DistrictRollupSchemeBucket>;
+  items: DistrictRollupRow[];
+  total: number;
+};
+
+export type DistrictRollupFilters = {
+  state_code?: string;
+  district_code?: string;
+  financial_year?: string;
+  scheme_code?: string;
+  group_by?: "district" | "block";
+};
+
 export type TotalRecordsFilters = {
   project_id?: string;
   work_area_id?: string;
@@ -129,6 +176,11 @@ export const plantationReportApi = {
   async photoEvidence(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
     const { format = "json", ...filters } = params;
     return fetchReport("/v1/plantation-reports/photo-evidence", filters, format);
+  },
+  async districtRollup(params: DistrictRollupFilters = {}) {
+    return (await api.get<DistrictRollupResponse>("/v1/plantation-reports/district-rollup", {
+      params: cleanParams(params),
+    })).data;
   },
   async districtBlockAdmin(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
     const { format = "json", ...filters } = params;

@@ -30,6 +30,7 @@ import {
 } from "@/components/dashboard/command-center-shell";
 import { CompliancePortfolioStrip } from "@/components/dashboard/compliance-portfolio-strip";
 import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboard-strip";
+import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
 import { useTranslations } from "next-intl";
 import {
   Area,
@@ -418,6 +419,8 @@ export function ExecutiveDashboard() {
       <CompliancePortfolioStrip />
 
       <AudienceDashboardStrip />
+
+      <GovernmentRollupPanel />
 
       <DataTrustBanner variant="strip" />
       <OrgAdminChecklist compact />

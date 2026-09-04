@@ -8,8 +8,10 @@ from datetime import datetime
 from fastapi import APIRouter, Query, Request, Response
 
 from app.api.v1.deps import DB, CurrentUser
+from app.schemas.district_rollup import DistrictRollupOut
 from app.services.audit import record_audit
 from app.services.platform.governance import assert_org_feature_enabled
+from app.services.reports.district_rollup import build_district_rollup
 from app.services.reports.plantation_extended_reports import (
     build_carbon_stock_report,
     build_compliance_violations_report,
@@ -415,6 +417,28 @@ async def photo_evidence_report(
     return await _export_response(
         db=db, user=user, request=request, report_kind="photo_evidence", fmt=format,
         ctx=ctx, export_fn=export_photo_evidence, filename_stem="photo-evidence-pack",
+    )
+
+
+@router.get("/district-rollup", response_model=DistrictRollupOut)
+async def district_rollup_report(
+    user: CurrentUser,
+    db: DB,
+    state_code: str | None = None,
+    district_code: str | None = None,
+    financial_year: str | None = None,
+    scheme_code: str | None = None,
+    group_by: str = Query("district", pattern="^(district|block)$"),
+) -> dict:
+    await assert_org_feature_enabled(db, user, "reports")
+    return await build_district_rollup(
+        db,
+        user,
+        state_code=state_code,
+        district_code=district_code,
+        financial_year=financial_year,
+        scheme_code=scheme_code,
+        group_by=group_by,  # type: ignore[arg-type]
     )
 
 

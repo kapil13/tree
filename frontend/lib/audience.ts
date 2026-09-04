@@ -56,7 +56,7 @@ export function audienceQuickLinks(audience: PlantingAudience): { label: string;
     case "government":
       return [
         { label: "New scheme project", href: "/projects/new" },
-        { label: "Plantation reports", href: "/plantation-reports" },
+        { label: "Plantation reports", href: "/reports/plantation/project-wise" },
         { label: "Field operations", href: "/field-ops" },
       ];
     case "international":
