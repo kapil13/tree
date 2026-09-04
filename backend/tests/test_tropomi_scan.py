@@ -196,6 +196,8 @@ def test_run_tropomi_scan_persists_json_safe_nan_series(monkeypatch):
 def auth_client():
     user = MagicMock()
     user.id = uuid.uuid4()
+    user.organization_id = None
+    user.role = "admin"
 
     async def _current_user():
         return user
