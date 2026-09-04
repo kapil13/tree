@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { AudiencePicker } from "@/components/onboarding/audience-picker";
@@ -21,6 +21,13 @@ export default function OnboardingAudiencePage() {
     queryFn: () => audienceOnboarding.presets(),
   });
 
+  useEffect(() => {
+    if (!user) return;
+    if (!user.audience_onboarding_required && user.audience) {
+      router.replace("/dashboard");
+    }
+  }, [router, user]);
+
   if (isLoading || !user) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -30,8 +37,11 @@ export default function OnboardingAudiencePage() {
   }
 
   if (!user.audience_onboarding_required && user.audience) {
-    router.replace("/dashboard");
-    return null;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
+      </div>
+    );
   }
 
   async function handleSelect(audience: PlantingAudience) {
