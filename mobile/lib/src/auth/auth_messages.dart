@@ -25,6 +25,13 @@ String humanizeAuthError(String code) {
     'user_not_found': 'No account found for this email. Create an account to continue.',
     'google_oauth_not_configured': 'Google sign-in is not configured on this server.',
     'registration_required': 'No account for this phone. Create an account first.',
+    'program_not_enrolled':
+        'You are not enrolled in this planting program. Open Settings and enroll, or use BYOT.',
+    's3_key_forbidden':
+        'Photo upload was rejected. Retake the photo and try again, or sign in again.',
+    'project_access_denied': 'You do not have access to this project.',
+    'viewer_read_only': 'Your account is read-only. Contact your admin for write access.',
+    'storage_upload_failed': 'Photo upload failed on the server. Try again shortly.',
   };
   return map[code] ?? code.replaceAll('_', ' ');
 }

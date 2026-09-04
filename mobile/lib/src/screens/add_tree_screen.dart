@@ -435,7 +435,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     } catch (e) {
       setState(() {
         _localPhotoPaths.add(image.path);
-        _err = 'Photo saved offline — will upload when connected.';
+        _err = isOfflineOrNetworkError(e)
+            ? 'Photo saved offline — will upload when connected.'
+            : apiErrorMessage(e);
       });
       await _runComplianceCheck();
     } finally {

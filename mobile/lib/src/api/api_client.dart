@@ -747,20 +747,19 @@ class ApiClient {
 
   Future<String> uploadImageFile(String filePath, {String? filename}) async {
     final name = filename ?? filePath.split('/').last;
-    final presign = Map<String, dynamic>.from(
-      (await _dio.post('/uploads/presign', data: {
-        'filename': name,
-        'content_type': 'image/jpeg',
-      })).data,
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: name),
+    });
+    final r = await _dio.post(
+      '/uploads/image',
+      data: form,
+      options: Options(
+        sendTimeout: const Duration(seconds: 120),
+        receiveTimeout: const Duration(seconds: 120),
+      ),
     );
-    final uploadUrl = presign['upload_url'] as String;
-    final s3Key = presign['s3_key'] as String;
-    await Dio().put(
-      uploadUrl,
-      data: await File(filePath).readAsBytes(),
-      options: Options(headers: {'Content-Type': presign['content_type'] ?? 'image/jpeg'}),
-    );
-    return s3Key;
+    final data = Map<String, dynamic>.from(r.data);
+    return data['s3_key'] as String;
   }
 
   Future<Map<String, dynamic>> runAnalysis(String treeId) async {
