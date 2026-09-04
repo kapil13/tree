@@ -5,24 +5,34 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ShieldAlert } from "lucide-react";
 import { useAuth, useAuthHydrated } from "@/lib/auth-store";
-import { canAccessPath, routeAccessDeniedKey } from "@/lib/route-access";
+import {
+  canAccessPath,
+  routeAccessDeniedFeatureKey,
+  routeAccessDeniedKey,
+} from "@/lib/route-access";
+import { orgFeatureDisabledMessage } from "@/lib/org-feature-flags";
+import { useOrgFeatureFlagMap } from "@/lib/use-org-feature-flags";
 
 export function RouteAccessGuard({ children }: { children: React.ReactNode }) {
   const hydrated = useAuthHydrated();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { flags } = useOrgFeatureFlagMap();
   const t = useTranslations("access");
 
   if (!hydrated || !pathname) {
     return <>{children}</>;
   }
 
-  if (!user || canAccessPath(user, pathname)) {
+  if (!user || canAccessPath(user, pathname, flags)) {
     return <>{children}</>;
   }
 
-  const key = routeAccessDeniedKey(pathname);
-  const message = t(key);
+  const disabledFeature = routeAccessDeniedFeatureKey(pathname, flags);
+  const key = disabledFeature ? "featureDisabled" : routeAccessDeniedKey(pathname);
+  const message = disabledFeature
+    ? orgFeatureDisabledMessage(disabledFeature)
+    : t(key);
 
   return (
     <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm dark:border-stone-800 dark:bg-stone-900">

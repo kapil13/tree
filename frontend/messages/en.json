@@ -1023,6 +1023,7 @@
     "fieldOps": "Field operations are limited to supervisors and program leads.",
     "platform": "Platform administration access is required.",
     "default": "Your role does not include access to this section.",
+    "featureDisabled": "This capability is disabled for your organization. Contact your platform administrator.",
     "treesNew": "Your viewer role is read-only. Ask your program manager to change your access if you need to register or update trees."
   },
   "dataTrust": {
