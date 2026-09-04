@@ -9,7 +9,6 @@ from typing import Any, Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.services.planting_projects.service import project_summary
 from app.services.planting_projects.survival_survey import survey_interval_days
