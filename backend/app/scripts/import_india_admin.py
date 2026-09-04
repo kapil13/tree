@@ -50,7 +50,7 @@ async def _clear_all(db) -> None:
 async def _import_json_basics(db) -> None:
     states = json.loads((DATA_DIR / "states.json").read_text(encoding="utf-8"))
     districts = json.loads((DATA_DIR / "districts.json").read_text(encoding="utf-8"))
-    cities = json.loads((DATA_DIR / "cities.json").read_text(encoding="utf-8"))
+    cities = json.loads((DATA_DIR / "urban_local_bodies.json").read_text(encoding="utf-8"))
     state_codes = {s["code"] for s in states}
 
     db.add_all([IndiaState(code=s["code"], lgd=s.get("lgd"), name=s["name"]) for s in states])
@@ -69,15 +69,22 @@ async def _import_json_basics(db) -> None:
     )
     await db.commit()
 
-    city_rows = [c for c in cities if c["state_code"] in state_codes]
+    city_rows = [c for c in cities if c["state_code"] in state_codes and c.get("district_code")]
     for i in range(0, len(city_rows), BATCH):
         db.add_all(
-            [IndiaCity(state_code=c["state_code"], name=c["name"]) for c in city_rows[i : i + BATCH]]
+            [
+                IndiaCity(
+                    state_code=c["state_code"],
+                    district_code=c["district_code"],
+                    name=c["name"],
+                )
+                for c in city_rows[i : i + BATCH]
+            ]
         )
         await db.commit()
 
     print(
-        f"Imported {len(states)} states, {len(districts)} districts, {len(city_rows)} cities"
+        f"Imported {len(states)} states, {len(districts)} districts, {len(city_rows)} urban local bodies"
     )
 
 

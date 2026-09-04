@@ -3682,10 +3682,10 @@ export const indiaAdmin = {
       })
     ).data;
   },
-  async cities(stateCode: string) {
+  async cities(stateCode: string, districtCode: string) {
     return (
-      await api.get<{ items: IndiaAdminOption[] }>("/v1/india-admin/cities", {
-        params: { state_code: stateCode },
+      await api.get<IndiaAdminListResponse>("/v1/india-admin/cities", {
+        params: { state_code: stateCode, district_code: districtCode },
       })
     ).data;
   },

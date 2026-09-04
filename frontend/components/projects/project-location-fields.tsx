@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { indiaAdmin } from "@/lib/api";
 import {
-  citiesForDistrict,
   EMPTY_PROJECT_LOCATION,
   type ProjectAreaType,
   type ProjectLocation,
@@ -139,9 +138,11 @@ export function ProjectLocationFields({
   });
 
   const { data: citiesData, isLoading: citiesLoading } = useQuery({
-    queryKey: ["india-admin-cities", location.state_code],
-    queryFn: () => indiaAdmin.cities(location.state_code),
-    enabled: Boolean(location.state_code && location.area_type === "urban"),
+    queryKey: ["india-admin-cities", location.state_code, location.district_code],
+    queryFn: () => indiaAdmin.cities(location.state_code, location.district_code),
+    enabled: Boolean(
+      location.state_code && location.district_code && location.area_type === "urban",
+    ),
   });
 
   const { data: blocksData, isLoading: blocksLoading } = useQuery({
@@ -176,13 +177,10 @@ export function ProjectLocationFields({
     () => (districtsData?.items ?? []).map((d) => ({ code: d.code, name: d.name })),
     [districtsData],
   );
-  const cityOptions = useMemo(() => {
-    const all = (citiesData?.items ?? []).map((c) => ({ code: c.code || c.name, name: c.name }));
-    return citiesForDistrict(all, location.district_name).map((c) => ({
-      code: c.name,
-      name: c.name,
-    }));
-  }, [citiesData, location.district_name]);
+  const cityOptions = useMemo(
+    () => (citiesData?.items ?? []).map((c) => ({ code: c.code || c.name, name: c.name })),
+    [citiesData],
+  );
   const blockOptions = useMemo(
     () =>
       (blocksData?.items ?? []).map((b) => ({
@@ -356,11 +354,17 @@ export function ProjectLocationFields({
               disabled={!location.district_code}
               placeholder="Select city…"
               error={errors?.city_name}
-              manualFallback={cityOptions.length === 0}
+              manualFallback={citiesData?.manual_fallback || cityOptions.length === 0}
               manualValue={location.city_name}
               onSelect={(_code, name) => patch({ city_name: name })}
               onManualChange={(name) => patch({ city_name: name })}
             />
+            {location.district_code && !citiesLoading && cityOptions.length === 0 ? (
+              <p className="text-xs text-stone-500 sm:col-span-2">
+                No urban local bodies are listed for {location.district_name} in the directory yet.
+                Type the city or ULB name manually.
+              </p>
+            ) : null}
             <div>
               <label className="label">Ward / zone / site area</label>
               <input

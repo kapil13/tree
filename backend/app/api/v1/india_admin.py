@@ -38,9 +38,10 @@ async def list_cities(
     user: CurrentUser,
     db: DB,
     state_code: str = Query(..., min_length=1, max_length=8),
+    district_code: str = Query(..., min_length=1, max_length=16),
 ) -> dict:
     del user
-    return {"items": await _service.cities(db, state_code=state_code)}
+    return await _service.cities(db, state_code=state_code, district_code=district_code)
 
 
 @router.get("/blocks")

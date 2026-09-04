@@ -30,10 +30,18 @@ async def list_districts(db: AsyncSession, *, state_code: str) -> list[IndiaDist
     return list(res.scalars().all())
 
 
-async def list_cities(db: AsyncSession, *, state_code: str) -> list[IndiaCity]:
-    code = state_code.zfill(2)
+async def list_cities(
+    db: AsyncSession,
+    *,
+    state_code: str,
+    district_code: str,
+) -> list[IndiaCity]:
+    st = state_code.zfill(2)
+    dt = district_code.lstrip("0") or district_code
     res = await db.execute(
-        select(IndiaCity).where(IndiaCity.state_code == code).order_by(IndiaCity.name)
+        select(IndiaCity)
+        .where(IndiaCity.state_code == st, IndiaCity.district_code == dt)
+        .order_by(IndiaCity.name)
     )
     return list(res.scalars().all())
 

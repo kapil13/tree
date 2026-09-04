@@ -110,15 +110,3 @@ export function locationFromProject(project: PlantingProject | null | undefined)
   if (!project) return { ...EMPTY_PROJECT_LOCATION };
   return projectLocationFromMetadata(project.metadata ?? {});
 }
-
-export function citiesForDistrict(
-  cities: { name: string }[],
-  districtName: string,
-): { name: string }[] {
-  const district = districtName.trim().toLowerCase();
-  if (!district) return cities;
-  const exact = cities.filter((city) => city.name.trim().toLowerCase() === district);
-  if (exact.length > 0) return exact;
-  const related = cities.filter((city) => city.name.toLowerCase().includes(`(${district})`));
-  return related.length > 0 ? related : cities;
-}

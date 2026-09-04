@@ -36,11 +36,15 @@ class IndiaCity(Base):
     state_code: Mapped[str] = mapped_column(
         String(8), ForeignKey("india_states.code", ondelete="CASCADE"), nullable=False
     )
+    district_code: Mapped[str] = mapped_column(
+        String(16), ForeignKey("india_districts.code", ondelete="CASCADE"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("state_code", "name", name="india_cities_state_name_uq"),
+        UniqueConstraint("state_code", "district_code", "name", name="india_cities_state_district_name_uq"),
         Index("india_cities_state_idx", "state_code"),
+        Index("india_cities_state_district_idx", "state_code", "district_code"),
     )
 
 
