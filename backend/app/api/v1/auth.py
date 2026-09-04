@@ -93,6 +93,7 @@ from app.services.auth.user_profile import (
     user_has_professional_program,
 )
 from app.services.onboarding.audience_storage import (
+    backfill_org_audience_from_type,
     get_user_planting_audience,
     user_needs_audience_onboarding,
 )
@@ -675,6 +676,12 @@ async def _user_out_enriched(
         org_name = org.name if org else None
     onboarding = await get_user_onboarding_state(db, user.id)
     planting_audience = await get_user_planting_audience(db, user)
+    if planting_audience is None and user.organization_id:
+        org = await db.get(Organization, user.organization_id)
+        if org is not None:
+            planting_audience = await backfill_org_audience_from_type(db, org)
+            if planting_audience is not None:
+                await db.commit()
     audience_required = await user_needs_audience_onboarding(db, user, codes)
     return _user_out(
         user,

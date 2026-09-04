@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -23,8 +22,8 @@ export default function OnboardingAudiencePage() {
 
   useEffect(() => {
     if (!user) return;
-    if (!user.audience_onboarding_required && user.audience) {
-      router.replace("/dashboard");
+    if (!user.audience_onboarding_required) {
+      router.replace(onboardingRedirectPath(user) ?? "/dashboard");
     }
   }, [router, user]);
 
@@ -36,7 +35,7 @@ export default function OnboardingAudiencePage() {
     );
   }
 
-  if (!user.audience_onboarding_required && user.audience) {
+  if (!user.audience_onboarding_required) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-forest-600" />
@@ -73,15 +72,12 @@ export default function OnboardingAudiencePage() {
         <button
           type="button"
           className="font-medium text-forest-700 hover:underline"
+          disabled={busy}
           onClick={() => void handleSelect("general")}
         >
-          Start with general plantation
+          Skip — use general plantation
         </button>{" "}
-        or{" "}
-        <Link href="/trees/new" className="font-medium text-forest-700 hover:underline">
-          continue with BYOT
-        </Link>
-        .
+        (you can still browse every scheme when creating a project).
       </p>
     </div>
   );

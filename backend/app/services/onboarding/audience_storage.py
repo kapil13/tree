@@ -6,9 +6,41 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.models.organization import Organization
 from app.models.user import User
-from app.services.auth.user_profile import PROFESSIONAL_PROGRAM_CODES, user_has_professional_program
-from app.services.onboarding.audience import AudienceCode, AudienceError, normalize_audience
+from app.services.auth.user_profile import PROFESSIONAL_PROGRAM_CODES
+from app.services.onboarding.audience import (
+    ORG_TYPE_DEFAULT_AUDIENCE,
+    AudienceCode,
+    AudienceError,
+    normalize_audience,
+)
 from app.services.planting_programs.onboarding import _latest_professional_request
+
+
+def infer_audience_from_org_type(org_type: str | None) -> AudienceCode | None:
+    if not org_type:
+        return None
+    return ORG_TYPE_DEFAULT_AUDIENCE.get(org_type)
+
+
+async def backfill_org_audience_from_type(db, org: Organization) -> AudienceCode | None:
+    """Persist a one-time inferred audience for legacy orgs missing metadata."""
+    meta = dict(org.metadata_ or {})
+    raw = meta.get("audience")
+    if raw:
+        try:
+            return normalize_audience(str(raw))
+        except AudienceError:
+            pass
+
+    inferred = infer_audience_from_org_type(org.type)
+    if inferred is None:
+        return None
+
+    meta["audience"] = inferred
+    org.metadata_ = meta
+    flag_modified(org, "metadata_")
+    await db.flush()
+    return inferred
 
 
 async def get_user_planting_audience(db, user: User) -> AudienceCode | None:
@@ -21,6 +53,7 @@ async def get_user_planting_audience(db, user: User) -> AudienceCode | None:
                     return normalize_audience(str(raw))
                 except AudienceError:
                     return None
+            return infer_audience_from_org_type(org.type)
 
     request = await _latest_professional_request(db, user.id)
     if request and request.org_profile:
@@ -34,12 +67,11 @@ async def get_user_planting_audience(db, user: User) -> AudienceCode | None:
 
 
 async def user_needs_audience_onboarding(db, user: User, enrolled_codes: list[str]) -> bool:
+    del enrolled_codes
     if await get_user_planting_audience(db, user) is not None:
         return False
 
-    if user.organization_id and user_has_professional_program(enrolled_codes):
-        return True
-
+    # Only prompt during active professional signup — not for established org accounts.
     request = await _latest_professional_request(db, user.id)
     if request is None:
         return False

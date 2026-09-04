@@ -39,12 +39,16 @@ export function AudiencePicker({ presets, selected, busy, onSelect }: AudiencePi
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center sm:text-left">
+        <p className="text-xs font-semibold uppercase tracking-wide text-forest-700">
+          One-time setup · Step 1 of 2
+        </p>
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-          Who are you planting for?
+          What is your planting focus?
         </h1>
         <p className="text-sm leading-relaxed text-stone-600">
-          This tailors scheme suggestions, dashboard shortcuts, and compliance defaults. You can
-          still access every scheme when creating a project.
+          We use this once to sort scheme suggestions, dashboard shortcuts, and compliance
+          defaults for your account. It does not lock you out of any program — when you create a
+          project you can still browse the full scheme catalog.
         </p>
       </div>
 
