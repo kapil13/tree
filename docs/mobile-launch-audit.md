@@ -191,6 +191,7 @@ Mobile intentionally mirrors web **project-mode** registration: permit, legal ba
 | `api_errors.dart` | `isOfflineOrNetworkError()` |
 | `l10n/*.arb`, `setup_labels.dart` | New strings for GPS/scheme steps |
 | `project_setup_readiness_test.dart` | scheme_refs tests |
+| Round 2 | Deep-link `next=`, splash network handling, session expiry redirect, remember-email-only, dev_hint debug gate, phone OTP captcha, biometric retry UI, signup/password-reset public auth, bio WAV fix, dynamic web URLs, add-tree back button |
 
 ---
 
@@ -198,8 +199,6 @@ Mobile intentionally mirrors web **project-mode** registration: permit, legal ba
 
 1. **Release signing** (C11) — blocking Play Store
 2. **FCM push** (H1) — blocking operational alerts
-3. **Deep link next=** (C14) — blocking QR tree workflows
-4. **Cert pinning** (C12–C13, H9) — security posture
-5. **Session/splash hardening** (H2–H5)
-6. **Survival offline** (H7), **bio format** (H8)
-7. **Physical field QA** on target devices
+3. **Cert pinning** (C12–C13) — empty pins; S3 upload unpinned
+4. **Survival offline** (H7) — if survival surveys ship in v1
+5. **Physical field QA** on target devices
