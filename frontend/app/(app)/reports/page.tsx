@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrsrExportPanel } from "@/components/reports/brsr-export-panel";
+import { BrsrPrinciple6Wizard } from "@/components/reports/brsr-principle6-wizard";
 import { EtfHandoffExportPanel } from "@/components/reports/etf-handoff-export-panel";
 import { FrameworkExportPanel } from "@/components/reports/framework-export-panel";
 import { GbfExportPanel } from "@/components/reports/gbf-export-panel";
@@ -296,7 +296,7 @@ export default function ReportsPage() {
       ) : tab === "iso14064" ? (
         <Iso14064ExportPanel />
       ) : tab === "brsr" ? (
-        <BrsrExportPanel />
+        <BrsrPrinciple6Wizard />
       ) : (
         <>
       {canGenerate ? (
