@@ -23,6 +23,7 @@ from app.models.user import User
 from app.services.auth.sessions import token_issued_before_invalidation
 from app.services.auth.user_profile import user_has_professional_program
 from app.services.planting_programs.enrollment import list_user_program_codes
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.platform.modules import (
     BILLING_ADMIN_MODULE,
     OPS_ADMIN_MODULE,
@@ -253,3 +254,15 @@ def require_write_perm(perm: Permission):
         return user
 
     return Depends(dep)
+
+
+async def require_satellite_feature(user: CurrentUser, db: DB) -> None:
+    await assert_org_feature_enabled(db, user, "satellite")
+
+
+async def require_ai_scan_feature(user: CurrentUser, db: DB) -> None:
+    await assert_org_feature_enabled(db, user, "ai_scan")
+
+
+async def require_bioacoustic_feature(user: CurrentUser, db: DB) -> None:
+    await assert_org_feature_enabled(db, user, "bioacoustic")

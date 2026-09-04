@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, require_satellite_feature
 from app.schemas.intelligence import (
     ExecutiveBriefOut,
     IntegrationsHealthOut,
@@ -16,7 +16,11 @@ from app.services.intelligence.integrations import build_integrations_health
 from app.services.intelligence.satellite_fusion import build_portfolio_satellite_fusion
 from app.services.intelligence.summary import build_intelligence_summary
 
-router = APIRouter(prefix="/intelligence", tags=["intelligence"])
+router = APIRouter(
+    prefix="/intelligence",
+    tags=["intelligence"],
+    dependencies=[Depends(require_satellite_feature)],
+)
 
 
 @router.get("/brief", response_model=ExecutiveBriefOut)

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.v1.deps import CurrentUser
+from app.api.v1.deps import DB, CurrentUser, require_satellite_feature
 from app.schemas.emissions import DispersionMetOut
 from app.schemas.weather import WeatherForecast
 from app.services.weather.dispersion_met import fetch_dispersion_met
@@ -33,6 +33,8 @@ async def get_forecast(
 @router.get("/dispersion-met", response_model=DispersionMetOut)
 async def get_dispersion_met(
     user: CurrentUser,
+    db: DB,
+    _satellite: None = Depends(require_satellite_feature),
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     hours: int = Query(24, ge=1, le=72),
