@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+
 import pytest
 from pydantic import ValidationError
 
@@ -9,6 +11,8 @@ from app.core.config import Settings
 from app.core.production_guards import validate_runtime_settings
 from app.schemas.auth import RegisterRequest
 from app.services.auth.otp import otp_dev_hint, verify_dev_otp
+
+_EVIDENCE_SIGNING_KEY = base64.b64encode(b"0" * 32).decode("ascii")
 
 
 def test_verify_dev_otp_allowed_in_development(monkeypatch):
@@ -59,6 +63,7 @@ def _set_prod_base(monkeypatch) -> None:
     monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
     monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
     monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
+    monkeypatch.setenv("EVIDENCE_SIGNING_KEY", _EVIDENCE_SIGNING_KEY)
 
 
 def test_production_boot_rejects_weak_jwt(monkeypatch):
@@ -89,6 +94,15 @@ def test_production_boot_rejects_explicit_dev_otp(monkeypatch):
     s = Settings(_env_file=None)
     monkeypatch.setattr("app.core.production_guards.settings", s)
     with pytest.raises(RuntimeError, match="AUTH_ALLOW_DEV_OTP"):
+        validate_runtime_settings()
+
+
+def test_production_boot_rejects_missing_evidence_signing_key(monkeypatch):
+    _set_prod_base(monkeypatch)
+    monkeypatch.delenv("EVIDENCE_SIGNING_KEY", raising=False)
+    s = Settings(_env_file=None)
+    monkeypatch.setattr("app.core.production_guards.settings", s)
+    with pytest.raises(RuntimeError, match="EVIDENCE_SIGNING_KEY"):
         validate_runtime_settings()
 
 
