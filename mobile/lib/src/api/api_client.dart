@@ -664,6 +664,9 @@ class ApiClient {
   Future<Map<String, dynamic>> getPlantingProject(String id) async =>
       Map<String, dynamic>.from((await _dio.get('/planting-projects/$id')).data);
 
+  Future<Map<String, dynamic>> getCentralScheme(String code) async =>
+      Map<String, dynamic>.from((await _dio.get('/schemes/$code')).data);
+
   Future<List<dynamic>> listWorkAreas(String projectId) async {
     final r = await _dio.get('/planting-projects/$projectId/work-areas');
     return List<dynamic>.from(r.data);

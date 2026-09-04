@@ -159,6 +159,35 @@
   "addTreeValidationSpecies": "Enter a species before continuing.",
   "addTreeValidationLocation": "Capture GPS before continuing.",
   "addTreeValidationCompliance": "Compliance check failed — fix issues before saving (strict mode).",
+  "addTreeValidationMinPhotos": "Add at least {min} photos before continuing.",
+  "@addTreeValidationMinPhotos": {
+    "placeholders": {
+      "min": {"type": "int"}
+    }
+  },
+  "addTreeValidationSchemeProject": "Government and ESG programmes require a planting project. Open a project and register trees from there.",
+  "addTreeSchemeProjectTitle": "Scheme planting requires a project",
+  "addTreeSchemeProjectBody": "NHAI, CAMPA, Nagar Van, and other central schemes are configured on a planting project. Create or open a project first, then register trees from that project.",
+  "addTreeCreateProject": "Create planting project",
+  "addTreeOpenProjects": "Open projects",
+  "addTreeLocatingGps": "Locating…",
+  "addTreeRefreshGps": "Refresh GPS lock",
+  "addTreeGpsCaptured": "GPS captured",
+  "addTreeGpsNextHint": "GPS is saved. Tap Next to add photos, or refresh if you moved to a new planting point.",
+  "addTreeGpsAccuracyWarning": "GPS accuracy is low (±{meters} m). Move outdoors with clear sky and tap Refresh.",
+  "@addTreeGpsAccuracyWarning": {
+    "placeholders": {
+      "meters": {"type": "int"}
+    }
+  },
+  "addTreeOpenLocationSettings": "Open app settings",
+  "addTreePhotosNextHint": "Add at least {target} photo(s), then tap Next to review.",
+  "@addTreePhotosNextHint": {
+    "placeholders": {
+      "target": {"type": "int"}
+    }
+  },
+  "setupStepSchemeRefs": "Scheme references",
   "bioTabRecord": "Record",
   "bioTabHistory": "History",
   "bioRecordingLive": "Recording live",
@@ -549,6 +578,7 @@
   "welcomeJourneySub": "From field capture to executive clarity.",
   "indiaFirstMrv": "India-first MRV",
   "treeSavedReadyNext": "Tree saved. Ready for the next gap.",
+  "setupStepSchemeRefs": "Scheme references",
   "setupStepTreeDefaults": "Tree registration defaults",
   "setupStepPlantingStandard": "Planting standard",
   "setupStepWorkAreas": "Work areas on map",

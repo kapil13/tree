@@ -89,6 +89,8 @@ Future<LocationCaptureResult> captureLocation({
   }
 }
 
+Future<void> openLocationSettings() => Geolocator.openAppSettings();
+
 String formatCoordinates(double lat, double lon, {double? accuracyMeters}) {
   final acc = accuracyMeters != null ? ' · accuracy ±${accuracyMeters.toStringAsFixed(0)} m' : '';
   return 'Latitude ${lat.toStringAsFixed(5)}, Longitude ${lon.toStringAsFixed(5)}$acc';

@@ -16,6 +16,19 @@ bool isUnauthorizedError(Object err) {
   return false;
 }
 
+/// True when the failure is likely transient connectivity (safe to offline-queue).
+bool isOfflineOrNetworkError(Object err) {
+  if (err is DioException && err.response == null) {
+    final type = err.type;
+    return type == DioExceptionType.connectionError ||
+        type == DioExceptionType.connectionTimeout ||
+        type == DioExceptionType.receiveTimeout ||
+        type == DioExceptionType.sendTimeout ||
+        type == DioExceptionType.unknown;
+  }
+  return false;
+}
+
 /// User-facing message for API and network failures (mirrors web `errorMessage`).
 String apiErrorMessage(Object err) {
   if (err is SessionExpiredException) {
