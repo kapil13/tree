@@ -37,11 +37,13 @@ async def project_ids_needing_integrity_refresh(
     db: AsyncSession,
     *,
     limit: int | None = None,
+    organization_id: uuid.UUID | None = None,
 ) -> list[uuid.UUID]:
     """Projects with at least one active tree missing a fusion score."""
     stmt = (
         select(Tree.project_id)
         .outerjoin(TreeRiskScore, TreeRiskScore.tree_id == Tree.id)
+        .join(PlantingProject, PlantingProject.id == Tree.project_id)
         .where(
             Tree.project_id.is_not(None),
             Tree.status != "removed",
@@ -50,6 +52,8 @@ async def project_ids_needing_integrity_refresh(
         .group_by(Tree.project_id)
         .order_by(func.min(Tree.registered_at).asc())
     )
+    if organization_id is not None:
+        stmt = stmt.where(PlantingProject.organization_id == organization_id)
     if limit is not None:
         stmt = stmt.limit(limit)
     rows = (await db.execute(stmt)).scalars().all()
@@ -61,10 +65,13 @@ async def backfill_integrity_fusion(
     *,
     project_ids: list[uuid.UUID] | None = None,
     limit_projects: int | None = None,
+    organization_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if project_ids is None:
         project_ids = await project_ids_needing_integrity_refresh(
-            db, limit=limit_projects
+            db,
+            limit=limit_projects,
+            organization_id=organization_id,
         )
     elif limit_projects is not None:
         project_ids = project_ids[:limit_projects]

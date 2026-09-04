@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,8 +14,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api.v1 import api_router
-from app.api.v1.deps import DB, bearer_scheme, get_current_user
+from app.api.v1.deps import DB, bearer_scheme
 from app.core.config import settings
+from app.core.health_checks import (
+    collect_health,
+    health_http_status,
+    require_health_detail_auth,
+)
 from app.core.http_errors import format_http_exception_detail
 from app.core.logging import configure_logging, get_logger
 from app.core.production_guards import validate_runtime_settings
@@ -111,19 +116,19 @@ async def health_live() -> LivenessResponse:
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
-async def health(db: DB) -> HealthResponse:
-    db_status = "ok"
-    try:
-        from sqlalchemy import text
-
-        await db.execute(text("SELECT 1"))
-    except Exception:
-        db_status = "error"
-    return HealthResponse(status="ok", version=__version__, env=settings.app_env, db=db_status)
+async def health(db: DB, response: Response) -> HealthResponse:
+    health_status = await collect_health(db)
+    response.status_code = health_http_status(health_status)
+    return health_status
 
 
 @app.get("/health/workers", response_model=WorkerHealthResponse, tags=["meta"])
-async def worker_health(db: DB) -> WorkerHealthResponse:
+async def worker_health(
+    request: Request,
+    db: DB,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> WorkerHealthResponse:
+    await require_health_detail_auth(request, creds, db)
     from app.services.monitoring.worker_health import build_worker_health
 
     return WorkerHealthResponse.model_validate(await build_worker_health(db))
@@ -136,8 +141,7 @@ async def integrations_health(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ):
     """External data provider reachability. Requires auth in production/staging."""
-    if settings.app_env in ("production", "staging"):
-        await get_current_user(request, creds, db)
+    await require_health_detail_auth(request, creds, db)
     from app.services.intelligence.integrations import check_all_integrations
 
     return await check_all_integrations()

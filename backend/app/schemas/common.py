@@ -30,6 +30,7 @@ class HealthResponse(BaseModel):
     version: str
     env: str
     db: str = "unknown"
+    redis: str = "unknown"
 
 
 class LivenessResponse(BaseModel):

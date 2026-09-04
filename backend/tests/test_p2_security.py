@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import uuid
@@ -22,6 +23,8 @@ from app.services.payments.orders import mark_order_paid, record_webhook_event
 from app.services.payments.razorpay_client import verify_webhook_signature
 from app.services.planting_projects.access import can_access_project, load_project
 
+_EVIDENCE_SIGNING_KEY = base64.b64encode(b"1" * 32).decode("ascii")
+
 
 def _prod_env(monkeypatch, **extra: str) -> Settings:
     monkeypatch.setenv("APP_ENV", "production")
@@ -30,6 +33,7 @@ def _prod_env(monkeypatch, **extra: str) -> Settings:
     monkeypatch.delenv("AUTH_ALLOW_DEV_OTP", raising=False)
     monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
     monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
+    monkeypatch.setenv("EVIDENCE_SIGNING_KEY", _EVIDENCE_SIGNING_KEY)
     for key, value in extra.items():
         monkeypatch.setenv(key, value)
     return Settings(_env_file=None)
