@@ -33,12 +33,32 @@ class IndiaAdminService:
             for r in rows
         ]
 
-    async def cities(self, db: AsyncSession, *, state_code: str) -> list[dict[str, Any]]:
-        rows = await repo.list_cities(db, state_code=state_code)
-        return [
-            {"code": r.name, "name": r.name, "state_code": r.state_code}
-            for r in rows
-        ]
+    async def cities(
+        self,
+        db: AsyncSession,
+        *,
+        state_code: str,
+        district_code: str,
+    ) -> dict[str, Any]:
+        rows = await repo.list_cities(
+            db,
+            state_code=state_code,
+            district_code=district_code,
+        )
+        return {
+            "items": [
+                {
+                    "code": r.name,
+                    "name": r.name,
+                    "state_code": r.state_code,
+                    "district_code": r.district_code,
+                }
+                for r in rows
+            ],
+            "manual_fallback": len(rows) == 0,
+            "hint": None if rows else "no_cities_for_district",
+            "source": "database",
+        }
 
     async def blocks(
         self, db: AsyncSession, *, state_code: str, district_code: str

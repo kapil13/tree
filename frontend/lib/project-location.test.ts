@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  citiesForDistrict,
   EMPTY_PROJECT_LOCATION,
   projectLocationToMetadata,
   syncSchemeRefsFromLocation,
@@ -83,19 +82,5 @@ describe("project-location", () => {
       financial_year: "2026-27",
     });
     expect(meta).toEqual({ state_name: "Rajasthan", financial_year: "2026-27", area_type: "rural" });
-  });
-
-  it("prefers district-matching cities for urban picker", () => {
-    const cities = [
-      { name: "Jaipur" },
-      { name: "Alwar" },
-      { name: "Rajgarh (Alwar)" },
-    ];
-    expect(citiesForDistrict(cities, "Alwar").map((c) => c.name)).toEqual(["Alwar"]);
-    expect(citiesForDistrict(cities, "Unknown").map((c) => c.name)).toEqual([
-      "Jaipur",
-      "Alwar",
-      "Rajgarh (Alwar)",
-    ]);
   });
 });
