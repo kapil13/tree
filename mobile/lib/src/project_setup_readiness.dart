@@ -1,6 +1,8 @@
 /// Mirrors web `evaluateProjectSetup` for mobile tree registration gates.
 library;
 
+import 'api/api_base_url.dart';
+
 class ProjectSetupStep {
   const ProjectSetupStep({
     required this.id,
@@ -151,8 +153,12 @@ ProjectSetupStatus evaluateProjectSetup(
   );
 }
 
-String projectSetupWebUrl(String projectId) {
-  return 'https://aranyix.tech/projects/$projectId/setup';
+String projectSetupWebUrl(String projectId, {String? apiBase}) {
+  final origin = webAppOriginFromApiBase(apiBase ?? kByotApiBase);
+  return '$origin/projects/$projectId/setup';
 }
 
-String projectCreateWebUrl() => 'https://aranyix.tech/projects/new';
+String projectCreateWebUrl({String? apiBase}) {
+  final origin = webAppOriginFromApiBase(apiBase ?? kByotApiBase);
+  return '$origin/projects/new';
+}

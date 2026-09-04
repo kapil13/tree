@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'api/api_errors.dart';
 import 'auth/onboarding_routing.dart';
+import 'auth/post_auth_redirect.dart';
 import 'invite_landing.dart';
 import 'pending_invite.dart';
 import 'providers.dart';
@@ -12,6 +13,7 @@ Future<String> completeAuthSession(
   WidgetRef ref, {
   String? inviteToken,
   bool afterSignup = false,
+  String? postAuthNext,
 }) async {
   final api = await ref.read(apiClientProvider.future);
   var user = await api.me();
@@ -35,11 +37,13 @@ Future<String> completeAuthSession(
   final onboarding = onboardingRedirectPath(user);
   if (onboarding != null) return onboarding;
 
-  if (afterSignup) {
-    return postSignupLandingRoute(user);
-  }
-
-  return '/home';
+  final defaultLanding = afterSignup ? postSignupLandingRoute(user) : '/home';
+  return resolvePostAuthLanding(
+    api: api,
+    user: user,
+    defaultLanding: defaultLanding,
+    postAuthNext: postAuthNext,
+  );
 }
 
 /// Keeps [sessionController.user] in sync when the app has tokens but profile was not loaded.

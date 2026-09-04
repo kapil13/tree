@@ -10,9 +10,9 @@
 
 The mobile app has solid foundations (auth breadth, offline tree/bio queues, RBAC nav, Hindi i18n, Android App Links). **Tree registration (BYOT + Govt/NHAI)** had the highest launch risk: unclear GPS step progression, data-loss on online save, scheme-program misuse without a project, and missing API fields.
 
-This audit branch (`cursor/mobile-launch-audit-f2ba`) **fixes all CRITICAL tree-registration issues** identified in the add-tree flow. Several **CRITICAL/HIGH platform issues** (release signing, cert pinning, FCM, deep-link `next=`) remain and are documented below.
+This audit branch (`cursor/mobile-launch-audit-f2ba`) **fixes all CRITICAL tree-registration issues** and most **HIGH auth/security issues**. Remaining launch blockers: release signing, FCM push, and cert pinning implementation.
 
-**Automated verification run:** `flutter gen-l10n`, `flutter test` (28/28 passed), `flutter analyze` on changed files (no errors; pre-existing `value` deprecation infos on dropdowns).
+**Automated verification run:** `flutter test` (30/30 passed).
 
 **Not run in this environment:** Physical-device GPS/camera field test, release APK on hardware, Play Store upload.
 

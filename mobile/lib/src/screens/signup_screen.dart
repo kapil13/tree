@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -132,7 +133,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       );
       setState(() {
         _signupToken = res['signup_token'] as String;
-        _devHint = res['dev_hint'] as String?;
+        if (kDebugMode) {
+          _devHint = res['dev_hint'] as String?;
+        }
         _step = _SignupStep.verifyPhone;
       });
     } catch (e) {
@@ -160,7 +163,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       await api.signupVerifyPhone(signupToken: _signupToken, code: _phoneOtp);
       final emailRes = await api.signupSendEmailOtp(_signupToken);
       setState(() {
-        _devHint = emailRes['dev_hint'] as String?;
+        if (kDebugMode) {
+          _devHint = emailRes['dev_hint'] as String?;
+        }
         _step = _SignupStep.verifyEmail;
         _emailOtp = '';
       });
@@ -270,7 +275,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const SizedBox(height: 12),
               AuthErrorBanner(message: _error!),
             ],
-            if (_devHint != null) ...[
+            if (_devHint != null && kDebugMode) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.devHint(_devHint!),

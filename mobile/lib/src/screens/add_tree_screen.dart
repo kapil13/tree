@@ -230,7 +230,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   Future<void> _openProjectSetupWeb() async {
     final id = widget.projectId;
     if (id == null) return;
-    final uri = Uri.parse(projectSetupWebUrl(id));
+    final api = await ref.read(apiClientProvider.future);
+    final uri = Uri.parse(projectSetupWebUrl(id, apiBase: api.baseUrl));
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -794,7 +795,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (_loadingPrograms) {
       return stackRouteScaffold(
         location: '/trees/new',
-        appBar: ShellTopBar(title: title),
+        appBar: ShellTopBar(title: title, menuWithBack: true),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -806,7 +807,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
     return stackRouteScaffold(
       location: '/trees/new',
-      appBar: ShellTopBar(title: title),
+      appBar: ShellTopBar(title: title, menuWithBack: true),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -881,7 +882,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () async {
-                    final uri = Uri.parse(projectCreateWebUrl());
+                    final api = await ref.read(apiClientProvider.future);
+                    final uri = Uri.parse(projectCreateWebUrl(apiBase: api.baseUrl));
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   },
                   child: Text(l10n.addTreeCreateProject),

@@ -126,7 +126,7 @@ class ApiClient {
         }
 
         if (error.requestOptions.extra['retried'] == true) {
-          await client._clearSession();
+          await client._clearSession(sessionExpired: true);
           return handler.reject(
             DioException(
               requestOptions: error.requestOptions,
@@ -150,7 +150,7 @@ class ApiClient {
             // fall through to sign out
           }
         }
-        await client._clearSession();
+        await client._clearSession(sessionExpired: true);
         return handler.reject(
           DioException(
             requestOptions: error.requestOptions,
@@ -190,14 +190,14 @@ class ApiClient {
     }
   }
 
-  Future<void> _clearSession() async {
+  Future<void> _clearSession({bool sessionExpired = false}) async {
     _dio.options.headers.remove('Authorization');
     await _secure.delete(key: _tokenKey);
     await _secure.delete(key: _refreshKey);
     // Clear any leftover legacy prefs tokens.
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_refreshKey);
-    sessionController.signOut();
+    sessionController.signOut(sessionExpired: sessionExpired);
   }
 
   /// Drops stored tokens locally without calling the logout API (e.g. before sign-in).
@@ -332,12 +332,17 @@ class ApiClient {
     required String password,
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/auth/password-reset/confirm', data: {
-      'email': email,
-      'code': code,
-      'password': password,
-      'captcha_token': captchaToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/password-reset/confirm',
+      data: {
+        'email': email,
+        'code': code,
+        'password': password,
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -383,16 +388,26 @@ class ApiClient {
     required String signupToken,
     required String code,
   }) async {
-    await _dio.post('/auth/signup/verify-phone', data: {
-      'signup_token': signupToken,
-      'code': code,
-    });
+    _dio.options.headers.remove('Authorization');
+    await _dio.post(
+      '/auth/signup/verify-phone',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+      },
+      options: _publicAuthOptions(),
+    );
   }
 
   Future<Map<String, dynamic>> signupSendEmailOtp(String signupToken) async {
-    final r = await _dio.post('/auth/signup/send-email-otp', data: {
-      'signup_token': signupToken,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/send-email-otp',
+      data: {
+        'signup_token': signupToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -400,10 +415,15 @@ class ApiClient {
     required String signupToken,
     required String code,
   }) async {
-    final r = await _dio.post('/auth/signup/complete', data: {
-      'signup_token': signupToken,
-      'code': code,
-    });
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/complete',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
   }
 
@@ -819,8 +839,10 @@ class ApiClient {
     required double longitude,
     String? plantationFenceId,
   }) async {
+    final basename = filePath.split('/').last;
+    final filename = basename.contains('.') ? basename : 'recording.wav';
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: 'recording.m4a'),
+      'file': await MultipartFile.fromFile(filePath, filename: filename),
       'duration_seconds': durationSeconds,
       'latitude': latitude,
       'longitude': longitude,

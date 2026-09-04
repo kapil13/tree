@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,12 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../auth/google_oauth.dart';
 import '../auth/phone_utils.dart';
+import '../auth/post_auth_redirect.dart';
 import '../auth_session.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_input.dart';
+import '../widgets/turnstile_captcha.dart';
+import '../widgets/mobile_auth_security.dart';
 import '../l10n/l10n_ext.dart';
 
 /// Handles deep links: `https://aranyix.tech/auth/callback#access_token=…`
@@ -44,7 +48,12 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
         accessToken: tokens['access_token']!,
         refreshToken: tokens['refresh_token'],
       );
-      final landing = await completeAuthSession(ref);
+      final landing = await completeAuthSession(
+        ref,
+        postAuthNext: sanitizePostAuthPath(
+          GoRouterState.of(context).uri.queryParameters['next'],
+        ),
+      );
       if (!mounted) return;
       context.go(landing);
     } catch (e) {
@@ -114,7 +123,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         email: _email.text.trim(),
       );
       setState(() {
-        _devHint = res['dev_hint'] as String?;
+        if (kDebugMode) {
+          _devHint = res['dev_hint'] as String?;
+        }
         _step2 = true;
       });
     } catch (e) {
@@ -148,7 +159,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String?,
       );
-      final landing = await completeAuthSession(ref);
+      final landing = await completeAuthSession(
+        ref,
+        postAuthNext: sanitizePostAuthPath(
+          GoRouterState.of(context).uri.queryParameters['next'],
+        ),
+      );
       if (!mounted) return;
       context.go(landing);
     } catch (e) {
@@ -203,7 +219,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             const SizedBox(height: 12),
             AuthErrorBanner(message: _error!),
           ],
-          if (_devHint != null) ...[
+          if (_devHint != null && kDebugMode) ...[
             const SizedBox(height: 8),
             Text(l10n.devHint(_devHint!), style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -225,9 +241,28 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
 /// Phone OTP sign-in — works when SMS API is live; shows clear message when not.
 class PhoneOtpLoginPanel extends ConsumerStatefulWidget {
-  const PhoneOtpLoginPanel({super.key, required this.onSwitchToEmail});
+  const PhoneOtpLoginPanel({
+    super.key,
+    required this.onSwitchToEmail,
+    this.captchaEnabled = false,
+    this.skipCaptchaForMobile = false,
+    this.captchaSiteKey,
+    this.captchaToken,
+    this.onCaptchaToken,
+    this.onCaptchaError,
+    this.postAuthNext,
+  });
 
   final VoidCallback onSwitchToEmail;
+  final bool captchaEnabled;
+  final bool skipCaptchaForMobile;
+  final String? captchaSiteKey;
+  final String? captchaToken;
+  final ValueChanged<String>? onCaptchaToken;
+  final VoidCallback? onCaptchaError;
+  final String? postAuthNext;
+
+  bool get _needsCaptchaToken => captchaEnabled && !skipCaptchaForMobile;
 
   @override
   ConsumerState<PhoneOtpLoginPanel> createState() => _PhoneOtpLoginPanelState();
@@ -246,6 +281,11 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
       setState(() => _error = 'Enter a valid 10-digit Indian mobile number.');
       return;
     }
+    if (widget._needsCaptchaToken &&
+        (widget.captchaToken == null || widget.captchaToken!.isEmpty)) {
+      setState(() => _error = 'Complete the security check before continuing.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -254,10 +294,13 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
       final api = await ref.read(apiClientProvider.future);
       final res = await api.requestOtp(
         phone: phoneForApi(_phone.text),
+        captchaToken: widget.captchaToken,
       );
       setState(() {
         _codeSent = true;
-        _devHint = res['dev_hint'] as String?;
+        if (kDebugMode) {
+          _devHint = res['dev_hint'] as String?;
+        }
       });
     } catch (e) {
       setState(() => _error = apiErrorMessage(e));
@@ -285,7 +328,10 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String?,
       );
-      final landing = await completeAuthSession(ref);
+      final landing = await completeAuthSession(
+        ref,
+        postAuthNext: widget.postAuthNext,
+      );
       if (!mounted) return;
       context.go(landing);
     } catch (e) {
@@ -344,9 +390,20 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
           const SizedBox(height: 12),
           AuthErrorBanner(message: _error!),
         ],
-        if (_devHint != null) ...[
+        if (_devHint != null && kDebugMode) ...[
           const SizedBox(height: 8),
           Text(l10n.devHint(_devHint!), style: Theme.of(context).textTheme.bodySmall),
+        ],
+        if (widget.captchaEnabled && widget.skipCaptchaForMobile)
+          const MobileAuthSecurityNote()
+        else if (widget._needsCaptchaToken && widget.captchaSiteKey != null) ...[
+          const SizedBox(height: 12),
+          TurnstileCaptcha(
+            siteKey: widget.captchaSiteKey!,
+            onToken: (token) => widget.onCaptchaToken?.call(token),
+            onError: widget.onCaptchaError,
+            onExpired: widget.onCaptchaError,
+          ),
         ],
         const SizedBox(height: 16),
         FilledButton(

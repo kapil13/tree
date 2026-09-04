@@ -27,6 +27,16 @@ bool _isLocalhostHost(String host) {
 
 /// Throws [FormatException] if release and host not allowlisted
 /// (https only for non-localhost).
+/// Web app origin derived from API base (api.example.com → example.com).
+String webAppOriginFromApiBase(String apiBase) {
+  final normalized = normalizeApiBaseUrl(apiBase);
+  final uri = Uri.parse(normalized);
+  if (uri.host.startsWith('api.')) {
+    return '${uri.scheme}://${uri.host.substring(4)}';
+  }
+  return '${uri.scheme}://${uri.host}';
+}
+
 void assertAllowedApiBaseUrl(String url) {
   final normalized = normalizeApiBaseUrl(url);
   final uri = Uri.tryParse(normalized);
