@@ -1,4 +1,4 @@
-.PHONY: help migrate-db import-india-admin deploy logs seed-demo
+.PHONY: help migrate-db import-india-admin deploy logs seed-demo debug-backend
 
 ENV_FILE := .env.production
 COMPOSE_FILE := docker-compose.prod.yml
@@ -11,6 +11,7 @@ help:
 	@echo "  make migrate-db          Run Alembic migrations in backend container"
 	@echo "  make import-india-admin  Load LGD state/district/block/GP/village into DB"
 	@echo "  make deploy              Run ./deploy.sh (build, migrate, health checks)"
+	@echo "  make debug-backend       Diagnose unhealthy/restarting backend (one-shot)"
 	@echo "  make seed-demo           Seed demo user (optional)"
 	@echo "  make logs                Tail backend logs"
 	@echo ""
@@ -29,6 +30,9 @@ import-india-admin:
 
 deploy:
 	./deploy.sh
+
+debug-backend:
+	./debug-backend-boot.sh
 
 seed-demo:
 	$(COMPOSE) exec -T backend python -m app.scripts.seed_demo
