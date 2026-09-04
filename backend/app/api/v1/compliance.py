@@ -10,7 +10,8 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.schemas.compliance_checklist import ChecklistSaveRequest
 from app.services.audit import record_audit
-from app.services.compliance.checklists import get_checklist, list_checklists
+from app.services.compliance.checklist_engine import list_effective_checklist_catalog
+from app.services.compliance.checklists import get_checklist
 from app.services.compliance.evaluator import (
     build_project_checklist_state,
     list_project_checklist_summaries,
@@ -33,9 +34,9 @@ def _raise_checklist_db_error(exc: Exception) -> None:
 
 
 @router.get("/checklists")
-async def get_checklist_catalog() -> list[dict]:
-    """List guided eligibility checklist templates."""
-    return list_checklists()
+async def get_checklist_catalog(user: CurrentUser, db: DB) -> list[dict]:
+    """List guided eligibility checklist templates (CMS overrides applied)."""
+    return await list_effective_checklist_catalog(db)
 
 
 @router.get("/portfolio-summary")
