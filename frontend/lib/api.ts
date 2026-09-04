@@ -1753,6 +1753,7 @@ export const plantingProjects = {
         open_violations: number;
         survival_due: number;
         by_segment: Record<string, number>;
+        by_scheme: Record<string, number>;
         projects: Array<{
           id: string;
           code: string;
