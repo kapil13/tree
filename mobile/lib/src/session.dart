@@ -4,6 +4,16 @@ import 'package:flutter/foundation.dart';
 class SessionController extends ChangeNotifier {
   bool authenticated = false;
   Map<String, dynamic>? user;
+  bool _sessionExpiredPending = false;
+
+  bool get sessionExpiredPending => _sessionExpiredPending;
+
+  /// Returns true once if the session ended due to token expiry (not voluntary logout).
+  bool consumeSessionExpired() {
+    if (!_sessionExpiredPending) return false;
+    _sessionExpiredPending = false;
+    return true;
+  }
 
   void setAuthenticated(bool value) {
     if (authenticated == value) return;
@@ -16,9 +26,10 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void signOut() {
+  void signOut({bool sessionExpired = false}) {
     authenticated = false;
     user = null;
+    _sessionExpiredPending = sessionExpired;
     notifyListeners();
   }
 }

@@ -97,7 +97,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _pwd.text = 'byotdemo1234!';
       } else {
         _email.text = saved.email;
-        _pwd.text = saved.password;
       }
     });
   }
@@ -143,9 +142,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await LoginRemember.save(
       remember: _rememberMe,
       email: _email.text,
-      password: _pwd.text,
     );
   }
+
+  String? _postAuthNext() =>
+      GoRouterState.of(context).uri.queryParameters['next'];
 
   Future<void> _submitEmail() async {
     if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
@@ -180,7 +181,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await _persistRememberChoice();
       if (!mounted) return;
       final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
-      final landing = await completeAuthSession(ref, inviteToken: inviteToken);
+      final landing = await completeAuthSession(
+        ref,
+        inviteToken: inviteToken,
+        postAuthNext: _postAuthNext(),
+      );
       if (!mounted) return;
       context.go(landing);
     } on InviteAcceptException catch (e) {
@@ -214,7 +219,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       if (!mounted) return;
       final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
-      final landing = await completeAuthSession(ref, inviteToken: inviteToken);
+      final landing = await completeAuthSession(
+        ref,
+        inviteToken: inviteToken,
+        postAuthNext: _postAuthNext(),
+      );
       if (!mounted) return;
       context.go(landing);
     } catch (e) {
@@ -445,6 +454,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ] else
               PhoneOtpLoginPanel(
                 onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
+                captchaEnabled: _captchaEnabled,
+                skipCaptchaForMobile: _skipCaptchaForMobile,
+                captchaSiteKey: _captchaSiteKey,
+                captchaToken: _captchaToken,
+                onCaptchaToken: (token) => setState(() {
+                  _captchaToken = token;
+                  _err = null;
+                }),
+                onCaptchaError: () => setState(() => _captchaToken = null),
+                postAuthNext: _postAuthNext(),
               ),
           ],
         ),

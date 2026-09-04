@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +18,8 @@ import '../widgets/turnstile_captcha.dart';
 import '../l10n/l10n_ext.dart';
 
 enum _SignupStep { account, verifyPhone, verifyEmail }
+
+const _otpLength = 6;
 
 /// Lightweight registration — account details → phone OTP → email OTP.
 class SignupScreen extends ConsumerStatefulWidget {
@@ -122,6 +125,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
     try {
       final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
       final res = await api.signupStart(
         fullName: _name.text.trim(),
         email: _email.text.trim(),
@@ -131,8 +135,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         captchaToken: _captchaToken,
       );
       setState(() {
-        _signupToken = res['signup_token'] as String;
-        _devHint = res['dev_hint'] as String?;
+        _signupToken = res.signupToken;
+        if (kDebugMode) {
+          _devHint = res.devHint;
+        }
+        _phoneOtp = '';
         _step = _SignupStep.verifyPhone;
       });
     } catch (e) {
@@ -147,8 +154,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _verifyPhone() async {
-    if (_phoneOtp.length < 4) {
-      setState(() => _error = 'Enter the code sent to your phone.');
+    if (_signupToken.isEmpty) {
+      setState(() => _error = humanizeAuthError('signup_session_expired'));
+      return;
+    }
+    if (_phoneOtp.length != _otpLength) {
+      setState(() => _error = 'Enter the 6-digit code sent to your phone.');
       return;
     }
     setState(() {
@@ -158,9 +169,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     try {
       final api = await ref.read(apiClientProvider.future);
       await api.signupVerifyPhone(signupToken: _signupToken, code: _phoneOtp);
+    } catch (e) {
+      setState(() => _error = apiErrorMessage(e));
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
       final emailRes = await api.signupSendEmailOtp(_signupToken);
       setState(() {
-        _devHint = emailRes['dev_hint'] as String?;
+        if (kDebugMode && emailRes.devHint != null && !emailRes.emailEnabled) {
+          _devHint = emailRes.devHint;
+        } else {
+          _devHint = null;
+        }
         _step = _SignupStep.verifyEmail;
         _emailOtp = '';
       });
@@ -172,8 +200,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _completeSignup() async {
-    if (_emailOtp.length < 4) {
-      setState(() => _error = 'Enter the code sent to your email.');
+    if (_emailOtp.length != _otpLength) {
+      setState(() => _error = 'Enter the 6-digit code sent to your email.');
       return;
     }
     setState(() {
@@ -182,10 +210,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
     try {
       final api = await ref.read(apiClientProvider.future);
-      final tokens = await api.signupComplete(signupToken: _signupToken, code: _emailOtp);
+      final tokens = await api.signupComplete(
+        signupToken: _signupToken,
+        code: _emailOtp,
+        signupCategory: _category,
+      );
       await api.setTokens(
-        accessToken: tokens['access_token'] as String,
-        refreshToken: tokens['refresh_token'] as String?,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
       );
       final landing = await completeAuthSession(ref, afterSignup: true);
       if (!mounted) return;
@@ -270,7 +302,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const SizedBox(height: 12),
               AuthErrorBanner(message: _error!),
             ],
-            if (_devHint != null) ...[
+            if (_devHint != null && kDebugMode) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.devHint(_devHint!),
@@ -457,7 +489,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         const SizedBox(height: 20),
         OtpInput(
-          length: 6,
+          length: _otpLength,
           enabled: !_busy,
           onChanged: (v) => setState(() {
             if (isPhone) {

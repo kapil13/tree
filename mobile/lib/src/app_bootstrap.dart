@@ -24,6 +24,7 @@ class AppBootstrap extends ConsumerStatefulWidget {
 
 class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBindingObserver {
   bool _biometricGateOpen = true;
+  bool _biometricPromptVisible = false;
 
   @override
   void initState() {
@@ -71,14 +72,20 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
   }
 
   Future<void> _promptBiometric() async {
+    setState(() => _biometricPromptVisible = true);
     final ok = await PushRegistrationService.instance.authenticateBiometric();
     if (!mounted) return;
-    setState(() => _biometricGateOpen = ok);
-    if (!ok) {
-      final api = await ref.read(apiClientProvider.future);
-      await api.logout();
-      if (mounted) widget.router.go('/login');
+    if (ok) {
+      setState(() {
+        _biometricGateOpen = true;
+        _biometricPromptVisible = false;
+      });
+      return;
     }
+    setState(() {
+      _biometricGateOpen = false;
+      _biometricPromptVisible = true;
+    });
   }
 
   Future<void> _handleDeepLink(Uri uri) async {
@@ -120,8 +127,39 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     if (!_biometricGateOpen && AppSettings.instance.biometricUnlock) {
-      return const Material(
-        child: Center(child: CircularProgressIndicator()),
+      return Material(
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.fingerprint, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Unlock Aranyix',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Use biometrics to continue your session.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _biometricPromptVisible ? _promptBiometric : null,
+                    child: const Text('Try again'),
+                  ),
+                  TextButton(
+                    onPressed: () => widget.router.go('/login'),
+                    child: const Text('Sign in with password'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
     return widget.child;

@@ -806,6 +806,90 @@ abstract class AppLocalizations {
   /// **'Compliance check failed — fix issues before saving (strict mode).'**
   String get addTreeValidationCompliance;
 
+  /// No description provided for @addTreeValidationMinPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least {min} photos before continuing.'**
+  String addTreeValidationMinPhotos(int min);
+
+  /// No description provided for @addTreeValidationSchemeProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Government and ESG programmes require a planting project. Open a project and register trees from there.'**
+  String get addTreeValidationSchemeProject;
+
+  /// No description provided for @addTreeSchemeProjectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme planting requires a project'**
+  String get addTreeSchemeProjectTitle;
+
+  /// No description provided for @addTreeSchemeProjectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'NHAI, CAMPA, Nagar Van, and other central schemes are configured on a planting project. Create or open a project first, then register trees from that project.'**
+  String get addTreeSchemeProjectBody;
+
+  /// No description provided for @addTreeCreateProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Create planting project'**
+  String get addTreeCreateProject;
+
+  /// No description provided for @addTreeOpenProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Open projects'**
+  String get addTreeOpenProjects;
+
+  /// No description provided for @addTreeLocatingGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Locating…'**
+  String get addTreeLocatingGps;
+
+  /// No description provided for @addTreeRefreshGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh GPS lock'**
+  String get addTreeRefreshGps;
+
+  /// No description provided for @addTreeGpsCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS captured'**
+  String get addTreeGpsCaptured;
+
+  /// No description provided for @addTreeGpsNextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS is saved. Tap Next to add photos, or refresh if you moved to a new planting point.'**
+  String get addTreeGpsNextHint;
+
+  /// No description provided for @addTreeGpsAccuracyWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS accuracy is low (±{meters} m). Move outdoors with clear sky and tap Refresh.'**
+  String addTreeGpsAccuracyWarning(int meters);
+
+  /// No description provided for @addTreeOpenLocationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open app settings'**
+  String get addTreeOpenLocationSettings;
+
+  /// No description provided for @addTreePhotosNextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least {target} photo(s), then tap Next to review.'**
+  String addTreePhotosNextHint(int target);
+
+  /// No description provided for @setupStepSchemeRefs.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme references'**
+  String get setupStepSchemeRefs;
+
   /// No description provided for @bioTabRecord.
   ///
   /// In en, this message translates to:

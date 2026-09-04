@@ -66,6 +66,9 @@ final _routerProvider = Provider<GoRouter>((ref) {
       if (!sessionController.authenticated && !_isPublicRoute(loc)) {
         final invite = state.uri.queryParameters['invite'];
         if (invite != null) return '/login?invite=$invite';
+        if (sessionController.consumeSessionExpired()) {
+          return '/login?session=expired';
+        }
         return '/welcome';
       }
 

@@ -1,6 +1,8 @@
 /// Mirrors web `evaluateProjectSetup` for mobile tree registration gates.
 library;
 
+import 'api/api_base_url.dart';
+
 class ProjectSetupStep {
   const ProjectSetupStep({
     required this.id,
@@ -36,7 +38,36 @@ const _treeDefaultKeys = [
   ('maintenance_responsible', 'Maintenance responsible'),
 ];
 
-ProjectSetupStatus evaluateProjectSetup(Map<String, dynamic> project, List<dynamic> workAreas) {
+List<String> missingSchemeRefKeys(
+  Map<String, dynamic> project,
+  Map<String, dynamic>? scheme,
+) {
+  final schemeCode = project['scheme_code'] as String?;
+  if (schemeCode == null || scheme == null) return [];
+  final sections = (scheme['metadata_sections'] as List<dynamic>?) ?? [];
+  if (sections.isEmpty) return [];
+  final fields = (sections.first as Map<String, dynamic>?)?['fields'] as List<dynamic>? ?? [];
+  final refs = Map<String, dynamic>.from(
+    (project['metadata'] as Map?)?['scheme_refs'] as Map? ?? {},
+  );
+  final missing = <String>[];
+  for (final field in fields) {
+    final map = Map<String, dynamic>.from(field as Map);
+    if (map['required'] != true) continue;
+    final key = map['key'] as String? ?? '';
+    final value = refs[key];
+    if (value == null || value.toString().trim().isEmpty) {
+      missing.add(key);
+    }
+  }
+  return missing;
+}
+
+ProjectSetupStatus evaluateProjectSetup(
+  Map<String, dynamic> project,
+  List<dynamic> workAreas, {
+  Map<String, dynamic>? scheme,
+}) {
   final metadata = Map<String, dynamic>.from(project['metadata'] as Map? ?? {});
   final defaults = Map<String, dynamic>.from(metadata['tree_registration_defaults'] as Map? ?? {});
   final schemeCode = project['scheme_code'] as String?;
@@ -44,6 +75,8 @@ ProjectSetupStatus evaluateProjectSetup(Map<String, dynamic> project, List<dynam
   final complianceMode = project['compliance_mode'] as String? ?? 'open';
   final requiresWorkArea = complianceMode == 'strict' || complianceMode == 'guided';
 
+  final missingRefs = missingSchemeRefKeys(project, scheme);
+  final hasSchemeRefs = schemeCode == null || missingRefs.isEmpty;
   final hasStandard = project['active_standard'] != null;
   final missingDefaults = <String>[];
   if (schemeCode != null || programCode == 'government_nhai') {
@@ -57,6 +90,16 @@ ProjectSetupStatus evaluateProjectSetup(Map<String, dynamic> project, List<dynam
   final hasWorkAreas = workAreas.isNotEmpty;
 
   final steps = <ProjectSetupStep>[
+    if (schemeCode != null)
+      ProjectSetupStep(
+        id: 'scheme_refs',
+        label: 'Scheme references',
+        complete: hasSchemeRefs,
+        required: true,
+        description: hasSchemeRefs
+            ? 'Government IDs saved for audit exports'
+            : 'Missing: ${missingRefs.join(', ')}',
+      ),
     if (schemeCode != null || programCode == 'government_nhai')
       ProjectSetupStep(
         id: 'tree_defaults',
@@ -86,9 +129,12 @@ ProjectSetupStatus evaluateProjectSetup(Map<String, dynamic> project, List<dynam
   ];
 
   String? blockReason;
-  var canRegister = hasStandard && hasTreeDefaults && (!requiresWorkArea || hasWorkAreas);
+  var canRegister = hasStandard && hasTreeDefaults && hasSchemeRefs && (!requiresWorkArea || hasWorkAreas);
 
-  if (!hasStandard) {
+  if (!hasSchemeRefs) {
+    canRegister = false;
+    blockReason = 'Complete scheme reference fields in project setup before registering trees.';
+  } else if (!hasStandard) {
     canRegister = false;
     blockReason = 'Attach a planting standard before registering trees.';
   } else if (!hasTreeDefaults) {
@@ -107,6 +153,12 @@ ProjectSetupStatus evaluateProjectSetup(Map<String, dynamic> project, List<dynam
   );
 }
 
-String projectSetupWebUrl(String projectId) {
-  return 'https://aranyix.tech/projects/$projectId/setup';
+String projectSetupWebUrl(String projectId, {String? apiBase}) {
+  final origin = webAppOriginFromApiBase(apiBase ?? kByotApiBase);
+  return '$origin/projects/$projectId/setup';
+}
+
+String projectCreateWebUrl({String? apiBase}) {
+  final origin = webAppOriginFromApiBase(apiBase ?? kByotApiBase);
+  return '$origin/projects/new';
 }

@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/api_errors.dart';
 import '../location_helper.dart';
 import '../l10n/setup_labels.dart';
-import '../offline/tree_registration_queue.dart';
 import '../project_setup_readiness.dart';
 import '../providers.dart';
 import '../widgets/shell_scaffold.dart';
@@ -40,6 +39,8 @@ const _measurementMethods = [
   ('clinometer', 'Clinometer (height)'),
   ('photogrammetry', 'Photogrammetry'),
 ];
+
+const _schemeProgramCodes = {'government_nhai', 'ngo_community', 'corporate_esg'};
 
 class AddTreeScreen extends ConsumerStatefulWidget {
   const AddTreeScreen({super.key, this.projectId, this.workAreaId});
@@ -80,6 +81,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   String? _successMessage;
   int _wizardStep = 0;
   static const _wizardStepCount = 5;
+  bool _locating = false;
+  String? _gpsMessage;
+  String? _gpsWarning;
+  String? _chainageLabel;
+  Map<String, dynamic>? _scheme;
+  final _extraSelectValues = <String, String?>{};
+  final _extraBoolValues = <String, bool>{};
 
   @override
   void initState() {
@@ -98,6 +106,14 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         project = await api.getPlantingProject(widget.projectId!);
         workAreas = await api.listWorkAreas(widget.projectId!);
         _programCode = project['program_code'] as String? ?? _programCode;
+        final schemeCode = project['scheme_code'] as String?;
+        if (schemeCode != null && schemeCode.isNotEmpty) {
+          try {
+            _scheme = await api.getCentralScheme(schemeCode);
+          } catch (_) {
+            _scheme = null;
+          }
+        }
         try {
           _registrationContext = await api.registrationContext(
             widget.projectId!,
@@ -168,6 +184,32 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   bool get _isProjectMode => widget.projectId != null && _project != null;
 
+  bool get _showSchemeProjectWarning {
+    if (_isProjectMode) return false;
+    return _programs.any((p) => _schemeProgramCodes.contains(p['code']));
+  }
+
+  bool get _schemeProgramWithoutProject {
+    if (_isProjectMode) return false;
+    final code = _effectiveProgramCode;
+    return code != null && _schemeProgramCodes.contains(code);
+  }
+
+  Future<void> _reloadRegistrationContext() async {
+    final projectId = widget.projectId;
+    if (projectId == null) return;
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      _registrationContext = await api.registrationContext(
+        projectId,
+        workAreaId: _selectedWorkAreaId,
+      );
+      _applySegmentDefaults();
+    } catch (_) {
+      _registrationContext = null;
+    }
+  }
+
   bool get _chainageEnabled {
     final inherited = _registrationContext?['inherited_standard'] as Map<String, dynamic>?;
     if (inherited?['chainage_enabled'] == true) return true;
@@ -177,18 +219,19 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   bool get _projectSetupBlocks {
     if (!_isProjectMode) return false;
-    return !evaluateProjectSetup(_project!, _workAreas).canRegisterTree;
+    return !evaluateProjectSetup(_project!, _workAreas, scheme: _scheme).canRegisterTree;
   }
 
   ProjectSetupStatus? get _setupStatus {
     if (!_isProjectMode || _project == null) return null;
-    return evaluateProjectSetup(_project!, _workAreas);
+    return evaluateProjectSetup(_project!, _workAreas, scheme: _scheme);
   }
 
   Future<void> _openProjectSetupWeb() async {
     final id = widget.projectId;
     if (id == null) return;
-    final uri = Uri.parse(projectSetupWebUrl(id));
+    final api = await ref.read(apiClientProvider.future);
+    final uri = Uri.parse(projectSetupWebUrl(id, apiBase: api.baseUrl));
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -204,7 +247,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       _roadSide ??= 'lhs';
       final suggested = _registrationContext?['suggested_next'] as Map<String, dynamic>?;
       if (suggested?['chainage_label'] != null) {
-        // chainage stored in metadata on submit if needed
+        _chainageLabel = suggested!['chainage_label'].toString();
       }
     }
     if (_segment == 'industrial_greenbelt' && _allowedSpecies.isNotEmpty) {
@@ -237,7 +280,6 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (_isNhaiContext && (key == 'road_side' || key == 'guard_type' || key == 'pit_size_cm')) {
           continue;
         }
-        if (map['type'] == 'boolean' || map['type'] == 'select') continue;
         fields.add(map);
       }
     }
@@ -246,8 +288,21 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   void _syncExtraFields() {
     final keys = _extraFields.map((f) => f['key'] as String).toSet();
-    for (final key in keys) {
-      _extraControllers.putIfAbsent(key, TextEditingController.new);
+    for (final field in _extraFields) {
+      final key = field['key'] as String;
+      final type = field['type'] as String?;
+      if (type == 'boolean') {
+        _extraBoolValues.putIfAbsent(key, () => field['default'] == true);
+      } else if (type == 'select') {
+        _extraSelectValues.putIfAbsent(key, () => field['default']?.toString());
+      } else {
+        _extraControllers.putIfAbsent(key, TextEditingController.new);
+      }
+    }
+    for (final key in _extraControllers.keys.toList()) {
+      if (!keys.contains(key)) {
+        _extraControllers.remove(key)?.dispose();
+      }
     }
   }
 
@@ -256,6 +311,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (widget.projectId != null) metadata['project_id'] = widget.projectId;
     if (_isProjectMode) {
       if (_chainageEnabled && _roadSide != null) metadata['road_side'] = _roadSide;
+      if (_chainageLabel != null && _chainageLabel!.isNotEmpty) {
+        metadata['chainage_km'] = _chainageLabel;
+      }
     } else if (_isNhaiContext) {
       if (_roadSide != null) metadata['road_side'] = _roadSide;
       if (_guardType != null) metadata['guard_type'] = _guardType;
@@ -273,8 +331,16 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     }
     for (final field in _extraFields) {
       final key = field['key'] as String;
-      final value = _extraControllers[key]?.text.trim() ?? '';
-      if (value.isNotEmpty) metadata[key] = value;
+      final type = field['type'] as String?;
+      if (type == 'boolean') {
+        metadata[key] = _extraBoolValues[key] ?? false;
+      } else if (type == 'select') {
+        final value = _extraSelectValues[key];
+        if (value != null && value.isNotEmpty) metadata[key] = value;
+      } else {
+        final value = _extraControllers[key]?.text.trim() ?? '';
+        if (value.isNotEmpty) metadata[key] = value;
+      }
     }
     return metadata;
   }
@@ -302,21 +368,52 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Future<void> _useGps() async {
+    setState(() {
+      _locating = true;
+      _err = null;
+      _gpsMessage = null;
+      _gpsWarning = null;
+    });
     try {
       final gps = await captureLocation(allowFallback: false);
+      if (!mounted) return;
       setState(() {
         _lat = gps.latitude;
         _lon = gps.longitude;
         _acc = gps.accuracyMeters;
-        _err = gps.message;
+        _gpsMessage = gps.message;
+        if (gps.accuracyMeters != null && gps.accuracyMeters! > 50) {
+          _gpsWarning = null; // set below with l10n in build if needed
+        }
       });
       await _runComplianceCheck();
+      if (!mounted) return;
+      final acc = _acc;
+      if (acc != null && acc > 50) {
+        setState(() {
+          _gpsWarning = AppLocalizations.of(context)!
+              .addTreeGpsAccuracyWarning(acc.round());
+        });
+      }
     } on LocationCaptureException catch (e) {
       if (!mounted) return;
       setState(() => _err = e.message);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _err = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _locating = false);
     }
+  }
+
+  Future<List<String>> _ensurePhotosUploaded() async {
+    if (_localPhotoPaths.isEmpty) return List<String>.from(_photoKeys);
+    final api = await ref.read(apiClientProvider.future);
+    final keys = List<String>.from(_photoKeys);
+    for (final path in List<String>.from(_localPhotoPaths)) {
+      keys.add(await api.uploadImageFile(path));
+    }
+    return keys;
   }
 
   Future<void> _addPhoto() async {
@@ -355,6 +452,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   bool _canAdvanceFromStep(int step) {
     switch (step) {
       case 0:
+        if (_schemeProgramWithoutProject) return false;
         if (_projectSetupBlocks) return false;
         if (widget.projectId != null && _workAreas.isNotEmpty && _selectedWorkAreaId == null) {
           return false;
@@ -368,7 +466,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       case 2:
         return _lat != null && _lon != null;
       case 3:
-        return true;
+        final minPhotos = (_activeProgram?['min_photos'] as num?)?.toInt() ?? 0;
+        final target = minPhotos > 0 ? minPhotos : 1;
+        return (_photoKeys.length + _localPhotoPaths.length) >= target;
       case 4:
         return !_complianceBlocksSave;
       default:
@@ -395,6 +495,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     String message;
     switch (step) {
       case 0:
+        if (_schemeProgramWithoutProject) {
+          message = l10n?.addTreeValidationSchemeProject ??
+              'Government and ESG programmes require a planting project.';
+          break;
+        }
         message = l10n?.addTreeValidationContext ??
             'Finish project setup or select a work area before continuing.';
         if (_project == null && _programs.isNotEmpty && (_effectiveProgramCode == null || _effectiveProgramCode!.isEmpty)) {
@@ -408,6 +513,12 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         break;
       case 2:
         message = l10n?.addTreeValidationLocation ?? 'Capture GPS before continuing.';
+        break;
+      case 3:
+        final minPhotos = (_activeProgram?['min_photos'] as num?)?.toInt() ?? 0;
+        final target = minPhotos > 0 ? minPhotos : 1;
+        message = l10n?.addTreeValidationMinPhotos(target) ??
+            'Add at least $target photo(s) before continuing.';
         break;
       default:
         message = l10n?.addTreeValidationCompliance ??
@@ -496,6 +607,12 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
   Future<void> _save({bool registerNext = false}) async {
     final l10n = AppLocalizations.of(context)!;
+    if (_schemeProgramWithoutProject) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.addTreeValidationSchemeProject)),
+      );
+      return;
+    }
     if (_lat == null || _lon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.captureGpsBeforeRegister)),
@@ -505,6 +622,15 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (widget.projectId != null && _selectedWorkAreaId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.selectWorkAreaForProject)),
+      );
+      return;
+    }
+    final minPhotos = (_activeProgram?['min_photos'] as num?)?.toInt() ?? 0;
+    final photoCount = _photoKeys.length + _localPhotoPaths.length;
+    final requiredPhotos = minPhotos > 0 ? minPhotos : 1;
+    if (photoCount < requiredPhotos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.addTreeValidationMinPhotos(requiredPhotos))),
       );
       return;
     }
@@ -528,28 +654,33 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       if (dbh != null) 'dbh_cm': dbh,
       if (height != null) 'height_m': height,
     };
-    final payload = {
-      'program_code': _programCode ?? 'byot',
-      'species_text': _species.text.trim(),
-      'latitude': _lat,
-      'longitude': _lon,
-      'accuracy_m': _acc,
-      'photo_keys': _photoKeys,
-      'metadata': metadata,
-      if (_selectedWorkAreaId != null) 'work_area_id': _selectedWorkAreaId,
-      if (dbh != null || height != null || _measurementMethod != 'visual_estimate')
-        'initial_measurement': initialMeasurement,
-    };
+    final plantedAt = DateTime.now().toUtc().toIso8601String();
 
     try {
       final api = await ref.read(apiClientProvider.future);
+      final uploadedPhotoKeys = await _ensurePhotosUploaded();
+      final payload = {
+        'program_code': _programCode ?? 'byot',
+        'species_text': _species.text.trim(),
+        'latitude': _lat,
+        'longitude': _lon,
+        'accuracy_m': _acc,
+        'planted_at': plantedAt,
+        'photo_keys': uploadedPhotoKeys,
+        'metadata': metadata,
+        if (_selectedWorkAreaId != null) 'work_area_id': _selectedWorkAreaId,
+        if (dbh != null || height != null || _measurementMethod != 'visual_estimate')
+          'initial_measurement': initialMeasurement,
+      };
+
       final t = await api.createTree(
         programCode: payload['program_code'] as String,
         speciesText: payload['species_text'] as String,
+        plantedAt: plantedAt,
         lat: _lat!,
         lon: _lon!,
         accuracy: _acc,
-        photoKeys: _photoKeys,
+        photoKeys: uploadedPhotoKeys,
         metadata: metadata,
         workAreaId: _selectedWorkAreaId,
         initialMeasurement: initialMeasurement,
@@ -570,22 +701,25 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           _lat = null;
           _lon = null;
           _acc = null;
+          _gpsMessage = null;
+          _gpsWarning = null;
           _compliance = null;
+          _chainageLabel = null;
+          _wizardStep = 2;
         });
-        try {
-          _registrationContext = await api.registrationContext(
-            widget.projectId!,
-            workAreaId: _selectedWorkAreaId,
-          );
-          final suggested =
-              _registrationContext?['suggested_next'] as Map<String, dynamic>?;
-          if (suggested?['latitude'] != null && suggested?['longitude'] != null) {
-            setState(() {
-              _lat = (suggested!['latitude'] as num).toDouble();
-              _lon = (suggested['longitude'] as num).toDouble();
-            });
-          }
-        } catch (_) {}
+        await _reloadRegistrationContext();
+        if (!mounted) return;
+        final suggested = _registrationContext?['suggested_next'] as Map<String, dynamic>?;
+        if (suggested?['latitude'] != null && suggested?['longitude'] != null) {
+          setState(() {
+            _lat = (suggested!['latitude'] as num).toDouble();
+            _lon = (suggested['longitude'] as num).toDouble();
+            if (suggested['chainage_label'] != null) {
+              _chainageLabel = suggested['chainage_label'].toString();
+            }
+          });
+          await _runComplianceCheck();
+        }
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_successMessage ?? l10n.treeSaved)),
@@ -594,6 +728,37 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       }
       context.go('/trees/${t['id']}');
     } catch (e) {
+      if (isUnauthorizedError(e)) {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _err = apiErrorMessage(e);
+          });
+        }
+        return;
+      }
+      if (!isOfflineOrNetworkError(e)) {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _err = apiErrorMessage(e);
+          });
+        }
+        return;
+      }
+      final payload = {
+        'program_code': _programCode ?? 'byot',
+        'species_text': _species.text.trim(),
+        'latitude': _lat,
+        'longitude': _lon,
+        'accuracy_m': _acc,
+        'planted_at': plantedAt,
+        'photo_keys': _photoKeys,
+        'metadata': metadata,
+        if (_selectedWorkAreaId != null) 'work_area_id': _selectedWorkAreaId,
+        if (dbh != null || height != null || _measurementMethod != 'visual_estimate')
+          'initial_measurement': initialMeasurement,
+      };
       final queue = ref.read(treeRegistrationQueueProvider);
       await queue.enqueue(
         id: 'tree-${DateTime.now().millisecondsSinceEpoch}',
@@ -630,7 +795,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     if (_loadingPrograms) {
       return stackRouteScaffold(
         location: '/trees/new',
-        appBar: ShellTopBar(title: title),
+        appBar: ShellTopBar(title: title, menuWithBack: true),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -642,7 +807,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
 
     return stackRouteScaffold(
       location: '/trees/new',
-      appBar: ShellTopBar(title: title),
+      appBar: ShellTopBar(title: title, menuWithBack: true),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -697,6 +862,40 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         if (_isProjectMode) ...[
           Text(_project!['name'] as String, style: Theme.of(context).textTheme.titleMedium),
           Text(l10n.addTreeProjectHint, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
+        ],
+        if (_showSchemeProjectWarning && _schemeProgramWithoutProject) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              border: Border.all(color: Colors.amber.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.addTreeSchemeProjectTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(l10n.addTreeSchemeProjectBody, style: const TextStyle(fontSize: 13)),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () async {
+                    final api = await ref.read(apiClientProvider.future);
+                    final uri = Uri.parse(projectCreateWebUrl(apiBase: api.baseUrl));
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: Text(l10n.addTreeCreateProject),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () => context.go('/projects'),
+                  child: Text(l10n.addTreeOpenProjects),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
         ],
         if (_projectSetupBlocks) ...[
@@ -780,9 +979,10 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 .toList(),
             onChanged: _busy
                 ? null
-                : (v) {
+                : (v) async {
                     setState(() => _selectedWorkAreaId = v);
-                    _runComplianceCheck();
+                    await _reloadRegistrationContext();
+                    await _runComplianceCheck();
                   },
           ),
         if (_programs.isNotEmpty && _project == null) ...[
@@ -887,12 +1087,47 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
         ],
         for (final field in _extraFields) ...[
           const SizedBox(height: 12),
-          TextField(
-            controller: _extraControllers[field['key'] as String],
-            decoration: InputDecoration(
-              labelText: '${field['label']}${field['required'] == true ? ' *' : ''}',
+          if (field['type'] == 'boolean')
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('${field['label']}${field['required'] == true ? ' *' : ''}'),
+              value: _extraBoolValues[field['key'] as String] ?? false,
+              onChanged: _busy
+                  ? null
+                  : (v) {
+                      setState(() => _extraBoolValues[field['key'] as String] = v);
+                      _runComplianceCheck();
+                    },
+            )
+          else if (field['type'] == 'select')
+            DropdownButtonFormField<String>(
+              value: _extraSelectValues[field['key'] as String],
+              decoration: InputDecoration(
+                labelText: '${field['label']}${field['required'] == true ? ' *' : ''}',
+              ),
+              items: ((field['options'] as List<dynamic>?) ?? [])
+                  .map(
+                    (opt) => DropdownMenuItem<String>(
+                      value: opt.toString(),
+                      child: Text(opt.toString()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _busy
+                  ? null
+                  : (v) {
+                      setState(() => _extraSelectValues[field['key'] as String] = v);
+                      _runComplianceCheck();
+                    },
+            )
+          else
+            TextField(
+              controller: _extraControllers[field['key'] as String],
+              decoration: InputDecoration(
+                labelText: '${field['label']}${field['required'] == true ? ' *' : ''}',
+              ),
+              onChanged: (_) => _runComplianceCheck(),
             ),
-          ),
         ],
         if (!_isProjectMode) ...[
           const SizedBox(height: 16),
@@ -940,21 +1175,83 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Widget _stepLocation(AppLocalizations l10n) {
+    final hasGps = _lat != null && _lon != null;
+    final permissionBlocked = _err != null &&
+        (_err!.contains('permission') ||
+            _err!.contains('blocked') ||
+            _err!.contains('Settings'));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(l10n.addTreeLocationHint, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: _busy ? null : _useGps,
-          icon: const Icon(Icons.my_location),
-          label: Text(l10n.addTreeGetGps),
-        ),
-        if (_lat != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
+        if (hasGps)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              border: Border.all(color: Colors.green.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text(l10n.addTreeGpsCaptured, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(formatCoordinates(_lat!, _lon!, accuracyMeters: _acc)),
+                if (_gpsMessage != null) ...[
+                  const SizedBox(height: 4),
+                  Text(_gpsMessage!, style: Theme.of(context).textTheme.bodySmall),
+                ],
+                if (_gpsWarning != null) ...[
+                  const SizedBox(height: 4),
+                  Text(_gpsWarning!, style: TextStyle(color: Colors.orange.shade900, fontSize: 13)),
+                ],
+                if (_chainageLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text('Chainage: $_chainageLabel', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ],
+            ),
           ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: (_busy || _locating) ? null : _useGps,
+          icon: _locating
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.my_location),
+          label: Text(_locating
+              ? l10n.addTreeLocatingGps
+              : (hasGps ? l10n.addTreeRefreshGps : l10n.addTreeGetGps)),
+        ),
+        if (permissionBlocked) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: openLocationSettings,
+            icon: const Icon(Icons.settings),
+            label: Text(l10n.addTreeOpenLocationSettings),
+          ),
+        ],
+        if (hasGps) ...[
+          const SizedBox(height: 12),
+          Text(l10n.addTreeGpsNextHint, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: (_busy || _locating) ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
+          ),
+        ],
         if (_compliance != null) ...[
           const SizedBox(height: 12),
           _ComplianceBanner(result: _compliance!, mode: _complianceMode),
@@ -964,7 +1261,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   Widget _stepPhotos(AppLocalizations l10n, {required int minPhotos, required int photoCount}) {
-    final target = minPhotos > 0 ? minPhotos : 3;
+    final target = minPhotos > 0 ? minPhotos : 1;
+    final canContinue = photoCount >= target;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -988,6 +1286,23 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(l10n.addTreeOfflinePhotos(_localPhotoPaths.length)),
           ),
+        const SizedBox(height: 12),
+        Text(l10n.addTreePhotosNextHint(target), style: Theme.of(context).textTheme.bodySmall),
+        if (minPhotos > 0 && photoCount < minPhotos)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l10n.addTreeMinPhotosWarning(minPhotos),
+              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
+            ),
+          ),
+        if (canContinue) ...[
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _nextWizardStep,
+            child: Text(l10n.addTreeNext),
+          ),
+        ],
       ],
     );
   }

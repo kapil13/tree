@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byot_mobile/l10n/app_localizations.dart';
@@ -218,11 +219,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     }
                   },
                 ),
-                SwitchListTile(
-                  title: Text(l10n.certificatePinning),
-                  value: settings.certificatePinning,
-                  onChanged: settings.setCertificatePinning,
-                ),
+                if (kDebugMode)
+                  SwitchListTile(
+                    title: Text(l10n.certificatePinning),
+                    value: settings.certificatePinning,
+                    onChanged: settings.setCertificatePinning,
+                  ),
                 SwitchListTile(
                   title: Text(l10n.analyticsEnabled),
                   subtitle: Text(l10n.analyticsHint),

@@ -127,7 +127,7 @@ class BioacousticQueue extends ChangeNotifier {
   }) async {
     final db = await _database();
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final destPath = p.join(await _queueAudioDir(), '$id.m4a');
+    final destPath = p.join(await _queueAudioDir(), '$id.wav');
     await File(tempFilePath).copy(destPath);
 
     final item = QueuedBioacousticRecording(

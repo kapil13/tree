@@ -406,6 +406,57 @@ class AppLocalizationsHi extends AppLocalizations {
       'अनुपालन जाँच विफल — सख्त मोड में सहेजने से पहले ठीक करें।';
 
   @override
+  String addTreeValidationMinPhotos(int min) {
+    return 'आगे बढ़ने से पहले कम से कम $min फ़ोटो जोड़ें।';
+  }
+
+  @override
+  String get addTreeValidationSchemeProject =>
+      'सरकारी और ESG कार्यक्रमों के लिए रोपण परियोजना आवश्यक है। परियोजना खोलकर वहाँ से पेड़ पंजीकृत करें।';
+
+  @override
+  String get addTreeSchemeProjectTitle => 'योजना रोपण के लिए परियोजना आवश्यक';
+
+  @override
+  String get addTreeSchemeProjectBody =>
+      'NHAI, CAMPA, नगर वन आदि केंद्रीय योजनाएँ रोपण परियोजना पर सेट होती हैं। पहले परियोजना बनाएँ या खोलें, फिर उसी से पेड़ पंजीकृत करें।';
+
+  @override
+  String get addTreeCreateProject => 'रोपण परियोजना बनाएँ';
+
+  @override
+  String get addTreeOpenProjects => 'परियोजनाएँ खोलें';
+
+  @override
+  String get addTreeLocatingGps => 'स्थान खोज रहे हैं…';
+
+  @override
+  String get addTreeRefreshGps => 'GPS ताज़ा करें';
+
+  @override
+  String get addTreeGpsCaptured => 'GPS सहेजा गया';
+
+  @override
+  String get addTreeGpsNextHint =>
+      'GPS सहेजा गया। फ़ोटो के लिए आगे टैप करें, या नए बिंदु पर Refresh करें।';
+
+  @override
+  String addTreeGpsAccuracyWarning(int meters) {
+    return 'GPS सटीकता कम है (±$meters m)। खुले आसमान में बाहर जाएँ और Refresh करें।';
+  }
+
+  @override
+  String get addTreeOpenLocationSettings => 'ऐप सेटिंग खोलें';
+
+  @override
+  String addTreePhotosNextHint(int target) {
+    return 'कम से कम $target फ़ोटो जोड़ें, फिर समीक्षा के लिए आगे टैप करें।';
+  }
+
+  @override
+  String get setupStepSchemeRefs => 'योजना संदर्भ';
+
+  @override
   String get bioTabRecord => 'रिकॉर्ड';
 
   @override

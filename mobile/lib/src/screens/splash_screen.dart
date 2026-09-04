@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_errors.dart';
 import '../auth_session.dart';
 import '../providers.dart';
 import '../session.dart';
@@ -51,7 +52,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final landing = await completeAuthSession(ref);
       if (!mounted) return;
       context.go(landing);
-    } catch (_) {
+    } catch (e) {
+      if (isUnauthorizedError(e)) {
+        await api.logout();
+        ref.invalidate(apiClientProvider);
+        if (!mounted) return;
+        context.go('/welcome');
+        return;
+      }
+      if (isOfflineOrNetworkError(e)) {
+        sessionController.setAuthenticated(true);
+        if (!mounted) return;
+        context.go('/home');
+        return;
+      }
       await api.logout();
       ref.invalidate(apiClientProvider);
       if (!mounted) return;

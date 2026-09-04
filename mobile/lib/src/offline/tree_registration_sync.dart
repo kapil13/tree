@@ -73,6 +73,7 @@ class TreeRegistrationSyncService extends ChangeNotifier {
           await api.createTree(
             programCode: payload['program_code'] as String,
             speciesText: payload['species_text'] as String,
+            plantedAt: payload['planted_at'] as String?,
             lat: (payload['latitude'] as num).toDouble(),
             lon: (payload['longitude'] as num).toDouble(),
             accuracy: (payload['accuracy_m'] as num?)?.toDouble(),
@@ -88,6 +89,11 @@ class TreeRegistrationSyncService extends ChangeNotifier {
         } catch (e) {
           if (isUnauthorizedError(e)) {
             _lastError = apiErrorMessage(e);
+            await _queue.updateStatus(
+              item.id,
+              status: TreeQueueStatus.pending,
+              errorMessage: _lastError,
+            );
             break;
           }
           await _queue.updateStatus(
