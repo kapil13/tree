@@ -208,12 +208,20 @@ SCHEME_ZONE_EXAMPLES: dict[str, dict[ClimateZone, list[str]]] = {
         "coastal": ["Neem", "Coconut", "Cashew", "Jamun", "Bamboo"],
         "himalayan": ["Oak", "Willow", "Poplar", "Walnut"],
     },
+    "raj_amrit_poshan_vatika": {
+        "arid": ["Ber", "Guava", "Pomegranate", "Amla", "Karonda", "Drumstick", "Neem"],
+        "semi_arid": ["Guava", "Pomegranate", "Amla", "Jamun", "Ber", "Mango", "Lemon", "Karonda"],
+        "moist": ["Guava", "Mango", "Jamun", "Amla", "Lemon", "Pomegranate"],
+        "coastal": ["Coconut", "Mango", "Guava", "Jamun", "Lemon"],
+        "himalayan": ["Amla", "Guava", "Pomegranate", "Walnut", "Apple"],
+    },
 }
 
 SEGMENT_ZONE_SPECIES: dict[str, dict[ClimateZone, list[str]]] = {
     "nhai_highway": SCHEME_ZONE_EXAMPLES["nhai_highway"],
     "nagar_van_urban": SCHEME_ZONE_EXAMPLES["nagar_van"],
     "sahakar_van_coop": SCHEME_ZONE_EXAMPLES["sahakar_van"],
+    "nutri_garden": SCHEME_ZONE_EXAMPLES["raj_amrit_poshan_vatika"],
     "general": {
         "arid": ["Khejri", "Neem", "Ber", "Babool"],
         "semi_arid": ["Neem", "Jamun", "Khejri", "Peepal"],

@@ -88,6 +88,11 @@ const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
     hint: "Community plots, guided compliance",
   },
   {
+    code: "nutri_garden",
+    label: "Nutri-garden / Poshan Vatika",
+    hint: "Anganwadi, SHG, and panchayat fruit gardens (0.1–0.5 ha)",
+  },
+  {
     code: "general",
     label: "General plantation",
     hint: "Flexible boundaries",
@@ -146,9 +151,12 @@ export default function NewProjectPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: schemes = [], isLoading: schemesLoading } = useQuery({
-    queryKey: ["central-schemes", showAllSchemes ? "all" : plantingAudience],
+    queryKey: ["central-schemes", showAllSchemes ? "all" : plantingAudience, location.state_code],
     queryFn: () =>
-      centralSchemes.list(showAllSchemes ? undefined : { audience: plantingAudience }),
+      centralSchemes.list({
+        audience: showAllSchemes ? undefined : plantingAudience,
+        stateCode: location.state_code || undefined,
+      }),
   });
 
   const selectedScheme = selection?.kind === "scheme" ? selection.scheme : null;
@@ -228,6 +236,7 @@ export default function NewProjectPage() {
   const schemesByGroup = useMemo(() => {
     const groups: Record<CentralSchemeGroup, CentralScheme[]> = {
       central: [],
+      state: [],
       cooperative: [],
       convergence: [],
       corporate: [],

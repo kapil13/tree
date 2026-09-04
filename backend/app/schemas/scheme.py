@@ -20,7 +20,7 @@ class CentralSchemeOut(BaseModel):
     label: str
     description: str
     ministry: str
-    group: Literal["central", "convergence", "corporate", "cooperative"]
+    group: Literal["central", "convergence", "corporate", "cooperative", "state"]
     program_codes: list[str]
     default_segment: str
     default_compliance_mode: Literal["open", "guided", "strict"]
@@ -29,6 +29,7 @@ class CentralSchemeOut(BaseModel):
     framework_profiles: list[str] = Field(default_factory=list)
     convergence_allowed: list[str] = Field(default_factory=list)
     legacy_plantation_category: str | None = None
+    state_codes: list[str] = Field(default_factory=list)
     kpi_targets: SchemeKpiTargetsOut = Field(default_factory=SchemeKpiTargetsOut)
     metadata_sections: list[dict[str, Any]] = Field(default_factory=list)
 

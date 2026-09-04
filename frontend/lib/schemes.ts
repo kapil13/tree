@@ -1,6 +1,11 @@
 import type { ComplianceMode, ProjectSegment } from "@/lib/api";
 
-export type CentralSchemeGroup = "central" | "convergence" | "corporate" | "cooperative";
+export type CentralSchemeGroup =
+  | "central"
+  | "convergence"
+  | "corporate"
+  | "cooperative"
+  | "state";
 
 export type CentralScheme = {
   code: string;
@@ -16,6 +21,7 @@ export type CentralScheme = {
   framework_profiles: string[];
   convergence_allowed: string[];
   legacy_plantation_category: string | null;
+  state_codes?: string[];
   kpi_targets: {
     survival_pct_min?: number | null;
     geo_tagged_pct_min?: number | null;
@@ -34,6 +40,7 @@ export function isMonitoringScheme(code: string | null | undefined): boolean {
 
 export const SCHEME_GROUP_LABEL: Record<CentralSchemeGroup, string> = {
   central: "Central government schemes",
+  state: "State government schemes",
   convergence: "Convergence programmes",
   corporate: "Corporate & green credit",
   cooperative: "Cooperative programmes",

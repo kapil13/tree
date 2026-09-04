@@ -827,6 +827,7 @@ export type ProjectSegment =
   | "nagar_van_urban"
   | "sahakar_van_coop"
   | "ngo_watershed"
+  | "nutri_garden"
   | "estate_monitoring"
   | "general";
 
@@ -837,7 +838,7 @@ export type CentralScheme = {
   label: string;
   description: string;
   ministry: string;
-  group: "central" | "convergence" | "corporate";
+  group: "central" | "convergence" | "corporate" | "cooperative" | "state";
   program_codes: string[];
   default_segment: ProjectSegment;
   default_compliance_mode: ComplianceMode;
@@ -846,6 +847,7 @@ export type CentralScheme = {
   framework_profiles: string[];
   convergence_allowed: string[];
   legacy_plantation_category: string | null;
+  state_codes?: string[];
   kpi_targets: {
     survival_pct_min?: number | null;
     geo_tagged_pct_min?: number | null;
@@ -857,12 +859,13 @@ export type CentralScheme = {
 };
 
 export const centralSchemes = {
-  async list(params?: { programCode?: string; audience?: string }) {
+  async list(params?: { programCode?: string; audience?: string; stateCode?: string }) {
     return (
       await api.get<{ items: CentralScheme[] }>("/v1/schemes", {
         params: {
           program_code: params?.programCode,
           audience: params?.audience,
+          state_code: params?.stateCode,
         },
       })
     ).data.items;

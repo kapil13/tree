@@ -73,6 +73,19 @@ async def test_list_schemes_filters_audience(auth_client):
 
 
 @pytest.mark.asyncio
+async def test_list_schemes_filters_state_code(auth_client):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/schemes",
+            params={"state_code": "08"},
+        )
+    assert response.status_code == 200
+    codes = {item["code"] for item in response.json()["items"]}
+    assert "raj_amrit_poshan_vatika" in codes
+
+
+@pytest.mark.asyncio
 async def test_audience_presets_endpoint(auth_client):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

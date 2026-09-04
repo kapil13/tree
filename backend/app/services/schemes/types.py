@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypedDict
 
-SchemeGroup = Literal["central", "convergence", "corporate", "cooperative"]
+SchemeGroup = Literal["central", "convergence", "corporate", "cooperative", "state"]
 
 
 class SchemeKpiTargets(TypedDict, total=False):
@@ -15,7 +15,7 @@ class SchemeKpiTargets(TypedDict, total=False):
     max_days_since_scan: int
 
 
-class CentralSchemeDefinition(TypedDict):
+class CentralSchemeDefinition(TypedDict, total=False):
     code: str
     label: str
     description: str
@@ -32,3 +32,4 @@ class CentralSchemeDefinition(TypedDict):
     kpi_targets: SchemeKpiTargets
     active: bool
     metadata_sections: list[dict[str, Any]]
+    state_codes: list[str]

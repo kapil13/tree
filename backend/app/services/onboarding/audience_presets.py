@@ -60,6 +60,7 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
             "campa_ca",
             "nhai_highway",
             "nagar_van",
+            "raj_amrit_poshan_vatika",
             "mgnrega_convergence",
         ],
         "recommended_template_code": "campa_ca_v1",

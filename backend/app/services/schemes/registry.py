@@ -243,6 +243,28 @@ SCHEME_REGISTRY: dict[str, CentralSchemeDefinition] = {
         "active": True,
         "metadata_sections": [],
     },
+    "raj_amrit_poshan_vatika": {
+        "code": "raj_amrit_poshan_vatika",
+        "label": "Amrit Poshan Vatika — Rajasthan Nutri-Garden",
+        "description": (
+            "Rajasthan state nutri-garden programme on Anganwadi, SHG, and panchayat sites "
+            "with fruit and medicinal plants converged with MGNREGS wage employment."
+        ),
+        "ministry": "Rajasthan Forest & Rural Development",
+        "group": "state",
+        "program_codes": ["government_nhai", "ngo_community"],
+        "default_segment": "nutri_garden",
+        "default_compliance_mode": "guided",
+        "default_template_code": "amrit_poshan_vatika_v1",
+        "checklist_codes": ["mgnrega_convergence"],
+        "framework_profiles": ["esg_general"],
+        "convergence_allowed": ["mgnrega_convergence"],
+        "legacy_plantation_category": "community",
+        "kpi_targets": {"survival_pct_min": 65.0, "geo_tagged_pct_min": 85.0, "min_trees": 50},
+        "active": True,
+        "state_codes": ["08"],
+        "metadata_sections": [],
+    },
 }
 
 PROGRAMS_REQUIRING_SCHEME = frozenset({"government_nhai", "ngo_community"})
@@ -270,9 +292,11 @@ def list_schemes(
     *,
     program_code: str | None = None,
     audience: str | None = None,
+    state_code: str | None = None,
     active_only: bool = True,
 ) -> list[CentralSchemeDefinition]:
     from app.services.onboarding.audience import normalize_audience, scheme_matches_audience
+    from app.services.planting_projects.climate_zones import normalize_state_code
 
     items = list(SCHEME_REGISTRY.values())
     if active_only:
@@ -282,4 +306,12 @@ def list_schemes(
     if audience:
         resolved = normalize_audience(audience)
         items = [s for s in items if scheme_matches_audience(s, resolved)]
+    if state_code:
+        norm_state = normalize_state_code(state_code)
+        if norm_state:
+            items = [
+                s
+                for s in items
+                if not s.get("state_codes") or norm_state in s.get("state_codes", [])
+            ]
     return sorted(items, key=lambda s: (s["group"], s["label"]))

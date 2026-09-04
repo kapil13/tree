@@ -37,6 +37,7 @@ SCHEME_AUDIENCE_TAGS: dict[str, list[AudienceCode]] = {
     "sahakar_van": ["government", "international"],
     "dfi_green_corridor": ["government", "international"],
     "estate_monitoring": ["mining", "corporate_esg", "government", "international"],
+    "raj_amrit_poshan_vatika": ["government"],
 }
 
 ORG_TYPE_DEFAULT_AUDIENCE: dict[str, AudienceCode] = {
