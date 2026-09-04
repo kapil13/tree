@@ -410,6 +410,57 @@ class AppLocalizationsEn extends AppLocalizations {
       'Compliance check failed — fix issues before saving (strict mode).';
 
   @override
+  String addTreeValidationMinPhotos(int min) {
+    return 'Add at least $min photos before continuing.';
+  }
+
+  @override
+  String get addTreeValidationSchemeProject =>
+      'Government and ESG programmes require a planting project. Open a project and register trees from there.';
+
+  @override
+  String get addTreeSchemeProjectTitle => 'Scheme planting requires a project';
+
+  @override
+  String get addTreeSchemeProjectBody =>
+      'NHAI, CAMPA, Nagar Van, and other central schemes are configured on a planting project. Create or open a project first, then register trees from that project.';
+
+  @override
+  String get addTreeCreateProject => 'Create planting project';
+
+  @override
+  String get addTreeOpenProjects => 'Open projects';
+
+  @override
+  String get addTreeLocatingGps => 'Locating…';
+
+  @override
+  String get addTreeRefreshGps => 'Refresh GPS lock';
+
+  @override
+  String get addTreeGpsCaptured => 'GPS captured';
+
+  @override
+  String get addTreeGpsNextHint =>
+      'GPS is saved. Tap Next to add photos, or refresh if you moved to a new planting point.';
+
+  @override
+  String addTreeGpsAccuracyWarning(int meters) {
+    return 'GPS accuracy is low (±$meters m). Move outdoors with clear sky and tap Refresh.';
+  }
+
+  @override
+  String get addTreeOpenLocationSettings => 'Open app settings';
+
+  @override
+  String addTreePhotosNextHint(int target) {
+    return 'Add at least $target photo(s), then tap Next to review.';
+  }
+
+  @override
+  String get setupStepSchemeRefs => 'Scheme references';
+
+  @override
   String get bioTabRecord => 'Record';
 
   @override
