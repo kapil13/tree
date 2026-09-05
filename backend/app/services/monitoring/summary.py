@@ -17,6 +17,7 @@ from app.services.monitoring.sar_ops_dashboard import (
     build_sar_ops_summary,
     list_open_sar_field_verifications,
 )
+from app.services.monitoring.scan_ops import build_scan_engine_summary
 from app.services.planting_projects.access import project_list_filter
 from app.services.planting_projects.field_ops import build_field_ops_summary
 
@@ -31,6 +32,14 @@ SAR_ALERT_KINDS = {
     "sar_ground_moisture",
     "sar_ground_instability",
     "sar_sweep_health",
+}
+
+HAZARD_ALERT_KINDS = {
+    "fire_alert",
+    "flood_extent_alert",
+    "ndvi_acute_drop",
+    "canopy_loss_suspected",
+    "locust_watch",
 }
 
 
@@ -127,7 +136,9 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
         alert_counts[kind] = int(count)
 
     sar_alert_counts = {k: v for k, v in alert_counts.items() if k in SAR_ALERT_KINDS}
+    hazard_alert_counts = {k: v for k, v in alert_counts.items() if k in HAZARD_ALERT_KINDS}
     open_field_tasks = await list_open_sar_field_verifications(db, project_ids)
+    scan_engine = await build_scan_engine_summary(db, user)
 
     return {
         **field_ops,
@@ -143,6 +154,8 @@ async def build_monitoring_summary(db: AsyncSession, user) -> dict[str, Any]:
         "work_area_monitoring": work_area_rows[:100],
         "unread_alerts_by_kind": alert_counts,
         "unread_sar_alerts_by_kind": sar_alert_counts,
+        "unread_hazard_alerts_by_kind": hazard_alert_counts,
+        "scan_engine": scan_engine,
         "open_sar_field_verifications": open_field_tasks,
         "recent_jobs": await get_recent_job_runs(db, limit=10),
     }

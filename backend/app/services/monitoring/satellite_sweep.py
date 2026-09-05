@@ -193,26 +193,19 @@ async def scan_and_persist_work_area(
     return rec
 
 
-async def scan_and_persist_tree(
+async def scan_and_persist_tree_from_sample(
     db: AsyncSession,
     tree: Tree,
+    sample,
     *,
     notify_user: User | None = None,
+    change: float | None = None,
 ) -> SatelliteRecord | None:
-    try:
-        pt = to_shape(tree.location)
-        lat, lon = pt.y, pt.x
-    except Exception:
-        return None
-
-    from app.services.satellite.service import get_satellite_service
-
-    sample = await get_satellite_service().sample(lat, lon)
-    change = sample.change_vs_baseline
-    if sample.ndvi_mean is not None:
-        computed = await _tree_baseline_ndvi_change(db, tree.id, float(sample.ndvi_mean))
-        if computed != 0.0:
-            change = computed
+    computed_change = change
+    if computed_change is None and sample.ndvi_mean is not None:
+        computed_change = await _tree_baseline_ndvi_change(db, tree.id, float(sample.ndvi_mean))
+    if computed_change is None:
+        computed_change = sample.change_vs_baseline or 0.0
 
     rec = SatelliteRecord(
         tree_id=tree.id,
@@ -225,7 +218,7 @@ async def scan_and_persist_tree(
         ndvi_min=sample.ndvi_min,
         evi_mean=sample.evi_mean,
         presence_confirmed=sample.presence_confirmed,
-        change_vs_baseline=change,
+        change_vs_baseline=computed_change,
     )
     db.add(rec)
     tree.last_satellite_at = datetime.now(UTC)
@@ -241,9 +234,27 @@ async def scan_and_persist_tree(
         tree=tree,
         user=notify_user,
         sample=sample,
-        change=float(change or 0.0),
+        change=float(computed_change or 0.0),
     )
     return rec
+
+
+async def scan_and_persist_tree(
+    db: AsyncSession,
+    tree: Tree,
+    *,
+    notify_user: User | None = None,
+) -> SatelliteRecord | None:
+    try:
+        pt = to_shape(tree.location)
+        lat, lon = pt.y, pt.x
+    except Exception:
+        return None
+
+    from app.services.satellite.service import get_satellite_service
+
+    sample = await get_satellite_service().sample(lat, lon)
+    return await scan_and_persist_tree_from_sample(db, tree, sample, notify_user=notify_user)
 
 
 async def run_monthly_satellite_sweep(db: AsyncSession) -> dict[str, Any]:
