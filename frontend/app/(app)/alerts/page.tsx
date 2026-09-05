@@ -35,6 +35,8 @@ const SAR_ALERT_KINDS = new Set([
 
 const ALERT_KIND_KEYS = new Set([
   "ndvi_degradation",
+  "ndvi_acute_drop",
+  "canopy_loss_suspected",
   "health_roundup",
   "compliance_open",
   "threat_watch",

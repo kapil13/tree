@@ -757,6 +757,10 @@ async def update_project(
         project.metadata_ = merged
         flag_modified(project, "metadata_")
 
+    from app.services.monitoring.scan_targets import sync_work_area_targets_for_project
+
+    await sync_work_area_targets_for_project(db, project)
+
     await record_audit(
         db,
         actor=user,
@@ -798,6 +802,11 @@ async def update_scheme_metadata(
         merged,
         strict=True,
     )
+    flag_modified(project, "metadata_")
+
+    from app.services.monitoring.scan_targets import sync_work_area_targets_for_project
+
+    await sync_work_area_targets_for_project(db, project)
 
     await record_audit(
         db,
@@ -896,6 +905,10 @@ async def create_work_area(
 
     if project.status == "planning":
         project.status = "active"
+
+    from app.services.monitoring.scan_targets import ensure_work_area_scan_target
+
+    await ensure_work_area_scan_target(db, fence, project)
 
     await db.commit()
     await db.refresh(fence)

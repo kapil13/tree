@@ -580,6 +580,8 @@
     "severityModerate": "Moderate",
     "severityLow": "Low",
     "kind_ndvi_degradation": "Canopy decline",
+    "kind_ndvi_acute_drop": "Acute canopy drop",
+    "kind_canopy_loss_suspected": "Canopy loss suspected",
     "kind_health_roundup": "Health roundup",
     "kind_compliance_open": "Open compliance",
     "kind_threat_watch": "Weather & pest watch",

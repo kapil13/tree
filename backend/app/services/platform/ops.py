@@ -26,6 +26,9 @@ RETRYABLE_JOBS: dict[str, str] = {
     "compliance_deadline_scan": "compliance_deadline_scan",
     "survival_survey_reminders": "survival_survey_reminders",
     "biodiversity_baseline": "biodiversity_baseline",
+    "daily_tree_scan_sweep": "daily_tree_scan_sweep",
+    "daily_satellite_watch_sweep": "daily_satellite_watch_sweep",
+    "weekly_tree_scan_target_backfill": "weekly_tree_scan_target_backfill",
 }
 
 

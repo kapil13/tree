@@ -32,6 +32,9 @@ SATELLITE_JOB_NAMES = {
     "monthly_sar_sweep",
     "weekly_sar_integrity_watch",
     "daily_sar_sweep_health",
+    "daily_tree_scan_sweep",
+    "daily_satellite_watch_sweep",
+    "weekly_tree_scan_target_backfill",
 }
 
 

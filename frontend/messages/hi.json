@@ -579,6 +579,8 @@
     "severityModerate": "मध्यम",
     "severityLow": "निम्न",
     "kind_ndvi_degradation": "वनस्पति गिरावट",
+    "kind_ndvi_acute_drop": "तीव्र वनस्पति गिरावट",
+    "kind_canopy_loss_suspected": "छतरी हानि की आशंका",
     "kind_health_roundup": "स्वास्थ्य सारांश",
     "kind_compliance_open": "खुला अनुपालन",
     "kind_threat_watch": "मौसम और कीट निगरानी",

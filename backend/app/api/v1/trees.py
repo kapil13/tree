@@ -461,6 +461,10 @@ async def create_tree(
         images=created_images,
     )
 
+    from app.services.monitoring.scan_targets import ensure_tree_scan_target
+
+    await ensure_tree_scan_target(db, tree)
+
     initial = payload.initial_measurement or TreeInitialMeasurement()
     photo_key = initial.photo_key or (payload.photo_keys[0] if payload.photo_keys else None)
     await create_measurement(
