@@ -2214,3 +2214,253 @@
 .screen-body.no-pad-bottom {
   padding-bottom: 80px;
 }
+
+/* ── Global drawer (More tab) ─────────────────────────────── */
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 180;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.global-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 88%;
+  background: var(--bg-surface);
+  z-index: 190;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+.global-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 52px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand-forest);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.drawer-user-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.drawer-user-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.drawer-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg-subtle);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 24px;
+}
+
+.drawer-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  padding: 12px 16px 6px;
+}
+
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.drawer-item:active {
+  background: var(--bg-subtle);
+}
+
+.drawer-item.active {
+  background: #f0f4f1;
+  color: var(--brand-forest);
+  font-weight: 600;
+}
+
+.drawer-item-icon {
+  width: 28px;
+  text-align: center;
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+.drawer-item-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.drawer-item-badge.alert {
+  background: #fee2e2;
+  color: var(--status-danger);
+}
+
+.drawer-footer {
+  padding: 12px 16px 28px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* ── Bioacoustic module ───────────────────────────────────── */
+.bio-hero {
+  background: linear-gradient(135deg, #0b3d2e 0%, #1a5240 100%);
+  color: white;
+  padding: 20px 16px;
+  margin: 0 -16px 16px;
+}
+
+.bio-hero-score {
+  font-size: 36px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.bio-species-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.bio-species-row:active {
+  opacity: 0.8;
+}
+
+.bio-waveform {
+  height: 48px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px;
+  margin: 12px 0;
+}
+
+.bio-waveform span {
+  flex: 1;
+  background: var(--brand-canopy);
+  border-radius: 1px;
+  min-height: 4px;
+}
+
+.record-pulse {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--brand-forest);
+  color: white;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  margin: 24px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 8px rgba(11, 61, 46, 0.15);
+}
+
+.evidence-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 16px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.evidence-step {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 72px;
+}
+
+.evidence-step.done {
+  background: #dcfce7;
+  border-color: var(--status-ok);
+  color: var(--status-ok);
+}
+
+.evidence-step.pending {
+  background: #fef3c7;
+  border-color: var(--status-warn);
+}
+
+.evidence-step-arrow {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}

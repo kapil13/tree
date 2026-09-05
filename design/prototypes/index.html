@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="prototype-shell">
-    <p class="prototype-label">Aranyix Mobile Redesign — Interactive Prototype v3.0 (Scalable registry + Field execution)</p>
+    <p class="prototype-label">Aranyix Mobile Redesign — Interactive Prototype v4.0 (Global drawer + Bioacoustic)</p>
 
     <div class="phone" id="phone">
       <div class="phone-notch"></div>
@@ -23,6 +23,8 @@
       </div>
       <div id="filter-overlay" class="overlay"></div>
       <div id="project-overlay" class="overlay"></div>
+      <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+      <div id="global-drawer" class="global-drawer"></div>
       <div id="photo-viewer" class="photo-viewer"></div>
       <div id="dialog" class="dialog">
         <div class="dialog-box">
@@ -48,8 +50,10 @@
       <button class="proto-btn" data-screen="tree-detail" onclick="openTree('t1')">Tree detail</button>
       <button class="proto-btn" data-screen="register" onclick="startRegister()">Register</button>
       <button class="proto-btn" data-screen="monitor" onclick="jumpTo('monitor')">Monitor</button>
+      <button class="proto-btn" data-screen="more" onclick="jumpTo('more')">More (drawer)</button>
       <button class="proto-btn" data-screen="alerts" onclick="jumpTo('alerts')">Alerts</button>
-      <button class="proto-btn" data-screen="more" onclick="jumpTo('more')">More</button>
+      <button class="proto-btn" data-screen="bioacoustic" onclick="jumpTo('bioacoustic')">Bioacoustic</button>
+      <button class="proto-btn" data-screen="evidence" onclick="jumpTo('evidence')">Evidence</button>
       <button class="proto-btn" data-screen="assistant" onclick="jumpTo('assistant')">AI</button>
       <button class="proto-btn" data-screen="settings" onclick="jumpTo('settings')">Settings</button>
       <button class="proto-btn" data-screen="empty" onclick="jumpTo('empty')">Empty</button>

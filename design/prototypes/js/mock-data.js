@@ -179,6 +179,7 @@ const MOCK_DASHBOARD = {
     sitesMonitored: 8,
     evidenceGaps: 5,
     needsAttention: 82,
+    bioacousticSpecies: 34,
   },
   briefLines: [
     "NDVI dropped sharply at Chainage 142–148 — field inspection recommended within 48h.",
@@ -486,7 +487,51 @@ const MOCK_FIELD_TASKS = [
   { id: "ft2", title: "Survival survey", context: "12 trees · Zone B", type: "survey", priority: "medium" },
   { id: "ft3", title: "Capture pit evidence", context: "KM 146+350 · pending photo", type: "evidence", priority: "high" },
   { id: "ft4", title: "Verify placement", context: "3 unverified · nearby", type: "verify", priority: "medium" },
+  { id: "ft5", title: "Bioacoustic survey", context: "Zone B · dusk window", type: "bioacoustic", priority: "medium" },
 ];
+
+const MOCK_BIOACOUSTIC = {
+  healthScore: 72,
+  ecosystemLabel: "Moderate diversity",
+  speciesDetected: 34,
+  recordingsTotal: 128,
+  recordingsThisWeek: 6,
+  shannonIndex: 2.41,
+  lastSession: "2h ago · Chainage 142–148",
+  trend: "+4 species vs last month",
+  alert: {
+    id: "ba1",
+    title: "Elevated anthropogenic noise",
+    context: "NHAI KM-48 · Ch. 142–148",
+    detail: "Noise floor 8 dB above baseline. May affect dawn chorus survey quality.",
+    action: "View on map",
+  },
+  topSpecies: [
+    { name: "Indian Peafowl", scientific: "Pavo cristatus", confidence: 0.92, count: 24 },
+    { name: "Rose-ringed Parakeet", scientific: "Psittacula krameri", confidence: 0.88, count: 18 },
+    { name: "Common Hawk-Cuckoo", scientific: "Hierococcyx varius", confidence: 0.81, count: 12 },
+    { name: "Asian Koel", scientific: "Eudynamys scolopaceus", confidence: 0.79, count: 9 },
+  ],
+  sessions: [
+    { id: "bs1", site: "Chainage 142–148", duration: "12 min", species: 8, time: "2h ago", status: "analyzed" },
+    { id: "bs2", site: "CAMPA Comp. 3", duration: "15 min", species: 11, time: "1d ago", status: "analyzed" },
+    { id: "bs3", site: "Nagar Van Zone B", duration: "10 min", species: 6, time: "3d ago", status: "pending" },
+  ],
+};
+
+const MOCK_BIODIVERSITY = {
+  shannon: 2.41,
+  simpson: 0.89,
+  taxaRichness: 34,
+  bioacousticRecordings: 128,
+  satelliteEcosystem: 68,
+  fusionScore: 72,
+  hotspots: [
+    { area: "Nagar Van Zone B", score: 81, trend: "up" },
+    { area: "CAMPA Comp. 3", score: 74, trend: "stable" },
+    { area: "NHAI Ch. 142–148", score: 62, trend: "down" },
+  ],
+};
 
 function registryCategoryForIndex(i) {
   if (i <= 6) {
