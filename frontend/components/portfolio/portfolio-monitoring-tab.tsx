@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Activity,
   Bell,
   ClipboardList,
   Download,
@@ -50,6 +49,10 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   sar_ground_moisture: "SAR ground moisture",
   sar_ground_instability: "SAR ground instability",
   sar_sweep_health: "SAR sweep health",
+  fire_alert: "Fire watch",
+  flood_extent_alert: "Flood extent",
+  ndvi_acute_drop: "Acute NDVI drop",
+  canopy_loss_suspected: "Canopy loss",
 };
 
 const SAR_MODE_LABEL: Record<string, string> = {
@@ -80,6 +83,11 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
     (a, b) => a + b,
     0,
   );
+  const hazardUnreadTotal = Object.values(data.unread_hazard_alerts_by_kind ?? {}).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const scanEngine = data.scan_engine;
   const openFieldTasks = (data.open_sar_field_verifications ?? []).filter(
     (task) => !projectId || task.project_id === projectId,
   );
@@ -143,22 +151,29 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
         <PortfolioKpiCard
           icon={Bell}
           label="Unread alerts"
-          value={String(unreadTotal + sarUnreadTotal)}
-          warn={unreadTotal + sarUnreadTotal > 0}
+          value={String(unreadTotal + sarUnreadTotal + hazardUnreadTotal)}
+          warn={unreadTotal + sarUnreadTotal + hazardUnreadTotal > 0}
         />
         <PortfolioKpiCard
-          icon={Activity}
-          label="Avg site health"
-          value={
-            data.sar_avg_forest_integrity != null
-              ? `${data.sar_avg_forest_integrity}`
-              : "—"
-          }
-          warn={
-            data.sar_avg_forest_integrity != null && data.sar_avg_forest_integrity < 50
-          }
+          icon={Server}
+          label="Trees due for scan"
+          value={scanEngine ? String(scanEngine.due_now) : "—"}
+          warn={Boolean(scanEngine && scanEngine.due_now > 0)}
         />
       </div>
+
+      {scanEngine ? (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+          <span className="font-medium text-stone-900">Scan engine</span>
+          {" — "}
+          {scanEngine.enrolled_trees} trees enrolled across {scanEngine.distinct_scan_tiles} tiles
+          {scanEngine.tile_batching_enabled ? " (tile-batched)" : ""}
+          {scanEngine.watch_work_areas > 0
+            ? ` · ${scanEngine.watch_work_areas} manual watch work area(s)`
+            : ""}
+          {scanEngine.firms_live ? " · FIRMS live" : " · FIRMS seasonal fallback"}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="text-stone-600">

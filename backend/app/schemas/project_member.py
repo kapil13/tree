@@ -53,5 +53,7 @@ class MonitoringSummaryOut(FieldOpsSummaryOut):
     work_area_monitoring: list[dict]
     unread_alerts_by_kind: dict[str, int]
     unread_sar_alerts_by_kind: dict[str, int] = Field(default_factory=dict)
+    unread_hazard_alerts_by_kind: dict[str, int] = Field(default_factory=dict)
+    scan_engine: dict = Field(default_factory=dict)
     open_sar_field_verifications: list[dict] = Field(default_factory=list)
     recent_jobs: list[dict]

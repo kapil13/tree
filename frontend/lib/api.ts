@@ -1877,6 +1877,30 @@ export const plantingProjects = {
         }>;
         unread_alerts_by_kind: Record<string, number>;
         unread_sar_alerts_by_kind?: Record<string, number>;
+        unread_hazard_alerts_by_kind?: Record<string, number>;
+        scan_engine?: {
+          enrolled_targets: number;
+          enrolled_trees: number;
+          watch_work_areas: number;
+          due_now: number;
+          distinct_scan_tiles: number;
+          tile_batching_enabled: boolean;
+          org_daily_scan_limit: number;
+          tree_batch_limit: number;
+          firms_live: boolean;
+          last_tree_sweep: {
+            status: string;
+            finished_at: string | null;
+            result: Record<string, unknown>;
+            error: string | null;
+          } | null;
+          last_watch_sweep: {
+            status: string;
+            finished_at: string | null;
+            result: Record<string, unknown>;
+            error: string | null;
+          } | null;
+        };
         open_sar_field_verifications?: Array<{
           id: string;
           project_id: string | null;

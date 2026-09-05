@@ -201,6 +201,7 @@ class Settings(BaseSettings):
     # Phase A — scheduled satellite scan quotas
     monitoring_tree_scan_batch_limit: int = Field(default=500, ge=50, le=10000)
     monitoring_org_daily_scan_limit: int = Field(default=2000, ge=100, le=100000)
+    monitoring_tile_batch_enabled: bool = True
 
     # Phase B — fire (FIRMS) and flood extent hazard watch
     firms_map_key: str | None = None

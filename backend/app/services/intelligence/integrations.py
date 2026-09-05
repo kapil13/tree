@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.services.ai.service import ai_service_status
 from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
+from app.services.threats.firms_client import has_firms_credentials
 
 
 async def _ping_open_meteo(timeout: float = 3.0) -> dict[str, Any]:
@@ -142,6 +143,17 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
             "label": "IUCN Red List API",
             "reachable": iucn_configured,
             "error": None if iucn_configured else "token_optional",
+        },
+        "firms_fire": {
+            "status": "configured" if has_firms_credentials() else "seasonal_fallback",
+            "mode": "live" if has_firms_credentials() else "estimate",
+            "label": (
+                "NASA FIRMS active fire API configured"
+                if has_firms_credentials()
+                else "Fire watch uses seasonal fallback until FIRMS_MAP_KEY is set"
+            ),
+            "reachable": has_firms_credentials(),
+            "error": None if has_firms_credentials() else "missing_credentials",
         },
     }
 
