@@ -133,6 +133,26 @@
   background: var(--bg-subtle);
 }
 
+.app-bar-menu {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  flex-shrink: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-bar-menu:hover {
+  background: var(--bg-subtle);
+}
+
 .app-bar-action {
   width: 40px;
   height: 40px;
@@ -2234,17 +2254,17 @@
 .global-drawer {
   position: absolute;
   top: 0;
-  right: 0;
+  left: 0;
   bottom: 0;
   width: 300px;
   max-width: 88%;
   background: var(--bg-surface);
   z-index: 190;
-  transform: translateX(100%);
+  transform: translateX(-100%);
   transition: transform 0.28s ease;
   display: flex;
   flex-direction: column;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
 }
 
 .global-drawer.open {

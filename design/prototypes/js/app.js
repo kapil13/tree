@@ -31,7 +31,6 @@ const state = {
   authTab: "email",
   userRole: "supervisor", // supervisor | field_worker | citizen
   drawerOpen: false,
-  lastTab: "home",
   selectedBioSession: null,
 };
 
@@ -40,12 +39,12 @@ const ICONS = {
   map: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
   field: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
   monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
-  more: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+  bioacoustic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
   back: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>`,
   chevron: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`,
 };
 
-const TAB_SCREENS = ["home", "map", "field", "monitor", "more"];
+const TAB_SCREENS = ["home", "map", "field", "monitor", "bioacoustic"];
 
 function syncIcon(sync) {
   if (sync === "synced") return "✓";
@@ -167,10 +166,19 @@ function establishContext(projectId) {
   state.projectFilter = proj.id;
 }
 
+function hamburgerBtn() {
+  return `<button class="app-bar-menu" onclick="openDrawer()" aria-label="Open navigation">☰</button>`;
+}
+
 function appBar(title, opts = {}) {
-  const { back, actions = "", transparent } = opts;
+  const { back, menu, actions = "", transparent } = opts;
+  const leading = back
+    ? `<button class="app-bar-back" onclick="goBack()">${ICONS.back}</button>`
+    : menu
+      ? hamburgerBtn()
+      : "";
   return `<header class="app-bar${transparent ? " transparent" : ""}">
-    ${back ? `<button class="app-bar-back" onclick="goBack()">${ICONS.back}</button>` : ""}
+    ${leading}
     <span class="app-bar-title">${title}</span>
     ${actions}
   </header>`;
@@ -182,14 +190,14 @@ function bottomNav() {
     { id: "map", label: "Map", icon: ICONS.map },
     { id: "field", label: "Field", icon: ICONS.field },
     { id: "monitor", label: "Monitor", icon: ICONS.monitor, badge: true },
-    { id: "more", label: "More", icon: ICONS.more },
+    { id: "bioacoustic", label: "Bio", icon: ICONS.bioacoustic },
   ];
-  const activeTab = state.drawerOpen ? "more" : state.tab;
+  const activeTab = state.tab;
   return `<nav class="bottom-nav">
     ${tabs
       .map(
         (t) => `
-      <button class="nav-item${activeTab === t.id ? " active" : ""}" onclick="${t.id === "more" ? "openDrawer()" : `navigateTab('${t.id}')`}">
+      <button class="nav-item${activeTab === t.id ? " active" : ""}" onclick="navigateTab('${t.id}')">
         ${t.icon}
         <span>${t.label}</span>
         ${t.badge ? '<span class="nav-badge"></span>' : ""}
@@ -265,6 +273,7 @@ function renderHome() {
   return `
     ${offlineBanner()}
     ${appBar("Command center", {
+      menu: true,
       actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="badge">${d.kpis.unreadAlerts}</span></button>`,
     })}
     <div class="screen-body">
@@ -331,7 +340,7 @@ function renderHome() {
         </div>`).join("")}
 
       <div class="section-header"><span class="section-title">Environmental intelligence</span></div>
-      <div class="integrity-hero" style="margin-bottom:8px;background:linear-gradient(135deg,#0b3d2e,#1a5240);color:white;border:none" onclick="navigate('bioacoustic')">
+      <div class="integrity-hero" style="margin-bottom:8px;background:linear-gradient(135deg,#0b3d2e,#1a5240);color:white;border:none" onclick="navigateTab('bioacoustic')">
         <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;opacity:0.8;margin-bottom:4px">Bioacoustic · Biodiversity</div>
         <div style="display:flex;justify-content:space-between;align-items:flex-end">
           <div>
@@ -470,6 +479,7 @@ function renderMap() {
     ${offlineBanner()}
     <div class="screen-body no-pad" style="position:relative;flex:1;display:flex;flex-direction:column">
       <header class="app-bar" style="position:absolute;top:0;left:0;right:0;z-index:20;background:rgba(247,248,246,0.92);backdrop-filter:blur(8px)">
+        ${hamburgerBtn()}
         <span class="app-bar-title">Map</span>
         ${projectChip()}
       </header>
@@ -542,7 +552,7 @@ function renderField() {
   const nearby = queryRegistry({ category: "all", projectId: ctx.project.id, page: 1, pageSize: 3, sort: "proximity" }).trees;
   return `
     ${offlineBanner()}
-    ${appBar("Field", { actions: `${projectChip()}<button class="app-bar-action" onclick="navigateTab('map')" title="Map">🗺</button>` })}
+    ${appBar("Field", { menu: true, actions: `${projectChip()}<button class="app-bar-action" onclick="navigateTab('map')" title="Map">🗺</button>` })}
     <div class="screen-body">
       ${contextBanner(ctx, { compact: true })}
       <div class="priority-card" style="margin-bottom:16px;border-color:#fca5a5" onclick="navigate('alert-detail','a1')">
@@ -800,7 +810,7 @@ function renderRegister() {
 function renderMonitor() {
   return `
     ${offlineBanner()}
-    ${appBar("Monitor", { actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg><span class="badge">2</span></button>` })}
+    ${appBar("Monitor", { menu: true, actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg><span class="badge">2</span></button>` })}
     <div class="screen-body">
       <div class="section-header"><span class="section-title">Action required</span><button class="section-link" onclick="navigate('alerts')">All alerts</button></div>
       ${MOCK_ALERTS.slice(0, 2)
@@ -897,25 +907,20 @@ function renderAlertDetail() {
 function renderGlobalDrawer() {
   const items = [
     { section: "Workspace", links: [
-      { icon: "🏠", label: "Command center", action: "tab:home" },
       { icon: "📁", label: "Projects", action: "projects" },
       { icon: "🌳", label: "Tree registry", action: "registry", badge: REGISTRY_STATS.total.toLocaleString() },
-      { icon: "↻", label: "Field queue & sync", action: "sync-queue" },
+      { icon: "📍", label: "Field operations", action: "sync-queue" },
     ]},
-    { section: "Field & map", links: [
-      { icon: "📍", label: "Field", action: "tab:field" },
-      { icon: "🗺", label: "Map", action: "tab:map" },
-    ]},
-    { section: "Intelligence", links: [
+    { section: "Monitoring & ecology", links: [
       { icon: "📊", label: "Monitoring", action: "tab:monitor" },
-      { icon: "🎙", label: "Bioacoustic", action: "bioacoustic", badge: MOCK_BIOACOUSTIC.speciesDetected + " spp" },
+      { icon: "🎙", label: "Bioacoustic", action: "tab:bioacoustic", badge: MOCK_BIOACOUSTIC.speciesDetected + " spp" },
       { icon: "🦋", label: "Biodiversity", action: "biodiversity" },
       { icon: "🔔", label: "Alerts", action: "alerts", badge: "4", alert: true },
     ]},
     { section: "Compliance & MRV", links: [
       { icon: "📋", label: "Evidence", action: "evidence" },
       { icon: "📄", label: "Reports", action: "reports" },
-      { icon: "✓", label: "MRV status", action: "evidence" },
+      { icon: "✓", label: "MRV", action: "evidence" },
     ]},
     { section: "Carbon & credits", links: [
       { icon: "🌿", label: "Carbon", action: "carbon" },
@@ -961,7 +966,7 @@ function renderBioacoustic() {
   const b = MOCK_BIOACOUSTIC;
   return `
     ${offlineBanner()}
-    ${appBar("Bioacoustic", { back: true, actions: `<button class="app-bar-action" onclick="navigate('bioacoustic-capture')" title="Record">🎙</button>` })}
+    ${appBar("Bioacoustic", { menu: true, actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('bioacoustic-capture')" title="Record">🎙</button>` })}
     <div class="screen-body no-pad">
       <div class="bio-hero">
         <div style="font-size:11px;opacity:0.8;text-transform:uppercase;letter-spacing:0.04em">Ecosystem acoustic health</div>
@@ -1010,7 +1015,8 @@ function renderBioacoustic() {
           <button class="btn btn-secondary btn-sm" onclick="navigateTab('map')">Map layers</button>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${bottomNav()}`;
 }
 
 function renderBioacousticCapture() {
@@ -1029,7 +1035,7 @@ function renderBioacousticCapture() {
         <div class="card-meta">${ctx.project.name} · ${ctx.workArea}</div>
         <div class="detail-row"><span class="detail-label">Scheme</span><span class="detail-value">${ctx.scheme.name}</span></div>
       </div>
-      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigate('bioacoustic')">Save & analyze</button>
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigateTab('bioacoustic')">Save & analyze</button>
     </div>`;
 }
 
@@ -1072,7 +1078,7 @@ function renderBiodiversity() {
           </div>
           <div class="card-meta">Trend ${h.trend === "up" ? "↑" : h.trend === "down" ? "↓" : "→"}</div>
         </div>`).join("")}
-      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="navigate('bioacoustic')">Bioacoustic detail</button>
+      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="navigateTab('bioacoustic')">Bioacoustic detail</button>
     </div>`;
 }
 
@@ -1105,10 +1111,6 @@ function renderEvidence() {
         </div>`).join("")}
       <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigate('reports')">Reports & exports</button>
     </div>`;
-}
-
-function renderMore() {
-  return renderHome();
 }
 
 function renderProjects() {
@@ -1286,7 +1288,6 @@ const SCREEN_RENDERERS = {
   monitor: renderMonitor,
   alerts: renderAlerts,
   "alert-detail": renderAlertDetail,
-  more: renderMore,
   projects: renderProjects,
   "project-detail": renderProjectDetail,
   "sync-queue": renderSyncQueue,
@@ -1379,15 +1380,15 @@ function navigate(screen, param) {
   if (screen === "project-detail" && param) {
     state.selectedMapPin = param;
   }
-  if (!TAB_SCREENS.includes(screen)) state.tab = null;
+  if (TAB_SCREENS.includes(screen)) {
+    state.tab = screen;
+  } else {
+    state.tab = null;
+  }
   render();
 }
 
 function navigateTab(tab) {
-  if (tab === "more") {
-    openDrawer();
-    return;
-  }
   state.drawerOpen = false;
   state.tab = tab;
   state.screen = tab;
@@ -1591,18 +1592,12 @@ function handleFieldTask(id) {
 
 function openDrawer() {
   state.drawerOpen = true;
-  state.lastTab = state.tab || (TAB_SCREENS.includes(state.screen) ? state.screen : "home");
-  state.tab = "more";
   render();
 }
 
 function closeDrawer() {
   if (!state.drawerOpen) return;
   state.drawerOpen = false;
-  state.tab = state.lastTab || "home";
-  if (TAB_SCREENS.includes(state.tab) && state.tab !== "more") {
-    state.screen = state.tab;
-  }
   render();
 }
 
@@ -1696,7 +1691,11 @@ function showToast(msg) {
 }
 
 function jumpTo(screen) {
-  if (screen === "more") {
+  if (screen === "drawer") {
+    if (!state.tab) {
+      state.tab = "home";
+      state.screen = "home";
+    }
     openDrawer();
     return;
   }
