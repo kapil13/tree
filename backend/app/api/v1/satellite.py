@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
 from geoalchemy2.shape import to_shape
@@ -14,6 +13,11 @@ from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
 from app.services.satellite import get_satellite_service
+from app.services.satellite.operations import (
+    apply_sample_to_tree,
+    scan_tree,
+    satellite_record_from_sample,
+)
 
 router = APIRouter(prefix="/satellite", tags=["satellite"])
 
@@ -33,26 +37,10 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
 @router.post("/scan", response_model=SatelliteRecordOut)
 async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecordOut:
     tree = await _load_tree(tree_id, user, db)
-    pt = to_shape(tree.location)
-    sample = await get_satellite_service().sample(pt.y, pt.x)
-    rec = SatelliteRecord(
-        tree_id=tree.id,
-        provider=sample.provider,
-        scene_id=sample.scene_id,
-        scene_acquired_at=sample.scene_acquired_at,
-        cloud_cover_pct=sample.cloud_cover_pct,
-        ndvi_mean=sample.ndvi_mean,
-        ndvi_max=sample.ndvi_max,
-        ndvi_min=sample.ndvi_min,
-        evi_mean=sample.evi_mean,
-        presence_confirmed=sample.presence_confirmed,
-        change_vs_baseline=sample.change_vs_baseline,
-    )
-    db.add(rec)
-    tree.satellite_verified = bool(sample.presence_confirmed)
-    tree.last_satellite_at = datetime.now(UTC)
-    await db.commit()
-    await db.refresh(rec)
+    try:
+        rec = await scan_tree(tree, db)
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     return SatelliteRecordOut.model_validate(rec)
 
 
@@ -71,26 +59,16 @@ async def get_series(
 
     if not stored:
         pt = to_shape(tree.location)
-        samples = await get_satellite_service().series(pt.y, pt.x, months=months)
+        try:
+            samples = await get_satellite_service().series(pt.y, pt.x, months=months)
+        except RuntimeError as exc:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
         for s in samples:
-            rec = SatelliteRecord(
-                tree_id=tree.id,
-                provider=s.provider,
-                scene_id=s.scene_id,
-                scene_acquired_at=s.scene_acquired_at,
-                cloud_cover_pct=s.cloud_cover_pct,
-                ndvi_mean=s.ndvi_mean,
-                ndvi_max=s.ndvi_max,
-                ndvi_min=s.ndvi_min,
-                evi_mean=s.evi_mean,
-                presence_confirmed=s.presence_confirmed,
-                change_vs_baseline=s.change_vs_baseline,
-            )
+            rec = satellite_record_from_sample(tree.id, s)
             db.add(rec)
             stored.append(rec)
         if samples:
-            tree.satellite_verified = bool(samples[-1].presence_confirmed)
-            tree.last_satellite_at = samples[-1].scene_acquired_at
+            await apply_sample_to_tree(tree, samples[-1])
         await db.commit()
         for r in stored:
             await db.refresh(r)
