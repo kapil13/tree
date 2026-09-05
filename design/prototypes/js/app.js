@@ -1514,6 +1514,8 @@ function handlePriority(id) {
   if (p.target === "alert-detail") navigate("alert-detail", p.targetId);
   else if (p.target === "dashboard-attention") navigate("dashboard-attention");
   else if (p.target === "sync-queue") navigate("sync-queue");
+  else if (p.target === "field") navigateTab("field");
+  else if (TAB_SCREENS.includes(p.target)) navigateTab(p.target);
   else navigate(p.target);
 }
 
