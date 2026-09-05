@@ -16,6 +16,8 @@ from app.services.alerts.interpreter import build_site_preparedness_brief
 from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.planting_projects.pest_intel import build_pest_intel
+from app.services.threats.fire_watch import assess_fire_proximity
+from app.services.threats.flood_extent import assess_fence_flood_extent
 from app.services.threats.locust import locust_early_warning
 from app.services.weather.alerts import evaluate_weather_alerts, weather_alert_summary
 
@@ -167,6 +169,18 @@ async def build_site_threat_watch(
         longitude=lon,
     )
 
+    fire = await assess_fire_proximity(lat, lon)
+    if fire.get("early_warning"):
+        early_warnings.append(fire["early_warning"])
+
+    flood = await assess_fence_flood_extent(
+        db,
+        fence.id,
+        rain_mm_48h=float(intel.get("rain_mm_next_48h") or 0),
+    )
+    if flood.get("early_warning"):
+        early_warnings.append(flood["early_warning"])
+
     site_data = {
         "work_area_id": str(fence.id),
         "work_area_name": fence.name,
@@ -183,6 +197,18 @@ async def build_site_threat_watch(
         "tree_count": intel.get("tree_count", 0),
         "weather_alerts": weather_alerts,
         "early_warnings": early_warnings,
+        "fire_watch": {
+            "risk_level": fire.get("risk_level"),
+            "fire_count": fire.get("fire_count"),
+            "nearest_km": fire.get("nearest_km"),
+            "source": fire.get("source"),
+        },
+        "flood_extent_watch": {
+            "risk_level": flood.get("risk_level"),
+            "water_extent_score": flood.get("water_extent_score"),
+            "delta_score": flood.get("delta_score"),
+            "rain_mm_48h": flood.get("rain_mm_48h"),
+        },
         "forecast_summary": forecast_summary,
         "recommended_actions": intel.get("recommended_actions", []),
     }
@@ -238,6 +264,16 @@ async def build_portfolio_threat_watch(
     locust_watch = sum(
         1 for s in sites for w in s.get("early_warnings", []) if w.get("kind") == "locust"
     )
+    fire_watch = sum(
+        1
+        for s in sites
+        if s.get("fire_watch", {}).get("risk_level") not in (None, "none")
+    )
+    flood_extent_watch = sum(
+        1
+        for s in sites
+        if s.get("flood_extent_watch", {}).get("risk_level") not in (None, "none")
+    )
 
     highest = "low"
     for s in sites:
@@ -252,6 +288,8 @@ async def build_portfolio_threat_watch(
             "weather_alerts_count": weather_count,
             "pest_high_count": pest_high,
             "locust_watch_count": locust_watch,
+            "fire_watch_count": fire_watch,
+            "flood_extent_watch_count": flood_extent_watch,
             "highest_risk": highest,
         },
         "sites": sites,

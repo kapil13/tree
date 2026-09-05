@@ -55,6 +55,8 @@ const ALERT_KIND_KEYS = new Set([
   "sar_ground_moisture",
   "sar_ground_instability",
   "locust_watch",
+  "fire_alert",
+  "flood_extent_alert",
   "pest_intel_high",
   "pest_intel_critical",
   "emission_anomaly_detected",

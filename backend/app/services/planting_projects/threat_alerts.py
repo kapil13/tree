@@ -166,23 +166,62 @@ async def create_threat_watch_alerts(db: AsyncSession) -> dict[str, Any]:
                 created += 1
 
         for ew in site.get("early_warnings", []):
-            if ew.get("kind") != "locust":
+            kind = ew.get("kind")
+            if kind == "locust":
+                alert = await _create_threat_alert(
+                    db,
+                    user=owner,
+                    kind="locust_watch",
+                    severity=ew.get("severity", "warning"),
+                    title=f"Locust watch — {fence.name}",
+                    message=ew["message"],
+                    payload={
+                        **base_payload,
+                        "distance_km": ew.get("distance_km"),
+                        "corridor": ew.get("corridor"),
+                    },
+                )
+                if alert:
+                    created += 1
                 continue
-            alert = await _create_threat_alert(
-                db,
-                user=owner,
-                kind="locust_watch",
-                severity=ew.get("severity", "warning"),
-                title=f"Locust watch — {fence.name}",
-                message=ew["message"],
-                payload={
-                    **base_payload,
-                    "distance_km": ew.get("distance_km"),
-                    "corridor": ew.get("corridor"),
-                },
-            )
-            if alert:
-                created += 1
+            if kind == "fire":
+                alert = await _create_threat_alert(
+                    db,
+                    user=owner,
+                    kind="fire_alert",
+                    severity=ew.get("severity", "warning"),
+                    title=f"Fire watch — {fence.name}",
+                    message=ew["message"],
+                    payload={
+                        **base_payload,
+                        "distance_km": ew.get("distance_km"),
+                        "fire_count": ew.get("fire_count"),
+                        "nearest_fire": ew.get("nearest_fire"),
+                        "source": ew.get("source"),
+                    },
+                )
+                if alert:
+                    created += 1
+                continue
+            if kind == "flood_extent":
+                alert = await _create_threat_alert(
+                    db,
+                    user=owner,
+                    kind="flood_extent_alert",
+                    severity=ew.get("severity", "warning"),
+                    title=f"Flood extent watch — {fence.name}",
+                    message=ew["message"],
+                    payload={
+                        **base_payload,
+                        "water_extent_score": ew.get("water_extent_score"),
+                        "baseline_score": ew.get("baseline_score"),
+                        "delta_score": ew.get("delta_score"),
+                        "rain_mm_48h": ew.get("rain_mm_48h"),
+                        "source": ew.get("source"),
+                    },
+                )
+                if alert:
+                    created += 1
 
     await db.commit()
     log.info("threat_watch.alerts_created", count=created)

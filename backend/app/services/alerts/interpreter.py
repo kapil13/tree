@@ -242,6 +242,40 @@ def interpret_alert(
             "category": "pest",
         }
 
+    if kind == "fire_alert":
+        dist = payload.get("distance_km")
+        dist_txt = f" (~{dist} km away)" if dist else ""
+        return {
+            "headline": f"Active fire near {site}",
+            "meaning": (
+                message
+                or f"Satellite fire detections suggest burn activity near this plantation{dist_txt}."
+            ),
+            "prepare": [
+                "Patrol plantation perimeters and check for smoke or scorch marks",
+                "Coordinate with district forest / fire services if fire is advancing",
+                "Document any canopy loss with geo-tagged photos for compliance",
+            ],
+            "urgency": "today" if severity in ("critical", "high", "warning") else "this_week",
+            "category": "fire",
+        }
+
+    if kind == "flood_extent_alert":
+        return {
+            "headline": f"Flood / standing water signal at {site}",
+            "meaning": (
+                message
+                or "Radar and rain signals suggest standing water or flood extent may be expanding."
+            ),
+            "prepare": [
+                "Inspect low-lying rows and drainage channels within 24 hours",
+                "Check access roads and pit outlets after heavy rain",
+                "Re-stake saplings in waterlogged blocks if roots are exposed",
+            ],
+            "urgency": "today" if severity in ("critical", "high", "warning") else "this_week",
+            "category": "flood",
+        }
+
     if kind.startswith("sar_"):
         return {
             "headline": title,
