@@ -202,6 +202,12 @@ class Settings(BaseSettings):
     monitoring_tree_scan_batch_limit: int = Field(default=500, ge=50, le=10000)
     monitoring_org_daily_scan_limit: int = Field(default=2000, ge=100, le=100000)
 
+    # Phase B — fire (FIRMS) and flood extent hazard watch
+    firms_map_key: str | None = None
+    firms_api_url: str = "https://firms.modaps.eosdis.nasa.gov"
+    hazard_fire_radius_km: float = Field(default=25.0, ge=5.0, le=100.0)
+    hazard_flood_sar_baseline_days: int = Field(default=30, ge=7, le=90)
+
     # ISRO Bhoonidhi (NRSC) STAC catalog — requires IP whitelist + API account
     bhoonidhi_user_id: str | None = None
     bhoonidhi_password: str | None = None

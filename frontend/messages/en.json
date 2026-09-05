@@ -600,6 +600,8 @@
     "kind_sar_ground_moisture": "Ground moisture",
     "kind_sar_ground_instability": "Ground instability",
     "kind_locust_watch": "Locust watch",
+    "kind_fire_alert": "Fire watch",
+    "kind_flood_extent_alert": "Flood extent watch",
     "kind_pest_intel_high": "Pest risk",
     "kind_pest_intel_critical": "Pest risk",
     "kind_emission_anomaly_detected": "Methane signal",
