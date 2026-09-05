@@ -171,13 +171,14 @@ const MOCK_DASHBOARD = {
     },
   ],
   kpis: {
-    totalTrees: 14237,
+    totalTrees: 1248,
     pctHealthy: 84,
     openViolations: 3,
     unreadAlerts: 4,
     co2Stored: 28450,
     sitesMonitored: 8,
     evidenceGaps: 5,
+    needsAttention: 82,
   },
   briefLines: [
     "NDVI dropped sharply at Chainage 142–148 — field inspection recommended within 48h.",
@@ -447,3 +448,135 @@ const MOCK_EVIDENCE = {
     { project: "Nagar Van Phase 2", item: "Survival survey evidence (Zone B)", status: "due" },
   ],
 };
+
+// ── Scalable registry (1,248 trees — procedural, not 1,248 DOM nodes) ──
+
+const REGISTRY_TOTAL = 1248;
+
+const REGISTRY_STATS = {
+  total: 1248,
+  healthy: 1048,
+  needsAttention: 82,
+  missingEvidence: 16,
+  notRecentlyMonitored: 31,
+  unverified: 45,
+};
+
+const SPECIES_POOL = [
+  "Neem (Azadirachta indica)",
+  "Khejri (Prosopis cineraria)",
+  "Babul (Vachellia nilotica)",
+  "Pilkhan (Ficus virens)",
+  "Jamun (Syzygium cumini)",
+  "Arjun (Terminalia arjuna)",
+  "Sheesham (Dalbergia sissoo)",
+  "Unidentified",
+];
+
+const PHOTO_POOL = [
+  "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1513836279014-a89f9a76ae07?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=120&h=120&fit=crop",
+  "https://images.unsplash.com/photo-1598902108854-10e335adac99?w=120&h=120&fit=crop",
+  null,
+];
+
+const MOCK_FIELD_TASKS = [
+  { id: "ft1", title: "Inspect NDVI drop", context: "Ch. 142–148 · 240m NE", type: "alert", priority: "critical" },
+  { id: "ft2", title: "Survival survey", context: "12 trees · Zone B", type: "survey", priority: "medium" },
+  { id: "ft3", title: "Capture pit evidence", context: "KM 146+350 · pending photo", type: "evidence", priority: "high" },
+  { id: "ft4", title: "Verify placement", context: "3 unverified · nearby", type: "verify", priority: "medium" },
+];
+
+function registryCategoryForIndex(i) {
+  if (i <= 6) {
+    const t = MOCK_TREES[i - 1];
+    if (t.needsAttention) return "attention";
+    if (!t.verified) return "unverified";
+    if (!t.photo) return "missing_evidence";
+    return "healthy";
+  }
+  if (i % 17 < 2) return "attention";
+  if (i % 78 === 0) return "missing_evidence";
+  if (i % 40 === 0) return "stale_monitoring";
+  if (i % 28 === 0) return "unverified";
+  return "healthy";
+}
+
+function generateRegistryTree(index) {
+  if (index >= 1 && index <= 6) return { ...MOCK_TREES[index - 1], registryIndex: index };
+  const proj = MOCK_PROJECTS[index % 3];
+  const healthRoll = index % 11;
+  const health =
+    healthRoll <= 7 ? "good" : healthRoll <= 9 ? "stressed" : healthRoll === 10 ? "at_risk" : "unknown";
+  const hasPhoto = index % 13 !== 0;
+  const prefix = proj.id === "p1" ? "NH" : proj.id === "p2" ? "CA" : "NV";
+  return {
+    id: `tree-${index}`,
+    registryIndex: index,
+    code: `ARX-${prefix}-${String(400000 + index).slice(-6)}`,
+    species: SPECIES_POOL[index % SPECIES_POOL.length],
+    project: proj.name,
+    projectId: proj.id,
+    workArea: proj.workAreas[index % proj.workAreas.length],
+    health,
+    sync: index % 97 === 0 ? "failed" : index % 23 === 0 ? "pending" : "synced",
+    verified: index % 28 !== 0,
+    needsAttention: registryCategoryForIndex(index) === "attention",
+    attentionReason:
+      registryCategoryForIndex(index) === "attention" ? "Monitoring flag · review needed" : null,
+    photo: hasPhoto ? PHOTO_POOL[index % PHOTO_POOL.length] : null,
+    lastMonitored: index % 40 === 0 ? "45d ago" : index % 8 === 0 ? "12d ago" : "3d ago",
+    distanceM: 80 + (index % 900),
+    lat: 26.91 + (index % 100) * 0.0001,
+    lng: 75.78 + (index % 100) * 0.0001,
+    category: registryCategoryForIndex(index),
+  };
+}
+
+function getTreeById(id) {
+  const featured = MOCK_TREES.find((t) => t.id === id);
+  if (featured) return featured;
+  const m = id.match(/^tree-(\d+)$/);
+  if (m) return generateRegistryTree(parseInt(m[1], 10));
+  return MOCK_TREES[0];
+}
+
+function queryRegistry(opts = {}) {
+  const {
+    search = "",
+    category = "all",
+    projectId = "all",
+    page = 1,
+    pageSize = 25,
+    sort = "recent",
+  } = opts;
+  let indices = [];
+  for (let i = 1; i <= REGISTRY_TOTAL; i++) {
+    const cat = registryCategoryForIndex(i);
+    if (category !== "all" && cat !== category) continue;
+    const tree = generateRegistryTree(i);
+    if (projectId !== "all" && tree.projectId !== projectId) continue;
+    if (search) {
+      const q = search.toLowerCase();
+      if (
+        !tree.code.toLowerCase().includes(q) &&
+        !tree.species.toLowerCase().includes(q) &&
+        !tree.workArea.toLowerCase().includes(q) &&
+        !tree.project.toLowerCase().includes(q)
+      )
+        continue;
+    }
+    indices.push(i);
+  }
+  if (sort === "code") indices.sort((a, b) => a - b);
+  else if (sort === "health") indices.sort((a, b) => registryCategoryForIndex(a).localeCompare(registryCategoryForIndex(b)));
+  else if (sort === "proximity") indices.sort((a, b) => (a % 900) - (b % 900));
+  else indices.sort((a, b) => b - a);
+  const total = indices.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), pages);
+  const start = (safePage - 1) * pageSize;
+  const trees = indices.slice(start, start + pageSize).map((i) => generateRegistryTree(i));
+  return { trees, total, page: safePage, pages, pageSize };
+}
