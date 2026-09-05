@@ -1,0 +1,48 @@
+/* Aranyix Mobile Design System — Prototype tokens */
+:root {
+  --brand-forest: #0b3d2e;
+  --brand-canopy: #15803d;
+  --brand-moss: #3d7a57;
+  --bg-app: #f7f8f6;
+  --bg-surface: #ffffff;
+  --bg-subtle: #eef1ee;
+  --text-primary: #0f1410;
+  --text-secondary: #5c665e;
+  --text-tertiary: #8a938c;
+  --border: #dde2dc;
+  --border-strong: #b8c0b8;
+  --status-ok: #15803d;
+  --status-warn: #b45309;
+  --status-danger: #b91c1c;
+  --status-info: #1d4ed8;
+  --status-offline: #6b7280;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --nav-height: 64px;
+  --header-height: 56px;
+  --phone-width: 390px;
+  --phone-height: 844px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #1a1a1a;
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
