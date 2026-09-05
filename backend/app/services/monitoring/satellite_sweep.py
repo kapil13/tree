@@ -17,10 +17,7 @@ from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
-from app.services.monitoring.ndvi_change_alerts import (
-    NDVI_DEGRADATION_THRESHOLD,
-    emit_ndvi_change_alerts,
-)
+from app.services.monitoring.ndvi_change_alerts import emit_ndvi_change_alerts
 from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 

@@ -9,7 +9,6 @@ from app.services.monitoring.alert_engine import PREFS_MAP, _resolve_channels
 from app.services.monitoring.compliance_escalation import ESCALATION_DAYS
 from app.services.monitoring.health_roundup import STALE_ANALYSIS_DAYS
 from app.services.monitoring.ndvi_change_alerts import NDVI_DEGRADATION_THRESHOLD
-from app.services.monitoring.satellite_sweep import MIN_BASELINE_SAMPLES
 
 
 class _User:

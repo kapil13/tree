@@ -97,10 +97,17 @@ async def test_maybe_alert_tree_ndvi_decline_creates_alert():
     user = MagicMock()
     sample = MagicMock(ndvi_mean=0.35)
     db = AsyncMock()
-    with patch(
-        "app.services.monitoring.satellite_sweep.create_monitoring_alert",
-        new_callable=AsyncMock,
-    ) as create_alert:
+    with (
+        patch(
+            "app.services.monitoring.ndvi_change_alerts.create_monitoring_alert",
+            new_callable=AsyncMock,
+        ) as create_alert,
+        patch(
+            "app.services.monitoring.satellite_sweep._recent_ndvi_values_for_tree",
+            new_callable=AsyncMock,
+            return_value=[0.53],
+        ),
+    ):
         await maybe_alert_tree_ndvi_decline(
             db,
             tree=tree,
