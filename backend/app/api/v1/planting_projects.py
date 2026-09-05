@@ -50,6 +50,7 @@ from app.schemas.project_member import (
 )
 from app.schemas.project_risk import ProjectRiskAssessmentCreate
 from app.schemas.rule_template import ProjectRuleOverrideUpdate
+from app.schemas.scan_cycle import ScanCycleOut, TreeScanHistoryOut, TreeScanHistoryRowOut
 from app.schemas.scan_history import ScanHistoryOut, ScanHistoryRowOut
 from app.schemas.tree import TreeListItem
 from app.schemas.vm0047 import (
@@ -62,11 +63,16 @@ from app.services.audit import record_audit
 from app.services.evidence import build_project_evidence_bundle
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.satellite_sweep import run_project_satellite_scan
+from app.services.monitoring.scan_cycle import build_scan_cycle
 from app.services.monitoring.scan_history import (
     build_portfolio_scan_history,
     build_project_scan_history,
 )
 from app.services.monitoring.summary import build_monitoring_summary
+from app.services.monitoring.tree_scan_history import (
+    build_portfolio_tree_scan_history,
+    build_project_tree_scan_history,
+)
 from app.services.planting_projects.access import (
     can_manage_project,
     load_project,
@@ -241,6 +247,43 @@ async def monitoring_summary(user: CurrentUser, db: DB) -> MonitoringSummaryOut:
     return MonitoringSummaryOut.model_validate(await build_monitoring_summary(db, user))
 
 
+@router.get("/scan-cycle", response_model=ScanCycleOut)
+async def portfolio_scan_cycle(user: CurrentUser, db: DB) -> ScanCycleOut:
+    """Unified scan cycle timeline — scheduled jobs, registry due counts, recent runs."""
+    return ScanCycleOut.model_validate(await build_scan_cycle(db, user))
+
+
+@router.get("/tree-scan-history", response_model=TreeScanHistoryOut)
+async def portfolio_tree_scan_history(
+    user: CurrentUser,
+    db: DB,
+    limit: int = Query(96, ge=1, le=200),
+) -> TreeScanHistoryOut:
+    """Portfolio-wide tree-level NDVI scan history."""
+    rows = await build_portfolio_tree_scan_history(db, user, limit=limit)
+    return TreeScanHistoryOut(
+        rows=[
+            TreeScanHistoryRowOut(
+                scan_date=r.scan_date,
+                tree_id=r.tree_id,
+                tree_code=r.tree_code,
+                species_text=r.species_text,
+                project_id=r.project_id,
+                project_name=r.project_name,
+                work_area_id=r.work_area_id,
+                work_area_name=r.work_area_name,
+                ndvi_mean=r.ndvi_mean,
+                ndvi_change_vs_baseline=r.ndvi_change_vs_baseline,
+                cloud_cover_pct=r.cloud_cover_pct,
+                provider=r.provider,
+                presence_confirmed=r.presence_confirmed,
+                scene_ids=r.scene_ids,
+            )
+            for r in rows
+        ],
+    )
+
+
 @router.get("/scan-history", response_model=ScanHistoryOut)
 async def portfolio_scan_history(
     user: CurrentUser,
@@ -385,6 +428,42 @@ async def project_scan_history(
                 sar_monitoring_mode=r.sar_monitoring_mode,
                 sar_ground_status=r.sar_ground_status,
                 sar_risk_level=r.sar_risk_level,
+                scene_ids=r.scene_ids,
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.get("/{project_id}/tree-scan-history", response_model=TreeScanHistoryOut)
+async def project_tree_scan_history(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    limit: int = Query(96, ge=1, le=200),
+) -> TreeScanHistoryOut:
+    """Tree-level NDVI scan history for a planting project."""
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    rows = await build_project_tree_scan_history(db, user, project, limit=limit)
+    return TreeScanHistoryOut(
+        project_id=project.id,
+        rows=[
+            TreeScanHistoryRowOut(
+                scan_date=r.scan_date,
+                tree_id=r.tree_id,
+                tree_code=r.tree_code,
+                species_text=r.species_text,
+                project_id=r.project_id,
+                project_name=r.project_name,
+                work_area_id=r.work_area_id,
+                work_area_name=r.work_area_name,
+                ndvi_mean=r.ndvi_mean,
+                ndvi_change_vs_baseline=r.ndvi_change_vs_baseline,
+                cloud_cover_pct=r.cloud_cover_pct,
+                provider=r.provider,
+                presence_confirmed=r.presence_confirmed,
                 scene_ids=r.scene_ids,
             )
             for r in rows

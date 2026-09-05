@@ -17,6 +17,8 @@ import { alertsHref } from "@/lib/alerts-links";
 import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
+import { ScanCyclePanel } from "@/components/satellite/scan-cycle-panel";
+import { TreeScanHistoryGrid } from "@/components/satellite/tree-scan-history-grid";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -53,6 +55,7 @@ const ALERT_KIND_LABEL: Record<string, string> = {
   flood_extent_alert: "Flood extent",
   ndvi_acute_drop: "Acute NDVI drop",
   canopy_loss_suspected: "Canopy loss",
+  scan_cycle_digest: "Scan cycle digest",
 };
 
 const SAR_MODE_LABEL: Record<string, string> = {
@@ -174,6 +177,8 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
           {scanEngine.firms_live ? " · FIRMS live" : " · FIRMS seasonal fallback"}
         </div>
       ) : null}
+
+      <ScanCyclePanel />
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="text-stone-600">
@@ -367,6 +372,13 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
       </section>
 
       <ScanHistoryGrid portfolio title="Recent scan history" limit={40} />
+
+      <TreeScanHistoryGrid
+        portfolio={!projectId}
+        projectId={projectId ?? undefined}
+        title="Tree scan history"
+        limit={40}
+      />
 
       <section className="card overflow-hidden p-0">
         <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">

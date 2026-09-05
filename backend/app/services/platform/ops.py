@@ -29,6 +29,7 @@ RETRYABLE_JOBS: dict[str, str] = {
     "daily_tree_scan_sweep": "daily_tree_scan_sweep",
     "daily_satellite_watch_sweep": "daily_satellite_watch_sweep",
     "weekly_tree_scan_target_backfill": "weekly_tree_scan_target_backfill",
+    "weekly_scan_cycle_digest": "weekly_scan_cycle_digest",
 }
 
 
