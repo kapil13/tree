@@ -599,6 +599,8 @@
     "kind_sar_ground_moisture": "भूमि नमी",
     "kind_sar_ground_instability": "भूमि अस्थिरता",
     "kind_locust_watch": "टिड्डी निगरानी",
+    "kind_fire_alert": "आग निगरानी",
+    "kind_flood_extent_alert": "बाढ़ विस्तार निगरानी",
     "kind_pest_intel_high": "कीट जोखिम",
     "kind_pest_intel_critical": "कीट जोखिम",
     "kind_emission_anomaly_detected": "मीथेन संकेत",
