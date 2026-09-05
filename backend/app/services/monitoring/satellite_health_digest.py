@@ -27,7 +27,11 @@ def is_satellite_health_alert(kind: str) -> bool:
     """Return True for satellite-related alert kinds (excluding digest itself)."""
     if kind == DIGEST_KIND:
         return False
-    if kind == "ndvi_degradation":
+    if kind in (
+        "ndvi_degradation",
+        "ndvi_acute_drop",
+        "canopy_loss_suspected",
+    ):
         return True
     return kind.startswith("satellite_health_")
 

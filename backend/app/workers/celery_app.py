@@ -95,5 +95,17 @@ celery_app.conf.update(
             "schedule": crontab(hour="3", minute="45"),
             "kwargs": {"limit_projects": 50},
         },
+        "daily-tree-scan-sweep": {
+            "task": "app.workers.tasks.daily_tree_scan_sweep",
+            "schedule": crontab(hour="2", minute="30"),
+        },
+        "daily-satellite-watch-sweep": {
+            "task": "app.workers.tasks.daily_satellite_watch_sweep",
+            "schedule": crontab(hour="2", minute="45"),
+        },
+        "weekly-tree-scan-backfill": {
+            "task": "app.workers.tasks.weekly_tree_scan_target_backfill",
+            "schedule": crontab(day_of_week="0", hour="1", minute="30"),
+        },
     },
 )

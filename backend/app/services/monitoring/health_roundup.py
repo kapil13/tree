@@ -28,7 +28,13 @@ async def run_daily_health_roundup(db: AsyncSession) -> dict[str, Any]:
 
     for tree in trees:
         stale = tree.last_analysis_at is None or tree.last_analysis_at <= cutoff
-        poor_health = tree.current_health in ("poor", "critical", "dead")
+        poor_health = tree.current_health in (
+            "poor",
+            "critical",
+            "dead",
+            "unhealthy",
+            "disease_risk",
+        )
         low_satellite = tree.satellite_verified is False and tree.last_satellite_at is not None
         if not (poor_health or stale or low_satellite):
             continue
@@ -42,7 +48,11 @@ async def run_daily_health_roundup(db: AsyncSession) -> dict[str, Any]:
         owner = await db.get(User, owner_trees[0].owner_user_id)
         if owner is None:
             continue
-        poor = sum(1 for t in owner_trees if t.current_health in ("poor", "critical", "dead"))
+        poor = sum(
+            1
+            for t in owner_trees
+            if t.current_health in ("poor", "critical", "dead", "unhealthy", "disease_risk")
+        )
         alert = await create_monitoring_alert(
             db,
             user=owner,

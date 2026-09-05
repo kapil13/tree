@@ -17,13 +17,12 @@ from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
-from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.ndvi_change_alerts import emit_ndvi_change_alerts
 from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 
 log = get_logger("monitoring.satellite")
 
-NDVI_DEGRADATION_THRESHOLD = -0.15
 MIN_BASELINE_SAMPLES = 2
 
 
@@ -65,6 +64,29 @@ async def _tree_baseline_ndvi_change(
     return round(current_ndvi - baseline, 4)
 
 
+async def _recent_ndvi_values_for_tree(db: AsyncSession, tree_id) -> list[float]:
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree_id, SatelliteRecord.ndvi_mean.isnot(None))
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(6)
+    )
+    return [float(r.ndvi_mean) for r in res.scalars().all() if r.ndvi_mean is not None]
+
+
+async def _recent_ndvi_values_for_fence(db: AsyncSession, fence_id) -> list[float]:
+    res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .where(
+            PlantationSatelliteRecord.fence_id == fence_id,
+            PlantationSatelliteRecord.ndvi_mean.isnot(None),
+        )
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+        .limit(6)
+    )
+    return [float(r.ndvi_mean) for r in res.scalars().all() if r.ndvi_mean is not None]
+
+
 async def maybe_alert_tree_ndvi_decline(
     db: AsyncSession,
     *,
@@ -73,31 +95,23 @@ async def maybe_alert_tree_ndvi_decline(
     sample,
     change: float,
 ) -> None:
-    if change is None or change > NDVI_DEGRADATION_THRESHOLD:
-        return
     notify_user = user
     if notify_user is None and tree.owner_user_id:
         notify_user = await db.get(User, tree.owner_user_id)
-    if notify_user is None:
+    if notify_user is None or sample.ndvi_mean is None:
         return
-    await create_monitoring_alert(
+    recent = await _recent_ndvi_values_for_tree(db, tree.id)
+    await emit_ndvi_change_alerts(
         db,
         user=notify_user,
-        kind="ndvi_degradation",
-        severity="high",
-        title=f"NDVI drop — {tree.public_code}",
-        message=(
-            f"Tree vegetation index fell {abs(change):.2f} vs recent baseline "
-            f"(current NDVI {sample.ndvi_mean:.2f}). Inspect on site or re-geotag."
-        ),
-        payload={
+        change=float(change),
+        current_ndvi=float(sample.ndvi_mean),
+        recent_ndvi_values=recent,
+        title_prefix=tree.public_code,
+        payload_base={
             "tree_id": str(tree.id),
             "project_id": str(tree.project_id) if tree.project_id else None,
-            "ndvi_mean": float(sample.ndvi_mean) if sample.ndvi_mean is not None else None,
-            "change_vs_baseline": change,
         },
-        prefs_key="satellite_health",
-        dedupe_hours=168,
         dedupe_keys=("tree_id",),
     )
 
@@ -146,29 +160,22 @@ async def scan_and_persist_work_area(
         fence.metadata_ = meta
     await db.flush()
 
-    if change is not None and change <= NDVI_DEGRADATION_THRESHOLD:
+    if change is not None and sample.ndvi_mean is not None:
         owner_id = notify_user_id or fence.owner_user_id
         owner = await db.get(User, owner_id) if owner_id else None
         if owner:
-            project_id = str(fence.project_id) if fence.project_id else None
-            await create_monitoring_alert(
+            recent = await _recent_ndvi_values_for_fence(db, fence.id)
+            await emit_ndvi_change_alerts(
                 db,
                 user=owner,
-                kind="ndvi_degradation",
-                severity="high",
-                title=f"NDVI drop — {fence.name}",
-                message=(
-                    f"Vegetation index fell {abs(change):.2f} vs recent baseline "
-                    f"(current NDVI {sample.ndvi_mean:.2f}). Inspect work area."
-                ),
-                payload={
+                change=float(change),
+                current_ndvi=float(sample.ndvi_mean),
+                recent_ndvi_values=recent,
+                title_prefix=fence.name,
+                payload_base={
                     "fence_id": str(fence.id),
-                    "project_id": project_id,
-                    "ndvi_mean": float(sample.ndvi_mean) if sample.ndvi_mean else None,
-                    "change_vs_baseline": change,
+                    "project_id": str(fence.project_id) if fence.project_id else None,
                 },
-                prefs_key="satellite_health",
-                dedupe_hours=168,
                 dedupe_keys=("fence_id",),
             )
 

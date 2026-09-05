@@ -19,6 +19,7 @@ from app.models.emission_source import (
     EmissionSource,
 )
 from app.models.monitoring_job_run import MonitoringJobRun
+from app.models.monitoring_scan_target import MonitoringScanTarget
 from app.models.organization import Organization
 from app.models.organization_invite import OrganizationInvite
 from app.models.payment import PaymentEvent, PaymentOrder
@@ -134,6 +135,7 @@ __all__ = [
     "ProjectSafeguardDocument",
     "ProjectRiskAssessment",
     "MonitoringJobRun",
+    "MonitoringScanTarget",
     "VerificationItem",
     "VerificationSample",
     "PlotMonitoringDesign",

@@ -526,6 +526,54 @@ def refresh_project_integrity_fusion(project_id: str) -> dict:
     return _execute_recorded("refresh_project_integrity_fusion", _run)
 
 
+@celery_app.task(name="app.workers.tasks.daily_tree_scan_sweep")
+def daily_tree_scan_sweep() -> dict:
+    log.info("worker.daily_tree_scan_sweep")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.tree_tile_sweep import (
+            register_due_trees_without_targets,
+            run_tree_scan_sweep,
+        )
+
+        async with AsyncSessionLocal() as db:
+            enrolled = await register_due_trees_without_targets(db, limit=300)
+            result = await run_tree_scan_sweep(db)
+            result["newly_enrolled"] = enrolled
+            return result
+
+    return _execute_recorded("daily_tree_scan_sweep", _run)
+
+
+@celery_app.task(name="app.workers.tasks.daily_satellite_watch_sweep")
+def daily_satellite_watch_sweep() -> dict:
+    log.info("worker.daily_satellite_watch_sweep")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.watch_area_sweep import run_daily_satellite_watch_sweep
+
+        async with AsyncSessionLocal() as db:
+            return await run_daily_satellite_watch_sweep(db)
+
+    return _execute_recorded("daily_satellite_watch_sweep", _run)
+
+
+@celery_app.task(name="app.workers.tasks.weekly_tree_scan_target_backfill")
+def weekly_tree_scan_target_backfill() -> dict:
+    log.info("worker.weekly_tree_scan_target_backfill")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.scan_targets import backfill_tree_scan_targets
+
+        async with AsyncSessionLocal() as db:
+            return await backfill_tree_scan_targets(db, limit=2000)
+
+    return _execute_recorded("weekly_tree_scan_target_backfill", _run)
+
+
 @celery_app.task(name="app.workers.tasks.backfill_integrity_fusion")
 def backfill_integrity_fusion(
     project_id: str | None = None,
