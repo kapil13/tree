@@ -99,31 +99,43 @@ function projectChip() {
   </button>`;
 }
 
+function contextStrip(ctx) {
+  if (!ctx) return "";
+  const chainage = ctx.inherited?.chainageEnabled && ctx.suggestedNext ? ` · ${ctx.suggestedNext.chainageLabel}` : "";
+  return `<div class="context-strip">
+    <span class="context-strip-project">${ctx.project.name}</span>
+    <span class="context-strip-meta">${ctx.workArea}${chainage}</span>
+  </div>`;
+}
+
 function contextBanner(ctx, opts = {}) {
   if (!ctx) return "";
   const { compact } = opts;
+  if (compact) return contextStrip(ctx);
   return `<div class="context-banner">
     <div class="context-path">${ctx.program.name} → ${ctx.scheme.name}</div>
     <div class="context-title">${ctx.project.name}</div>
     <div class="context-meta">${ctx.workArea}${ctx.inherited.chainageEnabled && ctx.suggestedNext ? " · " + ctx.suggestedNext.chainageLabel : ""}</div>
-    ${compact ? "" : `<div class="context-locked">🔒 Context inherited — not re-entered per tree</div>`}
+  </div>`;
+}
+
+function inheritedSummary(ctx) {
+  if (!ctx) return "";
+  const i = ctx.inherited;
+  const parts = [
+    `${i.minPhotos} photos`,
+    i.requirePitPhoto ? "pit photo" : null,
+    i.spacing || i.spacingM ? `${i.spacing || i.spacingM + "m"} spacing` : null,
+    i.complianceMode,
+  ].filter(Boolean);
+  return `<div class="inherited-summary" onclick="showToast('${i.pitSize} pit · ${i.guardType} guard · ${i.implementingAgency}')">
+    <span class="inherited-summary-label">Scheme rules applied</span>
+    <span class="inherited-summary-value">${parts.join(" · ")}</span>
   </div>`;
 }
 
 function inheritedPanel(ctx) {
-  if (!ctx) return "";
-  const i = ctx.inherited;
-  return `<div class="inherited-panel">
-    <div class="inherited-title">Inherited from scheme & project</div>
-    <div class="inherited-grid">
-      <span class="inherited-label">Pit size</span><span class="inherited-value">${i.pitSize}</span>
-      <span class="inherited-label">Spacing</span><span class="inherited-value">${i.spacing}</span>
-      <span class="inherited-label">Guard</span><span class="inherited-value">${i.guardType}</span>
-      <span class="inherited-label">Min photos</span><span class="inherited-value">${i.minPhotos}</span>
-      <span class="inherited-label">Compliance</span><span class="inherited-value">${i.complianceMode}</span>
-      <span class="inherited-label">Agency</span><span class="inherited-value">${i.implementingAgency}</span>
-    </div>
-  </div>`;
+  return inheritedSummary(ctx);
 }
 
 function getActiveContext() {
@@ -164,6 +176,27 @@ function establishContext(projectId) {
     },
   };
   state.projectFilter = proj.id;
+}
+
+function fieldCaptureBar(label = "Register next tree") {
+  return `<div class="field-capture-bar">
+    <button class="field-capture-btn" onclick="startRegister()">
+      <span class="field-capture-icon">+</span>
+      <span>${label}</span>
+    </button>
+  </div>`;
+}
+
+function signalStrip(signals) {
+  return `<div class="signal-strip">${signals
+    .map(
+      (s) => `
+    <button class="signal-pill" onclick="${s.action}">
+      <span class="signal-value">${s.value}</span>
+      <span class="signal-label">${s.label}</span>
+    </button>`
+    )
+    .join("")}</div>`;
 }
 
 function hamburgerBtn() {
@@ -270,105 +303,87 @@ function renderHome() {
   const fi = d.forestIntegrity;
   const ctx = getActiveContext();
   const statusClass = d.operationalStatus === "critical" ? "critical" : d.operationalStatus === "attention" ? "attention" : "healthy";
+  const topPriority = d.priorities[0];
+  const activeProject = MOCK_PROJECTS.find((p) => p.id === (ctx.project?.id || state.projectFilter)) || MOCK_PROJECTS[0];
   return `
     ${offlineBanner()}
     ${appBar("Command center", {
       menu: true,
       actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="badge">${d.kpis.unreadAlerts}</span></button>`,
     })}
-    <div class="screen-body">
-      <div class="status-banner ${statusClass}">
+    <div class="screen-body has-capture-bar">
+      ${contextStrip(ctx)}
+
+      <div class="status-banner ${statusClass} clickable" onclick="navigate('dashboard-integrity')">
         <span style="font-size:18px">${statusClass === "healthy" ? "✓" : "⚠"}</span>
-        <div>
+        <div style="flex:1">
           <div class="status-banner-title">${d.statusLabel}</div>
-          <div class="status-banner-detail">${d.statusDetail}</div>
+          <div class="status-banner-detail">${d.briefLines[0]}</div>
         </div>
+        <span class="integrity-score compact">${fi.score}</span>
       </div>
 
-      <div class="integrity-hero" onclick="navigate('dashboard-integrity')">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:4px">Forest integrity</div>
-        <div class="integrity-score-row">
-          <span class="integrity-score">${fi.score}</span>
-          <span style="font-size:14px;color:var(--text-secondary)">/100</span>
-          <span class="integrity-trend down">${fi.trend} vs last week</span>
-        </div>
-        <div class="integrity-bar"><div class="integrity-bar-marker" style="width:${fi.score}%"></div></div>
-        <div style="font-size:12px;color:var(--text-secondary)">${fi.grade} · Tap for factors & actions →</div>
-      </div>
+      ${topPriority ? `
+      <div class="next-up-hero" onclick="handlePriority('${topPriority.id}')">
+        <div class="next-up-label">Next up</div>
+        <div class="next-up-title">${topPriority.title}</div>
+        <div class="next-up-sub">${topPriority.subtitle}</div>
+        <span class="next-up-action">${topPriority.action} →</span>
+      </div>` : ""}
 
-      <div class="brief-card">
-        <strong style="color:var(--text-primary)">Brief:</strong> ${d.briefLines[0]}
-        <button class="btn btn-ghost btn-sm" style="margin-top:6px;padding:0;font-size:12px" onclick="navigate('assistant')">Ask AI →</button>
-      </div>
+      ${signalStrip([
+        { value: d.kpis.unreadAlerts, label: "Alerts", action: "navigate('alerts')" },
+        { value: d.kpis.needsAttention, label: "Attention", action: "openRegistryCategory('attention')" },
+        { value: d.kpis.evidenceGaps, label: "Evidence", action: "navigate('evidence')" },
+        { value: MOCK_BIOACOUSTIC.speciesDetected, label: "Species", action: "navigateTab('bioacoustic')" },
+      ])}
 
-      <div class="kpi-scroll">
-        <div class="kpi-chip" onclick="navigate('registry')"><div class="kpi-chip-value">${d.kpis.totalTrees.toLocaleString()}</div><div class="kpi-chip-label">Trees · ${d.kpis.pctHealthy}% healthy</div></div>
-        <div class="kpi-chip" onclick="navigate('alerts')"><div class="kpi-chip-value">${d.kpis.unreadAlerts}</div><div class="kpi-chip-label">Alerts</div></div>
-        <div class="kpi-chip" onclick="openRegistryCategory('attention')"><div class="kpi-chip-value">${d.kpis.needsAttention}</div><div class="kpi-chip-label">Need attention</div></div>
-        <div class="kpi-chip" onclick="navigate('reports')"><div class="kpi-chip-value">${d.kpis.evidenceGaps}</div><div class="kpi-chip-label">Evidence gaps</div></div>
-        <div class="kpi-chip" onclick="navigate('carbon')"><div class="kpi-chip-value">${(d.kpis.co2Stored / 1000).toFixed(1)}k</div><div class="kpi-chip-label">tCO₂e stored</div></div>
-      </div>
-
-      <div class="section-header"><span class="section-title">What needs attention</span></div>
-      ${d.priorities.map((p) => `
-        <div class="priority-card" onclick="handlePriority('${p.id}')">
+      <div class="section-header"><span class="section-title">Queue</span><button class="section-link" onclick="navigateTab('field')">Field →</button></div>
+      ${d.priorities.slice(1, 4).map((p) => `
+        <div class="priority-card slim" onclick="handlePriority('${p.id}')">
           <div class="priority-icon ${p.severity}">${p.type === "alert" ? "!" : p.type === "trees" ? "🌳" : p.type === "sync" ? "↻" : "📋"}</div>
           <div class="priority-body">
             <div class="priority-title">${p.title}</div>
             <div class="priority-sub">${p.subtitle}</div>
           </div>
-          <span class="priority-action">${p.action} →</span>
+          <span class="priority-action">${p.action}</span>
         </div>`).join("")}
 
-      <div class="section-header"><span class="section-title">Spatial situation</span><button class="section-link" onclick="navigateTab('map')">Full map</button></div>
-      <div class="map-preview" onclick="navigateTab('map')">
+      <div class="section-header"><span class="section-title">Spatial</span><button class="section-link" onclick="navigateTab('map')">Map</button></div>
+      <div class="map-preview connected" onclick="navigateTab('map')">
         <div class="map-preview-grid"></div>
         <div style="position:absolute;top:30%;left:25%;width:10px;height:10px;background:var(--status-danger);border-radius:50%;border:2px solid white"></div>
         <div style="position:absolute;top:50%;left:45%;width:10px;height:10px;background:var(--brand-canopy);border-radius:50%;border:2px solid white"></div>
-        <div style="position:absolute;top:40%;left:65%;width:10px;height:10px;background:var(--brand-canopy);border-radius:50%;border:2px solid white"></div>
-        <div class="map-preview-label">2 alerts · 4,821 trees · ${ctx.project.name}</div>
+        <div class="map-preview-label">${d.kpis.unreadAlerts} alerts · NDVI stress Ch. 142–148 · tap to inspect</div>
       </div>
 
-      <div class="section-header"><span class="section-title">Project performance</span><button class="section-link" onclick="navigate('projects')">All projects</button></div>
-      ${MOCK_PROJECTS.slice(0, 2).map((p) => `
-        <div class="card card-clickable" style="margin-bottom:8px" onclick="navigate('project-detail','${p.id}')">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div><div class="card-title">${p.name}</div><div class="card-meta">${p.trees.toLocaleString()} / ${p.targetTrees.toLocaleString()} trees · ${p.progressPct}%</div></div>
-            <span class="badge-status ${p.integrityScore >= 75 ? "badge-ok" : "badge-warn"}">${p.integrityScore}</span>
-          </div>
-          <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${p.progressPct}%"></div></div>
-        </div>`).join("")}
-
-      <div class="section-header"><span class="section-title">Environmental intelligence</span></div>
-      <div class="integrity-hero" style="margin-bottom:8px;background:linear-gradient(135deg,#0b3d2e,#1a5240);color:white;border:none" onclick="navigateTab('bioacoustic')">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;opacity:0.8;margin-bottom:4px">Bioacoustic · Biodiversity</div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end">
-          <div>
-            <div class="bio-hero-score" style="font-size:28px">${MOCK_BIOACOUSTIC.speciesDetected}</div>
-            <div style="font-size:12px;opacity:0.9">species detected · ${MOCK_BIOACOUSTIC.trend}</div>
-          </div>
-          <div style="text-align:right;font-size:12px;opacity:0.9">
-            Health ${MOCK_BIOACOUSTIC.healthScore}/100<br>${MOCK_BIOACOUSTIC.recordingsThisWeek} recordings this week
-          </div>
+      <div class="connected-project" onclick="navigate('project-detail','${activeProject.id}')">
+        <div>
+          <div class="connected-project-name">${activeProject.name}</div>
+          <div class="connected-project-meta">${activeProject.trees.toLocaleString()} trees · integrity ${activeProject.integrityScore} · ${activeProject.progressPct}% planted</div>
         </div>
-        ${MOCK_BIOACOUSTIC.alert ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(255,255,255,0.12);border-radius:8px;font-size:12px">⚠ ${MOCK_BIOACOUSTIC.alert.title}</div>` : ""}
-        <div style="font-size:11px;margin-top:8px;opacity:0.75">Tap for bioacoustic intelligence →</div>
+        <span class="badge-status ${activeProject.integrityScore >= 75 ? "badge-ok" : "badge-warn"}">${activeProject.openViolations ? activeProject.openViolations + " open" : "On track"}</span>
       </div>
 
-      <div class="section-header"><span class="section-title">Recent activity</span></div>
-      ${d.recentActivity.map((a) => `
-        <div class="activity-item" onclick="handleActivity('${a.id}')">
+      ${MOCK_BIOACOUSTIC.alert ? `
+      <div class="intel-line" onclick="navigateTab('bioacoustic')">
+        <span>🎙 Bioacoustic</span>
+        <span class="intel-line-text">${MOCK_BIOACOUSTIC.alert.title}</span>
+        <span>→</span>
+      </div>` : ""}
+
+      <div class="section-header"><span class="section-title">Live feed</span></div>
+      ${d.recentActivity.slice(0, 3).map((a) => `
+        <div class="activity-item compact" onclick="handleActivity('${a.id}')">
           <div class="activity-dot"></div>
           <div style="flex:1">
-            <div class="activity-title">${a.title}</div>
-            <div class="activity-detail">${a.detail}</div>
+            <div class="activity-title">${a.title} · ${a.detail}</div>
             <div class="activity-time">${a.time}</div>
           </div>
           ${ICONS.chevron}
         </div>`).join("")}
-
-      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="startRegister()">Register tree in context</button>
     </div>
+    ${fieldCaptureBar("Register tree in context")}
     ${bottomNav()}`;
 }
 
@@ -417,30 +432,31 @@ function renderRegisterContext() {
   const selProgram = state._selProgram || "government_nhai";
   const selScheme = state._selScheme || "nhai_highway";
   const selProject = state._selProject || "p1";
+  const scheme = MOCK_SCHEMES.find((s) => s.id === selScheme);
+  const project = MOCK_PROJECTS.find((p) => p.id === selProject);
   return `
     ${offlineBanner()}
-    ${appBar("Establish context", { back: true })}
+    ${appBar("Set work context", { back: true })}
     <div class="screen-body">
-      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">Program and scheme determine registration rules. Select once — context is inherited for all trees in this session.</p>
-      <div class="section-header"><span class="section-title">1. Program</span></div>
-      ${MOCK_PROGRAMS.map((p) => `
-        <div class="scheme-card${selProgram === p.id ? " selected" : ""}" onclick="selectProgram('${p.id}')">
-          <div class="scheme-card-title">${p.name}</div>
-          <div class="scheme-card-meta">${p.description}</div>
-        </div>`).join("")}
-      <div class="section-header"><span class="section-title">2. Scheme</span></div>
-      ${MOCK_SCHEMES.filter((s) => s.programId === selProgram).map((s) => `
-        <div class="scheme-card${selScheme === s.id ? " selected" : ""}" onclick="selectScheme('${s.id}')">
-          <div class="scheme-card-title">${s.name}</div>
-          <div class="scheme-card-meta">${s.complianceMode} compliance · ${s.rules.minPhotos} photos min</div>
-        </div>`).join("")}
-      <div class="section-header"><span class="section-title">3. Project</span></div>
-      ${MOCK_PROJECTS.filter((p) => p.schemeId === selScheme).map((p) => `
-        <div class="scheme-card${selProject === p.id ? " selected" : ""}" onclick="selectProjectForContext('${p.id}')">
-          <div class="scheme-card-title">${p.name}</div>
-          <div class="scheme-card-meta">${p.trees.toLocaleString()} trees · ${p.workAreas.join(", ")}</div>
-        </div>`).join("")}
-      <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="confirmContext()">Establish context & continue</button>
+      <p class="lead-copy">Pick where you're working. Rules and defaults load automatically — you won't re-enter them per tree.</p>
+      <div class="context-picker">
+        <div class="context-picker-label">Program</div>
+        <div class="context-picker-row">
+          ${MOCK_PROGRAMS.map((p) => `<button class="context-pill${selProgram === p.id ? " active" : ""}" onclick="selectProgram('${p.id}')">${p.name.replace("Government ", "")}</button>`).join("")}
+        </div>
+        <div class="context-picker-label">Scheme</div>
+        <div class="context-picker-row">
+          ${MOCK_SCHEMES.filter((s) => s.programId === selProgram).map((s) => `<button class="context-pill${selScheme === s.id ? " active" : ""}" onclick="selectScheme('${s.id}')">${s.name.replace("NHAI ", "").replace(" Compensatory Afforestation", "")}</button>`).join("")}
+        </div>
+        <div class="context-picker-label">Project</div>
+        ${MOCK_PROJECTS.filter((p) => p.schemeId === selScheme).map((p) => `
+          <div class="scheme-card${selProject === p.id ? " selected" : ""}" onclick="selectProjectForContext('${p.id}')">
+            <div class="scheme-card-title">${p.name}</div>
+            <div class="scheme-card-meta">${p.workAreas[0]} · ${p.trees.toLocaleString()} trees</div>
+          </div>`).join("")}
+      </div>
+      ${scheme && project ? `<div class="context-ready">Ready: ${scheme.rules.minPhotos} photos${scheme.rules.requirePitPhoto ? " + pit" : ""} · ${scheme.complianceMode} compliance</div>` : ""}
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="confirmContext()">Start capturing trees</button>
     </div>`;
 }
 
@@ -452,20 +468,18 @@ function renderRegisterSuccess() {
     <div class="screen-body">
       <div class="success-hero">
         <div class="success-icon">✓</div>
-        <h2 style="font-size:20px;font-weight:600;margin-bottom:4px">Tree registered</h2>
-        <div style="font-family:var(--font-mono);font-size:14px;color:var(--text-secondary)">${code}</div>
-        ${state.offline ? `<div class="compliance-result compliance-warn" style="margin-top:16px;text-align:left">Queued offline — will sync when connected</div>` : ""}
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:4px">Captured</h2>
+        <div style="font-family:var(--font-mono);font-size:14px;color:var(--text-secondary)">${code} · Neem · ${ctx.suggestedNext.chainageLabel}</div>
+        ${state.offline ? `<div class="compliance-result compliance-warn" style="margin-top:16px">Queued offline — syncs when connected</div>` : `<div class="compliance-result compliance-pass" style="margin-top:16px">Synced · compliance passed</div>`}
       </div>
-      ${contextBanner(ctx, { compact: true })}
-      <div class="card" style="margin-bottom:16px">
-        <div class="detail-row"><span class="detail-label">Species</span><span class="detail-value">Neem (suggested)</span></div>
-        <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${ctx.suggestedNext.chainageLabel}</span></div>
-        <div class="detail-row"><span class="detail-label">Compliance</span><span class="detail-value" style="color:var(--status-ok)">Passed</span></div>
+      ${contextStrip(ctx)}
+      <button class="btn btn-primary btn-block" onclick="registerAnother()">Register another</button>
+      <p style="text-align:center;font-size:12px;color:var(--text-tertiary);margin:8px 0">Same project context · GPS advances automatically</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" style="flex:1" onclick="openTree('t1')">View tree</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="navigateTab('map')">On map</button>
       </div>
-      <button class="btn btn-primary btn-block" onclick="registerAnother()">Register another tree</button>
-      <p style="text-align:center;font-size:12px;color:var(--text-tertiary);margin:8px 0">Context retained — no need to re-select program/scheme/project</p>
-      <button class="btn btn-secondary btn-block" onclick="openTree('t1')">View tree detail</button>
-      <button class="btn btn-ghost btn-block" onclick="navigateTab('home')">Back to command center</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="navigateTab('home')">Command center</button>
     </div>`;
 }
 
@@ -550,23 +564,21 @@ function renderMapSheet() {
 function renderField() {
   const ctx = getActiveContext();
   const nearby = queryRegistry({ category: "all", projectId: ctx.project.id, page: 1, pageSize: 3, sort: "proximity" }).trees;
+  const nextTask = MOCK_FIELD_TASKS[0];
   return `
     ${offlineBanner()}
     ${appBar("Field", { menu: true, actions: `${projectChip()}<button class="app-bar-action" onclick="navigateTab('map')" title="Map">🗺</button>` })}
-    <div class="screen-body">
-      ${contextBanner(ctx, { compact: true })}
-      <div class="priority-card" style="margin-bottom:16px;border-color:#fca5a5" onclick="navigate('alert-detail','a1')">
-        <div class="priority-icon critical">!</div>
-        <div class="priority-body">
-          <div class="priority-title">NDVI drop · 240m NE</div>
-          <div class="priority-sub">Inspect before next registration block</div>
-        </div>
-        <span class="priority-action">Map →</span>
+    <div class="screen-body has-capture-bar">
+      ${contextStrip(ctx)}
+      <div class="next-up-hero field" onclick="handleFieldTask('${nextTask.id}')">
+        <div class="next-up-label">Nearest action · ${nextTask.context.split("·").pop().trim()}</div>
+        <div class="next-up-title">${nextTask.title}</div>
+        <div class="next-up-sub">Tap to inspect on map or resolve in field</div>
+        <span class="next-up-action">Go →</span>
       </div>
-      <button class="btn btn-primary btn-block" style="margin-bottom:12px" onclick="startRegister()">Register tree in context</button>
-      <div class="section-header"><span class="section-title">Nearby tasks</span><button class="section-link" onclick="navigate('registry')">All ${REGISTRY_STATS.total}</button></div>
-      ${MOCK_FIELD_TASKS.map((task) => `
-        <div class="priority-card" onclick="handleFieldTask('${task.id}')">
+      <div class="section-header"><span class="section-title">Today's queue</span><button class="section-link" onclick="navigate('sync-queue')">Sync</button></div>
+      ${MOCK_FIELD_TASKS.slice(1).map((task) => `
+        <div class="priority-card slim" onclick="handleFieldTask('${task.id}')">
           <div class="priority-icon ${task.priority === "critical" ? "critical" : task.priority === "high" ? "high" : "medium"}">${task.type === "alert" ? "!" : task.type === "survey" ? "📋" : task.type === "evidence" ? "📷" : task.type === "bioacoustic" ? "🎙" : "✓"}</div>
           <div class="priority-body">
             <div class="priority-title">${task.title}</div>
@@ -574,16 +586,14 @@ function renderField() {
           </div>
           ${ICONS.chevron}
         </div>`).join("")}
-      <div class="section-header"><span class="section-title">Nearby trees</span><button class="section-link" onclick="navigateTab('map')">Map</button></div>
+      <div class="section-header"><span class="section-title">Nearby trees</span><button class="section-link" onclick="navigate('registry')">${REGISTRY_STATS.total.toLocaleString()}</button></div>
       ${nearby.map((t) => renderCompactRow(t, { showDistance: true })).join("")}
-      <div class="section-header"><span class="section-title">Sync</span></div>
-      <div class="card card-clickable" onclick="navigate('sync-queue')">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div class="card-title">1 pending · 1 failed</div><div class="card-meta">Last sync 12 min ago · Wi-Fi</div></div>
-          <span class="badge-status badge-warn">↻ Retry</span>
-        </div>
+      <div class="sync-inline" onclick="navigate('sync-queue')">
+        <span>↻ 1 pending · 1 failed</span>
+        <span class="sync-inline-action">Retry</span>
       </div>
     </div>
+    ${fieldCaptureBar("Capture tree here")}
     ${bottomNav()}`;
 }
 
@@ -665,16 +675,16 @@ function renderRegistry() {
       </div>
       <div class="registry-pagination">
         <button class="btn btn-secondary btn-sm" onclick="setRegistryPage(${page - 1})" ${page <= 1 ? "disabled" : ""}>← Prev</button>
-        <span class="registry-page-info">Showing ${(page - 1) * state.registryPageSize + 1}–${Math.min(page * state.registryPageSize, total)} of ${total.toLocaleString()}</span>
+        <span class="registry-page-info">${(page - 1) * state.registryPageSize + 1}–${Math.min(page * state.registryPageSize, total)} of ${total.toLocaleString()}</span>
         <button class="btn btn-secondary btn-sm" onclick="setRegistryPage(${page + 1})" ${page >= pages ? "disabled" : ""}>Next →</button>
       </div>
-      <p class="registry-scale-note">Virtualized list in production · server-side search & cursor pagination</p>
     </div>
     <button class="fab" onclick="startRegister()">+</button>`;
 }
 
 function renderTreeDetail() {
   const t = state.selectedTree || MOCK_TREES[0];
+  const speciesShort = t.species.split("(")[0].trim();
   return `
     ${offlineBanner()}
     <div class="screen-body no-pad" style="flex:1;overflow-y:auto">
@@ -683,42 +693,37 @@ function renderTreeDetail() {
         <button class="app-bar-back" style="position:absolute;top:48px;left:8px;background:rgba(0,0,0,0.4);color:white;border-radius:50%" onclick="goBack()">${ICONS.back}</button>
         <div class="tree-hero-overlay">
           <div class="tree-hero-code">${t.code}</div>
-          <div class="tree-hero-species">${t.species}</div>
+          <div class="tree-hero-species">${speciesShort}</div>
         </div>
       </div>
       <div style="padding:16px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
-          ${healthBadge(t.health)}
-          ${t.verified ? '<span class="badge-status badge-ok">✓ Verified</span>' : '<span class="badge-status badge-warn">Pending verification</span>'}
-          <span class="badge-status ${t.sync === "synced" ? "badge-ok" : t.sync === "pending" ? "badge-warn" : "badge-danger"}">${t.sync}</span>
+        <div class="state-summary">
+          <div class="state-summary-main">
+            ${healthBadge(t.health)}
+            ${t.verified ? '<span class="badge-status badge-ok">Verified</span>' : '<span class="badge-status badge-warn">Unverified</span>'}
+            <span class="badge-status ${t.sync === "synced" ? "badge-ok" : t.sync === "pending" ? "badge-warn" : "badge-danger"}">${t.sync}</span>
+          </div>
+          <p class="state-summary-text">${t.attentionReason || "Canopy stable · NDVI 0.52 · last scan 2d ago"}${t.needsAttention ? " · needs field check" : ""}</p>
         </div>
-        <div class="detail-section">
-          <div class="section-title" style="margin-bottom:8px">Location & context</div>
-          <div class="detail-row"><span class="detail-label">Project</span><span class="detail-value">${t.project}</span></div>
-          <div class="detail-row"><span class="detail-label">Work area</span><span class="detail-value">${t.workArea}</span></div>
-          <div class="detail-row"><span class="detail-label">Coordinates</span><span class="detail-value" style="font-family:var(--font-mono);font-size:12px">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span></div>
+
+        <div class="action-rail">
+          <button class="action-rail-btn primary" onclick="navigateTab('map')">Map</button>
+          <button class="action-rail-btn" onclick="showToast('Field inspection started')">Inspect</button>
+          <button class="action-rail-btn" onclick="navigate('evidence')">Evidence</button>
+          <button class="action-rail-btn" onclick="navigateTab('monitor')">Monitor</button>
         </div>
-        <div class="detail-section">
-          <div class="section-title" style="margin-bottom:8px">Monitoring</div>
-          <div class="detail-row"><span class="detail-label">NDVI (30d)</span><span class="detail-value">0.52 ↓</span></div>
-          <div class="detail-row"><span class="detail-label">Last scan</span><span class="detail-value">2 days ago</span></div>
-          <div class="detail-row"><span class="detail-label">Integrity</span><span class="detail-value">Aligned</span></div>
+
+        <div class="location-chip" onclick="navigateTab('map')">
+          <span>📍 ${t.workArea}</span>
+          <span class="location-chip-coords">${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}</span>
+          <span>→</span>
         </div>
-        <div class="detail-section">
+
+        <div class="detail-section compact">
           <div class="section-title" style="margin-bottom:8px">Timeline</div>
-          <div class="timeline-item"><div class="timeline-dot"></div><div><div style="font-weight:500">Registered</div><div style="font-size:12px;color:var(--text-secondary)">12 Mar 2025 · Field capture</div></div></div>
-          <div class="timeline-item"><div class="timeline-dot"></div><div><div style="font-weight:500">Verified</div><div style="font-size:12px;color:var(--text-secondary)">15 Mar 2025 · Supervisor review</div></div></div>
-          <div class="timeline-item"><div class="timeline-dot"></div><div><div style="font-weight:500">NDVI alert</div><div style="font-size:12px;color:var(--text-secondary)">2h ago · Acute drop detected</div></div></div>
-        </div>
-        <div class="detail-section">
-          <div class="section-title" style="margin-bottom:8px">Current state</div>
-          <div class="detail-row"><span class="detail-label">Last monitored</span><span class="detail-value">${t.lastMonitored || "3 days ago"}</span></div>
-          ${t.attentionReason ? `<div class="detail-row"><span class="detail-label">Attention</span><span class="detail-value" style="color:var(--status-warn)">${t.attentionReason}</span></div>` : ""}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
-          <button class="btn btn-primary" style="flex:1;min-width:120px" onclick="navigateTab('map')">View on map</button>
-          <button class="btn btn-secondary" style="flex:1;min-width:120px" onclick="showToast('Field inspection')">Inspect</button>
-          <button class="btn btn-secondary" style="flex:1;min-width:120px" onclick="showToast('Add evidence')">Add evidence</button>
+          <div class="timeline-item compact"><div class="timeline-dot"></div><div><div style="font-weight:500">Registered · 12 Mar</div><div style="font-size:12px;color:var(--text-secondary)">Field capture · ${t.project}</div></div></div>
+          <div class="timeline-item compact"><div class="timeline-dot"></div><div><div style="font-weight:500">Verified · 15 Mar</div><div style="font-size:12px;color:var(--text-secondary)">Supervisor review</div></div></div>
+          ${t.needsAttention ? `<div class="timeline-item compact"><div class="timeline-dot warn"></div><div><div style="font-weight:500">NDVI alert · 2h ago</div><div style="font-size:12px;color:var(--text-secondary)">Linked to active alert</div></div></div>` : ""}
         </div>
       </div>
     </div>`;
@@ -736,24 +741,23 @@ function renderRegister() {
 
   if (step === 1) {
     body = `
-      ${contextBanner(ctx)}
-      ${inheritedPanel(ctx)}
-      <div class="gps-card">
+      ${contextStrip(ctx)}
+      ${inheritedSummary(ctx)}
+      <div class="gps-card capture-first">
         <div class="gps-status">
           <span style="color:var(--status-ok)">●</span>
           <strong>GPS locked</strong>
           <span class="gps-accuracy">±4.2 m</span>
         </div>
         <div class="mini-map"><div class="mini-map-pin"></div></div>
-        <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">
-          Work area: <strong>${ctx.workArea}</strong> (auto-detected)
-          ${i.chainageEnabled ? `<br>Chainage: <strong>${ctx.suggestedNext.chainageLabel}</strong> (suggested_next)` : ""}
+        <div class="gps-placement">
+          <span>${ctx.workArea}</span>
+          ${i.chainageEnabled ? `<span class="gps-chainage">${ctx.suggestedNext.chainageLabel}</span>` : ""}
         </div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:8px;padding:0" onclick="showToast('Adjust pin on map')">Adjust on map</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;padding:0" onclick="showToast('Adjust pin on map')">Nudge pin</button>
       </div>
-      <div class="compliance-result compliance-pass">✓ Inside work area boundary · spacing OK</div>
-      <p style="font-size:12px;color:var(--text-tertiary)">Program, scheme, project, pit rules, spacing, and agency are inherited — not re-entered.</p>
-      <button class="btn btn-primary btn-block" onclick="setRegisterStep(2)">Continue to photos</button>`;
+      <div class="compliance-result compliance-pass">Inside work area · spacing OK</div>
+      <button class="btn btn-primary btn-block" onclick="setRegisterStep(2)">Open camera</button>`;
   } else if (step === 2) {
     const minPhotos = i.minPhotos || 3;
     const pitSlot = i.requirePitPhoto
@@ -768,41 +772,36 @@ function renderRegister() {
       return `<div class="photo-slot" onclick="addRegisterPhoto(${idx})"><span style="font-size:24px">📷</span><span>Plant ${idx + 1}</span></div>`;
     }).join("");
     body = `
-      ${contextBanner(ctx, { compact: true })}
-      <p style="margin-bottom:12px;font-size:14px;color:var(--text-secondary)">${i.requirePitPhoto ? "Pit photo required (NHAI scheme). " : ""}Min ${minPhotos} plant photos. Species suggested after capture.</p>
+      ${contextStrip(ctx)}
+      <p class="capture-hint">${i.requirePitPhoto ? "Pit photo required · " : ""}${minPhotos} plant photos · species inferred after capture</p>
       <div class="photo-capture-grid" style="position:relative">${pitSlot}${plantSlots}</div>
-      <button class="btn btn-primary btn-block" onclick="setRegisterStep(3)" ${state.registerPhotos.length < 1 || (i.requirePitPhoto && !state.registerPitPhoto) ? "disabled style='opacity:0.5'" : ""}>Continue</button>
+      <button class="btn btn-primary btn-block" onclick="setRegisterStep(3)" ${state.registerPhotos.length < 1 || (i.requirePitPhoto && !state.registerPitPhoto) ? "disabled style='opacity:0.5'" : ""}>Confirm photos</button>
       <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="setRegisterStep(1)">Back</button>`;
   } else {
     body = `
-      ${state.registerSessionCount > 0 ? `<div class="register-session">Session: ${state.registerSessionCount + 1} trees registered · context retained</div>` : ""}
-      ${contextBanner(ctx, { compact: true })}
-      <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto">
-        ${state.registerPitPhoto ? `<img src="${state.registerPitPhoto}" style="width:64px;height:64px;border-radius:8px;object-fit:cover" alt="pit">` : ""}
-        ${state.registerPhotos.map((p) => `<img src="${p}" style="width:64px;height:64px;border-radius:8px;object-fit:cover" alt="">`).join("")}
+      ${state.registerSessionCount > 0 ? `<div class="register-session">${state.registerSessionCount + 1} trees this session · context locked</div>` : ""}
+      ${contextStrip(ctx)}
+      <div class="capture-review">
+        ${state.registerPitPhoto ? `<img src="${state.registerPitPhoto}" alt="pit">` : ""}
+        ${state.registerPhotos.map((p) => `<img src="${p}" alt="">`).join("")}
       </div>
-      <div class="compliance-result compliance-pass">✓ ${ctx.workArea}${i.chainageEnabled ? " · " + ctx.suggestedNext.chainageLabel : ""}</div>
-      <div class="form-group">
-        <label class="form-label">Species (AI suggested)</label>
-        <input class="form-input" value="Neem (Azadirachta indica)" placeholder="Search species…">
+      <div class="species-chips">
+        <span class="species-chip active" onclick="showToast('Neem selected')">Neem · 94% AI</span>
+        <span class="species-chip" onclick="showToast('Khejri suggested')">Khejri · 72%</span>
+        <span class="species-chip" onclick="showToast('Search species')">Other…</span>
       </div>
-      ${i.chainageEnabled ? `<div class="form-group"><label class="form-label">Road side</label><select class="form-input"><option>Left</option><option selected>Right</option></select></div>` : ""}
-      ${state.offline ? `<div class="compliance-result compliance-warn">Offline — queued for sync</div>` : ""}
-      <button class="btn btn-primary btn-block" onclick="submitRegister()">${state.offline ? "Save offline" : "Register tree"}</button>
-      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="setRegisterStep(2)">Back</button>`;
+      ${i.chainageEnabled ? `<div class="road-side-toggle"><button class="road-side active">Right</button><button class="road-side">Left</button></div>` : ""}
+      ${state.offline ? `<div class="compliance-result compliance-warn">Offline — queued for sync</div>` : `<div class="compliance-result compliance-pass">${ctx.workArea}${i.chainageEnabled ? " · " + ctx.suggestedNext.chainageLabel : ""} · ready</div>`}
+      <button class="btn btn-primary btn-block" onclick="submitRegister()">${state.offline ? "Save offline" : "Capture tree"}</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="setRegisterStep(2)">Retake photos</button>`;
   }
 
   return `
     ${offlineBanner()}
     ${appBar("Capture tree", { back: true })}
-    <div class="step-indicator">
-      ${[1, 2, 3].map((s) => `<div class="step-dot${step === s ? " active" : ""}"></div>`).join("")}
-    </div>
+    <div class="capture-progress"><div class="capture-progress-fill" style="width:${(step / totalSteps) * 100}%"></div></div>
     <div class="screen-body">
-      <div style="margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;color:var(--text-secondary)">Step ${step} of ${totalSteps} · Tree-specific only</div>
-        <div style="font-size:17px;font-weight:600">${stepLabels[step - 1]}</div>
-      </div>
+      <div class="capture-step-label">${stepLabels[step - 1]}</div>
       ${body}
     </div>`;
 }
@@ -812,41 +811,38 @@ function renderMonitor() {
     ${offlineBanner()}
     ${appBar("Monitor", { menu: true, actions: `${projectChip()}<button class="app-bar-action" onclick="navigate('alerts')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg><span class="badge">2</span></button>` })}
     <div class="screen-body">
-      <div class="section-header"><span class="section-title">Action required</span><button class="section-link" onclick="navigate('alerts')">All alerts</button></div>
+      <div class="section-header"><span class="section-title">Needs decision</span><button class="section-link" onclick="navigateTab('field')">Field</button></div>
       ${MOCK_ALERTS.slice(0, 2)
         .map(
           (a) => `
-        <div class="monitor-card" onclick="navigate('alert-detail','${a.id}')">
+        <div class="monitor-card clickable" onclick="navigate('alert-detail','${a.id}')">
           <div class="severity-stripe severity-${a.severity}"></div>
           <div style="flex:1">
             <div style="font-weight:600;font-size:15px">${a.title}</div>
             <div style="font-size:13px;color:var(--text-secondary)">${a.context}</div>
-            <button class="btn btn-primary btn-sm" style="margin-top:10px">${a.action}</button>
+            <div class="monitor-action-hint">${a.action} →</div>
           </div>
         </div>`
         )
         .join("")}
-      <div class="section-header"><span class="section-title">Site health</span></div>
+      <div class="section-header"><span class="section-title">Site pulse</span><button class="section-link" onclick="navigateTab('map')">Map</button></div>
       ${MOCK_MONITOR.map((m) => {
         const ndviPct = Math.round(m.ndvi * 100);
         const cls = m.ndvi >= 0.55 ? "ndvi-high" : m.ndvi >= 0.45 ? "ndvi-mid" : "ndvi-low";
         return `
-        <div class="card" style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div>
-              <div class="card-title">${m.site}</div>
-              <div class="card-meta">NDVI ${m.ndvi.toFixed(2)} ${m.trend === "down" ? "↓" : m.trend === "up" ? "↑" : "→"}${m.stale ? " · <span style='color:var(--status-warn)'>Stale scan</span>" : ""}</div>
-            </div>
-            <span class="badge-status ${m.action === "No action" ? "badge-ok" : "badge-warn"}">${m.action}</span>
+        <div class="monitor-site-row" onclick="navigateTab('map')">
+          <div style="flex:1">
+            <div class="card-title">${m.site}</div>
+            <div class="card-meta">NDVI ${m.ndvi.toFixed(2)} ${m.trend === "down" ? "↓" : m.trend === "up" ? "↑" : "→"}${m.stale ? " · stale scan" : ""}</div>
+            <div class="ndvi-bar"><div class="ndvi-fill ${cls}" style="width:${ndviPct}%"></div></div>
           </div>
-          <div class="ndvi-bar"><div class="ndvi-fill ${cls}" style="width:${ndviPct}%"></div></div>
+          <span class="badge-status ${m.action === "No action" ? "badge-ok" : "badge-warn"}">${m.action === "No action" ? "OK" : "Act"}</span>
         </div>`;
       }).join("")}
-      <div class="section-header"><span class="section-title">Hazards</span></div>
-      <div class="card">
-        <div class="card-title">Fire watch — CAMPA Block A</div>
-        <div class="card-meta">3 detections within 25 km · Elevated seasonal risk</div>
-        <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="navigate('map')">View on map</button>
+      <div class="intel-line" onclick="navigateTab('bioacoustic')">
+        <span>🎙 Ecology</span>
+        <span class="intel-line-text">${MOCK_BIOACOUSTIC.speciesDetected} species · Shannon ${MOCK_BIOACOUSTIC.shannonIndex}</span>
+        <span>→</span>
       </div>
     </div>
     ${bottomNav()}`;
