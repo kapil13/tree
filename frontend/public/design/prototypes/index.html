@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aranyix Mobile UX Prototype</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="prototype-shell">
+    <p class="prototype-label">Aranyix Mobile Redesign — Interactive Prototype v4.2 (Senior UX refinement)</p>
+
+    <div class="phone" id="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-status-bar">
+        <span>9:41</span>
+        <span>●●●○ Aranyix</span>
+        <span>100%</span>
+      </div>
+      <div class="phone-content" id="screen-container">
+        <!-- Rendered by app.js -->
+      </div>
+      <div id="filter-overlay" class="overlay"></div>
+      <div id="project-overlay" class="overlay"></div>
+      <div id="drawer-backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+      <div id="global-drawer" class="global-drawer"></div>
+      <div id="photo-viewer" class="photo-viewer"></div>
+      <div id="dialog" class="dialog">
+        <div class="dialog-box">
+          <div class="dialog-title" id="dialog-title">Confirm</div>
+          <div class="dialog-body" id="dialog-body"></div>
+          <div class="dialog-actions">
+            <button class="btn btn-secondary btn-sm" onclick="closeDialog()">Cancel</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDialog()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proto-controls" id="proto-controls">
+      <span style="color:#666;font-size:11px;width:100%;text-align:center;margin-bottom:4px">Quick jump — prototype reviewer controls</span>
+      <button class="proto-btn" data-screen="welcome" onclick="jumpTo('welcome')">Auth</button>
+      <button class="proto-btn" data-screen="home" onclick="jumpTo('home')">Command center</button>
+      <button class="proto-btn" data-screen="dashboard-integrity" onclick="jumpTo('dashboard-integrity')">Integrity</button>
+      <button class="proto-btn" data-screen="register-context" onclick="jumpTo('register-context')">Context setup</button>
+      <button class="proto-btn" data-screen="map" onclick="jumpTo('map')">Map</button>
+      <button class="proto-btn" data-screen="field" onclick="jumpTo('field')">Field</button>
+      <button class="proto-btn" data-screen="registry" onclick="jumpTo('registry')">Registry (1,248)</button>
+      <button class="proto-btn" data-screen="tree-detail" onclick="openTree('t1')">Tree detail</button>
+      <button class="proto-btn" data-screen="register" onclick="startRegister()">Register</button>
+      <button class="proto-btn" data-screen="monitor" onclick="jumpTo('monitor')">Monitor</button>
+      <button class="proto-btn" data-screen="bioacoustic" onclick="jumpTo('bioacoustic')">Bioacoustic</button>
+      <button class="proto-btn" data-screen="drawer" onclick="jumpTo('drawer')">Drawer (☰)</button>
+      <button class="proto-btn" data-screen="alerts" onclick="jumpTo('alerts')">Alerts</button>
+      <button class="proto-btn" data-screen="evidence" onclick="jumpTo('evidence')">Evidence</button>
+      <button class="proto-btn" data-screen="assistant" onclick="jumpTo('assistant')">AI</button>
+      <button class="proto-btn" data-screen="settings" onclick="jumpTo('settings')">Settings</button>
+      <button class="proto-btn" data-screen="empty" onclick="jumpTo('empty')">Empty</button>
+      <button class="proto-btn" data-screen="loading" onclick="jumpTo('loading')">Loading</button>
+    </div>
+
+    <p class="prototype-label" style="max-width:390px;text-align:center;line-height:1.5">
+      Open <code style="color:#aaa">design/prototypes/index.html</code> in a browser.
+      Tap through bottom nav (Home · Map · Field · Monitor · Bio), hamburger drawer (☰), tree registry, registration flow, map pins, and alerts.
+      Toggle offline mode in Settings.
+    </p>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
