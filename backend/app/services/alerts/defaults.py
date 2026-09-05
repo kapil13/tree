@@ -35,6 +35,12 @@ DEFAULT_CITIZEN_STEWARDSHIP_PREFS: dict[str, Any] = {
     "survey_interval_days": 30,
 }
 
+DEFAULT_SCAN_CYCLE_PREFS: dict[str, Any] = {
+    "enabled": True,
+    "channels": ["in_app", "email"],
+    "weekly_digest": True,
+}
+
 
 def default_notification_preferences() -> dict[str, Any]:
     return {
@@ -43,4 +49,5 @@ def default_notification_preferences() -> dict[str, Any]:
         "survival_survey": dict(DEFAULT_SURVIVAL_SURVEY_PREFS),
         "citizen_stewardship": dict(DEFAULT_CITIZEN_STEWARDSHIP_PREFS),
         "compliance": dict(DEFAULT_COMPLIANCE_PREFS),
+        "scan_cycle": dict(DEFAULT_SCAN_CYCLE_PREFS),
     }

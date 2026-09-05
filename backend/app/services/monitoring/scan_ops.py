@@ -112,5 +112,5 @@ def _job_snapshot(run: MonitoringJobRun | None) -> dict[str, Any] | None:
         "status": run.status,
         "finished_at": run.finished_at.isoformat() if run.finished_at else None,
         "result": run.result or {},
-        "error": run.error,
+        "error": run.error_message,
     }

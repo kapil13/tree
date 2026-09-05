@@ -35,6 +35,7 @@ SATELLITE_JOB_NAMES = {
     "daily_tree_scan_sweep",
     "daily_satellite_watch_sweep",
     "weekly_tree_scan_target_backfill",
+    "weekly_scan_cycle_digest",
 }
 
 

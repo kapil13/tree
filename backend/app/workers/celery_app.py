@@ -107,5 +107,9 @@ celery_app.conf.update(
             "task": "app.workers.tasks.weekly_tree_scan_target_backfill",
             "schedule": crontab(day_of_week="0", hour="1", minute="30"),
         },
+        "weekly-scan-cycle-digest": {
+            "task": "app.workers.tasks.weekly_scan_cycle_digest",
+            "schedule": crontab(day_of_week="1", hour="7", minute="0"),
+        },
     },
 )

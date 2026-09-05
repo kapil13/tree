@@ -15,6 +15,7 @@ from app.models.user import User
 from app.services.alerts.defaults import (
     DEFAULT_COMPLIANCE_PREFS,
     DEFAULT_SATELLITE_HEALTH_PREFS,
+    DEFAULT_SCAN_CYCLE_PREFS,
     DEFAULT_SURVIVAL_SURVEY_PREFS,
     DEFAULT_THREAT_WATCH_PREFS,
     default_notification_preferences,
@@ -29,6 +30,7 @@ PREFS_MAP = {
     "threat_watch": DEFAULT_THREAT_WATCH_PREFS,
     "survival_survey": DEFAULT_SURVIVAL_SURVEY_PREFS,
     "compliance": DEFAULT_COMPLIANCE_PREFS,
+    "scan_cycle": DEFAULT_SCAN_CYCLE_PREFS,
     "monitoring": {"enabled": True, "channels": ["in_app", "email"]},
 }
 

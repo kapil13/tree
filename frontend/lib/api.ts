@@ -523,6 +523,56 @@ export type ScanHistoryResponse = {
   rows: ScanHistoryRow[];
 };
 
+export type TreeScanHistoryRow = {
+  scan_date: string;
+  tree_id: string;
+  tree_code: string;
+  species_text: string | null;
+  project_id: string | null;
+  project_name: string | null;
+  work_area_id: string | null;
+  work_area_name: string | null;
+  ndvi_mean: number | null;
+  ndvi_change_vs_baseline: number | null;
+  cloud_cover_pct: number | null;
+  provider: string | null;
+  presence_confirmed: boolean | null;
+  scene_ids: string[];
+};
+
+export type TreeScanHistoryResponse = {
+  project_id?: string | null;
+  rows: TreeScanHistoryRow[];
+};
+
+export type ScanCycleJob = {
+  job_name: string;
+  label: string;
+  cadence: string;
+  schedule_utc: string;
+  last_run: {
+    status: string;
+    finished_at: string | null;
+    result: Record<string, unknown>;
+    error: string | null;
+  } | null;
+  stale: boolean;
+};
+
+export type ScanCycleResponse = {
+  generated_at: string;
+  registry: Record<string, unknown>;
+  due_within_7_days: number;
+  scheduled_jobs: ScanCycleJob[];
+  recent_runs: Array<{
+    job_name: string;
+    status: string;
+    result: Record<string, unknown>;
+    error: string | null;
+    finished_at: string | null;
+  }>;
+};
+
 export type PlantationSatelliteRecord = {
   id: string;
   fence_id: string;
@@ -1809,6 +1859,24 @@ export const plantingProjects = {
       await api.get<ScanHistoryResponse>("/v1/planting-projects/scan-history", {
         params: { limit },
       })
+    ).data;
+  },
+  async scanCycle() {
+    return (await api.get<ScanCycleResponse>("/v1/planting-projects/scan-cycle")).data;
+  },
+  async treeScanHistoryPortfolio(limit = 96) {
+    return (
+      await api.get<TreeScanHistoryResponse>("/v1/planting-projects/tree-scan-history", {
+        params: { limit },
+      })
+    ).data;
+  },
+  async treeScanHistory(projectId: string, limit = 96) {
+    return (
+      await api.get<TreeScanHistoryResponse>(
+        `/v1/planting-projects/${projectId}/tree-scan-history`,
+        { params: { limit } },
+      )
     ).data;
   },
   async monitoringSummary() {

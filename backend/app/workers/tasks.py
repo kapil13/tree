@@ -574,6 +574,20 @@ def weekly_tree_scan_target_backfill() -> dict:
     return _execute_recorded("weekly_tree_scan_target_backfill", _run)
 
 
+@celery_app.task(name="app.workers.tasks.weekly_scan_cycle_digest")
+def weekly_scan_cycle_digest() -> dict:
+    log.info("worker.weekly_scan_cycle_digest")
+
+    async def _run() -> dict:
+        from app.core.database import AsyncSessionLocal
+        from app.services.monitoring.scan_cycle_digest import run_weekly_scan_cycle_digest
+
+        async with AsyncSessionLocal() as db:
+            return await run_weekly_scan_cycle_digest(db)
+
+    return _execute_recorded("weekly_scan_cycle_digest", _run)
+
+
 @celery_app.task(name="app.workers.tasks.backfill_integrity_fusion")
 def backfill_integrity_fusion(
     project_id: str | None = None,
