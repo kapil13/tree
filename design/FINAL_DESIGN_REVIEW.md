@@ -1,6 +1,6 @@
 # Aranyix Mobile — Final Design Review
 
-**Version:** 2.0  
+**Version:** 3.0  
 **Date:** 2026-09-05  
 **Status:** FINAL HTML PROTOTYPE — awaiting approval  
 **Prototype:** `design/prototypes/index.html`  
@@ -59,11 +59,22 @@ The web app (`frontend/`) and mobile app (`mobile/`) must share the same busines
 - Re-asks program/scheme/project context per tree instead of session inheritance
 - Web blocks scheme users without `?project=` — mobile should match
 
-### Tree registry
-- Text-heavy list; photos underused
-- No attention/status hierarchy for field prioritization
+### Tree registry (v2 prototype issue — fixed in v3)
+- v2 used photo-forward **grid** — inappropriate at 1,000+ trees
+- v3 redesign: **asset-management compact list** with thumbnails, category overview, pagination
+- Designed for server-side search, cursor pagination, virtualized lists in production
 
-### Visual
+### v3 prototype assessment
+
+| Area | v2 state | v3 change |
+|------|----------|-----------|
+| Registry | Photo grid (6 trees) | **1,248-tree scale** with compact rows, 25/page pagination |
+| Registry IA | Gallery-first | **Overview chips** → filtered list → detail |
+| Field | Mini admin (4 action cards) | **Execution layer**: context, nearby alert, tasks, nearby trees, map link |
+| Dashboard | Good command center | Retained; KPI links to registry categories |
+| Registration | Web-aligned context | Retained |
+
+---
 - Generic green SaaS — large radii, green surfaces, decorative cards
 - Does not communicate "forest intelligence"
 
@@ -318,33 +329,85 @@ Before showing any field, ask: **"Is this already known?"**
 
 ---
 
-## 13. Tree Registry strategy
+## 13. Tree Registry strategy (v3 — scalable asset management)
 
-### Information hierarchy (list item)
+### Design principle
 
-1. Photo thumbnail (prominent)
-2. Tree code (mono)
-3. Species
-4. Status: health · sync · verification · needs attention
-5. Context: project / work area
-6. Distance (when sorting by proximity)
+The registry is **asset management at scale**, not a photo gallery.
 
-### Controls
+| Scale | UX approach |
+|-------|-------------|
+| < 50 trees | Compact list still works |
+| 1,000 trees | Pagination + server search + category filters |
+| 10,000+ trees | Virtualized list + cursor pagination + bbox map filter |
 
-- Search: code, species, work area
-- Filter: project, health, sync, verification, needs attention
-- Sort: recent, code, proximity, health
-- View: grid (default) / compact list
+### Overview (top of registry)
 
-### Large datasets
+Interactive category chips with counts:
 
-- Pagination + bbox for map viewport
-- Thumbnail lazy load + cache
-- Virtualized list (implementation)
+- **1,248** All
+- **82** Attention
+- **16** Missing evidence
+- **31** Stale scan
+- **45** Unverified
+- **1,048** Healthy
+
+Tap → filtered registry with result count: *"82 trees match"*
+
+### Compact row hierarchy
+
+```
+[44px thumbnail]  ARX-NH-004821          124m
+                  Neem
+                  NHAI · Ch. 142–148
+                  [Healthy] [Unverified]
+```
+
+Photos are **visual identity** (small thumbnail), not the primary layout.
+
+### Search & filter
+
+- Primary: search bar (ID, species, area, project)
+- Category chips (overview)
+- Sort: recent, tree ID, nearest, health
+- Sheet: additional filters (health, sync, verification)
+- Server-side search/filter in production (`page`, `bbox`, `q` params)
+
+### Pagination model (prototype)
+
+- 25 trees per page (not 1,248 DOM nodes)
+- Prev/Next with "Showing 1–25 of 1,248"
+- Procedural data generation simulates backend scale
+
+### Production requirements
+
+- `TreeListItem.thumbnail_url` for small thumbs
+- Cursor-based pagination API
+- Virtualized `ListView` (Flutter)
+- Lazy image loading + disk cache
+- Offline: cached recent trees subset
 
 ---
 
-## 14. Tree Detail strategy
+## 14. Registry scalability strategy
+
+```
+User opens Registry
+  → Overview stats (from API aggregate)
+  → Optional category filter
+  → Server query (search + filter + sort + page)
+  → Virtualized compact list (25–50 visible rows)
+  → Tap row → Tree detail (full photo)
+```
+
+**Anti-patterns rejected:**
+- Photo card grid at scale
+- Loading all trees client-side
+- Full-size images in list rows
+
+---
+
+## 15. Tree Detail strategy
 
 Progressive disclosure sections:
 
@@ -359,17 +422,28 @@ Not a raw database dump.
 
 ---
 
-## 15. Field strategy
+## 16. Field strategy (v3 — execution layer)
 
-Field tab = **execution layer**:
+Field answers: **"What do I need to do right now?"**
 
-- Register tree (primary)
-- Survival survey
-- Bioacoustic capture
-- Plot visit
-- Registry preview + sync queue
+Not a mini admin panel with four equal action cards.
 
-Optimized for outdoor, one-handed, bright sun, poor connectivity. Sync always visible.
+### Field screen structure
+
+1. **Active context banner** (program → scheme → project)
+2. **Nearest critical alert** → map / alert detail
+3. **Primary CTA:** Register tree in context
+4. **Nearby tasks** (inspect, survey, evidence, verify)
+5. **Nearby trees** (compact rows with distance, tap → detail)
+6. **Map shortcut** in app bar
+7. **Sync status** card
+
+### Field ↔ Map connection
+
+- Nearby trees sorted by proximity
+- Alert card opens map at affected area
+- Tree detail → View on map
+- Map → pin → field inspect
 
 ---
 
@@ -557,7 +631,20 @@ Documented in `ARANYIX_DESIGN_SYSTEM.md`. Summary:
 
 ---
 
-## 29. Unresolved product decisions
+## 31. Product risks
+
+| Risk | Mitigation |
+|------|------------|
+| Registry performance at 10k+ trees | Server pagination, virtualization, thumbnail-only in list |
+| Offline registry subset stale | Show "offline mode · last synced" + queue indicator |
+| Context confusion across projects | Persistent context banner + locked program in project mode |
+| Dashboard overload | Strict hierarchy + progressive disclosure |
+| Web/mobile registration drift | Shared registration-context API contract |
+| Image bandwidth in field | Thumbnails in list; full res only in detail |
+
+---
+
+## 32. Unresolved product decisions
 
 1. **Citizen home** — 4-tab nav vs simplified single-screen?
 2. **Context establishment** — always explicit screen vs auto from last project?

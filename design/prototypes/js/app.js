@@ -17,7 +17,10 @@ const state = {
   offline: false,
   projectFilter: "all",
   treeSearch: "",
-  treeView: "grid",
+  registryCategory: "all",
+  registryPage: 1,
+  registryPageSize: 25,
+  registrySort: "recent",
   treeFilters: { health: "all", sync: "all", verified: "all" },
   mapSheetOpen: false,
   selectedMapPin: null,
@@ -59,29 +62,26 @@ function healthBadge(h) {
 }
 
 function getFilteredTrees() {
-  let trees = [...MOCK_TREES];
-  if (state.projectFilter !== "all") {
-    const proj = MOCK_PROJECTS.find((p) => p.id === state.projectFilter);
-    if (proj) trees = trees.filter((t) => t.project === proj.name);
-  }
-  if (state.treeSearch) {
-    const q = state.treeSearch.toLowerCase();
-    trees = trees.filter(
-      (t) =>
-        t.code.toLowerCase().includes(q) ||
-        t.species.toLowerCase().includes(q) ||
-        t.workArea.toLowerCase().includes(q)
-    );
-  }
-  if (state.treeFilters.health !== "all")
-    trees = trees.filter((t) => t.health === state.treeFilters.health);
-  if (state.treeFilters.sync !== "all")
-    trees = trees.filter((t) => t.sync === state.treeFilters.sync);
-  if (state.treeFilters.verified === "yes")
-    trees = trees.filter((t) => t.verified);
-  if (state.treeFilters.verified === "no")
-    trees = trees.filter((t) => !t.verified);
-  return trees;
+  const result = queryRegistry({
+    search: state.treeSearch,
+    category: state.registryCategory,
+    projectId: state.projectFilter,
+    page: state.registryPage,
+    pageSize: state.registryPageSize,
+    sort: state.registrySort,
+  });
+  return result;
+}
+
+function getRegistryQueryOpts() {
+  return {
+    search: state.treeSearch,
+    category: state.registryCategory,
+    projectId: state.projectFilter,
+    page: state.registryPage,
+    pageSize: state.registryPageSize,
+    sort: state.registrySort,
+  };
 }
 
 function projectChip() {
@@ -291,7 +291,7 @@ function renderHome() {
       <div class="kpi-scroll">
         <div class="kpi-chip" onclick="navigate('registry')"><div class="kpi-chip-value">${d.kpis.totalTrees.toLocaleString()}</div><div class="kpi-chip-label">Trees · ${d.kpis.pctHealthy}% healthy</div></div>
         <div class="kpi-chip" onclick="navigate('alerts')"><div class="kpi-chip-value">${d.kpis.unreadAlerts}</div><div class="kpi-chip-label">Alerts</div></div>
-        <div class="kpi-chip" onclick="navigate('dashboard-attention')"><div class="kpi-chip-value">18</div><div class="kpi-chip-label">Need attention</div></div>
+        <div class="kpi-chip" onclick="openRegistryCategory('attention')"><div class="kpi-chip-value">${d.kpis.needsAttention}</div><div class="kpi-chip-label">Need attention</div></div>
         <div class="kpi-chip" onclick="navigate('reports')"><div class="kpi-chip-value">${d.kpis.evidenceGaps}</div><div class="kpi-chip-label">Evidence gaps</div></div>
         <div class="kpi-chip" onclick="navigate('carbon')"><div class="kpi-chip-value">${(d.kpis.co2Stored / 1000).toFixed(1)}k</div><div class="kpi-chip-label">tCO₂e stored</div></div>
       </div>
@@ -372,22 +372,15 @@ function renderDashboardIntegrity() {
 }
 
 function renderDashboardAttention() {
-  const trees = MOCK_TREES.filter((t) => t.needsAttention);
+  const result = queryRegistry({ category: "attention", page: 1, pageSize: 15 });
   return `
     ${offlineBanner()}
     ${appBar("Trees needing attention", { back: true })}
     <div class="screen-body">
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">${trees.length} trees across ${new Set(trees.map((t) => t.projectId)).size} projects</p>
-      ${trees.map((t) => `
-        <div class="tree-list-item" onclick="openTree('${t.id}')">
-          ${t.photo ? `<img class="tree-list-photo" src="${t.photo}" alt="">` : `<div class="tree-list-photo" style="display:flex;align-items:center;justify-content:center">🌳</div>`}
-          <div class="tree-list-info">
-            <div class="tree-code">${t.code}</div>
-            <div class="tree-species">${t.species}</div>
-            <div style="font-size:12px;color:var(--status-warn)">${t.attentionReason}</div>
-          </div>
-        </div>`).join("")}
-      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="navigateTab('map')">View on map</button>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${result.total} trees across active projects</p>
+      ${result.trees.map((t) => renderCompactRow(t)).join("")}
+      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="openRegistryCategory('attention')">View all in registry</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="navigateTab('map')">View on map</button>
     </div>`;
 }
 
@@ -525,45 +518,38 @@ function renderMapSheet() {
 }
 
 function renderField() {
+  const ctx = getActiveContext();
+  const nearby = queryRegistry({ category: "all", projectId: ctx.project.id, page: 1, pageSize: 3, sort: "proximity" }).trees;
   return `
     ${offlineBanner()}
-    ${appBar("Field", { actions: projectChip() })}
+    ${appBar("Field", { actions: `${projectChip()}<button class="app-bar-action" onclick="navigateTab('map')" title="Map">🗺</button>` })}
     <div class="screen-body">
-      <div class="field-actions">
-        <div class="field-action" onclick="startRegister()">
-          <div class="field-action-icon">🌱</div>
-          <div class="field-action-title">Register tree</div>
-          <div class="field-action-desc">GPS + photos</div>
+      ${contextBanner(ctx, { compact: true })}
+      <div class="priority-card" style="margin-bottom:16px;border-color:#fca5a5" onclick="navigate('alert-detail','a1')">
+        <div class="priority-icon critical">!</div>
+        <div class="priority-body">
+          <div class="priority-title">NDVI drop · 240m NE</div>
+          <div class="priority-sub">Inspect before next registration block</div>
         </div>
-        <div class="field-action" onclick="showToast('Survival survey flow')">
-          <div class="field-action-icon">📋</div>
-          <div class="field-action-title">Survival survey</div>
-          <div class="field-action-desc">Due trees</div>
-        </div>
-        <div class="field-action" onclick="showToast('Bioacoustic capture')">
-          <div class="field-action-icon">🎙</div>
-          <div class="field-action-title">Bioacoustic</div>
-          <div class="field-action-desc">Record & upload</div>
-        </div>
-        <div class="field-action" onclick="showToast('Plot visit checklist')">
-          <div class="field-action-icon">📍</div>
-          <div class="field-action-title">Plot visit</div>
-          <div class="field-action-desc">Monitoring visit</div>
-        </div>
+        <span class="priority-action">Map →</span>
       </div>
-      <div class="section-header">
-        <span class="section-title">Tree registry</span>
-        <button class="section-link" onclick="navigate('registry')">View all ${MOCK_TREES.length}</button>
-      </div>
-      <div class="tree-grid" style="margin-bottom:16px">
-        ${MOCK_TREES.slice(0, 4)
-          .map((t) => renderTreeCard(t))
-          .join("")}
-      </div>
-      <div class="section-header"><span class="section-title">Sync status</span></div>
+      <button class="btn btn-primary btn-block" style="margin-bottom:12px" onclick="startRegister()">Register tree in context</button>
+      <div class="section-header"><span class="section-title">Nearby tasks</span><button class="section-link" onclick="navigate('registry')">All ${REGISTRY_STATS.total}</button></div>
+      ${MOCK_FIELD_TASKS.map((task) => `
+        <div class="priority-card" onclick="handleFieldTask('${task.id}')">
+          <div class="priority-icon ${task.priority === "critical" ? "critical" : task.priority === "high" ? "high" : "medium"}">${task.type === "alert" ? "!" : task.type === "survey" ? "📋" : task.type === "evidence" ? "📷" : "✓"}</div>
+          <div class="priority-body">
+            <div class="priority-title">${task.title}</div>
+            <div class="priority-sub">${task.context}</div>
+          </div>
+          ${ICONS.chevron}
+        </div>`).join("")}
+      <div class="section-header"><span class="section-title">Nearby trees</span><button class="section-link" onclick="navigateTab('map')">Map</button></div>
+      ${nearby.map((t) => renderCompactRow(t, { showDistance: true })).join("")}
+      <div class="section-header"><span class="section-title">Sync</span></div>
       <div class="card card-clickable" onclick="navigate('sync-queue')">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div class="card-title">1 pending · 1 failed</div><div class="card-meta">Last sync 12 min ago</div></div>
+          <div><div class="card-title">1 pending · 1 failed</div><div class="card-meta">Last sync 12 min ago · Wi-Fi</div></div>
           <span class="badge-status badge-warn">↻ Retry</span>
         </div>
       </div>
@@ -571,54 +557,88 @@ function renderField() {
     ${bottomNav()}`;
 }
 
-function renderTreeCard(t) {
-  return `<div class="tree-card" onclick="openTree('${t.id}')">
-    <div class="tree-card-photo">
-      ${t.photo ? `<img src="${t.photo}" alt="" loading="lazy" onclick="event.stopPropagation();openPhotoViewer('${t.photo}')">` : `<div class="no-photo"><span style="font-size:24px">🌳</span><span>No photo</span></div>`}
-      <span class="tree-card-sync sync-${t.sync}">${syncIcon(t.sync)}</span>
+function renderCompactRow(t, opts = {}) {
+  const { showDistance } = opts;
+  const speciesShort = t.species.split("(")[0].trim();
+  return `<div class="registry-row" onclick="openTree('${t.id}')">
+    ${t.photo
+      ? `<img class="registry-thumb" src="${t.photo}" alt="" loading="lazy">`
+      : `<div class="registry-thumb registry-thumb-empty">🌳</div>`}
+    <div class="registry-main">
+      <div class="registry-top">
+        <span class="registry-code">${t.code}</span>
+        ${showDistance ? `<span class="registry-distance">${t.distanceM || "—"}m</span>` : `<span class="registry-distance">${t.lastMonitored || "—"}</span>`}
+      </div>
+      <div class="registry-species">${speciesShort}</div>
+      <div class="registry-meta">${t.project.split(" ")[0]} · ${t.workArea}</div>
+      <div class="registry-status">
+        ${healthBadge(t.health)}
+        ${!t.verified ? '<span class="badge-status badge-warn">Unverified</span>' : ""}
+        ${t.needsAttention ? '<span class="badge-status badge-danger">Attention</span>' : ""}
+        ${t.sync !== "synced" ? `<span class="badge-status ${t.sync === "pending" ? "badge-warn" : "badge-danger"}">${t.sync}</span>` : ""}
+      </div>
     </div>
-    <div class="tree-card-body">
-      <div class="tree-code">${t.code}</div>
-      <div class="tree-species">${t.species}</div>
-      <div class="tree-meta">${healthBadge(t.health)}${t.verified ? '<span class="badge-status badge-ok">Verified</span>' : '<span class="badge-status badge-neutral">Unverified</span>'}</div>
-    </div>
+    ${ICONS.chevron}
   </div>`;
 }
 
-function renderTreeListItem(t) {
-  return `<div class="tree-list-item" onclick="openTree('${t.id}')">
-    ${t.photo ? `<img class="tree-list-photo" src="${t.photo}" alt="">` : `<div class="tree-list-photo" style="display:flex;align-items:center;justify-content:center;font-size:20px">🌳</div>`}
-    <div class="tree-list-info">
-      <div class="tree-code">${t.code}</div>
-      <div class="tree-species">${t.species}</div>
-      <div style="font-size:12px;color:var(--text-secondary)">${t.workArea}</div>
-      <div class="tree-meta" style="margin-top:4px">${healthBadge(t.health)} <span class="badge-status sync-${t.sync === "synced" ? "badge-ok" : t.sync === "pending" ? "badge-warn" : "badge-danger"}">${t.sync}</span></div>
-    </div>
-  </div>`;
+function renderRegistryOverview() {
+  const cats = [
+    { id: "all", label: "All", count: REGISTRY_STATS.total },
+    { id: "attention", label: "Attention", count: REGISTRY_STATS.needsAttention },
+    { id: "missing_evidence", label: "Missing evidence", count: REGISTRY_STATS.missingEvidence },
+    { id: "stale_monitoring", label: "Stale scan", count: REGISTRY_STATS.notRecentlyMonitored },
+    { id: "unverified", label: "Unverified", count: REGISTRY_STATS.unverified },
+    { id: "healthy", label: "Healthy", count: REGISTRY_STATS.healthy },
+  ];
+  return `
+    <div class="registry-overview">
+      <div class="registry-total">${REGISTRY_STATS.total.toLocaleString()} <span>trees</span></div>
+      <div class="registry-categories">
+        ${cats.map((c) => `
+          <button class="registry-cat${state.registryCategory === c.id ? " active" : ""}" onclick="setRegistryCategory('${c.id}')">
+            <span class="registry-cat-count">${c.count}</span>
+            <span class="registry-cat-label">${c.label}</span>
+          </button>`).join("")}
+      </div>
+    </div>`;
 }
 
 function renderRegistry() {
-  const trees = getFilteredTrees();
+  const result = getFilteredTrees();
+  const { trees, total, page, pages } = result;
   return `
     ${offlineBanner()}
     ${appBar("Tree registry", { back: true, actions: projectChip() })}
-    <div class="screen-body">
-      <div class="registry-toolbar">
-        <input class="search-input" placeholder="Search code, species…" value="${state.treeSearch}" oninput="setTreeSearch(this.value)">
-        <button class="filter-btn" onclick="openFilterSheet()" title="Filter">☰</button>
-        <div class="view-toggle">
-          <button class="${state.treeView === "grid" ? "active" : ""}" onclick="setTreeView('grid')">▦</button>
-          <button class="${state.treeView === "list" ? "active" : ""}" onclick="setTreeView('list')">≡</button>
+    <div class="screen-body no-pad-bottom">
+      <div style="padding:0 16px">
+        <div class="registry-toolbar" style="margin-top:8px">
+          <input class="search-input" placeholder="Search ID, species, area…" value="${state.treeSearch}" oninput="setTreeSearch(this.value)">
+          <button class="filter-btn" onclick="openFilterSheet()" title="More filters">☰</button>
+          <select class="registry-sort" onchange="setRegistrySort(this.value)">
+            <option value="recent" ${state.registrySort === "recent" ? "selected" : ""}>Recent</option>
+            <option value="code" ${state.registrySort === "code" ? "selected" : ""}>Tree ID</option>
+            <option value="proximity" ${state.registrySort === "proximity" ? "selected" : ""}>Nearest</option>
+            <option value="health" ${state.registrySort === "health" ? "selected" : ""}>Health</option>
+          </select>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${trees.length} trees</div>
-      ${
-        trees.length === 0
-          ? `<div class="empty-state"><div class="empty-icon">🌳</div><div class="empty-title">No trees found</div><p>Try adjusting filters or search</p></div>`
-          : state.treeView === "grid"
-            ? `<div class="tree-grid">${trees.map((t) => renderTreeCard(t)).join("")}</div>`
-            : trees.map((t) => renderTreeListItem(t)).join("")
-      }
+      ${renderRegistryOverview()}
+      <div class="registry-results-bar">
+        <span><strong>${total.toLocaleString()}</strong> trees match</span>
+        <span>Page ${page} of ${pages}</span>
+      </div>
+      <div class="registry-list">
+        ${trees.length === 0
+          ? `<div class="empty-state"><div class="empty-icon">🌳</div><div class="empty-title">No trees match</div><p>Try a different filter or search term</p></div>`
+          : trees.map((t) => renderCompactRow(t)).join("")}
+      </div>
+      <div class="registry-pagination">
+        <button class="btn btn-secondary btn-sm" onclick="setRegistryPage(${page - 1})" ${page <= 1 ? "disabled" : ""}>← Prev</button>
+        <span class="registry-page-info">Showing ${(page - 1) * state.registryPageSize + 1}–${Math.min(page * state.registryPageSize, total)} of ${total.toLocaleString()}</span>
+        <button class="btn btn-secondary btn-sm" onclick="setRegistryPage(${page + 1})" ${page >= pages ? "disabled" : ""}>Next →</button>
+      </div>
+      <p class="registry-scale-note">Virtualized list in production · server-side search & cursor pagination</p>
     </div>
     <button class="fab" onclick="startRegister()">+</button>`;
 }
@@ -660,9 +680,15 @@ function renderTreeDetail() {
           <div class="timeline-item"><div class="timeline-dot"></div><div><div style="font-weight:500">Verified</div><div style="font-size:12px;color:var(--text-secondary)">15 Mar 2025 · Supervisor review</div></div></div>
           <div class="timeline-item"><div class="timeline-dot"></div><div><div style="font-weight:500">NDVI alert</div><div style="font-size:12px;color:var(--text-secondary)">2h ago · Acute drop detected</div></div></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:20px">
-          <button class="btn btn-primary" style="flex:1" onclick="navigate('map')">View on map</button>
-          <button class="btn btn-secondary" style="flex:1" onclick="showToast('Survival survey')">Survey</button>
+        <div class="detail-section">
+          <div class="section-title" style="margin-bottom:8px">Current state</div>
+          <div class="detail-row"><span class="detail-label">Last monitored</span><span class="detail-value">${t.lastMonitored || "3 days ago"}</span></div>
+          ${t.attentionReason ? `<div class="detail-row"><span class="detail-label">Attention</span><span class="detail-value" style="color:var(--status-warn)">${t.attentionReason}</span></div>` : ""}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1;min-width:120px" onclick="navigateTab('map')">View on map</button>
+          <button class="btn btn-secondary" style="flex:1;min-width:120px" onclick="showToast('Field inspection')">Inspect</button>
+          <button class="btn btn-secondary" style="flex:1;min-width:120px" onclick="showToast('Add evidence')">Add evidence</button>
         </div>
       </div>
     </div>`;
@@ -928,7 +954,7 @@ function renderSyncQueue() {
         <div class="card-meta">Wi-Fi · Auto-sync enabled</div>
         <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="showToast('Syncing…')">Sync now</button>
       </div>
-      ${pending.length ? pending.map((t) => renderTreeListItem(t)).join("") : `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">All synced</div></div>`}
+      ${pending.length ? pending.map((t) => renderCompactRow(t)).join("") : `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">All synced</div></div>`}
     </div>`;
 }
 
@@ -1176,7 +1202,7 @@ function enterApp() {
 }
 
 function openTree(id) {
-  state.selectedTree = MOCK_TREES.find((t) => t.id === id);
+  state.selectedTree = getTreeById(id);
   navigate("tree-detail");
 }
 
@@ -1301,12 +1327,43 @@ function closeMapSheet() {
 
 function setTreeSearch(v) {
   state.treeSearch = v;
+  state.registryPage = 1;
   render();
 }
 
-function setTreeView(v) {
-  state.treeView = v;
+function setRegistryCategory(cat) {
+  state.registryCategory = cat;
+  state.registryPage = 1;
+  if (state.screen !== "registry") navigate("registry");
+  else render();
+}
+
+function openRegistryCategory(cat) {
+  state.registryCategory = cat;
+  state.registryPage = 1;
+  navigate("registry");
+}
+
+function setRegistryPage(p) {
+  const result = queryRegistry(getRegistryQueryOpts());
+  if (p < 1 || p > result.pages) return;
+  state.registryPage = p;
   render();
+}
+
+function setRegistrySort(sort) {
+  state.registrySort = sort;
+  state.registryPage = 1;
+  render();
+}
+
+function handleFieldTask(id) {
+  const task = MOCK_FIELD_TASKS.find((t) => t.id === id);
+  if (!task) return;
+  if (task.type === "alert") navigate("alert-detail", "a1");
+  else if (task.type === "survey") openRegistryCategory("attention");
+  else if (task.type === "evidence") startRegister();
+  else openRegistryCategory("unverified");
 }
 
 function setFilter(key, val) {
