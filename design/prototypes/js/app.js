@@ -30,6 +30,9 @@ const state = {
   photoViewerUrl: null,
   authTab: "email",
   userRole: "supervisor", // supervisor | field_worker | citizen
+  drawerOpen: false,
+  lastTab: "home",
+  selectedBioSession: null,
 };
 
 const ICONS = {
@@ -181,11 +184,12 @@ function bottomNav() {
     { id: "monitor", label: "Monitor", icon: ICONS.monitor, badge: true },
     { id: "more", label: "More", icon: ICONS.more },
   ];
+  const activeTab = state.drawerOpen ? "more" : state.tab;
   return `<nav class="bottom-nav">
     ${tabs
       .map(
         (t) => `
-      <button class="nav-item${state.tab === t.id ? " active" : ""}" onclick="navigateTab('${t.id}')">
+      <button class="nav-item${activeTab === t.id ? " active" : ""}" onclick="${t.id === "more" ? "openDrawer()" : `navigateTab('${t.id}')`}">
         ${t.icon}
         <span>${t.label}</span>
         ${t.badge ? '<span class="nav-badge"></span>' : ""}
@@ -325,6 +329,22 @@ function renderHome() {
           </div>
           <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${p.progressPct}%"></div></div>
         </div>`).join("")}
+
+      <div class="section-header"><span class="section-title">Environmental intelligence</span></div>
+      <div class="integrity-hero" style="margin-bottom:8px;background:linear-gradient(135deg,#0b3d2e,#1a5240);color:white;border:none" onclick="navigate('bioacoustic')">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;opacity:0.8;margin-bottom:4px">Bioacoustic · Biodiversity</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div class="bio-hero-score" style="font-size:28px">${MOCK_BIOACOUSTIC.speciesDetected}</div>
+            <div style="font-size:12px;opacity:0.9">species detected · ${MOCK_BIOACOUSTIC.trend}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;opacity:0.9">
+            Health ${MOCK_BIOACOUSTIC.healthScore}/100<br>${MOCK_BIOACOUSTIC.recordingsThisWeek} recordings this week
+          </div>
+        </div>
+        ${MOCK_BIOACOUSTIC.alert ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(255,255,255,0.12);border-radius:8px;font-size:12px">⚠ ${MOCK_BIOACOUSTIC.alert.title}</div>` : ""}
+        <div style="font-size:11px;margin-top:8px;opacity:0.75">Tap for bioacoustic intelligence →</div>
+      </div>
 
       <div class="section-header"><span class="section-title">Recent activity</span></div>
       ${d.recentActivity.map((a) => `
@@ -537,7 +557,7 @@ function renderField() {
       <div class="section-header"><span class="section-title">Nearby tasks</span><button class="section-link" onclick="navigate('registry')">All ${REGISTRY_STATS.total}</button></div>
       ${MOCK_FIELD_TASKS.map((task) => `
         <div class="priority-card" onclick="handleFieldTask('${task.id}')">
-          <div class="priority-icon ${task.priority === "critical" ? "critical" : task.priority === "high" ? "high" : "medium"}">${task.type === "alert" ? "!" : task.type === "survey" ? "📋" : task.type === "evidence" ? "📷" : "✓"}</div>
+          <div class="priority-icon ${task.priority === "critical" ? "critical" : task.priority === "high" ? "high" : "medium"}">${task.type === "alert" ? "!" : task.type === "survey" ? "📋" : task.type === "evidence" ? "📷" : task.type === "bioacoustic" ? "🎙" : "✓"}</div>
           <div class="priority-body">
             <div class="priority-title">${task.title}</div>
             <div class="priority-sub">${task.context}</div>
@@ -874,43 +894,221 @@ function renderAlertDetail() {
     </div>`;
 }
 
-function renderMore() {
+function renderGlobalDrawer() {
+  const items = [
+    { section: "Workspace", links: [
+      { icon: "🏠", label: "Command center", action: "tab:home" },
+      { icon: "📁", label: "Projects", action: "projects" },
+      { icon: "🌳", label: "Tree registry", action: "registry", badge: REGISTRY_STATS.total.toLocaleString() },
+      { icon: "↻", label: "Field queue & sync", action: "sync-queue" },
+    ]},
+    { section: "Field & map", links: [
+      { icon: "📍", label: "Field", action: "tab:field" },
+      { icon: "🗺", label: "Map", action: "tab:map" },
+    ]},
+    { section: "Intelligence", links: [
+      { icon: "📊", label: "Monitoring", action: "tab:monitor" },
+      { icon: "🎙", label: "Bioacoustic", action: "bioacoustic", badge: MOCK_BIOACOUSTIC.speciesDetected + " spp" },
+      { icon: "🦋", label: "Biodiversity", action: "biodiversity" },
+      { icon: "🔔", label: "Alerts", action: "alerts", badge: "4", alert: true },
+    ]},
+    { section: "Compliance & MRV", links: [
+      { icon: "📋", label: "Evidence", action: "evidence" },
+      { icon: "📄", label: "Reports", action: "reports" },
+      { icon: "✓", label: "MRV status", action: "evidence" },
+    ]},
+    { section: "Carbon & credits", links: [
+      { icon: "🌿", label: "Carbon", action: "carbon" },
+      { icon: "💳", label: "Credits", action: "credits" },
+    ]},
+    { section: "Tools", links: [
+      { icon: "✨", label: "AI Assistant", action: "assistant" },
+    ]},
+    { section: "Account", links: [
+      { icon: "👤", label: "Profile", action: "profile" },
+      { icon: "⚙", label: "Settings", action: "settings" },
+    ]},
+  ];
+  return `
+    <div class="drawer-header">
+      <div class="drawer-user">
+        <div class="drawer-avatar">RK</div>
+        <div>
+          <div class="drawer-user-name">Rajesh Kumar</div>
+          <div class="drawer-user-role">Field Supervisor</div>
+        </div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="drawer-body">
+      ${items.map((sec) => `
+        <div class="drawer-section-title">${sec.section}</div>
+        ${sec.links.map((l) => `
+          <button class="drawer-item" onclick="drawerNav('${l.action}')">
+            <span class="drawer-item-icon">${l.icon}</span>
+            <span>${l.label}</span>
+            ${l.badge ? `<span class="drawer-item-badge${l.alert ? " alert" : ""}">${l.badge}</span>` : ""}
+          </button>`).join("")}
+      `).join("")}
+      <button class="drawer-item" style="color:var(--status-danger)" onclick="drawerNav('welcome')">
+        <span class="drawer-item-icon">↪</span><span>Sign out</span>
+      </button>
+    </div>
+    <div class="drawer-footer">Aranyix · Forest intelligence platform</div>`;
+}
+
+function renderBioacoustic() {
+  const b = MOCK_BIOACOUSTIC;
   return `
     ${offlineBanner()}
-    ${appBar("More")}
+    ${appBar("Bioacoustic", { back: true, actions: `<button class="app-bar-action" onclick="navigate('bioacoustic-capture')" title="Record">🎙</button>` })}
+    <div class="screen-body no-pad">
+      <div class="bio-hero">
+        <div style="font-size:11px;opacity:0.8;text-transform:uppercase;letter-spacing:0.04em">Ecosystem acoustic health</div>
+        <div class="bio-hero-score">${b.healthScore}<span style="font-size:16px;font-weight:400">/100</span></div>
+        <div style="font-size:13px;opacity:0.9">${b.ecosystemLabel} · Shannon ${b.shannonIndex}</div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:12px">
+          <span>${b.speciesDetected} species</span>
+          <span>${b.recordingsTotal} recordings</span>
+          <span>${b.trend}</span>
+        </div>
+      </div>
+      <div style="padding:0 16px">
+        ${b.alert ? `
+        <div class="priority-card" style="margin-bottom:16px" onclick="navigateTab('map')">
+          <div class="priority-icon medium">🎙</div>
+          <div class="priority-body">
+            <div class="priority-title">${b.alert.title}</div>
+            <div class="priority-sub">${b.alert.context}</div>
+          </div>
+          <span class="priority-action">Map →</span>
+        </div>` : ""}
+        <div class="section-header"><span class="section-title">Top species (30d)</span><button class="section-link" onclick="navigate('biodiversity')">Biodiversity →</button></div>
+        ${b.topSpecies.map((s) => `
+          <div class="bio-species-row" onclick="showToast('${s.name} — ${Math.round(s.confidence * 100)}% confidence')">
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${s.name}</div>
+              <div style="font-size:12px;color:var(--text-secondary)">${s.scientific}</div>
+            </div>
+            <span class="badge-status badge-ok">${s.count} detections</span>
+          </div>`).join("")}
+        <div class="section-header"><span class="section-title">Recent sessions</span><button class="section-link" onclick="navigate('bioacoustic-capture')">New recording</button></div>
+        ${b.sessions.map((s) => `
+          <div class="registry-row" onclick="openBioSession('${s.id}')">
+            <div class="registry-thumb" style="display:flex;align-items:center;justify-content:center;background:#e8f0eb">🎙</div>
+            <div class="registry-main">
+              <div class="registry-species">${s.site}</div>
+              <div class="registry-meta">${s.duration} · ${s.species} species · ${s.time}</div>
+              <span class="badge-status ${s.status === "analyzed" ? "badge-ok" : "badge-warn"}">${s.status}</span>
+            </div>
+            ${ICONS.chevron}
+          </div>`).join("")}
+        <div class="section-header"><span class="section-title">Connected intelligence</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="navigateTab('monitor')">Monitoring</button>
+          <button class="btn btn-secondary btn-sm" onclick="navigate('evidence')">Evidence</button>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTab('map')">Map layers</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBioacousticCapture() {
+  const ctx = getActiveContext();
+  return `
+    ${offlineBanner()}
+    ${appBar("Record bioacoustic", { back: true })}
+    <div class="screen-body" style="text-align:center">
+      ${contextBanner(ctx, { compact: true })}
+      <p style="font-size:14px;color:var(--text-secondary);margin:16px 0">Place device near plot centre. Min 10 min for survey-grade analysis.</p>
+      <div class="bio-waveform">${[40,65,30,80,55,70,45,90,35,60,75,50,85,40,70].map((h) => `<span style="height:${h}%"></span>`).join("")}</div>
+      <button class="record-pulse" onclick="showToast('Recording…')">⏺</button>
+      <div style="font-size:13px;color:var(--text-secondary)">Tap to start · GPS locked ±4.2m</div>
+      <div class="card" style="margin-top:24px;text-align:left">
+        <div class="card-title">Session context (inherited)</div>
+        <div class="card-meta">${ctx.project.name} · ${ctx.workArea}</div>
+        <div class="detail-row"><span class="detail-label">Scheme</span><span class="detail-value">${ctx.scheme.name}</span></div>
+      </div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigate('bioacoustic')">Save & analyze</button>
+    </div>`;
+}
+
+function renderBioacousticDetail() {
+  const s = state.selectedBioSession || MOCK_BIOACOUSTIC.sessions[0];
+  return `
+    ${appBar("Session detail", { back: true })}
     <div class="screen-body">
-      <div class="more-section">
-        <div class="more-section-title">Workspace</div>
-        <button class="more-item" onclick="navigate('projects')"><span class="more-item-icon">📁</span> Projects<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="navigate('sync-queue')"><span class="more-item-icon">↻</span> Field queue & sync<span class="more-item-chevron">${ICONS.chevron}</span></button>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">${s.site}</div>
+        <div class="card-meta">${s.duration} · ${s.time} · ${s.status}</div>
       </div>
-      <div class="more-section">
-        <div class="more-section-title">Intelligence</div>
-        <button class="more-item" onclick="navigateTab('monitor')"><span class="more-item-icon">📊</span> Monitoring portfolio<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="navigate('alerts')"><span class="more-item-icon">🔔</span> Alert inbox<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="showToast('Bioacoustic library')"><span class="more-item-icon">🎙</span> Bioacoustic<span class="more-item-chevron">${ICONS.chevron}</span></button>
+      <div class="bio-waveform" style="height:64px">${[30,50,70,40,90,60,80,45,75,55,85,65,50,70,40].map((h) => `<span style="height:${h}%"></span>`).join("")}</div>
+      <div class="section-header"><span class="section-title">Detected species</span></div>
+      ${MOCK_BIOACOUSTIC.topSpecies.slice(0, 3).map((sp) => `
+        <div class="detail-row"><span class="detail-label">${sp.name}</span><span class="detail-value">${Math.round(sp.confidence * 100)}%</span></div>`).join("")}
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigate('biodiversity')">View biodiversity fusion</button>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px" onclick="navigate('evidence')">Add to evidence bundle</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="navigateTab('map')">View on map</button>
+    </div>`;
+}
+
+function renderBiodiversity() {
+  const b = MOCK_BIODIVERSITY;
+  return `
+    ${appBar("Biodiversity", { back: true })}
+    <div class="screen-body">
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-value">${b.taxaRichness}</div><div class="stat-label">Taxa</div></div>
+        <div class="stat-box"><div class="stat-value">${b.shannon}</div><div class="stat-label">Shannon</div></div>
+        <div class="stat-box"><div class="stat-value">${b.fusionScore}</div><div class="stat-label">Fusion score</div></div>
       </div>
-      <div class="more-section">
-        <div class="more-section-title">Compliance & MRV</div>
-        <button class="more-item" onclick="navigate('reports')"><span class="more-item-icon">📄</span> Reports & exports<span class="more-item-chevron">${ICONS.chevron}</span></button>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Fused from bioacoustic (${b.bioacousticRecordings} recordings) + satellite ecosystem (${b.satelliteEcosystem}/100)</p>
+      <div class="section-header"><span class="section-title">Hotspots by work area</span></div>
+      ${b.hotspots.map((h) => `
+        <div class="card card-clickable" style="margin-bottom:8px" onclick="navigateTab('map')">
+          <div style="display:flex;justify-content:space-between">
+            <div class="card-title">${h.area}</div>
+            <span class="badge-status ${h.score >= 75 ? "badge-ok" : "badge-warn"}">${h.score}</span>
+          </div>
+          <div class="card-meta">Trend ${h.trend === "up" ? "↑" : h.trend === "down" ? "↓" : "→"}</div>
+        </div>`).join("")}
+      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="navigate('bioacoustic')">Bioacoustic detail</button>
+    </div>`;
+}
+
+function renderEvidence() {
+  return `
+    ${appBar("Evidence & MRV", { back: true })}
+    <div class="screen-body">
+      <div class="section-title" style="margin-bottom:8px">Evidence pipeline</div>
+      <div class="evidence-pipeline">
+        <div class="evidence-step done">Capture</div><span class="evidence-step-arrow">→</span>
+        <div class="evidence-step done">Evidence</div><span class="evidence-step-arrow">→</span>
+        <div class="evidence-step pending">Verify</div><span class="evidence-step-arrow">→</span>
+        <div class="evidence-step">MRV</div><span class="evidence-step-arrow">→</span>
+        <div class="evidence-step">Report</div>
       </div>
-      <div class="more-section">
-        <div class="more-section-title">Carbon & credits</div>
-        <button class="more-item" onclick="navigate('carbon')"><span class="more-item-icon">🌿</span> Carbon overview<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="navigate('credits')"><span class="more-item-icon">💳</span> Credit ledger<span class="more-item-chevron">${ICONS.chevron}</span></button>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-value">${MOCK_EVIDENCE.verified}</div><div class="stat-label">Verified</div></div>
+        <div class="stat-box"><div class="stat-value">${MOCK_EVIDENCE.pending}</div><div class="stat-label">Pending</div></div>
+        <div class="stat-box"><div class="stat-value">${MOCK_EVIDENCE.complete}</div><div class="stat-label">Complete</div></div>
       </div>
-      <div class="more-section">
-        <div class="more-section-title">Tools</div>
-        <button class="more-item" onclick="navigate('assistant')"><span class="more-item-icon">✨</span> AI Assistant<span class="more-item-chevron">${ICONS.chevron}</span></button>
-      </div>
-      <div class="more-section">
-        <div class="more-section-title">Account</div>
-        <button class="more-item" onclick="navigate('profile')"><span class="more-item-icon">👤</span> Profile<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="navigate('settings')"><span class="more-item-icon">⚙</span> Settings<span class="more-item-chevron">${ICONS.chevron}</span></button>
-        <button class="more-item" onclick="navigate('welcome')" style="color:var(--status-danger)"><span class="more-item-icon">↪</span> Sign out</button>
-      </div>
-    </div>
-    ${bottomNav()}`;
+      <div class="section-header"><span class="section-title">Gaps needing attention</span></div>
+      ${MOCK_EVIDENCE.gaps.map((g) => `
+        <div class="priority-card" onclick="navigate('reports')">
+          <div class="priority-icon medium">📋</div>
+          <div class="priority-body">
+            <div class="priority-title">${g.item}</div>
+            <div class="priority-sub">${g.project}</div>
+          </div>
+          <span class="badge-status badge-warn">${g.status}</span>
+        </div>`).join("")}
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="navigate('reports')">Reports & exports</button>
+    </div>`;
+}
+
+function renderMore() {
+  return renderHome();
 }
 
 function renderProjects() {
@@ -1098,6 +1296,11 @@ const SCREEN_RENDERERS = {
   assistant: renderAssistant,
   profile: renderProfile,
   settings: renderSettings,
+  bioacoustic: renderBioacoustic,
+  "bioacoustic-capture": renderBioacousticCapture,
+  "bioacoustic-detail": renderBioacousticDetail,
+  biodiversity: renderBiodiversity,
+  evidence: renderEvidence,
   empty: renderEmpty,
   loading: renderLoading,
 };
@@ -1129,6 +1332,13 @@ function renderOverlays() {
     if (state.showPhotoViewer && state.photoViewerUrl) {
       photoEl.innerHTML = `<button class="photo-viewer-close" onclick="closePhotoViewer()">×</button><img src="${state.photoViewerUrl}" alt="">`;
     }
+  }
+  const backdrop = document.getElementById("drawer-backdrop");
+  const drawer = document.getElementById("global-drawer");
+  if (backdrop) backdrop.classList.toggle("open", state.drawerOpen);
+  if (drawer) {
+    drawer.classList.toggle("open", state.drawerOpen);
+    drawer.innerHTML = state.drawerOpen ? renderGlobalDrawer() : "";
   }
 }
 
@@ -1174,6 +1384,11 @@ function navigate(screen, param) {
 }
 
 function navigateTab(tab) {
+  if (tab === "more") {
+    openDrawer();
+    return;
+  }
+  state.drawerOpen = false;
   state.tab = tab;
   state.screen = tab;
   state.history = [];
@@ -1360,10 +1575,46 @@ function setRegistrySort(sort) {
 function handleFieldTask(id) {
   const task = MOCK_FIELD_TASKS.find((t) => t.id === id);
   if (!task) return;
+  if (task.type === "register") {
+    startRegister();
+    return;
+  }
+  if (task.type === "bioacoustic") {
+    navigate("bioacoustic-capture");
+    return;
+  }
   if (task.type === "alert") navigate("alert-detail", "a1");
   else if (task.type === "survey") openRegistryCategory("attention");
-  else if (task.type === "evidence") startRegister();
+  else if (task.type === "evidence") navigate("evidence");
   else openRegistryCategory("unverified");
+}
+
+function openDrawer() {
+  state.drawerOpen = true;
+  state.lastTab = state.tab || (TAB_SCREENS.includes(state.screen) ? state.screen : "home");
+  state.tab = "more";
+  render();
+}
+
+function closeDrawer() {
+  if (!state.drawerOpen) return;
+  state.drawerOpen = false;
+  state.tab = state.lastTab || "home";
+  if (TAB_SCREENS.includes(state.tab) && state.tab !== "more") {
+    state.screen = state.tab;
+  }
+  render();
+}
+
+function drawerNav(action) {
+  closeDrawer();
+  if (action.startsWith("tab:")) navigateTab(action.slice(4));
+  else navigate(action);
+}
+
+function openBioSession(id) {
+  state.selectedBioSession = MOCK_BIOACOUSTIC.sessions.find((s) => s.id === id) || MOCK_BIOACOUSTIC.sessions[0];
+  navigate("bioacoustic-detail");
 }
 
 function setFilter(key, val) {
@@ -1445,6 +1696,10 @@ function showToast(msg) {
 }
 
 function jumpTo(screen) {
+  if (screen === "more") {
+    openDrawer();
+    return;
+  }
   if (TAB_SCREENS.includes(screen)) {
     navigateTab(screen);
   } else {
@@ -1469,4 +1724,8 @@ document.addEventListener("DOMContentLoaded", () => {
       render();
     }
   });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.drawerOpen) closeDrawer();
 });
