@@ -9,228 +9,262 @@ import '../dashboard/dashboard_brief.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
-import '../theme.dart';
-import '../widgets/dashboard/dashboard_charts.dart';
-import '../widgets/dashboard/dashboard_map_preview.dart';
-import '../widgets/primary_field_actions.dart';
-import '../widgets/shell_scaffold.dart';
-import '../services/coach_marks.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
+import '../widgets/prototype/prototype_ui.dart';
+import '../widgets/shell_scaffold.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+/// Command center home — matches design/prototypes v4.2 renderHome().
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCoachMark());
-  }
-
-  Future<void> _maybeCoachMark() async {
-    final l10n = AppLocalizations.of(context);
-    if (l10n == null) return;
-    await CoachMarks.showIfNeeded(
-      context: context,
-      key: 'home_dashboard',
-      title: l10n.coachMarkHomeTitle,
-      body: l10n.coachMarkHomeBody,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = sessionController.user;
-
+  Widget build(BuildContext context, WidgetRef ref) {
     final dashAsync = ref.watch(dashboardProvider);
     final alertsAsync = ref.watch(alertsProvider);
     final weatherAsync = ref.watch(weatherProvider);
     final fencesAsync = ref.watch(plantationFencesProvider);
     final userAsync = ref.watch(userProvider);
+    final user = sessionController.user ?? userAsync.valueOrNull;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AranyixColors.forest,
-          onRefresh: () async {
-            ref.invalidate(dashboardProvider);
-            ref.invalidate(alertsProvider);
-            ref.invalidate(weatherProvider);
-            ref.invalidate(plantationFencesProvider);
-            ref.invalidate(treesProvider);
-          },
-          child: dashAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) {
-              if (maybeRedirectUnauthorized(ref, context, e)) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return _errorBody(context, ref, e);
-            },
-            data: (dashboard) {
-              final l10n = AppLocalizations.of(context)!;
-              final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-              final weather = weatherAsync.maybeWhen(data: (d) => d, orElse: () => null);
-              final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-              final user = userAsync.maybeWhen(data: (d) => d, orElse: () => null);
-              final firstName = _firstName(user);
-
-              final health = computeForestHealth(dashboard);
-              final briefLines = buildAiBriefLines(
-                dashboard: dashboard,
-                alerts: alerts,
-                weather: weather,
-              );
-              final priority = pickPriorityAlert(alerts);
-              final metrics = buildQuickMetrics(dashboard: dashboard, weather: weather);
-
-              return CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  const SliverToBoxAdapter(child: OfflineConnectivityBanner()),
-                  const SliverToBoxAdapter(child: PendingSyncBanner()),
-                  SliverToBoxAdapter(
-                    child: _DashboardTopBar(
-                      greeting: firstName != null ? l10n.homeHello(firstName) : null,
-                      projectName: _projectLabel(fences, user, l10n),
-                      onMenu: () => openAppDrawer(context),
-                      onNotifications: () => context.go('/notifications'),
-                      onProfile: () => context.go('/profile'),
-                      onProjectTap: () => _showProjectPicker(context, fences),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        if (firstName != null) ...[
-                          Text(
-                            l10n.homeWelcomeBack,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AranyixColors.onSurfaceMuted,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        PrimaryFieldActions(user: user),
-                        const SizedBox(height: 20),
-                        _ForestHealthHero(
-                          score: health.score,
-                          label: health.label,
-                          trendDelta: health.trendDelta,
-                          onViewDetails: () => context.push('/trees'),
-                        ),
-                        if (canSeeMonitoring(user) || canSeeFieldOps(user) || canSeeReports(user)) ...[
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (canSeeMonitoring(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.monitor_heart_outlined, size: 18),
-                                  label: Text(l10n.homeMonitoringChip),
-                                  onPressed: () => context.go('/monitoring'),
-                                ),
-                              if (canSeeFieldOps(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.construction_outlined, size: 18),
-                                  label: Text(l10n.homeFieldOpsChip),
-                                  onPressed: () => context.go('/field'),
-                                ),
-                              if (canSeeReports(user))
-                                ActionChip(
-                                  avatar: const Icon(Icons.description_outlined, size: 18),
-                                  label: Text(l10n.homeReportsChip),
-                                  onPressed: () => context.push('/reports'),
-                                ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        _AiBriefCard(
-                          lines: briefLines,
-                          onReview: () => context.go('/assistant'),
-                        ),
-                        if (priority != null) ...[
-                          const SizedBox(height: 20),
-                          _PriorityAlertCard(
-                            alert: priority,
-                            onAction: () => context.push('/notifications'),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        DashboardMapPreview(),
-                        const SizedBox(height: 24),
-                        DashboardChartsSection(dashboard: dashboard),
-                        const SizedBox(height: 24),
-                        _QuickSnapshotRow(metrics: metrics),
-                        const SizedBox(height: 24),
-                        _AskAranyixCard(
-                          onTap: () => context.go('/assistant'),
-                          onMic: () => context.go('/assistant'),
-                        ),
-                        if (canSeeFieldProjectsCard(user)) ...[
-                          const SizedBox(height: 16),
-                          Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.assignment_outlined),
-                              title: Text(l10n.homeFieldProjects),
-                              subtitle: Text(l10n.homeFieldProjectsSub),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => context.push('/projects'),
-                            ),
-                          ),
-                        ],
-                      ]),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+      backgroundColor: PrototypeColors.bgApp,
+      appBar: dashAsync.maybeWhen(
+        data: (dashboard) {
+          final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+          final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+          final unread = alerts.where((a) => (a as Map)['is_read'] != true).length;
+          return PrototypeCommandBar(
+            title: 'Command center',
+            projectLabel: _projectLabel(fences, user, l10n),
+            onMenu: () => openAppDrawer(context),
+            onProject: fences.isNotEmpty ? () => _showProjectPicker(context, fences, l10n) : null,
+            alertCount: unread,
+            onAlerts: () => context.go('/notifications'),
+          );
+        },
+        orElse: () => PrototypeCommandBar(
+          title: 'Command center',
+          onMenu: () => openAppDrawer(context),
         ),
       ),
-    );
-  }
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+        color: PrototypeColors.brandCanopy,
+        onRefresh: () async {
+          ref.invalidate(dashboardProvider);
+          ref.invalidate(alertsProvider);
+          ref.invalidate(weatherProvider);
+          ref.invalidate(plantationFencesProvider);
+          ref.invalidate(treesProvider);
+        },
+        child: dashAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) {
+            if (maybeRedirectUnauthorized(ref, context, e)) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => ref.invalidate(dashboardProvider),
+                          child: Text(l10n.retry),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+          data: (dashboard) {
+            final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+            final weather = weatherAsync.maybeWhen(data: (d) => d, orElse: () => null);
+            final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+            final health = computeForestHealth(dashboard);
+            final briefLines = buildAiBriefLines(dashboard: dashboard, alerts: alerts, weather: weather);
+            final priority = pickPriorityAlert(alerts);
+            final kpi = dashboard['kpi'] as Map<String, dynamic>? ?? {};
+            final bio = dashboard['bioacoustic'] as Map<String, dynamic>? ?? {};
+            final trees = (kpi['total_trees'] as num?)?.toInt() ?? 0;
+            final unreadAlerts = alerts.where((a) => (a as Map)['is_read'] != true).length;
+            final attentionCount = alerts
+                .where((a) {
+                  final sev = (a as Map)['severity'] as String? ?? '';
+                  return sev == 'critical' || sev == 'high' || sev == 'moderate';
+                })
+                .length;
+            final species = (bio['total_species_detected'] as num?)?.toInt() ?? 0;
+            final statusLevel = health.score >= 75
+                ? PrototypeStatusLevel.healthy
+                : health.score >= 50
+                    ? PrototypeStatusLevel.attention
+                    : PrototypeStatusLevel.critical;
+            final statusLabel = health.score >= 75 ? 'Portfolio healthy' : health.score >= 50 ? 'Needs attention' : 'Critical signals';
+            final projectName = _projectLabel(fences, user, l10n);
+            final queueAlerts = alerts.where((a) => (a as Map)['is_read'] != true).take(3).toList();
 
-  Widget _errorBody(BuildContext context, WidgetRef ref, Object e) {
-    final l10n = AppLocalizations.of(context)!;
-    return ListView(
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.5,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(apiErrorMessage(e), textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => ref.invalidate(dashboardProvider),
-                    child: Text(l10n.retry),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                const OfflineConnectivityBanner(),
+                const PendingSyncBanner(),
+                PrototypeContextStrip(
+                  project: projectName,
+                  meta: trees > 0 ? '$trees trees registered' : l10n.registerTreePrimarySub,
+                ),
+                PrototypeStatusBanner(
+                  title: statusLabel,
+                  detail: briefLines.isNotEmpty ? briefLines.first : health.label,
+                  score: health.score,
+                  level: statusLevel,
+                  onTap: () => context.go('/monitoring'),
+                ),
+                if (priority != null)
+                  PrototypeNextUpHero(
+                    label: 'Next up',
+                    title: priority.title,
+                    subtitle: priority.zone,
+                    action: 'View →',
+                    onTap: () => context.go('/notifications'),
+                  ),
+                PrototypeSignalStrip(
+                  signals: [
+                    PrototypeSignal(
+                      value: '$unreadAlerts',
+                      label: 'Alerts',
+                      onTap: () => context.go('/notifications'),
+                    ),
+                    PrototypeSignal(
+                      value: '$attentionCount',
+                      label: 'Attention',
+                      onTap: () => context.go('/trees'),
+                    ),
+                    PrototypeSignal(
+                      value: '$trees',
+                      label: 'Trees',
+                      onTap: () => context.go('/trees'),
+                    ),
+                    if (canSeeBioacoustic(user))
+                      PrototypeSignal(
+                        value: '$species',
+                        label: 'Species',
+                        onTap: () => context.go('/bioacoustic'),
+                      )
+                    else
+                      PrototypeSignal(
+                        value: '${(kpi['pct_healthy'] as num?)?.round() ?? 0}%',
+                        label: 'Healthy',
+                        onTap: () => context.go('/trees'),
+                      ),
+                  ],
+                ),
+                PrototypeSectionHeader(
+                  title: 'Queue',
+                  linkLabel: 'Field →',
+                  onLink: () => context.go('/field'),
+                ),
+                if (queueAlerts.isEmpty)
+                  PrototypePriorityCard(
+                    icon: '✓',
+                    title: 'No urgent items',
+                    subtitle: 'Field queue is clear for now',
+                    action: 'Field',
+                    onTap: () => context.go('/field'),
+                  )
+                else
+                  for (final raw in queueAlerts)
+                    PrototypePriorityCard(
+                      icon: '!',
+                      title: (raw as Map)['title'] as String? ?? 'Alert',
+                      subtitle: (raw)['message'] as String? ?? (raw)['severity'] as String? ?? '',
+                      severity: (raw)['severity'] as String? ?? 'medium',
+                      action: 'Open',
+                      onTap: () => context.go('/notifications'),
+                    ),
+                PrototypeSectionHeader(
+                  title: 'Spatial',
+                  linkLabel: 'Map',
+                  onLink: () => context.go('/map'),
+                ),
+                PrototypeMapPreview(
+                  label: '$unreadAlerts alerts · tap to inspect map',
+                  onTap: () => context.go('/map'),
+                ),
+                if (fences.isNotEmpty)
+                  PrototypeConnectedProject(
+                    name: (fences.first as Map)['name'] as String? ?? l10n.projectFallback,
+                    meta: '$trees trees · integrity ${health.score} · ${health.label}',
+                    badge: health.score >= 75 ? 'On track' : 'Review',
+                    badgeOk: health.score >= 75,
+                    onTap: () {
+                      final id = (fences.first as Map)['id'];
+                      if (id != null) context.push('/projects/$id');
+                    },
+                  ),
+                if (canSeeBioacoustic(user) && (bio['total_recordings'] as num? ?? 0) > 0) ...[
+                  Material(
+                    color: PrototypeColors.bgSurface,
+                    borderRadius: BorderRadius.circular(PrototypeRadii.md),
+                    child: InkWell(
+                      onTap: () => context.go('/bioacoustic'),
+                      borderRadius: BorderRadius.circular(PrototypeRadii.md),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: PrototypeColors.border),
+                          borderRadius: BorderRadius.circular(PrototypeRadii.md),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🎙', style: TextStyle(fontSize: 18)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${species > 0 ? '$species species detected' : 'Bioacoustic monitoring active'}',
+                                style: const TextStyle(fontSize: 13, color: PrototypeColors.textSecondary),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, size: 16, color: PrototypeColors.textTertiary),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ),
+                const PrototypeSectionHeader(title: 'Live feed'),
+                for (final raw in alerts.take(3))
+                  PrototypeActivityItem(
+                    title: (raw as Map)['title'] as String? ?? 'Activity',
+                    time: (raw)['created_at'] as String? ?? '',
+                    onTap: () => context.go('/notifications'),
+                  ),
+              ],
+            );
+          },
+        ),
             ),
           ),
-        ),
-      ],
+          if (canAddTrees(user))
+            PrototypeFieldCaptureBar(
+              label: l10n.registerTreeInField,
+              onPressed: () => context.push('/trees/new'),
+            ),
+        ],
+      ),
     );
-  }
-
-  String? _firstName(Map<String, dynamic>? user) {
-    final name = user?['full_name'] as String?;
-    if (name == null || name.isEmpty) return null;
-    return name.split(' ').first;
   }
 
   String _projectLabel(List<dynamic> fences, Map<String, dynamic>? user, AppLocalizations l10n) {
@@ -240,17 +274,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (fences.length == 1) return name;
       return '$name +${fences.length - 1}';
     }
-    return user?['full_name'] as String? ?? l10n.homeAllSites;
+    return user?['organization_name'] as String? ?? l10n.homeAllSites;
   }
 
-  void _showProjectPicker(BuildContext context, List<dynamic> fences) {
-    if (fences.isEmpty) return;
-    final l10n = AppLocalizations.of(context)!;
+  void _showProjectPicker(BuildContext context, List<dynamic> fences, AppLocalizations l10n) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AranyixColors.surfaceContainer,
+      backgroundColor: PrototypeColors.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AranyixRadii.card)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -258,490 +290,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
               child: Text(l10n.projects, style: Theme.of(ctx).textTheme.titleLarge),
             ),
             for (final raw in fences)
               ListTile(
-                leading: const Icon(Icons.forest_outlined, color: AranyixColors.forest),
+                leading: const Icon(Icons.folder_outlined, color: PrototypeColors.brandForest),
                 title: Text((raw as Map<String, dynamic>)['name'] as String? ?? l10n.siteFallback),
                 onTap: () => Navigator.pop(ctx),
               ),
-            const SizedBox(height: 8),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardTopBar extends StatelessWidget {
-  const _DashboardTopBar({
-    this.greeting,
-    required this.projectName,
-    required this.onMenu,
-    required this.onNotifications,
-    required this.onProfile,
-    required this.onProjectTap,
-  });
-
-  final String? greeting;
-  final String projectName;
-  final VoidCallback onMenu;
-  final VoidCallback onNotifications;
-  final VoidCallback onProfile;
-  final VoidCallback onProjectTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: onMenu,
-                icon: const Icon(Icons.menu_rounded),
-                color: AranyixColors.forestDark,
-                tooltip: 'Menu',
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(11),
-                  gradient: const LinearGradient(
-                    colors: [AranyixColors.heroGradientStart, AranyixColors.heroGradientEnd],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Image.asset(
-                  'assets/brand/aranyix-app-icon.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Text(
-                      'A',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Aranyix',
-                style: TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  color: AranyixColors.forestDark,
-                ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: onProjectTap,
-                icon: const Icon(Icons.expand_more, size: 18),
-                label: Text(
-                  projectName,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AranyixColors.onSurfaceMuted,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-              ),
-              IconButton(
-                onPressed: onNotifications,
-                icon: const Icon(Icons.notifications_outlined),
-                color: AranyixColors.forestDark,
-              ),
-              IconButton(
-                onPressed: onProfile,
-                icon: const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: AranyixColors.forestLight,
-                  child: Icon(Icons.person, size: 16, color: AranyixColors.forest),
-                ),
-              ),
-            ],
-          ),
-          if (greeting != null) ...[
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 46),
-              child: Text(
-                greeting!,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AranyixColors.onSurfaceMuted,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ForestHealthHero extends StatelessWidget {
-  const _ForestHealthHero({
-    required this.score,
-    required this.label,
-    required this.trendDelta,
-    required this.onViewDetails,
-  });
-
-  final int score;
-  final String label;
-  final int trendDelta;
-  final VoidCallback onViewDetails;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final trendText = trendDelta >= 0 ? '↑ +$trendDelta since yesterday' : '↓ $trendDelta since yesterday';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AranyixColors.heroGradientStart, AranyixColors.heroGradientEnd],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        boxShadow: [
-          BoxShadow(
-            color: AranyixColors.forest.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.homeForestHealth,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$score',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w300,
-                    ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10, left: 4),
-                child: Text(
-                  '/100',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.homeTrend(trendText),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onViewDetails,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AranyixColors.forestDark,
-              ),
-              child: Text(l10n.viewDetails),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiBriefCard extends StatelessWidget {
-  const _AiBriefCard({required this.lines, required this.onReview});
-
-  final List<String> lines;
-  final VoidCallback onReview;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AranyixColors.forestLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: AranyixColors.forest, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(l10n.homeAiBriefTitle, style: Theme.of(context).textTheme.titleLarge),
-              ],
-            ),
-            const SizedBox(height: 18),
-            for (var i = 0; i < lines.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
-              Text(
-                lines[i],
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(onPressed: onReview, child: Text(l10n.reviewActions)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PriorityAlertCard extends StatelessWidget {
-  const _PriorityAlertCard({required this.alert, required this.onAction});
-
-  final PriorityAlertView alert;
-  final VoidCallback onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AranyixColors.warningContainer,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        border: Border.all(color: AranyixColors.warningBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('🔥', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  alert.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AranyixColors.warningOnContainer,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            alert.zone,
-            style: TextStyle(
-              fontSize: 14,
-              color: AranyixColors.warningOnContainer.withValues(alpha: 0.85),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onAction,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEA580C),
-              ),
-              child: Text(l10n.takeAction),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickSnapshotRow extends StatelessWidget {
-  const _QuickSnapshotRow({required this.metrics});
-
-  final List<QuickMetric> metrics;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(l10n.homeQuickSnapshot, style: Theme.of(context).textTheme.titleMedium),
-        ),
-        SizedBox(
-          height: 108,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: metrics.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => _MetricChip(metric: metrics[i]),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MetricChip extends StatelessWidget {
-  const _MetricChip({required this.metric});
-
-  final QuickMetric metric;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 108,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AranyixColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(metric.emoji, style: const TextStyle(fontSize: 18)),
-          Text(
-            metric.value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  metric.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AranyixColors.onSurfaceMuted),
-                ),
-              ),
-              Text(
-                metric.trend,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: metric.trend == '↑'
-                      ? AranyixColors.forest
-                      : metric.trend == '↓'
-                          ? const Color(0xFF059669)
-                          : AranyixColors.onSurfaceMuted,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AskAranyixCard extends StatelessWidget {
-  const _AskAranyixCard({required this.onTap, required this.onMic});
-
-  final VoidCallback onTap;
-  final VoidCallback onMic;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.homeAskAranyix, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F1),
-                  borderRadius: BorderRadius.circular(AranyixRadii.card),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.askAnythingForest,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AranyixColors.onSurfaceMuted,
-                            ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: onMic,
-                      icon: const Icon(Icons.mic_none_rounded, color: AranyixColors.forest),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

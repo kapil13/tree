@@ -8,7 +8,7 @@ import '../providers.dart';
 import '../nav_groups.dart';
 import '../auth_session.dart';
 import '../session.dart';
-import '../theme.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import 'app_drawer.dart';
 import 'shell_scaffold.dart';
 
@@ -68,23 +68,31 @@ class AppShell extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     final destinations = navDestinationsFor(user);
-    final showFab = canAddTrees(user) && showFieldFabOnRoute(location);
+    final showFab = canAddTrees(user) &&
+        showFieldFabOnRoute(location) &&
+        location != '/home' &&
+        location != '/field';
 
     final selectedIndex = destinations.indexWhere((d) => location.startsWith(d.path));
     final currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
 
     return Scaffold(
-      backgroundColor: AranyixColors.surface,
+      backgroundColor: PrototypeColors.bgApp,
       drawer: AppDrawer(currentLocation: location),
       body: child,
       floatingActionButton: showFab ? ShellRegisterFab(location: location) : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AranyixColors.surfaceElevated,
-          border: Border(top: BorderSide(color: AranyixColors.border)),
+          color: PrototypeColors.bgSurface,
+          border: Border(top: BorderSide(color: PrototypeColors.border)),
         ),
         child: NavigationBar(
+          height: 64,
+          elevation: 0,
+          backgroundColor: PrototypeColors.bgSurface,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: const Color(0xFFE8F5EC),
           selectedIndex: currentIndex.clamp(0, destinations.length - 1),
           onDestinationSelected: (index) {
             final dest = destinations[index];

@@ -12,7 +12,7 @@ abstract final class AranyixColors {
   static const forestLight = Color(0xFFE8F5EC);
   static const forestMuted = Color(0xFF6FCF97);
   static const leaf = Color(0xFF8FDB6E);
-  static const surface = Color(0xFFF4F7F4);
+  static const surface = Color(0xFFF7F8F6);
   static const surfaceElevated = Color(0xFFFFFFFF);
   static const surfaceContainer = Color(0xFFFFFFFF);
   static const surfaceTint = Color(0xFFEEF5F0);
@@ -225,59 +225,59 @@ ThemeData get byotLightTheme {
 }
 
 TextTheme _buildTextTheme() {
-  final base = GoogleFonts.plusJakartaSansTextTheme();
+  final base = GoogleFonts.dmSansTextTheme();
   return base.copyWith(
-    headlineLarge: GoogleFonts.plusJakartaSans(
+    headlineLarge: GoogleFonts.dmSans(
       fontSize: 40,
       fontWeight: FontWeight.w700,
       letterSpacing: -1.2,
       height: 1.05,
       color: AranyixColors.onSurface,
     ),
-    headlineMedium: GoogleFonts.plusJakartaSans(
+    headlineMedium: GoogleFonts.dmSans(
       fontSize: 28,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.6,
       height: 1.15,
       color: AranyixColors.onSurface,
     ),
-    headlineSmall: GoogleFonts.plusJakartaSans(
+    headlineSmall: GoogleFonts.dmSans(
       fontSize: 22,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.4,
       color: AranyixColors.onSurface,
     ),
-    titleLarge: GoogleFonts.plusJakartaSans(
+    titleLarge: GoogleFonts.dmSans(
       fontSize: 18,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.2,
       color: AranyixColors.onSurface,
     ),
-    titleMedium: GoogleFonts.plusJakartaSans(
+    titleMedium: GoogleFonts.dmSans(
       fontSize: 15,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.1,
       color: AranyixColors.onSurface,
     ),
-    bodyLarge: GoogleFonts.plusJakartaSans(
+    bodyLarge: GoogleFonts.dmSans(
       fontSize: 16,
       fontWeight: FontWeight.w400,
       height: 1.5,
       color: const Color(0xFF334155),
     ),
-    bodyMedium: GoogleFonts.plusJakartaSans(
+    bodyMedium: GoogleFonts.dmSans(
       fontSize: 14,
       fontWeight: FontWeight.w400,
       height: 1.45,
       color: AranyixColors.onSurfaceMuted,
     ),
-    bodySmall: GoogleFonts.plusJakartaSans(
+    bodySmall: GoogleFonts.dmSans(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       height: 1.35,
       color: AranyixColors.onSurfaceMuted,
     ),
-    labelLarge: GoogleFonts.plusJakartaSans(
+    labelLarge: GoogleFonts.dmSans(
       fontSize: 13,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.1,
