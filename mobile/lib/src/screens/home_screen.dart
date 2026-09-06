@@ -17,7 +17,6 @@ import '../widgets/shell_scaffold.dart';
 import '../services/coach_marks.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
-import 'field_worker_home_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -47,9 +46,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = sessionController.user;
-    if (isFieldWorkerHome(user)) {
-      return const FieldWorkerHomeScreen();
-    }
 
     final dashAsync = ref.watch(dashboardProvider);
     final alertsAsync = ref.watch(alertsProvider);
@@ -146,7 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ActionChip(
                                   avatar: const Icon(Icons.construction_outlined, size: 18),
                                   label: Text(l10n.homeFieldOpsChip),
-                                  onPressed: () => context.push('/field-ops'),
+                                  onPressed: () => context.go('/field'),
                                 ),
                               if (canSeeReports(user))
                                 ActionChip(

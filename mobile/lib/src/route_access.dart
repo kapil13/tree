@@ -12,7 +12,8 @@ const _routeRules = [
   _RouteRule('/trees/new', 'can_write'),
   _RouteRule('/projects', ['professional', 'field_supervisor', 'field_worker']),
   _RouteRule('/bioacoustic', 'professional'),
-  _RouteRule('/field-ops', ['professional', 'field_supervisor', 'field_worker'], excludeViewers: true),
+  _RouteRule('/field', 'can_write'),
+  _RouteRule('/field-ops', 'can_write'),
   _RouteRule('/monitoring', ['professional', 'field_supervisor']),
   _RouteRule('/map/draw', 'can_write'),
   _RouteRule('/reports', ['professional', 'field_supervisor']),
@@ -50,8 +51,8 @@ String routeAccessDeniedMessage(String path) {
   if (path.startsWith('/bioacoustic')) {
     return 'Bioacoustic monitoring requires a professional program.';
   }
-  if (path.startsWith('/field-ops')) {
-    return 'Field operations are limited to field teams and program leads.';
+  if (path.startsWith('/field-ops') || path.startsWith('/field')) {
+    return 'Field workspace requires write access.';
   }
   if (path.startsWith('/monitoring')) {
     return 'Monitoring is limited to supervisors and program members.';

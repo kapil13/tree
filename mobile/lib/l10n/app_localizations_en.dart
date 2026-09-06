@@ -45,6 +45,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldOps => 'Field ops';
 
   @override
+  String get navField => 'Field';
+
+  @override
+  String get navBio => 'Bio';
+
+  @override
   String get shareTreeQr => 'Share tree QR';
 
   @override
@@ -168,11 +174,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Programs, tree registry, map, and field work';
 
   @override
+  String get navSectionWorkspace => 'Workspace';
+
+  @override
+  String get navSectionWorkspaceDesc =>
+      'Projects, tree registry, and field queue';
+
+  @override
   String get navSectionIntelligence => 'Monitoring & analysis';
 
   @override
   String get navSectionIntelligenceDesc =>
       'Satellite, biodiversity, and alerts';
+
+  @override
+  String get navSectionCompliance => 'Compliance & MRV';
+
+  @override
+  String get navSectionComplianceDesc => 'Reports and evidence exports';
+
+  @override
+  String get navSectionCarbon => 'Carbon & credits';
+
+  @override
+  String get navSectionTools => 'Tools';
 
   @override
   String get navSectionReports => 'Reports & evidence';
@@ -182,6 +207,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navSectionAccount => 'Account';
+
+  @override
+  String get navFieldQueue => 'Field queue & sync';
 
   @override
   String get navBioacoustic => 'Bioacoustic';
@@ -1418,6 +1446,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewAllProjects => 'View all projects';
+
+  @override
+  String get viewAll => 'View all';
+
+  @override
+  String get noProjectsAssigned => 'No projects assigned yet.';
 
   @override
   String get registerTreeInField => 'Register a tree';

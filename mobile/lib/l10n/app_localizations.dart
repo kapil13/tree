@@ -170,6 +170,18 @@ abstract class AppLocalizations {
   /// **'Field ops'**
   String get fieldOps;
 
+  /// No description provided for @navField.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get navField;
+
+  /// No description provided for @navBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get navBio;
+
   /// No description provided for @shareTreeQr.
   ///
   /// In en, this message translates to:
@@ -374,6 +386,18 @@ abstract class AppLocalizations {
   /// **'Programs, tree registry, map, and field work'**
   String get navSectionPlantationDesc;
 
+  /// No description provided for @navSectionWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get navSectionWorkspace;
+
+  /// No description provided for @navSectionWorkspaceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects, tree registry, and field queue'**
+  String get navSectionWorkspaceDesc;
+
   /// No description provided for @navSectionIntelligence.
   ///
   /// In en, this message translates to:
@@ -385,6 +409,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Satellite, biodiversity, and alerts'**
   String get navSectionIntelligenceDesc;
+
+  /// No description provided for @navSectionCompliance.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance & MRV'**
+  String get navSectionCompliance;
+
+  /// No description provided for @navSectionComplianceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports and evidence exports'**
+  String get navSectionComplianceDesc;
+
+  /// No description provided for @navSectionCarbon.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon & credits'**
+  String get navSectionCarbon;
+
+  /// No description provided for @navSectionTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get navSectionTools;
 
   /// No description provided for @navSectionReports.
   ///
@@ -403,6 +451,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get navSectionAccount;
+
+  /// No description provided for @navFieldQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Field queue & sync'**
+  String get navFieldQueue;
 
   /// No description provided for @navBioacoustic.
   ///
@@ -2689,6 +2743,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View all projects'**
   String get viewAllProjects;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAll;
+
+  /// No description provided for @noProjectsAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects assigned yet.'**
+  String get noProjectsAssigned;
 
   /// No description provided for @registerTreeInField.
   ///

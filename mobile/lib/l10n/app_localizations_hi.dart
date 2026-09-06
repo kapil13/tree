@@ -45,6 +45,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fieldOps => 'फील्ड कार्य';
 
   @override
+  String get navField => 'फील्ड';
+
+  @override
+  String get navBio => 'जैव';
+
+  @override
   String get shareTreeQr => 'पेड़ QR साझा करें';
 
   @override
@@ -166,10 +172,28 @@ class AppLocalizationsHi extends AppLocalizations {
       'कार्यक्रम, पेड़ पंजी, मानचित्र और फील्ड कार्य';
 
   @override
+  String get navSectionWorkspace => 'कार्यक्षेत्र';
+
+  @override
+  String get navSectionWorkspaceDesc => 'परियोजनाएँ, पेड़ पंजी और फील्ड कतार';
+
+  @override
   String get navSectionIntelligence => 'निगरानी और विश्लेषण';
 
   @override
   String get navSectionIntelligenceDesc => 'उपग्रह, जैव विविधता और अलर्ट';
+
+  @override
+  String get navSectionCompliance => 'अनुपालन और MRV';
+
+  @override
+  String get navSectionComplianceDesc => 'रिपोर्ट और प्रमाण निर्यात';
+
+  @override
+  String get navSectionCarbon => 'कार्बन और क्रेडिट';
+
+  @override
+  String get navSectionTools => 'उपकरण';
 
   @override
   String get navSectionReports => 'रिपोर्ट और प्रमाण';
@@ -179,6 +203,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get navSectionAccount => 'खाता';
+
+  @override
+  String get navFieldQueue => 'फील्ड कतार और सिंक';
 
   @override
   String get navBioacoustic => 'जैव ध्वनि';
@@ -1415,6 +1442,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get viewAllProjects => 'सभी परियोजनाएँ देखें';
+
+  @override
+  String get viewAll => 'सभी देखें';
+
+  @override
+  String get noProjectsAssigned => 'अभी कोई परियोजना असाइन नहीं।';
 
   @override
   String get registerTreeInField => 'पेड़ पंजीकृत करें';
