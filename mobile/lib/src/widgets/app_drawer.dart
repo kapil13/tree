@@ -17,9 +17,15 @@ class AppDrawer extends ConsumerWidget {
 
   String _label(AppLocalizations l10n, String key) {
     return switch (key) {
-      'navDashboard' => l10n.navDashboard,
-      'navSectionPlantation' => l10n.navSectionPlantation,
-      'navSectionPlantationDesc' => l10n.navSectionPlantationDesc,
+      'navField' => l10n.navField,
+      'navFieldQueue' => l10n.navFieldQueue,
+      'navBio' => l10n.navBio,
+      'navSectionWorkspace' => l10n.navSectionWorkspace,
+      'navSectionWorkspaceDesc' => l10n.navSectionWorkspaceDesc,
+      'navSectionCompliance' => l10n.navSectionCompliance,
+      'navSectionComplianceDesc' => l10n.navSectionComplianceDesc,
+      'navSectionCarbon' => l10n.navSectionCarbon,
+      'navSectionTools' => l10n.navSectionTools,
       'navSectionIntelligence' => l10n.navSectionIntelligence,
       'navSectionIntelligenceDesc' => l10n.navSectionIntelligenceDesc,
       'navSectionReports' => l10n.navSectionReports,
@@ -35,7 +41,6 @@ class AppDrawer extends ConsumerWidget {
       'trees' => l10n.trees,
       'map' => l10n.map,
       'fieldOps' => l10n.fieldOps,
-      'monitoring' => l10n.monitoring,
       'profile' => l10n.profile,
       _ => key,
     };
@@ -200,7 +205,7 @@ class AppDrawer extends ConsumerWidget {
             ),
             if (canAddTrees(user))
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
@@ -208,18 +213,6 @@ class AppDrawer extends ConsumerWidget {
                   },
                   icon: const Icon(Icons.add_circle_outline),
                   label: Text(l10n.registerTreePrimary),
-                ),
-              ),
-            if (canSeeBioacoustic(user))
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    context.push('/bioacoustic');
-                  },
-                  icon: const Icon(Icons.graphic_eq),
-                  label: Text(l10n.navBioacoustic),
                 ),
               ),
           ],

@@ -119,45 +119,29 @@ bool canSeeCarbon(UserMap? user) => user != null;
 
 bool canSeeAssistant(UserMap? user) => user != null;
 
-/// Bottom-nav path+label descriptors by role shell.
-/// Icons are applied in [AppShell]; labels resolved via [navDestinationLabelKey].
-///
-/// Role shells:
-/// - Field worker: Home, Trees, Map, Alerts (`/notifications`)
-/// - Supervisor: Home, Map, Alerts, Trees
-/// - Exec/professional: Home, Monitoring (`/monitoring`), Projects, Alerts
-/// - Default/citizen: Home, Trees, Map, Profile
+/// Whether the Field bottom-tab is visible (capture & verify hub).
+bool canSeeFieldTab(UserMap? user) {
+  if (user == null || isOrgViewer(user)) return false;
+  return true;
+}
+
+/// Bottom-nav path+label descriptors — v4.2: Home · Map · Field · Monitor · Bio.
+/// Monitor and Bio are role-gated; icons applied in [AppShell].
 List<NavDestinationDesc> navDestinationsFor(UserMap? user) {
-  if (isFieldWorkerHome(user)) {
-    return const [
-      NavDestinationDesc('/home', 'home'),
-      NavDestinationDesc('/trees', 'trees'),
-      NavDestinationDesc('/map', 'map'),
-      NavDestinationDesc('/notifications', 'navAlerts'),
-    ];
-  }
-  if (isSupervisor(user)) {
-    return const [
-      NavDestinationDesc('/home', 'home'),
-      NavDestinationDesc('/map', 'map'),
-      NavDestinationDesc('/notifications', 'navAlerts'),
-      NavDestinationDesc('/trees', 'trees'),
-    ];
-  }
-  if (canSeeExecutiveHome(user) || userHasProfessionalAccess(user)) {
-    return const [
-      NavDestinationDesc('/home', 'home'),
-      NavDestinationDesc('/monitoring', 'monitoring'),
-      NavDestinationDesc('/projects', 'projects'),
-      NavDestinationDesc('/notifications', 'navAlerts'),
-    ];
-  }
-  return const [
-    NavDestinationDesc('/home', 'home'),
-    NavDestinationDesc('/trees', 'trees'),
-    NavDestinationDesc('/map', 'map'),
-    NavDestinationDesc('/profile', 'profile'),
+  final destinations = <NavDestinationDesc>[
+    const NavDestinationDesc('/home', 'home'),
+    const NavDestinationDesc('/map', 'map'),
   ];
+  if (canSeeFieldTab(user)) {
+    destinations.add(const NavDestinationDesc('/field', 'navField'));
+  }
+  if (canSeeMonitoring(user)) {
+    destinations.add(const NavDestinationDesc('/monitoring', 'monitoring'));
+  }
+  if (canSeeBioacoustic(user)) {
+    destinations.add(const NavDestinationDesc('/bioacoustic', 'navBio'));
+  }
+  return destinations;
 }
 
 class NavDestinationDesc {

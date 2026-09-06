@@ -91,7 +91,7 @@ class MonitoringScreen extends ConsumerWidget {
                       ActionChip(
                         avatar: const Icon(Icons.construction_outlined, size: 18),
                         label: Text(l10n.fieldOps),
-                        onPressed: () => context.push('/field-ops'),
+                        onPressed: () => context.go('/field'),
                       ),
                   ],
                 ),

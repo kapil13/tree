@@ -284,7 +284,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           if (showFieldOps)
             IconButton(
               tooltip: l10n.fieldOps,
-              onPressed: () => context.push('/field-ops'),
+              onPressed: () => context.go('/field'),
               icon: const Icon(Icons.construction_outlined),
             ),
           if (_mode != _DrawMode.none) ...[

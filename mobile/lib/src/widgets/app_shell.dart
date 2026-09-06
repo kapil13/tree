@@ -17,7 +17,9 @@ String navDestinationLabel(AppLocalizations l10n, String labelKey) {
     'home' => l10n.home,
     'trees' => l10n.trees,
     'map' => l10n.map,
+    'navField' => l10n.navField,
     'monitoring' => l10n.monitoring,
+    'navBio' => l10n.navBio,
     'projects' => l10n.projects,
     'profile' => l10n.profile,
     'navAlerts' => l10n.navAlerts,
@@ -38,10 +40,14 @@ class AppShell extends ConsumerWidget {
         return selected ? Icons.park_rounded : Icons.park_outlined;
       case '/map':
         return selected ? Icons.map_rounded : Icons.map_outlined;
+      case '/field':
+        return selected ? Icons.construction_rounded : Icons.construction_outlined;
       case '/notifications':
         return selected ? Icons.notifications_rounded : Icons.notifications_outlined;
       case '/monitoring':
         return selected ? Icons.monitor_heart_rounded : Icons.monitor_heart_outlined;
+      case '/bioacoustic':
+        return selected ? Icons.graphic_eq_rounded : Icons.graphic_eq;
       case '/projects':
         return selected ? Icons.assignment_rounded : Icons.assignment_outlined;
       case '/profile':

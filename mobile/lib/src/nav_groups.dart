@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'nav_access.dart';
 
-/// Sidebar navigation groups mirroring web `frontend/components/sidebar.tsx`.
+/// Sidebar navigation groups — v4.2 drawer (bottom tabs excluded).
 class MobileNavItem {
   const MobileNavItem({
     required this.route,
@@ -39,21 +39,9 @@ class MobileNavGroup {
 
 const mobileNavGroups = [
   MobileNavGroup(
-    id: 'overview',
-    hideHeader: true,
-    items: [
-      MobileNavItem(
-        route: '/home',
-        labelKey: 'navDashboard',
-        icon: Icons.dashboard_outlined,
-        exact: true,
-      ),
-    ],
-  ),
-  MobileNavGroup(
-    id: 'plantation',
-    labelKey: 'navSectionPlantation',
-    descKey: 'navSectionPlantationDesc',
+    id: 'workspace',
+    labelKey: 'navSectionWorkspace',
+    descKey: 'navSectionWorkspaceDesc',
     items: [
       MobileNavItem(
         route: '/projects',
@@ -68,15 +56,10 @@ const mobileNavGroups = [
         exact: true,
       ),
       MobileNavItem(
-        route: '/map',
-        labelKey: 'map',
-        icon: Icons.map_outlined,
-      ),
-      MobileNavItem(
-        route: '/field-ops',
-        labelKey: 'fieldOps',
-        icon: Icons.construction_outlined,
-        audience: ['professional', 'field_supervisor', 'field_worker'],
+        route: '/field',
+        labelKey: 'navFieldQueue',
+        icon: Icons.sync_outlined,
+        audience: 'can_write',
         excludeViewers: true,
       ),
     ],
@@ -87,18 +70,6 @@ const mobileNavGroups = [
     descKey: 'navSectionIntelligenceDesc',
     items: [
       MobileNavItem(
-        route: '/monitoring',
-        labelKey: 'monitoring',
-        icon: Icons.monitor_heart_outlined,
-        audience: ['professional', 'field_supervisor'],
-      ),
-      MobileNavItem(
-        route: '/bioacoustic',
-        labelKey: 'navBioacoustic',
-        icon: Icons.graphic_eq,
-        audience: 'professional',
-      ),
-      MobileNavItem(
         route: '/notifications',
         labelKey: 'navAlerts',
         icon: Icons.notifications_outlined,
@@ -106,9 +77,9 @@ const mobileNavGroups = [
     ],
   ),
   MobileNavGroup(
-    id: 'reports',
-    labelKey: 'navSectionReports',
-    descKey: 'navSectionReportsDesc',
+    id: 'compliance',
+    labelKey: 'navSectionCompliance',
+    descKey: 'navSectionComplianceDesc',
     items: [
       MobileNavItem(
         route: '/reports',
@@ -116,11 +87,12 @@ const mobileNavGroups = [
         icon: Icons.description_outlined,
         audience: ['professional', 'field_supervisor'],
       ),
-      MobileNavItem(
-        route: '/assistant',
-        labelKey: 'navAssistant',
-        icon: Icons.auto_awesome,
-      ),
+    ],
+  ),
+  MobileNavGroup(
+    id: 'carbon',
+    labelKey: 'navSectionCarbon',
+    items: [
       MobileNavItem(
         route: '/carbon',
         labelKey: 'navCarbon',
@@ -131,6 +103,17 @@ const mobileNavGroups = [
         labelKey: 'navCredits',
         icon: Icons.account_balance_outlined,
         audience: ['professional', 'field_supervisor'],
+      ),
+    ],
+  ),
+  MobileNavGroup(
+    id: 'tools',
+    labelKey: 'navSectionTools',
+    items: [
+      MobileNavItem(
+        route: '/assistant',
+        labelKey: 'navAssistant',
+        icon: Icons.auto_awesome,
       ),
     ],
   ),
@@ -179,16 +162,17 @@ bool mobileNavItemActive(String location, MobileNavItem item) {
     return location == '/trees' ||
         (location.startsWith('/trees/') && !location.startsWith('/trees/new'));
   }
+  if (item.route == '/field') {
+    return location == '/field' || location == '/field-ops';
+  }
   return location == item.route || location.startsWith('${item.route}/');
 }
 
 /// Routes where the register-tree FAB should appear.
 bool showFieldFabOnRoute(String location) {
   return location == '/home' ||
+      location == '/field' ||
       location == '/trees' ||
       location == '/map' ||
-      location == '/projects' ||
-      location == '/monitoring' ||
-      location == '/notifications' ||
-      location == '/profile';
+      location == '/monitoring';
 }

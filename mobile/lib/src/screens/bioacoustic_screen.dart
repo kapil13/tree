@@ -14,7 +14,6 @@ import '../offline/bioacoustic_sync.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
-import '../widgets/stack_route_scaffold.dart';
 
 class BioacousticScreen extends ConsumerStatefulWidget {
   const BioacousticScreen({super.key});
@@ -283,8 +282,8 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
     final sync = ref.watch(bioacousticSyncProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    return stackRouteScaffold(
-      location: '/bioacoustic',
+    return Scaffold(
+      backgroundColor: AranyixColors.surface,
       appBar: ShellTopBar(
         title: l10n.navBioacoustic,
         actions: [
