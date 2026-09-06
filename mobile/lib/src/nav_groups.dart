@@ -62,6 +62,13 @@ const mobileNavGroups = [
         audience: 'can_write',
         excludeViewers: true,
       ),
+      MobileNavItem(
+        route: '/sync-queue',
+        labelKey: 'navSyncQueue',
+        icon: Icons.cloud_sync_outlined,
+        audience: 'can_write',
+        excludeViewers: true,
+      ),
     ],
   ),
   MobileNavGroup(
@@ -74,6 +81,12 @@ const mobileNavGroups = [
         labelKey: 'navAlerts',
         icon: Icons.notifications_outlined,
       ),
+      MobileNavItem(
+        route: '/biodiversity',
+        labelKey: 'reportTypeBiodiversity',
+        icon: Icons.hive_outlined,
+        audience: 'professional',
+      ),
     ],
   ),
   MobileNavGroup(
@@ -81,6 +94,12 @@ const mobileNavGroups = [
     labelKey: 'navSectionCompliance',
     descKey: 'navSectionComplianceDesc',
     items: [
+      MobileNavItem(
+        route: '/evidence',
+        labelKey: 'navEvidence',
+        icon: Icons.fact_check_outlined,
+        audience: ['professional', 'field_supervisor'],
+      ),
       MobileNavItem(
         route: '/reports',
         labelKey: 'navReports',

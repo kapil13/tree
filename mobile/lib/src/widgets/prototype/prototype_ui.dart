@@ -717,3 +717,693 @@ abstract final class PrototypeRadii {
   static const md = 10.0;
   static const lg = 14.0;
 }
+
+// ── Registry & list patterns ──────────────────────────────────────────────
+
+class PrototypeEmptyState extends StatelessWidget {
+  const PrototypeEmptyState({super.key, required this.icon, required this.title, this.subtitle, this.action});
+
+  final String icon;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 48)),
+          const SizedBox(height: 12),
+          Text(title, textAlign: TextAlign.center, style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(subtitle!, textAlign: TextAlign.center, style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary)),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    );
+  }
+}
+
+class PrototypeStatusBadge extends StatelessWidget {
+  const PrototypeStatusBadge({super.key, required this.label, this.variant = 'neutral'});
+
+  final String label;
+  final String variant; // ok, warn, danger, info, neutral
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = switch (variant) {
+      'ok' => (const Color(0xFFDCFCE7), PrototypeColors.brandCanopy),
+      'warn' => (const Color(0xFFFEF3C7), const Color(0xFFB45309)),
+      'danger' => (const Color(0xFFFEE2E2), PrototypeColors.statusDanger),
+      'info' => (const Color(0xFFDBEAFE), const Color(0xFF1D4ED8)),
+      _ => (PrototypeColors.bgSubtle, PrototypeColors.textSecondary),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: colors.$1, borderRadius: BorderRadius.circular(PrototypeRadii.sm)),
+      child: Text(label, style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w600, color: colors.$2)),
+    );
+  }
+}
+
+String prototypeHealthVariant(String? health) {
+  switch (health?.toLowerCase()) {
+    case 'healthy':
+    case 'good':
+      return 'ok';
+    case 'stressed':
+    case 'moderate':
+      return 'warn';
+    case 'dead':
+    case 'critical':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+class PrototypeHealthBadge extends StatelessWidget {
+  const PrototypeHealthBadge({super.key, required this.health});
+
+  final String? health;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = health?.replaceAll('_', ' ') ?? 'unknown';
+    return PrototypeStatusBadge(label: label, variant: prototypeHealthVariant(health));
+  }
+}
+
+class PrototypeFilterChip extends StatelessWidget {
+  const PrototypeFilterChip({super.key, required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? PrototypeColors.brandForest : PrototypeColors.bgSurface,
+      borderRadius: BorderRadius.circular(PrototypeRadii.sm),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(PrototypeRadii.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PrototypeRadii.sm),
+            border: Border.all(color: selected ? PrototypeColors.brandForest : PrototypeColors.border),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: selected ? Colors.white : PrototypeColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeRegistryCategory extends StatelessWidget {
+  const PrototypeRegistryCategory({
+    super.key,
+    required this.count,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int count;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? PrototypeColors.brandForest : PrototypeColors.bgSurface,
+      borderRadius: BorderRadius.circular(PrototypeRadii.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(PrototypeRadii.md),
+        child: Container(
+          width: 88,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PrototypeRadii.md),
+            border: Border.all(color: selected ? PrototypeColors.brandForest : PrototypeColors.border),
+          ),
+          child: Column(
+            children: [
+              Text(
+                count >= 1000 ? '${(count / 1000).toStringAsFixed(1)}k' : '$count',
+                style: GoogleFonts.dmSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : PrototypeColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 10,
+                  color: selected ? Colors.white.withValues(alpha: 0.9) : PrototypeColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeRegistryRow extends StatelessWidget {
+  const PrototypeRegistryRow({
+    super.key,
+    required this.code,
+    required this.species,
+    required this.meta,
+    required this.health,
+    this.imageUrl,
+    this.badges = const [],
+    this.trailing,
+    this.onTap,
+  });
+
+  final String code;
+  final String species;
+  final String meta;
+  final String? health;
+  final String? imageUrl;
+  final List<Widget> badges;
+  final String? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: PrototypeColors.bgSurface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              _thumb(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(code, style: GoogleFonts.ibmPlexMono(fontSize: 12, fontWeight: FontWeight.w600)),
+                        const Spacer(),
+                        if (trailing != null)
+                          Text(trailing!, style: GoogleFonts.dmSans(fontSize: 11, color: PrototypeColors.textTertiary)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(species, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+                    Text(meta, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.dmSans(fontSize: 11, color: PrototypeColors.textSecondary)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        PrototypeHealthBadge(health: health),
+                        ...badges,
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: PrototypeColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _thumb() {
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(PrototypeRadii.sm),
+        child: Image.network(imageUrl!, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _emptyThumb()),
+      );
+    }
+    return _emptyThumb();
+  }
+
+  Widget _emptyThumb() {
+    return Container(
+      width: 48,
+      height: 48,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: PrototypeColors.bgSubtle,
+        borderRadius: BorderRadius.circular(PrototypeRadii.sm),
+        border: Border.all(color: PrototypeColors.border),
+      ),
+      child: const Text('🌳', style: TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+class PrototypeMonitorCard extends StatelessWidget {
+  const PrototypeMonitorCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.actionHint,
+    required this.severity,
+    this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String actionHint;
+  final String severity;
+  final VoidCallback? onTap;
+
+  Color _stripe() {
+    return switch (severity) {
+      'critical' => PrototypeColors.statusDanger,
+      'high' => const Color(0xFFEA580C),
+      'moderate' => const Color(0xFFD97706),
+      _ => PrototypeColors.brandCanopy,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: PrototypeColors.bgSurface,
+      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+            border: Border.all(color: PrototypeColors.border),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 4, decoration: BoxDecoration(color: _stripe(), borderRadius: const BorderRadius.horizontal(left: Radius.circular(PrototypeRadii.lg)))),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary)),
+                      const SizedBox(height: 6),
+                      Text('$actionHint →', style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600, color: PrototypeColors.brandCanopy)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeAlertItem extends StatelessWidget {
+  const PrototypeAlertItem({
+    super.key,
+    required this.title,
+    required this.detail,
+    required this.time,
+    required this.severity,
+    this.onTap,
+  });
+
+  final String title;
+  final String detail;
+  final String time;
+  final String severity;
+  final VoidCallback? onTap;
+
+  Color _stripe() {
+    return switch (severity) {
+      'critical' => PrototypeColors.statusDanger,
+      'high' => const Color(0xFFEA580C),
+      'moderate' => const Color(0xFFD97706),
+      _ => PrototypeColors.brandCanopy,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: PrototypeColors.bgSurface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 4, height: 56, decoration: BoxDecoration(color: _stripe(), borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(detail, style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
+                    const SizedBox(height: 4),
+                    Text(time, style: GoogleFonts.dmSans(fontSize: 11, color: PrototypeColors.textTertiary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 18, color: PrototypeColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeNdviRow extends StatelessWidget {
+  const PrototypeNdviRow({
+    super.key,
+    required this.site,
+    required this.ndvi,
+    required this.meta,
+    required this.actionLabel,
+    this.onTap,
+  });
+
+  final String site;
+  final double? ndvi;
+  final String meta;
+  final String actionLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = ndvi ?? 0;
+    final pct = (value * 100).clamp(0, 100).toInt();
+    final fillClass = value >= 0.55 ? PrototypeColors.brandCanopy : value >= 0.45 ? const Color(0xFFD97706) : PrototypeColors.statusDanger;
+    final badgeVariant = actionLabel.toLowerCase().contains('no') || actionLabel.toLowerCase() == 'ok' ? 'ok' : 'warn';
+
+    return Material(
+      color: PrototypeColors.bgSurface,
+      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+            border: Border.all(color: PrototypeColors.border),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(site, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(meta, style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: pct / 100,
+                        minHeight: 6,
+                        backgroundColor: PrototypeColors.bgSubtle,
+                        color: fillClass,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              PrototypeStatusBadge(label: badgeVariant == 'ok' ? 'OK' : 'Act', variant: badgeVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeActionRail extends StatelessWidget {
+  const PrototypeActionRail({super.key, required this.actions});
+
+  final List<({String label, VoidCallback? onTap, bool primary})> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final a in actions)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: OutlinedButton(
+                onPressed: a.onTap,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: a.primary ? Colors.white : PrototypeColors.textPrimary,
+                  backgroundColor: a.primary ? PrototypeColors.brandForest : PrototypeColors.bgSurface,
+                  side: BorderSide(color: a.primary ? PrototypeColors.brandForest : PrototypeColors.border),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(PrototypeRadii.md)),
+                ),
+                child: Text(a.label, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class PrototypeTimelineItem extends StatelessWidget {
+  const PrototypeTimelineItem({super.key, required this.title, required this.subtitle, this.warn = false});
+
+  final String title;
+  final String subtitle;
+  final bool warn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 4, right: 10),
+            decoration: BoxDecoration(
+              color: warn ? const Color(0xFFD97706) : PrototypeColors.brandCanopy,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(subtitle, style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PrototypeBioHero extends StatelessWidget {
+  const PrototypeBioHero({
+    super.key,
+    required this.score,
+    required this.label,
+    required this.speciesCount,
+    required this.recordingsCount,
+    this.shannon,
+  });
+
+  final int score;
+  final String label;
+  final int speciesCount;
+  final int recordingsCount;
+  final String? shannon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0B3D2E), Color(0xFF15803D)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ECOSYSTEM ACOUSTIC HEALTH',
+            style: GoogleFonts.dmSans(fontSize: 11, letterSpacing: 0.5, color: Colors.white70),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('$score', style: GoogleFonts.ibmPlexMono(fontSize: 48, fontWeight: FontWeight.w700, color: Colors.white)),
+              Text('/100', style: GoogleFonts.dmSans(fontSize: 16, color: Colors.white70)),
+            ],
+          ),
+          Text(label, style: GoogleFonts.dmSans(fontSize: 13, color: Colors.white.withValues(alpha: 0.9))),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text('$speciesCount species', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+              const SizedBox(width: 16),
+              Text('$recordingsCount recordings', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+              if (shannon != null) ...[
+                const SizedBox(width: 16),
+                Text('Shannon $shannon', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PrototypeEvidencePipeline extends StatelessWidget {
+  const PrototypeEvidencePipeline({super.key, this.activeStep = 2});
+
+  final int activeStep;
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = ['Capture', 'Evidence', 'Verify', 'MRV', 'Report'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < steps.length; i++) ...[
+            _step(steps[i], i < activeStep ? 'done' : i == activeStep ? 'pending' : 'future'),
+            if (i < steps.length - 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text('→', style: GoogleFonts.dmSans(color: PrototypeColors.textTertiary)),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _step(String label, String state) {
+    final bg = switch (state) {
+      'done' => const Color(0xFFDCFCE7),
+      'pending' => const Color(0xFFFEF3C7),
+      _ => PrototypeColors.bgSubtle,
+    };
+    final fg = switch (state) {
+      'done' => PrototypeColors.brandCanopy,
+      'pending' => const Color(0xFFB45309),
+      _ => PrototypeColors.textTertiary,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(PrototypeRadii.sm)),
+      child: Text(label, style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: fg)),
+    );
+  }
+}
+
+class PrototypeStatBox extends StatelessWidget {
+  const PrototypeStatBox({super.key, required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(
+          color: PrototypeColors.bgSurface,
+          borderRadius: BorderRadius.circular(PrototypeRadii.md),
+          border: Border.all(color: PrototypeColors.border),
+        ),
+        child: Column(
+          children: [
+            Text(value, style: GoogleFonts.dmSans(fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(label, textAlign: TextAlign.center, style: GoogleFonts.dmSans(fontSize: 11, color: PrototypeColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PrototypeBackBar extends StatelessWidget implements PreferredSizeWidget {
+  const PrototypeBackBar({super.key, required this.title, this.actions});
+
+  final String title;
+  final List<Widget>? actions;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: PrototypeColors.bgApp,
+      foregroundColor: PrototypeColors.textPrimary,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      title: Text(title, style: GoogleFonts.dmSans(fontSize: 17, fontWeight: FontWeight.w600)),
+      actions: actions,
+    );
+  }
+}

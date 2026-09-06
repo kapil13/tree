@@ -34,6 +34,10 @@ import 'screens/carbon_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/credits_screen.dart';
 import 'screens/survival_survey_screen.dart';
+import 'screens/sync_queue_screen.dart';
+import 'screens/alert_detail_screen.dart';
+import 'screens/evidence_screen.dart';
+import 'screens/biodiversity_screen.dart';
 import 'widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -174,6 +178,13 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/profile/edit', builder: (_, __) => const ProfileEditScreen()),
+      GoRoute(path: '/sync-queue', builder: (_, __) => const SyncQueueScreen()),
+      GoRoute(
+        path: '/alerts/:id',
+        builder: (_, s) => AlertDetailScreen(alertId: s.pathParameters['id']!),
+      ),
+      GoRoute(path: '/evidence', builder: (_, __) => const EvidenceScreen()),
+      GoRoute(path: '/biodiversity', builder: (_, __) => const BiodiversityScreen()),
     ],
   );
 });

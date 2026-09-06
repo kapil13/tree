@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../nav_access.dart';
 import '../offline/tree_registration_queue.dart';
@@ -142,7 +143,9 @@ class PendingSyncBanner extends ConsumerWidget {
         if (pending == 0 && !treeSync.syncing && !bioSync.syncing) {
           return const SizedBox.shrink();
         }
-        return Container(
+        return InkWell(
+          onTap: () => context.push('/sync-queue'),
+          child: Container(
           width: double.infinity,
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -169,6 +172,7 @@ class PendingSyncBanner extends ConsumerWidget {
               ),
             ],
           ),
+        ),
         );
       },
     );

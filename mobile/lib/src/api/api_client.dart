@@ -481,12 +481,31 @@ class ApiClient {
     int pageSize = 100,
     String? bbox,
   }) async {
+    final result = await listTreesPage(page: page, pageSize: pageSize, bbox: bbox);
+    return result.items;
+  }
+
+  Future<({List<dynamic> items, int total, int page, int pageSize})> listTreesPage({
+    int page = 1,
+    int pageSize = 50,
+    String? bbox,
+    String? health,
+    String? projectId,
+    String? workAreaId,
+  }) async {
     final params = <String, dynamic>{'page': page, 'page_size': pageSize};
-    if (bbox != null && bbox.isNotEmpty) {
-      params['bbox'] = bbox;
-    }
+    if (bbox != null && bbox.isNotEmpty) params['bbox'] = bbox;
+    if (health != null && health.isNotEmpty) params['health'] = health;
+    if (projectId != null && projectId.isNotEmpty) params['project_id'] = projectId;
+    if (workAreaId != null && workAreaId.isNotEmpty) params['work_area_id'] = workAreaId;
     final r = await _dio.get('/trees', queryParameters: params);
-    return List<dynamic>.from(r.data['items'] ?? []);
+    final data = r.data as Map<String, dynamic>;
+    return (
+      items: List<dynamic>.from(data['items'] ?? []),
+      total: (data['total'] as num?)?.toInt() ?? 0,
+      page: (data['page'] as num?)?.toInt() ?? page,
+      pageSize: (data['page_size'] as num?)?.toInt() ?? pageSize,
+    );
   }
 
   Future<Map<String, dynamic>> getTree(String id) async =>

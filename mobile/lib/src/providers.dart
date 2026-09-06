@@ -101,6 +101,11 @@ final bioacousticRecordingsProvider = FutureProvider.autoDispose((ref) async {
   return api.listBioacousticRecordings();
 });
 
+final bioacousticSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.bioacousticSummary();
+});
+
 final plantationFencesProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.listPlantationFences();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,6 +14,7 @@ import '../services/analytics_service.dart';
 import '../session.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
+import '../widgets/prototype/prototype_ui.dart';
 
 class TreeDetailScreen extends ConsumerStatefulWidget {
   const TreeDetailScreen({super.key, required this.id});
@@ -174,9 +176,21 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
     final blockers = _auditBlockers(risk);
     return stackRouteScaffold(
       location: '/trees/${widget.id}',
-      appBar: ShellTopBar(title: t?['species_text'] ?? l10n.treeFallback, menuWithBack: true),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4), shape: BoxShape.circle),
+            child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+          ),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy))
           : _error != null
               ? Center(
                   child: Padding(
@@ -186,160 +200,327 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
+                        FilledButton(
+                          onPressed: _load,
+                          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
+                          child: Text(l10n.retry),
+                        ),
                       ],
                     ),
                   ),
                 )
               : ListView(
-                  padding: const EdgeInsets.all(16),
                   children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(t!['public_code'], style: const TextStyle(fontFamily: 'monospace')),
-                            const SizedBox(height: 8),
-                            _row(l10n.healthLabel, _str(t['current_health'])),
-                            _row(l10n.carbonLabel, '${t['current_carbon_kg']} kg'),
-                            _row(l10n.dbhCmLabel, '${t['current_dbh_cm'] ?? '—'} cm'),
-                            _row(l10n.heightMLabel, '${t['current_height_m'] ?? '—'} m'),
-                            _row(l10n.satelliteLabel, t['satellite_verified'] == true ? '✓' : '—'),
-                            if (t['verification_status'] != null)
-                              _row('Verification', _str(t['verification_status']).replaceAll('_', ' ')),
-                            if (risk?['fusion_score'] != null)
-                              _row('Fusion score', '${risk!['fusion_score']}'),
-                            if (risk?['credit_eligible'] != null)
-                              _row(
-                                'Credit eligible',
-                                risk!['credit_eligible'] == true ? 'Yes' : 'No',
-                              ),
-                            if (risk?['regeotag_mismatch'] == true)
-                              _row('Integrity flag', 'Re-geotag mismatch'),
+                    _hero(t!),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                        _stateSummary(t, risk, satellite),
+                        const SizedBox(height: 14),
+                        PrototypeActionRail(
+                          actions: [
+                            (label: 'Map', onTap: () => context.go('/map'), primary: true),
+                            (label: 'Inspect', onTap: () => context.push('/trees/${widget.id}/survival'), primary: false),
+                            (label: 'Evidence', onTap: () => context.push('/evidence'), primary: false),
+                            (label: 'Monitor', onTap: () => context.go('/monitoring'), primary: false),
                           ],
                         ),
-                      ),
-                    ),
-                    if (blockers.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Audit-ready blockers',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              ...blockers.map(
-                                (b) => Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('• '),
-                                      Expanded(child: Text(_auditBlockerLabel(b))),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 12),
+                        _locationChip(t),
+                        if (blockers.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _auditBlockersCard(blockers),
+                        ],
+                        if (satellite != null) ...[
+                          const SizedBox(height: 16),
+                          _satelliteCard(l10n, satellite!),
+                        ],
+                        const SizedBox(height: 16),
+                        _timelineSection(t, satellite),
+                        const SizedBox(height: 16),
+                        _qrSection(t),
+                        const SizedBox(height: 16),
+                        if (canWriteInApp(sessionController.user)) ...[
+                          OutlinedButton.icon(
+                            onPressed: () => context.push('/trees/${widget.id}/survival'),
+                            icon: const Icon(Icons.my_location),
+                            label: Text(l10n.survivalRegeotag),
                           ),
-                        ),
-                      ),
-                    ],
-                    if (satellite != null) ...[
-                      const SizedBox(height: 12),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.satelliteHealth,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              _row(l10n.riskLabel, _str(satellite!['risk_level'])),
-                              _row(l10n.statusLabel, _str(satellite!['health_status'])),
-                              if (satellite!['ndvi_current'] != null)
-                                _row(l10n.ndviLabel, _str(satellite!['ndvi_current'])),
-                              const SizedBox(height: 8),
-                              Text(_str(satellite!['summary'])),
-                              if (satellite!['llm_narrative'] != null) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  satellite!['llm_narrative'] as String,
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ],
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: photoBusy ? null : _addFollowUpPhoto,
+                            icon: const Icon(Icons.add_a_photo_outlined),
+                            label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
                           ),
+                          const SizedBox(height: 8),
+                        ],
+                        FilledButton.icon(
+                          onPressed: analyzing ? null : _analyze,
+                          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest, minimumSize: const Size.fromHeight(48)),
+                          icon: const Icon(Icons.auto_awesome),
+                          label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: FutureBuilder(
-                          future: ref.read(apiClientProvider.future),
-                          builder: (context, snap) {
-                            final code = t['public_code'] as String;
-                            final url = snap.hasData
-                                ? snap.data!.publicTreeUrl(code)
-                                : 'https://aranyix.tech/p/$code';
-                            final shareL10n = AppLocalizations.of(context)!;
-                            return Column(
-                              children: [
-                                QrImageView(data: url, size: 180),
-                                const SizedBox(height: 12),
-                                OutlinedButton.icon(
-                                  onPressed: () => _shareTree(url),
-                                  icon: const Icon(Icons.share_outlined),
-                                  label: Text(shareL10n.shareTreeQr),
-                                ),
-                              ],
-                            );
-                          },
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: satelliteBusy ? null : _satelliteHealth,
+                          icon: const Icon(Icons.satellite_alt),
+                          label: Text(satelliteBusy ? l10n.checkingSatellite : l10n.runSatelliteHealth),
                         ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (canWriteInApp(sessionController.user)) ...[
-                      OutlinedButton.icon(
-                        onPressed: () => context.push('/trees/${widget.id}/survival'),
-                        icon: const Icon(Icons.my_location),
-                        label: Text(l10n.survivalRegeotag),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: photoBusy ? null : _addFollowUpPhoto,
-                        icon: const Icon(Icons.add_a_photo_outlined),
-                        label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    FilledButton.icon(
-                      onPressed: analyzing ? null : _analyze,
-                      icon: const Icon(Icons.auto_awesome),
-                      label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: satelliteBusy ? null : _satelliteHealth,
-                      icon: const Icon(Icons.satellite_alt),
-                      label: Text(satelliteBusy ? l10n.checkingSatellite : l10n.runSatelliteHealth),
                     ),
                   ],
                 ),
     );
   }
+
+  Widget _hero(Map<String, dynamic> t) {
+    final images = (t['images'] as List?) ?? [];
+    final firstImage = images.isNotEmpty ? (images.first as Map)['url'] as String? : null;
+    return SizedBox(
+      height: 240,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (firstImage != null)
+            Image.network(firstImage, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _heroPlaceholder())
+          else
+            _heroPlaceholder(),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t['public_code'] as String? ?? '—',
+                  style: GoogleFonts.ibmPlexMono(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+                Text(
+                  t['species_text'] as String? ?? 'Tree',
+                  style: GoogleFonts.dmSans(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroPlaceholder() {
+    return Container(
+      color: PrototypeColors.bgSubtle,
+      alignment: Alignment.center,
+      child: const Text('🌳', style: TextStyle(fontSize: 64)),
+    );
+  }
+
+  Widget _stateSummary(Map<String, dynamic> t, Map<String, dynamic>? risk, Map<String, dynamic>? sat) {
+    final ndvi = sat?['ndvi_current'];
+    final summary = sat?['summary'] as String?;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PrototypeColors.bgSurface,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        border: Border.all(color: PrototypeColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              PrototypeHealthBadge(health: t['current_health'] as String?),
+              if (t['satellite_verified'] == true)
+                const PrototypeStatusBadge(label: 'Verified', variant: 'ok')
+              else
+                const PrototypeStatusBadge(label: 'Unverified', variant: 'warn'),
+              if (t['verification_status'] != null)
+                PrototypeStatusBadge(label: _str(t['verification_status']).replaceAll('_', ' '), variant: 'info'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summary ?? 'Carbon ${t['current_carbon_kg']} kg · DBH ${t['current_dbh_cm'] ?? '—'} cm'
+            '${ndvi != null ? ' · NDVI $ndvi' : ''}',
+            style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
+          ),
+          if (risk?['fusion_score'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Fusion score ${risk!['fusion_score']}',
+                style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _locationChip(Map<String, dynamic> t) {
+    final lat = (t['latitude'] as num?)?.toDouble();
+    final lon = (t['longitude'] as num?)?.toDouble();
+    return Material(
+      color: PrototypeColors.bgSurface,
+      borderRadius: BorderRadius.circular(PrototypeRadii.md),
+      child: InkWell(
+        onTap: () => context.go('/map'),
+        borderRadius: BorderRadius.circular(PrototypeRadii.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(PrototypeRadii.md),
+            border: Border.all(color: PrototypeColors.border),
+          ),
+          child: Row(
+            children: [
+              const Text('📍', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t['work_area_name'] as String? ?? 'Field location',
+                  style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ),
+              if (lat != null && lon != null)
+                Text(
+                  '${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)}',
+                  style: GoogleFonts.ibmPlexMono(fontSize: 10, color: PrototypeColors.textTertiary),
+                ),
+              const Icon(Icons.chevron_right, size: 16, color: PrototypeColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _auditBlockersCard(List<String> blockers) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Audit-ready blockers', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          for (final b in blockers)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text('• ${_auditBlockerLabel(b)}', style: GoogleFonts.dmSans(fontSize: 13)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _satelliteCard(AppLocalizations l10n, Map<String, dynamic> sat) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PrototypeColors.bgSurface,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        border: Border.all(color: PrototypeColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.satelliteHealth, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _row(l10n.riskLabel, _str(sat['risk_level'])),
+          _row(l10n.statusLabel, _str(sat['health_status'])),
+          if (sat['ndvi_current'] != null) _row(l10n.ndviLabel, _str(sat['ndvi_current'])),
+          const SizedBox(height: 8),
+          Text(_str(sat['summary']), style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _timelineSection(Map<String, dynamic> t, Map<String, dynamic>? sat) {
+    final created = t['created_at'] as String?;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Timeline', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        if (created != null)
+          PrototypeTimelineItem(
+            title: 'Registered · ${_shortDate(created)}',
+            subtitle: 'Field capture',
+          ),
+        if (t['satellite_verified'] == true)
+          const PrototypeTimelineItem(title: 'Satellite verified', subtitle: 'Remote sensing check passed'),
+        if (sat?['risk_level'] != null && sat!['risk_level'] != 'low')
+          PrototypeTimelineItem(
+            title: 'NDVI signal · ${sat['risk_level']}',
+            subtitle: _str(sat['summary']),
+            warn: true,
+          ),
+      ],
+    );
+  }
+
+  Widget _qrSection(Map<String, dynamic> t) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: PrototypeColors.bgSurface,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        border: Border.all(color: PrototypeColors.border),
+      ),
+      child: FutureBuilder(
+        future: ref.read(apiClientProvider.future),
+        builder: (context, snap) {
+          final code = t['public_code'] as String;
+          final url = snap.hasData ? snap.data!.publicTreeUrl(code) : 'https://aranyix.tech/p/$code';
+          final shareL10n = AppLocalizations.of(context)!;
+          return Column(
+            children: [
+              QrImageView(data: url, size: 160),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _shareTree(url),
+                icon: const Icon(Icons.share_outlined),
+                label: Text(shareL10n.shareTreeQr),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _shortDate(String iso) {
+    try {
+      final dt = DateTime.parse(iso);
+      return '${dt.day} ${_month(dt.month)}';
+    } catch (_) {
+      return iso.length > 10 ? iso.substring(0, 10) : iso;
+    }
+  }
+
+  String _month(int m) => const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
 
   Widget _row(String label, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),

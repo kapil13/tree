@@ -8,8 +8,8 @@ import '../l10n/alert_labels.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
-import '../theme.dart';
-import '../widgets/sar_monitoring_cards.dart';
+import '../widgets/offline_connectivity_banner.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 
 class MonitoringScreen extends ConsumerWidget {
@@ -32,13 +32,24 @@ class MonitoringScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
     final summaryAsync = ref.watch(monitoringSummaryProvider);
+    final alertsAsync = ref.watch(alertsProvider);
+    final bioSummaryAsync = ref.watch(bioacousticSummaryProvider);
     final user = sessionController.user;
+    final unread = alertsAsync.maybeWhen(
+      data: (items) => items.where((a) => (a as Map)['is_read'] != true).length,
+      orElse: () => 0,
+    );
 
     return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: ShellTopBar(title: l10n.monitoring),
+      backgroundColor: PrototypeColors.bgApp,
+      appBar: PrototypeCommandBar(
+        title: l10n.monitoring,
+        onMenu: () => openAppDrawer(context),
+        alertCount: unread,
+        onAlerts: () => context.go('/notifications'),
+      ),
       body: summaryAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -49,6 +60,7 @@ class MonitoringScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(monitoringSummaryProvider),
+                  style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
                   child: Text(l10n.retry),
                 ),
               ],
@@ -56,174 +68,116 @@ class MonitoringScreen extends ConsumerWidget {
           ),
         ),
         data: (summary) {
-          final stale = summary['stale_satellite_work_areas'] ?? 0;
-          final sarAtRisk = summary['sar_at_risk_work_areas'] ?? 0;
-          final sarAvg = summary['sar_avg_forest_integrity'];
-          final sarDivergent = summary['sar_divergent_work_areas'] ?? 0;
-          final sarAligned = summary['sar_aligned_work_areas'] ?? 0;
-          final sarAlerts = Map<String, dynamic>.from(summary['unread_sar_alerts_by_kind'] ?? {});
-          final alertsByKind = Map<String, dynamic>.from(summary['unread_alerts_by_kind'] ?? {});
           final workAreas = List<dynamic>.from(summary['work_area_monitoring'] ?? []);
-          final fieldTasks = List<dynamic>.from(summary['open_sar_field_verifications'] ?? []);
           final highlightFenceId = GoRouterState.of(context).uri.queryParameters['fence'];
+          final decisionAlerts = alertsAsync.maybeWhen(
+            data: (items) => items
+                .where((a) {
+                  final m = a as Map;
+                  final sev = m['severity'] as String? ?? '';
+                  return sev == 'critical' || sev == 'high' || m['is_read'] != true;
+                })
+                .take(3)
+                .toList(),
+            orElse: () => <dynamic>[],
+          );
 
           return RefreshIndicator(
-            color: AranyixColors.forest,
-            onRefresh: () async => ref.invalidate(monitoringSummaryProvider),
+            color: PrototypeColors.brandCanopy,
+            onRefresh: () async {
+              ref.invalidate(monitoringSummaryProvider);
+              ref.invalidate(alertsProvider);
+              ref.invalidate(bioacousticSummaryProvider);
+            },
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ActionChip(
-                      avatar: const Icon(Icons.map_outlined, size: 18),
-                      label: Text(l10n.map),
-                      onPressed: () => context.go('/map'),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.notifications_outlined, size: 18),
-                      label: Text(l10n.navAlerts),
-                      onPressed: () => context.go('/notifications'),
-                    ),
-                    if (canSeeFieldOps(user))
-                      ActionChip(
-                        avatar: const Icon(Icons.construction_outlined, size: 18),
-                        label: Text(l10n.fieldOps),
-                        onPressed: () => context.go('/field'),
-                      ),
-                  ],
+                const OfflineConnectivityBanner(),
+                PrototypeSectionHeader(
+                  title: 'Needs decision',
+                  linkLabel: 'Field',
+                  onLink: canSeeFieldOps(user) ? () => context.go('/field') : null,
                 ),
-                const SizedBox(height: 16),
-                SarIntegrityHeroCard(
-                  avgIntegrity: sarAvg is num ? sarAvg : null,
-                  atRisk: sarAtRisk is int ? sarAtRisk : int.tryParse('$sarAtRisk') ?? 0,
-                  divergent: sarDivergent is int ? sarDivergent : int.tryParse('$sarDivergent') ?? 0,
-                  aligned: sarAligned is int ? sarAligned : int.tryParse('$sarAligned') ?? 0,
-                  languageCode: lang,
-                ),
-                const SizedBox(height: 12),
-                _StatCard(
-                  title: l10n.monitoringStaleSatellite,
-                  value: '$stale',
-                  subtitle: l10n.monitoringStaleSatelliteHint,
-                ),
-                if (fieldTasks.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Text(l10n.monitoringOpenSarVerifications, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  for (final raw in fieldTasks.take(8))
-                    SarWorkAreaTile(
-                      name: (raw as Map)['work_area_name'] as String? ?? l10n.monitoringWorkAreaFallback,
-                      subtitle: () {
-                        final kind = raw['alert_kind'] as String?;
-                        if (kind != null && kind.isNotEmpty) {
-                          return alertKindLabel(kind, languageCode: lang);
-                        }
-                        return raw['message'] as String? ?? '';
-                      }(),
-                      integrity: raw['forest_integrity_score'] as num?,
-                      onTap: () => _openWorkArea(context, raw),
-                    ),
-                ],
-                if (sarAlerts.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Text(l10n.monitoringSarAlerts30d, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final e in sarAlerts.entries)
-                        Chip(
-                          backgroundColor: Colors.amber.shade50,
-                          label: Text(
-                            '${alertKindLabel(e.key, languageCode: lang)}: ${e.value}',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 20),
-                Text(l10n.monitoringUnreadAlertsByKind, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                if (alertsByKind.isEmpty)
-                  Text(l10n.monitoringNoUnreadAlerts, style: const TextStyle(color: AranyixColors.onSurfaceMuted))
+                if (decisionAlerts.isEmpty)
+                  const PrototypeEmptyState(icon: '✓', title: 'No urgent alerts', subtitle: 'Monitoring signals are stable')
                 else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final e in alertsByKind.entries)
-                        Chip(
-                          label: Text('${alertKindLabel(e.key, languageCode: lang)}: ${e.value}'),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 20),
-                Text(l10n.monitoringWorkAreaSarStatus, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
+                  for (final raw in decisionAlerts)
+                    PrototypeMonitorCard(
+                      title: (raw as Map)['title'] as String? ?? 'Alert',
+                      subtitle: (raw)['message'] as String? ?? '',
+                      actionHint: alertKindLabel((raw)['kind'] as String? ?? '', languageCode: lang),
+                      severity: (raw)['severity'] as String? ?? 'moderate',
+                      onTap: () => context.push('/alerts/${(raw)['id']}'),
+                    ),
+                PrototypeSectionHeader(
+                  title: 'Site pulse',
+                  linkLabel: l10n.map,
+                  onLink: () => context.go('/map'),
+                ),
                 if (workAreas.isEmpty)
                   Text(
                     l10n.monitoringNoWorkAreas(
                       '${summary['open_violations'] ?? 0}',
                       '${summary['survival_due'] ?? 0}',
                     ),
-                    style: const TextStyle(color: AranyixColors.onSurfaceMuted),
+                    style: const TextStyle(color: PrototypeColors.textSecondary),
                   )
                 else
-                  for (final raw in workAreas.take(30))
-                    SarWorkAreaTile(
-                      name: (raw as Map)['name'] as String? ?? l10n.monitoringWorkAreaFallback,
-                      subtitle: [
+                  for (final raw in workAreas.take(12))
+                    PrototypeNdviRow(
+                      site: (raw as Map)['name'] as String? ?? l10n.monitoringWorkAreaFallback,
+                      ndvi: (raw['latest_ndvi'] as num?)?.toDouble(),
+                      meta: [
                         raw['project_name'] ?? '',
                         if (raw['latest_ndvi'] != null) 'NDVI ${raw['latest_ndvi']}',
                         if (raw['days_since_scan'] != null)
                           l10n.monitoringDaysSinceNdvi('${raw['days_since_scan']}'),
                       ].where((s) => s.toString().isNotEmpty).join(' · '),
-                      integrity: raw['sar_forest_integrity'] as num?,
-                      mode: sarModeLabel(raw['sar_monitoring_mode'] as String?, languageCode: lang),
-                      recommendedAction: raw['sar_recommended_action'] as String?,
-                      highlight: highlightFenceId != null && raw['id'] == highlightFenceId,
+                      actionLabel: raw['sar_recommended_action'] as String? ?? 'OK',
                       onTap: () => _openWorkArea(context, raw),
                     ),
+                const SizedBox(height: 8),
+                bioSummaryAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (bio) {
+                    final species = (bio['species_richness'] as num?)?.toInt() ??
+                        (bio['total_species_detected'] as num?)?.toInt() ?? 0;
+                    final shannon = bio['shannon_diversity_index'];
+                    return Material(
+                      color: PrototypeColors.bgSurface,
+                      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                      child: InkWell(
+                        onTap: () => context.go('/bioacoustic'),
+                        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                            border: Border.all(color: PrototypeColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('🎙', style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  '$species species · Shannon ${shannon ?? '—'}',
+                                  style: const TextStyle(fontSize: 13, color: PrototypeColors.textSecondary),
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right, size: 16, color: PrototypeColors.textTertiary),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.title, required this.value, required this.subtitle});
-
-  final String title;
-  final String value;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AranyixColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(AranyixRadii.card),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: AranyixColors.onSurfaceMuted)),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-        ],
       ),
     );
   }

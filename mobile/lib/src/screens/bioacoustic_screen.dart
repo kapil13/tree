@@ -12,8 +12,9 @@ import '../location_helper.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/bioacoustic_sync.dart';
 import '../providers.dart';
-import '../theme.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
+import '../theme.dart';
 
 class BioacousticScreen extends ConsumerStatefulWidget {
   const BioacousticScreen({super.key});
@@ -278,14 +279,16 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
   @override
   Widget build(BuildContext context) {
     final recordings = ref.watch(bioacousticRecordingsProvider);
+    final summaryAsync = ref.watch(bioacousticSummaryProvider);
     final queue = ref.watch(bioacousticQueueProvider);
     final sync = ref.watch(bioacousticSyncProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AranyixColors.surface,
-      appBar: ShellTopBar(
+      backgroundColor: PrototypeColors.bgApp,
+      appBar: PrototypeCommandBar(
         title: l10n.navBioacoustic,
+        onMenu: () => openAppDrawer(context),
         actions: [
           if (sync.syncing)
             const Padding(
@@ -299,15 +302,35 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
               icon: const Icon(Icons.sync),
             ),
         ],
-        subtitle: l10n.bioacousticActionSub,
       ),
       body: Stack(
         children: [
           Column(
             children: [
+              summaryAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (bio) {
+                  final score = (bio['bioacoustic_health_score'] as num?)?.toInt() ??
+                      (bio['health_score'] as num?)?.toInt() ?? 0;
+                  final species = (bio['species_richness'] as num?)?.toInt() ??
+                      (bio['total_species_detected'] as num?)?.toInt() ?? 0;
+                  final recordingsCount = (bio['recordings_total'] as num?)?.toInt() ??
+                      (bio['total_recordings'] as num?)?.toInt() ?? 0;
+                  final shannon = bio['shannon_diversity_index']?.toString();
+                  final label = bio['ecosystem_label'] as String? ?? bio['health_label'] as String? ?? 'Ecosystem acoustic health';
+                  return PrototypeBioHero(
+                    score: score,
+                    label: label,
+                    speciesCount: species,
+                    recordingsCount: recordingsCount,
+                    shannon: shannon,
+                  );
+                },
+              ),
               TabBar(
                 controller: _tabs,
-                labelColor: AranyixColors.forest,
+                labelColor: PrototypeColors.brandForest,
                 tabs: [
                   Tab(text: l10n.bioTabRecord, icon: const Icon(Icons.mic_rounded)),
                   Tab(text: l10n.bioTabHistory, icon: const Icon(Icons.history_rounded)),
