@@ -10,6 +10,7 @@ import '../auth/login_remember.dart';
 import '../auth_session.dart';
 import '../pending_invite.dart';
 import '../providers.dart';
+import '../session.dart';
 import '../theme.dart';
 import '../widgets/auth_light_scope.dart';
 import '../widgets/auth_scaffold.dart';
@@ -40,6 +41,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loaded = false;
   bool _inviteLoaded = false;
   bool _sessionPrepared = false;
+  bool _showSessionExpiredBanner = false;
   String? _invitePreview;
   bool _rememberMe = true;
   bool _obscurePassword = true;
@@ -67,11 +69,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _prepareSession() async {
     final sessionExpired =
         GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
-    if (!sessionExpired) return;
+    if (sessionExpired) {
+      _showSessionExpiredBanner = true;
+    }
+    // Drop stale tokens so refresh failures do not block a fresh sign-in.
     try {
       final api = await ref.read(apiClientProvider.future);
       await api.clearLocalSession();
     } catch (_) {}
+    sessionController.signOut();
+    sessionController.consumeSessionExpired();
+    ref.invalidate(apiClientProvider);
+    if (!mounted) return;
+    if (sessionExpired) {
+      setState(() {});
+      final uri = GoRouterState.of(context).uri;
+      if (uri.queryParameters.containsKey('session')) {
+        final params = Map<String, String>.from(uri.queryParameters);
+        params.remove('session');
+        final query = params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
+        context.replace('${uri.path}$query');
+      }
+    }
   }
 
   @override
@@ -208,6 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
       final auth = await api.googleAuthorize();
       final url = auth['authorize_url'] as String;
       if (!mounted) return;
@@ -243,7 +263,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionExpired = GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
+    final sessionExpired = _showSessionExpiredBanner;
     final l10n = context.l10n;
     return AuthLightScope(
       child: AuthScaffold(
