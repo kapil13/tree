@@ -23,6 +23,8 @@ const _publicAuthPaths = {
   '/auth/password-reset/confirm',
   '/auth/refresh',
   '/auth/google/login',
+  '/auth/captcha-config',
+  '/auth/otp-config',
   '/citizen/signup/start',
   '/citizen/signup/complete',
 };
@@ -102,7 +104,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 45),
       headers: {
         'Content-Type': 'application/json',
-        'X-Aranyix-Client': 'mobile/1.2.1',
+        'X-Aranyix-Client': 'mobile/1.2.2',
       },
     ));
     CertificatePinning.configureDio(dio);
