@@ -8,211 +8,175 @@
   <link rel="stylesheet" href="css/home.css" />
 </head>
 <body>
-  <div id="loading-overlay" class="state-overlay" aria-hidden="true">
-    <div class="skeleton-brief">
-      <div class="skeleton-line short"></div>
-      <div class="skeleton-line wide" style="height:24px;margin:20px 0"></div>
-      <div class="skeleton-line med"></div>
-      <div class="skeleton-line wide"></div>
+  <div id="loading-overlay" class="state-overlay">
+    <div class="load-grid">
+      <div class="load-cell"></div><div class="load-cell wide"></div><div class="load-cell"></div>
+      <div class="load-cell map"></div><div class="load-cell"></div>
     </div>
   </div>
 
   <div class="app-shell">
-    <aside id="sidebar" class="sidebar" aria-label="Main navigation">
-      <div class="sidebar-brand">
-        <span>🌿</span>
-        Aranyix
-      </div>
+    <aside id="sidebar" class="sidebar" aria-label="Navigation">
+      <div class="sidebar-brand"><span>🌿</span> Aranyix</div>
       <nav id="sidebar-nav"></nav>
     </aside>
 
     <div class="main">
       <header class="topbar">
         <div class="topbar-left">
-          <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Open menu">☰</button>
+          <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Menu">☰</button>
           <span class="topbar-title">Command Center</span>
-          <div class="global-filters">
-            <select id="filter-project" class="filter-select" aria-label="Project filter">
-              <option value="all">All Projects</option>
-            </select>
-            <select id="filter-scheme" class="filter-select" aria-label="Program or scheme">
-              <option value="all">All programmes</option>
-            </select>
-            <select id="filter-time" class="filter-select" aria-label="Time range">
-              <option value="today">Today</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d" selected>Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="custom">Custom range</option>
-            </select>
-          </div>
-          <span class="live-pill"><span class="dot"></span> <span id="live-updated">Updated 2 min ago</span></span>
+          <select id="filter-project" class="filter-select" aria-label="Project"><option value="all">All Projects</option></select>
+          <select id="filter-scheme" class="filter-select" aria-label="Programme"><option value="all">All programmes</option></select>
+          <select id="filter-time" class="filter-select" aria-label="Time">
+            <option value="7d">7 days</option>
+            <option value="30d" selected>30 days</option>
+            <option value="90d">90 days</option>
+          </select>
+          <span class="live-pill"><span class="dot"></span><span id="live-updated">2m</span></span>
         </div>
         <div class="topbar-actions">
-          <button type="button" class="btn-icon" aria-label="Alerts" id="btn-alerts">
-            🔔
-            <span class="badge" id="alert-badge">3</span>
-          </button>
-          <div class="avatar" id="avatar" title="Profile">PS</div>
+          <button type="button" class="btn-icon" id="btn-alerts" aria-label="Alerts">🔔<span class="badge" id="alert-badge">3</span></button>
+          <div class="avatar" id="avatar">PS</div>
         </div>
       </header>
 
-      <main class="content" id="main-content">
-        <div id="state-error" class="state-error" role="alert">
-          <h2>Unable to load command center</h2>
-          <p>Forest intelligence services are temporarily unavailable. Your portfolio data could not be retrieved.</p>
-          <button type="button" class="btn btn-primary" id="btn-retry">Retry</button>
-        </div>
+      <main class="dashboard" id="main-content">
+        <div id="state-error" class="state-msg"><h2>Unavailable</h2><button class="btn btn-primary" id="btn-retry">Retry</button></div>
+        <div id="state-empty" class="state-msg"><h2>No portfolio</h2><button class="btn btn-primary" data-route="/projects/new">Create project</button></div>
 
-        <div id="state-empty" class="state-empty">
-          <h2>No portfolio data yet</h2>
-          <p>Register your first project or plantation programme to begin monitoring forest intelligence.</p>
-          <button type="button" class="btn btn-primary" data-route="/projects/new">Create project</button>
-        </div>
-
-        <!-- ── Continuous intelligence briefing ───────────────── -->
-        <article class="briefing" id="zone-brief">
-          <header class="briefing-header">
-            <div class="briefing-meta">
-              <span id="user-org">NHAI Regional Plantation Cell</span>
-              <span class="meta-sep">·</span>
-              <span id="filter-context-label">All projects · Last 30 days</span>
+        <!-- VIEWPORT: health + map + ops -->
+        <div class="viewport-grid">
+          <section class="panel health-panel" aria-label="Portfolio health">
+            <div class="panel-head"><span class="panel-title">Portfolio health</span><span class="status-pill warn" id="status-pill">Follow-up</span></div>
+            <div class="integrity-block">
+              <div class="integrity-gauge" id="integrity-gauge">
+                <svg viewBox="0 0 120 120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="48"/><circle class="gauge-fill" id="gauge-arc" cx="60" cy="60" r="48"/></svg>
+                <div class="gauge-center"><span class="gauge-num" id="integrity-score">76</span><span class="gauge-sub">/100</span></div>
+              </div>
+              <div class="integrity-meta">
+                <div class="delta-row"><span class="delta down" id="integrity-trend">−3</span><span class="delta-label">vs prev period</span></div>
+                <div class="dist-bars" id="health-dist"></div>
+                <div class="dist-bars risk" id="risk-dist"></div>
+              </div>
             </div>
-            <div class="briefing-score-inline">
-              <span class="score-value"><span id="narrative-score">76</span>/100</span>
-              <span id="narrative-trend" class="trend down">−3 this week</span>
-              <span class="status-tag" id="operational-status">Monitoring follow-up needed</span>
+            <div class="kpi-strip" id="kpi-strip"></div>
+          </section>
+
+          <section class="panel map-panel" aria-label="Spatial intelligence">
+            <div class="panel-head">
+              <span class="panel-title">Spatial intelligence</span>
+              <div class="map-layers" id="map-layers">
+                <button type="button" class="layer on" data-layer="health">Health</button>
+                <button type="button" class="layer on" data-layer="ndvi">NDVI</button>
+                <button type="button" class="layer on" data-layer="alerts">Alerts</button>
+                <button type="button" class="layer on" data-layer="satellite">Satellite</button>
+                <button type="button" class="layer on" data-layer="bio">Bio</button>
+                <button type="button" class="layer on" data-layer="field">Field</button>
+              </div>
             </div>
-          </header>
-
-          <p class="executive-summary" id="executive-summary"></p>
-
-          <div class="briefing-insight-row">
-            <div class="insight-block">
-              <h2 class="insight-label">Why it matters</h2>
-              <p id="why-matters-short"></p>
-            </div>
-            <div class="insight-block insight-action">
-              <h2 class="insight-label">Recommended next step</h2>
-              <p id="next-step-short"></p>
-              <button type="button" class="btn btn-primary" id="btn-primary-action">Take action</button>
-            </div>
-          </div>
-
-          <p class="interpreted-intel" id="interpreted-intel"></p>
-
-          <div class="brief-chips" id="brief-chips" aria-label="Explore topics"></div>
-        </article>
-
-        <!-- ── Since last review (compact) ────────────────────── -->
-        <section class="review-strip" id="review-strip" aria-label="Changes since last review"></section>
-
-        <!-- ── Where ─────────────────────────────────────────── -->
-        <section class="spatial-zone" id="zone-spatial">
-          <p class="spatial-lead" id="spatial-narrative"></p>
-          <div class="spatial-layout">
-            <div id="spatial-map" class="map-panel" role="img" aria-label="Portfolio map with risk hotspots">
+            <div id="spatial-map" class="map-canvas">
               <div class="map-grid"></div>
-              <div class="map-corridor" aria-hidden="true"></div>
+              <div class="map-corridor"></div>
+              <div id="map-heatmap" class="map-heatmap"></div>
               <div id="map-zones"></div>
-              <div class="map-layers">
-                <button type="button" class="layer-chip on" data-layer="trees">Trees</button>
-                <button type="button" class="layer-chip on" data-layer="alerts">Alerts</button>
-                <button type="button" class="layer-chip on" data-layer="stale">Stale scans</button>
-                <button type="button" class="layer-chip on" data-layer="bio">Bioacoustic</button>
-              </div>
-              <div class="map-label" id="map-label"></div>
+              <div id="map-pins"></div>
+              <div class="map-tooltip" id="map-tooltip"></div>
             </div>
-            <aside class="spatial-sidebar">
-              <h2 class="sidebar-heading">Attention on the ground</h2>
-              <div class="priority-list-compact" id="priority-list"></div>
-              <div id="context-detail" class="detail-card" hidden></div>
-            </aside>
+            <div class="map-context" id="map-context">
+              <span id="ctx-project">All projects</span>
+              <span id="ctx-ndvi">NDVI —</span>
+              <span id="ctx-alerts">3 alerts</span>
+            </div>
+          </section>
+
+          <section class="panel ops-panel" aria-label="Operations">
+            <div class="panel-head"><span class="panel-title">Priority queue</span><button class="link-btn" data-route="/alerts">All</button></div>
+            <div class="severity-legend">
+              <span class="leg crit">Critical</span><span class="leg high">High</span><span class="leg med">Med</span><span class="leg done">Done</span>
+            </div>
+            <div class="alert-queue" id="alert-queue"></div>
+            <div class="panel-head sub"><span class="panel-title">Immediate action</span></div>
+            <button type="button" class="action-btn primary" id="btn-action-primary">Inspect Ch. 142–148</button>
+            <div class="delta-chips" id="delta-chips"></div>
+          </section>
+        </div>
+
+        <!-- MONITORING TRENDS -->
+        <div class="trends-grid">
+          <div class="panel chart-panel" data-chart="ndvi">
+            <div class="panel-head"><span class="panel-title">NDVI</span><span class="chart-val down" id="ndvi-val">0.58</span></div>
+            <svg id="chart-ndvi" class="mini-chart" viewBox="0 0 200 56"></svg>
           </div>
-        </section>
-
-        <!-- ── Progressive disclosure: secondary detail ───────── -->
-        <details class="deeper-context" id="deeper-context">
-          <summary>Further actions, evidence and programme detail</summary>
-          <div class="deeper-inner">
-            <div class="recommend-list" id="recommend-list"></div>
-
-            <div class="deeper-grid">
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Evidence &amp; MRV</div>
-                  <button type="button" class="panel-link" data-route="/reports">Reports</button>
-                </div>
-                <div class="panel-body" id="evidence-body"></div>
-              </div>
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Active alerts</div>
-                  <button type="button" class="panel-link" data-route="/alerts">View all</button>
-                </div>
-                <div class="panel-body" id="alert-list"></div>
-              </div>
-            </div>
-
-            <div class="deeper-charts">
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Carbon trajectory</div>
-                  <span class="panel-sub">Portfolio estimate</span>
-                </div>
-                <div class="panel-body">
-                  <div class="chart-wrap">
-                    <svg id="chart-carbon" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-                  </div>
-                </div>
-              </div>
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">NDVI pulse</div>
-                  <span class="panel-sub" id="ndvi-subtitle">Chainage 142–148</span>
-                </div>
-                <div class="panel-body">
-                  <div class="chart-wrap">
-                    <svg id="chart-ndvi" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-                  </div>
-                  <p class="chart-caption" id="ndvi-legend">12% below 30-day baseline</p>
-                </div>
-              </div>
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Canopy health</div>
-                </div>
-                <div class="panel-body">
-                  <div class="gauge-row" id="gauge-row"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="deeper-grid">
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Programme breakdown</div>
-                </div>
-                <div class="panel-body" id="project-breakdown"></div>
-              </div>
-              <div class="panel">
-                <div class="panel-header">
-                  <div class="panel-title">Recent activity</div>
-                </div>
-                <div class="panel-body" id="activity-feed"></div>
-              </div>
-            </div>
+          <div class="panel chart-panel" data-chart="canopy">
+            <div class="panel-head"><span class="panel-title">Canopy health</span><span class="chart-val" id="canopy-val">84%</span></div>
+            <svg id="chart-canopy" class="mini-chart" viewBox="0 0 200 56"></svg>
           </div>
-        </details>
+          <div class="panel chart-panel" data-chart="survival">
+            <div class="panel-head"><span class="panel-title">Survival</span><span class="chart-val down" id="survival-val">88%</span></div>
+            <svg id="chart-survival" class="mini-chart" viewBox="0 0 200 56"></svg>
+          </div>
+          <div class="panel chart-panel" data-chart="satellite">
+            <div class="panel-head"><span class="panel-title">Satellite freshness</span><span class="chart-val warn" id="sat-val">71%</span></div>
+            <svg id="chart-satellite" class="mini-chart" viewBox="0 0 200 56"></svg>
+          </div>
+          <div class="panel chart-panel" data-chart="anomaly">
+            <div class="panel-head"><span class="panel-title">Anomalies</span><span class="chart-val down" id="anomaly-val">7</span></div>
+            <svg id="chart-anomaly" class="mini-chart" viewBox="0 0 200 56"></svg>
+          </div>
+        </div>
 
-        <p class="footer-note">Signed in as <span id="user-name">Program manager</span></p>
+        <!-- ANALYTICS ROW -->
+        <div class="analytics-grid">
+          <section class="panel" aria-label="Biodiversity">
+            <div class="panel-head"><span class="panel-title">Biodiversity / Bioacoustic</span><span class="chart-val" id="bio-species">34 sp.</span></div>
+            <div class="bio-grid">
+              <div class="bio-stat"><span class="bio-num" id="bio-shannon">2.14</span><span class="bio-lbl">Shannon</span></div>
+              <div class="bio-stat"><span class="bio-num" id="bio-chorus">82%</span><span class="bio-lbl">Chorus</span></div>
+              <div class="bio-stat warn"><span class="bio-num" id="bio-threat">2</span><span class="bio-lbl">Threatened</span></div>
+            </div>
+            <svg id="chart-bio" class="mini-chart wide" viewBox="0 0 280 48"></svg>
+            <svg id="chart-bio-obs" class="mini-chart wide" viewBox="0 0 280 36"></svg>
+          </section>
+
+          <section class="panel" aria-label="Carbon">
+            <div class="panel-head">
+              <span class="panel-title">Carbon trajectory</span>
+              <span class="track-pill on" id="carbon-track">On track</span>
+            </div>
+            <div class="carbon-meta">
+              <span><strong id="carbon-current">284.5</strong> tCO₂e</span>
+              <span class="muted">Target <strong id="carbon-target">310</strong></span>
+            </div>
+            <svg id="chart-carbon" class="carbon-chart" viewBox="0 0 360 100"></svg>
+          </section>
+
+          <section class="panel" aria-label="MRV">
+            <div class="panel-head"><span class="panel-title">Evidence / MRV</span><span class="chart-val" id="mrv-ready">82%</span></div>
+            <div class="mrv-pipeline" id="mrv-pipeline"></div>
+            <div class="mrv-stats">
+              <span><strong id="mrv-verified">847</strong> verified</span>
+              <span class="warn-text"><strong id="mrv-gaps">5</strong> gaps</span>
+              <span><strong id="mrv-pending">23</strong> pending</span>
+            </div>
+          </section>
+
+          <section class="panel" aria-label="Activity">
+            <div class="panel-head"><span class="panel-title">Live activity</span></div>
+            <div class="timeline" id="activity-timeline"></div>
+          </section>
+        </div>
+
+        <div class="project-strip" id="project-strip"></div>
       </main>
     </div>
   </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+  <div id="toast" class="toast" role="status"></div>
 
   <script src="js/mock-data.js"></script>
+  <script src="js/charts.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

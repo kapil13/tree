@@ -1,568 +1,384 @@
 /**
- * Aranyix Web Home — Forest Intelligence Command Center
- * Narrative first: speak, then explore.
+ * Aranyix Command Center — visual operational dashboard
  */
 
 const state = {
+  project: "all",
+  scheme: "all",
+  time: "30d",
   selectedHotspot: null,
-  selectedPriority: null,
-  mapLayers: { trees: true, alerts: true, stale: true, bio: true },
-  sidebarOpen: false,
-  filters: { project: "all", scheme: "all", time: "30d" },
+  selectedAlert: null,
+  layers: { health: true, ndvi: true, alerts: true, satellite: true, bio: true, field: true },
   loading: true,
-  error: false,
-  empty: false,
 };
 
-const TIME_LABELS = {
-  today: "Today",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
-  "90d": "Last 90 days",
-  custom: "Custom range",
-};
-
-function fmtCo2e(kg) {
-  const t = kg / 1000;
-  return t >= 100 ? `${t.toFixed(0)}` : t.toFixed(1);
-}
+function $(id) { return document.getElementById(id); }
 
 function showToast(msg) {
-  const el = document.getElementById("toast");
+  const el = $("toast");
   el.textContent = msg;
   el.classList.add("show");
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => el.classList.remove("show"), 2600);
+  showToast._t = setTimeout(() => el.classList.remove("show"), 2200);
 }
 
-function getFilteredProjects() {
-  let projects = MOCK_PROJECTS;
-  if (state.filters.project !== "all") {
-    projects = projects.filter((p) => p.id === state.filters.project);
-  } else if (state.filters.scheme !== "all") {
-    projects = projects.filter((p) => p.schemeId === state.filters.scheme);
-  }
-  return projects;
+function getProjects() {
+  if (state.project !== "all") return MOCK_PROJECTS.filter((p) => p.id === state.project);
+  if (state.scheme !== "all") return MOCK_PROJECTS.filter((p) => p.schemeId === state.scheme);
+  return MOCK_PROJECTS;
 }
 
-function getFilteredHotspots() {
-  const projects = getFilteredProjects();
-  const ids = new Set(projects.map((p) => p.id));
-  if (state.filters.project === "all" && state.filters.scheme === "all") return MOCK_MAP_HOTSPOTS;
-  return MOCK_MAP_HOTSPOTS.filter((h) => ids.has(h.projectId));
-}
-
-function getFilteredPriorities() {
-  const projects = getFilteredProjects();
-  const ids = new Set(projects.map((p) => p.id));
-  if (state.filters.project === "all" && state.filters.scheme === "all") return MOCK_PRIORITIES;
-  return MOCK_PRIORITIES.filter((p) => p.projectId === "all" || ids.has(p.projectId));
-}
-
-function getDashboardView() {
-  const d = {
-    ...MOCK_DASHBOARD,
-    kpi: { ...MOCK_DASHBOARD.kpi },
-    forestIntegrity: { ...MOCK_DASHBOARD.forestIntegrity },
-    narrative: { ...MOCK_DASHBOARD.narrative },
-  };
-  const projects = getFilteredProjects();
+function getData() {
+  const d = JSON.parse(JSON.stringify(MOCK_DASHBOARD));
+  const projects = getProjects();
   if (projects.length === 1) {
     const p = projects[0];
     d.forestIntegrity.score = p.integrityScore;
+    d.forestIntegrity.trend = p.integrityTrend;
     d.kpi.total_trees = p.trees;
-    d.fieldOps = { ...d.fieldOps, open_violations: p.openViolations, survival_due: p.survivalDue };
-    d.narrative.executiveSummary = `Focused on ${p.name}: integrity at ${p.integrityScore}/100 with ${p.openViolations} open violations and ${p.survivalDue} survival surveys due.`;
-    d.narrative.spatial = `Attention is concentrated in ${p.workAreas.join(" and ")} within ${p.name}.`;
   } else if (projects.length < MOCK_PROJECTS.length) {
     d.kpi.total_trees = projects.reduce((s, p) => s + p.trees, 0);
-    d.fieldOps.open_violations = projects.reduce((s, p) => s + p.openViolations, 0);
-    d.fieldOps.survival_due = projects.reduce((s, p) => s + p.survivalDue, 0);
     d.forestIntegrity.score = Math.round(projects.reduce((s, p) => s + p.integrityScore, 0) / projects.length);
   }
   return d;
 }
 
-function getFilterContextLabel() {
-  const proj =
-    state.filters.project !== "all"
-      ? MOCK_PROJECTS.find((p) => p.id === state.filters.project)?.name
-      : state.filters.scheme !== "all"
-        ? MOCK_SCHEMES.find((s) => s.id === state.filters.scheme)?.label
-        : "All projects";
-  return `${proj} · ${TIME_LABELS[state.filters.time]}`;
+function getHotspots() {
+  const ids = new Set(getProjects().map((p) => p.id));
+  if (state.project === "all" && state.scheme === "all") return MOCK_MAP_HOTSPOTS;
+  return MOCK_MAP_HOTSPOTS.filter((h) => ids.has(h.projectId));
+}
+
+function getAlerts() {
+  const ids = new Set(getProjects().map((p) => p.id));
+  return MOCK_ALERTS.filter((a) => a.projectId === "all" || ids.has(a.projectId));
 }
 
 function renderSidebar() {
-  const nav = document.getElementById("sidebar-nav");
-  nav.innerHTML = NAV_GROUPS
-    .map(
-      (g) => `
+  $("sidebar-nav").innerHTML = NAV_GROUPS.map((g) => `
     <div class="nav-group-label">${g.label}</div>
-    ${g.items.map((item) => `
-      <button type="button" class="nav-item${item.active ? " active" : ""}" data-nav="${item.id}">
-        <span class="icon">${item.icon}</span>${item.label}
-      </button>`).join("")}`
-    )
-    .join("");
-
-  nav.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.nav !== "dashboard") showToast(`Open ${btn.textContent.trim()}`);
-      if (window.innerWidth <= 768) {
-        state.sidebarOpen = false;
-        document.getElementById("sidebar").classList.remove("open");
-      }
-    });
+    ${g.items.map((i) => `<button type="button" class="nav-item${i.active ? " active" : ""}" data-nav="${i.id}"><span class="icon">${i.icon}</span>${i.label}</button>`).join("")}
+  `).join("");
+  $("sidebar-nav").querySelectorAll(".nav-item").forEach((b) => {
+    b.onclick = () => { if (b.dataset.nav !== "dashboard") showToast(b.textContent.trim()); };
   });
 }
 
 function renderFilters() {
-  document.getElementById("filter-project").innerHTML =
-    `<option value="all">All Projects</option>${MOCK_PROJECTS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("")}`;
-  document.getElementById("filter-project").value = state.filters.project;
-  document.getElementById("filter-scheme").innerHTML =
-    MOCK_SCHEMES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
-  document.getElementById("filter-scheme").value = state.filters.scheme;
-  document.getElementById("filter-time").value = state.filters.time;
-  document.getElementById("filter-context-label").textContent = getFilterContextLabel();
+  $("filter-project").innerHTML = `<option value="all">All Projects</option>${MOCK_PROJECTS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("")}`;
+  $("filter-project").value = state.project;
+  $("filter-scheme").innerHTML = MOCK_SCHEMES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+  $("filter-scheme").value = state.scheme;
+  $("filter-time").value = state.time;
 }
 
-function renderBrief() {
-  const d = getDashboardView();
-  document.getElementById("narrative-score").textContent = d.forestIntegrity.score;
-  const trendEl = document.getElementById("narrative-trend");
+function renderHealth() {
+  const d = getData();
+  $("integrity-score").textContent = d.forestIntegrity.score;
+  const arc = $("gauge-arc");
+  const { circ, offset } = Charts.gaugeArc(d.forestIntegrity.score);
+  arc.style.strokeDasharray = circ;
+  arc.style.strokeDashoffset = offset;
   const t = d.forestIntegrity.trend;
-  trendEl.textContent = `${t > 0 ? "+" : ""}${t} this week`;
-  trendEl.className = `trend ${t < 0 ? "down" : t > 0 ? "up" : "flat"}`;
-  document.getElementById("operational-status").textContent = d.statusLabel;
-  document.getElementById("executive-summary").textContent = d.narrative.executiveSummary;
-  document.getElementById("why-matters-short").textContent = d.narrative.whyMatters;
-  document.getElementById("next-step-short").textContent = d.narrative.nextStep;
-  document.getElementById("interpreted-intel").textContent = d.narrative.interpreted;
-  document.getElementById("spatial-narrative").textContent = d.narrative.spatial;
-  document.getElementById("live-updated").textContent = `Updated ${d.updatedAt}`;
-  document.getElementById("alert-badge").textContent = d.unreadAlerts;
+  $("integrity-trend").textContent = `${t > 0 ? "+" : ""}${t}`;
+  $("integrity-trend").className = `delta ${t < 0 ? "down" : t > 0 ? "up" : ""}`;
+  $("status-pill").textContent = d.statusLabel;
+  $("status-pill").className = `status-pill ${d.forestIntegrity.score < 70 ? "crit" : d.forestIntegrity.score < 80 ? "warn" : "ok"}`;
+  $("live-updated").textContent = d.updatedAt.replace(" ago", "").replace("Updated ", "").replace(" min", "m");
+  $("alert-badge").textContent = d.unreadAlerts;
 
-  const chips = document.getElementById("brief-chips");
-  chips.innerHTML = MOCK_BRIEF_CHIPS
-    .map((c) => `<button type="button" class="brief-chip ${c.class}" data-topic="${c.topic}">${c.label}</button>`)
-    .join("");
-  chips.querySelectorAll(".brief-chip").forEach((chip) => {
-    chip.addEventListener("click", () => handleBriefChip(chip.dataset.topic));
-  });
+  $("health-dist").innerHTML = `<span class="dist-label">Health</span>${d.health_distribution.map((x) =>
+    `<div class="dist-seg" style="width:${x.pct}%;background:${x.color}" title="${x.label} ${x.pct}%"></div>`).join("")}`;
+  $("risk-dist").innerHTML = `<span class="dist-label">Risk</span>${d.risk_distribution.map((x) =>
+    `<div class="dist-seg" style="width:${x.pct}%;background:${x.color}" title="${x.label} ${x.pct}%"></div>`).join("")}`;
 
-  document.getElementById("btn-primary-action").onclick = () => {
-    state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.id === "h1");
-    state.selectedPriority = getFilteredPriorities().find((p) => p.id === "pr1");
-    renderMap();
-    renderPriorities();
-    document.getElementById("zone-spatial").scrollIntoView({ behavior: "smooth" });
-    showToast("Schedule field inspection at Chainage 142–148");
-  };
-}
-
-function renderReviewStrip() {
-  const strip = document.getElementById("review-strip");
-  strip.innerHTML = `
-    <h2 class="review-strip-label">Since last review</h2>
-    <div class="review-items">
-      ${MOCK_CHANGES.sinceLastReview.map((c) => `
-        <span class="review-item ${c.tone}">${c.text}</span>`).join("")}
-    </div>`;
-}
-
-function renderPriorities() {
-  const priorities = getFilteredPriorities();
-  if (!state.selectedPriority || !priorities.find((p) => p.id === state.selectedPriority.id)) {
-    state.selectedPriority = priorities[0] || null;
-  }
-
-  document.getElementById("priority-list").innerHTML = priorities
-    .map(
-      (p) => `
-    <div class="priority-item${state.selectedPriority?.id === p.id ? " active" : ""}" data-priority="${p.id}">
-      <div class="priority-sev ${p.severity}"></div>
-      <div class="priority-body">
-        <div class="priority-title">${p.title}</div>
-        <div class="priority-sub">${p.subtitle}</div>
-      </div>
-    </div>`
-    )
-    .join("");
-
-  document.querySelectorAll("#priority-list .priority-item").forEach((el) => {
-    el.addEventListener("click", () => {
-      state.selectedPriority = priorities.find((p) => p.id === el.dataset.priority);
-      if (state.selectedPriority?.title.toLowerCase().includes("ndvi")) {
-        state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.id === "h1");
-      }
-      renderPriorities();
-      renderMap();
-      renderDetail();
-    });
-  });
-
-  renderDetail();
-}
-
-function renderDetail() {
-  const p = state.selectedPriority;
-  const h = state.selectedHotspot;
-  const el = document.getElementById("context-detail");
-  if (!p && !h) {
-    el.innerHTML = "";
-    el.hidden = true;
-    return;
-  }
-  el.hidden = false;
-  const sev = p?.severity || h?.severity || "ok";
-  el.className = `detail-card ${sev === "critical" ? "danger" : sev === "high" || sev === "medium" ? "warn" : ""}`;
-  el.innerHTML = `
-    <h3>${p?.title || h?.name}</h3>
-    <p>${p?.detail || h?.detail}</p>`;
-}
-
-function renderMapZones() {
-  const container = document.getElementById("map-zones");
-  if (!container) return;
-  const zones = [
-    { projectId: "p1", left: 22, top: 38, width: 42, height: 22, label: "KM-48" },
-    { projectId: "p2", left: 62, top: 24, width: 28, height: 20, label: "CAMPA" },
-    { projectId: "p3", left: 18, top: 52, width: 22, height: 18, label: "Nagar Van" },
+  const sp = d.kpi_sparklines;
+  const items = [
+    { id: "trees", label: "Trees", val: d.kpi.total_trees.toLocaleString(), delta: `+${d.kpi.trees_delta}`, spark: sp.trees, color: "#5c7a6e" },
+    { id: "co2", label: "CO₂e (t)", val: (d.kpi.total_co2e_kg / 1000).toFixed(1), delta: `+${d.kpi.co2e_delta_pct}%`, spark: sp.co2e, color: "#6b7f5e" },
+    { id: "attention", label: "Attention", val: d.kpi.trees_attention, delta: `+${d.kpi.trees_attention_delta}`, spark: [10, 12, 14, 15, 16, 18], color: "#c4705a" },
+    { id: "violations", label: "Violations", val: d.fieldOps.open_violations, delta: "0", spark: sp.violations, color: "#b8956b" },
   ];
-  const visible = new Set(getFilteredProjects().map((p) => p.id));
-  container.innerHTML = zones
-    .filter((z) => visible.has(z.projectId))
-    .map(
-      (z) => `
-    <div class="map-project-zone${state.selectedHotspot?.projectId === z.projectId ? " active" : ""}"
-         style="left:${z.left}%;top:${z.top}%;width:${z.width}%;height:${z.height}%"
-         title="${z.label}"></div>`
-    )
-    .join("");
+  $("kpi-strip").innerHTML = items.map((k) => `
+    <div class="kpi-cell" data-kpi="${k.id}">
+      <div class="kpi-top"><span class="kpi-label">${k.label}</span><span class="kpi-delta">${k.delta}</span></div>
+      <div class="kpi-val">${k.val}</div>
+      <svg class="kpi-spark" viewBox="0 0 80 24" data-spark="${k.id}"></svg>
+    </div>`).join("");
+  items.forEach((k) => {
+    const svg = $(`kpi-strip`).querySelector(`[data-spark="${k.id}"]`);
+    if (svg) Charts.sparkline(svg, k.spark, k.color, { width: 80, height: 24, pad: 2 });
+  });
 }
 
 function renderMap() {
-  const map = document.getElementById("spatial-map");
-  const pins = getFilteredHotspots().filter((h) => {
-    if (h.type === "alert" && !state.mapLayers.alerts) return false;
-    if (h.type === "stale" && !state.mapLayers.stale) return false;
-    if (h.type === "tree" && !state.mapLayers.trees) return false;
-    if (h.type === "bio" && !state.mapLayers.bio) return false;
+  const projects = getProjects();
+  const hotspots = getHotspots().filter((h) => {
+    if (h.type === "alert" && !state.layers.alerts) return false;
+    if (h.type === "stale" && !state.layers.satellite) return false;
+    if (h.type === "field" && !state.layers.field) return false;
+    if (h.type === "tree" && !state.layers.health) return false;
+    if (h.type === "bio" && !state.layers.bio) return false;
     return true;
   });
 
-  if (!state.selectedHotspot && pins.length) state.selectedHotspot = pins[0];
+  if (!state.selectedHotspot && hotspots.length) state.selectedHotspot = hotspots[0];
 
-  map.querySelectorAll(".map-pin").forEach((n) => n.remove());
-  renderMapZones();
+  $("map-zones").innerHTML = projects.map((p) => {
+    const z = p.mapZone;
+    const active = state.selectedHotspot?.projectId === p.id || state.project === p.id;
+    return `<button type="button" class="map-zone${active ? " active" : ""}" data-project="${p.id}"
+      style="left:${z.left}%;top:${z.top}%;width:${z.width}%;height:${z.height}%"
+      title="${p.name} · ${p.integrityScore}/100"><span>${p.shortName}</span></button>`;
+  }).join("");
 
-  pins.forEach((h) => {
-    const pin = document.createElement("button");
-    pin.type = "button";
-    pin.className = `map-pin ${h.type}${state.selectedHotspot?.id === h.id ? " selected" : ""}`;
-    pin.style.left = `${h.left}%`;
-    pin.style.top = `${h.top}%`;
-    pin.title = h.name;
-    pin.setAttribute("aria-label", h.name);
-    pin.addEventListener("click", (e) => {
+  $("map-pins").innerHTML = hotspots.map((h) => `
+    <button type="button" class="pin ${h.type}${state.selectedHotspot?.id === h.id ? " sel" : ""}"
+      style="left:${h.left}%;top:${h.top}%" data-id="${h.id}" title="${h.name}"></button>`).join("");
+
+  const heatOn = state.layers.ndvi;
+  $("map-heatmap").classList.toggle("on", heatOn);
+  if (heatOn) {
+    $("map-heatmap").innerHTML = `<div class="heat stress" style="left:34%;top:40%;width:18%;height:14%"></div>
+      <div class="heat ok" style="left:68%;top:28%;width:14%;height:12%"></div>
+      <div class="heat warn" style="left:22%;top:56%;width:12%;height:10%"></div>`;
+  }
+
+  $("map-zones").querySelectorAll(".map-zone").forEach((z) => {
+    z.onclick = () => selectProject(z.dataset.project);
+  });
+  $("map-pins").querySelectorAll(".pin").forEach((p) => {
+    p.onclick = (e) => {
       e.stopPropagation();
-      state.selectedHotspot = h;
-      const linked = getFilteredPriorities().find((p) =>
-        h.type === "alert" ? p.title.toLowerCase().includes("ndvi") : p.projectId === h.projectId || p.projectId === "all"
-      );
-      if (linked) state.selectedPriority = linked;
-      renderMap();
-      renderPriorities();
-      renderDetail();
-    });
-    map.appendChild(pin);
+      selectHotspot(MOCK_MAP_HOTSPOTS.find((h) => h.id === p.dataset.id));
+    };
   });
 
-  const h = state.selectedHotspot;
-  document.getElementById("map-label").innerHTML = h
-    ? `<strong>${h.name}</strong> · ${h.project}${h.ndvi != null ? ` · NDVI ${h.ndvi} (${h.delta})` : ` · ${h.delta}`}`
-    : "Select a location on the map to see detail";
+  updateMapContext();
 }
 
-function renderMapLayers() {
-  document.querySelectorAll(".layer-chip").forEach((chip) => {
-    const layer = chip.dataset.layer;
-    chip.classList.toggle("on", state.mapLayers[layer]);
-    chip.onclick = () => {
-      state.mapLayers[layer] = !state.mapLayers[layer];
-      renderMapLayers();
+function updateMapContext() {
+  const h = state.selectedHotspot;
+  const d = getData();
+  if (h) {
+    $("ctx-project").textContent = MOCK_PROJECTS.find((p) => p.id === h.projectId)?.shortName || h.name;
+    $("ctx-ndvi").textContent = h.ndvi != null ? `NDVI ${h.ndvi} (${h.delta > 0 ? "+" : ""}${h.delta}%)` : `Bio ${h.delta}%`;
+    $("map-tooltip").innerHTML = `<strong>${h.name}</strong> · ${h.type}${h.ndvi != null ? ` · ${h.ndvi}` : ""}`;
+    $("map-tooltip").classList.add("show");
+  } else {
+    $("ctx-project").textContent = state.project !== "all" ? MOCK_PROJECTS.find((p) => p.id === state.project)?.name : "All projects";
+    $("ctx-ndvi").textContent = `NDVI avg ${(d.ndvi_series.at(-1)?.value ?? 0).toFixed(2)}`;
+    $("map-tooltip").classList.remove("show");
+  }
+  $("ctx-alerts").textContent = `${getAlerts().filter((a) => a.status !== "completed").length} alerts`;
+}
+
+function selectProject(id) {
+  state.project = state.project === id && id !== "all" ? "all" : id;
+  state.scheme = "all";
+  $("filter-project").value = state.project;
+  state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.projectId === state.project) || getHotspots()[0];
+  refresh();
+}
+
+function selectHotspot(h) {
+  state.selectedHotspot = h;
+  state.selectedAlert = getAlerts().find((a) => a.projectId === h.projectId || a.location.includes(h.name.split(" ")[0]));
+  renderMap();
+  renderTrends();
+  renderOps();
+  highlightCharts();
+}
+
+function renderOps() {
+  const alerts = getAlerts();
+  $("alert-queue").innerHTML = alerts.map((a) => `
+    <button type="button" class="alert-row ${a.severity}${a.status === "completed" ? " done" : ""}${a.status === "overdue" ? " overdue" : ""}${state.selectedAlert?.id === a.id ? " sel" : ""}"
+      data-id="${a.id}">
+      <span class="sev-bar"></span>
+      <span class="alert-title">${a.title}</span>
+      <span class="alert-loc">${a.location}</span>
+      <span class="alert-trend ${a.trend}">${a.trend === "up" ? "↑" : a.trend === "down" ? "↓" : "·"}</span>
+      <span class="alert-due">${a.due}</span>
+    </button>`).join("");
+
+  $("alert-queue").querySelectorAll(".alert-row").forEach((r) => {
+    r.onclick = () => {
+      state.selectedAlert = alerts.find((a) => a.id === r.dataset.id);
+      const h = MOCK_MAP_HOTSPOTS.find((x) => x.projectId === state.selectedAlert.projectId);
+      if (h) state.selectedHotspot = h;
+      renderMap();
+      renderOps();
+      showToast(`${state.selectedAlert.action}: ${state.selectedAlert.title}`);
+    };
+  });
+
+  const d = getData();
+  $("delta-chips").innerHTML = [
+    { t: "down", l: `Integrity ${d.forestIntegrity.trend}` },
+    { t: "down", l: "NDVI −12%" },
+    { t: "warn", l: "5 stale" },
+    { t: "up", l: "+43.5t C" },
+  ].map((c) => `<span class="dchip ${c.t}">${c.l}</span>`).join("");
+}
+
+function renderTrends() {
+  const d = getData();
+  const h = state.selectedHotspot;
+  const ndvi = h?.ndvi ?? d.ndvi_series.at(-1).value;
+  $("ndvi-val").textContent = ndvi.toFixed ? ndvi.toFixed(2) : ndvi;
+  $("ndvi-val").className = `chart-val ${h?.delta < 0 || d.ndvi_series.at(-1).value < 0.62 ? "down" : ""}`;
+  $("canopy-val").textContent = `${d.canopy_series.at(-1).value}%`;
+  $("survival-val").textContent = `${d.survival_series.at(-1).value}%`;
+  $("sat-val").textContent = `${d.satellite_freshness.at(-1).value}%`;
+  $("sat-val").className = `chart-val ${d.satellite_freshness.at(-1).value < 80 ? "warn" : ""}`;
+  $("anomaly-val").textContent = d.anomaly_series.at(-1).value;
+
+  Charts.sparkline($("chart-ndvi"), d.ndvi_series, "#5a8a94", { min: 0.5, max: 0.72 });
+  Charts.sparkline($("chart-canopy"), d.canopy_series, "#5c7a6e", { min: 80, max: 90 });
+  Charts.sparkline($("chart-survival"), d.survival_series, "#6b7f5e", { min: 85, max: 95 });
+  Charts.sparkline($("chart-satellite"), d.satellite_freshness, "#b8956b", { min: 65, max: 95 });
+  Charts.sparkline($("chart-anomaly"), d.anomaly_series, "#c4705a", { min: 0, max: 10 });
+
+  bindChartHover("chart-ndvi", d.ndvi_series);
+  bindChartHover("chart-canopy", d.canopy_series);
+}
+
+function highlightCharts() {
+  document.querySelectorAll(".chart-panel").forEach((p) => p.classList.remove("highlight"));
+  if (state.selectedHotspot?.type === "alert" || state.selectedHotspot?.type === "stale") {
+    document.querySelector('[data-chart="ndvi"]')?.classList.add("highlight");
+    document.querySelector('[data-chart="satellite"]')?.classList.add("highlight");
+  }
+  if (state.selectedHotspot?.type === "bio") {
+    document.querySelector(".analytics-grid .panel")?.classList.add("highlight");
+  }
+}
+
+function renderBioCarbonMrv() {
+  const d = getData();
+  $("bio-species").textContent = `${d.bioacoustic.total_species_detected} sp.`;
+  $("bio-shannon").textContent = d.bioacoustic.avg_shannon_index;
+  $("bio-chorus").textContent = `${d.bioacoustic.chorus_activity_pct}%`;
+  $("bio-threat").textContent = d.bioacoustic.threatened_species_count;
+  Charts.sparkline($("chart-bio"), d.bio_activity_series, "#5a8a94", { width: 280, height: 48 });
+  Charts.bars($("chart-bio-obs"), d.bio_observations, "#5c7a6e");
+
+  $("carbon-current").textContent = d.carbon_trajectory.historical.at(-1).value;
+  $("carbon-target").textContent = d.carbon_trajectory.target;
+  $("carbon-track").textContent = d.carbon_trajectory.on_track ? "On track" : "Off track";
+  $("carbon-track").className = `track-pill ${d.carbon_trajectory.on_track ? "on" : "off"}`;
+  Charts.carbon($("chart-carbon"), d.carbon_trajectory);
+
+  $("mrv-ready").textContent = `${d.compliance.avg_readiness_pct}%`;
+  $("mrv-verified").textContent = d.compliance.evidence_verified;
+  $("mrv-gaps").textContent = d.compliance.evidence_gaps;
+  $("mrv-pending").textContent = d.compliance.evidence_pending;
+  $("mrv-pipeline").innerHTML = d.mrv_pipeline.map((s, i) => `
+    <button type="button" class="mrv-stage ${s.status}" data-stage="${s.stage}" style="flex:${s.pct}">
+      <span class="mrv-name">${s.stage}</span>
+      <span class="mrv-pct">${s.pct}%</span>
+      ${s.gaps ? `<span class="mrv-gap">${s.gaps} gap</span>` : ""}
+    </button>${i < d.mrv_pipeline.length - 1 ? '<span class="mrv-arrow">›</span>' : ""}`).join("");
+  $("mrv-pipeline").querySelectorAll(".mrv-stage").forEach((s) => {
+    s.onclick = () => showToast(`MRV: ${s.dataset.stage}`);
+  });
+}
+
+function renderActivity() {
+  $("activity-timeline").innerHTML = MOCK_ACTIVITY.map((a) => `
+    <div class="tl-item ${a.type}" style="--offset:${a.offset}%">
+      <span class="tl-dot"></span>
+      <span class="tl-label">${a.label}</span>
+      <span class="tl-meta">${a.meta}</span>
+      <span class="tl-time">${a.time}</span>
+    </div>`).join("");
+}
+
+function renderProjectStrip() {
+  $("project-strip").innerHTML = getProjects().map((p) => `
+    <button type="button" class="proj-chip${state.project === p.id ? " sel" : ""}" data-project="${p.id}">
+      <span class="proj-name">${p.shortName}</span>
+      <span class="proj-score">${p.integrityScore}</span>
+      <span class="proj-trend ${p.integrityTrend < 0 ? "down" : "up"}">${p.integrityTrend > 0 ? "+" : ""}${p.integrityTrend}</span>
+      <span class="proj-ndvi ${p.ndviDelta < 0 ? "down" : ""}">NDVI ${p.ndviDelta > 0 ? "+" : ""}${p.ndviDelta}%</span>
+    </button>`).join("");
+  $("project-strip").querySelectorAll(".proj-chip").forEach((c) => {
+    c.onclick = () => selectProject(c.dataset.project === state.project ? "all" : c.dataset.project);
+  });
+}
+
+function bindChartHover(svgId, series) {
+  const svg = $(svgId);
+  if (!svg) return;
+  const tip = $("chart-tooltip");
+  svg.querySelectorAll(".chart-dot").forEach((dot) => {
+    dot.addEventListener("mouseenter", () => {
+      const i = +dot.dataset.i;
+      tip.textContent = `${series[i].label}: ${series[i].value}`;
+      tip.hidden = false;
+      const rect = dot.getBoundingClientRect();
+      tip.style.left = `${rect.left}px`;
+      tip.style.top = `${rect.top - 28}px`;
+    });
+    dot.addEventListener("mouseleave", () => { tip.hidden = true; });
+  });
+}
+
+function bindLayers() {
+  $("map-layers").querySelectorAll(".layer").forEach((l) => {
+    l.onclick = () => {
+      state.layers[l.dataset.layer] = !state.layers[l.dataset.layer];
+      l.classList.toggle("on", state.layers[l.dataset.layer]);
       renderMap();
     };
   });
 }
 
-function renderRecommendations() {
-  document.getElementById("recommend-list").innerHTML = MOCK_RECOMMENDATIONS
-    .map(
-      (r, i) => `
-    <div class="recommend-item${i === 0 ? " priority-1" : ""}" data-rec="${r.id}">
-      <div class="recommend-rank">${r.priority}</div>
-      <div class="recommend-body">
-        <h4>${r.title}</h4>
-        <p>${r.detail}</p>
-        <div class="recommend-meta">${r.due}</div>
-      </div>
-    </div>`
-    )
-    .join("");
-
-  document.querySelectorAll(".recommend-item").forEach((el) => {
-    el.addEventListener("click", () => {
-      const rec = MOCK_RECOMMENDATIONS.find((r) => r.id === el.dataset.rec);
-      showToast(rec.title);
-      if (rec.priority === 1) {
-        state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.id === "h1");
-        state.selectedPriority = getFilteredPriorities()[0];
-        document.getElementById("zone-spatial").scrollIntoView({ behavior: "smooth" });
-        renderMap();
-        renderPriorities();
-      }
-    });
-  });
-}
-
-function renderEvidence() {
-  const d = getDashboardView();
-  document.getElementById("evidence-body").innerHTML = `
-    <div class="evidence-pipeline">
-      <span class="evidence-step done">Capture</span><span class="evidence-arrow">→</span>
-      <span class="evidence-step done">Evidence</span><span class="evidence-arrow">→</span>
-      <span class="evidence-step pending">Verify</span><span class="evidence-arrow">→</span>
-      <span class="evidence-step">MRV</span><span class="evidence-arrow">→</span>
-      <span class="evidence-step">Report</span>
-    </div>
-    <p class="evidence-summary">
-      ${d.compliance.evidence_verified} verified · ${d.compliance.evidence_pending} pending ·
-      <strong class="warn-text">${d.compliance.evidence_gaps} gaps</strong> before next scheme export.
-      Pit photos missing on 3 CAMPA Block A trees.
-    </p>
-    <div class="compliance-bar"><div class="compliance-fill" style="width:${d.compliance.avg_readiness_pct}%"></div></div>
-    <p class="evidence-readiness">${d.compliance.avg_readiness_pct}% compliance readiness</p>`;
-}
-
-function renderCharts() {
-  const d = getDashboardView();
-  drawAreaChart("chart-carbon", d.carbon_growth, "#6b7f5e");
-  drawAreaChart("chart-ndvi", d.ndvi_series, "#b8956b", 0, 1);
-  document.getElementById("ndvi-legend").textContent = "12% below 30-day baseline";
-  document.getElementById("gauge-row").innerHTML = d.health_distribution
-    .slice(0, 3)
-    .map(
-      (h) => `
-    <div class="gauge">
-      <div class="gauge-ring" style="--pct:${h.pct}">
-        <div class="gauge-ring-inner">${h.pct}%</div>
-      </div>
-      <div class="gauge-label">${h.label}</div>
-    </div>`
-    )
-    .join("");
-}
-
-function drawAreaChart(svgId, series, color, minY, maxY) {
-  const svg = document.getElementById(svgId);
-  if (!svg) return;
-  const w = 400;
-  const h = 140;
-  const pad = { t: 12, r: 12, b: 24, l: 36 };
-  const vals = series.map((p) => p.value);
-  const ymin = minY ?? Math.min(...vals) * 0.95;
-  const ymax = maxY ?? Math.max(...vals) * 1.05;
-  const xStep = (w - pad.l - pad.r) / (series.length - 1);
-  const points = series.map((p, i) => {
-    const x = pad.l + i * xStep;
-    const y = pad.t + (1 - (p.value - ymin) / (ymax - ymin)) * (h - pad.t - pad.b);
-    return `${x},${y}`;
-  });
-  const area = `${pad.l},${h - pad.b} ${points.join(" ")} ${pad.l + (series.length - 1) * xStep},${h - pad.b}`;
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="grad-${svgId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${color}" stop-opacity="0.18"/>
-        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
-      </linearGradient>
-    </defs>
-    <polygon points="${area}" fill="url(#grad-${svgId})"/>
-    <polyline points="${points.join(" ")}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
-    ${series.map((p, i) => {
-      const x = pad.l + i * xStep;
-      const y = pad.t + (1 - (p.value - ymin) / (ymax - ymin)) * (h - pad.t - pad.b);
-      return `<circle cx="${x}" cy="${y}" r="3" fill="#fdfcfa" stroke="${color}" stroke-width="2"/>`;
-    }).join("")}
-    ${series.map((p, i) => {
-      const x = pad.l + i * xStep;
-      return `<text x="${x}" y="${h - 6}" text-anchor="middle" font-size="10" fill="#8a918c">${p.label}</text>`;
-    }).join("")}`;
-}
-
-function renderAlerts() {
-  document.getElementById("alert-list").innerHTML = MOCK_ALERTS
-    .map(
-      (a) => `
-    <div class="priority-item">
-      <div class="priority-sev ${a.severity === "high" ? "critical" : "medium"}"></div>
-      <div class="priority-body">
-        <div class="priority-title">${a.title}</div>
-        <div class="priority-sub">${a.message}</div>
-      </div>
-      <span class="activity-time">${a.created_at}</span>
-    </div>`
-    )
-    .join("");
-}
-
-function renderActivity() {
-  document.getElementById("activity-feed").innerHTML = MOCK_ACTIVITY
-    .map(
-      (a) => `
-    <div class="activity-item">
-      <div class="activity-dot"></div>
-      <div>
-        <div><strong>${a.title}</strong> · ${a.detail}</div>
-        <div class="activity-time">${a.time}</div>
-      </div>
-    </div>`
-    )
-    .join("");
-}
-
-function renderProjects() {
-  document.getElementById("project-breakdown").innerHTML = getFilteredProjects()
-    .map(
-      (p) => `
-    <div class="priority-item">
-      <div class="priority-body">
-        <div class="priority-title">${p.name}</div>
-        <div class="priority-sub">${p.trees.toLocaleString()} trees · integrity ${p.integrityScore} · ${p.progressPct}% of target</div>
-      </div>
-      <span class="priority-action">${p.openViolations ? p.openViolations + " open" : "On track"}</span>
-    </div>`
-    )
-    .join("");
-}
-
-function handleBriefChip(topic) {
-  const map = {
-    ndvi: () => {
-      state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.id === "h1");
-      state.selectedPriority = getFilteredPriorities().find((p) => p.id === "pr1");
-    },
-    trees: () => { state.selectedPriority = getFilteredPriorities().find((p) => p.id === "pr2"); },
-    satellite: () => { state.selectedPriority = getFilteredPriorities().find((p) => p.id === "pr3"); },
-    bio: () => {
-      state.selectedHotspot = MOCK_MAP_HOTSPOTS.find((h) => h.id === "h5");
-      state.selectedPriority = getFilteredPriorities().find((p) => p.id === "pr4");
-    },
-    fire: () => showToast("Fire watch: 3 VIIRS detections within 25 km of KM-48"),
-  };
-  map[topic]?.();
-  renderMap();
-  renderPriorities();
-  document.getElementById("zone-spatial").scrollIntoView({ behavior: "smooth" });
-}
-
-function applyFilters() {
+function refresh() {
   renderFilters();
-  renderBrief();
-  renderReviewStrip();
-  renderPriorities();
+  renderHealth();
   renderMap();
-  renderRecommendations();
-  renderEvidence();
-  renderCharts();
-  renderProjects();
-}
-
-function renderAll() {
-  renderFilters();
-  renderBrief();
-  renderReviewStrip();
-  renderPriorities();
-  renderMap();
-  renderRecommendations();
-  renderEvidence();
-  renderCharts();
-  renderAlerts();
+  renderOps();
+  renderTrends();
+  renderBioCarbonMrv();
   renderActivity();
-  renderProjects();
-}
-
-function setAppState(mode) {
-  const content = document.getElementById("main-content");
-  content.classList.remove("is-error", "is-empty");
-  state.error = state.empty = false;
-  if (mode === "error") { content.classList.add("is-error"); state.error = true; }
-  else if (mode === "empty") { content.classList.add("is-empty"); state.empty = true; }
-}
-
-function hideLoading() {
-  document.getElementById("loading-overlay").classList.add("hidden");
-  state.loading = false;
+  renderProjectStrip();
 }
 
 function bindGlobal() {
-  document.getElementById("menu-toggle").addEventListener("click", () => {
-    state.sidebarOpen = !state.sidebarOpen;
-    document.getElementById("sidebar").classList.toggle("open", state.sidebarOpen);
-  });
-
-  document.getElementById("filter-project").addEventListener("change", (e) => {
-    state.filters.project = e.target.value;
-    if (e.target.value !== "all") state.filters.scheme = "all";
-    applyFilters();
-  });
-  document.getElementById("filter-scheme").addEventListener("change", (e) => {
-    state.filters.scheme = e.target.value;
-    if (e.target.value !== "all") state.filters.project = "all";
-    applyFilters();
-  });
-  document.getElementById("filter-time").addEventListener("change", (e) => {
-    state.filters.time = e.target.value;
-    applyFilters();
-  });
-
-  document.getElementById("btn-alerts").addEventListener("click", () => showToast("Open alerts"));
-  document.getElementById("btn-retry").addEventListener("click", () => {
-    setAppState("ok");
-    renderAll();
-  });
-  document.querySelectorAll("[data-route]").forEach((btn) => {
-    btn.addEventListener("click", () => showToast(`Open ${btn.dataset.route}`));
-  });
-
-  setInterval(() => {
-    if (state.loading || state.error) return;
-    document.getElementById("live-updated").textContent = `Updated ${Math.floor(Math.random() * 4) + 1} min ago`;
-  }, 45000);
+  $("menu-toggle").onclick = () => $("sidebar").classList.toggle("open");
+  $("filter-project").onchange = (e) => { state.project = e.target.value; if (e.target.value !== "all") state.scheme = "all"; refresh(); };
+  $("filter-scheme").onchange = (e) => { state.scheme = e.target.value; if (e.target.value !== "all") state.project = "all"; refresh(); };
+  $("filter-time").onchange = (e) => { state.time = e.target.value; refresh(); };
+  $("btn-alerts").onclick = () => showToast("Alerts");
+  $("btn-retry").onclick = () => { $("main-content").classList.remove("is-error"); refresh(); };
+  $("btn-action-primary").onclick = () => selectHotspot(MOCK_MAP_HOTSPOTS[0]);
+  document.querySelectorAll("[data-route]").forEach((b) => b.onclick = () => showToast(`Open ${b.dataset.route}`));
 }
 
 function init() {
-  const demoState = new URLSearchParams(window.location.search).get("state");
-  document.getElementById("user-name").textContent = MOCK_USER.full_name;
-  document.getElementById("user-org").textContent = MOCK_USER.organization_name;
-  document.getElementById("avatar").textContent = MOCK_USER.full_name.split(" ").map((n) => n[0]).join("");
-
+  const demo = new URLSearchParams(location.search).get("state");
+  $("user-name") && ($("avatar").textContent = MOCK_USER.full_name.split(" ").map((n) => n[0]).join(""));
   renderSidebar();
-  renderMapLayers();
+  bindLayers();
   bindGlobal();
 
   setTimeout(() => {
-    hideLoading();
-    if (demoState === "error") setAppState("error");
-    else if (demoState === "empty") setAppState("empty");
+    $("loading-overlay").classList.add("hidden");
+    state.loading = false;
+    if (demo === "error") $("main-content").classList.add("is-error");
+    else if (demo === "empty") $("main-content").classList.add("is-empty");
     else {
       state.selectedHotspot = MOCK_MAP_HOTSPOTS[0];
-      state.selectedPriority = MOCK_PRIORITIES[0];
-      renderAll();
+      state.selectedAlert = MOCK_ALERTS[0];
+      refresh();
     }
-  }, 600);
+  }, 500);
+
+  setInterval(() => {
+    if (!state.loading) $("live-updated").textContent = `${Math.floor(Math.random() * 4) + 1}m`;
+  }, 40000);
 }
 
 document.addEventListener("DOMContentLoaded", init);
