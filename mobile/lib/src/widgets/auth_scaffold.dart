@@ -30,6 +30,9 @@ class AuthScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AranyixColors.surface,
+      drawer: null,
+      endDrawer: null,
+      floatingActionButton: null,
       drawerEnableOpenDragGesture: false,
       endDrawerEnableOpenDragGesture: false,
       body: Stack(

@@ -24,6 +24,19 @@ void main() {
       expect(apiErrorMessage(err), 'Invalid email or password.');
     });
 
+    test('maps bare login 401 to invalid credentials', () {
+      final err = DioException(
+        requestOptions: RequestOptions(path: '/api/v1/auth/login'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/api/v1/auth/login'),
+          statusCode: 401,
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(apiErrorMessage(err), 'Invalid email or password.');
+    });
+
     test('keeps session expired for refresh failures', () {
       final err = DioException(
         requestOptions: RequestOptions(path: '/auth/me'),

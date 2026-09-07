@@ -24,6 +24,7 @@ import 'screens/map_screen.dart';
 import 'screens/assistant_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/bioacoustic_screen.dart';
+import 'screens/bioacoustic_session_detail_screen.dart';
 import 'screens/projects_list_screen.dart';
 import 'screens/project_detail_screen.dart';
 import 'screens/profile_screen.dart';
@@ -71,7 +72,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
         final invite = state.uri.queryParameters['invite'];
         if (invite != null) return '/login?invite=$invite';
         if (sessionController.consumeSessionExpired()) {
-          return '/login?session=expired';
+          return loc.startsWith('/login') ? null : '/login?session=expired';
         }
         return '/welcome';
       }
@@ -174,6 +175,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => TreeDetailScreen(id: s.pathParameters['id']!),
       ),
       GoRoute(path: '/carbon', builder: (_, __) => const CarbonScreen()),
+      GoRoute(
+        path: '/bioacoustic/:id',
+        builder: (_, s) => BioacousticSessionDetailScreen(recordingId: s.pathParameters['id']!),
+      ),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),

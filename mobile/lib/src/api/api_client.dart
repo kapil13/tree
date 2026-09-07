@@ -35,6 +35,13 @@ bool _isPublicAuthRequest(RequestOptions options) {
   return _publicAuthPaths.any((p) => path.endsWith(p));
 }
 
+/// Suppresses session-expired side effects while credentials are being exchanged.
+bool _authExchangeInProgress = false;
+
+void beginAuthExchange() => _authExchangeInProgress = true;
+
+void endAuthExchange() => _authExchangeInProgress = false;
+
 class ApiClient {
   ApiClient._(this._dio, this._prefs, this._secure);
 
@@ -121,7 +128,7 @@ class ApiClient {
         }
 
         // Login/signup 401 means bad credentials — never recycle refresh tokens or sign out.
-        if (_isPublicAuthRequest(error.requestOptions)) {
+        if (_authExchangeInProgress || _isPublicAuthRequest(error.requestOptions)) {
           handler.next(error);
           return;
         }
@@ -192,23 +199,28 @@ class ApiClient {
   }
 
   Future<void> _clearSession({bool sessionExpired = false}) async {
+    final wasAuthenticated = sessionController.authenticated;
     _dio.options.headers.remove('Authorization');
     await _secure.delete(key: _tokenKey);
     await _secure.delete(key: _refreshKey);
     // Clear any leftover legacy prefs tokens.
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_refreshKey);
-    sessionController.signOut(sessionExpired: sessionExpired);
+    sessionController.signOut(sessionExpired: sessionExpired && wasAuthenticated);
   }
 
   /// Drops stored tokens locally without calling the logout API (e.g. before sign-in).
-  Future<void> clearLocalSession() async {
-    await _clearSession();
+  Future<void> clearLocalSession({bool sessionExpired = false}) async {
+    await _clearSession(sessionExpired: sessionExpired);
   }
 
   Options _publicAuthOptions() => Options(extra: const {'skipSessionRecovery': true});
 
-  Future<void> setTokens({required String accessToken, String? refreshToken}) async {
+  Future<void> setTokens({
+    required String accessToken,
+    String? refreshToken,
+    bool markSessionAuthenticated = false,
+  }) async {
     _dio.options.headers['Authorization'] = 'Bearer $accessToken';
     await _secure.write(key: _tokenKey, value: accessToken);
     if (refreshToken != null) {
@@ -216,7 +228,9 @@ class ApiClient {
     }
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_refreshKey);
-    sessionController.setAuthenticated(true);
+    if (markSessionAuthenticated) {
+      sessionController.setAuthenticated(true);
+    }
   }
 
   Future<void> setToken(String token) => setTokens(accessToken: token);
