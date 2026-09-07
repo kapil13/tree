@@ -1,39 +1,63 @@
-/* Aranyix Web Home — Forest Intelligence tokens */
+/* Aranyix Web Home — Forest Intelligence tokens (calm observatory palette) */
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 :root {
-  --brand-forest: #0b3d2e;
-  --brand-canopy: #15803d;
-  --brand-moss: #3d7a57;
-  --bg-app: #f4f6f3;
-  --bg-surface: #ffffff;
-  --bg-subtle: #eef1ee;
+  /* Nature-inspired — used sparingly */
+  --brand-forest: #2d4a3e;
+  --brand-canopy: #4a6b5c;
+  --brand-sage: #7a8f7a;
+  --brand-eucalyptus: #5c7a6e;
+  --brand-moss: #6b7f5e;
+  --earth-taupe: #c4b8a8;
+  --earth-sand: #e8e2d8;
+
+  /* Surfaces */
+  --bg-app: #f8f6f2;
+  --bg-surface: #fdfcfa;
+  --bg-subtle: #f1efe9;
+  --bg-muted: #eae6df;
   --bg-elevated: #ffffff;
-  --bg-sidebar: #041f17;
-  --text-primary: #0f1410;
-  --text-secondary: #5c665e;
-  --text-tertiary: #8a938c;
-  --border: #dde2dc;
-  --border-strong: #b8c0b8;
-  --status-ok: #15803d;
-  --status-warn: #b45309;
-  --status-danger: #b91c1c;
-  --status-info: #1d4ed8;
-  --ndvi-high: #15803d;
-  --ndvi-mid: #ca8a04;
-  --ndvi-low: #b91c1c;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 16px rgba(11, 61, 46, 0.08);
-  --shadow-lg: 0 12px 40px rgba(11, 61, 46, 0.12);
+  --bg-sidebar: #2a322e;
+
+  /* Typography */
+  --text-primary: #2a2f2c;
+  --text-secondary: #5c645f;
+  --text-tertiary: #8a918c;
+  --text-inverse: #f8f6f2;
+
+  /* Semantic — restrained */
+  --status-ok: #5c7a6e;
+  --status-warn: #b8956b;
+  --status-danger: #c4705a;
+  --status-info: #5a8a94;
+
+  --ndvi-high: #5c7a6e;
+  --ndvi-mid: #b8956b;
+  --ndvi-low: #c4705a;
+
+  --border: #e4e0d8;
+  --border-strong: #cfc9be;
+  --border-subtle: #eeeae4;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(42, 47, 44, 0.04);
+  --shadow-md: 0 2px 8px rgba(42, 47, 44, 0.06);
+  --shadow-lg: 0 4px 20px rgba(42, 47, 44, 0.08);
+
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
-  --sidebar-width: 248px;
-  --topbar-height: 56px;
-  --content-max: 1440px;
+
+  --sidebar-width: 240px;
+  --topbar-height: 52px;
+  --content-max: 1360px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 0.18s var(--ease-out);
+  --transition-med: 0.32s var(--ease-out);
 }
 
 * {
@@ -50,17 +74,18 @@ body {
   font-family: var(--font-sans);
   background: var(--bg-app);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
 a {
-  color: var(--brand-canopy);
+  color: var(--brand-eucalyptus);
   text-decoration: none;
 }
 
@@ -70,7 +95,7 @@ a:hover {
 
 .mono {
   font-family: var(--font-mono);
-  font-size: 0.92em;
+  font-size: 0.9em;
 }
 
 .sr-only {
@@ -82,4 +107,24 @@ a:hover {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes map-ping {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
 }
