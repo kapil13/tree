@@ -56,6 +56,13 @@ String apiErrorMessage(Object err) {
       }
       return err.message ?? 'Network error';
     }
+    final path = err.requestOptions.uri.path;
+    final isAuthAttempt = path.endsWith('/auth/login') ||
+        path.endsWith('/auth/otp/verify') ||
+        path.endsWith('/auth/signup/complete');
+    if (err.response?.statusCode == 401 && isAuthAttempt) {
+      return humanizeAuthError('invalid_credentials');
+    }
     if (err.response?.statusCode == 401) return 'Session expired. Please sign in again.';
     // Avoid showing Dio's long default 401 boilerplate.
     if (err.type == DioExceptionType.badResponse) {

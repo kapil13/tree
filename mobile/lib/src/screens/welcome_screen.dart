@@ -72,6 +72,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     return AuthLightScope(
       child: Scaffold(
         backgroundColor: AranyixColors.surface,
+        drawer: null,
+        endDrawer: null,
+        floatingActionButton: null,
+        drawerEnableOpenDragGesture: false,
+        endDrawerEnableOpenDragGesture: false,
         body: SafeArea(
           child: FadeTransition(
             opacity: _fade,

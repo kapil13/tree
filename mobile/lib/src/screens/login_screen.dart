@@ -40,7 +40,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _busy = false;
   bool _loaded = false;
   bool _inviteLoaded = false;
-  bool _sessionPrepared = false;
   bool _showSessionExpiredBanner = false;
   String? _invitePreview;
   bool _rememberMe = true;
@@ -59,11 +58,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _bootstrap();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
-  Future<void> _bootstrap() async {
-    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_inviteLoaded) {
+      _inviteLoaded = true;
+      _loadInvitePreview();
+    }
   }
 
   Future<void> _prepareSession() async {
@@ -75,11 +79,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // Drop stale tokens so refresh failures do not block a fresh sign-in.
     try {
       final api = await ref.read(apiClientProvider.future);
-      await api.clearLocalSession();
-    } catch (_) {}
-    sessionController.signOut();
-    sessionController.consumeSessionExpired();
-    ref.invalidate(apiClientProvider);
+      await api.clearLocalSession(sessionExpired: sessionExpired);
+    } catch (_) {
+      sessionController.signOut(sessionExpired: sessionExpired);
+    }
+    ref.invalidate(dashboardProvider);
+    ref.invalidate(treesProvider);
+    ref.invalidate(alertsProvider);
+    ref.invalidate(userProvider);
     if (!mounted) return;
     if (sessionExpired) {
       setState(() {});
@@ -93,17 +100,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_sessionPrepared) {
-      _sessionPrepared = true;
-      _prepareSession();
-    }
-    if (!_inviteLoaded) {
-      _inviteLoaded = true;
-      _loadInvitePreview();
-    }
+  Future<void> _bootstrap() async {
+    await _prepareSession();
+    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
   }
 
   Future<void> _loadRemembered() async {
@@ -176,6 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _err = null;
     });
+    beginAuthExchange();
     try {
       if (allowCustomApiBase) {
         try {
@@ -216,6 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       });
       _captchaKey.currentState?.reset();
     } finally {
+      endAuthExchange();
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -225,6 +226,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _err = null;
     });
+    beginAuthExchange();
     try {
       final api = await ref.read(apiClientProvider.future);
       await api.clearLocalSession();
@@ -249,6 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       setState(() => _err = apiErrorMessage(e));
     } finally {
+      endAuthExchange();
       if (mounted) setState(() => _busy = false);
     }
   }

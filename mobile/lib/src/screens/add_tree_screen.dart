@@ -10,6 +10,7 @@ import '../location_helper.dart';
 import '../l10n/setup_labels.dart';
 import '../project_setup_readiness.dart';
 import '../providers.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 
@@ -529,49 +530,23 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _wizardStepLabel(int step, AppLocalizations l10n) {
-    switch (step) {
-      case 0:
-        return l10n.addTreeStepContext;
-      case 1:
-        return l10n.addTreeStepSpecies;
-      case 2:
-        return l10n.addTreeStepLocation;
-      case 3:
-        return l10n.addTreeStepPhotos;
-      default:
-        return l10n.addTreeStepReview;
-    }
+  int get _visualStep {
+    if (_wizardStep <= 1) return 1;
+    if (_wizardStep == 2) return 2;
+    return 3;
+  }
+
+  String _visualStepLabel(AppLocalizations l10n) {
+    if (_wizardStep <= 1) return 'Site & species';
+    if (_wizardStep == 2) return 'GPS & placement';
+    return 'Photos & submit';
   }
 
   Widget _wizardProgress(AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: List.generate(_wizardStepCount, (i) {
-              final active = i <= _wizardStep;
-              return Expanded(
-                child: Container(
-                  height: 4,
-                  margin: EdgeInsets.only(right: i == _wizardStepCount - 1 ? 0 : 6),
-                  decoration: BoxDecoration(
-                    color: active ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${l10n.addTreeStepOf(_wizardStep + 1, _wizardStepCount)} · ${_wizardStepLabel(_wizardStep, l10n)}',
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-        ],
-      ),
+    return PrototypeCaptureProgress(
+      step: _visualStep,
+      totalSteps: 3,
+      label: '${l10n.addTreeStepOf(_visualStep, 3)} · ${_visualStepLabel(l10n)}',
     );
   }
 
@@ -862,9 +837,17 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_isProjectMode) ...[
-          Text(_project!['name'] as String, style: Theme.of(context).textTheme.titleMedium),
-          Text(l10n.addTreeProjectHint, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 12),
+          PrototypeContextStrip(
+            project: _project!['name'] as String,
+            meta: _selectedWorkAreaId != null
+                ? _workAreas
+                    .cast<Map<String, dynamic>>()
+                    .where((w) => w['id'] == _selectedWorkAreaId)
+                    .map((w) => w['name'] as String? ?? '')
+                    .firstWhere((n) => n.isNotEmpty, orElse: () => l10n.addTreeProjectHint)
+                : l10n.addTreeProjectHint,
+          ),
+          const SizedBox(height: 4),
         ],
         if (_showSchemeProjectWarning && _schemeProgramWithoutProject) ...[
           Container(

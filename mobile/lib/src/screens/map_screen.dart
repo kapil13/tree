@@ -10,9 +10,12 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 
 enum _DrawMode { none, polygon, corridor }
+
+enum _MapLayer { trees, workAreas, alerts }
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -28,6 +31,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _saving = false;
   /// Initial Hyderabad viewport until the map reports visible bounds.
   String _viewportBbox = '77.2,17.2,78.6,17.6';
+  final Set<_MapLayer> _activeLayers = {_MapLayer.trees, _MapLayer.workAreas};
+  Map<String, dynamic>? _selectedTree;
+  Map<String, dynamic>? _selectedAlert;
 
   @override
   void initState() {
@@ -49,6 +55,78 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+
+  void _closePinSheet() {
+    setState(() {
+      _selectedTree = null;
+      _selectedAlert = null;
+    });
+  }
+
+  void _toggleLayer(String key) {
+    final layer = switch (key) {
+      'Trees' => _MapLayer.trees,
+      'Work areas' => _MapLayer.workAreas,
+      'Alerts' => _MapLayer.alerts,
+      _ => null,
+    };
+    if (layer == null) return;
+    setState(() {
+      if (_activeLayers.contains(layer)) {
+        _activeLayers.remove(layer);
+      } else {
+        _activeLayers.add(layer);
+      }
+      if (layer == _MapLayer.alerts && !_activeLayers.contains(_MapLayer.alerts)) {
+        _selectedAlert = null;
+      }
+      if (layer == _MapLayer.trees && !_activeLayers.contains(_MapLayer.trees)) {
+        _selectedTree = null;
+      }
+    });
+  }
+
+  String _treeHealthLabel(Map<String, dynamic> tree) {
+    final status = tree['health_status'] as String? ?? tree['status'] as String?;
+    if (status == null || status.isEmpty) return 'Healthy';
+    return status.replaceAll('_', ' ');
+  }
+
+  String _treeHealthVariant(Map<String, dynamic> tree) {
+    final status = (tree['health_status'] as String? ?? tree['status'] as String? ?? '').toLowerCase();
+    if (status.contains('critical') || status.contains('dead')) return 'danger';
+    if (status.contains('stress') || status.contains('warn')) return 'warn';
+    return 'ok';
+  }
+
+  LatLng? _alertPoint(Map<String, dynamic> alert, List<dynamic> trees) {
+    final payload = alert['payload'] as Map<String, dynamic>?;
+    final lat = (payload?['latitude'] as num?)?.toDouble() ?? (payload?['lat'] as num?)?.toDouble();
+    final lon = (payload?['longitude'] as num?)?.toDouble() ?? (payload?['lon'] as num?)?.toDouble();
+    if (lat != null && lon != null) return LatLng(lat, lon);
+    final treeId = alert['tree_id'] as String?;
+    if (treeId == null) return null;
+    for (final raw in trees) {
+      final t = raw as Map<String, dynamic>;
+      if (t['id'] == treeId) {
+        final tLat = (t['latitude'] as num?)?.toDouble();
+        final tLon = (t['longitude'] as num?)?.toDouble();
+        if (tLat != null && tLon != null) return LatLng(tLat, tLon);
+      }
+    }
+    return null;
+  }
+
+  Color _alertColor(String? severity) {
+    switch (severity) {
+      case 'critical':
+        return const Color(0xFFDC2626);
+      case 'high':
+        return const Color(0xFFEA580C);
+      default:
+        return const Color(0xFFD97706);
+    }
   }
 
   List<Polygon> _fencePolygons(List<dynamic> fences) {
@@ -268,6 +346,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final bbox = _viewportBbox;
     final treesAsync = ref.watch(mapTreesProvider(bbox));
     final fencesAsync = ref.watch(plantationFencesProvider);
+    final alertsAsync = ref.watch(alertsProvider);
     final canDraw = canDrawOnMap(user);
     final showFieldOps = canSeeFieldOps(user) && (isSupervisor(user) || canSeeExecutiveHome(user));
 
@@ -332,29 +411,82 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         data: (items) {
           final points = <LatLng>[];
           final markers = <Marker>[];
-          for (final raw in items) {
-            final t = raw as Map<String, dynamic>;
-            final lat = (t['latitude'] as num?)?.toDouble();
-            final lon = (t['longitude'] as num?)?.toDouble();
-            if (lat == null || lon == null) continue;
-            final point = LatLng(lat, lon);
-            points.add(point);
-            markers.add(
-              Marker(
-                point: point,
-                width: 40,
-                height: 40,
-                child: GestureDetector(
-                  onTap: _mode != _DrawMode.none ? null : () => context.push('/trees/${t['id']}'),
-                  child: const Icon(Icons.park, color: Color(0xFF15803D), size: 32),
+          final showTrees = _activeLayers.contains(_MapLayer.trees);
+          final showWorkAreas = _activeLayers.contains(_MapLayer.workAreas);
+          final showAlerts = _activeLayers.contains(_MapLayer.alerts);
+          final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+
+          if (showTrees) {
+            for (final raw in items) {
+              final t = raw as Map<String, dynamic>;
+              final lat = (t['latitude'] as num?)?.toDouble();
+              final lon = (t['longitude'] as num?)?.toDouble();
+              if (lat == null || lon == null) continue;
+              final point = LatLng(lat, lon);
+              points.add(point);
+              final selected = _selectedTree?['id'] == t['id'];
+              markers.add(
+                Marker(
+                  point: point,
+                  width: selected ? 48 : 40,
+                  height: selected ? 48 : 40,
+                  child: GestureDetector(
+                    onTap: _mode != _DrawMode.none
+                        ? null
+                        : () => setState(() {
+                              _selectedAlert = null;
+                              _selectedTree = t;
+                            }),
+                    child: Icon(
+                      Icons.park,
+                      color: selected ? const Color(0xFF14532D) : const Color(0xFF15803D),
+                      size: selected ? 36 : 32,
+                    ),
+                  ),
                 ),
-              ),
-            );
+              );
+            }
+          }
+
+          if (showAlerts) {
+            for (final raw in alerts) {
+              final alert = raw as Map<String, dynamic>;
+              final point = _alertPoint(alert, items);
+              if (point == null) continue;
+              final selected = _selectedAlert?['id'] == alert['id'];
+              markers.add(
+                Marker(
+                  point: point,
+                  width: selected ? 36 : 30,
+                  height: selected ? 36 : 30,
+                  child: GestureDetector(
+                    onTap: _mode != _DrawMode.none
+                        ? null
+                        : () => setState(() {
+                              _selectedTree = null;
+                              _selectedAlert = alert;
+                            }),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _alertColor(alert['severity'] as String?),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: selected ? 3 : 2),
+                        boxShadow: selected
+                            ? [BoxShadow(color: _alertColor(alert['severity'] as String?).withValues(alpha: 0.45), blurRadius: 10)]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text('!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                    ),
+                  ),
+                ),
+              );
+            }
           }
 
           final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-          final fencePolygons = _fencePolygons(fences);
-          final fenceLines = _fencePolylines(fences);
+          final fencePolygons = showWorkAreas ? _fencePolygons(fences) : <Polygon>[];
+          final fenceLines = showWorkAreas ? _fencePolylines(fences) : <Polyline>[];
 
           final drawPolygons = <Polygon>[];
           final drawLines = <Polyline>[];
@@ -414,7 +546,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     }
                   },
                   onTap: (tap, latLng) {
-                    if (_mode == _DrawMode.none) return;
+                    if (_mode == _DrawMode.none) {
+                      _closePinSheet();
+                      return;
+                    }
                     setState(() => _drawPoints.add(latLng));
                   },
                 ),
@@ -430,11 +565,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   MarkerLayer(markers: markers),
                 ],
               ),
-              if (points.isEmpty && _mode == _DrawMode.none)
+              if (points.isEmpty && _mode == _DrawMode.none && !showAlerts)
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, (_selectedTree != null || _selectedAlert != null) ? 200 : 88),
                     child: Card(
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -443,9 +578,50 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   ),
                 ),
+              if (_mode == _DrawMode.none)
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  child: PrototypeMapLayerChips(
+                    layers: {
+                      'Trees': showTrees,
+                      'Work areas': showWorkAreas,
+                      'Alerts': showAlerts,
+                    },
+                    onToggle: _toggleLayer,
+                  ),
+                ),
+              if (_selectedTree != null && _mode == _DrawMode.none)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: PrototypeMapPinSheet(
+                    code: _selectedTree!['public_code'] as String? ?? _selectedTree!['code'] as String?,
+                    title: _selectedTree!['species_text'] as String? ?? 'Tree',
+                    subtitle: _selectedTree!['work_area_name'] as String? ??
+                        _selectedTree!['project_name'] as String? ??
+                        'Registered tree',
+                    healthLabel: _treeHealthLabel(_selectedTree!),
+                    healthVariant: _treeHealthVariant(_selectedTree!),
+                    onPrimary: () => context.push('/trees/${_selectedTree!['id']}'),
+                    onClose: _closePinSheet,
+                  ),
+                ),
+              if (_selectedAlert != null && _mode == _DrawMode.none)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: PrototypeMapPinSheet(
+                    title: _selectedAlert!['title'] as String? ?? 'Alert',
+                    subtitle: _selectedAlert!['message'] as String? ?? '',
+                    accentColor: _alertColor(_selectedAlert!['severity'] as String?),
+                    primaryLabel: 'View alert',
+                    onPrimary: () => context.push('/alerts/${_selectedAlert!['id']}'),
+                    onClose: _closePinSheet,
+                  ),
+                ),
               Positioned(
                 right: 16,
-                bottom: 24,
+                bottom: (_selectedTree != null || _selectedAlert != null) ? 200 : 24,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

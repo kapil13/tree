@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
@@ -623,9 +624,12 @@ class _HistoryTab extends StatelessWidget {
                   final detections = (r['species_detections'] as List?) ?? [];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => context.push('/bioacoustic/${r['id']}'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('${r['duration_seconds']}s · ${r['status']}', style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -657,6 +661,7 @@ class _HistoryTab extends StatelessWidget {
                             );
                           }),
                         ],
+                        ),
                       ),
                     ),
                   );
