@@ -4,25 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../l10n/alert_labels.dart';
 import '../providers.dart';
-import '../theme.dart';
-import '../widgets/shell_scaffold.dart';
+import '../widgets/prototype/prototype_ui.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
-  Color _severityColor(String? severity) {
-    switch (severity) {
-      case 'critical':
-        return Colors.red.shade700;
-      case 'high':
-        return Colors.orange.shade800;
-      case 'moderate':
-        return Colors.amber.shade800;
-      default:
-        return Colors.green.shade700;
-    }
-  }
+  @override
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  String _filter = 'all';
 
   Future<void> _openPreferences(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
@@ -39,9 +33,9 @@ class NotificationsScreen extends ConsumerWidget {
 
       await showModalBottomSheet<void>(
         context: context,
-        backgroundColor: AranyixColors.surfaceContainer,
+        backgroundColor: PrototypeColors.bgSurface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AranyixRadii.card)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
         ),
         builder: (ctx) {
           return StatefulBuilder(
@@ -123,6 +117,7 @@ class NotificationsScreen extends ConsumerWidget {
                                     }
                                   }
                                 },
+                          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
                           child: Text(saving ? l10n.saving : l10n.save),
                         ),
                       ),
@@ -143,12 +138,25 @@ class NotificationsScreen extends ConsumerWidget {
     }
   }
 
+  List<dynamic> _filtered(List<dynamic> items) {
+    if (_filter == 'all') return items;
+    if (_filter == 'critical') {
+      return items.where((a) => (a as Map)['severity'] == 'critical').toList();
+    }
+    return items.where((a) {
+      final kind = (a as Map)['kind'] as String? ?? '';
+      return kind.contains(_filter);
+    }).toList();
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
     final alertsAsync = ref.watch(alertsProvider);
     return Scaffold(
-      appBar: ShellTopBar(
+      backgroundColor: PrototypeColors.bgApp,
+      appBar: PrototypeBackBar(
         title: l10n.navAlerts,
         actions: [
           IconButton(
@@ -159,7 +167,7 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: alertsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -170,6 +178,7 @@ class NotificationsScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(alertsProvider),
+                  style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
                   child: Text(l10n.retry),
                 ),
               ],
@@ -177,71 +186,49 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ),
         data: (items) {
-          if (items.isEmpty) {
-            return Center(child: Text(l10n.noAlerts));
-          }
+          final filtered = _filtered(items);
           return RefreshIndicator(
+            color: PrototypeColors.brandCanopy,
             onRefresh: () async => ref.invalidate(alertsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(8),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
-              itemBuilder: (_, i) {
-                final a = items[i] as Map<String, dynamic>;
-                final isRead = a['is_read'] == true;
-                final severity = a['severity'] as String?;
-                return Card(
-                  color: isRead ? null : Colors.green.shade50,
-                  child: ListTile(
-                    leading: Icon(Icons.notifications, color: _severityColor(severity)),
-                    title: Text(a['title'] as String? ?? 'Alert'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(a['message'] as String? ?? ''),
-                        if (a['created_at'] != null)
-                          Text(
-                            a['created_at'] as String,
-                            style: const TextStyle(fontSize: 11, color: Colors.grey),
-                          ),
-                      ],
-                    ),
-                    isThreeLine: true,
-                    onTap: () async {
-                      if (!isRead) {
-                        try {
-                          final api = await ref.read(apiClientProvider.future);
-                          await api.markAlertRead(a['id'] as String);
-                          ref.invalidate(alertsProvider);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(apiErrorMessage(e))),
-                            );
-                          }
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    PrototypeFilterChip(label: 'All', selected: _filter == 'all', onTap: () => setState(() => _filter = 'all')),
+                    PrototypeFilterChip(label: 'Critical', selected: _filter == 'critical', onTap: () => setState(() => _filter = 'critical')),
+                    PrototypeFilterChip(label: 'NDVI', selected: _filter == 'ndvi', onTap: () => setState(() => _filter = 'ndvi')),
+                    PrototypeFilterChip(label: 'Fire', selected: _filter == 'fire', onTap: () => setState(() => _filter = 'fire')),
+                    PrototypeFilterChip(label: 'Survey', selected: _filter == 'survey', onTap: () => setState(() => _filter = 'survey')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (filtered.isEmpty)
+                  PrototypeEmptyState(icon: '🔔', title: l10n.noAlerts)
+                else
+                  ...filtered.map((raw) {
+                    final a = raw as Map<String, dynamic>;
+                    final kind = a['kind'] as String? ?? '';
+                    return PrototypeAlertItem(
+                      title: a['title'] as String? ?? 'Alert',
+                      detail: a['message'] as String? ?? alertKindLabel(kind, languageCode: lang),
+                      time: a['created_at'] as String? ?? '',
+                      severity: a['severity'] as String? ?? 'moderate',
+                      onTap: () async {
+                        if (a['is_read'] != true) {
+                          try {
+                            final api = await ref.read(apiClientProvider.future);
+                            await api.markAlertRead(a['id'] as String);
+                            ref.invalidate(alertsProvider);
+                          } catch (_) {}
                         }
-                      }
-                      if (!context.mounted) return;
-                      final payload = a['payload'] as Map<String, dynamic>?;
-                      final mobileDeepLink = payload?['mobile_deep_link'] as String?;
-                      final deepLink = payload?['deep_link'] as String?;
-                      final fenceId = payload?['fence_id'] as String?;
-                      final treeId = a['tree_id'] as String? ?? payload?['tree_id'] as String?;
-                      final projectId = payload?['project_id'] as String?;
-                      final target = mobileDeepLink ?? deepLink;
-                      if (target != null && target.startsWith('/')) {
-                        context.push(target);
-                      } else if (fenceId != null) {
-                        context.push('/monitoring?fence=$fenceId');
-                      } else if (treeId != null) {
-                        context.push('/trees/$treeId');
-                      } else if (projectId != null) {
-                        context.push('/projects/$projectId');
-                      }
-                    },
-                  ),
-                );
-              },
+                        if (context.mounted) context.push('/alerts/${a['id']}');
+                      },
+                    );
+                  }),
+              ],
             ),
           );
         },
