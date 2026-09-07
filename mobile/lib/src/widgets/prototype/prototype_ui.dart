@@ -1407,3 +1407,207 @@ class PrototypeBackBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 }
+
+/// Toggle chips for map layer visibility (trees, work areas, alerts).
+class PrototypeMapLayerChips extends StatelessWidget {
+  const PrototypeMapLayerChips({
+    super.key,
+    required this.layers,
+    required this.onToggle,
+  });
+
+  final Map<String, bool> layers;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final entry in layers.entries)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => onToggle(entry.key),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: entry.value ? PrototypeColors.brandForest : PrototypeColors.bgSurface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: entry.value ? PrototypeColors.brandForest : PrototypeColors.border,
+                    ),
+                    boxShadow: entry.value
+                        ? [BoxShadow(color: PrototypeColors.brandForest.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))]
+                        : null,
+                  ),
+                  child: Text(
+                    entry.key,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: entry.value ? Colors.white : PrototypeColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet preview when a map pin is selected.
+class PrototypeMapPinSheet extends StatelessWidget {
+  const PrototypeMapPinSheet({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.code,
+    this.healthLabel,
+    this.healthVariant = 'ok',
+    this.accentColor,
+    this.photoUrl,
+    this.primaryLabel = 'Details',
+    this.onPrimary,
+    this.onClose,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? code;
+  final String? healthLabel;
+  final String healthVariant;
+  final Color? accentColor;
+  final String? photoUrl;
+  final String primaryLabel;
+  final VoidCallback? onPrimary;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = accentColor ?? PrototypeColors.brandForest;
+    return Material(
+      elevation: 12,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      color: PrototypeColors.bgSurface,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (accentColor != null)
+                Container(
+                  width: 4,
+                  height: 72,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              if (accentColor != null) const SizedBox(width: 12),
+              if (photoUrl != null || accentColor == null) ...[
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: PrototypeColors.bgSubtle,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: PrototypeColors.border),
+                    image: photoUrl != null
+                        ? DecorationImage(image: NetworkImage(photoUrl!), fit: BoxFit.cover)
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: photoUrl == null ? const Text('🌳', style: TextStyle(fontSize: 28)) : null,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (code != null)
+                      Text(
+                        code!,
+                        style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: PrototypeColors.textTertiary),
+                      ),
+                    Text(title, style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
+                    if (healthLabel != null) ...[
+                      const SizedBox(height: 8),
+                      PrototypeStatusBadge(label: healthLabel!, variant: healthVariant),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        FilledButton(
+                          onPressed: onPrimary,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: PrototypeColors.brandForest,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                          child: Text(primaryLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton(
+                          onPressed: onClose,
+                          child: Text('Close', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Single continuous progress bar for 3-step capture flows.
+class PrototypeCaptureProgress extends StatelessWidget {
+  const PrototypeCaptureProgress({super.key, required this.step, required this.totalSteps, this.label});
+
+  final int step;
+  final int totalSteps;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = step.clamp(0, totalSteps) / totalSteps;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE8F5EC),
+              color: PrototypeColors.brandForest,
+            ),
+          ),
+          if (label != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              label!,
+              style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: PrototypeColors.textPrimary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

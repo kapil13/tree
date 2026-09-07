@@ -1,10 +1,12 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 
@@ -60,9 +62,18 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
     }
   }
 
+  String _formatTonnes(double kg) {
+    final tonnes = kg / 1000;
+    if (tonnes >= 1000) return tonnes.toStringAsFixed(0);
+    if (tonnes >= 10) return tonnes.toStringAsFixed(1);
+    return tonnes.toStringAsFixed(2);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final dashboardAsync = ref.watch(dashboardProvider);
+    final projectsAsync = ref.watch(plantingProjectsProvider);
     final co2e = (_result?['co2e_kg'] as num?)?.toDouble();
     final lower = (_result?['co2e_kg_lower_90'] as num?)?.toDouble();
     final upper = (_result?['co2e_kg_upper_90'] as num?)?.toDouble();
@@ -71,10 +82,126 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
 
     return stackRouteScaffold(
       location: '/carbon',
-      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navCarbon),
+      appBar: ShellTopBar(title: l10n.navCarbon),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          dashboardAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
+            ),
+            error: (e, _) => Text(apiErrorMessage(e)),
+            data: (dashboard) {
+              final kpi = dashboard['kpi'] as Map<String, dynamic>? ?? {};
+              final totalCo2eKg = (kpi['total_co2e_kg'] as num?)?.toDouble() ?? 0;
+              final annualSeq = (kpi['annual_sequestration_kg'] as num?)?.toDouble() ?? 0;
+              final totalTrees = (kpi['total_trees'] as num?)?.toInt() ?? 0;
+              final progress = annualSeq > 0 ? (totalCo2eKg / (annualSeq * 12)).clamp(0.0, 1.0) : 0.68;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF14532D), Color(0xFF166534)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                      boxShadow: [
+                        BoxShadow(
+                          color: PrototypeColors.brandForest.withValues(alpha: 0.25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          _formatTonnes(totalCo2eKg),
+                          style: GoogleFonts.dmSans(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
+                        ),
+                        Text(
+                          'tCO₂e estimated (portfolio)',
+                          style: GoogleFonts.dmSans(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
+                        ),
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          annualSeq > 0
+                              ? '${(progress * 100).round()}% of annual sequestration pace'
+                              : '$totalTrees trees in portfolio',
+                          style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('By project', style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  projectsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text(apiErrorMessage(e)),
+                    data: (projects) {
+                      if (projects.isEmpty) {
+                        return Text(
+                          'No planting projects yet.',
+                          style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
+                        );
+                      }
+                      final perTree = totalTrees > 0 ? totalCo2eKg / totalTrees : 2.6 * (44 / 12);
+                      return Column(
+                        children: projects.map((raw) {
+                          final p = raw as Map<String, dynamic>;
+                          final trees = (p['tree_count'] as num?)?.toInt() ?? 0;
+                          final estimateKg = trees * perTree;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: PrototypeColors.bgSurface,
+                              borderRadius: BorderRadius.circular(PrototypeRadii.md),
+                              border: Border.all(color: PrototypeColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    p['name'] as String? ?? 'Project',
+                                    style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                Text(
+                                  '${_formatTonnes(estimateKg)} tCO₂e',
+                                  style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: PrototypeColors.brandForest),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(l10n.carbonTitle, style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                ],
+              );
+            },
+          ),
           Text(
             'Estimate CO₂e from species and optional measurements. '
             'This is an Estimate — not a Live field measurement or registry-issued credit.',
