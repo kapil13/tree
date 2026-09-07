@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aranyix — Dashboard / Command Center</title>
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+  <div id="loading-overlay" class="state-overlay">
+    <div class="load-grid">
+      <div class="load-cell"></div><div class="load-cell wide"></div><div class="load-cell"></div>
+      <div class="load-cell map"></div><div class="load-cell"></div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar" aria-label="Navigation">
+      <div class="sidebar-brand"><span class="mark">🌿</span> Aranyix</div>
+      <nav id="sidebar-nav"></nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Menu">☰</button>
+          <div>
+            <div class="topbar-breadcrumb">Dashboard / <strong>Command Center</strong></div>
+            <span class="topbar-title" id="topbar-context">Portfolio overview</span>
+          </div>
+          <select id="filter-project" class="filter-select" aria-label="Project"><option value="all">All Projects</option></select>
+          <select id="filter-scheme" class="filter-select" aria-label="Programme"><option value="all">All programmes</option></select>
+          <select id="filter-time" class="filter-select" aria-label="Time">
+            <option value="7d">7 days</option>
+            <option value="30d" selected>30 days</option>
+            <option value="90d">90 days</option>
+          </select>
+          <span class="live-pill"><span class="dot"></span>Updated <span id="live-updated">2m</span> ago</span>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="btn-icon" id="btn-alerts" aria-label="Notifications">🔔<span class="badge" id="alert-badge">6</span></button>
+          <div class="topbar-user">
+            <span class="name" id="user-name">Priya Sharma</span>
+            <span class="org" id="user-org">NHAI Regional Plantation Cell</span>
+          </div>
+          <div class="avatar" id="avatar">PS</div>
+        </div>
+      </header>
+
+      <main class="dashboard" id="main-content">
+        <div id="state-error" class="state-msg"><h2>Dashboard unavailable</h2><p>Could not load portfolio data.</p><button class="btn btn-primary" id="btn-retry">Retry</button></div>
+        <div id="state-empty" class="state-msg"><h2>No portfolio yet</h2><p>Create a project to begin monitoring.</p><button class="btn btn-primary" data-route="/projects/new">Create project</button></div>
+
+        <div class="dash-body">
+          <!-- Operational status -->
+          <div id="status-bar" class="status-bar warn">
+            <div class="status-left">
+              <span class="status-icon">⚠</span>
+              <div>
+                <div class="status-label" id="status-label">Follow-up needed</div>
+                <div class="status-summary" id="status-summary">3 compliance items · 6 alerts · 5 stale satellite sites</div>
+              </div>
+            </div>
+            <button type="button" class="link-btn" id="status-action">View priorities →</button>
+          </div>
+
+          <!-- AI insight (one line) -->
+          <div class="ai-strip" id="ai-strip">
+            <span class="ai-tag">AI signal</span>
+            <span id="ai-text">NDVI decline and SAR divergence are concentrated around KM-48 corridor Ch. 142–148.</span>
+          </div>
+
+          <!-- What changed -->
+          <div class="change-strip" id="change-strip" aria-label="What changed"></div>
+
+          <!-- FIRST VIEWPORT: health + map + priority -->
+          <div class="viewport-grid">
+            <section class="panel primary health-panel" aria-label="Portfolio health">
+              <div class="panel-head">
+                <span class="panel-title">Forest integrity</span>
+                <span class="status-pill warn" id="status-pill">Follow-up</span>
+              </div>
+              <div class="integrity-block">
+                <div class="integrity-gauge" id="integrity-gauge">
+                  <svg viewBox="0 0 120 120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="48"/><circle class="gauge-fill" id="gauge-arc" cx="60" cy="60" r="48"/></svg>
+                  <div class="gauge-center"><span class="gauge-num" id="integrity-score">76</span><span class="gauge-sub">/100</span></div>
+                </div>
+                <div class="integrity-meta">
+                  <div class="delta-row"><span class="delta down" id="integrity-trend">−3</span><span class="delta-label">vs prev period</span></div>
+                  <div class="major-risk" id="major-risk">Major risk: NDVI stress corridor</div>
+                  <div class="dist-bars" id="health-dist"></div>
+                  <div class="dist-bars risk" id="risk-dist"></div>
+                </div>
+              </div>
+              <div class="signal-row" id="signal-row"></div>
+              <div class="kpi-strip" id="kpi-strip"></div>
+            </section>
+
+            <section class="panel map-panel" aria-label="Spatial intelligence">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-title">Spatial intelligence</span>
+                  <div class="panel-sub" id="map-subtitle">Projects · health · alerts · field work</div>
+                </div>
+                <div class="map-layers" id="map-layers">
+                  <button type="button" class="layer on" data-layer="health">Health</button>
+                  <button type="button" class="layer on" data-layer="ndvi">NDVI</button>
+                  <button type="button" class="layer on" data-layer="alerts">Alerts</button>
+                  <button type="button" class="layer on" data-layer="satellite">Satellite</button>
+                  <button type="button" class="layer on" data-layer="bio">Bio</button>
+                  <button type="button" class="layer on" data-layer="field">Field</button>
+                </div>
+              </div>
+              <div id="spatial-map" class="map-canvas">
+                <div class="map-grid"></div>
+                <div class="map-corridor" id="map-corridor"></div>
+                <div id="map-heatmap" class="map-heatmap"></div>
+                <div id="map-zones"></div>
+                <div id="map-pins"></div>
+                <div class="map-tooltip" id="map-tooltip"></div>
+              </div>
+              <div class="map-context" id="map-context">
+                <span id="ctx-project">All projects</span>
+                <span id="ctx-ndvi">NDVI —</span>
+                <span id="ctx-alerts">6 alerts</span>
+              </div>
+            </section>
+
+            <section class="panel ops-panel" aria-label="Priority queue">
+              <div class="panel-head"><span class="panel-title">Priority queue</span><button class="link-btn" data-route="/alerts">All alerts</button></div>
+              <div class="severity-legend">
+                <span class="leg crit">Critical</span><span class="leg high">High</span><span class="leg med">Med</span><span class="leg done">Done</span>
+              </div>
+              <div class="alert-queue" id="alert-queue"></div>
+              <div class="panel-head sub"><span class="panel-title">Recommended action</span></div>
+              <button type="button" class="action-btn primary" id="btn-action-primary">Inspect KM-48</button>
+            </section>
+          </div>
+
+          <!-- Command strip -->
+          <div class="command-strip" id="command-strip"></div>
+
+          <!-- Compliance / Audience / Government -->
+          <div class="strips-row">
+            <section class="panel strip-panel" aria-label="Compliance">
+              <div class="strip-head">Compliance & evidence</div>
+              <div class="strip-metrics" id="compliance-strip"></div>
+              <div class="compliance-flow" id="compliance-flow"></div>
+            </section>
+            <section class="panel strip-panel" aria-label="Programmes">
+              <div class="strip-head">Programme context</div>
+              <div class="strip-body" id="audience-strip"></div>
+            </section>
+            <section class="panel strip-panel" aria-label="Government rollup">
+              <div class="strip-head">Government rollup</div>
+              <div class="strip-metrics" id="gov-strip"></div>
+            </section>
+          </div>
+
+          <!-- Monitoring trends -->
+          <div class="trends-grid">
+            <div class="panel chart-panel" data-chart="ndvi">
+              <div class="panel-head"><span class="panel-title">NDVI</span><span class="chart-val down" id="ndvi-val">0.58</span></div>
+              <svg id="chart-ndvi" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+            <div class="panel chart-panel" data-chart="canopy">
+              <div class="panel-head"><span class="panel-title">Canopy</span><span class="chart-val" id="canopy-val">84%</span></div>
+              <svg id="chart-canopy" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+            <div class="panel chart-panel" data-chart="survival">
+              <div class="panel-head"><span class="panel-title">Survival</span><span class="chart-val down" id="survival-val">88%</span></div>
+              <svg id="chart-survival" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+            <div class="panel chart-panel" data-chart="satellite">
+              <div class="panel-head"><span class="panel-title">Satellite</span><span class="chart-val warn" id="sat-val">71%</span></div>
+              <svg id="chart-satellite" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+            <div class="panel chart-panel" data-chart="anomaly">
+              <div class="panel-head"><span class="panel-title">Anomalies</span><span class="chart-val down" id="anomaly-val">7</span></div>
+              <svg id="chart-anomaly" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+            <div class="panel chart-panel" data-chart="alerts">
+              <div class="panel-head"><span class="panel-title">Alert trend</span><span class="chart-val down" id="alert-trend-val">6</span></div>
+              <svg id="chart-alerts" class="mini-chart" viewBox="0 0 200 56"></svg>
+            </div>
+          </div>
+
+          <!-- SAR intelligence -->
+          <section class="panel" aria-label="SAR intelligence" style="margin-bottom:12px">
+            <div class="panel-head">
+              <div>
+                <span class="panel-title">SAR intelligence</span>
+                <div class="panel-sub">Forest integrity from synthetic aperture radar</div>
+              </div>
+              <button class="link-btn" data-route="/satellite">Open SAR →</button>
+            </div>
+            <div class="sar-stats" id="sar-stats"></div>
+            <svg id="chart-sar" class="sar-chart" viewBox="0 0 400 80"></svg>
+          </section>
+
+          <!-- Portfolio analytics -->
+          <div class="section-grid-2">
+            <section class="panel" aria-label="Portfolio vitals">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-title">Portfolio vitals</span>
+                  <div class="panel-sub">Healthy canopy · satellite MRV · ecosystem score</div>
+                </div>
+              </div>
+              <div class="vitals-row" id="vitals-row"></div>
+            </section>
+            <section class="panel" aria-label="Canopy health mix">
+              <div class="panel-head">
+                <span class="panel-title">Canopy health mix</span>
+                <span class="chart-val" id="health-total">14,237 trees</span>
+              </div>
+              <div style="display:flex;gap:12px;padding:8px 12px">
+                <svg id="chart-donut" viewBox="0 0 120 120" style="width:100px;height:100px;flex-shrink:0"></svg>
+                <div class="health-legend" id="health-legend" style="flex:1"></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="section-grid-2">
+            <section class="panel" aria-label="Carbon trajectory">
+              <div class="panel-head">
+                <span class="panel-title">Carbon trajectory</span>
+                <span class="track-pill on" id="carbon-track">On track</span>
+              </div>
+              <div class="carbon-meta">
+                <span><strong id="carbon-current">284.5</strong> tCO₂e stored</span>
+                <span class="muted">Target <strong id="carbon-target">310</strong> t</span>
+              </div>
+              <svg id="chart-carbon" class="carbon-chart" viewBox="0 0 360 110"></svg>
+            </section>
+            <section class="panel" aria-label="MRV pipeline">
+              <div class="panel-head">
+                <span class="panel-title">Evidence / MRV</span>
+                <span class="chart-val" id="mrv-ready">82%</span>
+              </div>
+              <div class="mrv-pipeline" id="mrv-pipeline"></div>
+              <div class="mrv-stats">
+                <span><strong id="mrv-verified">847</strong> verified</span>
+                <span class="warn-text"><strong id="mrv-gaps">5</strong> gaps</span>
+                <span><strong id="mrv-pending">23</strong> pending</span>
+                <span class="warn-text"><strong id="mrv-blocked">1</strong> blocked</span>
+              </div>
+            </section>
+          </div>
+
+          <!-- Satellite + Biodiversity -->
+          <div class="section-grid-2">
+            <section class="panel" aria-label="Satellite intelligence">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-title">Satellite intelligence</span>
+                  <div class="panel-sub">NDVI across plantation sites</div>
+                </div>
+                <button class="link-btn" data-route="/satellite">Open satellite →</button>
+              </div>
+              <svg id="chart-ndvi-full" viewBox="0 0 320 120" style="width:100%;height:100px;display:block;padding:0 12px"></svg>
+              <div class="fence-list" id="fence-list"></div>
+            </section>
+            <section class="panel" aria-label="Biodiversity pulse">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-title">Biodiversity pulse</span>
+                  <div class="panel-sub">Bioacoustic richness & taxon signals</div>
+                </div>
+                <button class="link-btn" data-route="/bioacoustic">Record soundscape →</button>
+              </div>
+              <div class="bio-grid" id="bio-grid"></div>
+              <svg id="chart-bio" class="mini-chart" viewBox="0 0 280 48" style="height:48px;padding:0 12px"></svg>
+              <svg id="chart-taxon" class="taxon-chart" viewBox="0 0 280 110"></svg>
+            </section>
+          </div>
+
+          <!-- Threat watch -->
+          <section class="panel" aria-label="Threat watch" style="margin-bottom:12px">
+            <div class="panel-head">
+              <div>
+                <span class="panel-title">Threat watch</span>
+                <div class="panel-sub">Fire · weather · pest early warning</div>
+              </div>
+              <button class="link-btn" data-route="/portfolio/threats">Full threat map →</button>
+            </div>
+            <div class="threat-grid" id="threat-grid"></div>
+          </section>
+
+          <!-- Operations + Species + Quick actions -->
+          <div class="section-grid-3">
+            <section class="panel" aria-label="Operations">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-title">Field operations</span>
+                  <div class="panel-sub" id="ops-sub">Inspections · surveys · evidence · monitoring</div>
+                </div>
+                <button class="link-btn" data-route="/field-ops">Field ops →</button>
+              </div>
+              <div class="ops-list" id="ops-list"></div>
+            </section>
+            <section class="panel" aria-label="Species leaderboard">
+              <div class="panel-head">
+                <span class="panel-title">Planted species</span>
+                <button class="link-btn" data-route="/trees">All trees →</button>
+              </div>
+              <div class="species-list" id="species-list"></div>
+            </section>
+            <section class="panel" aria-label="Quick actions">
+              <div class="panel-head"><span class="panel-title">Quick actions</span></div>
+              <div class="actions-grid" id="actions-grid"></div>
+              <div class="reports-mini" id="reports-mini"></div>
+            </section>
+          </div>
+
+          <!-- Spatial overview + Recent registrations -->
+          <div class="section-grid-2">
+            <section class="panel" aria-label="Spatial overview">
+              <div class="panel-head">
+                <span class="panel-title">Spatial overview</span>
+                <button class="link-btn" data-route="/map">Full map →</button>
+              </div>
+              <div class="spatial-mini" id="spatial-mini"></div>
+            </section>
+            <section class="panel" aria-label="Recent registrations">
+              <div class="panel-head">
+                <span class="panel-title">Recent registrations</span>
+                <button class="link-btn" data-route="/trees">Registry →</button>
+              </div>
+              <div class="tree-list" id="tree-list"></div>
+            </section>
+          </div>
+
+          <!-- Live activity + Data sources -->
+          <div class="section-grid-2">
+            <section class="panel" aria-label="Live activity">
+              <div class="panel-head"><span class="panel-title">Live activity</span></div>
+              <div class="timeline" id="activity-timeline"></div>
+            </section>
+            <section class="panel" aria-label="Data sources">
+              <div class="panel-head"><span class="panel-title">Data sources</span></div>
+              <div class="sources-row" id="sources-row"></div>
+            </section>
+          </div>
+
+          <!-- Project comparison -->
+          <div class="project-strip" id="project-strip"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
