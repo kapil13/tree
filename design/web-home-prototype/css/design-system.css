@@ -1,0 +1,85 @@
+/* Aranyix Web Home — Forest Intelligence tokens */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --brand-forest: #0b3d2e;
+  --brand-canopy: #15803d;
+  --brand-moss: #3d7a57;
+  --bg-app: #f4f6f3;
+  --bg-surface: #ffffff;
+  --bg-subtle: #eef1ee;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #041f17;
+  --text-primary: #0f1410;
+  --text-secondary: #5c665e;
+  --text-tertiary: #8a938c;
+  --border: #dde2dc;
+  --border-strong: #b8c0b8;
+  --status-ok: #15803d;
+  --status-warn: #b45309;
+  --status-danger: #b91c1c;
+  --status-info: #1d4ed8;
+  --ndvi-high: #15803d;
+  --ndvi-mid: #ca8a04;
+  --ndvi-low: #b91c1c;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(11, 61, 46, 0.08);
+  --shadow-lg: 0 12px 40px rgba(11, 61, 46, 0.12);
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --sidebar-width: 248px;
+  --topbar-height: 56px;
+  --content-max: 1440px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: var(--brand-canopy);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
