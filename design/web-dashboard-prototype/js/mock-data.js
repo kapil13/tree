@@ -183,6 +183,7 @@ const MOCK_DASHBOARD = {
     { stage: "MRV", pct: 45, status: "pending", pending: 0, gaps: 0, blocked: 0 },
     { stage: "Report", pct: 12, status: "pending", pending: 0, gaps: 0, blocked: 0 },
   ],
+  primarySignal: "KM-48 · NDVI ↓12%",
   change_strip: [
     { label: "+19 trees", trend: "up", type: "trees" },
     { label: "↓12% NDVI", trend: "down", type: "ndvi" },
@@ -232,6 +233,24 @@ const MOCK_MAP_HOTSPOTS = [
   { id: "h5", type: "bio", projectId: "p3", name: "Bio station", left: 32, top: 58, ndvi: null, delta: -18, severity: "medium" },
   { id: "h6", type: "field", projectId: "p1", name: "Field team", left: 42, top: 50, ndvi: null, delta: 0, severity: "info" },
   { id: "h7", type: "fire", projectId: "p1", name: "Fire watch", left: 48, top: 36, ndvi: null, delta: 0, severity: "high" },
+];
+
+const MOCK_PRIORITIES = [
+  {
+    id: "pr1", severity: "critical", name: "KM-48",
+    signals: ["NDVI ↓12%", "18 trees", "6 alerts"],
+    sla: "48h", action: "Inspect KM-48", projectId: "p1",
+  },
+  {
+    id: "pr2", severity: "high", name: "Fire Watch",
+    signals: ["3 sites", "Active"],
+    sla: "Active", action: "Monitor fire zones", projectId: "p1",
+  },
+  {
+    id: "pr3", severity: "medium", name: "Satellite refresh",
+    signals: ["5 sites", "Overdue"],
+    sla: "Overdue", action: "Refresh scans", projectId: "all",
+  },
 ];
 
 const MOCK_ALERTS = [

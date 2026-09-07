@@ -1,132 +1,156 @@
-# Aranyix Web Dashboard — Forest Intelligence OS Prototype
+# Aranyix Command Center — Visual Reconception
 
-Senior product design prototype for the Aranyix **Dashboard / Command Center**. This is an HTML-only redesign that preserves the informational richness of the production executive dashboard while recomposing it into a connected, visualization-first Forest Intelligence operating system.
+**HTML prototype only.** Do not implement in production until: `APPROVED — IMPLEMENT WEB`
 
-**Do not implement in production until approved with:** `APPROVED — IMPLEMENT WEB`
+This is a **complete visual reconception** of the Aranyix Dashboard — not a card-based rearrangement of the existing UI. The production executive dashboard remains the **source of truth for business content**; this prototype reimagines **how** that intelligence is experienced.
 
-## Preview locally
+## Preview
 
 ```bash
 cd design/web-dashboard-prototype
 python3 -m http.server 8765
-# Open http://localhost:8765/index.html
+# http://localhost:8765/index.html
 ```
 
-Demo states: `?state=error` · `?state=empty`
+---
 
-## Deploy to aranyix.tech (optional)
+## Visual concept
 
-```bash
-mkdir -p frontend/public/design/web-dashboard-prototype
-cp -r design/web-dashboard-prototype/* frontend/public/design/web-dashboard-prototype/
-cd infrastructure/hostinger
-FORCE_FRONTEND_REBUILD=1 ./deploy.sh
-```
+Aranyix is a **Forest Intelligence Platform**. The Command Center is an operational control room where **map + data + signals + trends + alerts + actions** are visually connected — alive and interactive before the user clicks anything.
 
-URL: `https://aranyix.tech/design/web-dashboard-prototype/index.html`
+It deliberately avoids feeling like:
+- Power BI / ERP / CRM dashboards
+- ESG reporting portals
+- KPI card grids
+- Generic SaaS admin panels
+
+### Design principle: 75% visual · 20% labels · 5% explanation
+
+No paragraphs. No repeated subtitles. Communication through **number · trend · label · chart · map · status · action**.
 
 ---
 
 ## Dashboard hierarchy
 
-The layout follows the **Command Center model** — seven conceptual layers composed visually, not as seven equal card rows:
+```
+┌ HEADER ─ filters · live status · notifications ─────────────────┐
+├ PORTFOLIO STATE          │  LIVE FOREST MAP (dominant canvas)   │
+│  76 ↓3                   │  projects · NDVI · alerts · bio      │
+│  cascade: NDVI→trees→    │  layers · heat · density · corridor  │
+│  alerts→action           │                                      │
+├ SIGNAL RIBBON ─ NDVI · Satellite · Survival · Alerts · Bio ─────┤
+├ SAR + THREAT inline strips ─────────────────────────────────────┤
+├ ANALYTICAL TRENDS (6 charts)  │  PRIORITY / ACTION stack       │
+├ CARBON │ BIODIVERSITY │ MRV PIPELINE │ LIVE ACTIVITY ────────────┤
+└ PROJECT / PROGRAMME PERFORMANCE ──────────────────────────────────┘
+```
 
-| Layer | Prototype section | Purpose |
-|-------|-------------------|---------|
-| 1. Portfolio state | Status bar + Forest integrity gauge + signal row | What is the overall health? |
-| 2. What changed | Change strip (deltas, arrows) | What moved since last period? |
-| 3. Where | Spatial intelligence map (first viewport) | Where is it happening? |
-| 4. Risk / attention | Priority queue + recommended action | What requires attention NOW? |
-| 5. Monitoring | Trends row, SAR, satellite, bio, threat watch | Is coverage adequate? Is health improving? |
-| 6. Action | Field operations, quick actions, MRV pipeline | What work needs execution? |
-| 7. Outcome | Carbon trajectory, compliance strips, species, activity | Are we on track? What was delivered? |
-
-### First viewport (above the fold)
-
-A Program Manager sees immediately:
-
-- **Forest integrity** score, trend, health/risk distributions, NDVI/trees/stale/alerts signals
-- **Spatial map** with layer controls (Health · NDVI · Alerts · Satellite · Bio · Field)
-- **Priority queue** with severity, location, trend, SLA — plus contextual recommended action
-
-No scrolling through five rows of identical cards before understanding the situation.
-
-### Supporting sections (production parity)
-
-All major production dashboard modules are retained:
-
-- Operational status bar
-- AI insight (one concise line — not a chatbot)
-- Command strip (projects, violations, alerts, sites, survival due)
-- Compliance / evidence / programme context / government rollup
-- SAR intelligence + integrity trend
-- Portfolio vitals (healthy · verified · ecosystem gauges)
-- Canopy health mix (donut + legend)
-- Carbon trajectory (historical → current → projected → target)
-- Evidence / MRV pipeline (Capture → Evidence → Verify → MRV → Report)
-- Satellite intelligence + site NDVI list
-- Biodiversity pulse + taxon breakdown
-- Threat watch (fire, pest, locust, weather)
-- Field operations work queue
-- Planted species leaderboard
-- Quick actions (contextually prioritized)
-- Spatial overview + recent tree registrations
-- Live activity timeline
-- Data sources strip
-- Project comparison strip
+| Zone | Role |
+|------|------|
+| **Portfolio state** | Integrity score, primary signal, visual cascade, key counts |
+| **Map stage** | Primary visual canvas — 70%+ of hero viewport |
+| **Signal ribbon** | Live cross-portfolio signals (not cards) |
+| **Trends canvas** | Full-size analytical charts with baseline/target/anomaly |
+| **Priority stack** | Visual severity blocks — not a conventional alert list |
+| **Operations band** | Carbon · Bio · MRV · Activity in one flowing band |
+| **Project performance** | Comparative integrity + NDVI by project |
 
 ---
 
-## Visualization strategy
+## Map strategy
 
-Every chart answers a business question:
+The map is the **heart** of the dashboard — not a card, not a widget.
 
-| Visualization | Question |
-|---------------|----------|
-| Integrity gauge + distributions | Is the portfolio healthy? Where is risk concentrated? |
-| NDVI / canopy / survival sparklines | Is forest health improving or deteriorating? |
-| Satellite freshness | Is MRV coverage adequate? |
-| Anomaly + alert trends | Are issues increasing? |
-| SAR integrity series | Does radar confirm optical stress? |
-| Carbon trajectory | Is sequestration on track vs target? |
-| MRV pipeline | Where are evidence blockers? |
-| Taxon bar chart | Is biodiversity improving? |
-| Species leaderboard | What is planted and at what scale? |
-| Threat grid | What external risks are active? |
+**Layers:** Health · NDVI · Alerts · Satellite · Bio · Field
 
-Color is used **for state**, not decoration. Green does not dominate the interface.
+**Visual elements:**
+- Project zone boundaries with stress highlighting
+- Tree density texture overlay
+- NDVI heat zones (stress / ok / warn)
+- Alert pins with pulse animation on critical items
+- Stress corridor overlay (KM-48)
+- Compact layer toggles + contextual legend
+
+**Selection flow:**
+```
+Select KM-48 hotspot
+  → NDVI chart highlights decline + anomaly marker
+  → 18 affected trees in cascade
+  → 6 alerts in state metrics
+  → priority block selects KM-48 CRITICAL
+  → "Inspect KM-48" becomes primary action
+  → map corridor + zone activate
+```
+
+---
+
+## Chart strategy
+
+**No decorative sparklines.** Each chart block includes:
+
+- Trend line with area fill
+- Baseline reference (where applicable)
+- Target line (carbon)
+- Anomaly highlighting (last point / selected context)
+- Current value + metadata row
+- Hover tooltips with exact values
+
+| Chart | Business question |
+|-------|-------------------|
+| NDVI | Is canopy vigor declining? Where? |
+| Forest Integrity | Is SAR composite holding? |
+| Carbon | Is sequestration on track vs target? |
+| Survival | Are plantings surviving? |
+| Satellite Freshness | Is MRV coverage adequate? |
+| Bioacoustic | Is ecosystem activity healthy? |
+
+Charts cross-highlight with map selection. Clicking a chart focuses the relevant map zone.
+
+---
+
+## Priority intelligence
+
+Not a list. **Visual severity blocks:**
+
+```
+CRITICAL ━━━━━━━━━━━━━━
+KM-48
+NDVI ↓12% · 18 trees · 6 alerts
+48h
+
+HIGH ━━━━━━━━━━━━━━━━━
+Fire Watch · 3 sites
+
+MEDIUM ━━━━━━━━━━━━━━━
+Satellite refresh · 5 sites
+```
+
+Each block exposes: **severity · location · signals · SLA · action**
 
 ---
 
 ## Interaction model
 
-The dashboard behaves as **one connected system**:
+One connected system — not isolated widgets.
 
-| User action | System response |
-|-------------|-----------------|
-| Select map pin / zone | Charts highlight, KPIs update, priority queue selects related alert, recommended action updates |
-| Select priority item | Map pin highlights, NDVI/satellite charts highlight |
-| Select change chip (e.g. ↓12% NDVI) | Map focuses stress corridor, related charts highlight |
-| Toggle map layers | Pins/heatmap show/hide by type |
-| Filter project / programme / time | All sections re-filter consistently |
-| Click trend chart | Cross-links to map or alerts |
-| Click fence row | Selects project on map |
-| Click project chip (bottom strip) | Full dashboard filters to that project |
-
-Hover on chart points shows exact values with period labels.
+| Trigger | Response |
+|---------|----------|
+| Project filter | Map zones · charts · KPIs · priorities · project rows |
+| Map pin/zone | Charts highlight · cascade updates · priority selects · action updates |
+| Priority block | Map focuses · charts · action button |
+| Signal ribbon cell | Cross-links to relevant map/chart |
+| Chart click | Map highlight · alert context |
+| Time range (30D/7D/90D) | All trend series refresh |
 
 ---
 
 ## Information prioritization
 
-Visual weight tiers:
-
-- **PRIMARY** — First viewport: integrity, map, priority queue
-- **IMPORTANT** — Status bar, change strip, command strip, trends, SAR
-- **SUPPORTING** — Portfolio vitals, carbon, MRV, satellite/bio, threat
-- **DETAIL** — Species, activity, data sources, recent trees, reports
-
-Text is minimal. Signals use numbers, arrows, deltas, and color — not paragraphs.
+1. **Instant read** — Integrity 76 ↓3 + primary signal + map
+2. **Live signals** — Ribbon strip (8 metrics, zero cards)
+3. **Analysis** — 6 full charts + priority stack
+4. **Outcome** — Carbon trajectory · Bio · MRV · Activity
+5. **Comparison** — Project performance rows
 
 ---
 
@@ -134,70 +158,66 @@ Text is minimal. Signals use numbers, arrows, deltas, and color — not paragrap
 
 | Token | Use |
 |-------|-----|
-| Warm ivory / stone (`#f8f6f2`, `#fdfcfa`) | Base surfaces |
-| Muted sage / eucalyptus (`#5c7a6e`, `#5a8a94`) | Healthy state, spatial/satellite |
-| Deep charcoal (`#2a2f2c`) | Primary text |
-| Muted amber (`#b8956b`) | Warning |
-| Restrained terracotta (`#c4705a`) | Critical / decline |
-| Muted teal (`#5a8a94`) | Satellite / spatial accents |
+| `#f8f6f2` ivory | App background |
+| `#fdfcfa` surface | Panels, map legend |
+| `#5c7a6e` eucalyptus | Healthy · integrity |
+| `#5a8a94` spatial teal | Map · satellite · NDVI |
+| `#b8956b` amber | Warning |
+| `#c4705a` terracotta | Critical · decline |
+| `#2d4a3e` forest deep | Primary action · nav rail |
 
-Avoided: neon green, heavy gradients, glassmorphism, cyberpunk aesthetics, marketing-homepage tone.
+Green is **not** dominant. Color communicates state.
 
 ---
 
 ## Web / mobile parity
 
-- **Desktop-first** — three-column cockpit (health | map | queue)
-- **Tablet** — viewport stacks; map remains prominent; trends go 3-column
-- **Mobile** — map first, then health, then queue; command strip 2-column; sections single-column
+- **Desktop:** Map-dominant hero · side state column · trends + priority split
+- **Tablet:** Map stacks above state · trends 2-column · priority below
+- **Mobile:** Map first (360px min) · state row wraps · single-column trends · priority + action sticky
 
-The mobile app should mirror the same information hierarchy and connected cross-filtering, adapted to touch and bottom navigation — not a shrunk desktop card stack.
+Mobile should preserve the **map-first, signal-driven** hierarchy — not shrink cards.
 
 ---
 
-## Production implementation notes
+## Production capabilities retained
 
-When approved, implement in this order:
+All real Aranyix modules represented with production terminology:
 
-1. **Layout shell** — Left nav, topbar filters, viewport grid in `executive-dashboard.tsx`
-2. **Connected state** — Shared filter context (project, programme, time) driving all panels
-3. **Map integration** — Promote `TreesMap` / plantation fence layers with compact layer toggles
-4. **Priority queue** — Replace generic alert list with severity-sorted work queue component
-5. **Change strip** — Compute period deltas from existing KPI endpoints
-6. **Chart upgrades** — Recharts panels with cross-highlight on selection
-7. **AI insight** — Single-line from `intelligence.brief()` — not a chat widget
-8. **Preserve all existing API calls** — No new metrics; recompose existing data
+Projects · Trees · Map · Field Operations · Portfolio Health · Satellite · SAR · Biodiversity · Bioacoustic · Alerts · Evidence · MRV · Carbon · Compliance · Threat Watch · Reports · AI signal · Government rollup concepts · Species · Quick actions (via rail + primary action)
 
-### Files in this prototype
+No invented business logic — representative mock data shaped like production API responses.
+
+---
+
+## Files
 
 ```
 design/web-dashboard-prototype/
-├── index.html          # Full dashboard structure
+├── index.html              # Map-centric command center structure
 ├── css/
-│   ├── design-system.css
-│   └── dashboard.css
+│   ├── design-system.css   # Tokens
+│   └── command-center.css  # Layout (NOT card-grid)
 ├── js/
-│   ├── mock-data.js    # Production-shaped representative data
-│   ├── charts.js       # SVG chart utilities
-│   └── app.js          # Connected interactions
+│   ├── mock-data.js        # Production-shaped data
+│   ├── charts.js           # Full-size chart engine
+│   └── app.js              # Connected intelligence
 └── README.md
 ```
 
-### Relationship to `web-home-prototype`
+## Acceptance test
 
-`design/web-home-prototype/` explored earlier Command Center iterations (v1–v4). This prototype (`web-dashboard-prototype`) is the **final senior product design direction** with full production module parity and the connected spatial intelligence model.
+Within 10 seconds, a Program Manager sees:
 
----
+1. **Portfolio health** — 76 ↓3
+2. **Primary issue** — KM-48 NDVI ↓12%
+3. **Where** — map corridor highlighted
+4. **Severity** — CRITICAL · 48h
+5. **Cascade** — NDVI → 18 trees → 6 alerts → FIELD INSPECTION
+6. **Action** — Inspect KM-48
 
-## Design acceptance test
+…without reading paragraphs or scrolling through card stacks.
 
-Within 10 seconds of opening, a Program Manager should understand:
+**Feeling:** "I can see the entire forest situation here."
 
-1. Overall portfolio health (integrity 76/100, follow-up needed)
-2. Biggest current issue (KM-48 NDVI drop)
-3. Where it is (map corridor Ch. 142–148)
-4. How serious it is (critical, 48h SLA)
-5. What changed (↓12% NDVI, +3 alerts, +19 trees)
-6. What action is required (Inspect KM-48)
-
-…while still having access to SAR, compliance, carbon, biodiversity, threats, operations, species, and all other production intelligence below the fold.
+**Not:** "I need to read this dashboard."
