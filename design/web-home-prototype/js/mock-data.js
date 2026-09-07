@@ -63,14 +63,24 @@ const MOCK_DASHBOARD = {
   updatedAt: "2 min ago",
   forestIntegrity: { score: 76, trend: -3, grade: "Moderate" },
   narrative: {
+    executiveSummary:
+      "Your portfolio remains broadly healthy at 76/100, but integrity has declined 3 points this week. The main concern is KM-48, where NDVI is 12% below its 30-day baseline. 18 trees need attention and 5 satellite observations are stale.",
+    whyMatters:
+      "The NDVI decline at Chainage 142–148 threatens survival verification for 4,821 registered trees and may delay the next NHAI compliance checkpoint. With 3 open violations and evidence gaps in CAMPA Block A, the quarterly MRV export window is at risk.",
+    nextStep:
+      "Schedule a field inspection at Chainage 142–148 within 48 hours to verify the 18 flagged trees and confirm whether vegetation stress is localized or spreading along the corridor.",
+    interpreted:
+      "Vegetation stress has increased at KM-48, but acoustic biodiversity activity remains broadly stable — 34 species detected with 2 threatened taxa still present. Carbon continues to accumulate (+43.5 tCO₂e this period). Five evidence gaps remain before the next scheme KPI export.",
+    spatial:
+      "Risk is concentrated along the NHAI KM-48 corridor: acute NDVI decline at Chainage 142–148 (critical), stale satellite coverage at 148–155, and parallel field attention in Nagar Van Zone B. CAMPA Block A remains stable.",
     headline:
-      "Your portfolio <em>remains stable at 76/100</em>, but integrity has <em>declined 3 points this week</em>. The main concern is <em>KM-48</em>, where NDVI is <em>12% below its 30-day baseline</em> and <em>18 trees require attention</em>.",
+      "Your portfolio remains broadly healthy at 76/100, but integrity has declined 3 points this week.",
     support:
-      "Satellite and SAR signals are divergent at Chainage 142–148. Bioacoustic monitoring in Zone B shows reduced dawn chorus activity (−18% vs prior month). Five work areas have stale observations, and evidence gaps in CAMPA Block A may block the next scheme KPI export.",
+      "The main concern is KM-48, where NDVI is 12% below its 30-day baseline. 18 trees need attention and 5 satellite observations are stale.",
     why:
-      "A 12% NDVI decline at KM-48 Greenbelt threatens survival verification for 482 registered trees and may delay the next NHAI compliance checkpoint. Combined with 5 stale satellite scans and 3 open violations, the portfolio integrity trend (−3 pts) signals monitoring follow-up is needed before the quarterly MRV export window.",
+      "The NDVI decline at Chainage 142–148 threatens survival verification for 4,821 registered trees and may delay the next NHAI compliance checkpoint. Combined with 5 stale satellite scans and 3 open violations, monitoring follow-up is needed before the quarterly MRV export window.",
     bioStory:
-      "Bioacoustic intelligence links canopy stress to biodiversity: <strong>34 species detected</strong> across 42 analyzed sessions, but <strong>Zone B dawn chorus activity fell 18%</strong> coinciding with NDVI decline. <strong>2 threatened species</strong> (Indian Peafowl, Common Hawk-Cuckoo) remain present — field verification recommended to confirm habitat continuity.",
+      "Bioacoustic monitoring shows dawn chorus activity down 18% in Zone B, coinciding with canopy stress — yet 34 species remain detected including Indian Peafowl and Common Hawk-Cuckoo. Field verification is recommended to confirm habitat continuity.",
   },
   kpi: {
     total_trees: 14237,
@@ -172,7 +182,7 @@ const MOCK_PRIORITIES = [
     subtitle: "Last scan >14 days · impacts NDVI trend confidence",
     action: "Trigger scan",
     detail:
-      "Work areas Chainage 148–155, Compartment 4, and Zone B exceeded the 14-day refresh SLA. Monitoring summary shows stale_satellite_work_areas = 5.",
+      "Work areas Chainage 148–155, Compartment 4, and Zone B exceeded the 14-day refresh SLA. Five sites now need a satellite refresh.",
     links: ["Satellite console", "View monitoring"],
   },
   {
@@ -182,23 +192,20 @@ const MOCK_PRIORITIES = [
     title: "12 survival surveys due",
     subtitle: "Nagar Van Phase 2 · Zone B · CAMPA Block A",
     action: "Start surveys",
-    detail: "fieldOps.survival_due = 16 across portfolio; 12 concentrated in two work areas due this week per programme SLA.",
+    detail: "16 survival surveys due across the portfolio; 12 concentrated in Nagar Van Zone B and CAMPA Block A this week.",
     links: ["Field ops", "Export survey list"],
   },
 ];
 
 const MOCK_CHANGES = {
-  sinceYesterday: [
-    { icon: "down", text: "Integrity score", sub: "76 (−1 pt) · KM-48 NDVI alert triggered 2h ago" },
-    { icon: "neutral", text: "3 trees registered", sub: "NHAI KM-48 · Chainage 142–148" },
-    { icon: "info", text: "Bioacoustic session analyzed", sub: "Zone B · 8 species · Shannon 2.1" },
-    { icon: "down", text: "1 new compliance gap", sub: "CAMPA Block A · pit photo missing" },
-  ],
   sinceLastReview: [
-    { icon: "down", text: "Portfolio integrity −3 pts", sub: "76/100 · trend declining over 7 days" },
-    { icon: "down", text: "NDVI −12% at Ch. 142–148", sub: "SAR divergent · 3 linked alerts" },
-    { icon: "neutral", text: "5 satellite scans went stale", sub: ">14 day refresh SLA exceeded" },
-    { icon: "up", text: "Carbon +43.5 tCO₂e", sub: "Portfolio estimate · Apr–Sep growth" },
+    { tone: "down", text: "Integrity −3 pts to 76/100" },
+    { tone: "down", text: "NDVI −12% at Ch. 142–148" },
+    { tone: "warn", text: "5 satellite scans now stale" },
+    { tone: "warn", text: "18 trees flagged for attention" },
+    { tone: "info", text: "3 new alerts · 1 compliance gap" },
+    { tone: "info", text: "Bioacoustic: chorus −18% in Zone B" },
+    { tone: "up", text: "Carbon +43.5 tCO₂e · 3 trees registered" },
   ],
 };
 

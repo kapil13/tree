@@ -1,4 +1,4 @@
-# Aranyix Web Home — Forest Intelligence Command Center (Prototype v2)
+# Aranyix Web Home — Forest Intelligence Command Center (Prototype v3)
 
 **Status:** HTML prototype only — **not** connected to production APIs.  
 **Awaiting approval:** `APPROVED — IMPLEMENT WEB` before any Next.js implementation.
