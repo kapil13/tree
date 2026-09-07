@@ -11,9 +11,17 @@ const MOCK_USER = {
   audience: "government",
 };
 
+const MOCK_SCHEMES = [
+  { id: "all", label: "All programmes" },
+  { id: "nhai", label: "NHAI Greenbelt" },
+  { id: "campa", label: "CAMPA" },
+  { id: "nagar", label: "Nagar Van" },
+];
+
 const MOCK_PROJECTS = [
   {
     id: "p1",
+    schemeId: "nhai",
     name: "NHAI KM-48 Greenbelt",
     trees: 4821,
     targetTrees: 6000,
@@ -25,6 +33,7 @@ const MOCK_PROJECTS = [
   },
   {
     id: "p2",
+    schemeId: "campa",
     name: "CAMPA Block A",
     trees: 9104,
     targetTrees: 10000,
@@ -36,6 +45,7 @@ const MOCK_PROJECTS = [
   },
   {
     id: "p3",
+    schemeId: "nagar",
     name: "Nagar Van Phase 2",
     trees: 312,
     targetTrees: 500,
@@ -54,9 +64,13 @@ const MOCK_DASHBOARD = {
   forestIntegrity: { score: 76, trend: -3, grade: "Moderate" },
   narrative: {
     headline:
-      "Your portfolio is <em>stable at 76/100</em>, but <em>5 sites have stale satellite observations</em> and <em>18 trees require attention</em>.",
+      "Your portfolio <em>remains stable at 76/100</em>, but integrity has <em>declined 3 points this week</em>. The main concern is <em>KM-48</em>, where NDVI is <em>12% below its 30-day baseline</em> and <em>18 trees require attention</em>.",
     support:
-      "The highest-risk area is <strong>NHAI KM-48 Greenbelt</strong>, where NDVI has declined <strong>12%</strong> over the last 30 days at Chainage 142–148. Field inspection is recommended within 48 hours; evidence gaps in CAMPA Block A may block the next scheme KPI export.",
+      "Satellite and SAR signals are divergent at Chainage 142–148. Bioacoustic monitoring in Zone B shows reduced dawn chorus activity (−18% vs prior month). Five work areas have stale observations, and evidence gaps in CAMPA Block A may block the next scheme KPI export.",
+    why:
+      "A 12% NDVI decline at KM-48 Greenbelt threatens survival verification for 482 registered trees and may delay the next NHAI compliance checkpoint. Combined with 5 stale satellite scans and 3 open violations, the portfolio integrity trend (−3 pts) signals monitoring follow-up is needed before the quarterly MRV export window.",
+    bioStory:
+      "Bioacoustic intelligence links canopy stress to biodiversity: <strong>34 species detected</strong> across 42 analyzed sessions, but <strong>Zone B dawn chorus activity fell 18%</strong> coinciding with NDVI decline. <strong>2 threatened species</strong> (Indian Peafowl, Common Hawk-Cuckoo) remain present — field verification recommended to confirm habitat continuity.",
   },
   kpi: {
     total_trees: 14237,
@@ -130,6 +144,7 @@ const MOCK_DASHBOARD = {
 const MOCK_PRIORITIES = [
   {
     id: "pr1",
+    projectId: "p1",
     severity: "critical",
     title: "Acute NDVI drop",
     subtitle: "NHAI KM-48 · Chainage 142–148 · −0.18 vs baseline",
@@ -140,6 +155,7 @@ const MOCK_PRIORITIES = [
   },
   {
     id: "pr2",
+    projectId: "all",
     severity: "high",
     title: "18 trees need attention",
     subtitle: "Stressed canopy · 3 projects · compliance strict mode",
@@ -150,6 +166,7 @@ const MOCK_PRIORITIES = [
   },
   {
     id: "pr3",
+    projectId: "all",
     severity: "medium",
     title: "5 sites need satellite refresh",
     subtitle: "Last scan >14 days · impacts NDVI trend confidence",
@@ -160,6 +177,7 @@ const MOCK_PRIORITIES = [
   },
   {
     id: "pr4",
+    projectId: "p3",
     severity: "medium",
     title: "12 survival surveys due",
     subtitle: "Nagar Van Phase 2 · Zone B · CAMPA Block A",
@@ -167,6 +185,64 @@ const MOCK_PRIORITIES = [
     detail: "fieldOps.survival_due = 16 across portfolio; 12 concentrated in two work areas due this week per programme SLA.",
     links: ["Field ops", "Export survey list"],
   },
+];
+
+const MOCK_CHANGES = {
+  sinceYesterday: [
+    { icon: "down", text: "Integrity score", sub: "76 (−1 pt) · KM-48 NDVI alert triggered 2h ago" },
+    { icon: "neutral", text: "3 trees registered", sub: "NHAI KM-48 · Chainage 142–148" },
+    { icon: "info", text: "Bioacoustic session analyzed", sub: "Zone B · 8 species · Shannon 2.1" },
+    { icon: "down", text: "1 new compliance gap", sub: "CAMPA Block A · pit photo missing" },
+  ],
+  sinceLastReview: [
+    { icon: "down", text: "Portfolio integrity −3 pts", sub: "76/100 · trend declining over 7 days" },
+    { icon: "down", text: "NDVI −12% at Ch. 142–148", sub: "SAR divergent · 3 linked alerts" },
+    { icon: "neutral", text: "5 satellite scans went stale", sub: ">14 day refresh SLA exceeded" },
+    { icon: "up", text: "Carbon +43.5 tCO₂e", sub: "Portfolio estimate · Apr–Sep growth" },
+  ],
+};
+
+const MOCK_RECOMMENDATIONS = [
+  {
+    id: "rec1",
+    priority: 1,
+    title: "Schedule field inspection at Chainage 142–148",
+    detail: "NDVI dropped 12% below baseline with SAR divergence. Verify survival status of 18 flagged trees within 48 hours.",
+    module: "field-ops",
+    due: "Within 48h",
+  },
+  {
+    id: "rec2",
+    priority: 2,
+    title: "Trigger satellite refresh for 5 stale work areas",
+    detail: "Monitoring confidence is degraded. Refresh scans for Chainage 148–155, Compartment 4, and Zone B.",
+    module: "satellite",
+    due: "This week",
+  },
+  {
+    id: "rec3",
+    priority: 3,
+    title: "Resolve 5 evidence gaps before KPI export",
+    detail: "3 pit photos missing in CAMPA Block A. Blocking violations may prevent scheme KPI export.",
+    module: "compliance",
+    due: "Before export",
+  },
+  {
+    id: "rec4",
+    priority: 4,
+    title: "Complete 12 survival surveys in Nagar Van Zone B",
+    detail: "fieldOps.survival_due concentrated in Zone B. Programme SLA due this week.",
+    module: "field-ops",
+    due: "This week",
+  },
+];
+
+const MOCK_BRIEF_CHIPS = [
+  { topic: "ndvi", label: "NDVI drop · Ch. 142–148", class: "danger" },
+  { topic: "satellite", label: "5 stale satellite scans", class: "warn" },
+  { topic: "trees", label: "18 trees need attention", class: "" },
+  { topic: "bio", label: "Bioacoustic · Zone B ↓18%", class: "" },
+  { topic: "fire", label: "Fire watch · 3 VIIRS", class: "warn" },
 ];
 
 const MOCK_MAP_HOTSPOTS = [
@@ -211,6 +287,7 @@ const MOCK_MAP_HOTSPOTS = [
     type: "tree",
     name: "Zone B",
     project: "Nagar Van Phase 2",
+    projectId: "p3",
     left: 28,
     top: 62,
     ndvi: 0.55,
@@ -218,7 +295,25 @@ const MOCK_MAP_HOTSPOTS = [
     severity: "high",
     detail: "12 survival surveys due · integrity 68/100",
   },
+  {
+    id: "h5",
+    type: "bio",
+    name: "Zone B · Bio station",
+    project: "Nagar Van Phase 2",
+    projectId: "p3",
+    left: 32,
+    top: 58,
+    ndvi: null,
+    delta: "chorus −18%",
+    severity: "medium",
+    detail: "Dawn chorus activity down 18% · 8 species last session · Shannon 2.1",
+  },
 ];
+
+// Add projectId to existing hotspots
+MOCK_MAP_HOTSPOTS[0].projectId = "p1";
+MOCK_MAP_HOTSPOTS[1].projectId = "p1";
+MOCK_MAP_HOTSPOTS[2].projectId = "p2";
 
 const MOCK_ALERTS = [
   {

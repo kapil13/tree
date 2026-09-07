@@ -1,4 +1,4 @@
-# Aranyix Web Home — Living Intelligence Dashboard (Prototype)
+# Aranyix Web Home — Forest Intelligence Command Center (Prototype v2)
 
 **Status:** HTML prototype only — **not** connected to production APIs.  
 **Awaiting approval:** `APPROVED — IMPLEMENT WEB` before any Next.js implementation.
@@ -8,14 +8,17 @@
 From the repository root:
 
 ```bash
-# Option A — Python
 cd design/web-home-prototype && python3 -m http.server 8765
-
-# Option B — npx
-cd design/web-home-prototype && npx --yes serve -p 8765
 ```
 
 Then open **http://localhost:8765** in your browser.
+
+### Demo states (query params)
+
+| URL | State |
+|-----|-------|
+| `?state=error` | Error — services unavailable |
+| `?state=empty` | Empty — no portfolio data |
 
 Resize the window to test responsive layouts (sidebar collapses below 768px).
 
@@ -25,16 +28,15 @@ Resize the window to test responsive layouts (sidebar collapses below 768px).
 
 ### Speak first, explore second
 
-The current production executive dashboard (`frontend/components/dashboard/executive-dashboard.tsx`) surfaces rich data but buries the story inside KPI grids and collapsible evidence sections. This prototype inverts the hierarchy:
+The Program Manager should answer in **30 seconds** without navigating:
 
-1. **Narrative hero** — A plain-language portfolio briefing (integrity score, what changed, what is at risk, where, why it matters).
-2. **Spatial proof** — Map hotspots tied to the narrative, not a separate module to discover later.
-3. **Prioritized queue** — Alerts, trees, stale scans, and surveys ranked by severity with inline context.
-4. **Intelligence modules** — Satellite, bioacoustic, carbon, and compliance/MRV visible at a glance.
-5. **Trends & evidence** — Carbon trajectory, NDVI pulse, health mix, and MRV pipeline status without accordion clicks.
-6. **Actions** — Recommended next steps linked to existing product routes.
+1. **What is the health of my portfolio?** → Intelligence brief + portfolio health strip
+2. **What changed?** → Since yesterday / since last review
+3. **Where is the issue?** → Spatial intelligence map + attention queue
+4. **Why does it matter?** → Integrated narrative + satellite/bio/carbon/compliance context
+5. **What should I do next?** → Aranyix recommendations (prioritized actions)
 
-The dashboard should feel like an **intelligent mission-control workspace** that is actively monitoring the portfolio — not a static SaaS homepage.
+The dashboard feels like a **calm forest observatory + intelligent mission control** — not a green corporate SaaS grid.
 
 ---
 
@@ -42,19 +44,31 @@ The dashboard should feel like an **intelligent mission-control workspace** that
 
 | Zone | Purpose | Production data source |
 |------|---------|------------------------|
-| Narrative hero | Portfolio integrity + spoken summary | `intelligence/brief`, `monitoring-summary`, `dashboard.kpi` |
-| Status strip | 5 executive KPIs | `dashboard.kpi`, `field-ops-summary`, `alerts` |
-| Priority queue | What needs attention now | Alerts, `open_violations`, `stale_satellite_work_areas`, `survival_due` |
-| Spatial map | Where risk is concentrated | `plantation-fences`, alert payloads, tree coordinates |
-| Intel row | Satellite / bio / carbon / compliance | `monitoring-summary`, `bioacoustic/summary`, `dashboard`, `compliance/portfolio-summary` |
-| Trend charts | Carbon & NDVI & health | `carbon_growth`, `ecosystem.ndvi_series`, `health_distribution` |
-| Evidence pipeline | MRV status without hiding | Compliance + evidence gap counts |
-| Alerts preview | Unread inbox | `alerts` |
-| Project breakdown | Per-project integrity | `field-ops-summary.projects` |
-| Live feed | Recent activity | Trees, alerts, evidence, scans |
-| Quick actions | Same destinations as prod | Register tree, portfolio health, satellite, bio, assistant, reports |
+| Intelligence brief | Spoken portfolio summary + integrity score | `intelligence/brief`, `monitoring-summary`, `dashboard.kpi` |
+| Portfolio health | 5 executive KPIs visible at a glance | `dashboard.kpi`, `field-ops-summary`, `alerts` |
+| What changed | Since yesterday / since last review deltas | Activity, alerts, integrity trend |
+| Spatial intelligence | Map hotspots + attention queue | `plantation-fences`, alerts, tree coordinates |
+| Why it matters | Integrated intel narrative | `monitoring-summary`, `bioacoustic/summary`, compliance |
+| Recommendations | Prioritized next actions | Alerts, field ops, compliance gaps |
+| Evidence & outcomes | MRV pipeline, carbon, NDVI, projects, feed | `compliance/portfolio-summary`, `carbon_growth`, `ecosystem.ndvi_series` |
 
-**No invented metrics** — all labels and fields mirror the production API shapes documented in `frontend/lib/api.ts` and `backend/app/schemas/dashboard.py`.
+**No invented metrics** — all labels mirror production API shapes in `frontend/lib/api.ts` and `backend/app/schemas/dashboard.py`.
+
+---
+
+## Global filters (minimal)
+
+Header provides only:
+
+```
+☰ Command Center  [All Projects ▾]  [All programmes ▾]  [Last 30 days ▾]  🔔
+```
+
+- **Project** — filters map, priorities, project breakdown, narrative context
+- **Programme/scheme** — NHAI Greenbelt, CAMPA, Nagar Van
+- **Time** — Today / 7 / 30 / 90 days / Custom
+
+Filters affect the **entire dashboard** context. No species, tree status, NDVI, carbon, bioacoustic, evidence, compliance or alert-type filters on the homepage — those belong in their modules.
 
 ---
 
@@ -62,37 +76,65 @@ The dashboard should feel like an **intelligent mission-control workspace** that
 
 | Interaction | Behavior |
 |-------------|----------|
-| Narrative chips | Scroll to map + select relevant hotspot/priority |
-| KPI strip | Select metric (visual focus + toast) |
-| Priority row click | Updates context detail card + map selection |
-| Map pin click | Selects hotspot, syncs priority context |
-| Layer chips | Toggle trees / alerts / stale scan pins |
-| Intel cards | Toast → would open satellite, bio, carbon, compliance modules |
-| Sidebar nav | Toast → recognizes production routes (`/dashboard`, `/projects`, etc.) |
-| Quick actions | Toast → production paths (`/trees/new`, `/portfolio-health`, …) |
-| Live pill | Simulated “updated N min ago” pulse |
+| Global filters | Update narrative, map, metrics, projects for selected context |
+| Brief chips | Scroll to map + select relevant hotspot/priority |
+| Health metrics | Visual focus + toast |
+| Priority row / map pin | Sync context detail card + map selection |
+| Layer chips | Toggle trees / alerts / stale scans / bioacoustic pins |
+| Recommendations | Scroll to spatial zone or toast module route |
+| Intel cards | Toast → satellite, bio, carbon, compliance modules |
+| Sidebar nav | Toast → production routes (`/dashboard`, `/projects`, etc.) |
 
-Interactions **enrich** the story (context card, map sync) rather than hiding essential information behind clicks.
+Interactions **enrich** the story rather than hiding essential information behind clicks.
+
+---
+
+## Visual design (v2)
+
+Calm nature-inspired palette:
+
+- Warm ivory / soft off-white base (`#f8f6f2`, `#fdfcfa`)
+- Muted sage, eucalyptus, moss accents — used sparingly
+- Deep charcoal typography — not neon green backgrounds
+- Muted amber (warnings), soft coral (critical), restrained teal (spatial/bio)
+- Generous whitespace, subtle borders, restrained elevation
+- Subtle motion: live pulse, map pin ping, chart transitions, fade-up zones
 
 ---
 
 ## Mobile Command Center parity
 
-This web prototype aligns with the mobile **Command center** (`design/prototypes/js/app.js` → `renderHome()`):
-
 | Mobile pattern | Web equivalent |
 |----------------|----------------|
-| Status banner + integrity score | Narrative hero with 76/100 score |
+| Status banner + integrity score | Intelligence brief |
 | `briefLines[0]` spoken insight | Headline + support paragraph |
-| Next-up hero | Top priority in queue + detail card |
-| Signal strip (alerts, attention, evidence, species) | Status strip + intel row |
-| Map preview with alert pin | Full spatial panel with layers |
-| Connected project card | Project breakdown section |
-| Bioacoustic intel line | Bio intel card |
+| Next-up hero | Top recommendation + attention queue |
+| Signal strip | Portfolio health strip |
+| Map preview with alert pin | Full spatial panel with bio layer |
+| Bioacoustic intel line | Integrated bio story in "Why it matters" |
 | Live feed | Activity feed |
-| Field capture / quick actions | Recommended actions bar |
+| Quick actions | Recommendations section |
 
-Shared **Forest Intelligence** tokens: DM Sans, IBM Plex Mono, `--brand-forest`, `--brand-canopy`, calm neutrals, semantic status colors (see `design/ARANYIX_DESIGN_SYSTEM.md`).
+Shared tokens: DM Sans, IBM Plex Mono, Forest Intelligence palette (see `design/ARANYIX_DESIGN_SYSTEM.md`).
+
+---
+
+## Deploy to aranyix.tech (preview URL)
+
+`./deploy.sh` alone does **not** serve this prototype. To publish at a public URL:
+
+```bash
+cd /opt/aranyix
+git pull origin main
+mkdir -p frontend/public/design/web-home-prototype
+cp -r design/web-home-prototype/* frontend/public/design/web-home-prototype/
+cd infrastructure/hostinger
+FORCE_FRONTEND_REBUILD=1 ./deploy.sh
+```
+
+Then open:
+
+**https://aranyix.tech/design/web-home-prototype/index.html**
 
 ---
 
@@ -100,13 +142,13 @@ Shared **Forest Intelligence** tokens: DM Sans, IBM Plex Mono, `--brand-forest`,
 
 ```
 design/web-home-prototype/
-├── index.html           # Main interactive prototype
+├── index.html
 ├── css/
-│   ├── design-system.css  # Tokens & base
-│   └── home.css           # Layout & components
+│   ├── design-system.css
+│   └── home.css
 ├── js/
-│   ├── mock-data.js       # Realistic mock aligned with API shapes
-│   └── app.js             # Rendering & interactions
+│   ├── mock-data.js
+│   └── app.js
 └── README.md
 ```
 
@@ -116,10 +158,10 @@ design/web-home-prototype/
 
 When approved with `APPROVED — IMPLEMENT WEB`:
 
-- Reuse existing React Query hooks in `executive-dashboard.tsx` — **restructure layout only**, do not change APIs.
-- Replace collapsible `CommandCenterEvidence` accordions with visible intel zones where data already loads.
-- Promote `intelligence.brief()` headline to page hero; keep `InsightPanel` content but lead with narrative.
-- Wire map panel to existing `TreesMap` + alert geolocation from `alerts.payload`.
-- Preserve sidebar nav from `frontend/components/sidebar.tsx` and role gating from `nav-access.ts`.
+- Reuse existing React Query hooks in `executive-dashboard.tsx` — restructure layout only
+- Promote `intelligence.brief()` to page hero; wire global filters to existing project/time scoping
+- Replace collapsible evidence accordions with visible intel zones
+- Wire map to `TreesMap` + alert geolocation
+- Preserve sidebar nav and role gating from `nav-access.ts`
 
 **Do not implement until explicit approval.**

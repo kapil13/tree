@@ -3,14 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aranyix — Living Intelligence Command Center (Prototype)</title>
+  <title>Aranyix — Forest Intelligence Command Center (Prototype)</title>
   <link rel="stylesheet" href="css/design-system.css" />
   <link rel="stylesheet" href="css/home.css" />
 </head>
 <body>
   <div class="prototype-banner">
-    <strong>Design prototype only</strong> — Web Home / Command Center · HTML interactive mock · Not connected to production APIs ·
-    Awaiting <code>APPROVED — IMPLEMENT WEB</code> for implementation
+    <strong>Design prototype only</strong> — Forest Intelligence Command Center · HTML interactive mock ·
+    Awaiting <code>APPROVED — IMPLEMENT WEB</code> for production implementation
+  </div>
+
+  <div id="loading-overlay" class="state-overlay" aria-hidden="true">
+    <div class="skeleton-brief">
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line wide" style="height:28px;margin:16px 0"></div>
+      <div class="skeleton-line med"></div>
+      <div class="skeleton-line wide"></div>
+      <p style="font-size:12px;color:var(--text-tertiary);margin-top:20px;text-align:center">Loading forest intelligence…</p>
+    </div>
   </div>
 
   <div class="app-shell">
@@ -26,13 +36,26 @@
       <header class="topbar">
         <div class="topbar-left">
           <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Open menu">☰</button>
-          <div class="breadcrumb">
-            Overview / <strong>Dashboard</strong>
+          <span class="topbar-title">Command Center</span>
+          <div class="global-filters">
+            <select id="filter-project" class="filter-select" aria-label="Project filter">
+              <option value="all">All Projects</option>
+            </select>
+            <select id="filter-scheme" class="filter-select" aria-label="Program or scheme">
+              <option value="all">All programmes</option>
+            </select>
+            <select id="filter-time" class="filter-select" aria-label="Time range">
+              <option value="today">Today</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d" selected>Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+              <option value="custom">Custom range</option>
+            </select>
           </div>
           <span class="live-pill"><span class="dot"></span> <span id="live-updated">Updated 2 min ago</span></span>
         </div>
         <div class="topbar-actions">
-          <button type="button" class="btn-icon" aria-label="Alerts" onclick="showToast('Prototype: /alerts')">
+          <button type="button" class="btn-icon" aria-label="Alerts" id="btn-alerts">
             🔔
             <span class="badge" id="alert-badge">3</span>
           </button>
@@ -41,204 +64,202 @@
       </header>
 
       <main class="content" id="main-content">
-        <!-- ── Narrative hero: speaks first ─────────────────────── -->
-        <section class="narrative-hero" aria-labelledby="narrative-heading">
-          <div class="narrative-meta">
-            <span>Forest Intelligence · Program manager view</span>
-            <span>·</span>
-            <span id="user-org">NHAI Regional Plantation Cell</span>
-            <span>·</span>
-            <span class="mono">3 active projects</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end">
-            <div>
-              <div style="font-size:12px;opacity:0.75;margin-bottom:4px">Portfolio integrity</div>
-              <div class="narrative-score"><span id="narrative-score">76</span><span>/100</span></div>
-              <div id="narrative-trend" class="trend down" style="font-size:13px;margin-top:4px">−3 vs last week</div>
+        <div id="state-error" class="state-error" role="alert">
+          <h2>Unable to load command center</h2>
+          <p>Forest intelligence services are temporarily unavailable. Your portfolio data could not be retrieved.</p>
+          <button type="button" class="btn btn-primary" id="btn-retry">Retry</button>
+        </div>
+
+        <div id="state-empty" class="state-empty">
+          <h2>No portfolio data yet</h2>
+          <p>Register your first project or plantation programme to begin monitoring forest intelligence.</p>
+          <button type="button" class="btn btn-primary" onclick="showToast('Prototype: /projects/new')">Create project</button>
+        </div>
+
+        <!-- 1. INTELLIGENCE BRIEF -->
+        <section class="zone" id="zone-brief" aria-labelledby="brief-label">
+          <div class="zone-label" id="brief-label">Intelligence brief</div>
+          <div class="brief-panel">
+            <div class="brief-meta">
+              <span>Forest Intelligence</span>
+              <span>·</span>
+              <span id="user-org">NHAI Regional Plantation Cell</span>
+              <span>·</span>
+              <span id="filter-context-label" class="mono">All projects · Last 30 days</span>
             </div>
-          </div>
-          <h1 class="narrative-headline" id="narrative-headline">
-            Loading narrative…
-          </h1>
-          <p class="narrative-support" id="narrative-support"></p>
-          <div class="narrative-chips">
-            <button type="button" class="narrative-chip danger" data-topic="ndvi">NDVI drop · Ch. 142–148</button>
-            <button type="button" class="narrative-chip warn" data-topic="satellite">5 stale satellite scans</button>
-            <button type="button" class="narrative-chip" data-topic="trees">18 trees need attention</button>
-            <button type="button" class="narrative-chip" data-topic="fire">Fire watch · 3 VIIRS</button>
+            <div class="brief-score-row">
+              <div class="brief-score-block">
+                <div class="label">Portfolio integrity</div>
+                <div class="brief-score"><span id="narrative-score">76</span><span>/100</span></div>
+                <div id="narrative-trend" class="trend down">−3 vs last week</div>
+              </div>
+              <div class="brief-score-block">
+                <div class="label">Operational status</div>
+                <div class="brief-grade" id="operational-status">Monitoring follow-up needed</div>
+              </div>
+            </div>
+            <h1 class="brief-headline" id="narrative-headline">Loading narrative…</h1>
+            <p class="brief-support" id="narrative-support"></p>
+            <div class="brief-chips" id="brief-chips"></div>
           </div>
         </section>
 
-        <!-- ── KPI strip (production executive metrics) ─────────── -->
-        <section class="status-strip" id="status-strip" aria-label="Portfolio metrics"></section>
+        <!-- 2. PORTFOLIO HEALTH -->
+        <section class="zone" id="zone-health" aria-labelledby="health-label">
+          <div class="zone-label" id="health-label">Portfolio health</div>
+          <div class="zone-heading">Executive signals at a glance</div>
+          <p class="zone-desc">Key metrics from dashboard KPI, field ops, monitoring and compliance — visible without navigation.</p>
+          <div class="health-strip" id="health-strip" aria-label="Portfolio metrics"></div>
+        </section>
 
-        <!-- ── Priorities + spatial ─────────────────────────────── -->
-        <div class="grid-2">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">What needs attention now</div>
-                <div class="panel-sub">Prioritized from alerts, monitoring, compliance & field ops</div>
-              </div>
-              <button type="button" class="panel-link" onclick="showToast('Prototype: /field-ops')">Field ops →</button>
-            </div>
-            <div class="panel-body" id="priority-list"></div>
-            <div class="panel-body" style="border-top:1px solid var(--border);padding-top:0">
-              <div id="context-detail" class="detail-card danger"></div>
-            </div>
-          </section>
+        <!-- 3. WHAT CHANGED -->
+        <section class="zone" id="zone-changed" aria-labelledby="changed-label">
+          <div class="zone-label" id="changed-label">What changed</div>
+          <div class="zone-heading">Meaningful shifts in your portfolio</div>
+          <div class="changes-grid" id="changes-grid"></div>
+        </section>
 
-          <section class="panel" id="spatial-section">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Where it's happening</div>
-                <div class="panel-sub">Spatial intelligence · risk hotspots on programme corridor</div>
+        <!-- 4. WHERE IT IS HAPPENING -->
+        <section class="zone" id="zone-spatial" aria-labelledby="spatial-label">
+          <div class="zone-label" id="spatial-label">Where it is happening</div>
+          <div class="zone-heading">Spatial intelligence</div>
+          <p class="zone-desc">Risk hotspots, monitoring signals and field attention mapped to programme corridors and work areas.</p>
+          <div class="spatial-layout">
+            <div id="spatial-map" class="map-panel" role="img" aria-label="Portfolio map with risk hotspots">
+              <div class="map-grid"></div>
+              <div class="map-corridor" aria-hidden="true"></div>
+              <div class="map-layers">
+                <button type="button" class="layer-chip on" data-layer="trees">Trees</button>
+                <button type="button" class="layer-chip on" data-layer="alerts">Alerts</button>
+                <button type="button" class="layer-chip on" data-layer="stale">Stale scans</button>
+                <button type="button" class="layer-chip on" data-layer="bio">Bioacoustic</button>
               </div>
-              <button type="button" class="panel-link" onclick="showToast('Prototype: /map')">Full map →</button>
+              <div class="map-legend" id="map-legend">3 projects · 4 hotspots</div>
+              <div class="map-label" id="map-label"></div>
             </div>
-            <div class="panel-body">
-              <div id="spatial-map" class="map-panel">
-                <div class="map-grid"></div>
-                <div class="map-corridor" aria-hidden="true"></div>
-                <div class="map-layers">
-                  <button type="button" class="layer-chip on" data-layer="trees">Trees</button>
-                  <button type="button" class="layer-chip on" data-layer="alerts">Alerts</button>
-                  <button type="button" class="layer-chip on" data-layer="stale">Stale scans</button>
+            <div class="spatial-sidebar">
+              <div class="panel">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title">Attention queue</div>
+                    <div class="panel-sub">Ranked by severity</div>
+                  </div>
                 </div>
-                <div class="map-pin-label" id="map-label"></div>
+                <div class="panel-body priority-list-compact" id="priority-list"></div>
               </div>
+              <div id="context-detail" class="detail-card danger" hidden></div>
             </div>
-          </section>
-        </div>
-
-        <!-- ── Intelligence modules (visible, not collapsed) ─────── -->
-        <section class="intel-row" aria-label="Intelligence modules">
-          <article class="intel-card" data-intel="satellite" id="intel-satellite"></article>
-          <article class="intel-card" data-intel="bioacoustic" id="intel-bio"></article>
-          <article class="intel-card" data-intel="carbon" id="intel-carbon"></article>
-          <article class="intel-card" data-intel="compliance" id="intel-compliance"></article>
-        </section>
-
-        <!-- ── Trends ───────────────────────────────────────────── -->
-        <div class="grid-3">
-          <section class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Carbon trajectory</div>
-              <span class="panel-sub">tCO₂e · dashboard.carbon_growth</span>
-            </div>
-            <div class="panel-body">
-              <div class="chart-wrap">
-                <svg id="chart-carbon" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-              </div>
-              <div class="spark-legend"><span class="legend-carbon">Portfolio estimate · not registry-issued credits</span></div>
-            </div>
-          </section>
-          <section class="panel">
-            <div class="panel-header">
-              <div class="panel-title">NDVI site pulse</div>
-              <span class="panel-sub">Chainage 142–148 · declining</span>
-            </div>
-            <div class="panel-body">
-              <div class="chart-wrap">
-                <svg id="chart-ndvi" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-              </div>
-              <div class="spark-legend"><span class="legend-ndvi">−12% vs 30-day baseline · 8% cloud on last pass</span></div>
-            </div>
-          </section>
-          <section class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Canopy health mix</div>
-              <span class="panel-sub">pct_healthy · health_distribution</span>
-            </div>
-            <div class="panel-body">
-              <div class="gauge-row" id="gauge-row"></div>
-            </div>
-          </section>
-        </div>
-
-        <!-- ── Evidence MRV + alerts + projects ───────────────── -->
-        <div class="grid-2">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Evidence & MRV pipeline</div>
-                <div class="panel-sub">Visible status — no accordion required</div>
-              </div>
-              <button type="button" class="panel-link" onclick="showToast('Prototype: /reports')">Reports →</button>
-            </div>
-            <div class="panel-body">
-              <div class="evidence-pipeline">
-                <span class="evidence-step done">Capture</span>
-                <span class="evidence-arrow">→</span>
-                <span class="evidence-step done">Evidence</span>
-                <span class="evidence-arrow">→</span>
-                <span class="evidence-step pending">Verify</span>
-                <span class="evidence-arrow">→</span>
-                <span class="evidence-step">MRV</span>
-                <span class="evidence-arrow">→</span>
-                <span class="evidence-step">Report</span>
-              </div>
-              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
-                <strong>847 verified</strong> · 23 pending · <strong style="color:var(--status-warn)">5 gaps</strong> blocking next scheme KPI export.
-                Pit photo missing on 3 CAMPA Block A trees.
-              </p>
-              <div class="detail-actions">
-                <button type="button" class="btn btn-primary" onclick="showToast('Prototype: resolve evidence gaps')">Resolve gaps</button>
-                <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: BRSR export')">BRSR Principle 6</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <div class="panel-title">Operations & alerts</div>
-                <div class="panel-sub">Unread inbox preview · severity visible</div>
-              </div>
-              <button type="button" class="panel-link" onclick="showToast('Prototype: /alerts')">All alerts →</button>
-            </div>
-            <div class="panel-body" id="alert-list"></div>
-          </section>
-        </div>
-
-        <!-- ── Projects + activity ──────────────────────────────── -->
-        <div class="grid-2">
-          <section class="panel">
-            <div class="panel-header">
-              <div class="panel-title">By project</div>
-              <div class="panel-sub">field-ops-summary · integrity & violations</div>
-            </div>
-            <div class="panel-body" id="project-breakdown"></div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Live feed</div>
-              <div class="panel-sub">Recent registrations, alerts, evidence, scans</div>
-            </div>
-            <div class="panel-body" id="activity-feed"></div>
-          </section>
-        </div>
-
-        <!-- ── Quick actions ────────────────────────────────────── -->
-        <section class="panel" style="margin-bottom:24px">
-          <div class="panel-header">
-            <div class="panel-title">Recommended actions</div>
-            <div class="panel-sub">Same destinations as production quick actions — enrich, don't hide</div>
-          </div>
-          <div class="panel-body" style="display:flex;flex-wrap:wrap;gap:10px">
-            <button type="button" class="btn btn-primary" onclick="showToast('Prototype: /trees/new')">Register tree</button>
-            <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: /portfolio-health')">Portfolio health</button>
-            <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: /satellite')">Satellite console</button>
-            <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: /bioacoustic')">Bioacoustic</button>
-            <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: /assistant')">AI assistant</button>
-            <button type="button" class="btn btn-secondary" onclick="showToast('Prototype: /reports')">Reports & exports</button>
-            <button type="button" class="btn btn-ghost" onclick="showToast('Prototype: /map')">Open map →</button>
           </div>
         </section>
 
-        <p style="font-size:12px;color:var(--text-tertiary);text-align:center;padding-bottom:32px">
-          Signed in as <span id="user-name">Program manager</span> · Data trust: dashboard + monitoring-summary + compliance/portfolio-summary · Prototype v1.0
+        <!-- 5. WHY IT MATTERS -->
+        <section class="zone" id="zone-why" aria-labelledby="why-label">
+          <div class="zone-label" id="why-label">Why it matters</div>
+          <div class="why-panel">
+            <p class="why-narrative" id="why-narrative"></p>
+            <div class="intel-grid" id="intel-grid">
+              <article class="intel-card" data-intel="satellite" id="intel-satellite"></article>
+              <article class="intel-card" data-intel="bioacoustic" id="intel-bio"></article>
+              <article class="intel-card" data-intel="carbon" id="intel-carbon"></article>
+              <article class="intel-card" data-intel="compliance" id="intel-compliance"></article>
+            </div>
+            <div class="bio-story" id="bio-story"></div>
+          </div>
+        </section>
+
+        <!-- 6. WHAT ARANYIX RECOMMENDS -->
+        <section class="zone" id="zone-recommend" aria-labelledby="recommend-label">
+          <div class="zone-label" id="recommend-label">What Aranyix recommends</div>
+          <div class="zone-heading">Prioritized next actions</div>
+          <p class="zone-desc">Based on alerts, monitoring divergence, compliance gaps and field ops SLA.</p>
+          <div class="recommend-list" id="recommend-list"></div>
+        </section>
+
+        <!-- 7. EVIDENCE / MRV / COMPLIANCE / CARBON OUTCOME -->
+        <section class="zone" id="zone-outcomes" aria-labelledby="outcomes-label">
+          <div class="zone-label" id="outcomes-label">Evidence & outcomes</div>
+          <div class="zone-heading">MRV pipeline, carbon trajectory and compliance readiness</div>
+
+          <div class="outcomes-grid">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Evidence & MRV pipeline</div>
+                  <div class="panel-sub">Capture → Evidence → Verify → MRV → Report</div>
+                </div>
+                <button type="button" class="panel-link" data-route="/reports">Reports →</button>
+              </div>
+              <div class="panel-body" id="evidence-body"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Operations & alerts</div>
+                  <div class="panel-sub">Unread inbox preview</div>
+                </div>
+                <button type="button" class="panel-link" data-route="/alerts">All alerts →</button>
+              </div>
+              <div class="panel-body" id="alert-list"></div>
+            </div>
+          </div>
+
+          <div class="outcomes-row">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Carbon trajectory</div>
+                <span class="panel-sub">tCO₂e · dashboard.carbon_growth</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap">
+                  <svg id="chart-carbon" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="spark-legend"><span class="legend-carbon">Portfolio estimate · not registry-issued credits</span></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">NDVI site pulse</div>
+                <span class="panel-sub" id="ndvi-subtitle">Chainage 142–148 · declining</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap">
+                  <svg id="chart-ndvi" class="chart-svg" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="spark-legend"><span class="legend-ndvi" id="ndvi-legend">−12% vs 30-day baseline</span></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Canopy health mix</div>
+                <span class="panel-sub">pct_healthy · health_distribution</span>
+              </div>
+              <div class="panel-body">
+                <div class="gauge-row" id="gauge-row"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="outcomes-grid" style="margin-top:16px">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">By project</div>
+                <div class="panel-sub">field-ops-summary · integrity & violations</div>
+              </div>
+              <div class="panel-body" id="project-breakdown"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">Live feed</div>
+                <div class="panel-sub">Recent registrations, alerts, evidence, scans</div>
+              </div>
+              <div class="panel-body" id="activity-feed"></div>
+            </div>
+          </div>
+        </section>
+
+        <p class="footer-note">
+          Signed in as <span id="user-name">Program manager</span> ·
+          Data trust: dashboard + monitoring-summary + compliance/portfolio-summary · Prototype v2.0
         </p>
       </main>
     </div>
