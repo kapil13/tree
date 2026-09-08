@@ -21,6 +21,30 @@ from app.services.notifications.notifier import Channel, get_notifier
 log = get_logger("alerts")
 
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
+URGENT_EMAIL_SEVERITIES = frozenset({"critical", "high", "warning"})
+URGENT_EMAIL_RISK_LEVELS = frozenset({"high", "critical"})
+
+
+def ensure_urgent_email_channel(
+    channels: list[str],
+    user: User,
+    *,
+    severity: str | None = None,
+    risk_level: str | None = None,
+) -> list[str]:
+    """Always include email for urgent alerts when the user has an address."""
+    urgent = (
+        (severity is not None and severity in URGENT_EMAIL_SEVERITIES)
+        or (risk_level is not None and risk_level in URGENT_EMAIL_RISK_LEVELS)
+    )
+    if not urgent:
+        return channels
+    email = getattr(user, "email", None)
+    if not email:
+        return channels
+    if "email" in channels:
+        return channels
+    return [*channels, "email"]
 
 
 def satellite_health_prefs(user: User) -> dict[str, Any]:
@@ -31,29 +55,61 @@ def satellite_health_prefs(user: User) -> dict[str, Any]:
 
 def resolve_channels(user: User, risk_level: str) -> list[Channel]:
     sh = satellite_health_prefs(user)
-    if not sh.get("enabled", True):
-        return ["in_app"]
-
     channels: list[Channel] = ["in_app"]
-    for ch in sh.get("channels", ["email"]):
-        if ch in ("email", "sms", "push") and ch not in channels:
-            channels.append(ch)  # type: ignore[arg-type]
+    if sh.get("enabled", True):
+        for ch in sh.get("channels", ["email"]):
+            if ch in ("email", "sms", "push") and ch not in channels:
+                channels.append(ch)  # type: ignore[arg-type]
 
-    if (
-        risk_level == "critical"
-        and sh.get("sms_on_critical", True)
-        and user.phone
-        and "sms" not in channels
-    ):
-        channels.append("sms")
+        if (
+            risk_level == "critical"
+            and sh.get("sms_on_critical", True)
+            and user.phone
+            and "sms" not in channels
+        ):
+            channels.append("sms")
 
-    return channels
+    return ensure_urgent_email_channel(channels, user, risk_level=risk_level)
 
 
 def threat_watch_prefs(user: User) -> dict[str, Any]:
     prefs = user.notification_preferences or default_notification_preferences()
     tw = prefs.get("threat_watch") or {}
     return {**DEFAULT_THREAT_WATCH_PREFS, **tw}
+
+
+async def dispatch_notification_channel_inline(
+    db: AsyncSession | None,
+    user: User,
+    channel: str,
+    *,
+    title: str,
+    message: str,
+    push_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Deliver one external notification channel without re-queueing through Celery."""
+    if channel == "in_app":
+        return {"delivered": True}
+    if channel == "push":
+        return await _dispatch_push_inline(
+            db,
+            user,
+            title=title,
+            message=message,
+            push_data=push_data,
+        )
+
+    to = user.email if channel == "email" else user.phone if channel == "sms" else ""
+    if not to:
+        return {"delivered": False, "info": "no_destination"}
+
+    notifier = get_notifier()
+    try:
+        nr = await notifier.send(channel=channel, to=to, title=title, message=message)  # type: ignore[arg-type]
+        return {"delivered": nr.delivered, "info": nr.info}
+    except Exception as exc:
+        log.warning("alert.dispatch_failed", channel=channel, error=str(exc))
+        return {"delivered": False, "info": str(exc)}
 
 
 async def dispatch_alert_channels(
@@ -69,32 +125,10 @@ async def dispatch_alert_channels(
     from app.workers.tasks import send_notification
 
     delivered: dict[str, Any] = {}
-    notifier = get_notifier()
 
     for channel in channels:
         if channel == "in_app":
             delivered["in_app"] = {"delivered": True}
-            continue
-
-        if channel == "push":
-            task_id = try_enqueue(
-                send_notification,
-                str(user.id),
-                channel,
-                title,
-                message,
-                push_data or {},
-            )
-            if task_id:
-                delivered["push"] = {"delivered": True, "queued": True, "task_id": task_id}
-            else:
-                delivered["push"] = await _dispatch_push_inline(
-                    db=None,
-                    user=user,
-                    title=title,
-                    message=message,
-                    push_data=push_data,
-                )
             continue
 
         task_id = try_enqueue(
@@ -109,16 +143,14 @@ async def dispatch_alert_channels(
             delivered[channel] = {"delivered": True, "queued": True, "task_id": task_id}
             continue
 
-        to = user.email if channel == "email" else user.phone if channel == "sms" else ""
-        if not to:
-            delivered[channel] = {"delivered": False, "info": "no_destination"}
-            continue
-        try:
-            nr = await notifier.send(channel=channel, to=to, title=title, message=message)
-            delivered[channel] = {"delivered": nr.delivered, "info": nr.info}
-        except Exception as exc:
-            log.warning("alert.dispatch_failed", channel=channel, error=str(exc))
-            delivered[channel] = {"delivered": False, "info": str(exc)}
+        delivered[channel] = await dispatch_notification_channel_inline(
+            None,
+            user,
+            channel,
+            title=title,
+            message=message,
+            push_data=push_data,
+        )
     return delivered
 
 

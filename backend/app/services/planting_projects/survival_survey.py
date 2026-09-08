@@ -15,7 +15,7 @@ from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.alerts.defaults import DEFAULT_SURVIVAL_SURVEY_PREFS
-from app.services.alerts.service import dispatch_alert_channels
+from app.services.alerts.service import dispatch_alert_channels, ensure_urgent_email_channel
 
 log = get_logger("survival_survey")
 
@@ -117,6 +117,7 @@ async def create_survival_survey_alerts(db: AsyncSession) -> dict[str, Any]:
         for ch in prefs.get("channels", ["in_app", "email"]):
             if ch not in channels:
                 channels.append(ch)
+        channels = ensure_urgent_email_channel(channels, owner, severity="warning")
 
         payload = {
             "project_id": str(project.id),

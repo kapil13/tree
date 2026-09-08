@@ -332,21 +332,21 @@ def send_notification(
     async def _run() -> dict:
         from app.core.database import AsyncSessionLocal
         from app.models.user import User
-        from app.services.alerts.service import _dispatch_push_inline, dispatch_alert_channels
+        from app.services.alerts.service import dispatch_notification_channel_inline
 
         async with AsyncSessionLocal() as db:
             user = await db.get(User, uuid.UUID(user_id))
             if user is None:
                 return {"status": "user_not_found"}
-            if channel == "push":
-                delivered = await _dispatch_push_inline(
-                    db, user, title=title, message=message, push_data=push_data
-                )
-                return {"status": "ok", "delivered": {"push": delivered}}
-            delivered = await dispatch_alert_channels(
-                user, [channel], title=title, message=message, push_data=push_data
+            result = await dispatch_notification_channel_inline(
+                db,
+                user,
+                channel,
+                title=title,
+                message=message,
+                push_data=push_data,
             )
-            return {"status": "ok", "delivered": delivered}
+            return {"status": "ok", "delivered": {channel: result}}
 
     return run_async(_run())
 
