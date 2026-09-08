@@ -23,7 +23,11 @@ import {
   CommandCenterEvidence,
   portfolioOperationalStatus,
 } from "@/components/dashboard/command-center-shell";
-import { CompliancePortfolioStrip } from "@/components/dashboard/compliance-portfolio-strip";
+import {
+  CommandCenterOpsBand,
+  type ActivityItem,
+  type MrvStage,
+} from "@/components/dashboard/command-center-ops-band";
 import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboard-strip";
 import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
 import { useTranslations } from "next-intl";
@@ -565,6 +569,143 @@ export function ExecutiveDashboard() {
 
   const selectedPriorityId = focus.priorityId ?? priorityItems[0]?.id ?? null;
 
+  const complianceProjects = complianceSummary?.projects ?? [];
+  const workflowDone = complianceProjects.reduce((sum, p) => sum + p.workflow_done, 0);
+  const workflowTotal = complianceProjects.reduce((sum, p) => sum + p.workflow_total, 0);
+  const evidencePct =
+    workflowTotal > 0 ? Math.round((workflowDone / workflowTotal) * 100) : 0;
+  const capturePct = Math.round(k.pct_satellite_verified);
+  const verifyPct = Math.round(complianceSummary?.avg_readiness_pct ?? mrvReadiness);
+  const reportReadyCount = complianceProjects.filter(
+    (p) => p.workflow_total > 0 && p.workflow_done >= p.workflow_total,
+  ).length;
+  const reportPct =
+    complianceProjects.length > 0
+      ? Math.round((reportReadyCount / complianceProjects.length) * 100)
+      : 0;
+  const mrvStagePct = Math.round((capturePct + evidencePct + verifyPct) / 3);
+
+  const stageStatus = (pct: number, blocked = false): MrvStage["status"] => {
+    if (blocked) return "active";
+    if (pct >= 90) return "done";
+    if (pct >= 40) return "active";
+    return "pending";
+  };
+
+  const mrvStages: MrvStage[] = [
+    {
+      id: "capture",
+      label: te("mrvStageCapture"),
+      pct: capturePct,
+      status: stageStatus(capturePct),
+    },
+    {
+      id: "evidence",
+      label: te("mrvStageEvidence"),
+      pct: evidencePct,
+      status: stageStatus(evidencePct),
+    },
+    {
+      id: "verify",
+      label: te("mrvStageVerify"),
+      pct: verifyPct,
+      status: stageStatus(verifyPct, (complianceSummary?.blocking_violations ?? 0) > 0),
+      blocked: (complianceSummary?.blocking_violations ?? 0) > 0,
+    },
+    {
+      id: "mrv",
+      label: te("mrvStageMrv"),
+      pct: mrvStagePct,
+      status: stageStatus(mrvStagePct),
+    },
+    {
+      id: "report",
+      label: te("mrvStageReport"),
+      pct: reportPct,
+      status: stageStatus(reportPct),
+    },
+  ];
+
+  const recentBioCount =
+    bio?.recent_recordings?.filter((recording) => {
+      const age = Date.now() - new Date(recording.recorded_at).getTime();
+      return age < 7 * 24 * 60 * 60 * 1000;
+    }).length ?? 0;
+
+  const activityItems: ActivityItem[] = [
+    ...alertItems.slice(0, 4).map((alert) => ({
+      id: `alert-${alert.id}`,
+      type: "alert" as const,
+      label: alert.title,
+      meta: alert.severity,
+      time: timeAgo(alert.created_at),
+      href: alertsHref(),
+      at: new Date(alert.created_at).getTime(),
+    })),
+    ...(treesQ.data?.items ?? []).slice(0, 3).map((tree) => ({
+      id: `tree-${tree.id}`,
+      type: "tree" as const,
+      label: tree.public_code,
+      meta: tree.species_text || te("speciesPending"),
+      time: timeAgo(tree.created_at),
+      href: `/trees/${tree.id}`,
+      at: new Date(tree.created_at).getTime(),
+    })),
+    ...(bio?.recent_recordings ?? []).slice(0, 2).map((recording) => ({
+      id: `bio-${recording.id}`,
+      type: "bio" as const,
+      label: te("recordBiodiversity"),
+      meta: recording.status,
+      time: timeAgo(recording.recorded_at),
+      href: "/bioacoustic",
+      at: new Date(recording.recorded_at).getTime(),
+    })),
+    ...(monitoring?.recent_violations ?? []).slice(0, 2).map((violation) => ({
+      id: `violation-${violation.id}`,
+      type: "evidence" as const,
+      label: violation.message,
+      meta: violation.project_name,
+      time: violation.created_at ? timeAgo(violation.created_at) : te("fieldInspection"),
+      href: fieldOpsHref({ section: "attention" }),
+      at: violation.created_at ? new Date(violation.created_at).getTime() : 0,
+    })),
+    ...(sitesNeedingScan > 0
+      ? [
+          {
+            id: "satellite-stale",
+            type: "satellite" as const,
+            label: te("sitesNeedRefresh", { count: sitesNeedingScan }),
+            meta: te("ndviStale"),
+            time: te("slaOverdue"),
+            href: "/satellite",
+            at: Date.now(),
+          },
+        ]
+      : []),
+    ...((fieldOps?.survival_due ?? 0) > 0
+      ? [
+          {
+            id: "field-survival",
+            type: "field" as const,
+            label: te("survivalDueCount", { count: fieldOps?.survival_due ?? 0 }),
+            meta: te("fieldInspection"),
+            time: te("slaOverdue"),
+            href: fieldOpsHref(),
+            at: Date.now() - 60_000,
+          },
+        ]
+      : []),
+  ]
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 6);
+
+  const carbonTarget =
+    k.lifetime_credits_tco2e > 0
+      ? +(k.lifetime_credits_tco2e / 1000).toFixed(2)
+      : carbonLatest > 0
+        ? +(carbonLatest * 1.25).toFixed(2)
+        : undefined;
+
   return (
     <div className="space-y-6">
       <OperationalStatusBar
@@ -626,7 +767,34 @@ export function ExecutiveDashboard() {
         onChartSelect={handleChartSelect}
       />
 
-      <CompliancePortfolioStrip />
+      <CommandCenterOpsBand
+        focus={focus}
+        onZoneSelect={handleSignalSelect}
+        carbon={{
+          latestTco2e: carbonLatest,
+          targetTco2e: carbonTarget,
+          onTrack: carbonDeltaPct >= 0,
+          series: carbonSeries,
+          deltaPct: carbonDeltaPct,
+          href: "/reports",
+        }}
+        bio={{
+          species: bio?.total_species_detected ?? 0,
+          threatened: bio?.threatened_species_count ?? 0,
+          observationsDelta: recentBioCount,
+          chorusPct: bioScore,
+          taxonBars: bioSeries,
+          href: "/bioacoustic",
+        }}
+        mrv={{
+          stages: mrvStages,
+          gaps: complianceSummary?.safeguard_gap_count ?? 0,
+          blockers: complianceSummary?.blocking_violations ?? 0,
+          readinessPct: mrvReadiness,
+          href: portfolioComplianceHref(),
+        }}
+        activity={activityItems}
+      />
 
       <AudienceDashboardStrip />
 
