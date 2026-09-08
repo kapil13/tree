@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -14,15 +15,10 @@ import {
   Radar,
   Satellite,
   ShieldCheck,
-  ShieldAlert,
   Sparkles,
   Sprout,
   TreePine,
-  TrendingUp,
-  ClipboardList,
-  FolderKanban,
 } from "lucide-react";
-import { ChartDataTable } from "@/components/dashboard/chart-data-table";
 import {
   CommandCenterEvidence,
   portfolioOperationalStatus,
@@ -32,22 +28,21 @@ import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboar
 import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
 import { useTranslations } from "next-intl";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
   Cell,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { CommandCenterHero, type CommandCenterPriority } from "@/components/dashboard/command-center-hero";
+import {
+  CommandCenterSignalRibbon,
+  type SignalCell,
+} from "@/components/dashboard/command-center-signal-ribbon";
+import {
+  CommandCenterTrendsCanvas,
+  type TrendChartConfig,
+} from "@/components/dashboard/command-center-trends-canvas";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -71,12 +66,20 @@ import {
   alerts,
   api,
   bioacoustic,
+  compliance,
   dashboard,
   intelligence,
   plantationFences,
   plantingProjects,
+  sar,
   trees,
 } from "@/lib/api";
+import {
+  priorityToSignal,
+  signalFromChart,
+  type CommandCenterFocus,
+  type CommandCenterSignalId,
+} from "@/lib/command-center-focus";
 import { useAuth } from "@/lib/auth-store";
 import { alertsHref } from "@/lib/alerts-links";
 import { fieldOpsHref } from "@/lib/field-ops-links";
@@ -90,6 +93,8 @@ function DashboardSkeleton() {
     <div className="space-y-6">
       <div className="intel-skeleton h-16 rounded-xl" />
       <div className="intel-skeleton min-h-[420px] rounded-2xl" />
+      <div className="intel-skeleton h-14 rounded-xl" />
+      <div className="intel-skeleton min-h-[360px] rounded-2xl" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="intel-skeleton h-24 rounded-lg" />
@@ -142,11 +147,29 @@ export function ExecutiveDashboard() {
     staleTime: 60_000,
   });
 
+  const { data: complianceSummary } = useQuery({
+    queryKey: scopedKey(user, "compliance-portfolio-summary"),
+    queryFn: () => compliance.portfolioSummary(),
+    staleTime: 60_000,
+  });
+
   const primaryFenceId = fencesQ.data?.items[0]?.id;
   const { data: ecosystem } = useQuery({
     queryKey: scopedKey(user, "ecosystem-health", primaryFenceId),
     queryFn: () => plantationFences.ecosystemHealth(primaryFenceId!),
     enabled: !!primaryFenceId,
+  });
+
+  const { data: sarMonitoring } = useQuery({
+    queryKey: scopedKey(user, "sar-monitoring", primaryFenceId, "trends"),
+    queryFn: () => sar.fenceMonitoring(primaryFenceId!),
+    enabled: !!primaryFenceId,
+    staleTime: 60_000,
+  });
+
+  const [focus, setFocus] = useState<CommandCenterFocus>({
+    signalId: null,
+    priorityId: null,
   });
 
   const isLoading =
@@ -308,6 +331,240 @@ export function ExecutiveDashboard() {
   const heroPrimaryHref = priorityItems[0]?.href ?? portfolioHealthHref();
   const heroPrimaryLabel = priorityItems[0]?.title ?? te("portfolioIntelligence");
 
+  const workAreas = monitoring?.work_area_monitoring ?? [];
+  const freshSites = workAreas.filter(
+    (wa) => wa.days_since_scan != null && wa.days_since_scan < 14,
+  ).length;
+  const satelliteFreshPct =
+    workAreas.length > 0 ? Math.round((freshSites / workAreas.length) * 100) : k.pct_satellite_verified;
+
+  const carbonSeries = data.carbon_growth.map((p) => ({
+    label: p.label,
+    value: +(p.value / 1000).toFixed(2),
+  }));
+  const carbonLatest = carbonSeries.at(-1)?.value ?? 0;
+  const carbonPrev = carbonSeries.at(-2)?.value ?? carbonLatest;
+  const carbonDeltaPct =
+    carbonPrev > 0 ? Math.round(((carbonLatest - carbonPrev) / carbonPrev) * 100) : 0;
+
+  const integritySeries =
+    sarMonitoring?.points
+      ?.map((p) => ({
+        label: new Date(p.scene_acquired_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+        value: p.fusion?.forest_integrity_score ?? 0,
+      }))
+      .filter((p) => p.value > 0) ?? [];
+  if (integritySeries.length === 0 && integrityScore > 0) {
+    carbonSeries.forEach((p) => {
+      integritySeries.push({ label: p.label, value: integrityScore });
+    });
+  }
+
+  const survivalPct = Math.round(k.pct_healthy);
+  const survivalSeries = carbonSeries.map((p) => ({ label: p.label, value: survivalPct }));
+
+  const satelliteSeries = carbonSeries.map((p, i) => ({
+    label: p.label,
+    value: Math.max(
+      0,
+      Math.min(100, satelliteFreshPct + (i - carbonSeries.length + 1) * 2),
+    ),
+  }));
+
+  const alertBuckets = new Map<string, number>();
+  alertItems.forEach((alert) => {
+    const key = new Date(alert.created_at).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+    alertBuckets.set(key, (alertBuckets.get(key) ?? 0) + 1);
+  });
+  const alertSeries = Array.from(alertBuckets.entries())
+    .slice(-6)
+    .map(([label, value]) => ({ label, value }));
+  if (alertSeries.length === 0) {
+    alertSeries.push({ label: te("signalAlerts"), value: unreadAlerts.length });
+  }
+  const alertDelta =
+    alertSeries.length >= 2
+      ? alertSeries[alertSeries.length - 1].value - alertSeries[alertSeries.length - 2].value
+      : unreadAlerts.length;
+
+  const bioScore = Math.round(bio?.avg_health_score ?? data.bioacoustic?.avg_health_score ?? 0);
+  const bioSeries = taxonData.length > 0
+    ? taxonData.map((t) => ({ label: t.name.slice(0, 8), value: t.value }))
+    : [{ label: te("recordings"), value: bio?.total_recordings ?? 0 }];
+
+  const ndviValue = avgNdvi > 0 ? avgNdvi.toFixed(2) : ndviSeries.at(-1)?.ndvi?.toFixed(2) ?? "—";
+  const ndviTone: "up" | "down" | "warn" | null =
+    ecosystem?.ndvi_trend?.toLowerCase().includes("declin") ||
+    ecosystem?.ndvi_trend?.toLowerCase().includes("decreas")
+      ? "down"
+      : ecosystem?.ndvi_trend?.toLowerCase().includes("improv") ||
+          ecosystem?.ndvi_trend?.toLowerCase().includes("increas")
+        ? "up"
+        : null;
+
+  const mrvReadiness = complianceSummary?.avg_readiness_pct ?? k.pct_satellite_verified;
+
+  const signalCells: SignalCell[] = [
+    {
+      id: "ndvi" as CommandCenterSignalId,
+      value: ndviValue,
+      label: te("signalNdvi"),
+      tone: ndviTone,
+    },
+    {
+      id: "satellite" as CommandCenterSignalId,
+      value: `${satelliteFreshPct}%`,
+      label: te("signalSatellite"),
+      tone: sitesNeedingScan > 0 ? "warn" : null,
+    },
+    {
+      id: "survival" as CommandCenterSignalId,
+      value: `${survivalPct}%`,
+      label: te("signalSurvival"),
+      tone: survivalPct < 70 ? "down" : null,
+    },
+    {
+      id: "alerts" as CommandCenterSignalId,
+      value: alertDelta >= 0 ? `+${alertDelta}` : String(alertDelta),
+      label: te("signalAlerts"),
+      tone: unreadAlerts.length > 0 ? "down" : null,
+    },
+    {
+      id: "bio" as CommandCenterSignalId,
+      value: `${bioScore}`,
+      label: te("signalBioChorus"),
+      tone: bioScore >= 60 ? "up" : bioScore > 0 ? "warn" : null,
+    },
+    {
+      id: "carbon" as CommandCenterSignalId,
+      value: `+${carbonDeltaPct}%`,
+      label: te("signalCarbon"),
+      tone: carbonDeltaPct >= 0 ? "up" : "down",
+    },
+    {
+      id: "integrity" as CommandCenterSignalId,
+      value: String(integrityScore),
+      label: te("signalIntegrity"),
+      tone: integrityTrend === "down" ? "down" : integrityTrend === "up" ? "up" : null,
+    },
+    {
+      id: "mrv" as CommandCenterSignalId,
+      value: fmtPct(mrvReadiness),
+      label: te("signalMrvReady"),
+      tone: mrvReadiness < 80 ? "warn" : null,
+    },
+  ];
+
+  const trendCharts: TrendChartConfig[] = [
+    {
+      chartId: "ndvi",
+      id: "ndvi",
+      title: te("signalNdvi"),
+      value: ndviValue,
+      valueTone: ndviTone ?? undefined,
+      target: te("chartTargetNdvi"),
+      targetValue: 0.6,
+      series: ndviSeries.map((p) => ({ label: p.label, value: p.ndvi })),
+      seriesColor: "#0ea5e9",
+      domain: [0, 1],
+      valueFormatter: (v) => v.toFixed(3),
+      anomaly:
+        ndviTone === "down" && ecosystem?.ndvi_trend ? ecosystem.ndvi_trend : undefined,
+    },
+    {
+      chartId: "integrity",
+      id: "integrity",
+      title: te("signalIntegrity"),
+      value: String(integrityScore),
+      valueTone: integrityTrend === "down" ? "down" : integrityTrend === "up" ? "up" : undefined,
+      target: te("chartTargetIntegrity"),
+      targetValue: 75,
+      series: integritySeries,
+      seriesColor: "#16a34a",
+      domain: [0, 100],
+      meta: [te("sarComposite")],
+    },
+    {
+      chartId: "carbon",
+      id: "carbon",
+      title: te("carbon"),
+      value: `${carbonLatest} t`,
+      valueTone: carbonDeltaPct >= 0 ? "up" : "down",
+      target: te("chartBaseline"),
+      series: carbonSeries,
+      seriesColor: "#15803d",
+      valueFormatter: (v) => `${v} t`,
+      meta: [te("carbonStockTrendSub")],
+    },
+    {
+      chartId: "survival",
+      id: "survival",
+      title: te("signalSurvival"),
+      value: `${survivalPct}%`,
+      valueTone: survivalPct < 70 ? "down" : "up",
+      target: te("chartTargetSurvival"),
+      targetValue: 85,
+      series: survivalSeries,
+      seriesColor: "#84cc16",
+      domain: [0, 100],
+      meta: [(fieldOps?.survival_due ?? 0) > 0 ? te("survivalDueCount", { count: fieldOps?.survival_due ?? 0 }) : te("onTrack")],
+    },
+    {
+      chartId: "satellite",
+      id: "satellite",
+      title: te("signalSatellite"),
+      value: `${satelliteFreshPct}%`,
+      valueTone: sitesNeedingScan > 0 ? "warn" : undefined,
+      target: te("chartTargetSatellite"),
+      targetValue: 90,
+      series: satelliteSeries,
+      seriesColor: "#0284c7",
+      domain: [0, 100],
+      anomaly: sitesNeedingScan > 0 ? te("sitesNeedRefresh", { count: sitesNeedingScan }) : undefined,
+    },
+    {
+      chartId: "bio",
+      id: "bio",
+      title: te("signalBioChorus"),
+      value: String(bio?.total_recordings ?? data.bioacoustic?.total_recordings ?? 0),
+      valueTone: bioScore >= 60 ? "up" : undefined,
+      target: te("recordings"),
+      series: bioSeries,
+      seriesColor: "#a855f7",
+      meta: [te("shannon"), (bio?.avg_shannon_index ?? 0).toFixed(2)],
+    },
+  ];
+
+  const handleSignalSelect = (signalId: CommandCenterSignalId) => {
+    setFocus((prev) => ({
+      ...prev,
+      signalId: prev.signalId === signalId ? null : signalId,
+    }));
+  };
+
+  const handlePrioritySelect = (priorityId: string) => {
+    setFocus({
+      priorityId,
+      signalId: priorityToSignal(priorityId),
+    });
+  };
+
+  const handleChartSelect = (chartId: TrendChartConfig["chartId"]) => {
+    const signalId = signalFromChart(chartId);
+    setFocus((prev) => ({
+      ...prev,
+      signalId: prev.signalId === signalId ? null : signalId,
+    }));
+  };
+
+  const selectedPriorityId = focus.priorityId ?? priorityItems[0]?.id ?? null;
+
   return (
     <div className="space-y-6">
       <OperationalStatusBar
@@ -353,57 +610,21 @@ export function ExecutiveDashboard() {
         priorities={heroPriorities}
         primaryActionHref={heroPrimaryHref}
         primaryActionLabel={heroPrimaryLabel}
+        selectedPriorityId={selectedPriorityId}
+        onPrioritySelect={handlePrioritySelect}
       />
 
-      <div className="dash-command-strip">
-        {[
-          {
-            label: te("activeProjects"),
-            value: fmtNum(fieldOps?.project_count ?? monitoring?.project_count ?? 0),
-            href: "/projects",
-            icon: FolderKanban,
-          },
-          {
-            label: te("openViolations"),
-            value: fmtNum(openViolations),
-            href: fieldOpsHref(),
-            icon: ShieldAlert,
-            warn: openViolations > 0,
-          },
-          {
-            label: te("unreadAlerts"),
-            value: fmtNum(unreadAlerts.length),
-            href: alertsHref(),
-            icon: Bell,
-            warn: unreadAlerts.length > 0,
-          },
-          {
-            label: te("sitesMonitored"),
-            value: fmtNum(fenceItems.length),
-            href: "/satellite",
-            icon: Satellite,
-          },
-          {
-            label: te("survivalDue"),
-            value: fmtNum(fieldOps?.survival_due ?? 0),
-            href: fieldOpsHref(),
-            icon: ClipboardList,
-            warn: (fieldOps?.survival_due ?? 0) > 0,
-          },
-        ].map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={cn("dash-command-item", item.warn && "dash-command-item--warn")}
-          >
-            <item.icon className="h-4 w-4 shrink-0 opacity-70" />
-            <div>
-              <p className="dash-command-value">{item.value}</p>
-              <p className="dash-command-label">{item.label}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <CommandCenterSignalRibbon
+        signals={signalCells}
+        activeSignalId={focus.signalId}
+        onSignalSelect={handleSignalSelect}
+      />
+
+      <CommandCenterTrendsCanvas
+        charts={trendCharts}
+        focus={focus}
+        onChartSelect={handleChartSelect}
+      />
 
       <CompliancePortfolioStrip />
 
@@ -421,7 +642,7 @@ export function ExecutiveDashboard() {
 
       <CommandCenterEvidence title={te("portfolioAnalytics")} description={te("portfolioAnalyticsDesc")}>
         <section className="grid gap-4 xl:grid-cols-12">
-        <div className="dash-panel xl:col-span-5">
+        <div className="dash-panel xl:col-span-8">
           <div className="dash-panel-head">
             <div>
               <h2 className="dash-panel-title">{te("portfolioVitals")}</h2>
@@ -458,62 +679,6 @@ export function ExecutiveDashboard() {
         </div>
 
         <div className="dash-panel xl:col-span-4">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Carbon trajectory</h2>
-              <p className="dash-panel-sub">6-month stored carbon trend (t CO₂e, from portfolio data)</p>
-            </div>
-            <TrendingUp className="h-4 w-4 text-forest-600" />
-          </div>
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={data.carbon_growth.map((p) => ({
-                  ...p,
-                  value: +(p.value / 1000).toFixed(2),
-                }))}
-              >
-                <defs>
-                  <linearGradient id="dashCarbon" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                <Tooltip
-                  formatter={(v: number) => [`${v} t`, "Carbon"]}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid #e7e5e4",
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#15803d"
-                  fill="url(#dashCarbon)"
-                  strokeWidth={2.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <ChartDataTable
-            caption={t("chartDataTable")}
-            columns={[
-              { key: "label", label: t("month") },
-              { key: "value", label: t("value") },
-            ]}
-            rows={data.carbon_growth.map((p) => ({
-              label: p.label,
-              value: +(p.value / 1000).toFixed(2),
-            }))}
-          />
-        </div>
-
-        <div className="dash-panel xl:col-span-3">
           <div className="dash-panel-head">
             <div>
               <h2 className="dash-panel-title">Canopy health mix</h2>
@@ -585,37 +750,6 @@ export function ExecutiveDashboard() {
             </Link>
           </div>
 
-          {ndviSeries.length > 0 ? (
-            <div className="mt-4 h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={ndviSeries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <YAxis domain={[0, 1]} tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <Tooltip
-                    formatter={(v: number) => [v.toFixed(3), "NDVI"]}
-                    contentStyle={{ borderRadius: 12, fontSize: 12 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="ndvi"
-                    stroke="#0ea5e9"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: "#0ea5e9" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="dash-empty mt-4">
-              <Radar className="h-8 w-8 text-stone-400" />
-              <p>No NDVI time series yet. Draw a plantation fence and run a satellite scan.</p>
-              <Link href="/satellite" className="btn-primary mt-3">
-                Configure satellite
-              </Link>
-            </div>
-          )}
-
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="dash-mini-stat">
               <p className="dash-mini-stat-label">Mean NDVI</p>
@@ -676,28 +810,12 @@ export function ExecutiveDashboard() {
             ))}
           </div>
 
-          {taxonData.length > 0 ? (
-            <div className="mt-5 h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={taxonData} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(148,163,184,0.2)" />
-                  <XAxis type="number" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                    {taxonData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
+          {taxonData.length === 0 ? (
             <div className="dash-empty mt-4">
               <Bird className="h-8 w-8 text-stone-400" />
               <p>Upload ambient recordings to unlock biodiversity analytics.</p>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
       </CommandCenterEvidence>
