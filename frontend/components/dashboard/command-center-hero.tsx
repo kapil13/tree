@@ -30,6 +30,8 @@ export type CommandCenterHeroProps = {
   priorities: CommandCenterPriority[];
   primaryActionHref: string;
   primaryActionLabel: string;
+  selectedPriorityId?: string | null;
+  onPrioritySelect?: (id: string) => void;
 };
 
 const SEVERITY_LABEL: Record<CommandCenterPriority["tone"], string> = {
@@ -47,9 +49,17 @@ export function CommandCenterHero({
   priorities,
   primaryActionHref,
   primaryActionLabel,
+  selectedPriorityId,
+  onPrioritySelect,
 }: CommandCenterHeroProps) {
   const te = useTranslations("executive");
-  const [selectedId, setSelectedId] = useState<string | null>(priorities[0]?.id ?? null);
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(priorities[0]?.id ?? null);
+  const selectedId = selectedPriorityId ?? localSelectedId;
+
+  const handlePrioritySelect = (id: string) => {
+    setLocalSelectedId(id);
+    onPrioritySelect?.(id);
+  };
 
   const selected = priorities.find((p) => p.id === selectedId) ?? priorities[0];
   const actionHref = selected?.href ?? primaryActionHref;
@@ -143,7 +153,7 @@ export function CommandCenterHero({
                     `cc-priority-block--${item.tone}`,
                     selectedId === item.id && "cc-priority-block--selected",
                   )}
-                  onClick={() => setSelectedId(item.id)}
+                  onClick={() => handlePrioritySelect(item.id)}
                 >
                   <p className="cc-priority-sev">{SEVERITY_LABEL[item.tone]}</p>
                   <div className="cc-priority-body">
