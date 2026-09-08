@@ -50,6 +50,7 @@ import {
 } from "@/components/dashboard/command-center-trends-canvas";
 import { localizeExecutiveBriefLine } from "@/lib/localize-executive-brief";
 import type { AppLocale } from "@/i18n/request";
+import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OperationalStatusBar } from "@/components/ui";
