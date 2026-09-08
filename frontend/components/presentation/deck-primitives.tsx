@@ -73,11 +73,13 @@ export function CoverSlide({ total = 20 }: { total?: number }) {
       </div>
 
       <main className="deck-cover-copy">
-        <div className="deck-cover-eyebrow">Intelligence for a thriving planet</div>
-        <h1 className="deck-cover-title">Aranyix — Intelligence for a Thriving Planet</h1>
+        <div className="deck-cover-eyebrow">The Plantation Intelligence Platform</div>
+        <h1 className="deck-cover-title">Aranyix</h1>
         <p className="deck-cover-subtitle">
-          Audit-ready MRV for plantation, carbon, biodiversity and compliance — one platform, every tree,
-          every standard (Indian and international).
+          Field truth · Live satellite · AI vision · Acoustic biodiversity · Audit-ready MRV
+        </p>
+        <p className="deck-cover-footnote">
+          Web + Mobile + API · Built for programmes that must prove outcomes, not just plant trees
         </p>
       </main>
 
