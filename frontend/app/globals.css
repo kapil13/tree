@@ -2518,6 +2518,202 @@ html[lang="hi"] body {
   @apply font-semibold text-rose-600;
 }
 
+.cc-ops-band {
+  @apply grid min-h-[200px] grid-cols-1 overflow-hidden rounded-2xl border border-stone-200/90 bg-white dark:border-stone-800 dark:bg-stone-900 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_280px];
+}
+
+.cc-ops-zone {
+  @apply flex flex-col border-b border-r-0 border-stone-200/80 p-4 text-left transition hover:bg-stone-50/80 dark:border-stone-800 dark:hover:bg-stone-800/40 md:border-b-0 md:border-r xl:last:border-r-0;
+}
+
+.cc-ops-zone--active {
+  @apply bg-sky-50/60 dark:bg-sky-950/20;
+}
+
+.cc-ops-zone--activity {
+  @apply md:col-span-2 xl:col-span-1;
+}
+
+.cc-ops-zone-label {
+  @apply mb-2.5 text-[10px] font-bold uppercase tracking-wider text-stone-500;
+}
+
+.cc-ops-zone-link {
+  @apply mt-2 text-[10px] font-semibold text-forest-700 hover:text-forest-900 dark:text-forest-300;
+}
+
+.cc-ops-carbon-head {
+  @apply mb-1 flex flex-wrap items-baseline gap-2;
+}
+
+.cc-ops-carbon-val {
+  @apply text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50;
+}
+
+.cc-ops-carbon-target {
+  @apply text-xs text-stone-500;
+}
+
+.cc-ops-carbon-track {
+  @apply rounded px-2 py-0.5 text-[10px] font-bold uppercase;
+}
+
+.cc-ops-carbon-track--on {
+  @apply bg-emerald-100 text-emerald-800;
+}
+
+.cc-ops-carbon-track--off {
+  @apply bg-rose-100 text-rose-700;
+}
+
+.cc-ops-bio-visual {
+  @apply flex flex-wrap items-end gap-4;
+}
+
+.cc-ops-bio-big {
+  @apply text-3xl font-bold leading-none text-stone-900 dark:text-stone-50;
+}
+
+.cc-ops-bio-unit {
+  @apply text-sm font-medium text-stone-500;
+}
+
+.cc-ops-bio-stats {
+  @apply flex flex-col gap-1;
+}
+
+.cc-ops-bio-stat {
+  @apply text-xs font-semibold text-stone-700 dark:text-stone-300;
+}
+
+.cc-ops-bio-stat--warn {
+  @apply text-rose-600;
+}
+
+.cc-ops-bio-chart {
+  @apply mt-2 h-[60px];
+}
+
+.cc-ops-mrv-flow {
+  @apply flex items-center gap-0 overflow-x-auto;
+}
+
+.cc-ops-mrv-step-wrap {
+  @apply flex flex-1 items-center;
+}
+
+.cc-ops-mrv-step {
+  @apply min-w-0 flex-1 text-center;
+}
+
+.cc-ops-mrv-pct {
+  @apply block text-base font-bold text-stone-900 dark:text-stone-50;
+}
+
+.cc-ops-mrv-name {
+  @apply block text-[8px] font-semibold uppercase tracking-wide text-stone-500;
+}
+
+.cc-ops-mrv-step--active .cc-ops-mrv-pct {
+  @apply text-sky-700;
+}
+
+.cc-ops-mrv-step--blocked .cc-ops-mrv-pct {
+  @apply text-rose-600;
+}
+
+.cc-ops-mrv-arrow {
+  @apply px-0.5 text-xs text-stone-400;
+}
+
+.cc-ops-mrv-bar {
+  @apply my-1 flex h-1 overflow-hidden rounded bg-stone-200 dark:bg-stone-700;
+}
+
+.cc-ops-mrv-bar-seg {
+  @apply h-full;
+}
+
+.cc-ops-mrv-bar-seg--done {
+  @apply bg-emerald-500;
+}
+
+.cc-ops-mrv-bar-seg--active {
+  @apply bg-sky-500;
+}
+
+.cc-ops-mrv-bar-seg--pending {
+  @apply bg-stone-300 dark:bg-stone-600;
+}
+
+.cc-ops-mrv-issues {
+  @apply flex flex-wrap gap-3 text-[11px] font-semibold;
+}
+
+.cc-ops-mrv-gap {
+  @apply text-rose-600;
+}
+
+.cc-ops-mrv-block {
+  @apply text-amber-600;
+}
+
+.cc-ops-mrv-ready {
+  @apply text-stone-500;
+}
+
+.cc-ops-activity-stream {
+  @apply flex max-h-[180px] flex-col overflow-y-auto;
+}
+
+.cc-ops-activity-empty {
+  @apply text-xs text-stone-500;
+}
+
+.cc-ops-act-item {
+  @apply grid grid-cols-[8px_1fr_auto] items-start gap-2 border-b border-stone-100 py-1.5 text-left last:border-b-0 dark:border-stone-800;
+}
+
+.cc-ops-act-dot {
+  @apply mt-1.5 h-1.5 w-1.5 rounded-full;
+}
+
+.cc-ops-act-dot--tree {
+  @apply bg-emerald-500;
+}
+
+.cc-ops-act-dot--alert {
+  @apply bg-rose-500;
+}
+
+.cc-ops-act-dot--evidence {
+  @apply bg-sky-500;
+}
+
+.cc-ops-act-dot--bio {
+  @apply bg-lime-600;
+}
+
+.cc-ops-act-dot--satellite {
+  @apply bg-sky-400;
+}
+
+.cc-ops-act-dot--field {
+  @apply bg-amber-500;
+}
+
+.cc-ops-act-label {
+  @apply text-[11px] font-semibold text-stone-900 dark:text-stone-50;
+}
+
+.cc-ops-act-meta {
+  @apply text-[10px] text-stone-500;
+}
+
+.cc-ops-act-time {
+  @apply whitespace-nowrap text-[10px] text-stone-400;
+}
+
 .dash-hero {
   @apply relative overflow-hidden rounded-[1.75rem] border border-forest-900/10 bg-[#041f17] p-6 text-white shadow-[0_20px_60px_rgba(4,31,23,0.18)] lg:p-8;
 }
