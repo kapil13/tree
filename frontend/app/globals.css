@@ -2209,6 +2209,211 @@ html[lang="hi"] body {
   @apply mx-auto max-w-[90rem] pb-4;
 }
 
+/* P0 Command Center hero — map-centric cockpit */
+.cc-hero {
+  @apply overflow-hidden rounded-2xl border border-stone-200/90 bg-[#f8f6f2] shadow-sm dark:border-stone-800 dark:bg-stone-950;
+}
+
+.cc-hero-grid {
+  @apply grid min-h-[min(520px,72vh)] grid-cols-1 lg:grid-cols-[minmax(200px,220px)_1fr_minmax(240px,280px)];
+}
+
+.cc-hero-state {
+  @apply flex flex-col gap-4 border-b border-stone-200/80 bg-white p-5 dark:border-stone-800 dark:bg-stone-900 lg:border-b-0 lg:border-r;
+}
+
+.cc-integrity-row {
+  @apply flex items-baseline gap-2;
+}
+
+.cc-integrity-score {
+  @apply text-5xl font-bold tracking-tight text-stone-900 dark:text-stone-50;
+  line-height: 1;
+}
+
+.cc-integrity-delta {
+  @apply text-xl font-bold;
+}
+
+.cc-integrity-delta--down {
+  @apply text-rose-600;
+}
+
+.cc-integrity-delta--up {
+  @apply text-forest-700;
+}
+
+.cc-integrity-label {
+  @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500;
+}
+
+.cc-primary-signal {
+  @apply border-l-[3px] border-sky-600/70 bg-sky-50/80 px-3 py-2 dark:bg-sky-950/30;
+}
+
+.cc-primary-tag {
+  @apply block text-[9px] font-bold uppercase tracking-[0.1em] text-sky-700 dark:text-sky-400;
+}
+
+.cc-primary-text {
+  @apply mt-0.5 text-sm font-semibold leading-snug text-stone-800 dark:text-stone-100;
+}
+
+.cc-cascade {
+  @apply space-y-0 border-t border-stone-100 pt-3 dark:border-stone-800;
+}
+
+.cc-cascade-arrow {
+  @apply my-0.5 block text-center text-[10px] text-stone-400;
+}
+
+.cc-cascade-step {
+  @apply text-xs font-semibold text-stone-600 dark:text-stone-400;
+}
+
+.cc-cascade-step--active {
+  @apply text-rose-700 dark:text-rose-400;
+}
+
+.cc-state-metrics {
+  @apply mt-auto space-y-2 border-t border-stone-100 pt-3 dark:border-stone-800;
+}
+
+.cc-state-metric {
+  @apply flex items-baseline justify-between gap-2 border-b border-stone-100 pb-2 last:border-0 dark:border-stone-800;
+}
+
+.cc-state-metric-label {
+  @apply text-[10px] font-semibold uppercase tracking-wide text-stone-500;
+}
+
+.cc-state-metric-value {
+  @apply text-lg font-bold text-stone-900 dark:text-stone-50;
+}
+
+.cc-state-metric-value--warn {
+  @apply text-amber-700;
+}
+
+.cc-state-metric-value--critical {
+  @apply text-rose-700;
+}
+
+.cc-hero-map {
+  @apply relative flex min-h-[320px] flex-col bg-stone-200/40 dark:bg-stone-900/50;
+}
+
+.cc-hero-map-frame {
+  @apply relative min-h-[280px] flex-1 lg:min-h-0;
+}
+
+.cc-hero-map-frame > div,
+.cc-hero-map-inner {
+  @apply h-full min-h-[280px];
+}
+
+.cc-hero-map-link {
+  @apply absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-white/80 bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-forest-800 shadow-sm backdrop-blur-sm hover:bg-white dark:border-stone-700 dark:bg-stone-900/90 dark:text-forest-300;
+}
+
+.cc-hero-priority {
+  @apply flex flex-col border-t border-stone-200/80 bg-white p-4 dark:border-stone-800 dark:bg-stone-900 lg:border-l lg:border-t-0;
+}
+
+.cc-priority-head {
+  @apply mb-3 flex items-center justify-between gap-2;
+}
+
+.cc-priority-title {
+  @apply text-[10px] font-bold uppercase tracking-[0.1em] text-stone-500;
+}
+
+.cc-priority-all {
+  @apply inline-flex items-center gap-0.5 text-[11px] font-semibold text-forest-700 hover:text-forest-800;
+}
+
+.cc-priority-stack {
+  @apply flex flex-1 flex-col gap-3 overflow-y-auto;
+  max-height: 340px;
+}
+
+.cc-priority-empty {
+  @apply text-sm text-stone-500;
+}
+
+.cc-priority-block {
+  @apply w-full text-left transition hover:translate-x-0.5;
+}
+
+.cc-priority-sev {
+  @apply mb-1 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.12em];
+}
+
+.cc-priority-sev::after {
+  content: "";
+  @apply h-0.5 flex-1 rounded-full opacity-40;
+}
+
+.cc-priority-block--critical .cc-priority-sev {
+  @apply text-rose-700;
+}
+
+.cc-priority-block--critical .cc-priority-sev::after {
+  @apply bg-rose-500;
+}
+
+.cc-priority-block--warn .cc-priority-sev {
+  @apply text-amber-700;
+}
+
+.cc-priority-block--warn .cc-priority-sev::after {
+  @apply bg-amber-500;
+}
+
+.cc-priority-block--info .cc-priority-sev {
+  @apply text-stone-500;
+}
+
+.cc-priority-block--info .cc-priority-sev::after {
+  @apply bg-stone-400;
+}
+
+.cc-priority-body {
+  @apply rounded-lg border border-stone-200/80 p-3 transition dark:border-stone-700;
+}
+
+.cc-priority-block--selected .cc-priority-body {
+  @apply border-sky-300 bg-sky-50/50 dark:border-sky-800 dark:bg-sky-950/20;
+}
+
+.cc-priority-name {
+  @apply text-sm font-bold text-stone-900 dark:text-stone-50;
+}
+
+.cc-priority-detail {
+  @apply mt-1 text-xs text-stone-600 dark:text-stone-400;
+}
+
+.cc-priority-signals {
+  @apply mt-2 flex flex-wrap gap-1.5;
+}
+
+.cc-priority-sig {
+  @apply rounded bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-stone-700 dark:bg-stone-800 dark:text-stone-300;
+}
+
+.cc-priority-sla {
+  @apply mt-2 text-[10px] font-semibold text-stone-500;
+}
+
+.cc-priority-sla--overdue {
+  @apply text-rose-600;
+}
+
+.cc-action-primary {
+  @apply mt-3 block w-full rounded-lg bg-forest-900 px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-white transition hover:bg-forest-800;
+}
+
 .dash-hero {
   @apply relative overflow-hidden rounded-[1.75rem] border border-forest-900/10 bg-[#041f17] p-6 text-white shadow-[0_20px_60px_rgba(4,31,23,0.18)] lg:p-8;
 }

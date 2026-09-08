@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   Bell,
@@ -48,11 +47,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TreesMap } from "@/components/trees-map";
+import { CommandCenterHero, type CommandCenterPriority } from "@/components/dashboard/command-center-hero";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InsightPanel, MetricGrid, OperationalStatusBar } from "@/components/ui";
+import { OperationalStatusBar } from "@/components/ui";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
@@ -75,7 +74,6 @@ import {
   dashboard,
   intelligence,
   plantationFences,
-  plantingPrograms,
   plantingProjects,
   trees,
 } from "@/lib/api";
@@ -90,16 +88,12 @@ import { cn } from "@/lib/cn";
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="intel-skeleton h-20 rounded-xl" />
-      <div className="intel-skeleton h-28 rounded-xl" />
+      <div className="intel-skeleton h-16 rounded-xl" />
+      <div className="intel-skeleton min-h-[420px] rounded-2xl" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="intel-skeleton h-24 rounded-lg" />
         ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="intel-skeleton h-72 rounded-xl" />
-        <div className="intel-skeleton h-72 rounded-xl" />
       </div>
     </div>
   );
@@ -114,14 +108,13 @@ export function ExecutiveDashboard() {
   const canWrite = canWriteInApp(user);
   const canReport = canGenerateReports(user);
 
-  const [dashQ, alertsQ, treesQ, fencesQ, bioQ, programsQ, fieldOpsQ, monitoringQ] = useQueries({
+  const [dashQ, alertsQ, treesQ, fencesQ, bioQ, fieldOpsQ, monitoringQ] = useQueries({
     queries: [
       { queryKey: scopedKey(user, "dashboard"), queryFn: dashboard.get },
       { queryKey: scopedKey(user, "alerts"), queryFn: async () => (await alerts.list()).items },
       { queryKey: scopedKey(user, "trees-dashboard"), queryFn: () => trees.list({ page_size: 10 }) },
       { queryKey: scopedKey(user, "plantation-fences"), queryFn: () => plantationFences.list({ page_size: 20 }) },
       { queryKey: scopedKey(user, "bio-summary"), queryFn: () => bioacoustic.summary() },
-      { queryKey: scopedKey(user, "program-memberships"), queryFn: () => plantingPrograms.memberships() },
       {
         queryKey: scopedKey(user, "field-ops-summary"),
         queryFn: () => plantingProjects.fieldOpsSummary(),
@@ -191,7 +184,6 @@ export function ExecutiveDashboard() {
   const sarIntegrity = monitoring?.sar_avg_forest_integrity;
   const fenceItems = fencesQ.data?.items ?? [];
   const bio = bioQ.data;
-  const enrolledPrograms = programsQ.data?.enrolled ?? [];
   const avgNdvi =
     fenceItems.length > 0
       ? fenceItems.reduce((sum, f) => sum + (f.latest_ndvi_mean ?? 0), 0) / fenceItems.length
@@ -206,8 +198,6 @@ export function ExecutiveDashboard() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
   const healthTotal = data.health_distribution.reduce((sum, d) => sum + d.value, 0);
-  const greeting = getGreeting(te);
-  const firstName = user?.full_name?.split(" ")[0] || te("steward");
 
   type PriorityItem = {
     id: string;
@@ -262,6 +252,62 @@ export function ExecutiveDashboard() {
     survivalDue: fieldOps?.survival_due ?? 0,
   });
 
+  const integrityScore =
+    sarIntegrity != null ? Math.round(sarIntegrity) : Math.round(k.pct_healthy);
+
+  const ndviTrend = ecosystem?.ndvi_trend?.toLowerCase() ?? "";
+  const integrityTrend: "up" | "down" | "flat" | null =
+    ndviTrend.includes("declin") || ndviTrend.includes("decreas")
+      ? "down"
+      : ndviTrend.includes("improv") || ndviTrend.includes("increas")
+        ? "up"
+        : null;
+
+  const primarySignal = brief?.priority_alert
+    ? `${brief.priority_alert.work_area_name} · ${brief.priority_alert.title}`
+    : brief?.headline?.slice(0, 96) || portfolioStatus.label;
+
+  const cascadeSteps: Array<{ label: string; active?: boolean }> = [];
+  if (brief?.priority_alert) {
+    cascadeSteps.push({ label: brief.priority_alert.title, active: true });
+  } else if (ecosystem?.ndvi_trend) {
+    cascadeSteps.push({ label: `NDVI ${ecosystem.ndvi_trend}`, active: true });
+  }
+  if (unreadAlerts.length > 0) {
+    cascadeSteps.push({ label: te("unreadAlertItems", { count: unreadAlerts.length }) });
+  }
+  if (openViolations > 0) {
+    cascadeSteps.push({ label: te("openComplianceItems", { count: openViolations }) });
+  }
+  if (fieldOps?.survival_due && fieldOps.survival_due > 0) {
+    cascadeSteps.push({ label: te("survivalDueCount", { count: fieldOps.survival_due }) });
+  }
+  cascadeSteps.push({ label: te("fieldInspection") });
+
+  const heroPriorities: CommandCenterPriority[] = priorityItems.map((item) => {
+    const signals: string[] = [];
+    if (item.id === "alerts") {
+      signals.push(te("unreadAlertItems", { count: unreadAlerts.length }));
+      if (criticalAlerts.length > 0) {
+        signals.push(te("highPriority", { count: criticalAlerts.length }));
+      }
+    } else if (item.id === "violations") {
+      signals.push(te("openComplianceItems", { count: openViolations }));
+    } else if (item.id === "scans") {
+      signals.push(te("sitesNeedRefresh", { count: sitesNeedingScan }));
+    } else if (item.id === "brief" && brief?.priority_alert) {
+      signals.push(brief.priority_alert.work_area_name);
+    }
+    return {
+      ...item,
+      signals: signals.length > 0 ? signals : [item.detail],
+      sla: item.id === "scans" && sitesNeedingScan > 0 ? te("slaOverdue") : undefined,
+    };
+  });
+
+  const heroPrimaryHref = priorityItems[0]?.href ?? portfolioHealthHref();
+  const heroPrimaryLabel = priorityItems[0]?.title ?? te("portfolioIntelligence");
+
   return (
     <div className="space-y-6">
       <OperationalStatusBar
@@ -282,89 +328,32 @@ export function ExecutiveDashboard() {
         }
       />
 
-      <InsightPanel
-        title={te("keyInsight")}
-        interpretation={
-          brief?.headline ||
-          te("greetingFallback", { greeting, name: firstName })
-        }
-        icon={Sparkles}
-      >
-        {brief?.lines && brief.lines.length > 0 ? (
-          <ul className="space-y-1 text-sm text-stone-600 dark:text-stone-400">
-            {brief.lines.slice(0, 3).map((line) => (
-              <li key={line}>• {line}</li>
-            ))}
-          </ul>
-        ) : null}
-      </InsightPanel>
-
-      <MetricGrid
-        columns={5}
+      <CommandCenterHero
+        integrityScore={integrityScore}
+        integrityTrend={integrityTrend}
+        primarySignal={primarySignal}
+        cascade={cascadeSteps}
         metrics={[
+          { label: te("treesRegistered"), value: fmtCompact(k.total_trees) },
           {
-            label: te("treesRegistered"),
-            value: fmtCompact(k.total_trees),
-            hint: te("healthyCanopy", { pct: fmtPct(k.pct_healthy) }),
-          },
-          {
-            label: te("co2Stored"),
-            value: fmtNum(k.total_co2e_kg / 1000, " t"),
-            hint: te("projected", { value: fmtNum(k.annual_sequestration_kg / 1000, " t/yr") }),
-            tone: "positive",
+            label: te("unreadAlerts"),
+            value: unreadAlerts.length,
+            tone: criticalAlerts.length > 0 ? "critical" : unreadAlerts.length > 0 ? "warn" : "default",
           },
           {
             label: te("openViolations"),
-            value: fmtNum(openViolations),
-            hint: te("complianceBlockers"),
-            tone: openViolations > 0 ? "critical" : "positive",
+            value: openViolations,
+            tone: openViolations > 0 ? "critical" : "default",
           },
           {
-            label: te("unreadAlerts"),
-            value: fmtNum(unreadAlerts.length),
-            hint: te("highPriority", { count: criticalAlerts.length }),
-            tone: criticalAlerts.length > 0 ? "critical" : unreadAlerts.length > 0 ? "warning" : "default",
-          },
-          {
-            label: te("forestIntegrity"),
-            value: sarIntegrity != null ? Math.round(sarIntegrity) : fmtPct(k.pct_satellite_verified),
-            hint: sarIntegrity != null ? te("sarComposite") : te("satelliteVerified"),
+            label: te("satelliteVerified"),
+            value: fmtPct(k.pct_satellite_verified),
           },
         ]}
+        priorities={heroPriorities}
+        primaryActionHref={heroPrimaryHref}
+        primaryActionLabel={heroPrimaryLabel}
       />
-
-      {priorityItems.length > 0 ? (
-        <section className="dash-panel dash-panel--priority">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Today&apos;s priorities</h2>
-              <p className="dash-panel-sub">Compliance, alerts, and monitoring that need action</p>
-            </div>
-            <Link href={portfolioComplianceHref()} className="dash-link">
-              Full monitoring <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <ul className="mt-4 grid gap-2 lg:grid-cols-3">
-            {priorityItems.slice(0, 3).map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "dash-priority-card",
-                    item.tone === "critical" && "dash-priority-card--critical",
-                    item.tone === "warn" && "dash-priority-card--warn",
-                    item.tone === "info" && "dash-priority-card--info",
-                  )}
-                >
-                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
-                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
 
       <div className="dash-command-strip">
         {[
@@ -884,29 +873,15 @@ export function ExecutiveDashboard() {
         title={te("spatialOverview")}
         description={te("spatialOverviewDesc")}
       >
-      <section className="grid gap-4 lg:grid-cols-12">
-        <div className="dash-panel lg:col-span-8">
-          <div className="dash-panel-head">
-            <div>
-              <h2 className="dash-panel-title">Spatial overview</h2>
-              <p className="dash-panel-sub">Live map of registered trees by health status</p>
-            </div>
-            <Link href="/map" className="dash-link">
-              Full map <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200">
-            <TreesMap height="320px" mapType="hybrid" />
-          </div>
-        </div>
-
-        <div className="dash-panel lg:col-span-4">
+      <section className="dash-panel">
           <div className="dash-panel-head">
             <div>
               <h2 className="dash-panel-title">Recent registrations</h2>
               <p className="dash-panel-sub">Latest trees added to portfolio</p>
             </div>
-            <Activity className="h-4 w-4 text-forest-600" />
+            <Link href="/map" className="dash-link">
+              Full map <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <div className="mt-4 space-y-2">
             {(treesQ.data?.items ?? []).map((tree) => (
@@ -929,16 +904,8 @@ export function ExecutiveDashboard() {
               </div>
             )}
           </div>
-        </div>
       </section>
       </CommandCenterEvidence>
     </div>
   );
-}
-
-function getGreeting(te: ReturnType<typeof useTranslations<"executive">>) {
-  const hour = new Date().getHours();
-  if (hour < 12) return te("goodMorning");
-  if (hour < 17) return te("goodAfternoon");
-  return te("goodEvening");
 }
