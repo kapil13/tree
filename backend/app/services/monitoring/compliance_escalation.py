@@ -47,7 +47,7 @@ async def create_compliance_escalation_alerts(db: AsyncSession) -> dict[str, Any
                 "violation_type": violation.violation_type,
                 "tree_id": str(violation.tree_id) if violation.tree_id else None,
             },
-            prefs_key="monitoring",
+            prefs_key="compliance",
             dedupe_hours=168,
             dedupe_keys=("violation_id",),
         )

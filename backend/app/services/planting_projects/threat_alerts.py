@@ -15,7 +15,11 @@ from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
 from app.services.alerts.interpreter import attach_interpretation, interpret_alert
-from app.services.alerts.service import dispatch_alert_channels, threat_watch_prefs
+from app.services.alerts.service import (
+    dispatch_alert_channels,
+    ensure_urgent_email_channel,
+    threat_watch_prefs,
+)
 from app.services.threats.watch import build_site_threat_watch
 
 log = get_logger("threat_alerts")
@@ -78,6 +82,8 @@ async def _create_threat_alert(
         and "sms" not in channels
     ):
         channels.append("sms")
+
+    channels = ensure_urgent_email_channel(channels, user, severity=severity)
 
     brief = interpret_alert(kind=kind, severity=severity, title=title, message=message, payload=payload)
     enriched_payload = attach_interpretation(payload, brief)

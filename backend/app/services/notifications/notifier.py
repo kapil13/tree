@@ -40,8 +40,8 @@ class Notifier:
 
     async def _send_email(self, to: str, title: str, message: str) -> NotificationResult:
         if not resend_configured():
-            log.info("notification.send", channel="email", to=_redact(to), title=title)
-            return NotificationResult(channel="email", delivered=True, info="dev_stub")
+            log.warning("notification.email_skipped", channel="email", to=_redact(to), title=title)
+            return NotificationResult(channel="email", delivered=False, info="email_not_configured")
         try:
             await send_security_notification(to=to, title=title, message=message)
             return NotificationResult(channel="email", delivered=True)

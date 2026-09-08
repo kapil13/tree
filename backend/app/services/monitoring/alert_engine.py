@@ -21,7 +21,7 @@ from app.services.alerts.defaults import (
     default_notification_preferences,
 )
 from app.services.alerts.interpreter import attach_interpretation, interpret_alert
-from app.services.alerts.service import dispatch_alert_channels
+from app.services.alerts.service import dispatch_alert_channels, ensure_urgent_email_channel
 
 log = get_logger("monitoring.alerts")
 
@@ -61,14 +61,14 @@ def _resolve_channels(user: User, prefs_key: str, severity: str) -> list[str]:
     prefs = user.notification_preferences or default_notification_preferences()
     base = {**PREFS_MAP.get(prefs_key, PREFS_MAP["monitoring"]), **(prefs.get(prefs_key) or {})}
     if not base.get("enabled", True):
-        return ["in_app"]
+        return ensure_urgent_email_channel(["in_app"], user, severity=severity)
     channels: list[str] = ["in_app"]
     for ch in base.get("channels", ["email"]):
         if ch in ("email", "sms", "push") and ch not in channels:
             channels.append(ch)
     if severity == "critical" and base.get("sms_on_critical") and user.phone and "sms" not in channels:
         channels.append("sms")
-    return channels
+    return ensure_urgent_email_channel(channels, user, severity=severity)
 
 
 async def create_monitoring_alert(
