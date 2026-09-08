@@ -15,7 +15,7 @@ function formatScheme(code: string) {
   return code.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function GovernmentRollupPanel() {
+export function GovernmentRollupPanel({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
   const audience = resolvePlantingAudience(user?.audience);
   const [groupBy, setGroupBy] = useState<"district" | "block">("district");
@@ -32,8 +32,8 @@ export function GovernmentRollupPanel() {
   }
 
   if (isLoading || !data) {
-    return (
-      <section className="dash-panel">
+    const skeleton = (
+      <>
         <div className="intel-skeleton h-8 w-56 rounded" />
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -41,8 +41,9 @@ export function GovernmentRollupPanel() {
           ))}
         </div>
         <div className="intel-skeleton mt-4 h-40 rounded-lg" />
-      </section>
+      </>
     );
+    return embedded ? <div>{skeleton}</div> : <section className="dash-panel">{skeleton}</section>;
   }
 
   const totals = data.totals;
@@ -51,18 +52,24 @@ export function GovernmentRollupPanel() {
   );
 
   return (
-    <section className="dash-panel">
+    <section className={cn(!embedded && "dash-panel")}>
       <div className="dash-panel-head">
-        <div>
-          <h2 className="dash-panel-title flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-forest-600" />
-            District plantation rollup
-          </h2>
-          <p className="dash-panel-sub">
-            Scheme delivery, survival, and geo-tag coverage across {fmtNum(data.total)}{" "}
-            {groupBy === "block" ? "blocks" : "districts"}
+        {!embedded ? (
+          <div>
+            <h2 className="dash-panel-title flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-forest-600" />
+              District plantation rollup
+            </h2>
+            <p className="dash-panel-sub">
+              Scheme delivery, survival, and geo-tag coverage across {fmtNum(data.total)}{" "}
+              {groupBy === "block" ? "blocks" : "districts"}
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-stone-500">
+            {fmtNum(data.total)} {groupBy === "block" ? "blocks" : "districts"} · scheme delivery rollup
           </p>
-        </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full border border-stone-200 bg-white p-0.5 text-xs">
             {(["district", "block"] as const).map((mode) => (

@@ -29,6 +29,7 @@ import {
   type MrvStage,
 } from "@/components/dashboard/command-center-ops-band";
 import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboard-strip";
+import { ProjectPerformancePanel } from "@/components/dashboard/project-performance-panel";
 import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
 import { useTranslations } from "next-intl";
 import {
@@ -88,6 +89,7 @@ import { useAuth } from "@/lib/auth-store";
 import { alertsHref } from "@/lib/alerts-links";
 import { fieldOpsHref } from "@/lib/field-ops-links";
 import { portfolioComplianceHref, portfolioHealthHref, portfolioThreatsHref } from "@/lib/portfolio-health-links";
+import { resolvePlantingAudience } from "@/lib/audience";
 import { canGenerateReports, canWriteInApp } from "@/lib/nav-access";
 import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
@@ -114,8 +116,12 @@ export function ExecutiveDashboard() {
   const te = useTranslations("executive");
   const to = useTranslations("opsStatus");
   const tChrome = useTranslations("chrome");
+  const tDataTrust = useTranslations("dataTrust");
   const canWrite = canWriteInApp(user);
   const canReport = canGenerateReports(user);
+  const audience = resolvePlantingAudience(user?.audience);
+  const showPlantingFocus = Boolean(user?.audience) && audience !== "general";
+  const showDistrictRollup = audience === "government";
 
   const [dashQ, alertsQ, treesQ, fencesQ, bioQ, fieldOpsQ, monitoringQ] = useQueries({
     queries: [
@@ -796,12 +802,30 @@ export function ExecutiveDashboard() {
         activity={activityItems}
       />
 
-      <AudienceDashboardStrip />
+      <ProjectPerformancePanel
+        monitoring={monitoring}
+        complianceSummary={complianceSummary}
+      />
 
-      <GovernmentRollupPanel />
+      {showPlantingFocus ? (
+        <CommandCenterEvidence title={te("plantingFocus")} description={te("plantingFocusDesc")}>
+          <AudienceDashboardStrip />
+        </CommandCenterEvidence>
+      ) : null}
 
-      <DataTrustBanner variant="strip" />
-      <OrgAdminChecklist compact />
+      {showDistrictRollup ? (
+        <CommandCenterEvidence title={te("districtRollup")} description={te("districtRollupDesc")}>
+          <GovernmentRollupPanel embedded />
+        </CommandCenterEvidence>
+      ) : null}
+
+      <CommandCenterEvidence title={tDataTrust("title")} description={te("dataTrustDesc")}>
+        <DataTrustBanner variant="strip" />
+      </CommandCenterEvidence>
+
+      <CommandCenterEvidence title={te("orgSetup")} description={te("orgSetupDesc")}>
+        <OrgAdminChecklist compact />
+      </CommandCenterEvidence>
 
       <CommandCenterEvidence title={te("sarTitle")} description={te("sarDesc")}>
         <SarIntelligencePanel />
