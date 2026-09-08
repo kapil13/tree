@@ -3,6 +3,7 @@ import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./presentation-deck.css";
 import "./gov-ppt.css";
 import "./pitch-deck.css";
+import "./institutional-deck.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -19,9 +20,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Aranyix Client Deck — MRV Platform Overview",
+  title: "Aranyix Institutional Briefing — Plantation Intelligence Platform",
   description:
-    "Professional 16:9 presentation deck for Aranyix: plantation MRV, carbon, biodiversity, compliance and monitoring.",
+    "33-slide institutional presentation: field MRV, always-on scan engine, intelligence fusion, India scheme depth, compliance universe, and integrity anti-fraud.",
   robots: "noindex, nofollow",
 };
 
