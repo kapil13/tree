@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Building2, MapPin, Sprout, Target } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { fmtNum, fmtPct } from "@/components/dashboard/format";
 import { plantationReportApi } from "@/lib/plantation-report-api";
 import { resolvePlantingAudience } from "@/lib/audience";
@@ -17,6 +18,7 @@ function formatScheme(code: string) {
 
 export function GovernmentRollupPanel({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth();
+  const te = useTranslations("executive");
   const audience = resolvePlantingAudience(user?.audience);
   const [groupBy, setGroupBy] = useState<"district" | "block">("district");
 
@@ -58,16 +60,16 @@ export function GovernmentRollupPanel({ embedded = false }: { embedded?: boolean
           <div>
             <h2 className="dash-panel-title flex items-center gap-2">
               <Building2 className="h-4 w-4 text-forest-600" />
-              District plantation rollup
+              {te("districtRollup")}
             </h2>
             <p className="dash-panel-sub">
-              Scheme delivery, survival, and geo-tag coverage across {fmtNum(data.total)}{" "}
-              {groupBy === "block" ? "blocks" : "districts"}
+              {te("districtRollupDesc")} {fmtNum(data.total)}{" "}
+              {groupBy === "block" ? te("blocks") : te("districts")}
             </p>
           </div>
         ) : (
           <p className="text-xs text-stone-500">
-            {fmtNum(data.total)} {groupBy === "block" ? "blocks" : "districts"} · scheme delivery rollup
+            {fmtNum(data.total)} {groupBy === "block" ? te("blocks") : te("districts")} · {te("schemeDeliveryRollup")}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
@@ -84,12 +86,12 @@ export function GovernmentRollupPanel({ embedded = false }: { embedded?: boolean
                     : "text-stone-600 hover:text-forest-800",
                 )}
               >
-                {mode}
+                {mode === "district" ? te("districts") : te("blocks")}
               </button>
             ))}
           </div>
           <Link href="/reports/plantation/district-block" className="dash-link">
-            Full report <ArrowRight className="h-3.5 w-3.5" />
+            {te("fullReport")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -97,25 +99,25 @@ export function GovernmentRollupPanel({ embedded = false }: { embedded?: boolean
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            label: "Projects",
+            label: te("activeProjects"),
             value: fmtNum(totals.project_count),
             icon: Target,
             warn: false,
           },
           {
-            label: "Trees registered",
+            label: te("treesRegistered"),
             value: fmtNum(totals.registered_trees),
             icon: Sprout,
             warn: totals.gap > 0,
           },
           {
-            label: "Avg survival",
+            label: te("avgSurvival"),
             value: totals.avg_survival_pct == null ? "—" : fmtPct(totals.avg_survival_pct),
             icon: Sprout,
             warn: (totals.avg_survival_pct ?? 100) < 70,
           },
           {
-            label: "Geo-tagged",
+            label: te("geoTagged"),
             value: totals.avg_geo_tagged_pct == null ? "—" : fmtPct(totals.avg_geo_tagged_pct),
             icon: MapPin,
             warn: (totals.avg_geo_tagged_pct ?? 100) < 80,

@@ -477,6 +477,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function Sidebar() {
+  const tc = useTranslations("chrome");
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950 md:flex md:max-h-screen">
       <div className="shrink-0 p-4 pb-0">
@@ -485,7 +486,7 @@ export function Sidebar() {
           <div className="min-w-0">
             <div className="text-base font-bold leading-tight text-forest-900">Aranyix</div>
             <div className="truncate text-[10px] font-medium text-stone-400">
-              Environmental intelligence platform
+              {tc("platformTagline")}
             </div>
           </div>
         </Link>

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Download, FileText, Radar } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { plantingProjects, sar } from "@/lib/api";
 import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { SarIntegrityTrendChart } from "@/components/satellite/sar-integrity-trend-chart";
 
 export function SarIntelligencePanel() {
+  const te = useTranslations("executive");
   const { data, isLoading } = useQuery({
     queryKey: ["monitoring-summary", "sar-panel"],
     queryFn: () => plantingProjects.monitoringSummary(),
@@ -17,7 +19,7 @@ export function SarIntelligencePanel() {
   if (isLoading) {
     return (
       <div className="dash-panel">
-        <p className="text-sm text-stone-500">Loading SAR intelligence…</p>
+        <p className="text-sm text-stone-500">{te("loadingSar")}</p>
       </div>
     );
   }
@@ -62,11 +64,9 @@ export function SarIntelligencePanel() {
         <div>
           <h2 className="dash-panel-title flex items-center gap-2">
             <Radar className="h-4 w-4 text-forest-600" />
-            SAR Forest Integrity
+            {te("sarTitle")}
           </h2>
-          <p className="dash-panel-sub">
-            NISAR-inspired ground intelligence across your work areas
-          </p>
+          <p className="dash-panel-sub">{te("sarDesc")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -86,21 +86,24 @@ export function SarIntelligencePanel() {
             CSV
           </button>
           <Link href={portfolioMonitoringHref()} className="dash-link">
-            Monitoring <ArrowRight className="h-3.5 w-3.5" />
+            {te("monitoring")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-4">
-        <SarKpi label="Avg integrity" value={avgIntegrity != null ? String(avgIntegrity) : "—"} warn={avgIntegrity != null && avgIntegrity < 50} />
-        <SarKpi label="At risk" value={String(atRisk)} warn={atRisk > 0} />
-        <SarKpi label="Divergent" value={String(divergent)} warn={divergent > 0} />
-        <SarKpi label="Field tasks" value={String(openTasks)} warn={openTasks > 0} />
+        <SarKpi label={te("sarAvgIntegrity")} value={avgIntegrity != null ? String(avgIntegrity) : "—"} warn={avgIntegrity != null && avgIntegrity < 50} />
+        <SarKpi label={te("sarAtRisk")} value={String(atRisk)} warn={atRisk > 0} />
+        <SarKpi label={te("sarDivergent")} value={String(divergent)} warn={divergent > 0} />
+        <SarKpi label={te("sarFieldTasks")} value={String(openTasks)} warn={openTasks > 0} />
       </div>
 
       <p className="mt-3 text-xs text-stone-500">
-        {aligned} aligned · {data.sar_live_providers ?? 0} live SAR providers ·{" "}
-        {data.sar_stub_providers ?? 0} stub
+        {te("sarAlignedSummary", {
+          aligned,
+          live: data.sar_live_providers ?? 0,
+          stub: data.sar_stub_providers ?? 0,
+        })}
       </p>
 
       {topAtRisk.length > 0 ? (
@@ -113,7 +116,9 @@ export function SarIntelligencePanel() {
               >
                 <span className="font-medium text-stone-800">{wa.name}</span>
                 <span className="text-xs text-amber-800">
-                  {wa.sar_forest_integrity != null ? `Integrity ${wa.sar_forest_integrity}` : "No SAR"}
+                  {wa.sar_forest_integrity != null
+                    ? te("sarIntegrityValue", { value: wa.sar_forest_integrity })
+                    : te("sarNoData")}
                 </span>
               </Link>
             </li>

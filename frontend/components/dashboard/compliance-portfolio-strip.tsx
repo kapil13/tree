@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { compliance } from "@/lib/api";
 import { portfolioComplianceHref } from "@/lib/compliance-links";
 import { fieldOpsHref } from "@/lib/field-ops-links";
@@ -14,6 +15,7 @@ import { fmtNum, fmtPct } from "@/components/dashboard/format";
 
 export function CompliancePortfolioStrip({ className }: { className?: string }) {
   const { user } = useAuth();
+  const te = useTranslations("executive");
   const { data, isLoading } = useQuery({
     queryKey: scopedKey(user, "compliance-portfolio-summary"),
     queryFn: () => compliance.portfolioSummary(),
@@ -33,43 +35,42 @@ export function CompliancePortfolioStrip({ className }: { className?: string }) 
         <div>
           <h2 className="dash-panel-title flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-forest-600" />
-            Compliance posture
+            {te("compliancePosture")}
           </h2>
           <p className="dash-panel-sub">
-            Readiness, violations, and safeguards across {data.project_count} project
-            {data.project_count === 1 ? "" : "s"}
+            {te("readinessAcrossProjects", { count: data.project_count })}
           </p>
         </div>
         <Link href={portfolioComplianceHref()} className="dash-link">
-          Portfolio compliance <ArrowRight className="h-3.5 w-3.5" />
+          {te("portfolioCompliance")} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            label: "Avg readiness",
+            label: te("avgReadiness"),
             value: fmtPct(data.avg_readiness_pct),
             href: portfolioComplianceHref(),
             icon: ShieldCheck,
             warn: warnReadiness,
           },
           {
-            label: "Open violations",
+            label: te("openViolations"),
             value: fmtNum(data.open_violations),
             href: portfolioComplianceHref(),
             icon: ShieldAlert,
             warn: warnViolations,
           },
           {
-            label: "Blocking",
+            label: te("blocking"),
             value: fmtNum(data.blocking_violations),
             href: fieldOpsHref({ section: "attention" }),
             icon: ShieldAlert,
             warn: warnBlocking,
           },
           {
-            label: "Safeguard gaps",
+            label: te("safeguardGaps"),
             value: fmtNum(data.safeguard_gap_count),
             href: portfolioComplianceHref(),
             icon: ShieldCheck,
@@ -92,7 +93,7 @@ export function CompliancePortfolioStrip({ className }: { className?: string }) 
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-4">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-          Org exports
+          {te("orgExports")}
         </span>
         {data.report_links.map((link) => (
           <Link
