@@ -2714,6 +2714,58 @@ html[lang="hi"] body {
   @apply whitespace-nowrap text-[10px] text-stone-400;
 }
 
+.cc-proj-section {
+  @apply overflow-hidden rounded-2xl border border-stone-200/90 bg-white p-4 dark:border-stone-800 dark:bg-stone-900;
+}
+
+.cc-proj-head {
+  @apply mb-3;
+}
+
+.cc-proj-title {
+  @apply text-xs font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400;
+}
+
+.cc-proj-desc {
+  @apply mt-0.5 text-xs text-stone-500;
+}
+
+.cc-proj-perf {
+  @apply flex flex-col gap-2;
+}
+
+.cc-proj-row {
+  @apply grid grid-cols-[5rem_1fr_2.5rem_4.5rem] items-center gap-2 rounded-lg px-1 py-1 text-xs transition hover:bg-stone-50 dark:hover:bg-stone-800/50;
+}
+
+.cc-proj-row--selected {
+  @apply bg-sky-50 dark:bg-sky-950/30;
+}
+
+.cc-proj-name {
+  @apply truncate font-bold text-stone-900 dark:text-stone-50;
+}
+
+.cc-proj-bar {
+  @apply h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700;
+}
+
+.cc-proj-fill {
+  @apply h-full rounded-full transition-all;
+}
+
+.cc-proj-score {
+  @apply text-right font-bold text-stone-900 dark:text-stone-50;
+}
+
+.cc-proj-secondary {
+  @apply text-right text-[10px] font-semibold text-stone-600;
+}
+
+.cc-proj-secondary--down {
+  @apply text-rose-600;
+}
+
 .dash-hero {
   @apply relative overflow-hidden rounded-[1.75rem] border border-forest-900/10 bg-[#041f17] p-6 text-white shadow-[0_20px_60px_rgba(4,31,23,0.18)] lg:p-8;
 }
