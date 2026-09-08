@@ -37,7 +37,10 @@ def ensure_urgent_email_channel(
         (severity is not None and severity in URGENT_EMAIL_SEVERITIES)
         or (risk_level is not None and risk_level in URGENT_EMAIL_RISK_LEVELS)
     )
-    if not urgent or not user.email:
+    if not urgent:
+        return channels
+    email = getattr(user, "email", None)
+    if not email:
         return channels
     if "email" in channels:
         return channels
