@@ -76,12 +76,19 @@ function SiteIntensityGrid({ labels }: { labels: { zoneA: string; zoneB: string;
 }
 
 export function MarketingGhgIntelligence({
-  eyebrow = "Project Carbon Intelligence",
-  title = "Project GHG emissions within your boundary",
-  copy = "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, source inventory, dispersion, and fusion inside the project area.",
-  cta = { label: "Open emissions workspace", href: "/auth?mode=signin&next=/projects" },
+  eyebrow,
+  title,
+  copy,
+  cta,
 }: GhgIntelligenceProps) {
   const t = useTranslations("marketing.home.ghg");
+  const th = useTranslations("marketing.home");
+  const resolvedEyebrow = eyebrow || th("ghgEyebrow");
+  const resolvedTitle = title || th("ghgTitle");
+  const resolvedCopy =
+    copy ||
+    "Spatial greenhouse-gas intelligence for planted sites — satellite methane context, source inventory, dispersion, and fusion inside the project area.";
+  const resolvedCta = cta ?? { label: th("ghgCta"), href: "/auth?mode=signin&next=/projects" };
   const demo = GHG_DEMO_DASHBOARD;
 
   function sourceLabel(label: string) {
@@ -94,9 +101,9 @@ export function MarketingGhgIntelligence({
       <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="marketing-ghg-intel-head">
           <div>
-            <p className="marketing-eyebrow">{eyebrow}</p>
-            <h2 className="marketing-section-title font-display">{title}</h2>
-            <p className="marketing-section-copy">{copy}</p>
+            <p className="marketing-eyebrow">{resolvedEyebrow}</p>
+            <h2 className="marketing-section-title font-display">{resolvedTitle}</h2>
+            <p className="marketing-section-copy">{resolvedCopy}</p>
           </div>
           <span className="marketing-demo-badge">{t("demoBadge")}</span>
         </div>
@@ -200,10 +207,10 @@ export function MarketingGhgIntelligence({
           </div>
         </div>
 
-        {cta?.label && cta.href ? (
+        {resolvedCta?.label && resolvedCta.href ? (
           <div className="marketing-intel-cta">
-            <Link href={cta.href} className="btn-primary">
-              {cta.label}
+            <Link href={resolvedCta.href} className="btn-primary">
+              {resolvedCta.label}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

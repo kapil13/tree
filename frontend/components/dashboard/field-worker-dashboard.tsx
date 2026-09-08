@@ -52,6 +52,7 @@ function FieldDashboardSkeleton() {
 export function FieldWorkerDashboard() {
   const { user } = useAuth();
   const tf = useTranslations("fieldWorker");
+  const tfo = useTranslations("fieldOps");
   const to = useTranslations("opsStatus");
   const [projectsQ, treesQ, fieldOpsQ] = useQueries({
     queries: [
@@ -200,21 +201,21 @@ export function FieldWorkerDashboard() {
           <div>
             <h2 className="dash-panel-title flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              Today&apos;s priorities
+              {tf("todaysPriorities")}
             </h2>
-            <p className="dash-panel-sub">Survival, geotag, and compliance items</p>
+            <p className="dash-panel-sub">{tf("todaysPrioritiesSub")}</p>
           </div>
           <Link href="/field-ops" className="dash-link">
-            Field ops <ArrowRight className="h-3.5 w-3.5" />
+            {tf("viewFieldOps")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
         {attention.length === 0 ? (
           <EmptyState
             className="mt-4 border-0 bg-transparent py-8"
             icon={RefreshCw}
-            title="Nothing due right now"
-            description="No survival checks, geotag updates, or open violations in your queue."
-            action={{ label: "Register a tree", href: "/trees/new" }}
+            title={tf("nothingDueTitle")}
+            description={tf("nothingDueDesc")}
+            action={{ label: tf("registerTree"), href: "/trees/new" }}
           />
         ) : (
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -245,8 +246,8 @@ export function FieldWorkerDashboard() {
             <ClipboardList className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-medium text-stone-900">My projects</p>
-            <p className="text-xs text-stone-500">Packages & work areas</p>
+            <p className="text-sm font-medium text-stone-900">{tf("myProjects")}</p>
+            <p className="text-xs text-stone-500">{tf("packagesWorkAreas")}</p>
           </div>
           <ArrowRight className="ml-auto h-4 w-4 text-stone-400" />
         </Link>
@@ -255,8 +256,8 @@ export function FieldWorkerDashboard() {
             <MapPin className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-medium text-stone-900">Field map</p>
-            <p className="text-xs text-stone-500">Find nearby trees</p>
+            <p className="text-sm font-medium text-stone-900">{tf("fieldMap")}</p>
+            <p className="text-xs text-stone-500">{tf("findNearbyTrees")}</p>
           </div>
           <ArrowRight className="ml-auto h-4 w-4 text-stone-400" />
         </Link>
@@ -265,23 +266,23 @@ export function FieldWorkerDashboard() {
       <DataTrustBanner compact />
 
       <CommandCenterEvidence
-        title="Assigned projects & recent trees"
-        description="Open a package or continue field surveys"
+        title={tf("assignedProjectsRecent")}
+        description={tf("assignedProjectsRecentDesc")}
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="dash-panel border-0 p-0 shadow-none">
             <div className="dash-panel-head px-0 pt-0">
               <div>
-                <h2 className="dash-panel-title">Assigned projects</h2>
-                <p className="dash-panel-sub">Open a package to register trees</p>
+                <h2 className="dash-panel-title">{tf("assignedProjects")}</h2>
+                <p className="dash-panel-sub">{tf("openPackageRegister")}</p>
               </div>
             </div>
             {unassigned ? (
               <EmptyState
                 className="mt-4 border-0 bg-transparent py-8"
                 icon={ClipboardList}
-                title="No projects assigned yet"
-                description="Ask your supervisor to add you on the project Team tab so packages appear here."
+                title={tf("noProjectsTitle")}
+                description={tf("noProjectsDesc")}
               />
             ) : (
               <ul className="mt-4 space-y-2">
@@ -303,20 +304,20 @@ export function FieldWorkerDashboard() {
           <div className="dash-panel border-0 p-0 shadow-none">
             <div className="dash-panel-head px-0 pt-0">
               <div>
-                <h2 className="dash-panel-title">Recent trees</h2>
-                <p className="dash-panel-sub">Continue field surveys</p>
+                <h2 className="dash-panel-title">{tf("recentTrees")}</h2>
+                <p className="dash-panel-sub">{tf("recentTreesSub")}</p>
               </div>
               <Link href="/trees" className="dash-link">
-                View all <ArrowRight className="h-3.5 w-3.5" />
+                {tfo("viewAll")} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
             {recentTrees.length === 0 ? (
               <EmptyState
                 className="mt-4 border-0 bg-transparent py-8"
                 icon={TreePine}
-                title="No trees registered yet"
-                description="Use Register tree to capture your first GPS-tagged planting."
-                action={{ label: "Register tree", href: "/trees/new" }}
+                title={tf("emptyTreesTitle")}
+                description={tf("emptyTreesDesc")}
+                action={{ label: tf("registerTree"), href: "/trees/new" }}
               />
             ) : (
               <ul className="mt-4 space-y-2">

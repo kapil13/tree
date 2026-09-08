@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Wind,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AlertPreparednessBlock, type PreparednessBrief } from "@/components/alerts/alert-preparedness-block";
 import { dashboard } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -76,6 +77,7 @@ function alertIcon(kind: string) {
 }
 
 export function ThreatWatchPanel() {
+  const te = useTranslations("executive");
   const { data, isLoading, error } = useQuery({
     queryKey: ["threat-watch"],
     queryFn: dashboard.threatWatch,
@@ -86,7 +88,7 @@ export function ThreatWatchPanel() {
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white p-6 text-sm text-stone-500">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading location-specific weather & pest alerts…
+        {te("loadingThreatWatch")}
       </div>
     );
   }
@@ -94,7 +96,7 @@ export function ThreatWatchPanel() {
   if (error || !data) {
     return (
       <div className="rounded-2xl border border-stone-200 bg-stone-50 p-6 text-sm text-stone-600">
-        Threat watch unavailable. Add plantation work areas to enable location alerts.
+        {te("threatWatchUnavailable")}
       </div>
     );
   }
@@ -108,25 +110,25 @@ export function ThreatWatchPanel() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            label: "Sites monitored",
+            label: te("sitesMonitored"),
             value: summary.sites_monitored,
             icon: MapPin,
             accent: "text-sky-600",
           },
           {
-            label: "Weather alerts",
+            label: te("weatherAlerts"),
             value: summary.weather_alerts_count,
             icon: CloudRain,
             accent: "text-blue-600",
           },
           {
-            label: "High pest risk",
+            label: te("highPestRisk"),
             value: summary.pest_high_count,
             icon: Bug,
             accent: "text-amber-600",
           },
           {
-            label: "Locust watch",
+            label: te("locustWatch"),
             value: summary.locust_watch_count,
             icon: ShieldAlert,
             accent: "text-orange-600",
@@ -145,9 +147,9 @@ export function ThreatWatchPanel() {
       {sites.length === 0 ? (
         <div className="dash-empty">
           <MapPin className="h-8 w-8 text-stone-400" />
-          <p>No plantation sites yet. Draw work areas on the satellite map to get location alerts.</p>
+          <p>{te("noSitesThreat")}</p>
           <Link href="/satellite" className="btn-primary mt-3">
-            Add plantation site
+            {te("addPlantationSite")}
           </Link>
         </div>
       ) : (

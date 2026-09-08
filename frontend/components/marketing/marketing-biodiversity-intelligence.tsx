@@ -37,13 +37,24 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 export function MarketingBiodiversityIntelligence({
-  eyebrow = "Biodiversity Intelligence",
-  title = "Listen to the landscape",
-  copy = "Turn field sound into biodiversity evidence.",
-  cta = { label: "Open bioacoustic workspace", href: "/auth?mode=signin&next=/bioacoustic" },
-  pipelineSteps = ["Field recording", "Bioacoustic engine", "Species model", "Verified evidence"],
+  eyebrow,
+  title,
+  copy,
+  cta,
+  pipelineSteps,
 }: BiodiversityIntelligenceProps) {
   const t = useTranslations("marketing.home.bio");
+  const th = useTranslations("marketing.home");
+  const resolvedEyebrow = eyebrow || th("bioEyebrow");
+  const resolvedTitle = title || th("bioTitle");
+  const resolvedCopy = copy || th("bioCopy");
+  const resolvedCta = cta ?? { label: th("bioCta"), href: "/auth?mode=signin&next=/bioacoustic" };
+  const resolvedPipeline = pipelineSteps ?? [
+    th("bioPipeline1"),
+    th("bioPipeline2"),
+    th("bioPipeline3"),
+    th("bioPipeline4"),
+  ];
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [level, setLevel] = useState(42);
@@ -64,9 +75,9 @@ export function MarketingBiodiversityIntelligence({
       <div className="mx-auto max-w-7xl px-6 py-20">
         <div className="marketing-bio-intel-head">
           <div>
-            <p className="marketing-eyebrow">{eyebrow}</p>
-            <h2 className="marketing-section-title font-display">{title}</h2>
-            <p className="marketing-section-copy">{copy}</p>
+            <p className="marketing-eyebrow">{resolvedEyebrow}</p>
+            <h2 className="marketing-section-title font-display">{resolvedTitle}</h2>
+            <p className="marketing-section-copy">{resolvedCopy}</p>
           </div>
           <span className="marketing-demo-badge">{t("demoBadge")}</span>
         </div>
@@ -165,19 +176,19 @@ export function MarketingBiodiversityIntelligence({
         </div>
 
         <ol className="marketing-intel-pipeline" aria-label={t("pipelineAria")}>
-          {pipelineSteps.map((step, index) => (
+          {resolvedPipeline.map((step, index) => (
             <li key={step}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <strong>{step}</strong>
-              {index < pipelineSteps.length - 1 ? <ArrowRight className="h-4 w-4" aria-hidden /> : null}
+              {index < resolvedPipeline.length - 1 ? <ArrowRight className="h-4 w-4" aria-hidden /> : null}
             </li>
           ))}
         </ol>
 
-        {cta?.label && cta.href ? (
+        {resolvedCta?.label && resolvedCta.href ? (
           <div className="marketing-intel-cta">
-            <Link href={cta.href} className="btn-primary">
-              {cta.label}
+            <Link href={resolvedCta.href} className="btn-primary">
+              {resolvedCta.label}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

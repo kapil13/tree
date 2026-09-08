@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import {
   BioacousticVisual,
@@ -8,7 +9,7 @@ import {
   FieldMapVisual,
   HeroCommandVisual,
   IntelligenceRiver,
-  PLATFORM_EDGES,
+  PlatformEdges,
   ProgramScene,
   SatelliteFusionVisual,
 } from "@/components/marketing/marketing-visuals";
@@ -83,7 +84,10 @@ function marketingSecondaryHref(href: string): string {
   return href;
 }
 
-function complianceGroups(items: Array<Record<string, string>>) {
+function complianceGroups(
+  items: Array<Record<string, string>>,
+  labels: { india: string; carbon: string; nature: string },
+) {
   const india = items.filter((i) =>
     /DPDP|NHAI|CAMPA|NGT|WCAG|BYOT|Green Credit|GCP|GIM|MISHTI|Nagar Van|Sahakar/i.test(
       `${i.code} ${i.title}`,
@@ -94,13 +98,15 @@ function complianceGroups(items: Array<Record<string, string>>) {
   );
   const nature = items.filter((i) => !india.includes(i) && !carbon.includes(i));
   return [
-    { title: "India & public programs", items: india },
-    { title: "Carbon & disclosure", items: carbon },
-    { title: "Nature & integrity", items: nature },
+    { title: labels.india, items: india },
+    { title: labels.carbon, items: carbon },
+    { title: labels.nature, items: nature },
   ].filter((g) => g.items.length > 0);
 }
 
 export function CmsSectionRenderer({ section }: { section: CmsSection }) {
+  const tm = useTranslations("marketing");
+  const th = useTranslations("marketing.home");
   const c = section.content;
 
   switch (section.section_type) {
@@ -169,7 +175,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
     case "stats": {
       const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
       return (
-        <section className="marketing-stats-ribbon" aria-label="Platform scale">
+        <section className="marketing-stats-ribbon" aria-label={tm("platformScaleAria")}>
           <div className="mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-8 px-6 py-10">
             {items.map((item) => (
               <div key={item.label} className="marketing-stats-metric">
@@ -253,18 +259,7 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
             <div className="mt-12">
               <IntelligenceRiver />
             </div>
-            <ul className="marketing-edge-grid">
-              {PLATFORM_EDGES.map((edge) => {
-                const Icon = edge.icon;
-                return (
-                  <li key={edge.title}>
-                    <Icon className="h-5 w-5" aria-hidden />
-                    <strong>{edge.title}</strong>
-                    <p>{edge.copy}</p>
-                  </li>
-                );
-              })}
-            </ul>
+            <PlatformEdges />
           </div>
         </section>
       );
@@ -272,7 +267,11 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
 
     case "compliance": {
       const items = Array.isArray(c.items) ? (c.items as Array<Record<string, string>>) : [];
-      const groups = complianceGroups(items);
+      const groups = complianceGroups(items, {
+        india: th("complianceGroupIndia"),
+        carbon: th("complianceGroupCarbon"),
+        nature: th("complianceGroupNature"),
+      });
       return (
         <section id={section.anchor_id || undefined} className="marketing-band">
           <div className="mx-auto max-w-7xl px-6 py-20">

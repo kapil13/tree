@@ -31,7 +31,7 @@ import {
 import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboard-strip";
 import { ProjectPerformancePanel } from "@/components/dashboard/project-performance-panel";
 import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Cell,
   Pie,
@@ -48,6 +48,8 @@ import {
   CommandCenterTrendsCanvas,
   type TrendChartConfig,
 } from "@/components/dashboard/command-center-trends-canvas";
+import { localizeExecutiveBriefLine } from "@/lib/localize-executive-brief";
+import type { AppLocale } from "@/i18n/request";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -112,6 +114,7 @@ function DashboardSkeleton() {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
+  const locale = useLocale() as AppLocale;
   const t = useTranslations("dashboard");
   const te = useTranslations("executive");
   const to = useTranslations("opsStatus");
@@ -298,7 +301,7 @@ export function ExecutiveDashboard() {
 
   const primarySignal = brief?.priority_alert
     ? `${brief.priority_alert.work_area_name} · ${brief.priority_alert.title}`
-    : brief?.headline?.slice(0, 96) || portfolioStatus.label;
+    : localizeExecutiveBriefLine(brief?.headline?.slice(0, 96), locale, te) || portfolioStatus.label;
 
   const cascadeSteps: Array<{ label: string; active?: boolean }> = [];
   if (brief?.priority_alert) {

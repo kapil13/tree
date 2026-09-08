@@ -34,12 +34,6 @@ export type CommandCenterHeroProps = {
   onPrioritySelect?: (id: string) => void;
 };
 
-const SEVERITY_LABEL: Record<CommandCenterPriority["tone"], string> = {
-  critical: "CRITICAL",
-  warn: "HIGH",
-  info: "MEDIUM",
-};
-
 export function CommandCenterHero({
   integrityScore,
   integrityTrend,
@@ -53,6 +47,11 @@ export function CommandCenterHero({
   onPrioritySelect,
 }: CommandCenterHeroProps) {
   const te = useTranslations("executive");
+  const SEVERITY_LABEL: Record<CommandCenterPriority["tone"], string> = {
+    critical: te("severityCritical"),
+    warn: te("severityHigh"),
+    info: te("severityMedium"),
+  };
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(priorities[0]?.id ?? null);
   const selectedId = selectedPriorityId ?? localSelectedId;
 
@@ -168,7 +167,7 @@ export function CommandCenterHero({
                       <p className="cc-priority-detail">{item.detail}</p>
                     )}
                     {item.sla ? (
-                      <p className={cn("cc-priority-sla", item.sla === "Overdue" && "cc-priority-sla--overdue")}>
+                      <p className={cn("cc-priority-sla", item.sla === te("slaOverdue") && "cc-priority-sla--overdue")}>
                         {item.sla}
                       </p>
                     ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Brain,
   Leaf,
@@ -381,27 +382,28 @@ export function BioacousticVisual() {
   );
 }
 
-const PIPELINE_STEPS = [
-  { icon: MapPin, label: "Field", detail: "GPS · photos · chainage" },
-  { icon: Satellite, label: "Orbit", detail: "NDVI + SAR fusion" },
-  { icon: Mic, label: "Habitat", detail: "BirdNET richness" },
-  { icon: Brain, label: "AI", detail: "Health + alerts" },
-  { icon: ShieldCheck, label: "Audit", detail: "Signed exports" },
+const PIPELINE_STEP_KEYS = [
+  { icon: MapPin, labelKey: "pipelineField", detailKey: "pipelineFieldDetail" },
+  { icon: Satellite, labelKey: "pipelineOrbit", detailKey: "pipelineOrbitDetail" },
+  { icon: Mic, labelKey: "pipelineHabitat", detailKey: "pipelineHabitatDetail" },
+  { icon: Brain, labelKey: "pipelineAi", detailKey: "pipelineAiDetail" },
+  { icon: ShieldCheck, labelKey: "pipelineAudit", detailKey: "pipelineAuditDetail" },
 ] as const;
 
 export function IntelligenceRiver() {
+  const t = useTranslations("marketing.home");
   return (
-    <ol className="marketing-pipeline" aria-label="Evidence flowing from field capture to audit export">
-      {PIPELINE_STEPS.map((step, i) => {
+    <ol className="marketing-pipeline" aria-label={t("pipelineAria")}>
+      {PIPELINE_STEP_KEYS.map((step, i) => {
         const Icon = step.icon;
         return (
-          <li key={step.label} className="marketing-pipeline-card">
+          <li key={step.labelKey} className="marketing-pipeline-card">
             <span className="marketing-pipeline-index">{String(i + 1).padStart(2, "0")}</span>
             <span className="marketing-pipeline-icon">
               <Icon className="h-5 w-5" aria-hidden />
             </span>
-            <strong>{step.label}</strong>
-            <em>{step.detail}</em>
+            <strong>{t(step.labelKey)}</strong>
+            <em>{t(step.detailKey)}</em>
           </li>
         );
       })}
@@ -710,6 +712,31 @@ export function ProgramScene({ kind }: { kind: string }) {
   );
 }
 
+export function PlatformEdges() {
+  const t = useTranslations("marketing.home");
+  const edges = [
+    { icon: Satellite, titleKey: "edgeSarTitle", copyKey: "edgeSarCopy" },
+    { icon: Mic, titleKey: "edgeBioTitle", copyKey: "edgeBioCopy" },
+    { icon: Radar, titleKey: "edgeIndiaTitle", copyKey: "edgeIndiaCopy" },
+    { icon: ShieldCheck, titleKey: "edgeAuditTitle", copyKey: "edgeAuditCopy" },
+  ] as const;
+  return (
+    <ul className="marketing-edge-grid">
+      {edges.map((edge) => {
+        const Icon = edge.icon;
+        return (
+          <li key={edge.titleKey}>
+            <Icon className="h-5 w-5" aria-hidden />
+            <strong>{t(edge.titleKey)}</strong>
+            <p>{t(edge.copyKey)}</p>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** @deprecated Use PlatformEdges() — kept for import compatibility during migration */
 export const PLATFORM_EDGES = [
   { icon: Satellite, title: "SAR + NDVI fusion", copy: "Sentinel and NISAR integrity — not greenness alone." },
   { icon: Mic, title: "BirdNET + Darwin Core", copy: "Habitat evidence most tree apps never capture." },
