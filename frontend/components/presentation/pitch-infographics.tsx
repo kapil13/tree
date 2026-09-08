@@ -588,3 +588,105 @@ export function PitchSarCompare() {
     </div>
   );
 }
+
+export function PitchRolesGrid() {
+  const roles = [
+    {
+      title: "Citizen steward",
+      items: ["Tag personal trees", "AI health scans", "Carbon estimate", "Stewardship badges"],
+    },
+    {
+      title: "Field worker / supervisor",
+      items: ["Offline registration", "Survival surveys", "SAR field tasks", "Plot visits"],
+    },
+    {
+      title: "Compliance / ESG lead",
+      items: ["Scheme checklists", "Violation tracking", "Framework reports", "Evidence bundles"],
+    },
+    {
+      title: "Executive / verifier",
+      items: ["Portfolio KPIs", "Integrity scores", "Credit ledger", "Attestation workflow"],
+    },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {roles.map((role) => (
+        <div key={role.title} className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{role.title}</p>
+          <ul className="mt-2 space-y-1 text-[11px] leading-snug text-stone-700">
+            {role.items.map((item) => (
+              <li key={item} className="flex gap-1.5">
+                <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const WHY_WINS_ROWS: [string, boolean, boolean, boolean][] = [
+  ["Per-tree GPS MRV", false, false, true],
+  ["Continuous satellite + SAR", false, false, true],
+  ["Biodiversity / bioacoustic evidence", false, false, true],
+  ["Carbon with confidence intervals", false, false, true],
+  ["Indian scheme compliance", false, false, true],
+  ["International standards", false, false, true],
+  ["Tamper-evident audit trail", false, false, true],
+  ["Signed evidence bundles", false, false, true],
+  ["Offline field capture", false, false, true],
+];
+
+export function PitchWhyWins() {
+  return (
+    <div className="ppt-table-wrap">
+      <table className="ppt-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Spreadsheets</th>
+            <th>Point solutions</th>
+            <th>Aranyix</th>
+          </tr>
+        </thead>
+        <tbody>
+          {WHY_WINS_ROWS.map(([cap, sheets, point, aranyix]) => (
+            <tr key={cap}>
+              <td className="font-semibold">{cap}</td>
+              <td className="text-center">{sheets ? <Check className="mx-auto h-4 w-4 text-emerald-600" /> : <X className="mx-auto h-4 w-4 text-red-500" />}</td>
+              <td className="text-center">{point ? <Check className="mx-auto h-4 w-4 text-emerald-600" /> : <X className="mx-auto h-4 w-4 text-red-500" />}</td>
+              <td className="text-center">{aranyix ? <Check className="mx-auto h-4 w-4 text-emerald-600" /> : <X className="mx-auto h-4 w-4 text-red-500" />}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function PitchMonitoringTimeline() {
+  const jobs = [
+    { label: "Monthly optical sweep", cadence: "Every work area" },
+    { label: "Monthly SAR sweep", cadence: "Weekly at-risk re-scan" },
+    { label: "Daily health roundup", cadence: "Poor / stale trees" },
+    { label: "Compliance deadline scan", cadence: "Escalation at 7 days" },
+    { label: "Satellite health digest", cadence: "Email / SMS digest" },
+  ];
+  return (
+    <div className="space-y-2">
+      {jobs.map((job, i) => (
+        <div key={job.label} className="flex items-center gap-3 rounded-md border border-stone-200 bg-white px-3 py-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
+            {i + 1}
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-stone-900">{job.label}</p>
+            <p className="text-xs text-stone-500">{job.cadence}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

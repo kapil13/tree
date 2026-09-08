@@ -68,7 +68,7 @@ export function DeckViewer() {
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-emerald-50">
             <Leaf className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm font-semibold">Aranyix Client Deck</span>
+            <span className="text-sm font-semibold">Aranyix Professional Briefing</span>
             <span className="hidden text-xs text-emerald-200/50 sm:inline">16:9 · {DECK_SLIDE_COUNT} slides</span>
           </div>
           <div className="flex items-center gap-2">

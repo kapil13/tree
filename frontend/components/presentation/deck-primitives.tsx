@@ -76,7 +76,8 @@ export function CoverSlide({ total = 20 }: { total?: number }) {
         <div className="deck-cover-eyebrow">Intelligence for a thriving planet</div>
         <h1 className="deck-cover-title">Aranyix — Intelligence for a Thriving Planet</h1>
         <p className="deck-cover-subtitle">
-          National MRV platform for plantation programmes, carbon integrity &amp; audit-ready compliance
+          Audit-ready MRV for plantation, carbon, biodiversity and compliance — one platform, every tree,
+          every standard (Indian and international).
         </p>
       </main>
 
