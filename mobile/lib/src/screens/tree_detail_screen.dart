@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
+import '../offline/offline_tree_cache.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../services/analytics_service.dart';
@@ -33,6 +34,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
   Map<String, dynamic>? sarFusion;
   String? _error;
   bool _loading = true;
+  bool _showingCache = false;
   bool analyzing = false;
   bool satelliteBusy = false;
   bool photoBusy = false;
@@ -54,10 +56,12 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     setState(() {
       _loading = true;
       _error = null;
+      _showingCache = false;
     });
     try {
       final api = await ref.read(apiClientProvider.future);
       final t = await api.getTree(widget.id);
+      await OfflineTreeCache.saveDetail(widget.id, t);
       Map<String, dynamic>? sat;
       List<dynamic> meas = [];
       List<dynamic> ai = [];
@@ -86,11 +90,21 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
         });
       }
     } catch (e) {
+      final cached = await OfflineTreeCache.loadDetail(widget.id);
       if (mounted) {
-        setState(() {
-          _error = apiErrorMessage(e);
-          _loading = false;
-        });
+        if (cached != null) {
+          setState(() {
+            tree = cached.tree;
+            _loading = false;
+            _showingCache = true;
+            _error = null;
+          });
+        } else {
+          setState(() {
+            _error = apiErrorMessage(e);
+            _loading = false;
+          });
+        }
       }
     }
   }
@@ -256,6 +270,13 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
                         ],
                       ),
                     ),
+                    if (_showingCache)
+                      MaterialBanner(
+                        content: const Text('Showing cached tree detail — connect to refresh'),
+                        actions: [
+                          TextButton(onPressed: _load, child: Text(l10n.retry)),
+                        ],
+                      ),
                     Expanded(
                       child: TabBarView(
                         controller: _tabs,

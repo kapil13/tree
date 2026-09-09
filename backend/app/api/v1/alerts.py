@@ -178,6 +178,17 @@ async def update_preferences(
     return await get_preferences(user)
 
 
+@router.get("/{alert_id}", response_model=AlertItemOut)
+async def get_alert(alert_id: uuid.UUID, user: CurrentUser, db: DB) -> AlertItemOut:
+    res = await db.execute(
+        select(Alert).where(Alert.id == alert_id, Alert.user_id == user.id)
+    )
+    alert = res.scalar_one_or_none()
+    if alert is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    return _alert_to_item(alert)
+
+
 @router.post("/{alert_id}/read")
 async def mark_read(alert_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
     res = await db.execute(

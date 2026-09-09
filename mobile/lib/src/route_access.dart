@@ -18,6 +18,8 @@ const _routeRules = [
   _RouteRule('/map/draw', 'can_write'),
   _RouteRule('/reports', ['professional', 'field_supervisor']),
   _RouteRule('/credits', ['professional', 'field_supervisor']),
+  _RouteRule('/evidence', ['professional', 'field_supervisor']),
+  _RouteRule('/biodiversity', 'professional'),
   _RouteRule('/carbon', 'all'),
 ];
 
@@ -62,6 +64,12 @@ String routeAccessDeniedMessage(String path) {
   }
   if (path.startsWith('/credits')) {
     return 'Credit ledgers are limited to program members.';
+  }
+  if (path.startsWith('/evidence')) {
+    return 'Evidence and MRV exports are limited to supervisors and program members.';
+  }
+  if (path.startsWith('/biodiversity')) {
+    return 'Biodiversity intelligence requires a professional program.';
   }
   if (path.startsWith('/map/draw')) {
     return 'Drawing work areas requires write access.';

@@ -8,6 +8,7 @@ import '../api/api_errors.dart';
 import '../nav_access.dart';
 import '../project_context.dart';
 import '../providers.dart';
+import '../offline/offline_tree_cache.dart';
 import '../tree_thumbnail.dart';
 import '../widgets/project_picker_sheet.dart';
 import '../widgets/offline_connectivity_banner.dart';
@@ -38,6 +39,8 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
   bool _showFilterSheet = false;
   String? _healthFilter;
   String? _projectFilter;
+  bool _showingCache = false;
+  String? _cacheSavedAt;
 
   @override
   void initState() {
@@ -67,6 +70,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _showingCache = false;
     });
     try {
       final api = await ref.read(apiClientProvider.future);
@@ -74,6 +78,11 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
         page: nextPage,
         pageSize: _pageSize,
         health: _healthFilter,
+        projectId: _projectFilter,
+      );
+      await OfflineTreeCache.saveList(
+        items: result.items,
+        total: result.total,
         projectId: _projectFilter,
       );
       if (mounted) {
@@ -85,11 +94,24 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
         });
       }
     } catch (e) {
+      final cached = await OfflineTreeCache.loadList(projectId: _projectFilter);
       if (mounted) {
-        setState(() {
-          _error = apiErrorMessage(e);
-          _loading = false;
-        });
+        if (cached != null && cached.items.isNotEmpty) {
+          setState(() {
+            _items = cached.items;
+            _total = cached.total;
+            _page = 1;
+            _showingCache = true;
+            _cacheSavedAt = cached.savedAt;
+            _loading = false;
+            _error = null;
+          });
+        } else {
+          setState(() {
+            _error = apiErrorMessage(e);
+            _loading = false;
+          });
+        }
       }
     }
   }
@@ -255,6 +277,16 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
       body: Column(
         children: [
           const OfflineConnectivityBanner(),
+          if (_showingCache)
+            MaterialBanner(
+              content: Text(
+                'Showing cached tree list'
+                '${_cacheSavedAt != null && _cacheSavedAt!.isNotEmpty ? ' from ${_cacheSavedAt!.substring(0, 16)}' : ''}',
+              ),
+              actions: [
+                TextButton(onPressed: () => _load(page: 1), child: Text(l10n.retry)),
+              ],
+            ),
           if (projects.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

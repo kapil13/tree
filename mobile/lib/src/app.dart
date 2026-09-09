@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import 'auth/post_auth_redirect.dart';
 import 'route_access.dart';
 import 'session.dart';
 import 'theme.dart';
@@ -64,6 +65,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: sessionController,
     redirect: (context, state) {
       final loc = state.matchedLocation;
+      final user = sessionController.user;
 
       if (loc == '/onboarding/org-profile' && !sessionController.authenticated) {
         return '/login';
@@ -80,6 +82,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
 
       if (sessionController.authenticated &&
           (loc == '/login' || loc == '/signup' || loc == '/welcome' || loc == '/forgot-password')) {
+        final next = sanitizePostAuthPath(state.uri.queryParameters['next']);
+        if (next != null && user != null && canAccessPath(user, Uri.parse(next).path)) {
+          return next;
+        }
         return '/home';
       }
 
@@ -88,8 +94,6 @@ final _routerProvider = Provider<GoRouter>((ref) {
         if (invite != null) return '/login?invite=$invite';
         return '/welcome';
       }
-
-      final user = sessionController.user;
       if (sessionController.authenticated && user != null && !canAccessPath(user, loc)) {
         return '/home';
       }
@@ -145,7 +149,22 @@ final _routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
           GoRoute(path: '/projects', builder: (_, __) => const ProjectsListScreen()),
           GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-          GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
+          GoRoute(
+            path: '/map',
+            builder: (_, state) => MapScreen(
+              focusTreeId: state.uri.queryParameters['tree'] ??
+                  (state.uri.queryParameters['focus'] == 'tree'
+                      ? state.uri.queryParameters['id']
+                      : null),
+              focusFenceId: state.uri.queryParameters['fence'] ??
+                  state.uri.queryParameters['work_area'] ??
+                  (state.uri.queryParameters['focus'] == 'fence'
+                      ? state.uri.queryParameters['id']
+                      : null),
+              focusLat: double.tryParse(state.uri.queryParameters['lat'] ?? ''),
+              focusLon: double.tryParse(state.uri.queryParameters['lon'] ?? ''),
+            ),
+          ),
           GoRoute(path: '/field', builder: (_, __) => const FieldScreen()),
           GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
           GoRoute(path: '/monitoring', builder: (_, __) => const MonitoringScreen()),
