@@ -130,6 +130,7 @@ class TreeListItem(BaseModel):
     last_geotag_at: datetime | None = None
     survival_status: str | None = None
     chainage_km: str | None = None
+    primary_image_url: str | None = None
 
 
 class TreeRegeotag(BaseModel):

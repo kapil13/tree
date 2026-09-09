@@ -523,7 +523,10 @@ async def list_trees(
         None, description="minLon,minLat,maxLon,maxLat"
     ),
 ) -> Page[TreeListItem]:
-    stmt = select(Tree).options(selectinload(Tree.planting_program))
+    stmt = select(Tree).options(
+        selectinload(Tree.planting_program),
+        selectinload(Tree.images),
+    )
     stmt = await apply_tree_scope(stmt, user, db)
     if health:
         stmt = stmt.where(Tree.current_health == health)
@@ -563,6 +566,14 @@ async def list_trees(
     for t in rows:
         pt = to_shape(t.location)
         meta = t.metadata_ or {}
+        primary_image_url: str | None = None
+        for img in t.images or []:
+            image_out = _image_out(img)
+            if image_out.cdn_url:
+                primary_image_url = image_out.cdn_url
+            if img.is_primary:
+                break
+
         items.append(
             TreeListItem(
                 id=t.id,
@@ -583,6 +594,7 @@ async def list_trees(
                 last_geotag_at=t.last_geotag_at,
                 survival_status=meta.get("survival_status") if isinstance(meta.get("survival_status"), str) else None,
                 chainage_km=meta.get("chainage_km") if meta.get("chainage_km") is not None else None,
+                primary_image_url=primary_image_url,
             )
         )
     return Page[TreeListItem](items=items, page=page, page_size=page_size, total=total or 0)
