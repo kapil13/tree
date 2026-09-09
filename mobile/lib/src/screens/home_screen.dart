@@ -7,10 +7,12 @@ import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../dashboard/dashboard_brief.dart';
 import '../nav_access.dart';
+import '../project_context.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/offline_tree_queue_section.dart';
+import '../widgets/project_picker_sheet.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 
@@ -24,22 +26,25 @@ class HomeScreen extends ConsumerWidget {
     final alertsAsync = ref.watch(alertsProvider);
     final weatherAsync = ref.watch(weatherProvider);
     final fencesAsync = ref.watch(plantationFencesProvider);
+    final projectsAsync = ref.watch(plantingProjectsProvider);
+    final selectedProjectId = ref.watch(selectedProjectIdProvider);
     final userAsync = ref.watch(userProvider);
     final user = sessionController.user ?? userAsync.valueOrNull;
     final l10n = AppLocalizations.of(context)!;
+    final projects = projectsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+    final projectLabel = selectedProjectLabel(context, projects, selectedProjectId);
 
     return Scaffold(
       backgroundColor: PrototypeColors.bgApp,
       appBar: dashAsync.maybeWhen(
         data: (dashboard) {
           final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-          final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
           final unread = alerts.where((a) => (a as Map)['is_read'] != true).length;
           return PrototypeCommandBar(
             title: 'Command center',
-            projectLabel: _projectLabel(fences, user, l10n),
+            projectLabel: projectLabel,
             onMenu: () => openAppDrawer(context),
-            onProject: fences.isNotEmpty ? () => _showProjectPicker(context, fences, l10n) : null,
+            onProject: projects.isNotEmpty ? () => showProjectPickerSheet(context, ref) : null,
             alertCount: unread,
             onAlerts: () => context.go('/notifications'),
           );
@@ -112,7 +117,7 @@ class HomeScreen extends ConsumerWidget {
                     ? PrototypeStatusLevel.attention
                     : PrototypeStatusLevel.critical;
             final statusLabel = health.score >= 75 ? 'Portfolio healthy' : health.score >= 50 ? 'Needs attention' : 'Critical signals';
-            final projectName = _projectLabel(fences, user, l10n);
+            final projectName = projectLabel;
             final queueAlerts = alerts.where((a) => (a as Map)['is_read'] != true).take(3).toList();
 
             return ListView(
@@ -267,41 +272,4 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _projectLabel(List<dynamic> fences, Map<String, dynamic>? user, AppLocalizations l10n) {
-    if (fences.isNotEmpty) {
-      final first = fences.first as Map<String, dynamic>;
-      final name = first['name'] as String? ?? l10n.homeAllSites;
-      if (fences.length == 1) return name;
-      return '$name +${fences.length - 1}';
-    }
-    return user?['organization_name'] as String? ?? l10n.homeAllSites;
-  }
-
-  void _showProjectPicker(BuildContext context, List<dynamic> fences, AppLocalizations l10n) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: PrototypeColors.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Text(l10n.projects, style: Theme.of(ctx).textTheme.titleLarge),
-            ),
-            for (final raw in fences)
-              ListTile(
-                leading: const Icon(Icons.folder_outlined, color: PrototypeColors.brandForest),
-                title: Text((raw as Map<String, dynamic>)['name'] as String? ?? l10n.siteFallback),
-                onTap: () => Navigator.pop(ctx),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }

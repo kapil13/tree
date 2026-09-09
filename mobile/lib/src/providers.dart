@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api/api_client.dart';
+import 'project_context.dart';
 import 'offline/bioacoustic_queue.dart';
 import 'offline/bioacoustic_sync.dart';
 import 'offline/tree_registration_queue.dart';
@@ -62,13 +63,15 @@ final dashboardProvider = FutureProvider.autoDispose((ref) async {
 
 final treesProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
-  return api.listTrees();
+  final projectId = ref.watch(selectedProjectIdProvider);
+  return api.listTrees(projectId: projectId);
 });
 
 /// Trees in the current map viewport (bbox + capped page size).
 final mapTreesProvider = FutureProvider.autoDispose.family<List<dynamic>, String>((ref, bbox) async {
   final api = await ref.watch(apiClientProvider.future);
-  return api.listTrees(bbox: bbox, pageSize: 150);
+  final projectId = ref.watch(selectedProjectIdProvider);
+  return api.listTrees(bbox: bbox, pageSize: 150, projectId: projectId);
 });
 
 final alertsProvider = FutureProvider.autoDispose((ref) async {

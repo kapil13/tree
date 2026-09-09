@@ -1,6 +1,7 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
 import '../nav_access.dart';
@@ -34,6 +35,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   bool _loading = true;
   String? _error;
   bool _creating = false;
+  String? _downloadingId;
   String _kind = 'carbon';
   String _format = 'pdf';
 
@@ -109,6 +111,40 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  bool _isReady(Map raw) {
+    final status = (raw['status'] as String? ?? '').toLowerCase();
+    return status == 'ready' || raw['download_ready'] == true || raw['s3_key'] != null;
+  }
+
+  Future<void> _download(Map<String, dynamic> raw) async {
+    final l10n = AppLocalizations.of(context)!;
+    final id = raw['id'] as String?;
+    if (id == null) return;
+    setState(() => _downloadingId = id);
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final path = await api.downloadReportFile(
+        reportId: id,
+        kind: raw['kind'] as String? ?? 'report',
+        format: raw['format'] as String? ?? 'pdf',
+      );
+      await Share.shareXFiles([XFile(path)], text: l10n.navReports);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report ready to share')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingId = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -178,6 +214,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             leading: const Icon(Icons.description_outlined, color: AranyixColors.forest),
                             title: Text('${(raw as Map)['kind']} · ${raw['format']}'),
                             subtitle: Text('${raw['status']} · ${raw['created_at'] ?? ''}'),
+                            trailing: _isReady(raw)
+                                ? (_downloadingId == raw['id']
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(Icons.download_outlined),
+                                        tooltip: 'Download',
+                                        onPressed: () => _download(Map<String, dynamic>.from(raw)),
+                                      ))
+                                : null,
+                            onTap: _isReady(raw) ? () => _download(Map<String, dynamic>.from(raw)) : null,
                           ),
                     ],
                   ),
