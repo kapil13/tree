@@ -23,6 +23,14 @@ const nextConfig = {
         source: "/api/:path*",
         destination: `${backendUrl.replace(/\/$/, "")}/api/:path*`,
       },
+      {
+        source: "/deck/aranyix_pitch",
+        destination: "/deck/aranyix_pitch/index.html",
+      },
+      {
+        source: "/deck/araynix_pitch",
+        destination: "/deck/aranyix_pitch/index.html",
+      },
     ];
   },
 };
