@@ -696,6 +696,74 @@ class ApiClient {
   Future<Map<String, dynamic>> creditsSummary() async =>
       Map<String, dynamic>.from((await _dio.get('/credits/summary')).data);
 
+  Future<Map<String, dynamic>> getProjectCreditLedger(String projectId) async =>
+      Map<String, dynamic>.from(
+        (await _dio.get('/credits/projects/$projectId')).data,
+      );
+
+  Future<List<dynamic>> listTreeAnalyses(String treeId) async {
+    final r = await _dio.get('/trees/$treeId/analyses');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>?> getSarTreeFusion(String treeId) async {
+    try {
+      final r = await _dio.get('/sar/trees/$treeId/fusion');
+      return Map<String, dynamic>.from(r.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getProjectPestIntel(
+    String projectId, {
+    String? workAreaId,
+  }) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/pest-intel',
+      queryParameters: workAreaId != null ? {'work_area_id': workAreaId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Downloads MRV compliance export to a temp file and returns the local path.
+  Future<String> downloadMrvExport({
+    required String projectId,
+    required String projectCode,
+    String format = 'pdf',
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/planting-projects/$projectId/mrv-export',
+      queryParameters: {'format': format},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final safeCode = projectCode.replaceAll('/', '-');
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/$safeCode-mrv-compliance.$ext';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
+  }
+
+  /// Downloads signed evidence bundle zip to a temp file and returns the local path.
+  Future<String> downloadEvidenceBundle({
+    required String projectId,
+    required String projectCode,
+    bool includePhotos = true,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/planting-projects/$projectId/evidence-bundle',
+      queryParameters: {'include_photos': includePhotos},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final safeCode = projectCode.replaceAll('/', '-');
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/$safeCode-evidence-bundle.zip';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
+  }
+
   Future<List<dynamic>> listReports() async {
     final r = await _dio.get('/reports');
     return List<dynamic>.from(r.data);

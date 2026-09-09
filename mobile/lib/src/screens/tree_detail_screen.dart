@@ -12,7 +12,6 @@ import '../nav_access.dart';
 import '../providers.dart';
 import '../services/analytics_service.dart';
 import '../session.dart';
-import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 import '../widgets/prototype/prototype_ui.dart';
 
@@ -23,10 +22,15 @@ class TreeDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<TreeDetailScreen> createState() => _TreeDetailScreenState();
 }
 
-class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
+class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
+    with SingleTickerProviderStateMixin {
   final _picker = ImagePicker();
+  late final TabController _tabs;
   Map<String, dynamic>? tree;
   Map<String, dynamic>? satellite;
+  List<dynamic> measurements = [];
+  List<dynamic> analyses = [];
+  Map<String, dynamic>? sarFusion;
   String? _error;
   bool _loading = true;
   bool analyzing = false;
@@ -36,7 +40,14 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 3, vsync: this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -48,15 +59,29 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
       final api = await ref.read(apiClientProvider.future);
       final t = await api.getTree(widget.id);
       Map<String, dynamic>? sat;
+      List<dynamic> meas = [];
+      List<dynamic> ai = [];
+      Map<String, dynamic>? sar;
       try {
         sat = await api.getSatelliteHealthLatest(widget.id);
-      } catch (_) {
-        // satellite health is optional
-      }
+      } catch (_) {}
+      try {
+        final page = await api.listTreeMeasurements(widget.id);
+        meas = List<dynamic>.from(page['items'] ?? []);
+      } catch (_) {}
+      try {
+        ai = await api.listTreeAnalyses(widget.id);
+      } catch (_) {}
+      try {
+        sar = await api.getSarTreeFusion(widget.id);
+      } catch (_) {}
       if (mounted) {
         setState(() {
           tree = t;
           satellite = sat;
+          measurements = meas;
+          analyses = ai;
+          sarFusion = sar;
           _loading = false;
         });
       }
@@ -168,12 +193,17 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
     await AnalyticsService.instance.track('tree_qr_shared');
   }
 
+  String? _projectId(Map<String, dynamic> t) => t['project_id'] as String?;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final t = tree;
     final risk = t?['risk_score'] as Map<String, dynamic>?;
     final blockers = _auditBlockers(risk);
+    final projectId = t != null ? _projectId(t) : null;
+    final evidenceRoute = projectId != null ? '/evidence?project=$projectId' : '/evidence';
+
     return stackRouteScaffold(
       location: '/trees/${widget.id}',
       extendBodyBehindAppBar: true,
@@ -209,65 +239,30 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
                     ),
                   ),
                 )
-              : ListView(
+              : Column(
                   children: [
                     _hero(t!),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                    Material(
+                      color: PrototypeColors.bgSurface,
+                      child: TabBar(
+                        controller: _tabs,
+                        labelColor: PrototypeColors.brandForest,
+                        unselectedLabelColor: PrototypeColors.textSecondary,
+                        indicatorColor: PrototypeColors.brandCanopy,
+                        tabs: const [
+                          Tab(text: 'Overview'),
+                          Tab(text: 'Field'),
+                          Tab(text: 'Intelligence'),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabs,
                         children: [
-                        _stateSummary(t, risk, satellite),
-                        const SizedBox(height: 14),
-                        PrototypeActionRail(
-                          actions: [
-                            (label: 'Map', onTap: () => context.go('/map'), primary: true),
-                            (label: 'Inspect', onTap: () => context.push('/trees/${widget.id}/survival'), primary: false),
-                            (label: 'Evidence', onTap: () => context.push('/evidence'), primary: false),
-                            (label: 'Monitor', onTap: () => context.go('/monitoring'), primary: false),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        _locationChip(t),
-                        if (blockers.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _auditBlockersCard(blockers),
-                        ],
-                        if (satellite != null) ...[
-                          const SizedBox(height: 16),
-                          _satelliteCard(l10n, satellite!),
-                        ],
-                        const SizedBox(height: 16),
-                        _timelineSection(t, satellite),
-                        const SizedBox(height: 16),
-                        _qrSection(t),
-                        const SizedBox(height: 16),
-                        if (canWriteInApp(sessionController.user)) ...[
-                          OutlinedButton.icon(
-                            onPressed: () => context.push('/trees/${widget.id}/survival'),
-                            icon: const Icon(Icons.my_location),
-                            label: Text(l10n.survivalRegeotag),
-                          ),
-                          const SizedBox(height: 8),
-                          OutlinedButton.icon(
-                            onPressed: photoBusy ? null : _addFollowUpPhoto,
-                            icon: const Icon(Icons.add_a_photo_outlined),
-                            label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        FilledButton.icon(
-                          onPressed: analyzing ? null : _analyze,
-                          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest, minimumSize: const Size.fromHeight(48)),
-                          icon: const Icon(Icons.auto_awesome),
-                          label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
-                        ),
-                        const SizedBox(height: 8),
-                        OutlinedButton.icon(
-                          onPressed: satelliteBusy ? null : _satelliteHealth,
-                          icon: const Icon(Icons.satellite_alt),
-                          label: Text(satelliteBusy ? l10n.checkingSatellite : l10n.runSatelliteHealth),
-                        ),
+                          _overviewTab(l10n, t, risk, blockers, evidenceRoute),
+                          _fieldTab(l10n, t),
+                          _intelligenceTab(l10n, t),
                         ],
                       ),
                     ),
@@ -276,11 +271,232 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen> {
     );
   }
 
+  Widget _overviewTab(
+    AppLocalizations l10n,
+    Map<String, dynamic> t,
+    Map<String, dynamic>? risk,
+    List<String> blockers,
+    String evidenceRoute,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _stateSummary(t, risk, satellite),
+        const SizedBox(height: 14),
+        PrototypeActionRail(
+          actions: [
+            (label: 'Map', onTap: () => context.go('/map'), primary: true),
+            (label: 'Inspect', onTap: () => context.push('/trees/${widget.id}/survival'), primary: false),
+            (label: 'Evidence', onTap: () => context.push(evidenceRoute), primary: false),
+            (label: 'Monitor', onTap: () => context.go('/monitoring'), primary: false),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _locationChip(t),
+        if (blockers.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _auditBlockersCard(blockers),
+        ],
+        if (satellite != null) ...[
+          const SizedBox(height: 16),
+          _satelliteCard(l10n, satellite!),
+        ],
+        const SizedBox(height: 16),
+        _timelineSection(t, satellite),
+        const SizedBox(height: 16),
+        _qrSection(t),
+        const SizedBox(height: 16),
+        if (canWriteInApp(sessionController.user)) ...[
+          OutlinedButton.icon(
+            onPressed: () => context.push('/trees/${widget.id}/survival'),
+            icon: const Icon(Icons.my_location),
+            label: Text(l10n.survivalRegeotag),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: photoBusy ? null : _addFollowUpPhoto,
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
+          ),
+          const SizedBox(height: 8),
+        ],
+        FilledButton.icon(
+          onPressed: analyzing ? null : _analyze,
+          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest, minimumSize: const Size.fromHeight(48)),
+          icon: const Icon(Icons.auto_awesome),
+          label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: satelliteBusy ? null : _satelliteHealth,
+          icon: const Icon(Icons.satellite_alt),
+          label: Text(satelliteBusy ? l10n.checkingSatellite : l10n.runSatelliteHealth),
+        ),
+      ],
+    );
+  }
+
+  Widget _fieldTab(AppLocalizations l10n, Map<String, dynamic> t) {
+    final images = List<dynamic>.from(t['images'] ?? []);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Photo gallery', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        if (images.isEmpty)
+          const PrototypeEmptyState(
+            icon: '📷',
+            title: 'No photos yet',
+            subtitle: 'Add a follow-up photo from Overview or during survival survey',
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: images.length,
+            itemBuilder: (_, i) {
+              final img = images[i] as Map;
+              final url = img['url'] as String?;
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(PrototypeRadii.md),
+                child: url != null
+                    ? Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _heroPlaceholder())
+                    : _heroPlaceholder(),
+              );
+            },
+          ),
+        const SizedBox(height: 20),
+        Text('Measurement history', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        if (measurements.isEmpty)
+          const PrototypeEmptyState(
+            icon: '📏',
+            title: 'No measurements recorded',
+            subtitle: 'Survival surveys and field captures appear here',
+          )
+        else
+          for (final raw in measurements)
+            _measurementTile(raw as Map<String, dynamic>),
+        if (canWriteInApp(sessionController.user)) ...[
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => context.push('/trees/${widget.id}/survival'),
+            icon: const Icon(Icons.my_location),
+            label: Text(l10n.survivalRegeotag),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _measurementTile(Map<String, dynamic> m) {
+    final measuredAt = m['measured_at'] as String?;
+    final parts = <String>[];
+    if (m['dbh_cm'] != null) parts.add('DBH ${m['dbh_cm']} cm');
+    if (m['height_m'] != null) parts.add('H ${m['height_m']} m');
+    if (m['canopy_m'] != null) parts.add('Canopy ${m['canopy_m']} m');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(m['source'] as String? ?? 'Measurement'),
+        subtitle: Text(
+          '${parts.join(' · ')}\n${m['method'] ?? ''}${measuredAt != null ? ' · ${_shortDate(measuredAt)}' : ''}',
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
+
+  Widget _intelligenceTab(AppLocalizations l10n, Map<String, dynamic> t) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (sarFusion != null) ...[
+          _sarFusionCard(sarFusion!),
+          const SizedBox(height: 16),
+        ],
+        if (satellite != null) ...[
+          _satelliteCard(l10n, satellite!),
+          const SizedBox(height: 16),
+        ],
+        Text('AI analysis history', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        if (analyses.isEmpty)
+          const PrototypeEmptyState(
+            icon: '🤖',
+            title: 'No AI analyses yet',
+            subtitle: 'Run AI analysis from the Overview tab',
+          )
+        else
+          for (final raw in analyses)
+            _analysisTile(raw as Map<String, dynamic>),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: analyzing ? null : _analyze,
+          style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
+          icon: const Icon(Icons.auto_awesome),
+          label: Text(analyzing ? l10n.analyzing : l10n.runAiAnalysis),
+        ),
+      ],
+    );
+  }
+
+  Widget _sarFusionCard(Map<String, dynamic> sar) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PrototypeColors.bgSurface,
+        borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+        border: Border.all(color: PrototypeColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('SAR integrity fusion', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          if (sar['ground_status'] != null) _row('Ground status', _str(sar['ground_status'])),
+          if (sar['integrity_score'] != null) _row('Integrity score', _str(sar['integrity_score'])),
+          if (sar['summary'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_str(sar['summary']), style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _analysisTile(Map<String, dynamic> a) {
+    final created = a['created_at'] as String?;
+    final species = List<dynamic>.from(a['species_topk'] ?? []);
+    final topSpecies = species.isNotEmpty ? (species.first as Map)['scientific'] as String? : null;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(topSpecies ?? a['health'] as String? ?? 'Analysis'),
+        subtitle: Text(
+          'Health ${a['health'] ?? '—'}'
+          '${a['estimated_dbh_cm'] != null ? ' · DBH ${a['estimated_dbh_cm']} cm' : ''}'
+          '${created != null ? '\n${_shortDate(created)}' : ''}',
+        ),
+        isThreeLine: created != null,
+        trailing: a['overall_confidence'] != null
+            ? Text('${((a['overall_confidence'] as num) * 100).round()}%')
+            : null,
+      ),
+    );
+  }
+
   Widget _hero(Map<String, dynamic> t) {
     final images = (t['images'] as List?) ?? [];
     final firstImage = images.isNotEmpty ? (images.first as Map)['url'] as String? : null;
     return SizedBox(
-      height: 240,
+      height: 200,
       child: Stack(
         fit: StackFit.expand,
         children: [

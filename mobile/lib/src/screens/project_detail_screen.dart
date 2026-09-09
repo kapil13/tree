@@ -2,8 +2,12 @@ import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../field_ops_actions.dart';
+import '../integrity_remediation.dart';
+import '../project_setup_readiness.dart';
 import '../providers.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
@@ -20,16 +24,26 @@ class ProjectDetailScreen extends ConsumerWidget {
     final projectAsync = ref.watch(plantingProjectProvider(projectId));
     final workAreasAsync = ref.watch(workAreasProvider(projectId));
     final integrityAsync = ref.watch(integrityFusionProvider(projectId));
+    final survivalAsync = ref.watch(survivalDueProvider(projectId));
+    final violationsAsync = ref.watch(projectViolationsProvider(projectId));
+    final schemeAsync = ref.watch(projectSchemeProvider(projectId));
 
     return stackRouteScaffold(
       location: '/projects/$projectId',
       appBar: ShellTopBar(title: AppLocalizations.of(context)!.projects, menuWithBack: true),
       floatingActionButton: projectAsync.maybeWhen(
-        data: (project) => FloatingActionButton.extended(
-          onPressed: () => context.push('/trees/new?project=$projectId'),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.registerTreeBtn),
-        ),
+        data: (project) {
+          final workAreas = workAreasAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+          final scheme = schemeAsync.maybeWhen(data: (d) => d, orElse: () => null);
+          final setup = evaluateProjectSetup(project, workAreas, scheme: scheme);
+          return FloatingActionButton.extended(
+            onPressed: setup.canRegisterTree
+                ? () => context.push('/trees/new?project=$projectId')
+                : () => _openSetup(context, ref),
+            icon: Icon(setup.canRegisterTree ? Icons.add : Icons.settings_outlined),
+            label: Text(setup.canRegisterTree ? l10n.registerTreeBtn : 'Complete setup'),
+          );
+        },
         orElse: () => null,
       ),
       body: projectAsync.when(
@@ -38,6 +52,10 @@ class ProjectDetailScreen extends ConsumerWidget {
         data: (project) {
           final summary = project['summary'] as Map<String, dynamic>?;
           final segment = project['segment'] as String? ?? 'general';
+          final workAreas = workAreasAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+          final scheme = schemeAsync.maybeWhen(data: (d) => d, orElse: () => null);
+          final setup = evaluateProjectSetup(project, workAreas, scheme: scheme);
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -58,10 +76,82 @@ class ProjectDetailScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
+              _SetupStatusCard(
+                setup: setup,
+                onOpenSetup: () => _openSetup(context, ref),
+              ),
+              const SizedBox(height: 16),
               integrityAsync.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) => Text(apiErrorMessage(e)),
-                data: (integrity) => _IntegrityMonitoringCard(integrity: integrity),
+                data: (integrity) => _IntegrityMonitoringCard(
+                  integrity: integrity,
+                  projectId: projectId,
+                ),
+              ),
+              const SizedBox(height: 16),
+              survivalAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text(apiErrorMessage(e)),
+                data: (survival) => _SurvivalDueCard(
+                  survival: survival,
+                  onTreeTap: (treeId) => context.push('/trees/$treeId/survival'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              violationsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (violations) {
+                  if (violations.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.recentViolations, style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      for (final raw in violations.take(5))
+                        Card(
+                          child: ListTile(
+                            title: Text(
+                              (raw as Map)['message'] as String? ??
+                                  raw['violation_type'] as String? ??
+                                  l10n.violationFallback,
+                            ),
+                            subtitle: Text('${raw['severity'] ?? ''}'),
+                            trailing: TextButton(
+                              onPressed: () => resolveComplianceViolation(
+                                context,
+                                ref,
+                                Map<String, dynamic>.from({
+                                  ...raw,
+                                  'project_id': projectId,
+                                }),
+                              ),
+                              child: Text(l10n.resolve),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => context.push('/credits/projects/$projectId'),
+                      child: const Text('Credit ledger'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => context.push('/evidence?project=$projectId'),
+                      child: const Text('Evidence & MRV'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               Text(l10n.workAreas, style: Theme.of(context).textTheme.titleMedium),
@@ -110,6 +200,12 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _openSetup(BuildContext context, WidgetRef ref) async {
+    final api = await ref.read(apiClientProvider.future);
+    final uri = Uri.parse(projectSetupWebUrl(projectId, apiBase: api.baseUrl));
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   String _densityLabel(Map<String, dynamic> wa, String segment) {
     if (segment != 'industrial_greenbelt') return '';
     final area = (wa['area_ha'] as num?)?.toDouble();
@@ -145,23 +241,131 @@ class ProjectDetailScreen extends ConsumerWidget {
   }
 }
 
+class _SetupStatusCard extends StatelessWidget {
+  const _SetupStatusCard({required this.setup, required this.onOpenSetup});
+
+  final ProjectSetupStatus setup;
+  final VoidCallback onOpenSetup;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  setup.canRegisterTree ? Icons.check_circle : Icons.pending_outlined,
+                  color: setup.canRegisterTree ? Colors.green.shade700 : Colors.orange.shade800,
+                ),
+                const SizedBox(width: 8),
+                Text('Project setup', style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            if (setup.blockReason != null) ...[
+              const SizedBox(height: 8),
+              Text(setup.blockReason!, style: const TextStyle(fontSize: 13)),
+            ],
+            const SizedBox(height: 8),
+            for (final step in setup.steps)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Icon(
+                      step.complete ? Icons.check : Icons.radio_button_unchecked,
+                      size: 16,
+                      color: step.complete ? Colors.green : Colors.grey,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        step.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: step.complete ? null : Colors.orange.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!setup.canRegisterTree) ...[
+              const SizedBox(height: 8),
+              TextButton(onPressed: onOpenSetup, child: const Text('Open setup on web')),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SurvivalDueCard extends StatelessWidget {
+  const _SurvivalDueCard({required this.survival, required this.onTreeTap});
+
+  final Map<String, dynamic> survival;
+  final void Function(String treeId) onTreeTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final due = (survival['trees_due'] as num?)?.toInt() ?? 0;
+    final total = (survival['trees_total'] as num?)?.toInt() ?? 0;
+    final interval = survival['survey_interval_days'];
+    final dueIds = List<String>.from(survival['due_tree_ids'] ?? []);
+
+    if (due == 0) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.verified_user, color: Colors.green.shade700),
+              const SizedBox(width: 8),
+              Expanded(child: Text('No survival surveys due ($total trees on ${interval ?? '—'} day interval)')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Survival surveys due',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Text('$due of $total trees need re-geotag (${interval ?? '—'} day interval)'),
+            const SizedBox(height: 8),
+            for (final id in dueIds.take(8))
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text('Tree $id', style: const TextStyle(fontSize: 13)),
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => onTreeTap(id),
+              ),
+            if (dueIds.length > 8)
+              Text('+ ${dueIds.length - 8} more', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _IntegrityMonitoringCard extends StatelessWidget {
-  const _IntegrityMonitoringCard({required this.integrity});
+  const _IntegrityMonitoringCard({required this.integrity, required this.projectId});
 
   final Map<String, dynamic> integrity;
-
-  String _gateLabel(String code) {
-    const labels = {
-      'sar_integrity_below_minimum': 'SAR forest integrity below minimum',
-      'optical_scan_stale': 'Work area optical scan is stale',
-      'insufficient_photos': 'Need at least 2 photos',
-      'photo_span_too_short': 'Photos must span 30+ days',
-      'regeotag_mismatch': 'Re-geotag mismatch',
-      'fusion_below_minimum': 'Fusion score below minimum',
-      'not_credit_eligible': 'Not credit eligible',
-    };
-    return labels[code] ?? code.replaceAll('_', ' ');
-  }
+  final String projectId;
 
   @override
   Widget build(BuildContext context) {
@@ -205,18 +409,21 @@ class _IntegrityMonitoringCard extends StatelessWidget {
             ],
             if (!monitoringReady && reasons.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...reasons.map(
-                (reason) => Padding(
+              for (final reason in reasons)
+                Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('• '),
-                      Expanded(child: Text(_gateLabel(reason))),
+                      Expanded(
+                        child: Text(
+                          resolveIntegrityRemediation(reason, projectId: projectId).label,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
             ],
             const SizedBox(height: 8),
             Text(
@@ -230,6 +437,27 @@ class _IntegrityMonitoringCard extends StatelessWidget {
                 '${blocking.length} tree(s) with blocking issues',
                 style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
               ),
+              for (final raw in blocking.take(5))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(
+                    (raw as Map)['public_code'] as String? ?? 'Tree',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    ((raw['blockers'] as List?) ?? [])
+                        .whereType<String>()
+                        .map(integrityBlockerLabel)
+                        .join(', '),
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () {
+                    final treeId = raw['tree_id'] as String?;
+                    if (treeId != null) context.push('/trees/$treeId');
+                  },
+                ),
             ],
           ],
         ),

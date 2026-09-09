@@ -1,6 +1,7 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
@@ -60,6 +61,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final s = _summary;
     final byStatus = Map<String, dynamic>.from(s?['by_status'] ?? {});
+    final projectsAsync = ref.watch(plantingProjectsProvider);
 
     return stackRouteScaffold(
       location: '/credits',
@@ -109,6 +111,35 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                             trailing: Text('${e.value}'),
                           ),
                       ],
+                      const SizedBox(height: 20),
+                      Text('Project ledgers', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      projectsAsync.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, _) => Text(apiErrorMessage(e)),
+                        data: (projects) {
+                          if (projects.isEmpty) {
+                            return Text(
+                              l10n.noProjectsYet,
+                              style: const TextStyle(color: AranyixColors.onSurfaceMuted),
+                            );
+                          }
+                          return Column(
+                            children: projects.map((raw) {
+                              final p = raw as Map<String, dynamic>;
+                              final id = p['id'] as String;
+                              return Card(
+                                child: ListTile(
+                                  title: Text(p['name'] as String? ?? l10n.projectFallback),
+                                  subtitle: Text('${p['code']} · ${p['segment'] ?? ''}'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => context.push('/credits/projects/$id'),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
