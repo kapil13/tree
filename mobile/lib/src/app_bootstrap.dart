@@ -95,32 +95,41 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
       return;
     }
 
-    if (uri.path.startsWith('/auth/callback')) {
-      final target = '${uri.path}${uri.query.isNotEmpty ? '?${uri.query}' : ''}';
-      widget.router.go(target);
+    final appRoute = DeepLinkService.appRouteFromUri(uri);
+    if (appRoute != null && appRoute.startsWith('/auth/callback')) {
+      widget.router.go(appRoute);
       return;
     }
 
-    final code = DeepLinkService.treePublicCodeFromUri(uri);
-    if (code == null) return;
-
-    if (!sessionController.authenticated) {
-      widget.router.go('/login?next=/p/$code');
+    if (appRoute != null && appRoute.startsWith('/p/')) {
+      final code = appRoute.replaceFirst('/p/', '').split('?').first;
+      if (!sessionController.authenticated) {
+        widget.router.go('/login?next=/p/$code');
+        return;
+      }
+      try {
+        final api = await ref.read(apiClientProvider.future);
+        final tree = await api.getTreeByPublicCode(code);
+        final id = tree['id'] as String;
+        if (!mounted) return;
+        widget.router.go('/trees/$id');
+        await AnalyticsService.instance.track('deep_link_tree', properties: {'public_code': code});
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
       return;
     }
 
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      final tree = await api.getTreeByPublicCode(code);
-      final id = tree['id'] as String;
-      if (!mounted) return;
-      widget.router.go('/trees/$id');
-      await AnalyticsService.instance.track('deep_link_tree', properties: {'public_code': code});
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(e))),
-      );
+    if (appRoute != null) {
+      if (!sessionController.authenticated) {
+        widget.router.go('/login?next=${Uri.encodeComponent(appRoute)}');
+        return;
+      }
+      widget.router.go(appRoute);
+      return;
     }
   }
 

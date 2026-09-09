@@ -69,4 +69,21 @@ void main() {
     expect(inviteLandingRoute('worker'), '/projects');
     expect(inviteLandingRoute('viewer'), '/trees');
   });
+
+  test('evidence and biodiversity routes are role-gated', () {
+    final supervisor = {
+      'role': 'government',
+      'org_role': 'supervisor',
+      'has_professional_program': true,
+    };
+    final worker = {
+      'role': 'field_worker',
+      'org_role': 'worker',
+      'has_professional_program': false,
+    };
+    expect(canAccessPath(supervisor, '/evidence'), isTrue);
+    expect(canAccessPath(supervisor, '/biodiversity'), isTrue);
+    expect(canAccessPath(worker, '/evidence'), isFalse);
+    expect(canAccessPath(worker, '/biodiversity'), isFalse);
+  });
 }

@@ -19,23 +19,30 @@ class AlertDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final lang = Localizations.localeOf(context).languageCode;
-    final alertsAsync = ref.watch(alertsProvider);
+    final alertAsync = ref.watch(alertProvider(alertId));
 
     return stackRouteScaffold(
       location: '/alerts/$alertId',
       appBar: PrototypeBackBar(title: 'Alert'),
-      body: alertsAsync.when(
+      body: alertAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
-        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
-        data: (items) {
-          final alert = items.cast<Map<String, dynamic>?>().firstWhere(
-                (a) => a?['id'] == alertId,
-                orElse: () => null,
-              );
-          if (alert == null) {
-            return PrototypeEmptyState(icon: '🔔', title: 'Alert not found');
-          }
-
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => ref.invalidate(alertProvider(alertId)),
+                  child: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
+        data: (alert) {
           final severity = alert['severity'] as String? ?? 'moderate';
           final title = alert['title'] as String? ?? 'Alert';
           final message = alert['message'] as String? ?? '';
@@ -95,7 +102,7 @@ class AlertDetailScreen extends ConsumerWidget {
               FilledButton(
                 onPressed: () {
                   if (fenceId != null) {
-                    context.push('/monitoring?fence=$fenceId');
+                    context.push('/map?fence=$fenceId');
                   } else if (treeId != null) {
                     context.push('/trees/$treeId');
                   } else if (projectId != null) {
@@ -117,6 +124,7 @@ class AlertDetailScreen extends ConsumerWidget {
                     final api = await ref.read(apiClientProvider.future);
                     await api.markAlertRead(alertId);
                     ref.invalidate(alertsProvider);
+                    ref.invalidate(alertProvider(alertId));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(l10n.preferencesSaved)),

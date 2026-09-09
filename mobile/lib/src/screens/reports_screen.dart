@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
 import '../nav_access.dart';
+import '../plantation_reports.dart';
 import '../providers.dart';
 import '../session.dart';
 import '../theme.dart';
@@ -38,6 +39,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String? _downloadingId;
   String _kind = 'carbon';
   String _format = 'pdf';
+  String _misReportId = mobilePlantationMisReports.first.id;
+  String _misFormat = 'pdf';
+  String? _downloadingMisId;
 
   @override
   void initState() {
@@ -114,6 +118,34 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   bool _isReady(Map raw) {
     final status = (raw['status'] as String? ?? '').toLowerCase();
     return status == 'ready' || raw['download_ready'] == true || raw['s3_key'] != null;
+  }
+
+  Future<void> _downloadMis() async {
+    final report = plantationMisReportById(_misReportId);
+    if (report == null) return;
+    setState(() => _downloadingMisId = report.id);
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final path = await api.downloadPlantationMisReport(
+        path: report.path,
+        reportId: report.id,
+        format: _misFormat,
+      );
+      await Share.shareXFiles([XFile(path)], text: report.label);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${report.label} ready to share')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingMisId = null);
+    }
   }
 
   Future<void> _download(Map<String, dynamic> raw) async {
@@ -229,6 +261,59 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                 : null,
                             onTap: _isReady(raw) ? () => _download(Map<String, dynamic>.from(raw)) : null,
                           ),
+                      if (canGenerate) ...[
+                        const SizedBox(height: 24),
+                        Text('Plantation MIS reports', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Operational exports used by government plantation programmes',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AranyixColors.onSurfaceMuted,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: _misReportId,
+                          decoration: const InputDecoration(labelText: 'Report type'),
+                          items: [
+                            for (final report in mobilePlantationMisReports)
+                              DropdownMenuItem(
+                                value: report.id,
+                                child: Text(report.label),
+                              ),
+                          ],
+                          onChanged: (v) => setState(() => _misReportId = v ?? _misReportId),
+                        ),
+                        if (plantationMisReportById(_misReportId)?.description != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            plantationMisReportById(_misReportId)!.description,
+                            style: const TextStyle(color: AranyixColors.onSurfaceMuted, fontSize: 13),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: _misFormat,
+                          decoration: InputDecoration(labelText: l10n.formatLabel),
+                          items: const [
+                            DropdownMenuItem(value: 'pdf', child: Text('PDF')),
+                            DropdownMenuItem(value: 'xlsx', child: Text('XLSX')),
+                          ],
+                          onChanged: (v) => setState(() => _misFormat = v ?? _misFormat),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _downloadingMisId != null ? null : _downloadMis,
+                          icon: _downloadingMisId != null
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.download_outlined),
+                          label: Text(_downloadingMisId != null ? 'Downloading…' : 'Download MIS report'),
+                        ),
+                      ],
                     ],
                   ),
                 ),

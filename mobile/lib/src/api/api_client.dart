@@ -921,8 +921,33 @@ class ApiClient {
     return List<dynamic>.from(data as List);
   }
 
+  Future<Map<String, dynamic>> getAlert(String alertId) async =>
+      Map<String, dynamic>.from((await _dio.get('/alerts/$alertId')).data);
+
   Future<void> markAlertRead(String alertId) async {
     await _dio.post('/alerts/$alertId/read');
+  }
+
+  /// Downloads a plantation MIS report export to a temp file.
+  Future<String> downloadPlantationMisReport({
+    required String path,
+    required String reportId,
+    String format = 'pdf',
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      path,
+      queryParameters: {
+        'format': format,
+        ...?queryParameters,
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final dir = await getTemporaryDirectory();
+    final filePath = '${dir.path}/aranyix-$reportId.$ext';
+    await File(filePath).writeAsBytes(r.data ?? const []);
+    return filePath;
   }
 
   Future<Map<String, dynamic>> assistant(String prompt) async {

@@ -110,6 +110,11 @@ final alertsProvider = FutureProvider.autoDispose((ref) async {
   return api.listAlerts();
 });
 
+final alertProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, alertId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.getAlert(alertId);
+});
+
 final fieldOpsSummaryProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.fieldOpsSummary();

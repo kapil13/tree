@@ -2,8 +2,10 @@ import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
 import '../nav_access.dart';
@@ -18,7 +20,18 @@ enum _DrawMode { none, polygon, corridor }
 enum _MapLayer { trees, workAreas, alerts }
 
 class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({
+    super.key,
+    this.focusTreeId,
+    this.focusFenceId,
+    this.focusLat,
+    this.focusLon,
+  });
+
+  final String? focusTreeId;
+  final String? focusFenceId;
+  final double? focusLat;
+  final double? focusLon;
 
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
@@ -29,16 +42,114 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   _DrawMode _mode = _DrawMode.none;
   final List<LatLng> _drawPoints = [];
   bool _saving = false;
+  bool _focusApplied = false;
   /// Initial Hyderabad viewport until the map reports visible bounds.
   String _viewportBbox = '77.2,17.2,78.6,17.6';
   final Set<_MapLayer> _activeLayers = {_MapLayer.trees, _MapLayer.workAreas};
   Map<String, dynamic>? _selectedTree;
   Map<String, dynamic>? _selectedAlert;
+  LatLng? _userLocation;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncViewportBbox());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncViewportBbox();
+      _loadUserLocation();
+    });
+  }
+
+  Future<void> _loadUserLocation() async {
+    try {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) return;
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 8),
+      );
+      if (mounted) setState(() => _userLocation = LatLng(pos.latitude, pos.longitude));
+    } catch (_) {}
+  }
+
+  Future<void> _centerOnUser() async {
+    if (_userLocation != null) {
+      _mapController.move(_userLocation!, 15);
+      return;
+    }
+    await _loadUserLocation();
+    if (_userLocation != null) {
+      _mapController.move(_userLocation!, 15);
+    }
+  }
+
+  Future<void> _openExternalMaps(double lat, double lon) async {
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lon');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  LatLng? _fenceCentroid(Map<String, dynamic> fence) {
+    final boundary = fence['boundary'] as Map<String, dynamic>?;
+    final rings = boundary?['coordinates'] as List?;
+    if (rings == null || rings.isEmpty) return null;
+    final ring = rings.first as List;
+    var latSum = 0.0;
+    var lonSum = 0.0;
+    var count = 0;
+    for (final c in ring) {
+      if (c is List && c.length >= 2) {
+        lonSum += (c[0] as num).toDouble();
+        latSum += (c[1] as num).toDouble();
+        count++;
+      }
+    }
+    if (count == 0) return null;
+    return LatLng(latSum / count, lonSum / count);
+  }
+
+  void _applyInitialFocus(List<dynamic> trees, List<dynamic> fences) {
+    if (_focusApplied) return;
+    LatLng? target;
+    Map<String, dynamic>? tree;
+    if (widget.focusTreeId != null) {
+      for (final raw in trees) {
+        final t = raw as Map<String, dynamic>;
+        if (t['id'] == widget.focusTreeId) {
+          tree = t;
+          final lat = (t['latitude'] as num?)?.toDouble();
+          final lon = (t['longitude'] as num?)?.toDouble();
+          if (lat != null && lon != null) target = LatLng(lat, lon);
+          break;
+        }
+      }
+    } else if (widget.focusFenceId != null) {
+      for (final raw in fences) {
+        final fence = raw as Map<String, dynamic>;
+        if (fence['id'] == widget.focusFenceId) {
+          target = _fenceCentroid(fence);
+          break;
+        }
+      }
+    } else if (widget.focusLat != null && widget.focusLon != null) {
+      target = LatLng(widget.focusLat!, widget.focusLon!);
+    }
+    if (target == null) return;
+    _focusApplied = true;
+    _mapController.move(target, 15);
+    if (tree != null) {
+      setState(() {
+        _selectedTree = tree;
+        _selectedAlert = null;
+      });
+    }
   }
 
   void _syncViewportBbox() {
@@ -485,6 +596,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           }
 
           final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+          if (!_focusApplied) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _applyInitialFocus(items, fences);
+            });
+          }
           final fencePolygons = showWorkAreas ? _fencePolygons(fences) : <Polygon>[];
           final fenceLines = showWorkAreas ? _fencePolylines(fences) : <Polyline>[];
 
@@ -518,6 +634,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.orange.shade800,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            );
+          }
+          if (_userLocation != null) {
+            markers.add(
+              Marker(
+                point: _userLocation!,
+                width: 20,
+                height: 20,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade600,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -595,16 +727,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               if (_selectedTree != null && _mode == _DrawMode.none)
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: PrototypeMapPinSheet(
-                    code: _selectedTree!['public_code'] as String? ?? _selectedTree!['code'] as String?,
-                    title: _selectedTree!['species_text'] as String? ?? 'Tree',
-                    subtitle: _selectedTree!['work_area_name'] as String? ??
-                        _selectedTree!['project_name'] as String? ??
-                        'Registered tree',
-                    healthLabel: _treeHealthLabel(_selectedTree!),
-                    healthVariant: _treeHealthVariant(_selectedTree!),
-                    onPrimary: () => context.push('/trees/${_selectedTree!['id']}'),
-                    onClose: _closePinSheet,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PrototypeMapPinSheet(
+                        code: _selectedTree!['public_code'] as String? ?? _selectedTree!['code'] as String?,
+                        title: _selectedTree!['species_text'] as String? ?? 'Tree',
+                        subtitle: _selectedTree!['work_area_name'] as String? ??
+                            _selectedTree!['project_name'] as String? ??
+                            'Registered tree',
+                        healthLabel: _treeHealthLabel(_selectedTree!),
+                        healthVariant: _treeHealthVariant(_selectedTree!),
+                        onPrimary: () => context.push('/trees/${_selectedTree!['id']}'),
+                        onClose: _closePinSheet,
+                      ),
+                      if ((_selectedTree!['latitude'] as num?) != null &&
+                          (_selectedTree!['longitude'] as num?) != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _openExternalMaps(
+                                (_selectedTree!['latitude'] as num).toDouble(),
+                                (_selectedTree!['longitude'] as num).toDouble(),
+                              ),
+                              icon: const Icon(Icons.navigation_outlined, size: 18),
+                              label: const Text('Open in Maps'),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               if (_selectedAlert != null && _mode == _DrawMode.none)
@@ -625,6 +778,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    FloatingActionButton.small(
+                      heroTag: 'map_my_location',
+                      tooltip: 'My location',
+                      onPressed: _centerOnUser,
+                      child: const Icon(Icons.my_location),
+                    ),
+                    const SizedBox(height: 10),
                     if (canAddTrees(user))
                       FloatingActionButton.small(
                         heroTag: 'map_add_tree',
