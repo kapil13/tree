@@ -34,6 +34,7 @@ import 'screens/monitoring_screen.dart';
 import 'screens/carbon_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/credits_screen.dart';
+import 'screens/project_credit_ledger_screen.dart';
 import 'screens/survival_survey_screen.dart';
 import 'screens/sync_queue_screen.dart';
 import 'screens/alert_detail_screen.dart';
@@ -181,6 +182,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
+      GoRoute(
+        path: '/credits/projects/:id',
+        builder: (_, s) => ProjectCreditLedgerScreen(projectId: s.pathParameters['id']!),
+      ),
       GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
       GoRoute(path: '/profile/edit', builder: (_, __) => const ProfileEditScreen()),
       GoRoute(path: '/sync-queue', builder: (_, __) => const SyncQueueScreen()),
@@ -188,7 +193,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
         path: '/alerts/:id',
         builder: (_, s) => AlertDetailScreen(alertId: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/evidence', builder: (_, __) => const EvidenceScreen()),
+      GoRoute(
+        path: '/evidence',
+        builder: (_, state) => EvidenceScreen(projectId: state.uri.queryParameters['project']),
+      ),
       GoRoute(path: '/biodiversity', builder: (_, __) => const BiodiversityScreen()),
     ],
   );

@@ -56,6 +56,37 @@ final integrityFusionProvider =
   return api.getIntegrityFusion(projectId);
 });
 
+final survivalDueProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, projectId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.survivalDue(projectId);
+});
+
+final projectViolationsProvider =
+    FutureProvider.autoDispose.family<List<dynamic>, String>((ref, projectId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.listComplianceViolations(projectId);
+});
+
+final projectCreditLedgerProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, projectId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.getProjectCreditLedger(projectId);
+});
+
+final projectSchemeProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>((ref, projectId) async {
+  final project = await ref.watch(plantingProjectProvider(projectId).future);
+  final schemeCode = project['scheme_code'] as String?;
+  if (schemeCode == null) return null;
+  final api = await ref.watch(apiClientProvider.future);
+  try {
+    return await api.getCentralScheme(schemeCode);
+  } catch (_) {
+    return null;
+  }
+});
+
 final dashboardProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   return api.dashboard();
