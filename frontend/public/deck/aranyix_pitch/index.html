@@ -489,31 +489,35 @@ body.export-print .progress { display: none !important; }
       <header class="slide-header">
         <div class="section-tag">Act III · Scan engine</div>
         <h2 class="slide-title">Your portfolio is scanned while you sleep</h2>
-        <p class="slide-subtitle">Scheduled observatory — monthly, weekly, and daily Celery beat jobs</p>
+        <p class="slide-subtitle">Scheduled observatory — monthly, weekly, and daily Celery beat jobs (times in IST · UTC+05:30)</p>
       </header>
       <div class="slide-body">
 <div class="scan-grid">
   <div><h4>Monthly</h4>
     <table class="data-table compact"><tbody>
-      <tr><td>1st 02:00 UTC</td><td>Optical NDVI sweep</td><td>NDVI degradation ≥15%</td></tr>
-      <tr><td>5th 03:00 UTC</td><td>SAR monthly sweep</td><td>Moisture, waterlogging signals</td></tr>
+      <tr><td>1st · 07:30 IST</td><td>Optical NDVI sweep</td><td>NDVI degradation ≥15%</td></tr>
+      <tr><td>5th · 08:30 IST</td><td>SAR monthly sweep</td><td>Moisture, waterlogging signals</td></tr>
     </tbody></table>
   </div>
   <div><h4>Weekly</h4>
     <table class="data-table compact"><tbody>
-      <tr><td>Mon 04:00</td><td>SAR integrity watch</td><td>At-risk fences from divergence</td></tr>
-      <tr><td>Sun 04:30</td><td>Biodiversity baseline</td><td>GBIF/IUCN species snapshot</td></tr>
+      <tr><td>Mon · 09:30 IST</td><td>SAR integrity watch</td><td>At-risk fences from divergence</td></tr>
+      <tr><td>Sun · 10:00 IST</td><td>Biodiversity baseline</td><td>GBIF/IUCN species snapshot</td></tr>
     </tbody></table>
   </div>
   <div class="wide"><h4>Daily heartbeat</h4>
     <table class="data-table compact"><tbody>
-      <tr><td>03:00</td><td>Health roundup</td><td>Portfolio health + compliance escalation</td></tr>
-      <tr><td>03:45</td><td>Integrity fusion backfill</td><td>Re-score 50 projects nightly</td></tr>
-      <tr><td>05:30</td><td>Threat watch scan</td><td>Weather + pest + locust heuristics</td></tr>
-      <tr><td>07:00</td><td>Compliance deadline scan</td><td>Approaching / overdue deadlines</td></tr>
+      <tr><td>08:30</td><td>Health roundup</td><td>Portfolio health + compliance escalation</td></tr>
+      <tr><td>09:15</td><td>Integrity fusion backfill</td><td>Re-score 50 projects nightly</td></tr>
+      <tr><td>10:00</td><td>SAR sweep health check</td><td>Validates SAR pipeline</td></tr>
+      <tr><td>11:00</td><td>Threat watch scan</td><td>Weather + pest + locust heuristics</td></tr>
+      <tr><td>11:30</td><td>Survival survey reminders</td><td>Overdue field surveys</td></tr>
+      <tr><td>12:00</td><td>Satellite health digest</td><td>Canopy summary to supervisors</td></tr>
+      <tr><td>12:30</td><td>Compliance deadline scan</td><td>Approaching / overdue deadlines</td></tr>
     </tbody></table>
   </div>
-</div></div>
+</div>
+<p class="muted">On-demand: any supervisor can trigger satellite, SAR, AI, or bioacoustic analysis instantly.</p></div>
       <footer class="slide-footer">
         <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
         <span class="slide-num"></span>
