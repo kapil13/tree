@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/signup_api.dart';
@@ -494,8 +497,14 @@ class ApiClient {
     int page = 1,
     int pageSize = 100,
     String? bbox,
+    String? projectId,
   }) async {
-    final result = await listTreesPage(page: page, pageSize: pageSize, bbox: bbox);
+    final result = await listTreesPage(
+      page: page,
+      pageSize: pageSize,
+      bbox: bbox,
+      projectId: projectId,
+    );
     return result.items;
   }
 
@@ -706,6 +715,23 @@ class ApiClient {
       },
     );
     return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Downloads a ready report to a temp file and returns the local path.
+  Future<String> downloadReportFile({
+    required String reportId,
+    required String kind,
+    required String format,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/reports/$reportId/download',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/aranyix-$kind-$reportId.$ext';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
   }
 
   Future<List<dynamic>> listPlantingProjects({String? segment, int pageSize = 100}) async {

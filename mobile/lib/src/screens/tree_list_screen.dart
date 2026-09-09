@@ -6,7 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../api/api_errors.dart';
 import '../nav_access.dart';
+import '../project_context.dart';
 import '../providers.dart';
+import '../tree_thumbnail.dart';
+import '../widgets/project_picker_sheet.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/prototype/prototype_ui.dart';
 
@@ -40,7 +43,17 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
   void initState() {
     super.initState();
     _searchCtrl.addListener(() => setState(() {}));
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncProjectFilter());
+  }
+
+  void _syncProjectFilter() {
+    final selected = ref.read(selectedProjectIdProvider);
+    if (_projectFilter != selected) {
+      _projectFilter = selected;
+      _load(page: 1);
+    } else if (_items.isEmpty && !_loading) {
+      _load();
+    }
   }
 
   @override
@@ -212,7 +225,14 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final selectedProjectId = ref.watch(selectedProjectIdProvider);
+    if (_projectFilter != selectedProjectId) {
+      _projectFilter = selectedProjectId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _load(page: 1));
+    }
     final user = ref.watch(userProvider).maybeWhen(data: (d) => d, orElse: () => null);
+    final projectsAsync = ref.watch(plantingProjectsProvider);
+    final projects = projectsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
     final canAdd = canAddTrees(user);
     final filtered = _filteredItems();
     final pages = _pages;
@@ -235,6 +255,18 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
       body: Column(
         children: [
           const OfflineConnectivityBanner(),
+          if (projects.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: PrototypeFilterChip(
+                  label: selectedProjectLabel(context, projects, selectedProjectId),
+                  selected: selectedProjectId != null,
+                  onTap: () => showProjectPickerSheet(context, ref),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
@@ -423,6 +455,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                                     species: t['species_text'] as String? ?? l10n.unknownSpecies,
                                     meta: meta.isNotEmpty ? meta : '—',
                                     health: t['current_health'] as String?,
+                                    imageUrl: treeListThumbnailUrl(t),
                                     badges: badges,
                                     trailing: t['created_at'] != null ? _shortDate(t['created_at'] as String) : null,
                                     onTap: () => context.push('/trees/${t['id']}'),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../field_ops_actions.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../theme.dart';
@@ -95,7 +96,11 @@ class FieldOpsScreen extends ConsumerWidget {
                   for (final raw in violations)
                     _ViolationTile(
                       violation: Map<String, dynamic>.from(raw as Map),
-                      onResolve: () => _resolve(context, ref, Map<String, dynamic>.from(raw)),
+                      onResolve: () => resolveComplianceViolation(
+                        context,
+                        ref,
+                        Map<String, dynamic>.from(raw),
+                      ),
                     ),
                 const SizedBox(height: 24),
                 Text(l10n.survivalDueByProject, style: Theme.of(context).textTheme.titleMedium),
@@ -119,24 +124,6 @@ class FieldOpsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _resolve(BuildContext context, WidgetRef ref, Map<String, dynamic> v) async {
-    final projectId = v['project_id'] as String?;
-    final id = v['id'] as String?;
-    if (projectId == null || id == null) return;
-    try {
-      final api = await ref.read(apiClientProvider.future);
-      await api.resolveViolation(projectId, id);
-      ref.invalidate(fieldOpsSummaryProvider);
-      ref.invalidate(monitoringSummaryProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.violationResolved)));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
-      }
-    }
-  }
 }
 
 class _KpiChip extends StatelessWidget {
