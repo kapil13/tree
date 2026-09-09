@@ -87,6 +87,11 @@ class _FieldCaptureBody extends ConsumerWidget {
         children: [
           const PendingSyncBanner(),
           PrototypeContextStrip(project: projectLabel, meta: l10n.registerTreePrimarySub),
+          PrototypeSectionHeader(
+            title: 'Tree registry',
+            linkLabel: l10n.viewAll,
+            onLink: () => context.go('/trees'),
+          ),
           if (nextAlert != null)
             PrototypeNextUpHero(
               fieldStyle: true,
@@ -183,6 +188,11 @@ class _FieldOpsBody extends ConsumerWidget {
               PrototypeContextStrip(
                 project: projectLabel,
                 meta: '${summary['tree_count'] ?? 0} trees · ${summary['open_violations'] ?? 0} violations open',
+              ),
+              PrototypeSectionHeader(
+                title: 'Tree registry',
+                linkLabel: l10n.viewAll,
+                onLink: () => context.go('/trees'),
               ),
               if (nextViolation != null)
                 PrototypeNextUpHero(

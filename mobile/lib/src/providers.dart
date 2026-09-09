@@ -150,6 +150,17 @@ final plantationFencesProvider = FutureProvider.autoDispose((ref) async {
   return api.listPlantationFences();
 });
 
+final regionalFaunaProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, key) async {
+  final parts = key.split(',');
+  if (parts.length != 2) {
+    throw StateError('regionalFaunaProvider expects "lat,lon" key');
+  }
+  final lat = double.parse(parts[0]);
+  final lon = double.parse(parts[1]);
+  final api = await ref.watch(apiClientProvider.future);
+  return api.regionalFauna(latitude: lat, longitude: lon);
+});
+
 /// Weather at first registered tree, or null when no trees exist.
 final weatherProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final api = await ref.watch(apiClientProvider.future);

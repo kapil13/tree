@@ -4,6 +4,27 @@ import 'package:byot_mobile/src/route_access.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('field worker uses simplified home routing', () {
+    final worker = {
+      'role': 'field_worker',
+      'org_role': 'worker',
+      'has_professional_program': false,
+    };
+    expect(isFieldWorkerHome(worker), isTrue);
+    expect(canSeeExecutiveHome(worker), isFalse);
+  });
+
+  test('supervisor can create projects when writable', () {
+    final supervisor = {
+      'role': 'government',
+      'org_role': 'supervisor',
+      'has_professional_program': true,
+    };
+    expect(isSupervisor(supervisor), isTrue);
+    expect(canWriteInApp(supervisor), isTrue);
+    expect(canSeeProjects(supervisor), isTrue);
+  });
+
   test('field worker sees field tab and map but not bioacoustic', () {
     final worker = {
       'role': 'field_worker',
