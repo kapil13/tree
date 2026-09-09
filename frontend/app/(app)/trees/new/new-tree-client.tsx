@@ -38,6 +38,12 @@ import { enrichTreePayloadMetadata } from "@/lib/tree-registration-defaults";
 import { evaluateProjectSetup } from "@/lib/project-setup-readiness";
 import { formatTreeRegistrationError } from "@/lib/tree-validation-errors";
 import { projectLocationFromMetadata } from "@/lib/project-location";
+import {
+  enqueueTreeRegistration,
+  fileToDataUrl,
+  type QueuedTreePhoto,
+} from "@/lib/offline/tree-registration-queue";
+import { isBrowserOnline, isNetworkFailure } from "@/lib/offline/tree-registration-sync";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -90,6 +96,7 @@ export function NewTreePageClient() {
   const [wizardResetKey, setWizardResetKey] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [sessionSavedCount, setSessionSavedCount] = useState(0);
+  const [offlinePhotos, setOfflinePhotos] = useState<Record<string, QueuedTreePhoto>>({});
 
   const { data: registrationContext } = useQuery({
     queryKey: ["registration-context", projectIdParam, workAreaId],
@@ -261,7 +268,48 @@ export function NewTreePageClient() {
     setPhotoPreviews([]);
     setPitPhotoKey(null);
     setPitPhotoPreview(null);
+    setOfflinePhotos({});
   }, [activeProgram?.code, project?.id]);
+
+  async function storeOfflinePhoto(file: File): Promise<string> {
+    const key = `offline:${crypto.randomUUID()}`;
+    const dataUrl = await fileToDataUrl(file);
+    const photo: QueuedTreePhoto = {
+      filename: file.name || "photo.jpg",
+      dataUrl,
+    };
+    setOfflinePhotos((current) => ({ ...current, [key]: photo }));
+    return key;
+  }
+
+  async function uploadPhoto(file: File): Promise<string> {
+    if (!isBrowserOnline()) {
+      return storeOfflinePhoto(file);
+    }
+    try {
+      return await uploads.uploadImage(file);
+    } catch (err) {
+      if (isNetworkFailure(err)) {
+        return storeOfflinePhoto(file);
+      }
+      throw err;
+    }
+  }
+
+  function collectQueuedPhotos(keys: string[]): QueuedTreePhoto[] {
+    return keys
+      .filter((key) => key.startsWith("offline:"))
+      .map((key) => offlinePhotos[key])
+      .filter((photo): photo is QueuedTreePhoto => Boolean(photo));
+  }
+
+  async function enqueueOfflineRegistration(payload: ReturnType<typeof splitPayload>) {
+    const keys = (payload.photo_keys as string[]) ?? [];
+    await enqueueTreeRegistration({
+      payload: payload as Record<string, unknown>,
+      photos: collectQueuedPhotos(keys),
+    });
+  }
 
   function geo() {
     if (!navigator.geolocation || !activeProgram) return;
@@ -352,7 +400,23 @@ export function NewTreePageClient() {
           surveyorName: user?.full_name ?? user?.email,
         });
       }
-      const tree = await trees.create(payload);
+      if (!isBrowserOnline()) {
+        await enqueueOfflineRegistration(payload);
+        router.push("/field-ops/sync-queue?queued=1");
+        return;
+      }
+
+      let tree;
+      try {
+        tree = await trees.create(payload);
+      } catch (createErr) {
+        if (isNetworkFailure(createErr)) {
+          await enqueueOfflineRegistration(payload);
+          router.push("/field-ops/sync-queue?queued=1");
+          return;
+        }
+        throw createErr;
+      }
 
       if (action === "exit" || !isProjectMode || !projectIdParam) {
         router.push(`/trees/${tree.id}`);
@@ -537,7 +601,7 @@ export function NewTreePageClient() {
         photoPreviews={photoPreviews}
         onPhotoKeysChange={setPhotoKeys}
         onPhotoPreviewsChange={setPhotoPreviews}
-        onUploadPhoto={(file) => uploads.uploadImage(file)}
+        onUploadPhoto={uploadPhoto}
         onUploadError={(err) => setError(errorMessage(err))}
         onUseLocation={geo}
         locating={locating}

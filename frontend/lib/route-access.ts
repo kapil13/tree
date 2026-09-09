@@ -15,7 +15,11 @@ type RouteRule = {
 
 const ROUTE_RULES: RouteRule[] = [
   { prefix: "/trees/new", audience: "can_write" },
-  { prefix: "/field-ops", audience: ["professional", "field_supervisor"], excludeViewers: true },
+  {
+    prefix: "/field-ops",
+    audience: ["professional", "field_worker", "field_supervisor"],
+    excludeViewers: true,
+  },
   { prefix: "/projects", audience: ["professional", "field_supervisor", "field_worker"] },
   {
     prefix: "/portfolio-health",
@@ -109,7 +113,7 @@ export function routeAccessDeniedMessage(pathname: string): string {
     return viewerReadOnlyMessage("trees");
   }
   if (pathname.startsWith("/field-ops")) {
-    return "Field operations are limited to supervisors and program leads.";
+    return "Field operations are available to field workers, supervisors, and professional accounts.";
   }
   if (pathname.startsWith("/platform")) {
     return "Platform administration access is required.";

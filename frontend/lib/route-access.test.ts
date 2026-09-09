@@ -15,6 +15,15 @@ const proUser: User = {
   has_professional_program: true,
 };
 
+const fieldWorker: User = {
+  id: "user-2",
+  email: "field@example.com",
+  role: "field_worker",
+  organization_id: "org-1",
+  full_name: "Field Worker",
+  has_professional_program: false,
+};
+
 function flags(disabled: OrgFeatureFlagKey): Map<OrgFeatureFlagKey, boolean> {
   return new Map([[disabled, false]]);
 }
@@ -32,5 +41,10 @@ describe("route-access feature flags", () => {
 
   it("allows dashboard regardless of feature flags", () => {
     expect(canAccessPath(proUser, "/dashboard", flags("satellite"))).toBe(true);
+  });
+
+  it("allows field workers to access field ops routes", () => {
+    expect(canAccessPath(fieldWorker, "/field-ops")).toBe(true);
+    expect(canAccessPath(fieldWorker, "/field-ops/sync-queue")).toBe(true);
   });
 });
