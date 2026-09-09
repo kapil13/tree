@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aranyix Pitch Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+:root {
+  --green-950: #041f17;
+  --green-900: #052e1f;
+  --green-700: #15803d;
+  --green-500: #22c55e;
+  --green-300: #86efac;
+  --accent: #16a34a;
+  --cream: #f7f4ec;
+  --stone-700: #44403c;
+  --stone-500: #78716c;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  background: #060a08;
+  color: #1c1917;
+  overflow: hidden;
+}
+h1, h2, h3, h4 { font-family: "Playfair Display", Georgia, serif; font-weight: 600; }
+code { font-family: ui-monospace, monospace; font-size: 0.9em; background: rgba(0,0,0,0.06); padding: 0.1em 0.35em; border-radius: 4px; }
+
+.export-toolbar {
+  position: fixed; top: 12px; left: 12px; z-index: 25;
+  display: flex; gap: 8px; padding: 8px 10px;
+  background: rgba(4, 31, 23, 0.82);
+  border: 1px solid rgba(134, 239, 172, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+}
+.export-toolbar button {
+  font: inherit; font-size: 12px; font-weight: 600;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  background: rgba(22, 163, 74, 0.25); color: #ecfdf5;
+  transition: background 0.15s;
+}
+.export-toolbar button:hover { background: rgba(22, 163, 74, 0.45); }
+
+.deck-viewport {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 56px 24px 48px;
+}
+.slide {
+  display: none;
+  width: min(100vw - 48px, 1280px);
+  aspect-ratio: 16 / 9;
+  max-height: calc(100vh - 104px);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.07), 0 30px 60px -20px rgba(0,0,0,0.65);
+}
+.slide.active { display: flex; flex-direction: column; }
+.slide--light {
+  background: linear-gradient(180deg, #fafcfa 0%, #eef3ef 100%);
+}
+.slide--dark {
+  background: linear-gradient(145deg, var(--green-950) 0%, var(--green-900) 42%, #0a1610 100%);
+  color: #f0fdf4;
+}
+.slide--cover {
+  background: linear-gradient(135deg, #14532d 0%, #041f17 55%, #0a1610 100%);
+  color: var(--cream);
+}
+.slide--cover::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(9,39,23,0.97) 0%, rgba(9,39,23,0.75) 45%, rgba(9,39,23,0.2) 100%);
+  pointer-events: none;
+}
+.slide-inner {
+  position: relative; z-index: 1;
+  flex: 1; display: flex; flex-direction: column;
+  padding: 4.5% 5.5%; min-height: 0;
+}
+.slide-header { flex-shrink: 0; margin-bottom: 0.65rem; }
+.section-tag {
+  font-size: clamp(9px, 1vw, 11px); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--accent); margin-bottom: 0.35rem;
+}
+.slide--dark .section-tag { color: var(--green-300); }
+.slide-title {
+  margin: 0; font-size: clamp(1.1rem, 2.4vw, 1.85rem);
+  line-height: 1.12; letter-spacing: -0.02em;
+}
+.slide-subtitle {
+  margin: 0.4rem 0 0; font-size: clamp(0.7rem, 1.2vw, 0.95rem);
+  color: var(--stone-500); line-height: 1.4;
+}
+.slide--dark .slide-subtitle { color: rgba(236,253,245,0.65); }
+.slide-body { flex: 1; min-height: 0; overflow: auto; font-size: clamp(0.62rem, 1vw, 0.78rem); line-height: 1.45; }
+.slide-footer {
+  flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
+  padding-top: 0.5rem; margin-top: auto;
+  font-size: clamp(9px, 0.9vw, 11px); color: var(--stone-500);
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.slide--dark .slide-footer { color: rgba(236,253,245,0.45); border-top-color: rgba(255,255,255,0.08); }
+.brand { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--accent); }
+.slide--dark .brand { color: var(--green-300); }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-500); }
+
+/* Cover */
+.cover-content { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 58%; }
+.cover-kicker {
+  font-size: clamp(9px, 1vw, 11px); font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: #a9d8b3;
+  display: flex; align-items: center; gap: 10px;
+}
+.cover-kicker::before { content: ""; width: 28px; height: 2px; background: var(--accent); }
+.cover-title { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0.75rem 0 0.5rem; color: #fbfaf6; }
+.cover-lead { font-size: clamp(0.8rem, 1.4vw, 1.05rem); color: #e4e9df; margin: 0; line-height: 1.45; }
+.cover-footnote { font-size: clamp(0.65rem, 1vw, 0.82rem); color: rgba(228,233,223,0.72); margin: 0.5rem 0 0; }
+.cover-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 1rem; }
+.cover-pill {
+  font-size: clamp(8px, 0.85vw, 10px); font-weight: 700; letter-spacing: 0.08em;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(134,239,172,0.15); border: 1px solid rgba(134,239,172,0.35); color: #d1fae5;
+}
+.cover-top-rule { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--accent); z-index: 3; }
+.cover-brand { position: absolute; top: 5%; left: 5.5%; z-index: 3; font-weight: 700; letter-spacing: 0.24em; font-size: 11px; color: #ecfdf5; }
+
+/* Content components */
+.bullets { margin: 0; padding-left: 1.1rem; }
+.bullets li { margin-bottom: 0.3rem; }
+.bullets.small { font-size: 0.92em; }
+.kicker { font-size: 0.85em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.4rem; }
+.kicker.amber { color: #b45309; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; height: 100%; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.92em; }
+.data-table th { text-align: left; padding: 0.35rem 0.45rem; background: #ecfdf5; color: #14532d; font-weight: 700; border-bottom: 2px solid #bbf7d0; }
+.data-table td { padding: 0.3rem 0.45rem; border-bottom: 1px solid #e7e5e4; vertical-align: top; }
+.data-table.compact { font-size: 0.85em; }
+.callout { padding: 0.45rem 0.55rem; border-radius: 0 6px 6px 0; margin: 0.5rem 0 0; font-size: 0.92em; }
+.callout.amber { background: #fffbeb; border-left: 3px solid #f59e0b; }
+.callout.green { background: #ecfdf5; border-left: 3px solid var(--accent); }
+.callout.neutral { background: #f5f5f4; border-left: 3px solid #a8a29e; }
+.vs-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.panel { flex: 1; padding: 0.5rem; border-radius: 8px; text-align: center; font-size: 0.9em; }
+.panel.bad { background: #fef2f2; border: 1px solid #fecaca; }
+.panel.good { background: #ecfdf5; border: 1px solid #bbf7d0; }
+.panel small { display: block; color: var(--stone-500); font-size: 0.85em; }
+.arrow { font-weight: 700; color: var(--accent); }
+.card-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.4rem; margin-bottom: 0.5rem; }
+.icon-card { text-align: center; padding: 0.4rem; background: #fff; border: 1px solid #e7e5e4; border-radius: 8px; font-size: 0.85em; }
+.icon-card .ico { font-size: 1.2rem; display: block; margin-bottom: 0.2rem; }
+.icon-card small { display: block; color: var(--stone-500); font-size: 0.85em; }
+.fusion-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.55rem; background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 0.45rem; font-size: 0.9em; }
+.output-card { padding: 0.4rem 0.55rem; background: #fff; border: 1px solid #d1fae5; border-radius: 8px; margin-bottom: 0.35rem; font-size: 0.9em; }
+.output-card span { display: block; color: var(--stone-500); font-size: 0.85em; }
+.roles-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.35rem; }
+.role-card { padding: 0.4rem; background: #fff; border: 1px solid #e7e5e4; border-radius: 8px; font-size: 0.82em; border-top: 3px solid var(--accent); }
+.role-card em { display: block; color: var(--stone-500); font-size: 0.9em; font-style: normal; }
+.role-card p { margin: 0.2rem 0 0; color: var(--stone-700); font-size: 0.9em; }
+.programs-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.4rem; }
+.program-card { padding: 0.45rem; background: #fff; border: 1px solid #e7e5e4; border-radius: 8px; font-size: 0.85em; }
+.program-card code { display: block; font-size: 0.8em; color: var(--accent); margin-bottom: 0.15rem; }
+.program-card span { display: block; color: var(--stone-500); font-size: 0.9em; }
+.program-card small { color: var(--stone-500); }
+.flow-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0.5rem 0; padding: 0.4rem; background: linear-gradient(90deg, var(--green-950), #0a3d28); color: #86efac; border-radius: 8px; font-size: 0.82em; font-weight: 600; }
+.muted { color: var(--stone-500); font-size: 0.9em; margin: 0.35rem 0 0; }
+.lifecycle { display: grid; grid-template-columns: repeat(7,1fr); gap: 0.3rem; }
+.lc-step { text-align: center; padding: 0.35rem 0.2rem; background: #fff; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 0.78em; }
+.lc-step .num { display: inline-flex; width: 1.25rem; height: 1.25rem; align-items: center; justify-content: center; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.75em; font-weight: 700; margin-bottom: 0.2rem; }
+.lc-step small { display: block; color: var(--stone-500); font-size: 0.85em; margin-top: 0.15rem; }
+.scan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.scan-grid .wide { grid-column: 1 / -1; }
+.scan-grid h4 { margin: 0 0 0.25rem; font-size: 0.9em; color: var(--accent); }
+.stack-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.stack-item { display: flex; flex-direction: column; padding: 0.35rem 0.45rem; background: #fff; border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 0.88em; }
+.stack-item span { color: var(--stone-500); font-size: 0.9em; }
+.fusion-result { text-align: center; padding: 0.75rem; background: linear-gradient(135deg, var(--green-950), #0a3d28); color: #ecfdf5; border-radius: 10px; }
+.gauge { font-family: "Playfair Display", serif; font-size: 2.5rem; font-weight: 700; color: var(--green-300); }
+.tags { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: center; margin-top: 0.35rem; }
+.tags span { font-size: 0.75em; padding: 0.1rem 0.4rem; border-radius: 999px; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); color: #86efac; }
+.mock-ui { border: 1px solid #d1fae5; border-radius: 8px; overflow: hidden; }
+.mock-bar { padding: 0.35rem 0.5rem; background: #041f17; color: #86efac; font-size: 0.8em; font-weight: 600; }
+.mock-body { padding: 0.5rem; background: #fff; font-size: 0.85em; }
+.scheme-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.35rem; }
+.scheme-cell { position: relative; padding: 0.4rem 0.45rem 0.4rem 0.55rem; background: #fff; border: 1px solid #e7e5e4; border-radius: 8px; font-size: 0.82em; overflow: hidden; }
+.scheme-cell .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+.scheme-cell em { font-size: 0.8em; font-weight: 700; text-transform: uppercase; color: var(--accent); font-style: normal; }
+.use-case .audience { color: var(--stone-500); font-size: 0.9em; margin: 0 0 0.35rem; }
+.timeline { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.35rem; }
+.tl-item { padding: 0.4rem; background: #fff; border-top: 3px solid var(--accent); border-radius: 0 0 8px 8px; font-size: 0.85em; }
+.tl-item span { display: block; color: var(--stone-500); font-size: 0.9em; margin-top: 0.15rem; }
+.impact-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.4rem; }
+.impact-card { padding: 0.45rem; background: #fff; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 0.88em; }
+.impact-card p { margin: 0.2rem 0 0; color: var(--stone-700); }
+.carbon-range { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: #ecfdf5; border-radius: 8px; font-weight: 700; }
+.carbon-range .mid { font-size: 0.85em; color: var(--stone-500); font-weight: 600; }
+.close-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem; margin-bottom: 0.5rem; }
+.close-grid h3 { margin: 0 0 0.25rem; font-size: 1em; color: var(--accent); }
+.hub-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.35rem; }
+.hub-item { padding: 0.5rem; text-align: center; background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 700; font-size: 0.85em; }
+
+.controls {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; z-index: 20;
+  padding: 8px 16px; background: rgba(4,31,23,0.9); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; backdrop-filter: blur(10px);
+}
+.controls button {
+  background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #ecfdf5;
+  width: 36px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 16px;
+}
+.controls button:hover { background: rgba(255,255,255,0.1); }
+.controls button:disabled { opacity: 0.3; cursor: default; }
+.controls .counter { font-size: 12px; color: rgba(236,253,245,0.7); min-width: 56px; text-align: center; }
+
+.progress {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.08); z-index: 20;
+}
+.progress-bar { height: 100%; background: var(--green-500); transition: width 0.2s; }
+
+.hint {
+  position: fixed; bottom: 64px; right: 16px; z-index: 15;
+  font-size: 10px; color: rgba(236,253,245,0.35); text-align: right;
+}
+
+@media print {
+  @page { size: landscape; margin: 0; }
+  body { overflow: visible; background: #fff; }
+  .export-toolbar, .controls, .hint, .progress { display: none !important; }
+  .deck-viewport { position: static; padding: 0; display: block; }
+  .slide {
+    display: block !important; position: relative !important;
+    width: 100vw; height: 100vh; max-height: none;
+    page-break-after: always; border-radius: 0; box-shadow: none;
+    aspect-ratio: auto;
+  }
+  .slide:last-child { page-break-after: auto; }
+}
+body.export-print {
+  overflow: visible;
+}
+body.export-print .deck-viewport { position: static; padding: 0; display: block; }
+body.export-print .slide {
+  display: block !important; position: relative !important;
+  width: 100vw; height: 100vh; max-height: none;
+  page-break-after: always; border-radius: 0; box-shadow: none;
+  aspect-ratio: auto;
+}
+body.export-print .export-toolbar,
+body.export-print .controls,
+body.export-print .hint,
+body.export-print .progress { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="export-toolbar" role="toolbar" aria-label="Export tools">
+    <button type="button" id="export-pdf">Export PDF</button>
+    <button type="button" id="download-html">Download HTML</button>
+  </div>
+
+  <div class="deck-viewport" id="deck">
+  <section class="slide slide--cover active" data-slide="1" id="slide-1" aria-label="Slide 1 of 40">
+
+    <div class="cover-top-rule"></div>
+    <div class="cover-brand">ARANYIX</div>
+    <div class="slide-inner">
+      <div class="cover-content">
+        <div class="cover-kicker">ARANYIX · THE PLANTATION INTELLIGENCE PLATFORM</div>
+        <h1 class="cover-title">Aranyix</h1>
+        <p class="cover-lead">Field truth · Live satellite · AI vision · Acoustic biodiversity · Audit-ready MRV</p>
+        <p class="cover-footnote">Web + Mobile + API · Built for programmes that must prove outcomes, not just plant trees</p>
+        <div class="cover-pills"><span class="cover-pill">FIELD MRV</span><span class="cover-pill">SATELLITE</span><span class="cover-pill">AI VISION</span><span class="cover-pill">BIOACOUSTIC</span><span class="cover-pill">CARBON & COMPLIANCE</span></div>
+      </div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="2" id="slide-2" aria-label="Slide 2 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act I · The stakes</div>
+        <h2 class="slide-title">Planting is easy. Proving it survived is the hard part.</h2>
+        <p class="slide-subtitle">Governments, miners, and corporates spend massively on afforestation — but proof fragments across the organisation</p>
+      </header>
+      <div class="slide-body">
+<div class="grid-2">
+  <div>
+    <p class="kicker amber">The accountability crisis</p>
+    <ul class="bullets">
+      <li>Proof fragments across registers, photos, Excel, and consultant PDFs</li>
+      <li>Survival surveys once a year — stress, flood, pest, canopy loss discovered too late</li>
+      <li>Boards and regulators demand traceable evidence, not ceremony photos</li>
+      <li>Carbon and nature claims without multi-signal verification create greenwashing risk</li>
+      <li>Field teams work offline; HQ needs real-time portfolio intelligence</li>
+    </ul>
+  </div>
+  <div>
+    <div class="vs-row">
+      <div class="panel bad"><strong>Registration tools</strong><small>Count trees once</small></div>
+      <span class="arrow">→</span>
+      <div class="panel good"><strong>Operating system for proof</strong><small>Watch · fuse · alert · export</small></div>
+    </div>
+    <p class="callout amber">The industry built registration tools. <strong>Nobody built the operating system for proof.</strong></p>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="3" id="slide-3" aria-label="Slide 3 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act I · Why now</div>
+        <h2 class="slide-title">Accountability went from “nice to have” to “show me the data”</h2>
+        
+      </header>
+      <div class="slide-body">
+<table class="data-table">
+  <thead><tr><th>Stakeholder</th><th>Pressure</th></tr></thead>
+  <tbody>
+    <tr><td>Government</td><td>CAMPA, Nagar Van, NHAI, Green Credit — scheme KPIs must be measurable</td></tr>
+    <tr><td>Mining</td><td>Progressive closure & green belts need continuous MRV, not one-time planting</td></tr>
+    <tr><td>SEBI / Listed cos</td><td>BRSR Principle 6 — board-level environmental evidence</td></tr>
+    <tr><td>CSR</td><td>Spend is scrutinised; survival and geo-proof matter</td></tr>
+    <tr><td>UN / Climate / Nature</td><td>NDCs, REDD+, TNFD, GBF — disclosure without field + satellite + biodiversity data is hollow</td></tr>
+  </tbody>
+</table>
+<p class="callout amber">The winner is not who plants most. It is who <strong>proves, monitors, and responds fastest</strong>.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="4" id="slide-4" aria-label="Slide 4 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act II · Platform</div>
+        <h2 class="slide-title">We didn't build another tree app</h2>
+        <p class="slide-subtitle">Aranyix is a full-stack plantation intelligence platform — trust infrastructure for green capital</p>
+      </header>
+      <div class="slide-body">
+<table class="data-table compact">
+  <thead><tr><th>Category</th><th>What you usually get</th><th>What's missing</th></tr></thead>
+  <tbody>
+    <tr><td>Citizen tree apps</td><td>QR tag, photo, feel-good</td><td>No scheme MRV, audit trail, satellite fusion</td></tr>
+    <tr><td>Carbon / MRV vendors</td><td>Spreadsheet carbon math</td><td>Weak field integrity, no India scheme depth</td></tr>
+    <tr><td>Satellite-only platforms</td><td>NDVI maps</td><td>No ground truth, survival workflow, compliance exports</td></tr>
+    <tr><td>ESG reporting tools</td><td>PDF packs from manual data</td><td>No live scanning, no anti-fraud fusion</td></tr>
+    <tr><td>Govt MIS / GIS</td><td>Static layers</td><td>No mobile offline ops, no automated alert engine</td></tr>
+  </tbody>
+</table>
+<p class="callout green"><strong>Aranyix</strong> connects people in the field → sensors in the sky → AI on the ground → alerts in the pocket → exports in the boardroom.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="5" id="slide-5" aria-label="Slide 5 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act II · Architecture</div>
+        <h2 class="slide-title">Three surfaces. One truth layer.</h2>
+        <p class="slide-subtitle">Web command centre · mobile field ops · APIs — fused through integrity scoring</p>
+      </header>
+      <div class="slide-body">
+<div class="grid-2">
+  <div>
+    <div class="card-row">
+      <div class="icon-card"><span class="ico">🌐</span><strong>Web Portal</strong><small>Command centre</small></div>
+      <div class="icon-card"><span class="ico">📱</span><strong>Mobile Field</strong><small>Offline operations</small></div>
+      <div class="icon-card"><span class="ico">⚡</span><strong>APIs & Webhooks</strong><small>Integration layer</small></div>
+    </div>
+    <div class="fusion-bar"><strong>Integrity Fusion</strong> — Photo · GPS · AI · Satellite · SAR</div>
+    <ul class="bullets small">
+      <li>OpenAI GPT-4o-mini — species, health, disease from photos</li>
+      <li>Sentinel Hub NDVI — per-tree and polygon scans</li>
+      <li>SAR monthly + weekly integrity watches</li>
+      <li>ISRO Bhoonidhi dual-source fusion</li>
+      <li>Celery beat — daily/weekly/monthly scans without human trigger</li>
+    </ul>
+  </div>
+  <div class="card-stack">
+    <div class="output-card"><strong>Scheme MRV</strong><span>14 programmes</span></div>
+    <div class="output-card"><strong>Alert Engine</strong><span>20+ alert kinds</span></div>
+    <div class="output-card"><strong>Compliance Exports</strong><span>BRSR · TNFD · VM0047…</span></div>
+    <p class="muted">aranyix.tech — PostGIS geospatial core · S3 media · RBAC</p>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="6" id="slide-6" aria-label="Slide 6 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act II · Users</div>
+        <h2 class="slide-title">Eight roles. One governed platform.</h2>
+        <p class="slide-subtitle">Citizen/BYOT, field worker, government, corporate ESG, verifier — same platform from one neem tree to 50,000 hectares</p>
+      </header>
+      <div class="slide-body">
+<div class="roles-grid">
+  <div class="role-card"><strong>Citizen / BYOT</strong><em>Homeowners, farmers</em><p>Register trees, adopt, QR passports</p></div>
+  <div class="role-card"><strong>Field worker</strong><em>MGNREGA crews</em><p>Offline registration, survival surveys</p></div>
+  <div class="role-card"><strong>Field supervisor</strong><em>Beat officers</em><p>Field-ops dashboard, contractor oversight</p></div>
+  <div class="role-card"><strong>Government user</strong><em>Forest dept, NHAI</em><p>Scheme projects, KPI rollups, compliance</p></div>
+  <div class="role-card"><strong>Corporate / ESG</strong><em>CSR, sustainability</em><p>Portfolios, BRSR exports, geo-MRV</p></div>
+  <div class="role-card"><strong>NGO / community</strong><em>Cooperatives, FPOs</em><p>Community plantations, scheme metadata</p></div>
+  <div class="role-card"><strong>Verifier</strong><em>Third-party QA</em><p>Attestation, audit evidence review</p></div>
+  <div class="role-card"><strong>Platform admin</strong><em>Aranyix ops</em><p>Org governance, workers, CMS</p></div>
+</div>
+<p class="callout neutral">Manager · Supervisor · Worker · Viewer — RBAC enforces who can see, edit, and approve.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="7" id="slide-7" aria-label="Slide 7 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act II · Onboarding</div>
+        <h2 class="slide-title">Four doors in. One intelligence engine.</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="programs-grid">
+  <div class="program-card"><code>byot</code><strong>BYOT Public</strong><span>Citizens</span><small>1 photo · quick tagging</small></div>
+  <div class="program-card"><code>government_nhai</code><strong>Government & Public Sector</strong><span>Forest dept, NHAI, PSUs</span><small>3 photos · strict integrity</small></div>
+  <div class="program-card"><code>corporate_esg</code><strong>Industry & Corporate ESG</strong><span>Listed cos, CSR, mines</span><small>2 photos · board exports</small></div>
+  <div class="program-card"><code>ngo_community</code><strong>NGO & Community</strong><span>NGOs, cooperatives</span><small>2 photos · scheme-linked</small></div>
+</div>
+<div class="flow-strip"><span>Signup → OTP → enrollment</span><span>→</span><span>Professional access request</span><span>→</span><span>Scheme picker on project create</span></div>
+<p class="muted"><strong>Program</strong> = who you are · <strong>Scheme</strong> = funding/compliance · <strong>Project</strong> = plantation with polygons & MRV lifecycle</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="8" id="slide-8" aria-label="Slide 8 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act III · MRV lifecycle</div>
+        <h2 class="slide-title">Plan → Plant → Prove → Watch → Alert → Report → Repeat</h2>
+        <p class="slide-subtitle">Every plantation is a living asset under continuous observation — not a one-time data entry event</p>
+      </header>
+      <div class="slide-body">
+<div class="lifecycle">
+  <div class="lc-step"><span class="num">1</span><strong>Plan</strong><small>Scheme picker, polygons, species</small></div>
+  <div class="lc-step"><span class="num">2</span><strong>Plant</strong><small>Mobile/web registration, offline queue</small></div>
+  <div class="lc-step"><span class="num">3</span><strong>Prove</strong><small>AI analysis, fusion score, re-geotag</small></div>
+  <div class="lc-step"><span class="num">4</span><strong>Watch</strong><small>Satellite + SAR sweeps, estate mode</small></div>
+  <div class="lc-step"><span class="num">5</span><strong>Alert</strong><small>20+ kinds → email, SMS, push</small></div>
+  <div class="lc-step"><span class="num">6</span><strong>Report</strong><small>MRV export, evidence ZIP, PDFs</small></div>
+  <div class="lc-step"><span class="num">7</span><strong>Repeat</strong><small>Monthly NDVI, weekly SAR, nightly backfill</small></div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="9" id="slide-9" aria-label="Slide 9 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act III · Scan engine</div>
+        <h2 class="slide-title">Your portfolio is scanned while you sleep</h2>
+        <p class="slide-subtitle">Scheduled observatory — monthly, weekly, and daily Celery beat jobs</p>
+      </header>
+      <div class="slide-body">
+<div class="scan-grid">
+  <div><h4>Monthly</h4>
+    <table class="data-table compact"><tbody>
+      <tr><td>1st 02:00 UTC</td><td>Optical NDVI sweep</td><td>NDVI degradation ≥15%</td></tr>
+      <tr><td>5th 03:00 UTC</td><td>SAR monthly sweep</td><td>Moisture, waterlogging signals</td></tr>
+    </tbody></table>
+  </div>
+  <div><h4>Weekly</h4>
+    <table class="data-table compact"><tbody>
+      <tr><td>Mon 04:00</td><td>SAR integrity watch</td><td>At-risk fences from divergence</td></tr>
+      <tr><td>Sun 04:30</td><td>Biodiversity baseline</td><td>GBIF/IUCN species snapshot</td></tr>
+    </tbody></table>
+  </div>
+  <div class="wide"><h4>Daily heartbeat</h4>
+    <table class="data-table compact"><tbody>
+      <tr><td>03:00</td><td>Health roundup</td><td>Portfolio health + compliance escalation</td></tr>
+      <tr><td>03:45</td><td>Integrity fusion backfill</td><td>Re-score 50 projects nightly</td></tr>
+      <tr><td>05:30</td><td>Threat watch scan</td><td>Weather + pest + locust heuristics</td></tr>
+      <tr><td>07:00</td><td>Compliance deadline scan</td><td>Approaching / overdue deadlines</td></tr>
+    </tbody></table>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="10" id="slide-10" aria-label="Slide 10 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act III · Early warning</div>
+        <h2 class="slide-title">When the canopy screams, the platform listens</h2>
+        <p class="slide-subtitle">Multi-signal catastrophic stress detection — satellite, SAR, weather, and pest intel</p>
+      </header>
+      <div class="slide-body">
+<table class="data-table compact">
+  <thead><tr><th>Threat</th><th>Detection</th><th>Alert</th><th>Response</th></tr></thead>
+  <tbody>
+    <tr><td>Fire / canopy loss</td><td>Acute NDVI drop</td><td>ndvi_degradation</td><td>Supervisor → field inspection</td></tr>
+    <tr><td>Heavy rain / flood</td><td>Open-Meteo forecast</td><td>weather_heavy_rain</td><td>Pre-event warning to field teams</td></tr>
+    <tr><td>Waterlogging</td><td>SAR double-bounce</td><td>sar_flood_risk</td><td>Ground verification prompted</td></tr>
+    <tr><td>Pest / disease</td><td>AI disease_risk + pest intel</td><td>pest_intel_critical</td><td>Treatment pushed to work-area panel</td></tr>
+  </tbody>
+</table>
+<p class="callout green">In-app (always) · Email (satellite, threats, compliance) · SMS on critical · Push (citizen stewardship)</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="11" id="slide-11" aria-label="Slide 11 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act IV · Fusion</div>
+        <h2 class="slide-title">Five sensors. One fused picture.</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="grid-2">
+  <div class="stack-list">
+    <div class="stack-item"><strong>Tree Photo</strong><span>OpenAI Vision → species, health, disease</span></div>
+    <div class="stack-item"><strong>Sentinel NDVI</strong><span>Optical canopy time series</span></div>
+    <div class="stack-item"><strong>SAR C-band</strong><span>Ground moisture & integrity</span></div>
+    <div class="stack-item"><strong>Bhoonidhi</strong><span>ISRO dual fusion</span></div>
+    <div class="stack-item"><strong>Open-Meteo</strong><span>Weather threat rules</span></div>
+    <div class="stack-item"><strong>Bioacoustic</strong><span>Shannon · IUCN enrichment</span></div>
+  </div>
+  <div class="fusion-result">
+    <p class="gauge-label">Composite integrity score</p>
+    <div class="gauge">78</div>
+    <p>Field ~45–55% · Satellite ~35–45% · AI ~20% when present</p>
+    <div class="tags"><span>credit-eligible</span><span>satellite_verified</span><span>audit-track</span></div>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="12" id="slide-12" aria-label="Slide 12 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act IV · AI vision</div>
+        <h2 class="slide-title">Every photo becomes a structured medical record for the tree</h2>
+        <p class="slide-subtitle">Live OpenAI vision — input to credit eligibility and compliance gates</p>
+      </header>
+      <div class="slide-body">
+<div class="grid-2">
+  <ul class="bullets">
+    <li>Species identification with confidence score</li>
+    <li>Health status, diseases, pests, growth stage</li>
+    <li>Carbon update trigger from DBH/height estimates</li>
+    <li>Confidence &lt;0.65 → ai_confidence_low flag</li>
+    <li>Feeds composite risk — never sole proof</li>
+  </ul>
+  <div class="mock-ui">
+    <div class="mock-bar">aranyix.tech/trees · Run AI Analysis</div>
+    <div class="mock-body">Species: <strong>Azadirachta indica</strong> · Health: Good · Disease risk: Low · Fusion +12</div>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="13" id="slide-13" aria-label="Slide 13 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act IV · Bioacoustic</div>
+        <h2 class="slide-title">The forest has a voice. We built the ears.</h2>
+        <p class="slide-subtitle">Major differentiator — acoustic biodiversity integrated with satellite and compliance exports</p>
+      </header>
+      <div class="slide-body">
+<div class="grid-2">
+  <ul class="bullets">
+    <li>BirdNET + multi-taxa pipeline (amphibians, mammals, insects)</li>
+    <li>Shannon diversity, species richness, Biodiversity Health Score 0–100</li>
+    <li>IUCN Red List enrichment and GBIF regional baselines</li>
+    <li>NDVI-to-bioacoustic correlation for ecosystem recovery proof</li>
+    <li>Exports to TNFD and Darwin Core for GBIF</li>
+  </ul>
+  <div class="mock-ui">
+    <div class="mock-bar">Bioacoustic · Shannon 2.84 · 12 species</div>
+    <div class="mock-body tags"><span>Indian Peafowl</span><span>Common Hawk-Cuckoo</span><span>LC</span><span>NT</span></div>
+  </div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="14" id="slide-14" aria-label="Slide 14 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act IV · Threat watch</div>
+        <h2 class="slide-title">Don't wait for the outbreak. Read the signals.</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Pest Intel composite: satellite health + 48h rainfall + bioacoustic + locust corridor + field health counts</li>
+  <li>Weather kinds (daily scan): heavy rain, hail, heat stress, high wind, frost</li>
+  <li>Locust watch heuristic corridors → locust_watch alerts</li>
+  <li>UI: Pest Intel panel on tree detail + Portfolio Threats tab + grounded AI assistant</li>
+</ul>
+<div class="mock-ui"><div class="mock-bar">Alerts · Filter: SAR, weather, NDVI, pest intel</div></div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="15" id="slide-15" aria-label="Slide 15 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act V · India depth</div>
+        <h2 class="slide-title">14 government programmes. Not generic “projects.”</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="scheme-grid">
+  <div class="scheme-cell"><span class="bar"></span><em>MoEFCC</em><strong>CAMPA Compensatory Afforestation</strong><small>Checklist, APO CSV, framework report</small></div>
+  <div class="scheme-cell"><span class="bar"></span><em>MoEFCC</em><strong>Green India Mission (GIM)</strong><small>Readiness checklist and report</small></div>
+  <div class="scheme-cell"><span class="bar"></span><em>MoEFCC</em><strong>Nagar Van Urban Forest</strong><small>Urban planting template</small></div>
+  <div class="scheme-cell"><span class="bar"></span><em>MoRTH</em><strong>NHAI Green Highway</strong><small>Chainage work areas</small></div>
+  <div class="scheme-cell"><span class="bar"></span><em>MoEFCC</em><strong>Green Credit Programme 2023</strong><small>Credit calculator, report</small></div>
+  <div class="scheme-cell"><span class="bar"></span><em>Cooperation</em><strong>Sahakar Van Cooperative</strong><small>Template + checklist</small></div>
+</div>
+<p class="muted">Plus MGNREGA convergence, Jal Shakti riparian, MISHTI mangrove, mining reclamation, estate monitoring…</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="16" id="slide-16" aria-label="Slide 16 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act V · Compliance universe</div>
+        <h2 class="slide-title">One data layer. Every disclosure format.</h2>
+        
+      </header>
+      <div class="slide-body">
+<table class="data-table compact">
+  <thead><tr><th>Standard</th><th>Body</th><th>Aranyix capability</th></tr></thead>
+  <tbody>
+    <tr><td>VM0047 ARR</td><td>Verra</td><td>Baseline, additionality, leakage accounting</td></tr>
+    <tr><td>BRSR Principle 6</td><td>SEBI</td><td>Assurance pack export</td></tr>
+    <tr><td>TNFD LEAP</td><td>TNFD</td><td>NDVI + bioacoustic evidence</td></tr>
+    <tr><td>ISO 14064-2</td><td>ISO</td><td>Project boundary, monitoring plan</td></tr>
+    <tr><td>ICVCM CCP</td><td>ICVCM</td><td>10-principle checklist with auto-signals</td></tr>
+    <tr><td>Darwin Core</td><td>GBIF</td><td>Species occurrence archive</td></tr>
+  </tbody>
+</table></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="17" id="slide-17" aria-label="Slide 17 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Government</div>
+        <h2 class="slide-title">Government & NHAI</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="use-case">
+  <p class="audience">Forest departments · highway authorities · district admin</p>
+  <ul class="bullets"><li>CAMPA blocks with survival KPIs and APO CSV import</li><li>Highway chainage MRV with work-area polygons</li><li>Nagar Van urban forest templates</li><li>District rollups and compliance deadline automation</li></ul>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="18" id="slide-18" aria-label="Slide 18 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Mining</div>
+        <h2 class="slide-title">Mining & progressive closure</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="use-case">
+  <p class="audience">IBM/MMDR progressive closure · green belts</p>
+  <ul class="bullets"><li>Mining reclamation scheme with IBM/MMDR metadata</li><li>Green belt density MRV and SAR slope/moisture watch</li><li>Progressive closure checklist</li><li>Green Credit linkage where applicable</li></ul>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="19" id="slide-19" aria-label="Slide 19 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Corporate ESG</div>
+        <h2 class="slide-title">SEBI / CSR / corporate ESG</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="use-case">
+  <p class="audience">Listed companies · CSR teams · supplier programmes</p>
+  <ul class="bullets"><li>BRSR Principle 6 export with assurance pack</li><li>Portfolio health dashboard for board reporting</li><li>Supplier geo due diligence (EUDR-ready packs)</li><li>ISO 14064 / SBTi FLAG · internal credit ledger for CSR plantations</li></ul>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="20" id="slide-20" aria-label="Slide 20 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · UN / institutional</div>
+        <h2 class="slide-title">UN / climate / institutional finance</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="use-case">
+  <p class="audience">DFIs · treaty reporting · nature disclosure</p>
+  <ul class="bullets"><li>TNFD with NDVI + bioacoustic evidence</li><li>REDD+ / NDC framework profiles</li><li>TROPOMI methane intelligence over work areas</li><li>DFI safeguard packs and Darwin Core for GBIF</li></ul>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="21" id="slide-21" aria-label="Slide 21 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Field ops</div>
+        <h2 class="slide-title">Field data that survives an audit</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>GPS-tagged tree registration with photos, species, and planting program</li>
+  <li>Append-only measurement time series — DBH, height, canopy — never overwritten</li>
+  <li>Survival surveys with alive / dead / removed / stressed events and cause codes</li>
+  <li>Offline-first mobile queues — auto-sync on reconnect</li>
+  <li>Work-area polygons (geofences) with area in hectares as spatial unit of record</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="22" id="slide-22" aria-label="Slide 22 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Monitoring</div>
+        <h2 class="slide-title">Monitoring is scheduled, not requested</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Monthly optical satellite sweeps across every work area and tree</li>
+  <li>Monthly SAR sweeps plus weekly re-scan of at-risk areas</li>
+  <li>Daily health roundup: poor-health trees, stale analyses, failed scans</li>
+  <li>Compliance deadline scanning and escalation of violations open beyond 7 days</li>
+  <li>Every automated job writes a job-run record for ops traceability</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="23" id="slide-23" aria-label="Slide 23 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Optical</div>
+        <h2 class="slide-title">Sentinel-2 NDVI, from pixel to project KPI</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>NDVI and EVI sampling for individual trees (point) and work areas (polygon)</li>
+  <li>Cloud cover, presence confirmation, and change vs baseline on every scan</li>
+  <li>Automatic alert when NDVI drops more than 0.15 against baseline</li>
+  <li>Full NDVI time series charted per plantation</li>
+  <li>Provider: Copernicus Sentinel Hub; graceful demo fallback when keys absent</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="24" id="slide-24" aria-label="Slide 24 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · SAR</div>
+        <h2 class="slide-title">See through cloud and monsoon</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Sentinel-1 C-band SAR via Google Earth Engine or Sentinel Hub</li>
+  <li>Derived signals: backscatter, double-bounce, wetland probability, ground moisture</li>
+  <li>Optical + SAR fusion produces 0–100 Forest Integrity Score with letter grade</li>
+  <li>Ten distinct SAR alert types including integrity drop and flood risk</li>
+  <li>SAR findings automatically create field verification tasks</li>
+</ul>
+<p class="muted">L/S-band analytics are NISAR-inspired; live feed is Sentinel-1 C-band.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="25" id="slide-25" aria-label="Slide 25 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Bhoonidhi</div>
+        <h2 class="slide-title">Indian earth observation, integrated</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>ISRO Bhoonidhi STAC catalog search across NRSC collections</li>
+  <li>Collections: ResourceSat LISS-3, AWIFS, EOS-06 OCM NDVI, Sentinel-1 GRD</li>
+  <li>Fusion status per work area: Sentinel NDVI trend, Bhoonidhi availability, SAR integrity</li>
+  <li>Recommended action when sources diverge or data goes stale</li>
+  <li>Supports sovereign-data narratives for government and PSU buyers</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="26" id="slide-26" aria-label="Slide 26 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VI · Weather</div>
+        <h2 class="slide-title">Risk before damage</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>1–7 day forecast at plantation centroid: WMO codes, temperature, precipitation, wind</li>
+  <li>Weather alert rules for heavy rain, hail, heat, wind and frost</li>
+  <li>Portfolio threat watch combines weather, pest/disease intel and locust corridors</li>
+  <li>Composite risk score with early warnings per site</li>
+  <li>Powered by Open-Meteo — no API key dependency, always live</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="27" id="slide-27" aria-label="Slide 27 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Market</div>
+        <h2 class="slide-title">They built features. We built a platform.</h2>
+        
+      </header>
+      <div class="slide-body">
+<table class="data-table compact">
+  <thead><tr><th>Competitor type</th><th>Typical offer</th><th>Aranyix</th></tr></thead>
+  <tbody>
+    <tr><td>Tree tagging apps</td><td>Registration only</td><td>Full MRV + fusion + compliance</td></tr>
+    <tr><td>Carbon calculators</td><td>Spreadsheet math</td><td>Monte Carlo + mortality + buffer</td></tr>
+    <tr><td>Satellite vendors</td><td>NDVI maps</td><td>Ground truth + alerts + exports</td></tr>
+    <tr><td>ESG software</td><td>Manual PDF assembly</td><td>Live data → signed bundles</td></tr>
+  </tbody>
+</table>
+<p class="callout green">Competitors sell a module. Aranyix is the <strong>infrastructure layer</strong> institutions have been assembling manually for a decade.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="28" id="slide-28" aria-label="Slide 28 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Engineering</div>
+        <h2 class="slide-title">From vision to production platform — phase by phase</h2>
+        <p class="slide-subtitle">2.5+ months of shipped product — and the scan engine runs every night</p>
+      </header>
+      <div class="slide-body">
+<div class="timeline">
+  <div class="tl-item"><strong>Phase 0–1</strong><span>Auth, RBAC, tree registration, schemes</span></div>
+  <div class="tl-item"><strong>Phase 2–3</strong><span>Satellite, SAR, bioacoustic, alerts</span></div>
+  <div class="tl-item"><strong>Phase 4–5</strong><span>Intelligence fusion, compliance exports, credits</span></div>
+  <div class="tl-item"><strong>Phase D+</strong><span>Scan engine, pest intel, integrity registry</span></div>
+</div>
+<p class="muted">Production at aranyix.tech · Android field app · Celery workers · PostGIS</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="29" id="slide-29" aria-label="Slide 29 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Impact</div>
+        <h2 class="slide-title">What changes when proof becomes automatic</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="impact-grid">
+  <div class="impact-card"><strong>For government</strong><p>Scheme KPIs live in one command centre — not quarterly Excel wars</p></div>
+  <div class="impact-card"><strong>For corporates</strong><p>Board-ready BRSR packs from the same field truth as operations</p></div>
+  <div class="impact-card"><strong>For communities</strong><p>Citizen stewardship with QR passports and push alerts</p></div>
+  <div class="impact-card"><strong>For verifiers</strong><p>Attest-only access to hash-chained evidence bundles</p></div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="30" id="slide-30" aria-label="Slide 30 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Carbon</div>
+        <h2 class="slide-title">Carbon quantification done honestly</h2>
+        <p class="slide-subtitle">A range, not a marketing number — engine <code>byot-carbon-1.3.0</code></p>
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Three methodologies: IPCC AR6, Verra VM0047, Gold Standard LUF</li>
+  <li>Species-specific allometrics plus Chave 2014 pan-tropical model</li>
+  <li>Monte Carlo uncertainty propagation — 90% confidence interval on every CO₂e figure</li>
+  <li>Verra-style conservative deduction when uncertainty exceeds 15%</li>
+  <li>Mortality-adjusted ex-ante lifetime credits, not naive multiplication</li>
+  <li>Dynamic permanence buffer 10–30% driven by NPRT risk assessment</li>
+  <li>Additional pools: deadwood, litter and soil organic carbon</li>
+</ul>
+<div class="carbon-range"><span class="low">12.4 tCO₂e</span><span class="mid">Estimate · 90% CI</span><span class="high">18.7 tCO₂e</span></div>
+<p class="muted">Aranyix carbon engine version: <strong>byot-carbon-1.3.0</strong></p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="31" id="slide-31" aria-label="Slide 31 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · VM0047</div>
+        <h2 class="slide-title">Baseline, additionality, leakage — structured, not narrative</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Project baseline scenarios with land cover class and baseline emissions/removals</li>
+  <li>Additionality assessments with scored factors and assessor attribution</li>
+  <li>Leakage accounts by type with estimated leakage and mitigation quantities</li>
+  <li>Carbon pool configuration per project</li>
+  <li>Consolidated VM0047 readiness summary endpoint for verifiers</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="32" id="slide-32" aria-label="Slide 32 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Credits</div>
+        <h2 class="slide-title">Registry-grade discipline before the registry</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Project credit ledger with strata, buffer withheld, gross and net credits</li>
+  <li>Lifecycle states: estimated → verified → buffered → issued</li>
+  <li>Serial numbers in structured format with state and year components</li>
+  <li>Exclusive claim registry rejects conflicting claims at the database level</li>
+  <li>MoEFCC Green Credit calculator with 5-year vesting and density thresholds</li>
+</ul>
+<p class="muted">Internal registry for traceability — not external registry issuance.</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="33" id="slide-33" aria-label="Slide 33 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Act VII · Trust</div>
+        <h2 class="slide-title">Tamper-evident by construction</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>SHA-256 hash-chained audit log across every recorded action</li>
+  <li>Daily audit root hash published to object storage</li>
+  <li>Evidence bundles: MRV context, compliance PDF, carbon summary, photo manifest</li>
+  <li>Ed25519 detached signature and SHA-256 digest in response headers</li>
+  <li>Verifier role: attest-only, no edit rights</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--dark" data-slide="34" id="slide-34" aria-label="Slide 34 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Close</div>
+        <h2 class="slide-title">The operating system for distributed reforestation</h2>
+        
+      </header>
+      <div class="slide-body">
+<div class="close-grid">
+  <div><h3>Aranyix</h3><p>Plantation intelligence for programmes that must prove outcomes.</p></div>
+  <div><h3>Contact</h3><p>aranyix.tech<br>Demo · pilot · enterprise deployment</p></div>
+  <div><h3>Next step</h3><p>Scheme-native pilot on your polygon · 30-day MRV proof cycle</p></div>
+</div>
+<p class="callout green">Field truth · Live satellite · AI vision · Acoustic biodiversity · Audit-ready MRV</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="35" id="slide-35" aria-label="Slide 35 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Integrity</div>
+        <h2 class="slide-title">How Aranyix prevents fraud & duplicate tree claims</h2>
+        <p class="slide-subtitle">Multi-mechanism integrity — not trust on a single photo or GPS pin</p>
+      </header>
+      <div class="slide-body">
+<div class="hub-grid">
+  <div class="hub-item">Scheme gates</div><div class="hub-item">Coordinate dedup</div><div class="hub-item">Photo hashing</div>
+  <div class="hub-item">EXIF / GPS proof</div><div class="hub-item">AI confidence</div><div class="hub-item">Satellite verify</div>
+  <div class="hub-item">Fusion score</div><div class="hub-item">Credit ladder</div>
+</div></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="36" id="slide-36" aria-label="Slide 36 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Mechanism 1</div>
+        <h2 class="slide-title">Scheme-aware registration gates</h2>
+        <p class="slide-subtitle">Compliance rule engine — first line of defense</p>
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Trees outside work-area boundaries blocked or flagged</li>
+  <li>Over-planting density checks per hectare</li>
+  <li>Species allow-list and spacing (~5 m) enforcement</li>
+  <li>Strict GPS accuracy for government / ESG programmes</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="37" id="slide-37" aria-label="Slide 37 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Mechanism 2</div>
+        <h2 class="slide-title">Stopping duplicate registrations</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Coordinate dedup: nearest tree &lt;5 m in same work area → blocked</li>
+  <li>SHA-256 exact duplicate detection on every upload</li>
+  <li>Perceptual hash catches resized / cropped / edited photos</li>
+  <li>Government & corporate ESG: exact and near photo matches are <strong>blocked</strong></li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="38" id="slide-38" aria-label="Slide 38 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Mechanism 3</div>
+        <h2 class="slide-title">Proving the photo was taken on-site, recently, at the tree</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>Live camera only in strict projects — no gallery picker</li>
+  <li>EXIF GPS and timestamp required; photo age ≤7 days in strict mode</li>
+  <li>Tree pin vs EXIF GPS within ~25 m</li>
+  <li>Re-geotag detection when pin moved from photo GPS</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="39" id="slide-39" aria-label="Slide 39 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Mechanism 4</div>
+        <h2 class="slide-title">AI as a fraud signal — not a vanity label</h2>
+        
+      </header>
+      <div class="slide-body">
+<ul class="bullets">
+  <li>AI vision outputs overall confidence score (0–1)</li>
+  <li>Confidence &lt;0.65 → ai_confidence_low flag</li>
+  <li>Low confidence feeds composite risk (+0.10) and reduces fusion score</li>
+  <li>Low-confidence scans cannot reach audit-ready status</li>
+</ul></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  <section class="slide slide--light" data-slide="40" id="slide-40" aria-label="Slide 40 of 40">
+
+    <div class="slide-inner">
+      <header class="slide-header">
+        <div class="section-tag">Appendix · Summary</div>
+        <h2 class="slide-title">Fraud & duplicacy prevention — mechanism map</h2>
+        
+      </header>
+      <div class="slide-body">
+<p class="callout green">Duplicacy is blocked at capture. Fraud is surfaced by fusion. Credits are issued only after audit-ready proof — field, AI, satellite, and independent verification aligned.</p>
+<p class="muted">Aranyix · aranyix.tech · Plantation intelligence platform</p></div>
+      <footer class="slide-footer">
+        <span class="brand"><span class="brand-dot"></span>Aranyix · aranyix.tech</span>
+        <span class="slide-num"></span>
+      </footer>
+    </div>
+  </section>
+  </div>
+
+  <div class="controls" aria-label="Slide navigation">
+    <button type="button" id="prev" aria-label="Previous slide">‹</button>
+    <span class="counter" id="counter">1 / 40</span>
+    <button type="button" id="next" aria-label="Next slide">›</button>
+  </div>
+  <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar" style="width:2.5%"></div></div>
+  <p class="hint">← → keys · swipe · Export PDF: Landscape, margins none, background graphics on</p>
+
+  <script>
+(function () {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const counterEl = document.getElementById('counter');
+  const progressEl = document.getElementById('progress-bar');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateFooters() {
+    document.querySelectorAll('.slide-num').forEach((el, i) => {
+      el.textContent = pad(i + 1) + ' / ' + pad(total);
+    });
+  }
+
+  function show(idx) {
+    current = Math.max(0, Math.min(total - 1, idx));
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    counterEl.textContent = (current + 1) + ' / ' + total;
+    progressEl.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+    history.replaceState(null, '', '#slide-' + (current + 1));
+  }
+
+  function go(delta) { show(current + delta); }
+
+  prevBtn.addEventListener('click', () => go(-1));
+  nextBtn.addEventListener('click', () => go(1));
+
+  document.getElementById('export-pdf').addEventListener('click', () => {
+    document.body.classList.add('export-print');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('export-print');
+  });
+
+  document.getElementById('download-html').addEventListener('click', () => {
+    const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'aranyix-pitch-deck.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+  });
+
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.changedTouches[0].screenX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].screenX - touchX;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+    touchX = null;
+  }, { passive: true });
+
+  const hash = location.hash.match(/slide-(\d+)/);
+  if (hash) show(parseInt(hash[1], 10) - 1);
+  else show(0);
+  updateFooters();
+})();
+</script>
+</body>
+</html>
