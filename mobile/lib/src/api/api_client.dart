@@ -802,6 +802,33 @@ class ApiClient {
     return path;
   }
 
+  Future<Map<String, dynamic>> createPlantingProject({
+    required String code,
+    required String name,
+    String description = '',
+    String segment = 'general',
+    String complianceMode = 'guided',
+    String? programCode,
+    String? schemeCode,
+    String? standardTemplateCode,
+    int? targetTreeCount,
+    Map<String, dynamic> metadata = const {},
+  }) async {
+    final r = await _dio.post('/planting-projects', data: {
+      'code': code,
+      'name': name,
+      'description': description,
+      'segment': segment,
+      'compliance_mode': complianceMode,
+      if (programCode != null) 'program_code': programCode,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (standardTemplateCode != null) 'standard_template_code': standardTemplateCode,
+      if (targetTreeCount != null) 'target_tree_count': targetTreeCount,
+      'metadata': metadata,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<List<dynamic>> listPlantingProjects({String? segment, int pageSize = 100}) async {
     final r = await _dio.get('/planting-projects', queryParameters: {
       'page': 1,
@@ -950,8 +977,11 @@ class ApiClient {
     return filePath;
   }
 
-  Future<Map<String, dynamic>> assistant(String prompt) async {
-    final r = await _dio.post('/assistant/query', data: {'prompt': prompt});
+  Future<Map<String, dynamic>> assistant(String prompt, {String? treeId}) async {
+    final r = await _dio.post('/assistant/query', data: {
+      'prompt': prompt,
+      if (treeId != null && treeId.isNotEmpty) 'tree_id': treeId,
+    });
     return Map<String, dynamic>.from(r.data);
   }
 

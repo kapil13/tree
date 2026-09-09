@@ -17,7 +17,7 @@ import 'screens/signup_screen.dart';
 import 'screens/auth_flow_screens.dart';
 import 'screens/onboarding_screens.dart';
 import 'screens/org_profile_wizard_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_route_screen.dart';
 import 'screens/tree_list_screen.dart';
 import 'screens/add_tree_screen.dart';
 import 'screens/tree_detail_screen.dart';
@@ -145,7 +145,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __, child) => AppShell(child: child),
         routes: [
           // All tab destinations for every role so context.go() works.
-          GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+          GoRoute(path: '/home', builder: (_, __) => const HomeRouteScreen()),
           GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
           GoRoute(path: '/projects', builder: (_, __) => const ProjectsListScreen()),
           GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
@@ -205,7 +205,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
         path: '/credits/projects/:id',
         builder: (_, s) => ProjectCreditLedgerScreen(projectId: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
+      GoRoute(
+        path: '/assistant',
+        builder: (_, state) => AssistantScreen(treeId: state.uri.queryParameters['tree']),
+      ),
       GoRoute(path: '/profile/edit', builder: (_, __) => const ProfileEditScreen()),
       GoRoute(path: '/sync-queue', builder: (_, __) => const SyncQueueScreen()),
       GoRoute(

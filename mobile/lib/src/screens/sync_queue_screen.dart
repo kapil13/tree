@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,6 +77,183 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     }
   }
 
+  Future<void> _confirmDelete({
+    required String title,
+    required Future<void> Function() onDelete,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: const Text('This removes the offline item from your device. It cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await onDelete();
+      await _reload();
+      if (mounted) setState(() => _status = 'Item removed');
+    }
+  }
+
+  void _previewTreeItem(QueuedTreeRegistration item) {
+    final payload = item.payload;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PrototypeColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                payload['species_text'] as String? ?? 'Tree registration',
+                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text('Status: ${_queueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Photos: ${item.photoPaths.length}', style: GoogleFonts.dmSans(fontSize: 13)),
+              if (payload['latitude'] != null && payload['longitude'] != null)
+                Text(
+                  'GPS: ${payload['latitude']}, ${payload['longitude']}',
+                  style: GoogleFonts.dmSans(fontSize: 13),
+                ),
+              Text(
+                'Queued: ${item.createdAt.toLocal()}',
+                style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
+              ),
+              if (item.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.errorMessage!,
+                  style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.statusDanger),
+                ),
+              ],
+              if (item.photoPaths.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 72,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: item.photoPaths.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final path = item.photoPaths[i];
+                      final file = File(path);
+                      if (!file.existsSync()) {
+                        return Container(
+                          width: 72,
+                          color: PrototypeColors.border,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined),
+                        );
+                      }
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(file, width: 72, height: 72, fit: BoxFit.cover),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (item.status == TreeQueueStatus.failed)
+                OutlinedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(treeRegistrationQueueProvider).markPending(item.id);
+                    await _syncAll();
+                  },
+                  child: const Text('Retry upload'),
+                ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _confirmDelete(
+                    title: 'Delete tree registration?',
+                    onDelete: () => ref.read(treeRegistrationQueueProvider).remove(item.id),
+                  );
+                },
+                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _previewBioItem(QueuedBioacousticRecording item) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PrototypeColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Bioacoustic recording',
+                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text('Duration: ${item.durationSeconds.toStringAsFixed(0)}s', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Status: ${_bioQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(
+                'GPS: ${item.latitude}, ${item.longitude}',
+                style: GoogleFonts.dmSans(fontSize: 13),
+              ),
+              Text(
+                'Queued: ${item.createdAt.toLocal()}',
+                style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
+              ),
+              if (item.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.errorMessage!,
+                  style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.statusDanger),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (item.status == BioacousticQueueStatus.failed)
+                OutlinedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(bioacousticQueueProvider).markPending(item.id);
+                    await _syncAll();
+                  },
+                  child: const Text('Retry upload'),
+                ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _confirmDelete(
+                    title: 'Delete recording?',
+                    onDelete: () => ref.read(bioacousticQueueProvider).remove(item.id),
+                  );
+                },
+                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -139,12 +318,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                       variant: item.status == TreeQueueStatus.failed ? 'danger' : 'warn',
                     ),
                   ],
-                  onTap: item.status == TreeQueueStatus.failed
-                      ? () async {
-                          await ref.read(treeRegistrationQueueProvider).markPending(item.id);
-                          await _syncAll();
-                        }
-                      : null,
+                  onTap: () => _previewTreeItem(item),
                 ),
             ],
             if (_bioItems.isNotEmpty) ...[
@@ -162,12 +336,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                       variant: item.status == BioacousticQueueStatus.failed ? 'danger' : 'warn',
                     ),
                   ],
-                  onTap: item.status == BioacousticQueueStatus.failed
-                      ? () async {
-                          await ref.read(bioacousticQueueProvider).markPending(item.id);
-                          await _syncAll();
-                        }
-                      : null,
+                  onTap: () => _previewBioItem(item),
                 ),
             ],
             if (_treeItems.isEmpty && _bioItems.isEmpty)

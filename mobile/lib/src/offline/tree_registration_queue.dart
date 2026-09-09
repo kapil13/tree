@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
@@ -164,6 +165,23 @@ class TreeRegistrationQueue extends ChangeNotifier {
 
   Future<void> remove(String id) async {
     await init();
+    final rows = await _db!.query(
+      'tree_queue',
+      columns: ['local_photo_paths'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isNotEmpty) {
+      final paths = (rows.first['local_photo_paths'] as String? ?? '').split('|');
+      for (final path in paths) {
+        if (path.isEmpty) continue;
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+    }
     await _db!.delete('tree_queue', where: 'id = ?', whereArgs: [id]);
     notifyListeners();
   }

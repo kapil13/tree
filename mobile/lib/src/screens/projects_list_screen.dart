@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
+import '../nav_access.dart';
 import '../providers.dart';
+import '../session.dart';
+import '../widgets/create_project_sheet.dart';
 import '../widgets/offline_tree_queue_section.dart';
 import '../widgets/shell_scaffold.dart';
 
@@ -25,9 +28,19 @@ class ProjectsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final user = sessionController.user;
+    final canCreate = isSupervisor(user) && canWriteInApp(user);
     final projectsAsync = ref.watch(plantingProjectsProvider);
     return Scaffold(
       appBar: ShellTopBar(title: l10n.projects),
+      floatingActionButton: canCreate
+          ? FloatingActionButton.extended(
+              onPressed: () => showCreateProjectSheet(context, ref),
+              backgroundColor: const Color(0xFF15803D),
+              icon: const Icon(Icons.add),
+              label: const Text('New project'),
+            )
+          : null,
       body: projectsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) {

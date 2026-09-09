@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_errors.dart';
+import '../project_context.dart';
 import '../providers.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 
 class AssistantScreen extends ConsumerStatefulWidget {
-  const AssistantScreen({super.key});
+  const AssistantScreen({super.key, this.treeId});
+
+  final String? treeId;
+
   @override
   ConsumerState<AssistantScreen> createState() => _AssistantScreenState();
 }
@@ -27,7 +31,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     });
     try {
       final api = await ref.read(apiClientProvider.future);
-      final r = await api.assistant(prompt);
+      final r = await api.assistant(prompt, treeId: widget.treeId);
       setState(() {
         _msgs.add((role: 'assistant', text: r['answer'] as String));
         _input.clear();
@@ -42,11 +46,29 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final selectedProjectId = ref.watch(selectedProjectIdProvider);
+    final projectsAsync = ref.watch(plantingProjectsProvider);
+    final projects = projectsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+    final projectLabel = selectedProjectLabel(context, projects, selectedProjectId);
+    final treeId = widget.treeId;
+
     return stackRouteScaffold(
       location: '/assistant',
       appBar: ShellTopBar(title: l10n.navAssistant),
       body: Column(
         children: [
+          if (treeId != null || selectedProjectId != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFE8F5E9),
+              child: Text(
+                treeId != null
+                    ? 'Context: tree $treeId · $projectLabel'
+                    : 'Context: $projectLabel',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF166534)),
+              ),
+            ),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
