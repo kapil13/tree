@@ -22,6 +22,15 @@ const HEALTH_FILTERS = [
   { value: "unknown", label: "Unknown" },
 ] as const;
 
+const CATEGORY_CHIPS = [
+  { value: "", label: "All trees" },
+  { value: "attention", label: "Attention" },
+  { value: "missing_evidence", label: "Missing evidence" },
+  { value: "geotag_due", label: "Geotag due" },
+  { value: "unverified", label: "Unverified" },
+  { value: "healthy", label: "Healthy" },
+] as const;
+
 function healthBadge(h: string) {
   const cls =
     h === "healthy"
@@ -82,6 +91,7 @@ export function TreeRegistry() {
   const canAdd = canWriteInApp(user);
   const showChainage = userHasProfessionalAccess(user);
   const [health, setHealth] = useState("all");
+  const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -132,12 +142,20 @@ export function TreeRegistry() {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["trees", health, projectId, workAreaId, page, debouncedSearch],
+    queryKey: ["trees", health, category, projectId, workAreaId, page, debouncedSearch],
     queryFn: () =>
       trees.list({
         page,
         page_size: PAGE_SIZE,
         ...(health !== "all" ? { health } : {}),
+        ...(category
+          ? {
+              category: category as Exclude<
+                (typeof CATEGORY_CHIPS)[number]["value"],
+                ""
+              >,
+            }
+          : {}),
         ...(projectId ? { project_id: projectId } : {}),
         ...(workAreaId ? { work_area_id: workAreaId } : {}),
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
@@ -172,7 +190,7 @@ export function TreeRegistry() {
 
   const totalTrees = data?.total ?? 0;
   const hasActiveFilters =
-    health !== "all" || !!projectId || !!workAreaId || !!debouncedSearch;
+    health !== "all" || !!category || !!projectId || !!workAreaId || !!debouncedSearch;
   const isOrgEmpty = !isLoading && !error && totalTrees === 0 && !hasActiveFilters;
   const addHref = projectId
     ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
@@ -336,25 +354,48 @@ export function TreeRegistry() {
             </FilterField>
           </FilterBar>
 
-          <div className="flex flex-wrap gap-2">
-            {HEALTH_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium",
-                  health === f.value
-                    ? "bg-forest-700 text-white"
-                    : "bg-stone-100 text-stone-700 hover:bg-stone-200",
-                )}
-                onClick={() => {
-                  setHealth(f.value);
-                  setPage(1);
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_CHIPS.map((chip) => (
+                <button
+                  key={chip.value || "all"}
+                  type="button"
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium",
+                    category === chip.value
+                      ? "bg-forest-800 text-white"
+                      : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+                  )}
+                  onClick={() => {
+                    setCategory(chip.value);
+                    if (chip.value === "healthy") setHealth("all");
+                    setPage(1);
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {HEALTH_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-medium",
+                    health === f.value
+                      ? "bg-forest-700 text-white"
+                      : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+                  )}
+                  onClick={() => {
+                    setHealth(f.value);
+                    setPage(1);
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (

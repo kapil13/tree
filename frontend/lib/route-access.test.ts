@@ -47,4 +47,10 @@ describe("route-access feature flags", () => {
     expect(canAccessPath(fieldWorker, "/field-ops")).toBe(true);
     expect(canAccessPath(fieldWorker, "/field-ops/sync-queue")).toBe(true);
   });
+
+  it("blocks field workers from creating projects", () => {
+    expect(canAccessPath(fieldWorker, "/projects")).toBe(true);
+    expect(canAccessPath(fieldWorker, "/projects/new")).toBe(false);
+    expect(canAccessPath(proUser, "/projects/new")).toBe(true);
+  });
 });

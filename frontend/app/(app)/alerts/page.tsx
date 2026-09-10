@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -18,6 +19,7 @@ import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/comp
 import { alerts, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { userHasProfessionalAccess } from "@/lib/nav-access";
+import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
 
 const SAR_ALERT_KINDS = new Set([
@@ -94,10 +96,11 @@ export default function AlertsPage() {
   const isOps = userHasProfessionalAccess(user);
   const searchParams = useSearchParams();
   const sarFilter = searchParams.get("sar");
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["alerts"],
-    queryFn: () => alerts.list(),
+    queryKey: scopedKey(user, "alerts", unreadOnly ? "unread" : "all"),
+    queryFn: () => alerts.list(unreadOnly ? { unreadOnly: true } : undefined),
   });
 
   const alertItems = (data?.items ?? []).filter((a) => {
@@ -234,7 +237,7 @@ export default function AlertsPage() {
       )}
 
       <section className="card">
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Bell className="h-4 w-4 text-forest-700" />
             Inbox
@@ -243,6 +246,32 @@ export default function AlertsPage() {
                 {unreadCount} unread
               </span>
             ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                !unreadOnly
+                  ? "bg-forest-800 text-white"
+                  : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+              )}
+              onClick={() => setUnreadOnly(false)}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                unreadOnly
+                  ? "bg-forest-800 text-white"
+                  : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+              )}
+              onClick={() => setUnreadOnly(true)}
+            >
+              Unread only
+            </button>
           </div>
         </div>
 
@@ -308,16 +337,13 @@ export default function AlertsPage() {
                     </span>
                     <span>{new Date(a.created_at).toLocaleString()}</span>
                   </div>
-                  {deepLink && (
-                    <Link
-                      href={deepLink}
-                      className="mt-2 inline-block text-xs text-forest-700 hover:underline"
-                    >
-                      {actionLabel ?? "Open related view"} →
-                    </Link>
-                  )}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {deepLink ? (
+                    <Link href={deepLink} className="btn-primary text-xs whitespace-nowrap">
+                      {actionLabel ?? "Open related view"}
+                    </Link>
+                  ) : null}
                   {!a.is_read && (
                     <button
                       type="button"

@@ -20,6 +20,7 @@ const ROUTE_RULES: RouteRule[] = [
     audience: ["professional", "field_worker", "field_supervisor"],
     excludeViewers: true,
   },
+  { prefix: "/projects/new", audience: ["professional", "field_supervisor"] },
   { prefix: "/projects", audience: ["professional", "field_supervisor", "field_worker"] },
   {
     prefix: "/portfolio-health",
@@ -84,11 +85,13 @@ export type RouteAccessMessageKey =
   | "platform"
   | "default"
   | "treesNew"
+  | "projectsNew"
   | "featureDisabled";
 
 export function routeAccessDeniedKey(pathname: string): RouteAccessMessageKey {
   if (pathname.startsWith("/settings/team")) return "teamAdmin";
   if (pathname.startsWith("/trees/new")) return "treesNew";
+  if (pathname.startsWith("/projects/new")) return "projectsNew";
   if (pathname.startsWith("/field-ops")) return "fieldOps";
   if (pathname.startsWith("/platform")) return "platform";
   return "default";
@@ -111,6 +114,9 @@ export function routeAccessDeniedMessage(pathname: string): string {
   }
   if (pathname.startsWith("/trees/new")) {
     return viewerReadOnlyMessage("trees");
+  }
+  if (pathname.startsWith("/projects/new")) {
+    return "Project creation is limited to supervisors and professional accounts. Ask your supervisor to create a project.";
   }
   if (pathname.startsWith("/field-ops")) {
     return "Field operations are available to field workers, supervisors, and professional accounts.";

@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ClipboardList,
+  CloudOff,
   Leaf,
   MapPin,
   RefreshCw,
@@ -21,19 +22,17 @@ import { DataTrustBanner } from "@/components/data-trust-banner";
 import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InsightPanel, MetricGrid, OperationalStatusBar } from "@/components/ui";
+import {
+  buildFieldOpsTasks,
+  FieldOpsTaskQueue,
+} from "@/components/field-ops/field-ops-task-queue";
+import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { plantingProjects, trees } from "@/lib/api";
 import { fieldOpsHref } from "@/lib/field-ops-links";
 import { useAuth } from "@/lib/auth-store";
+import { useOfflineTreeQueue } from "@/lib/offline/use-offline-queue";
 import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
-
-type AttentionItem = {
-  id: string;
-  title: string;
-  detail: string;
-  href: string;
-  tone: "critical" | "warn" | "info";
-};
 
 function FieldDashboardSkeleton() {
   return (
@@ -51,6 +50,7 @@ function FieldDashboardSkeleton() {
 
 export function FieldWorkerDashboard() {
   const { user } = useAuth();
+  const { pendingCount, syncing, syncNow } = useOfflineTreeQueue();
   const tf = useTranslations("fieldWorker");
   const tfo = useTranslations("fieldOps");
   const to = useTranslations("opsStatus");
@@ -87,47 +87,9 @@ export function FieldWorkerDashboard() {
     return days >= 30;
   });
 
-  const attention: AttentionItem[] = [];
   const dueProjects =
     fieldOps?.projects.filter((p) => p.open_violations > 0 || p.survival_due > 0) ?? [];
-
-  for (const p of dueProjects.slice(0, 4)) {
-    const bits: string[] = [];
-    if (p.survival_due > 0) bits.push(tf("survivalDueDetail", { count: p.survival_due }));
-    if (p.open_violations > 0) bits.push(tf("openViolationsDetail", { count: p.open_violations }));
-    attention.push({
-      id: `project-${p.id}`,
-      title: p.name,
-      detail: bits.join(" · ") || tf("needsAttention"),
-      href: `/projects/${p.id}`,
-      tone: p.open_violations > 0 ? "critical" : "warn",
-    });
-  }
-
-  if (attention.length < 3 && geotagDue.length > 0) {
-    attention.push({
-      id: "geotag",
-      title: tf("geotagTitle", { count: geotagDue.length }),
-      detail: tf("geotagDetail"),
-      href: geotagDue[0] ? `/trees/${geotagDue[0].id}` : "/trees",
-      tone: "warn",
-    });
-  }
-
-  if (
-    attention.length < 3 &&
-    fieldOps &&
-    fieldOps.survival_due > 0 &&
-    !dueProjects.some((p) => p.survival_due > 0)
-  ) {
-    attention.push({
-      id: "survival-summary",
-      title: tf("survivalSummary", { count: fieldOps.survival_due }),
-      detail: tf("survivalSummaryDetail"),
-      href: fieldOpsHref({ section: "attention" }),
-      tone: "warn",
-    });
-  }
+  const fieldTasks = fieldOps ? buildFieldOpsTasks(fieldOps) : [];
 
   const unassigned = projectItems.length === 0;
   const firstName = user?.full_name?.split(" ")[0] ?? tf("there");
@@ -137,7 +99,7 @@ export function FieldWorkerDashboard() {
   const fieldStatus = fieldOperationalStatus(to, {
     openViolations,
     survivalDue,
-    queueCount: attention.length,
+    queueCount: fieldTasks.length,
     geotagDue: geotagDue.length,
     unassigned,
   });
@@ -189,56 +151,56 @@ export function FieldWorkerDashboard() {
           },
           {
             label: tf("needsAttention"),
-            value: fmtNum(attention.length),
+            value: fmtNum(fieldTasks.length),
             hint: tf("treesRegistered"),
-            tone: attention.length > 0 ? "warning" : "positive",
+            tone: fieldTasks.length > 0 ? "warning" : "positive",
           },
         ]}
       />
 
-      <div className="dash-panel dash-panel--priority">
-        <div className="dash-panel-head">
-          <div>
-            <h2 className="dash-panel-title flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              {tf("todaysPriorities")}
-            </h2>
-            <p className="dash-panel-sub">{tf("todaysPrioritiesSub")}</p>
+      {pendingCount > 0 ? (
+        <section className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+                <CloudOff className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-semibold text-stone-900 dark:text-stone-50">
+                  {pendingCount} tree registration{pendingCount === 1 ? "" : "s"} waiting to sync
+                </p>
+                <p className="mt-0.5 text-sm text-stone-600 dark:text-stone-300">
+                  Upload when you are back online or open the sync queue to review.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                disabled={syncing}
+                onClick={() => void syncNow()}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", syncing && "animate-spin")} />
+                {syncing ? "Syncing…" : "Sync now"}
+              </button>
+              <Link href="/field-ops/sync-queue" className="btn-primary text-xs">
+                Open sync queue
+              </Link>
+            </div>
           </div>
-          <Link href="/field-ops" className="dash-link">
+        </section>
+      ) : null}
+
+      <FieldOpsTaskQueue tasks={fieldTasks} />
+
+      {dueProjects.length > 0 ? (
+        <div className="flex justify-end">
+          <Link href={fieldOpsHref({ section: "attention" })} className="dash-link">
             {tf("viewFieldOps")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        {attention.length === 0 ? (
-          <EmptyState
-            className="mt-4 border-0 bg-transparent py-8"
-            icon={RefreshCw}
-            title={tf("nothingDueTitle")}
-            description={tf("nothingDueDesc")}
-            action={{ label: tf("registerTree"), href: "/trees/new" }}
-          />
-        ) : (
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {attention.slice(0, 5).map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "dash-priority-card",
-                    item.tone === "critical" && "dash-priority-card--critical",
-                    item.tone === "warn" && "dash-priority-card--warn",
-                    item.tone === "info" && "dash-priority-card--info",
-                  )}
-                >
-                  <p className="text-sm font-semibold text-stone-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-stone-600">{item.detail}</p>
-                  <ArrowRight className="mt-3 h-4 w-4 text-stone-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Link href="/projects" className="dash-action-row">
@@ -324,7 +286,12 @@ export function FieldWorkerDashboard() {
                 {recentTrees.map((t) => (
                   <li key={t.id}>
                     <Link href={`/trees/${t.id}`} className="dash-list-row dash-list-row--link">
-                      <div>
+                      <TreeThumbnail
+                        imageUrl={t.primary_image_url}
+                        alt={t.species_text || t.public_code}
+                        size="sm"
+                      />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-stone-800">{t.species_text || "Tree"}</p>
                         <p className="text-xs text-stone-500">{t.public_code}</p>
                       </div>

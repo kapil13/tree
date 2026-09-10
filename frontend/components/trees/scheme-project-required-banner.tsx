@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { FolderTree, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/lib/auth-store";
 
 export function SchemeProjectRequiredBanner() {
+  const { user } = useAuth();
+  const canCreateProject = user?.role !== "field_worker";
+
   return (
     <div className="card mx-auto max-w-3xl border-amber-200 bg-amber-50/90">
       <div className="flex gap-3">
@@ -15,14 +19,22 @@ export function SchemeProjectRequiredBanner() {
             <strong>planting project</strong>. Create or open a project first, then use{" "}
             <strong>Add tree</strong> from that project so spacing, species, and audit rules apply.
           </p>
-          <Link
-            href="/projects/new"
-            className="btn-primary mt-2 inline-flex text-sm"
-          >
-            <FolderTree className="h-4 w-4" />
-            Create planting project
-          </Link>
-          <span className="mx-2 text-amber-800">or</span>
+          {canCreateProject ? (
+            <>
+              <Link
+                href="/projects/new"
+                className="btn-primary mt-2 inline-flex text-sm"
+              >
+                <FolderTree className="h-4 w-4" />
+                Create planting project
+              </Link>
+              <span className="mx-2 text-amber-800">or</span>
+            </>
+          ) : (
+            <p className="mt-2 text-xs text-amber-900">
+              Ask your field supervisor to create a project, or{" "}
+            </p>
+          )}
           <Link href="/projects" className="font-medium text-forest-800 underline">
             open an existing project
           </Link>
