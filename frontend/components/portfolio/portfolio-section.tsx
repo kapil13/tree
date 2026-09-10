@@ -24,7 +24,9 @@ export function PortfolioSection({
   const header = (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex min-w-0 items-start gap-2">
-        {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0 text-stone-500" aria-hidden /> : null}
+        {Icon ? (
+          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400" aria-hidden />
+        ) : null}
         <div>
           <h2 className="text-base font-medium text-stone-900 dark:text-stone-50">{title}</h2>
           {description ? (

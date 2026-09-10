@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsHref } from "./alerts-links";
+import { alertsHref, portfolioAlertKindHref } from "./alerts-links";
 import { fieldOpsHref } from "./field-ops-links";
 import {
   portfolioComplianceHref,
@@ -33,5 +33,10 @@ describe("nav phase C link helpers", () => {
     expect(alertsHref({ sar: "sar_integrity_at_risk" })).toBe(
       "/alerts?sar=sar_integrity_at_risk",
     );
+    expect(alertsHref({ kind: "ndvi_degradation" })).toBe("/alerts?kind=ndvi_degradation");
+    expect(portfolioAlertKindHref("sar_integrity_at_risk")).toBe(
+      "/alerts?sar=sar_integrity_at_risk",
+    );
+    expect(portfolioAlertKindHref("ndvi_degradation")).toBe("/alerts?kind=ndvi_degradation");
   });
 });

@@ -96,6 +96,7 @@ export default function AlertsPage() {
   const isOps = userHasProfessionalAccess(user);
   const searchParams = useSearchParams();
   const sarFilter = searchParams.get("sar");
+  const kindFilter = searchParams.get("kind");
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -104,6 +105,7 @@ export default function AlertsPage() {
   });
 
   const alertItems = (data?.items ?? []).filter((a) => {
+    if (kindFilter) return a.kind === kindFilter;
     if (!sarFilter) return true;
     if (sarFilter === "all") return SAR_ALERT_KINDS.has(a.kind);
     return a.kind === sarFilter;
@@ -199,17 +201,31 @@ export default function AlertsPage() {
           {
             label: "Total in view",
             value: fmtNum(alertItems.length),
-            hint: sarFilter ? "Filtered inbox" : "All alert kinds",
+            hint: sarFilter || kindFilter ? "Filtered inbox" : "All alert kinds",
           },
         ]}
       />
 
-      {sarKindsInList.length > 0 && (
+      {kindFilter ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-forest-800 px-3 py-1 text-sm text-white">
+            {humanizeKind(kindFilter, ta)}
+          </span>
+          <Link
+            href="/alerts"
+            className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
+          >
+            Clear filter
+          </Link>
+        </div>
+      ) : null}
+
+      {sarKindsInList.length > 0 && !kindFilter && (
         <div className="flex flex-wrap gap-2">
           <Link
             href="/alerts"
             className={`rounded-full px-3 py-1 text-sm ${
-              !sarFilter ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+              !sarFilter ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
             }`}
           >
             All alerts
@@ -217,7 +233,7 @@ export default function AlertsPage() {
           <Link
             href="/alerts?sar=all"
             className={`rounded-full px-3 py-1 text-sm ${
-              sarFilter === "all" ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+              sarFilter === "all" ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
             }`}
           >
             All SAR
@@ -227,7 +243,7 @@ export default function AlertsPage() {
               key={kind}
               href={`/alerts?sar=${kind}`}
               className={`rounded-full px-3 py-1 text-sm ${
-                sarFilter === kind ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200"
+                sarFilter === kind ? "bg-forest-800 text-white" : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
               }`}
             >
               {humanizeKind(kind, ta)}

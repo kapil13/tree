@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { TreePine } from "lucide-react";
 import en from "@/messages/en.json";
+import { PortfolioDisclosure } from "./portfolio-disclosure";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioTabBanner } from "./portfolio-tab-banner";
 
@@ -62,6 +63,21 @@ describe("ComplianceHubLinks omitPortfolio", () => {
     const hrefs = Array.from(links).map((a) => a.getAttribute("href"));
     expect(hrefs).not.toContain("/portfolio-health?tab=compliance");
     expect(hrefs.some((href) => href?.startsWith("/reports"))).toBe(true);
+  });
+});
+
+describe("PortfolioDisclosure", () => {
+  it("toggles panel content on click", () => {
+    render(
+      withIntl(
+        <PortfolioDisclosure title="Scan history" description="Recent NDVI runs">
+          <p>Hidden table</p>
+        </PortfolioDisclosure>,
+      ),
+    );
+    expect(screen.queryByText("Hidden table")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Scan history/i }));
+    expect(screen.getByText("Hidden table")).toBeTruthy();
   });
 });
 

@@ -782,7 +782,8 @@
         "title": "Sentinel + Bhoonidhi fusion",
         "summary": "{dual} dual-source · {stale} stale NDVI{sar}",
         "sarSuffix": " · SAR integrity avg {score}",
-        "empty": "No project work areas yet."
+        "empty": "No project work areas yet.",
+        "viewMonitoring": "View in Monitoring"
       },
       "integrations": "Data integrations",
       "weatherAlerts": "Weather alerts",
@@ -823,6 +824,12 @@
       "firmsLive": " · FIRMS live",
       "firmsFallback": " · FIRMS seasonal fallback",
       "exportsTitle": "SAR exports",
+      "exportsDesc": "Download portfolio SAR reports for compliance reviewers.",
+      "scanHistoryTitle": "Work area scan history",
+      "scanHistoryDesc": "NDVI, SAR ground status, and Forest Integrity scores by date.",
+      "treeScanHistoryTitle": "Tree scan history",
+      "treeScanHistoryDesc": "Automated and on-demand NDVI scans for enrolled trees.",
+      "recentJobsDesc": "Background satellite and monitoring job runs.",
       "sarProviders": "SAR providers: {live} live · {stub} stub",
       "exportPdf": "Export SAR PDF",
       "exportCsv": "Export SAR CSV",
