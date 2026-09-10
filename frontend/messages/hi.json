@@ -782,7 +782,8 @@
         "title": "Sentinel + Bhoonidhi फ्यूजन",
         "summary": "{dual} दोहरे स्रोत · {stale} पुराना NDVI{sar}",
         "sarSuffix": " · SAR अखंडता औसत {score}",
-        "empty": "अभी कोई परियोजना कार्य क्षेत्र नहीं।"
+        "empty": "अभी कोई परियोजना कार्य क्षेत्र नहीं।",
+        "viewMonitoring": "निगरानी में देखें"
       },
       "integrations": "डेटा एकीकरण",
       "weatherAlerts": "मौसम अलर्ट",
@@ -823,6 +824,12 @@
       "firmsLive": " · FIRMS लाइव",
       "firmsFallback": " · FIRMS मौसमी फॉलबैक",
       "exportsTitle": "SAR निर्यात",
+      "exportsDesc": "अनुपालन समीक्षकों के लिए पोर्टफोलियो SAR रिपोर्ट डाउनलोड करें।",
+      "scanHistoryTitle": "कार्य क्षेत्र स्कैन इतिहास",
+      "scanHistoryDesc": "तिथि के अनुसार NDVI, SAR जमीन स्थिति और वन अखंडता स्कोर।",
+      "treeScanHistoryTitle": "वृक्ष स्कैन इतिहास",
+      "treeScanHistoryDesc": "नामांकित वृक्षों के स्वचालित और ऑन-डिमांड NDVI स्कैन।",
+      "recentJobsDesc": "पृष्ठभूमि उपग्रह और निगरानी जॉब रन।",
       "sarProviders": "SAR प्रदाता: {live} लाइव · {stub} स्टब",
       "exportPdf": "SAR PDF निर्यात",
       "exportCsv": "SAR CSV निर्यात",

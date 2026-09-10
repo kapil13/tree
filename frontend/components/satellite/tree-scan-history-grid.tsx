@@ -11,6 +11,7 @@ type Props = {
   title?: string;
   className?: string;
   limit?: number;
+  embedded?: boolean;
 };
 
 function fmtNum(value: number | null | undefined, digits = 2): string {
@@ -24,6 +25,7 @@ export function TreeScanHistoryGrid({
   title = "Tree scan history",
   className,
   limit = 48,
+  embedded = false,
 }: Props) {
   const enabled = Boolean(projectId || portfolio);
   const { data, isLoading, isError } = useQuery({
@@ -44,26 +46,28 @@ export function TreeScanHistoryGrid({
 
   if (!enabled) return null;
 
-  return (
-    <section className={cn("card overflow-hidden p-0", className)}>
-      <div className="border-b border-stone-200 px-4 py-3 dark:border-stone-800">
-        <h2 className="font-medium text-stone-900 dark:text-stone-50">{title}</h2>
-        <p className="mt-0.5 text-xs text-stone-500">
-          Date-wise NDVI from automated and on-demand tree satellite scans.
-        </p>
-      </div>
+  const content = (
+    <>
+      {!embedded ? (
+        <div className="border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+          <h2 className="font-medium text-stone-900 dark:text-stone-50">{title}</h2>
+          <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+            Date-wise NDVI from automated and on-demand tree satellite scans.
+          </p>
+        </div>
+      ) : null}
       {isLoading ? (
-        <p className="px-4 py-6 text-sm text-stone-500">Loading tree scan history…</p>
+        <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">Loading tree scan history…</p>
       ) : isError ? (
-        <p className="px-4 py-6 text-sm text-rose-700">Could not load tree scan history.</p>
+        <p className="px-4 py-6 text-sm text-rose-700 dark:text-rose-300">Could not load tree scan history.</p>
       ) : rows.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-stone-500">
+        <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">
           No tree scans recorded yet. Enrolled trees are scanned on the daily sweep schedule.
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900">
+            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
               <tr>
                 <th className="px-4 py-2">Date</th>
                 <th className="px-4 py-2">Tree</th>
@@ -86,7 +90,7 @@ export function TreeScanHistoryGrid({
                   <td className="px-4 py-2">
                     <Link
                       href={`/trees/${row.tree_id}`}
-                      className="font-medium text-forest-800 hover:underline"
+                      className="font-medium text-forest-800 hover:underline dark:text-forest-300"
                     >
                       {row.tree_code}
                     </Link>
@@ -120,6 +124,12 @@ export function TreeScanHistoryGrid({
           </table>
         </div>
       )}
-    </section>
+    </>
   );
+
+  if (embedded) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return <section className={cn("card overflow-hidden p-0", className)}>{content}</section>;
 }

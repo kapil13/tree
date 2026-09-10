@@ -14,7 +14,8 @@ import {
   Server,
 } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
-import { alertsHref } from "@/lib/alerts-links";
+import { alertsHref, portfolioAlertKindHref } from "@/lib/alerts-links";
+import { PortfolioDisclosure } from "./portfolio-disclosure";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
@@ -181,32 +182,6 @@ export function PortfolioMonitoringTab({
 
       <ScanCyclePanel />
 
-      <PortfolioSection
-        title={t("exportsTitle")}
-        description={t("sarProviders", {
-          live: data.sar_live_providers ?? 0,
-          stub: data.sar_stub_providers ?? 0,
-        })}
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:hover:bg-stone-900"
-            onClick={() => void handleExportPdf()}
-          >
-            <FileText className="h-3 w-3" aria-hidden />
-            {t("exportPdf")}
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:hover:bg-stone-900"
-            onClick={() => void handleExport()}
-          >
-            <Download className="h-3 w-3" aria-hidden />
-            {t("exportCsv")}
-          </button>
-        </div>
-      </PortfolioSection>
 
       {(data.stale_sar_work_areas ?? 0) > 0 ? (
         <PortfolioTabBanner
@@ -282,8 +257,8 @@ export function PortfolioMonitoringTab({
             {Object.entries(data.unread_alerts_by_kind).map(([kind, count]) => (
               <Link
                 key={kind}
-                href={alertsHref()}
-                className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
+                href={portfolioAlertKindHref(kind)}
+                className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
               >
                 {ALERT_KIND_LABEL[kind] ?? kind}: {count}
               </Link>
@@ -375,16 +350,65 @@ export function PortfolioMonitoringTab({
         </table>
       </PortfolioSection>
 
-      <ScanHistoryGrid portfolio title="Recent scan history" limit={40} />
+      <PortfolioDisclosure
+        icon={Download}
+        title={t("exportsTitle")}
+        description={t("exportsDesc")}
+      >
+        <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
+          {t("sarProviders", {
+            live: data.sar_live_providers ?? 0,
+            stub: data.sar_stub_providers ?? 0,
+          })}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:hover:bg-stone-900"
+            onClick={() => void handleExportPdf()}
+          >
+            <FileText className="h-3 w-3" aria-hidden />
+            {t("exportPdf")}
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-950 dark:hover:bg-stone-900"
+            onClick={() => void handleExport()}
+          >
+            <Download className="h-3 w-3" aria-hidden />
+            {t("exportCsv")}
+          </button>
+        </div>
+      </PortfolioDisclosure>
 
-      <TreeScanHistoryGrid
-        portfolio={!projectId}
-        projectId={projectId ?? undefined}
-        title="Tree scan history"
-        limit={40}
-      />
+      <PortfolioDisclosure
+        icon={Satellite}
+        title={t("scanHistoryTitle")}
+        description={t("scanHistoryDesc")}
+      >
+        <ScanHistoryGrid portfolio embedded limit={40} className="-mx-4 -mb-4" />
+      </PortfolioDisclosure>
 
-      <PortfolioSection flush icon={Server} title={t("recentJobs")}>
+      <PortfolioDisclosure
+        icon={Radar}
+        title={t("treeScanHistoryTitle")}
+        description={t("treeScanHistoryDesc")}
+      >
+        <TreeScanHistoryGrid
+          portfolio={!projectId}
+          projectId={projectId ?? undefined}
+          embedded
+          limit={40}
+          className="-mx-4 -mb-4"
+        />
+      </PortfolioDisclosure>
+
+      <PortfolioDisclosure
+        icon={Server}
+        title={t("recentJobs")}
+        description={t("recentJobsDesc")}
+        badge={data.recent_jobs.length > 0 ? String(data.recent_jobs.length) : undefined}
+      >
         <table className="w-full text-sm">
           <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
             <tr>
@@ -407,7 +431,9 @@ export function PortfolioMonitoringTab({
                   key={`${job.job_name}-${job.finished_at}-${i}`}
                   className="border-t border-stone-100 dark:border-stone-800"
                 >
-                  <td className="px-4 py-2 font-mono text-xs">{job.job_name}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-stone-800 dark:text-stone-200">
+                    {job.job_name}
+                  </td>
                   <td className="px-4 py-2">
                     <span
                       className={
@@ -419,7 +445,9 @@ export function PortfolioMonitoringTab({
                       {job.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-xs text-stone-500">{job.finished_at ?? "—"}</td>
+                  <td className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400">
+                    {job.finished_at ?? "—"}
+                  </td>
                   <td className="max-w-xs truncate px-4 py-2 font-mono text-xs text-stone-600 dark:text-stone-400">
                     {job.error ?? JSON.stringify(job.result)}
                   </td>
@@ -428,7 +456,7 @@ export function PortfolioMonitoringTab({
             )}
           </tbody>
         </table>
-      </PortfolioSection>
+      </PortfolioDisclosure>
     </PortfolioTabShell>
   );
 }

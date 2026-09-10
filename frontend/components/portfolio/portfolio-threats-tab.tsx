@@ -10,11 +10,12 @@ import {
   CloudRain,
   Globe,
   Leaf,
-  Satellite,
   ShieldAlert,
 } from "lucide-react";
 import { intelligence as intelligenceApi } from "@/lib/api";
+import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
+import { PortfolioTabBanner } from "./portfolio-tab-banner";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
 import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
@@ -76,7 +77,6 @@ export function PortfolioThreatsTab({
   const integrations = data.integrations?.integrations ?? {};
   const integrationStatus = data.integrations?.status ?? "unknown";
   const fusion = data.satellite_fusion;
-  const fusionSites = fusion?.sites ?? [];
 
   const weatherAlerts = data.weather_alerts.filter((item) =>
     matchesProject(projectId, item.project_id),
@@ -135,57 +135,15 @@ export function PortfolioThreatsTab({
       </PortfolioKpiGrid>
 
       {fusion?.summary ? (
-        <PortfolioSection
-          flush
-          icon={Satellite}
+        <PortfolioTabBanner
+          variant="info"
           title={t("fusion.title")}
           description={fusionSummary}
-        >
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
-              <tr>
-                <th className="px-4 py-2">{t("table.workArea")}</th>
-                <th className="px-4 py-2">{t("table.fusion")}</th>
-                <th className="px-4 py-2">{t("table.ndvi")}</th>
-                <th className="px-4 py-2">{t("table.sarIntegrity")}</th>
-                <th className="px-4 py-2">{t("table.sarMode")}</th>
-                <th className="px-4 py-2">{t("table.trend")}</th>
-                <th className="px-4 py-2">{t("table.bhoonidhiScenes")}</th>
-                <th className="px-4 py-2">{t("table.action")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fusionSites.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-stone-500 dark:text-stone-400">
-                    {t("fusion.empty")}
-                  </td>
-                </tr>
-              ) : (
-                fusionSites.map((site) => (
-                  <tr key={site.work_area_id} className="border-t border-stone-100 dark:border-stone-800">
-                    <td className="px-4 py-2 font-medium">{site.work_area_name}</td>
-                    <td className="px-4 py-2 capitalize">{site.fusion_status.replace(/_/g, " ")}</td>
-                    <td className="px-4 py-2">
-                      {site.sentinel.latest_ndvi != null ? site.sentinel.latest_ndvi.toFixed(2) : "—"}
-                    </td>
-                    <td className="px-4 py-2">
-                      {site.sar?.forest_integrity_score != null ? site.sar.forest_integrity_score : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-xs">
-                      {site.sar?.monitoring_mode ? site.sar.monitoring_mode.replace(/_/g, " ") : "—"}
-                    </td>
-                    <td className="px-4 py-2 capitalize">{site.sentinel.ndvi_trend}</td>
-                    <td className="px-4 py-2">{site.bhoonidhi.scenes_available ?? 0}</td>
-                    <td className="max-w-xs truncate px-4 py-2 text-xs text-stone-600 dark:text-stone-400">
-                      {site.recommended_action}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </PortfolioSection>
+          action={{
+            label: t("fusion.viewMonitoring"),
+            href: portfolioMonitoringHref(projectId),
+          }}
+        />
       ) : null}
 
       <PortfolioSection icon={Globe} title={t("integrations")}>
