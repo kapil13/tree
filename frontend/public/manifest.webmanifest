@@ -24,9 +24,9 @@
   "categories": ["productivity", "utilities"],
   "shortcuts": [
     {
-      "name": "Offline tree list",
-      "url": "/field-ops/offline-trees",
-      "description": "Supervisor cached tree registry"
+      "name": "Sync queue",
+      "url": "/field-ops/sync-queue",
+      "description": "Review offline tree registrations waiting to upload"
     }
   ]
 }

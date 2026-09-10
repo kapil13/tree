@@ -25,6 +25,7 @@ import {
   type ComplianceCheck,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { useOptionalProjectContext } from "@/lib/project-context";
 import { canWriteInApp } from "@/lib/nav-access";
 import { schemeByCode } from "@/lib/schemes";
 import {
@@ -53,7 +54,8 @@ export function NewTreePageClient() {
   const { user } = useAuth();
   const canWrite = canWriteInApp(user);
   const searchParams = useSearchParams();
-  const projectIdParam = searchParams.get("project");
+  const projectContext = useOptionalProjectContext();
+  const projectIdParam = searchParams.get("project") ?? projectContext?.projectId ?? null;
   const workAreaIdParam = searchParams.get("work_area");
   const chainageKmParam = searchParams.get("chainage_km");
   const latParam = searchParams.get("lat");

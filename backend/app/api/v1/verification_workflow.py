@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.core.security import Permission, Role, has_permission
+from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.verification_workflow import VerificationItem, VerificationSample
 from app.schemas.verification_workflow import (
@@ -18,7 +19,7 @@ from app.schemas.verification_workflow import (
     VerificationSampleCreate,
 )
 from app.services.audit import record_audit
-from app.services.planting_projects.access import can_manage_project, load_project
+from app.services.planting_projects.access import can_manage_project, load_project, project_list_filter
 from app.services.verification.samples import (
     attest_verification_item,
     create_verification_sample,
@@ -43,6 +44,34 @@ async def _require_verifier(user: CurrentUser) -> None:
     if has_permission(user.role, Permission.MEASUREMENT_ATTEST):
         return
     raise HTTPException(status.HTTP_403_FORBIDDEN, detail="verifier_required")
+
+
+@router.get("/samples")
+async def list_verification_samples(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+    pending_only: bool = False,
+) -> list[dict]:
+    await _require_verifier(user)
+    stmt = (
+        select(VerificationSample, PlantingProject.name, PlantingProject.code)
+        .join(PlantingProject, PlantingProject.id == VerificationSample.project_id)
+        .order_by(VerificationSample.created_at.desc())
+    )
+    stmt = project_list_filter(user, stmt)
+    if project_id is not None:
+        stmt = stmt.where(VerificationSample.project_id == project_id)
+    rows = (await db.execute(stmt.limit(50))).all()
+    out: list[dict] = []
+    for sample, project_name, project_code in rows:
+        summary = await sample_summary(db, sample)
+        if pending_only and summary.get("by_status", {}).get("pending", 0) == 0:
+            continue
+        summary["project_name"] = project_name
+        summary["project_code"] = project_code
+        out.append(summary)
+    return out
 
 
 @router.post("/projects/{project_id}/samples")

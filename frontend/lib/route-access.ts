@@ -45,6 +45,8 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: "/bioacoustic", audience: "professional", featureFlag: "bioacoustic" },
   { prefix: "/reports", audience: ["professional", "field_supervisor"], featureFlag: "reports" },
   { prefix: "/assistant", audience: "all", featureFlag: "ai_scan" },
+  { prefix: "/verification", audience: ["professional", "field_supervisor"] },
+  { prefix: "/settings/billing", audience: "org_admin", featureFlag: "payments" },
   { prefix: "/settings/team", audience: "org_admin" },
 ];
 

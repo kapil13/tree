@@ -8,32 +8,35 @@ import { ImpersonationBanner } from "@/components/platform/impersonation-banner"
 import { OrgFeatureFlagsBanner } from "@/components/org-feature-flags-banner";
 import { MaintenanceBanner } from "@/components/platform/maintenance-banner";
 import { LocaleBootstrap } from "@/components/locale-bootstrap";
+import { ProjectContextProvider } from "@/lib/project-context";
 
 export const dynamic = "force-dynamic";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppAuthGuard>
-      <LocaleBootstrap />
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex flex-1 flex-col">
-          <div className="flex flex-col gap-0.5 bg-stone-200/80 dark:bg-stone-800">
-            <ImpersonationBanner />
-            <MaintenanceBanner />
-            <OrgFeatureFlagsBanner />
-          </div>
-          <Topbar />
-          <main className="flex-1 bg-stone-50 dark:bg-stone-950 md:p-6 p-4">
-            <div className="app-main-inner">
-              <Suspense fallback={null}>
-                <InviteAcceptHandler />
-              </Suspense>
-              <RouteAccessGuard>{children}</RouteAccessGuard>
+      <ProjectContextProvider>
+        <LocaleBootstrap />
+        <div className="flex min-h-screen">
+          <Sidebar />
+          <div className="flex flex-1 flex-col">
+            <div className="flex flex-col gap-0.5 bg-stone-200/80 dark:bg-stone-800">
+              <ImpersonationBanner />
+              <MaintenanceBanner />
+              <OrgFeatureFlagsBanner />
             </div>
-          </main>
+            <Topbar />
+            <main className="flex-1 bg-stone-50 dark:bg-stone-950 md:p-6 p-4">
+              <div className="app-main-inner">
+                <Suspense fallback={null}>
+                  <InviteAcceptHandler />
+                </Suspense>
+                <RouteAccessGuard>{children}</RouteAccessGuard>
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+      </ProjectContextProvider>
     </AppAuthGuard>
   );
 }

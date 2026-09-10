@@ -16,6 +16,7 @@ import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
 import { EmptyState } from "@/components/ui/empty-state";
 import { showToast } from "@/components/toast";
 import { useAuth } from "@/lib/auth-store";
+import { useProjectContext } from "@/lib/project-context";
 import { canWriteInApp } from "@/lib/nav-access";
 import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
@@ -150,12 +151,17 @@ export function TreesMap({
   const t = useTranslations("trees");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const { user } = useAuth();
+  const { projectId: contextProjectId, setProjectId: setContextProjectId } = useProjectContext();
   const canAdd = canWriteInApp(user);
   const [selected, setSelected] = useState<Tree | null>(null);
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [zoom, setZoom] = useState(12);
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(contextProjectId ?? "");
   const [health, setHealth] = useState("all");
+
+  useEffect(() => {
+    setProjectId(contextProjectId ?? "");
+  }, [contextProjectId]);
 
   const onBounds = useCallback((next: BBox, nextZoom: number) => {
     setBbox(next);
@@ -235,7 +241,11 @@ export function TreesMap({
           <select
             className="input max-w-xs text-sm"
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setProjectId(next);
+              setContextProjectId(next || null);
+            }}
             aria-label="Filter by project"
           >
             <option value="">All projects</option>
@@ -352,6 +362,7 @@ export function TreesMap({
                       label: "Clear filters",
                       onClick: () => {
                         setProjectId("");
+                        setContextProjectId(null);
                         setHealth("all");
                       },
                     }

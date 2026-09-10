@@ -8,6 +8,7 @@ import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } 
 import { EmptyState, FilterBar, FilterField, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { useProjectContext } from "@/lib/project-context";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
 import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
@@ -88,6 +89,7 @@ export function TreeRegistry() {
   const tt = useTranslations("treesPage");
   const tc = useTranslations("chrome");
   const { user } = useAuth();
+  const { projectId: contextProjectId, setProjectId: setContextProjectId } = useProjectContext();
   const canAdd = canWriteInApp(user);
   const showChainage = userHasProfessionalAccess(user);
   const [health, setHealth] = useState("all");
@@ -95,7 +97,7 @@ export function TreeRegistry() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [projectId, setProjectId] = useState("");
+  const [projectId, setProjectId] = useState(contextProjectId ?? "");
   const [workAreaId, setWorkAreaId] = useState("");
 
   useEffect(() => {
@@ -105,6 +107,12 @@ export function TreeRegistry() {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    setProjectId(contextProjectId ?? "");
+    setWorkAreaId("");
+    setPage(1);
+  }, [contextProjectId]);
 
   const { data: projectsData } = useQuery({
     queryKey: ["planting-projects"],
@@ -320,7 +328,9 @@ export function TreeRegistry() {
                 className="input w-full"
                 value={projectId}
                 onChange={(e) => {
-                  setProjectId(e.target.value);
+                  const next = e.target.value;
+                  setProjectId(next);
+                  setContextProjectId(next || null);
                   setWorkAreaId("");
                   setPage(1);
                 }}

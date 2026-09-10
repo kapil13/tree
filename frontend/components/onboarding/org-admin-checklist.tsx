@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, Users, Webhook, X } from "luci
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin } from "@/lib/nav-access";
+import { plantingProjects, webhooks } from "@/lib/api";
 import { organizations } from "@/lib/organizations-api";
 import { cn } from "@/lib/cn";
 
@@ -26,11 +27,25 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
     enabled: Boolean(user && isOrgAdmin(user)),
   });
 
+  const { data: projectsData } = useQuery({
+    queryKey: ["org-admin-projects"],
+    queryFn: () => plantingProjects.list(),
+    enabled: Boolean(user && isOrgAdmin(user)),
+  });
+
+  const { data: webhooksData } = useQuery({
+    queryKey: ["org-admin-webhooks"],
+    queryFn: () => webhooks.list(),
+    enabled: Boolean(user && isOrgAdmin(user)),
+  });
+
   if (!user || !isOrgAdmin(user) || dismissed) return null;
 
   const memberCount = membersData?.members.length ?? 1;
   const pendingInvites = membersData?.pending_invites.length ?? 0;
   const teamDone = memberCount > 1 || pendingInvites > 0;
+  const projectsDone = (projectsData?.items.length ?? 0) > 0;
+  const webhooksDone = (webhooksData?.length ?? 0) > 0;
 
   const steps = [
     {
@@ -43,7 +58,7 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
     },
     {
       id: "projects",
-      done: false,
+      done: projectsDone,
       title: "Review planting projects",
       description: "Confirm packages, work areas, and compliance settings.",
       href: "/projects",
@@ -51,7 +66,7 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
     },
     {
       id: "webhooks",
-      done: false,
+      done: webhooksDone,
       title: "Configure webhooks (optional)",
       description: "Send audit events to your SIEM or compliance stack.",
       href: "/settings/webhooks",

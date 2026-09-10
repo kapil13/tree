@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
+import { ProjectContextChip } from "@/components/project-context-chip";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { NavLinks } from "@/components/sidebar";
 import { clearAppQueryCache } from "@/app/providers";
@@ -60,6 +61,7 @@ export function Topbar() {
           >
             <Menu className="h-5 w-5" />
           </button>
+          <ProjectContextChip className="hidden sm:block" />
           <div className="min-w-0">
             {routeMeta?.section ? (
               <p className="hidden text-[10px] font-semibold uppercase tracking-wide text-stone-400 sm:block">

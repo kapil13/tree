@@ -43,6 +43,7 @@ from app.schemas.planting_project import (
     WorkAreaUpdate,
 )
 from app.schemas.project_member import (
+    FieldBriefOut,
     FieldOpsSummaryOut,
     MonitoringSummaryOut,
     ProjectMemberCreate,
@@ -81,6 +82,7 @@ from app.services.planting_projects.access import (
 from app.services.planting_projects.climate_zones import resolve_climate_zone
 from app.services.planting_projects.compliance import evaluate_tree_placement
 from app.services.planting_projects.constants import SEGMENT_LABELS
+from app.services.planting_projects.field_brief import build_field_brief
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.planting_projects.registration_context import build_registration_context
 from app.services.planting_projects.rule_engine import (
@@ -319,6 +321,17 @@ async def portfolio_scan_history(
             )
             for r in rows
         ],
+    )
+
+
+@router.get("/field-brief", response_model=FieldBriefOut)
+async def field_brief(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+) -> FieldBriefOut:
+    return FieldBriefOut.model_validate(
+        await build_field_brief(db, user, project_id=project_id)
     )
 
 
