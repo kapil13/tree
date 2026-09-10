@@ -12,6 +12,7 @@ from sqlalchemy import or_, select
 from app.api.v1.deps import DB, CurrentUser
 from app.models.alert import Alert
 from app.schemas.cursor_page import CursorPage
+from app.services.alerts.action_links import alert_action_fields
 from app.services.alerts.defaults import (
     DEFAULT_COMPLIANCE_PREFS,
     DEFAULT_SATELLITE_HEALTH_PREFS,
@@ -33,6 +34,10 @@ class AlertItemOut(BaseModel):
     is_read: bool
     created_at: str
     tree_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
+    recommended_action: str | None = None
+    deep_link: str | None = None
     payload: dict[str, Any] | None = None
 
 
@@ -78,6 +83,7 @@ class NotificationPreferencesUpdate(BaseModel):
 
 
 def _alert_to_item(a: Alert) -> AlertItemOut:
+    action = alert_action_fields(kind=a.kind, tree_id=a.tree_id, payload=a.payload)
     return AlertItemOut(
         id=str(a.id),
         kind=a.kind,
@@ -87,6 +93,10 @@ def _alert_to_item(a: Alert) -> AlertItemOut:
         is_read=a.is_read,
         created_at=a.created_at.isoformat(),
         tree_id=str(a.tree_id) if a.tree_id else None,
+        entity_id=action["entity_id"],
+        entity_type=action["entity_type"],
+        recommended_action=action["recommended_action"],
+        deep_link=action["deep_link"],
         payload=a.payload,
     )
 
