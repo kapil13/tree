@@ -34,6 +34,7 @@ import {
   useOrgFeatureFlagMap,
   type OrgFeatureFlagKey,
 } from "@/lib/use-org-feature-flags";
+import { useOfflineTreeQueue } from "@/lib/offline/use-offline-queue";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
@@ -262,11 +263,13 @@ function NavItemLink({
   active,
   onNavigate,
   nested,
+  badgeCount,
 }: {
   item: NavItem;
   active: boolean;
   onNavigate?: () => void;
   nested?: boolean;
+  badgeCount?: number;
 }) {
   const t = useTranslations("nav");
   const tReports = useTranslations("plantationReports");
@@ -298,7 +301,12 @@ function NavItemLink({
         )}
         aria-hidden
       />
-      {label}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {badgeCount && badgeCount > 0 ? (
+        <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
+          {badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -405,6 +413,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
   const { user } = useAuth();
   const { flags } = useOrgFeatureFlagMap();
+  const { pendingCount } = useOfflineTreeQueue();
   const t = useTranslations("nav");
 
   const adminItems: NavItem[] = [];
@@ -466,6 +475,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                   item={item}
                   active={active}
                   onNavigate={onNavigate}
+                  badgeCount={item.href === "/field-ops/sync-queue" ? pendingCount : undefined}
                 />
               );
             })}

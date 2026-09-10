@@ -22,6 +22,10 @@ import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/comp
 import { plantingProjects } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
+import {
+  buildFieldOpsTasks,
+  FieldOpsTaskQueue,
+} from "@/components/field-ops/field-ops-task-queue";
 import { cn } from "@/lib/cn";
 
 export default function FieldOpsPage() {
@@ -74,6 +78,8 @@ export default function FieldOpsPage() {
   );
 
   const canCreateProject = user?.role !== "field_worker";
+
+  const fieldTasks = buildFieldOpsTasks(data);
 
   const fieldStatus = fieldOperationalStatus(to, {
     openViolations: data.open_violations,
@@ -137,6 +143,8 @@ export default function FieldOpsPage() {
           },
         ]}
       />
+
+      <FieldOpsTaskQueue tasks={fieldTasks} />
 
       {data.project_count === 0 ? (
         <EmptyState

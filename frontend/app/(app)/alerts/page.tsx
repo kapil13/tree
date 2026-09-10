@@ -267,7 +267,8 @@ export default function AlertsPage() {
           )}
           {sortedItems.map((a) => {
             const payload = a.payload as Record<string, string> | undefined;
-            const deepLink = payload?.deep_link;
+            const deepLink = a.deep_link ?? payload?.deep_link;
+            const actionLabel = a.recommended_action ?? payload?.action_label;
             const interpretation = getAlertInterpretation(a.payload as Record<string, unknown>);
             return (
               <div
@@ -312,7 +313,7 @@ export default function AlertsPage() {
                       href={deepLink}
                       className="mt-2 inline-block text-xs text-forest-700 hover:underline"
                     >
-                      {payload?.action_label ?? "Open related view"} →
+                      {actionLabel ?? "Open related view"} →
                     </Link>
                   )}
                 </div>

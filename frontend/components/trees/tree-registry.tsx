@@ -9,6 +9,7 @@ import { EmptyState, FilterBar, FilterField, MetricGrid, OperationalStatusBar, P
 import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
+import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 25;
@@ -392,8 +393,12 @@ export function TreeRegistry() {
                       key={t.id}
                       className="rounded-xl border border-stone-200 bg-white p-4"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <TreeThumbnail
+                          imageUrl={t.primary_image_url}
+                          alt={t.species_text || t.public_code}
+                        />
+                        <div className="min-w-0 flex-1">
                           <Link
                             href={`/trees/${t.id}`}
                             className="font-semibold text-forest-900 hover:underline"
@@ -483,6 +488,7 @@ export function TreeRegistry() {
                 <table className="intel-data-table">
                   <thead>
                     <tr>
+                      <th className="w-16">Photo</th>
                       <th>Code</th>
                       <th>Project</th>
                       {showWorkAreaColumn ? <th>Work area</th> : null}
@@ -502,6 +508,13 @@ export function TreeRegistry() {
                       const geotagDue = isGeotagDue(t);
                       return (
                         <tr key={t.id}>
+                          <td>
+                            <TreeThumbnail
+                              imageUrl={t.primary_image_url}
+                              alt={t.species_text || t.public_code}
+                              size="sm"
+                            />
+                          </td>
                           <td className="font-mono text-xs">{t.public_code}</td>
                           <td className="max-w-[12rem]">
                             {t.project_id ? (

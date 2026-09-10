@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { showToast } from "@/components/toast";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp } from "@/lib/nav-access";
+import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
 
 const HEALTH_COLOR: Record<string, string> = {
@@ -394,8 +395,12 @@ function TreeActionSheet({ tree, onClose }: { tree: Tree; onClose: () => void })
   return (
     <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:left-auto sm:right-3 sm:top-14 sm:bottom-auto sm:w-80 sm:p-0">
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <TreeThumbnail
+            imageUrl={tree.primary_image_url}
+            alt={tree.species_text || tree.public_code}
+          />
+          <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-stone-900">
               {tree.species_text || "Unknown species"}
             </p>

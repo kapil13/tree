@@ -385,6 +385,7 @@ export type Tree = {
   last_geotag_at?: string | null;
   survival_status?: string | null;
   chainage_km?: string | null;
+  primary_image_url?: string | null;
 };
 
 export type TreeImage = {
@@ -2579,6 +2580,10 @@ export type AlertItem = {
   is_read: boolean;
   created_at: string;
   tree_id: string | null;
+  entity_id?: string | null;
+  entity_type?: string | null;
+  recommended_action?: string | null;
+  deep_link?: string | null;
   payload?: Record<string, unknown>;
 };
 
