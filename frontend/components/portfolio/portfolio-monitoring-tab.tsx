@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Bell,
   ClipboardList,
@@ -14,8 +15,12 @@ import {
 } from "lucide-react";
 import { plantingProjects, sar } from "@/lib/api";
 import { alertsHref } from "@/lib/alerts-links";
-import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
+import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
+import { PortfolioSection } from "./portfolio-section";
+import { PortfolioTabBanner } from "./portfolio-tab-banner";
+import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
+import { PortfolioTabShell } from "./portfolio-tab-shell";
 import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
 import { ScanCyclePanel } from "@/components/satellite/scan-cycle-panel";
 import { TreeScanHistoryGrid } from "@/components/satellite/tree-scan-history-grid";
@@ -65,20 +70,31 @@ const SAR_MODE_LABEL: Record<string, string> = {
   sar_stress: "Stress",
 };
 
-export function PortfolioMonitoringTab({ projectId }: { projectId?: string | null }) {
+export function PortfolioMonitoringTab({
+  projectId,
+  projectName,
+}: {
+  projectId?: string | null;
+  projectName?: string | null;
+}) {
+  const t = useTranslations("portfolioTabs.monitoring");
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["monitoring-summary"],
     queryFn: () => plantingProjects.monitoringSummary(),
   });
 
   const scanMutation = useMutation({
-    mutationFn: (projectId: string) => plantingProjects.triggerSatelliteScan(projectId),
+    mutationFn: (scanProjectId: string) => plantingProjects.triggerSatelliteScan(scanProjectId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["monitoring-summary"] }),
   });
 
-  if (isLoading || !data) {
-    return <p className="text-sm text-stone-500">Loading monitoring data…</p>;
+  if (isLoading) {
+    return <PortfolioTabLoading />;
+  }
+
+  if (error || !data) {
+    return <PortfolioTabError onRetry={() => void refetch()} />;
   }
 
   const unreadTotal = Object.values(data.unread_alerts_by_kind).reduce((a, b) => a + b, 0);
@@ -97,7 +113,6 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
   const workAreas = projectId
     ? data.work_area_monitoring.filter((wa) => wa.project_id === projectId)
     : data.work_area_monitoring;
-  const filteredProject = projectId ? data.projects.find((p) => p.id === projectId) : undefined;
 
   const handleExport = async () => {
     const blob = new Blob([await sar.portfolioExport()], { type: "text/csv" });
@@ -119,133 +134,123 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="space-y-6">
-      {filteredProject ? (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-          Showing monitoring for{" "}
-          <Link href={`/projects/${filteredProject.id}`} className="font-semibold hover:underline">
-            {filteredProject.name}
-          </Link>
-          .{" "}
-          <Link href={portfolioMonitoringHref()} className="font-medium text-sky-900 hover:underline">
-            View all projects
-          </Link>
-        </div>
-      ) : null}
-      <p className="text-sm text-stone-600">
-        Check which sites need a fresh satellite scan, review alerts, and open field follow-ups.
-        Greenness (NDVI) is the everyday signal; radar (SAR) fills in during clouds and monsoon.
-      </p>
+  const scanEngineDetail =
+    scanEngine &&
+    t("scanEngineDetail", {
+      trees: scanEngine.enrolled_trees,
+      tiles: scanEngine.distinct_scan_tiles,
+      batching: scanEngine.tile_batching_enabled ? t("tileBatched") : "",
+      watch:
+        scanEngine.watch_work_areas > 0 ? t("watchAreas", { count: scanEngine.watch_work_areas }) : "",
+      firms: scanEngine.firms_live ? t("firmsLive") : t("firmsFallback"),
+    });
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  return (
+    <PortfolioTabShell tab="monitoring" projectId={projectId} projectName={projectName}>
+      <PortfolioKpiGrid>
         <PortfolioKpiCard
           icon={Satellite}
-          label="Sites needing scan"
+          label={t("kpi.sitesNeedingScan")}
           value={String(data.stale_satellite_work_areas)}
           warn={data.stale_satellite_work_areas > 0}
         />
         <PortfolioKpiCard
           icon={Radar}
-          label="At-risk sites"
+          label={t("kpi.atRiskSites")}
           value={String(data.sar_at_risk_work_areas ?? 0)}
           warn={(data.sar_at_risk_work_areas ?? 0) > 0}
         />
         <PortfolioKpiCard
           icon={Bell}
-          label="Unread alerts"
+          label={t("kpi.unreadAlerts")}
           value={String(unreadTotal + sarUnreadTotal + hazardUnreadTotal)}
           warn={unreadTotal + sarUnreadTotal + hazardUnreadTotal > 0}
+          href={alertsHref()}
         />
         <PortfolioKpiCard
           icon={Server}
-          label="Trees due for scan"
+          label={t("kpi.treesDueScan")}
           value={scanEngine ? String(scanEngine.due_now) : "—"}
           warn={Boolean(scanEngine && scanEngine.due_now > 0)}
         />
-      </div>
+      </PortfolioKpiGrid>
 
       {scanEngine ? (
-        <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
-          <span className="font-medium text-stone-900">Scan engine</span>
-          {" — "}
-          {scanEngine.enrolled_trees} trees enrolled across {scanEngine.distinct_scan_tiles} tiles
-          {scanEngine.tile_batching_enabled ? " (tile-batched)" : ""}
-          {scanEngine.watch_work_areas > 0
-            ? ` · ${scanEngine.watch_work_areas} manual watch work area(s)`
-            : ""}
-          {scanEngine.firms_live ? " · FIRMS live" : " · FIRMS seasonal fallback"}
-        </div>
+        <PortfolioTabBanner variant="info" title={t("scanEngine")} description={scanEngineDetail} />
       ) : null}
 
       <ScanCyclePanel />
 
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="text-stone-600">
-          SAR providers: {data.sar_live_providers ?? 0} live · {data.sar_stub_providers ?? 0} stub
-        </span>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50"
-          onClick={() => void handleExportPdf()}
-        >
-          <FileText className="h-3 w-3" />
-          Export SAR PDF
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50"
-          onClick={() => void handleExport()}
-        >
-          <Download className="h-3 w-3" />
-          Export SAR CSV
-        </button>
-      </div>
+      <PortfolioSection
+        title={t("exportsTitle")}
+        description={t("sarProviders", {
+          live: data.sar_live_providers ?? 0,
+          stub: data.sar_stub_providers ?? 0,
+        })}
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:hover:bg-stone-900"
+            onClick={() => void handleExportPdf()}
+          >
+            <FileText className="h-3 w-3" aria-hidden />
+            {t("exportPdf")}
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50 dark:border-stone-600 dark:hover:bg-stone-900"
+            onClick={() => void handleExport()}
+          >
+            <Download className="h-3 w-3" aria-hidden />
+            {t("exportCsv")}
+          </button>
+        </div>
+      </PortfolioSection>
 
-      {(data.stale_sar_work_areas ?? 0) > 0 && (
-        <p className="text-sm text-amber-800">
-          {data.stale_sar_work_areas} work area{(data.stale_sar_work_areas ?? 0) === 1 ? "" : "s"}{" "}
-          have no SAR scan in the last 35 days. Run a SAR scan from the Satellite page.
-        </p>
-      )}
+      {(data.stale_sar_work_areas ?? 0) > 0 ? (
+        <PortfolioTabBanner
+          variant="warn"
+          description={t("staleSar", { count: data.stale_sar_work_areas ?? 0 })}
+        />
+      ) : null}
 
-      {Object.keys(data.unread_sar_alerts_by_kind ?? {}).length > 0 && (
-        <section className="card">
-          <h2 className="text-lg font-medium">SAR alerts by type</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
+      {Object.keys(data.unread_sar_alerts_by_kind ?? {}).length > 0 ? (
+        <PortfolioSection title={t("sarAlerts")}>
+          <div className="flex flex-wrap gap-2">
             {Object.entries(data.unread_sar_alerts_by_kind ?? {}).map(([kind, count]) => (
               <Link
                 key={kind}
                 href={alertsHref({ sar: kind })}
-                className="rounded-full bg-amber-50 px-3 py-1 text-sm text-amber-900 hover:bg-amber-100"
+                className="rounded-full bg-amber-50 px-3 py-1 text-sm text-amber-900 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-100"
               >
                 {ALERT_KIND_LABEL[kind] ?? kind}: {count}
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        </PortfolioSection>
+      ) : null}
 
-      {openFieldTasks.length > 0 && (
-        <section className="card overflow-hidden p-0">
-          <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">
-            <ClipboardList className="h-4 w-4 text-stone-500" />
-            <h2 className="font-medium">Open SAR field verifications</h2>
-            <span className="ml-auto text-xs text-stone-500">{openFieldTasks.length} open</span>
-          </div>
+      {openFieldTasks.length > 0 ? (
+        <PortfolioSection
+          flush
+          icon={ClipboardList}
+          title={t("fieldVerifications")}
+          description={t("openCount", { count: openFieldTasks.length })}
+        >
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
               <tr>
-                <th className="px-4 py-2">Work area</th>
-                <th className="px-4 py-2">Alert</th>
-                <th className="px-4 py-2">Severity</th>
-                <th className="px-4 py-2">Integrity</th>
+                <th className="px-4 py-2">{t("table.workArea")}</th>
+                <th className="px-4 py-2">{t("table.alert")}</th>
+                <th className="px-4 py-2">{t("table.severity")}</th>
+                <th className="px-4 py-2">{t("table.integrity")}</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
               {openFieldTasks.map((task) => (
-                <tr key={task.id} className="border-t border-stone-100">
+                <tr key={task.id} className="border-t border-stone-100 dark:border-stone-800">
                   <td className="px-4 py-2 font-medium">{task.work_area_name ?? "—"}</td>
                   <td className="px-4 py-2 text-xs">
                     {ALERT_KIND_LABEL[task.alert_kind ?? ""] ?? task.alert_kind ?? task.message}
@@ -255,63 +260,62 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
                     {task.forest_integrity_score != null ? task.forest_integrity_score : "—"}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {task.deep_link && (
-                      <Link href={task.deep_link} className="text-xs text-forest-700 hover:underline">
-                        Open satellite →
+                    {task.deep_link ? (
+                      <Link
+                        href={task.deep_link}
+                        className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                      >
+                        {t("openSatellite")}
                       </Link>
-                    )}
+                    ) : null}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
-      )}
+        </PortfolioSection>
+      ) : null}
 
-      {Object.keys(data.unread_alerts_by_kind).length > 0 && (
-        <section className="card">
-          <h2 className="text-lg font-medium">Unread alerts by type</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
+      {Object.keys(data.unread_alerts_by_kind).length > 0 ? (
+        <PortfolioSection title={t("unreadAlerts")}>
+          <div className="flex flex-wrap gap-2">
             {Object.entries(data.unread_alerts_by_kind).map(([kind, count]) => (
               <Link
                 key={kind}
                 href={alertsHref()}
-                className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200"
+                className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700"
               >
                 {ALERT_KIND_LABEL[kind] ?? kind}: {count}
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        </PortfolioSection>
+      ) : null}
 
-      <section className="card overflow-hidden p-0">
-        <div className="border-b border-stone-200 px-4 py-3">
-          <h2 className="font-medium">Work area satellite status</h2>
-        </div>
+      <PortfolioSection flush title={t("workAreaStatus")}>
         <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+          <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
             <tr>
-              <th className="px-4 py-2">Work area</th>
-              <th className="px-4 py-2">Project</th>
-              <th className="px-4 py-2">Segment</th>
-              <th className="px-4 py-2">Last scan</th>
-              <th className="px-4 py-2">NDVI</th>
-              <th className="px-4 py-2">SAR integrity</th>
-              <th className="px-4 py-2">SAR mode</th>
-              <th className="px-4 py-2">Recommended action</th>
+              <th className="px-4 py-2">{t("table.workArea")}</th>
+              <th className="px-4 py-2">{t("table.project")}</th>
+              <th className="px-4 py-2">{t("table.segment")}</th>
+              <th className="px-4 py-2">{t("table.lastScan")}</th>
+              <th className="px-4 py-2">{t("table.ndvi")}</th>
+              <th className="px-4 py-2">{t("table.sarIntegrity")}</th>
+              <th className="px-4 py-2">{t("table.sarMode")}</th>
+              <th className="px-4 py-2">{t("table.recommendedAction")}</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
             {workAreas.map((wa) => (
-              <tr key={wa.id} className="border-t border-stone-100">
+              <tr key={wa.id} className="border-t border-stone-100 dark:border-stone-800">
                 <td className="px-4 py-2 font-medium">{wa.name}</td>
                 <td className="px-4 py-2">
                   {wa.project_id ? (
                     <Link
                       href={`/projects/${wa.project_id}`}
-                      className="text-forest-800 hover:underline"
+                      className="text-forest-800 hover:underline dark:text-forest-300"
                     >
                       {wa.project_name}
                     </Link>
@@ -324,11 +328,11 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
                 </td>
                 <td className="px-4 py-2">
                   {wa.days_since_scan != null ? (
-                    <span className={wa.days_since_scan > 35 ? "text-amber-700" : ""}>
-                      {wa.days_since_scan}d ago
+                    <span className={wa.days_since_scan > 35 ? "text-amber-700 dark:text-amber-300" : ""}>
+                      {t("daysAgo", { days: wa.days_since_scan })}
                     </span>
                   ) : (
-                    <span className="text-stone-400">Never</span>
+                    <span className="text-stone-400">{t("neverScanned")}</span>
                   )}
                 </td>
                 <td className="px-4 py-2">
@@ -336,12 +340,12 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
                 </td>
                 <td className="px-4 py-2">
                   {wa.sar_forest_integrity != null ? (
-                    <span className={wa.sar_at_risk ? "font-medium text-amber-800" : ""}>
+                    <span className={wa.sar_at_risk ? "font-medium text-amber-800 dark:text-amber-300" : ""}>
                       {wa.sar_forest_integrity}
                       {wa.sar_integrity_grade ? ` (${wa.sar_integrity_grade})` : ""}
                     </span>
                   ) : (
-                    <span className="text-stone-400">No SAR</span>
+                    <span className="text-stone-400">{t("noSar")}</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-xs">
@@ -349,27 +353,27 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
                     ? SAR_MODE_LABEL[wa.sar_monitoring_mode] ?? wa.sar_monitoring_mode
                     : "—"}
                 </td>
-                <td className="max-w-xs truncate px-4 py-2 text-xs text-stone-600">
+                <td className="max-w-xs truncate px-4 py-2 text-xs text-stone-600 dark:text-stone-400">
                   {wa.sar_recommended_action ?? "—"}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  {wa.project_id && (
+                  {wa.project_id ? (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 text-xs text-forest-700 hover:underline disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-xs text-forest-700 hover:underline disabled:opacity-50 dark:text-forest-300"
                       disabled={scanMutation.isPending}
                       onClick={() => scanMutation.mutate(wa.project_id!)}
                     >
-                      <RefreshCw className="h-3 w-3" />
-                      Scan project
+                      <RefreshCw className="h-3 w-3" aria-hidden />
+                      {t("scanProject")}
                     </button>
-                  )}
+                  ) : null}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </section>
+      </PortfolioSection>
 
       <ScanHistoryGrid portfolio title="Recent scan history" limit={40} />
 
@@ -380,38 +384,43 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
         limit={40}
       />
 
-      <section className="card overflow-hidden p-0">
-        <div className="flex items-center gap-2 border-b border-stone-200 px-4 py-3">
-          <Server className="h-4 w-4 text-stone-500" />
-          <h2 className="font-medium">Recent background jobs</h2>
-        </div>
+      <PortfolioSection flush icon={Server} title={t("recentJobs")}>
         <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+          <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
             <tr>
-              <th className="px-4 py-2">Job</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Finished</th>
-              <th className="px-4 py-2">Result</th>
+              <th className="px-4 py-2">{t("table.job")}</th>
+              <th className="px-4 py-2">{t("table.status")}</th>
+              <th className="px-4 py-2">{t("table.finished")}</th>
+              <th className="px-4 py-2">{t("table.result")}</th>
             </tr>
           </thead>
           <tbody>
             {data.recent_jobs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-stone-500">
-                  No job runs recorded yet.
+                <td colSpan={4} className="px-4 py-6 text-center text-stone-500 dark:text-stone-400">
+                  {t("jobsEmpty")}
                 </td>
               </tr>
             ) : (
               data.recent_jobs.map((job, i) => (
-                <tr key={`${job.job_name}-${job.finished_at}-${i}`} className="border-t border-stone-100">
+                <tr
+                  key={`${job.job_name}-${job.finished_at}-${i}`}
+                  className="border-t border-stone-100 dark:border-stone-800"
+                >
                   <td className="px-4 py-2 font-mono text-xs">{job.job_name}</td>
                   <td className="px-4 py-2">
-                    <span className={job.status === "error" ? "text-red-700" : "text-green-700"}>
+                    <span
+                      className={
+                        job.status === "error"
+                          ? "text-red-700 dark:text-red-300"
+                          : "text-green-700 dark:text-green-300"
+                      }
+                    >
                       {job.status}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-xs text-stone-500">{job.finished_at ?? "—"}</td>
-                  <td className="max-w-xs truncate px-4 py-2 font-mono text-xs text-stone-600">
+                  <td className="max-w-xs truncate px-4 py-2 font-mono text-xs text-stone-600 dark:text-stone-400">
                     {job.error ?? JSON.stringify(job.result)}
                   </td>
                 </tr>
@@ -419,7 +428,7 @@ export function PortfolioMonitoringTab({ projectId }: { projectId?: string | nul
             )}
           </tbody>
         </table>
-      </section>
-    </div>
+      </PortfolioSection>
+    </PortfolioTabShell>
   );
 }
