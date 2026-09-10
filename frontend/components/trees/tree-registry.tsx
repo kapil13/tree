@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } from "lucide-react";
@@ -10,6 +10,8 @@ import { plantingProjects, trees } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
 import { cn } from "@/lib/cn";
+
+const PAGE_SIZE = 25;
 
 const HEALTH_FILTERS = [
   { value: "all", label: "All" },
@@ -80,8 +82,18 @@ export function TreeRegistry() {
   const showChainage = userHasProfessionalAccess(user);
   const [health, setHealth] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [projectId, setProjectId] = useState("");
   const [workAreaId, setWorkAreaId] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   const { data: projectsData } = useQuery({
     queryKey: ["planting-projects"],
@@ -119,66 +131,59 @@ export function TreeRegistry() {
   });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["trees", health, projectId, workAreaId],
+    queryKey: ["trees", health, projectId, workAreaId, page, debouncedSearch],
     queryFn: () =>
       trees.list({
-        page_size: 100,
+        page,
+        page_size: PAGE_SIZE,
         ...(health !== "all" ? { health } : {}),
         ...(projectId ? { project_id: projectId } : {}),
         ...(workAreaId ? { work_area_id: workAreaId } : {}),
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
       }),
   });
 
-  const filtered = useMemo(() => {
-    let items = data?.items ?? [];
-    const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (t) =>
-        t.public_code.toLowerCase().includes(q) ||
-        (t.species_text?.toLowerCase().includes(q) ?? false),
-    );
-  }, [data?.items, search]);
+  const items = data?.items ?? [];
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
-  function projectLabel(tree: (typeof filtered)[number]) {
+  function projectLabel(tree: (typeof items)[number]) {
     if (!tree.project_id) return "—";
     return projectNameById.get(tree.project_id) ?? "Unknown project";
   }
 
-  function surveyIntervalFor(tree: (typeof filtered)[number]) {
+  function surveyIntervalFor(tree: (typeof items)[number]) {
     if (tree.project_id) {
       return surveyIntervalByProjectId.get(tree.project_id) ?? surveyIntervalDays;
     }
     return surveyIntervalDays;
   }
 
-  function isGeotagDue(tree: (typeof filtered)[number]) {
+  function isGeotagDue(tree: (typeof items)[number]) {
     const dueDays = daysSince(tree.last_geotag_at);
     return dueDays != null && dueDays >= surveyIntervalFor(tree);
   }
 
-  const showWorkAreaColumn = !workAreaId && filtered.some((t) => t.work_area_id);
-  const showSurvivalColumn = filtered.some((t) => t.survival_status);
-  const showGeotagColumn = filtered.some((t) => t.last_geotag_at);
+  const showWorkAreaColumn = !workAreaId && items.some((t) => t.work_area_id);
+  const showSurvivalColumn = items.some((t) => t.survival_status);
+  const showGeotagColumn = items.some((t) => t.last_geotag_at);
   const showChainageColumn =
-    showChainage && filtered.some((t) => t.chainage_km);
+    showChainage && items.some((t) => t.chainage_km);
 
   const totalTrees = data?.total ?? 0;
   const hasActiveFilters =
-    health !== "all" || !!projectId || !!workAreaId || !!search.trim();
+    health !== "all" || !!projectId || !!workAreaId || !!debouncedSearch;
   const isOrgEmpty = !isLoading && !error && totalTrees === 0 && !hasActiveFilters;
   const addHref = projectId
     ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
     : "/trees/new";
 
   const registryStats = useMemo(() => {
-    const items = filtered;
     const healthy = items.filter((t) => t.current_health === "healthy").length;
     const geotagDueCount = items.filter((t) => isGeotagDue(t)).length;
     const satelliteVerified = items.filter((t) => t.satellite_verified).length;
     const pctHealthy = items.length ? Math.round((healthy / items.length) * 100) : 0;
     return { healthy, geotagDueCount, satelliteVerified, pctHealthy };
-  }, [filtered]);
+  }, [items]);
 
   const registryStatus = useMemo(() => {
     if (isOrgEmpty) {
@@ -195,7 +200,7 @@ export function TreeRegistry() {
         summary: `${registryStats.geotagDueCount} tree${registryStats.geotagDueCount === 1 ? "" : "s"} in view need a geotag or survival update.`,
       };
     }
-    if (registryStats.pctHealthy < 60 && filtered.length > 0) {
+    if (registryStats.pctHealthy < 60 && items.length > 0) {
       return {
         tone: "watch" as const,
         label: "Canopy stress in view",
@@ -205,9 +210,9 @@ export function TreeRegistry() {
     return {
       tone: "healthy" as const,
       label: "Registry operational",
-      summary: `${filtered.length} tree${filtered.length === 1 ? "" : "s"} in view · ${registryStats.pctHealthy}% healthy.`,
+      summary: `${items.length} tree${items.length === 1 ? "" : "s"} on this page · ${registryStats.pctHealthy}% healthy.`,
     };
-  }, [filtered.length, isOrgEmpty, registryStats.geotagDueCount, registryStats.pctHealthy]);
+  }, [items.length, isOrgEmpty, registryStats.geotagDueCount, registryStats.pctHealthy]);
 
   return (
     <div className="space-y-6">
@@ -238,8 +243,8 @@ export function TreeRegistry() {
             columns={4}
             metrics={[
               {
-                label: "In view",
-                value: String(filtered.length),
+                label: "On page",
+                value: String(items.length),
                 hint: `${totalTrees} total in org`,
               },
               {
@@ -298,6 +303,7 @@ export function TreeRegistry() {
                 onChange={(e) => {
                   setProjectId(e.target.value);
                   setWorkAreaId("");
+                  setPage(1);
                 }}
               >
                 <option value="">All projects</option>
@@ -313,7 +319,10 @@ export function TreeRegistry() {
                 id="tree-work-area"
                 className="input w-full"
                 value={workAreaId}
-                onChange={(e) => setWorkAreaId(e.target.value)}
+                onChange={(e) => {
+                  setWorkAreaId(e.target.value);
+                  setPage(1);
+                }}
                 disabled={!projectId}
               >
                 <option value="">All work areas</option>
@@ -337,7 +346,10 @@ export function TreeRegistry() {
                     ? "bg-forest-700 text-white"
                     : "bg-stone-100 text-stone-700 hover:bg-stone-200",
                 )}
-                onClick={() => setHealth(f.value)}
+                onClick={() => {
+                  setHealth(f.value);
+                  setPage(1);
+                }}
               >
                 {f.label}
               </button>
@@ -352,7 +364,7 @@ export function TreeRegistry() {
 
           {isLoading ? (
             <p className="py-8 text-center text-sm text-stone-500">Loading…</p>
-          ) : filtered.length === 0 ? (
+          ) : items.length === 0 ? (
             <EmptyState
               title="No trees match your filters"
               description="Try another health status, project, or clear search."
@@ -364,6 +376,7 @@ export function TreeRegistry() {
                       setProjectId("");
                       setWorkAreaId("");
                       setSearch("");
+                      setPage(1);
                     } }
               }
               className="border-0 bg-transparent py-8"
@@ -372,7 +385,7 @@ export function TreeRegistry() {
             <>
               {/* Mobile cards */}
               <section className="space-y-3 md:hidden">
-                {filtered.map((t) => {
+                {items.map((t) => {
                   const geotagDue = isGeotagDue(t);
                   return (
                     <article
@@ -485,7 +498,7 @@ export function TreeRegistry() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((t) => {
+                    {items.map((t) => {
                       const geotagDue = isGeotagDue(t);
                       return (
                         <tr key={t.id}>
@@ -557,6 +570,32 @@ export function TreeRegistry() {
                   </tbody>
                 </table>
               </div>
+
+              {totalPages > 1 ? (
+                <div className="flex items-center justify-between text-sm text-stone-600">
+                  <span>
+                    Page {page} of {totalPages} · {totalTrees} trees total
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary text-xs"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary text-xs"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </>
           )}
         </div>

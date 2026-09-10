@@ -10,7 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from geoalchemy2.shape import to_shape
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess, require_write_perm
@@ -519,6 +519,12 @@ async def list_trees(
     species_id: uuid.UUID | None = None,
     project_id: uuid.UUID | None = None,
     work_area_id: uuid.UUID | None = None,
+    search: str | None = Query(
+        None,
+        min_length=1,
+        max_length=128,
+        description="Filter by public code or species text (case-insensitive)",
+    ),
     bbox: str | None = Query(
         None, description="minLon,minLat,maxLon,maxLat"
     ),
@@ -536,6 +542,14 @@ async def list_trees(
         stmt = stmt.where(Tree.project_id == project_id)
     if work_area_id:
         stmt = stmt.where(Tree.plantation_id == work_area_id)
+    if search:
+        term = f"%{search.strip()}%"
+        stmt = stmt.where(
+            or_(
+                Tree.public_code.ilike(term),
+                Tree.species_text.ilike(term),
+            )
+        )
     if bbox:
         try:
             min_lon, min_lat, max_lon, max_lat = (float(x) for x in bbox.split(","))

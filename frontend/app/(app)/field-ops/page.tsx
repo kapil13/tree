@@ -20,11 +20,13 @@ import {
 import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 import { cn } from "@/lib/cn";
 
 export default function FieldOpsPage() {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const tf = useTranslations("fieldOps");
   const ts = useTranslations("segments");
   const to = useTranslations("opsStatus");
@@ -71,6 +73,8 @@ export default function FieldOpsPage() {
     (p) => p.open_violations > 0 || p.survival_due > 0,
   );
 
+  const canCreateProject = user?.role !== "field_worker";
+
   const fieldStatus = fieldOperationalStatus(to, {
     openViolations: data.open_violations,
     survivalDue: data.survival_due,
@@ -87,10 +91,12 @@ export default function FieldOpsPage() {
         description={tf("description")}
         breadcrumbs={[{ label: tc("sectionOperate") }, { label: tc("breadcrumbFieldOps") }]}
         actions={
-          <Link href="/projects/new" className="btn-primary inline-flex items-center gap-1.5">
-            <Plus className="h-4 w-4" />
-            {tf("newProject")}
-          </Link>
+          canCreateProject ? (
+            <Link href="/projects/new" className="btn-primary inline-flex items-center gap-1.5">
+              <Plus className="h-4 w-4" />
+              {tf("newProject")}
+            </Link>
+          ) : null
         }
       />
 
@@ -137,7 +143,11 @@ export default function FieldOpsPage() {
           icon={FolderKanban}
           title={tf("noProjectsTitle")}
           description={tf("noProjectsDesc")}
-          action={{ label: "Create first project", href: "/projects/new" }}
+          action={
+            canCreateProject
+              ? { label: "Create first project", href: "/projects/new" }
+              : { label: "Register a tree", href: "/trees/new" }
+          }
         />
       ) : (
         <>
