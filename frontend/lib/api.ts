@@ -2154,6 +2154,7 @@ export const trees = {
     project_id?: string;
     work_area_id?: string;
     search?: string;
+    category?: "attention" | "missing_evidence" | "geotag_due" | "unverified" | "healthy";
     bbox?: string;
   }) {
     return (await api.get("/v1/trees", { params })).data as {

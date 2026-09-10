@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   Bell,
@@ -26,7 +27,8 @@ import {
 import { AranyixMark } from "@/components/brand/aranyix-logo";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import { useAuth } from "@/lib/auth-store";
-import type { User } from "@/lib/api";
+import { alerts, plantingProjects, type User } from "@/lib/api";
+import { scopedKey } from "@/lib/query-keys";
 import { canSeeNavItem, type NavAudience } from "@/lib/nav-access";
 import { hasAnyPlatformAccess } from "@/lib/platform-access";
 import {
@@ -416,6 +418,35 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { pendingCount } = useOfflineTreeQueue();
   const t = useTranslations("nav");
 
+  const { data: unreadAlerts } = useQuery({
+    queryKey: scopedKey(user, "alerts-unread-nav"),
+    queryFn: () => alerts.list({ unreadOnly: true }),
+    refetchInterval: 60_000,
+    enabled: Boolean(user),
+  });
+  const unreadAlertCount = (unreadAlerts?.items ?? []).filter((a) => !a.is_read).length;
+
+  const showFieldOpsNav = canSeeNavItem(user, ["professional", "field_worker", "field_supervisor"], {
+    excludeViewers: true,
+  });
+  const { data: fieldOpsSummary } = useQuery({
+    queryKey: scopedKey(user, "field-ops-nav-badge"),
+    queryFn: () => plantingProjects.fieldOpsSummary(),
+    refetchInterval: 120_000,
+    enabled: Boolean(user) && showFieldOpsNav,
+  });
+  const fieldOpsBadgeCount = useMemo(() => {
+    if (!fieldOpsSummary) return 0;
+    return fieldOpsSummary.open_violations + fieldOpsSummary.survival_due;
+  }, [fieldOpsSummary]);
+
+  function navBadgeCount(href: string): number | undefined {
+    if (href === "/field-ops/sync-queue") return pendingCount > 0 ? pendingCount : undefined;
+    if (href === "/alerts") return unreadAlertCount > 0 ? unreadAlertCount : undefined;
+    if (href === "/field-ops") return fieldOpsBadgeCount > 0 ? fieldOpsBadgeCount : undefined;
+    return undefined;
+  }
+
   const adminItems: NavItem[] = [];
   if (hasAnyPlatformAccess(user)) {
     adminItems.push({
@@ -475,7 +506,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                   item={item}
                   active={active}
                   onNavigate={onNavigate}
-                  badgeCount={item.href === "/field-ops/sync-queue" ? pendingCount : undefined}
+                  badgeCount={navBadgeCount(item.href)}
                 />
               );
             })}

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import { projectsOperationalStatus } from "@/components/dashboard/command-center-shell";
 import { centralSchemes, plantingProjects } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
 import { portfolioComplianceHref } from "@/lib/compliance-links";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { schemeByCode } from "@/lib/schemes";
@@ -46,6 +47,8 @@ export default function ProjectsPage() {
   const tp = useTranslations("projects");
   const ts = useTranslations("segments");
   const tc = useTranslations("chrome");
+  const { user } = useAuth();
+  const canCreateProject = user?.role !== "field_worker";
   const [schemeFilter, setSchemeFilter] = useState("");
   const [search, setSearch] = useState("");
 
@@ -132,10 +135,12 @@ export default function ProjectsPage() {
           ) : undefined
         }
         actions={
-          <Link href="/projects/new" className="btn-primary">
-            <Plus className="h-4 w-4" />
-            {tp("newProject")}
-          </Link>
+          canCreateProject ? (
+            <Link href="/projects/new" className="btn-primary">
+              <Plus className="h-4 w-4" />
+              {tp("newProject")}
+            </Link>
+          ) : null
         }
       />
 
@@ -216,7 +221,11 @@ export default function ProjectsPage() {
           icon={FolderKanban}
           title={tp("emptyTitle")}
           description={tp("emptyDesc")}
-          action={{ label: tp("createFirst"), href: "/projects/new" }}
+          action={
+            canCreateProject
+              ? { label: tp("createFirst"), href: "/projects/new" }
+              : undefined
+          }
         />
       ) : filtered.length === 0 ? (
         <EmptyState

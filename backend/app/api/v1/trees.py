@@ -5,7 +5,7 @@ from __future__ import annotations
 import secrets
 import string
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -525,6 +525,12 @@ async def list_trees(
         max_length=128,
         description="Filter by public code or species text (case-insensitive)",
     ),
+    category: str | None = Query(
+        None,
+        description=(
+            "Registry category: attention, missing_evidence, geotag_due, unverified, healthy"
+        ),
+    ),
     bbox: str | None = Query(
         None, description="minLon,minLat,maxLon,maxLat"
     ),
@@ -550,6 +556,27 @@ async def list_trees(
                 Tree.species_text.ilike(term),
             )
         )
+    if category:
+        normalized = category.strip().lower()
+        if normalized == "attention":
+            stmt = stmt.where(Tree.current_health.in_(("unhealthy", "moderate")))
+        elif normalized == "missing_evidence":
+            primary_exists = (
+                select(TreeImage.id)
+                .where(TreeImage.tree_id == Tree.id, TreeImage.is_primary.is_(True))
+                .exists()
+            )
+            stmt = stmt.where(~primary_exists)
+        elif normalized == "geotag_due":
+            cutoff = datetime.now(UTC) - timedelta(days=30)
+            effective_geotag = func.coalesce(Tree.last_geotag_at, Tree.registered_at)
+            stmt = stmt.where(effective_geotag <= cutoff)
+        elif normalized == "unverified":
+            stmt = stmt.where(Tree.satellite_verified.is_(False))
+        elif normalized == "healthy":
+            stmt = stmt.where(Tree.current_health == "healthy")
+        else:
+            raise HTTPException(422, detail="invalid_category")
     if bbox:
         try:
             min_lon, min_lat, max_lon, max_lat = (float(x) for x in bbox.split(","))
