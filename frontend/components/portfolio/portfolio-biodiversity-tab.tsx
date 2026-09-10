@@ -2,98 +2,117 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Bird, Mic } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Bird, Mic } from "lucide-react";
 import { bioacoustic, plantationFences } from "@/lib/api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
+import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
+import { PortfolioSection } from "./portfolio-section";
+import { PortfolioTabBanner } from "./portfolio-tab-banner";
+import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
+import { PortfolioTabShell } from "./portfolio-tab-shell";
 
-export function PortfolioBiodiversityTab() {
-  const { data: bio, isLoading: bioLoading } = useQuery({
+export function PortfolioBiodiversityTab({
+  projectId,
+  projectName,
+}: {
+  projectId?: string | null;
+  projectName?: string | null;
+}) {
+  const t = useTranslations("portfolioTabs.biodiversity");
+
+  const { data: bio, isLoading: bioLoading, error: bioError, refetch: refetchBio } = useQuery({
     queryKey: ["bio-summary"],
     queryFn: () => bioacoustic.summary(),
   });
 
-  const { data: fences, isLoading: fencesLoading } = useQuery({
-    queryKey: ["plantation-fences-bio"],
-    queryFn: () => plantationFences.list({ page_size: 10 }),
-  });
+  const { data: fences, isLoading: fencesLoading, error: fencesError, refetch: refetchFences } =
+    useQuery({
+      queryKey: ["plantation-fences-bio"],
+      queryFn: () => plantationFences.list({ page_size: 10 }),
+    });
 
   if (bioLoading || fencesLoading) {
-    return <p className="text-sm text-stone-500">Loading biodiversity signals…</p>;
+    return <PortfolioTabLoading />;
+  }
+
+  if (bioError || fencesError || !bio) {
+    return (
+      <PortfolioTabError
+        onRetry={() => {
+          void refetchBio();
+          void refetchFences();
+        }}
+      />
+    );
   }
 
   const fenceItems = fences?.items ?? [];
-  const analyzed = bio?.analyzed_recordings ?? 0;
+  const analyzed = bio.analyzed_recordings ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50 to-white px-5 py-6 dark:border-forest-900 dark:from-forest-950/40 dark:to-stone-950">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="max-w-xl">
-            <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-50">
-              Record soundscapes in the field
-            </h2>
-            <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-              Capture a short ambient recording to detect species and track ecosystem health for each site.
-            </p>
-          </div>
-          <Link href="/bioacoustic" className="btn-primary">
-            Open Biodiversity
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
+    <PortfolioTabShell tab="biodiversity" projectId={projectId} projectName={projectName}>
+      <PortfolioTabBanner
+        variant="cta"
+        title={t("ctaTitle")}
+        description={t("ctaDesc")}
+        action={{ label: t("openBiodiversity"), href: "/bioacoustic" }}
+      />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <PortfolioKpiGrid>
+        <PortfolioKpiCard icon={Mic} label={t("kpi.analyzed")} value={String(analyzed)} />
         <PortfolioKpiCard
-          icon={Mic}
-          label="Analyzed recordings"
-          value={String(analyzed)}
+          icon={Bird}
+          label={t("kpi.species")}
+          value={String(bio.total_species_detected ?? 0)}
         />
         <PortfolioKpiCard
           icon={Bird}
-          label="Species detected"
-          value={String(bio?.total_species_detected ?? 0)}
+          label={t("kpi.healthScore")}
+          value={bio.avg_health_score != null ? bio.avg_health_score.toFixed(0) : "—"}
         />
-        <PortfolioKpiCard
-          icon={Bird}
-          label="Avg health score"
-          value={bio?.avg_health_score != null ? bio.avg_health_score.toFixed(0) : "—"}
-        />
-      </div>
+        <PortfolioKpiCard icon={Mic} label={t("kpi.sites")} value={String(fenceItems.length)} />
+      </PortfolioKpiGrid>
 
       {fenceItems.length === 0 && analyzed === 0 ? (
         <EmptyState
           icon={Mic}
-          title="No biodiversity recordings yet"
-          description="Go to Biodiversity to record a site soundscape. Results will show up here across your portfolio."
-          action={{ label: "Start recording", href: "/bioacoustic" }}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+          action={{ label: t("startRecording"), href: "/bioacoustic" }}
         />
       ) : fenceItems.length > 0 ? (
-        <section className="card overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-            <h2 className="font-medium">Sites</h2>
-            <Link href="/bioacoustic" className="text-xs font-medium text-forest-700 hover:underline">
-              Record at a site
-            </Link>
-          </div>
-          <ul className="divide-y divide-stone-100">
+        <PortfolioSection
+          flush
+          title={t("sitesTitle")}
+          action={{ label: t("recordAtSite"), href: "/bioacoustic" }}
+        >
+          <ul className="divide-y divide-stone-100 dark:divide-stone-800">
             {fenceItems.map((fence) => (
-              <li key={fence.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+              <li
+                key={fence.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
+              >
                 <div>
-                  <p className="font-medium text-stone-900">{fence.name}</p>
-                  <p className="text-xs text-stone-500">
-                    {fence.area_ha != null ? `${fence.area_ha.toFixed(1)} ha` : "Site"}
+                  <p className="font-medium text-stone-900 dark:text-stone-50">{fence.name}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                    {fence.area_ha != null
+                      ? t("siteHa", { ha: fence.area_ha.toFixed(1) })
+                      : t("siteLabel")}
                   </p>
                 </div>
-                <Link href="/bioacoustic" className="text-xs text-forest-700 hover:underline">
-                  Record / view
+                <Link
+                  href="/bioacoustic"
+                  className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                >
+                  {t("recordView")}
                 </Link>
               </li>
             ))}
           </ul>
-        </section>
+        </PortfolioSection>
       ) : null}
-    </div>
+    </PortfolioTabShell>
   );
 }

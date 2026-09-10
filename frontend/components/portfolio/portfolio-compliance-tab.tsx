@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 import { ComplianceHubLinks } from "@/components/compliance/compliance-hub-links";
 import { compliance } from "@/lib/api";
@@ -9,6 +10,11 @@ import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { reportTabHref } from "@/lib/report-tabs";
 import { cn } from "@/lib/cn";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
+import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
+import { PortfolioSection } from "./portfolio-section";
+import { PortfolioTabBanner } from "./portfolio-tab-banner";
+import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
+import { PortfolioTabShell } from "./portfolio-tab-shell";
 
 const SEGMENT_LABEL: Record<string, string> = {
   nhai_highway: "NHAI / Highway",
@@ -21,137 +27,150 @@ const SEGMENT_LABEL: Record<string, string> = {
 };
 
 function readinessTone(pct: number) {
-  if (pct >= 80) return "text-forest-700";
-  if (pct >= 50) return "text-amber-700";
-  return "text-rose-700";
+  if (pct >= 80) return "text-forest-700 dark:text-forest-300";
+  if (pct >= 50) return "text-amber-700 dark:text-amber-300";
+  return "text-rose-700 dark:text-rose-300";
 }
 
-export function PortfolioComplianceTab() {
-  const { data, isLoading, error } = useQuery({
+export function PortfolioComplianceTab({
+  projectId,
+  projectName,
+}: {
+  projectId?: string | null;
+  projectName?: string | null;
+}) {
+  const t = useTranslations("portfolioTabs.compliance");
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["compliance-portfolio-summary"],
     queryFn: () => compliance.portfolioSummary(),
     staleTime: 60_000,
   });
 
   if (isLoading) {
-    return <p className="text-sm text-stone-500">Loading compliance summary…</p>;
+    return <PortfolioTabLoading />;
   }
 
   if (error || !data) {
-    return (
-      <p className="text-sm text-rose-700">
-        Could not load compliance summary. Check your session and try again.
-      </p>
-    );
+    return <PortfolioTabError onRetry={() => void refetch()} />;
   }
 
-  const attentionProjects = data.projects.filter(
+  const projects = projectId ? data.projects.filter((p) => p.id === projectId) : data.projects;
+
+  const attentionProjects = projects.filter(
     (p) => p.blocking_violations > 0 || p.open_violations > 0 || p.readiness_pct < 80,
   );
 
+  const gapsSuffix =
+    data.projects_with_safeguard_gaps > 0
+      ? t("projectReadiness.gapsSuffix", { count: data.projects_with_safeguard_gaps })
+      : "";
+
+  const readinessMeta = t("projectReadiness.meta", {
+    projects: projectId ? projects.length : data.project_count,
+    below: projectId
+      ? projects.filter((p) => p.readiness_pct < 80).length
+      : data.projects_below_80_readiness,
+    gaps: gapsSuffix,
+  });
+
   return (
-    <div className="space-y-6">
-      <ComplianceHubLinks />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <PortfolioTabShell tab="compliance" projectId={projectId} projectName={projectName}>
+      <ComplianceHubLinks omitPortfolio />
+
+      <PortfolioKpiGrid>
         <PortfolioKpiCard
           icon={ShieldCheck}
-          label="Avg readiness"
+          label={t("kpi.avgReadiness")}
           value={`${Math.round(data.avg_readiness_pct)}%`}
           warn={data.avg_readiness_pct < 80}
         />
         <PortfolioKpiCard
           icon={AlertTriangle}
-          label="Open violations"
+          label={t("kpi.openViolations")}
           value={String(data.open_violations)}
           warn={data.open_violations > 0}
         />
         <PortfolioKpiCard
           icon={ShieldAlert}
-          label="Blocking violations"
+          label={t("kpi.blockingViolations")}
           value={String(data.blocking_violations)}
           warn={data.blocking_violations > 0}
         />
         <PortfolioKpiCard
           icon={FileText}
-          label="Safeguard gaps"
+          label={t("kpi.safeguardGaps")}
           value={String(data.safeguard_gap_count)}
           warn={data.safeguard_gap_count > 0}
         />
-      </div>
+      </PortfolioKpiGrid>
 
-      <section className="card p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="font-medium text-stone-900">Framework exports</h2>
-            <p className="mt-1 text-xs text-stone-500">
-              Org-level BRSR, ETF, SBTi FLAG, GBF, and ISO 14064-1 packs from Reports.
-            </p>
-          </div>
-          <Link href="/reports" className="text-xs font-medium text-forest-700 hover:underline">
-            Open reports
-          </Link>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+      <PortfolioSection
+        title={t("frameworkExports.title")}
+        description={t("frameworkExports.desc")}
+        action={{ label: t("frameworkExports.openReports"), href: "/reports" }}
+      >
+        <div className="flex flex-wrap gap-2">
           {data.report_links.map((link) => (
             <Link
               key={link.tab}
               href={reportTabHref(link.tab as Parameters<typeof reportTabHref>[0])}
-              className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-700 transition hover:border-forest-200 hover:bg-forest-50 hover:text-forest-800"
+              className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-700 transition hover:border-forest-200 hover:bg-forest-50 hover:text-forest-800 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:border-forest-700"
             >
               {link.label}
             </Link>
           ))}
         </div>
-      </section>
+      </PortfolioSection>
 
-      <section className="card overflow-hidden p-0">
-        <div className="border-b border-stone-200 px-4 py-3">
-          <h2 className="font-medium">Project readiness</h2>
-          <p className="text-xs text-stone-500">
-            {data.project_count} project{data.project_count === 1 ? "" : "s"} ·{" "}
-            {data.projects_below_80_readiness} below 80% readiness
-            {data.projects_with_safeguard_gaps > 0
-              ? ` · ${data.projects_with_safeguard_gaps} with safeguard gaps`
-              : ""}
+      <PortfolioSection
+        flush
+        title={t("projectReadiness.title")}
+        description={readinessMeta}
+      >
+        {projects.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">
+            {t("projectReadiness.empty")}
           </p>
-        </div>
-        {data.projects.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-stone-500">No planting projects in your portfolio yet.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
+            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
               <tr>
-                <th className="px-4 py-2">Project</th>
-                <th className="px-4 py-2">Framework</th>
-                <th className="px-4 py-2">Readiness</th>
-                <th className="px-4 py-2">Violations</th>
-                <th className="px-4 py-2">Safeguards</th>
+                <th className="px-4 py-2">{t("table.project")}</th>
+                <th className="px-4 py-2">{t("table.framework")}</th>
+                <th className="px-4 py-2">{t("table.readiness")}</th>
+                <th className="px-4 py-2">{t("table.violations")}</th>
+                <th className="px-4 py-2">{t("table.safeguards")}</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
-              {data.projects.map((p) => (
-                <tr key={p.id} className="border-t border-stone-100">
+              {projects.map((p) => (
+                <tr key={p.id} className="border-t border-stone-100 dark:border-stone-800">
                   <td className="px-4 py-2">
-                    <Link href={`/projects/${p.id}`} className="font-medium text-forest-800 hover:underline">
+                    <Link
+                      href={`/projects/${p.id}`}
+                      className="font-medium text-forest-800 hover:underline dark:text-forest-300"
+                    >
                       {p.name}
                     </Link>
                     <div className="text-xs text-stone-500">
                       {p.code} · {SEGMENT_LABEL[p.segment] ?? p.segment}
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-xs text-stone-600">{p.recommended_checklist_label}</td>
+                  <td className="px-4 py-2 text-xs text-stone-600 dark:text-stone-400">
+                    {p.recommended_checklist_label}
+                  </td>
                   <td className="px-4 py-2">
                     <span className={cn("font-semibold", readinessTone(p.readiness_pct))}>
                       {Math.round(p.readiness_pct)}%
                     </span>
                     <div className="text-xs text-stone-500">
-                      {p.workflow_done}/{p.workflow_total} steps
+                      {t("table.steps", { done: p.workflow_done, total: p.workflow_total })}
                     </div>
                   </td>
                   <td className="px-4 py-2">
                     {p.open_violations > 0 ? (
-                      <span className="text-amber-700">
+                      <span className="text-amber-700 dark:text-amber-300">
                         {p.open_violations}
                         {p.blocking_violations > 0 ? ` (${p.blocking_violations} blocking)` : ""}
                       </span>
@@ -161,17 +180,19 @@ export function PortfolioComplianceTab() {
                   </td>
                   <td className="px-4 py-2">
                     {p.safeguard_gaps > 0 ? (
-                      <span className="text-amber-700">{p.safeguard_gaps} missing</span>
+                      <span className="text-amber-700 dark:text-amber-300">
+                        {t("safeguardsMissing", { count: p.safeguard_gaps })}
+                      </span>
                     ) : (
-                      <span className="text-forest-700">Complete</span>
+                      <span className="text-forest-700 dark:text-forest-300">{t("safeguardsComplete")}</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <Link
                       href={projectSecondaryHref(p.id, "compliance")}
-                      className="inline-flex items-center gap-1 text-xs text-forest-700 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs text-forest-700 hover:underline dark:text-forest-300"
                     >
-                      Open compliance
+                      {t("openCompliance")}
                       <ArrowRight className="h-3 w-3" />
                     </Link>
                   </td>
@@ -180,15 +201,17 @@ export function PortfolioComplianceTab() {
             </tbody>
           </table>
         )}
-      </section>
+      </PortfolioSection>
 
       {attentionProjects.length > 0 ? (
-        <section className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-950">
-          <p className="font-medium">Priority actions</p>
-          <ul className="mt-2 space-y-1 text-xs">
+        <PortfolioTabBanner variant="warn" title={t("priorityActions")}>
+          <ul className="space-y-1 text-xs">
             {attentionProjects.slice(0, 5).map((p) => (
               <li key={p.id}>
-                <Link href={projectSecondaryHref(p.id, "compliance")} className="hover:underline">
+                <Link
+                  href={projectSecondaryHref(p.id, "compliance")}
+                  className="hover:underline"
+                >
                   {p.name}
                 </Link>
                 {" — "}
@@ -200,8 +223,8 @@ export function PortfolioComplianceTab() {
               </li>
             ))}
           </ul>
-        </section>
+        </PortfolioTabBanner>
       ) : null}
-    </div>
+    </PortfolioTabShell>
   );
 }
