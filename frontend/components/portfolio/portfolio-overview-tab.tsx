@@ -11,6 +11,7 @@ import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
 import { PortfolioTabLoading, PortfolioTabError } from "./portfolio-tab-state";
+import { PortfolioRelatedLinks } from "./portfolio-related-links";
 import { PortfolioTabShell } from "./portfolio-tab-shell";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -108,6 +109,8 @@ export function PortfolioOverviewTab({
           href={alertsHref()}
         />
       </PortfolioKpiGrid>
+
+      <PortfolioRelatedLinks projectId={projectId} />
 
       <PortfolioSection flush title={t("attentionTitle")} description={t("attentionDesc")}>
         {attentionProjects.length === 0 ? (

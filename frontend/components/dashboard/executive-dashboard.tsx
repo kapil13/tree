@@ -1145,9 +1145,7 @@ export function ExecutiveDashboard() {
                 ? [{ href: "/trees/new", icon: Sprout, label: te("registerTree"), sub: te("guidedWizard") }]
               : []),
               { href: portfolioComplianceHref(), icon: ShieldCheck, label: te("portfolioCompliance"), sub: te("readinessSafeguards") },
-              { href: portfolioHealthHref(), icon: Radar, label: te("portfolioHealth"), sub: te("threatsMonitoring") },
-              { href: "/satellite", icon: Satellite, label: te("satelliteScan"), sub: te("ndviHealth") },
-              { href: "/bioacoustic", icon: Bird, label: te("recordBiodiversity"), sub: te("soundscape") },
+              { href: portfolioHealthHref(), icon: Radar, label: te("portfolioHealth"), sub: te("portfolioHealthHub") },
               { href: "/assistant", icon: Sparkles, label: te("askAiAnalyst"), sub: te("carbonTips") },
               ...(canReport
                 ? [{ href: "/reports", icon: FileText, label: te("generateReport"), sub: te("pdfExcel") }]

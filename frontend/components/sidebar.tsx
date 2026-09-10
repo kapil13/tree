@@ -43,6 +43,7 @@ import { cn } from "@/lib/cn";
 export type NavItem = {
   href: string;
   labelKey: string;
+  hintKey?: string;
   icon: LucideIcon;
   audience?: NavAudience | NavAudience[];
   excludeViewers?: boolean;
@@ -106,6 +107,7 @@ const NAV_GROUPS: NavGroup[] = [
       {
         href: "/portfolio-health",
         labelKey: "portfolioHealth",
+        hintKey: "portfolioHealthHint",
         icon: Activity,
         audience: ["professional", "field_supervisor"],
         exact: true,
@@ -114,12 +116,20 @@ const NAV_GROUPS: NavGroup[] = [
       {
         href: "/satellite",
         labelKey: "satellite",
+        hintKey: "satelliteHint",
         icon: Satellite,
         audience: ["professional", "field_supervisor"],
         featureFlag: "satellite",
       },
-      { href: "/bioacoustic", labelKey: "biodiversity", icon: Mic, audience: "professional", featureFlag: "bioacoustic" },
-      { href: "/alerts", labelKey: "alerts", icon: Bell, audience: "all" },
+      {
+        href: "/bioacoustic",
+        labelKey: "biodiversity",
+        hintKey: "biodiversityHint",
+        icon: Mic,
+        audience: "professional",
+        featureFlag: "bioacoustic",
+      },
+      { href: "/alerts", labelKey: "alerts", hintKey: "alertsHint", icon: Bell, audience: "all" },
       {
         href: "/verification",
         labelKey: "verification",
@@ -287,6 +297,7 @@ function NavItemLink({
     (item.href.startsWith("/reports/plantation") || item.href === "/reports")
       ? tReports(item.labelKey as never)
       : t(item.labelKey);
+  const hint = item.hintKey ? t(item.hintKey as never) : null;
   const Icon = item.icon;
 
   return (
@@ -294,7 +305,7 @@ function NavItemLink({
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
-      title={label}
+      title={hint ? `${label} — ${hint}` : label}
       className={cn(
         "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600",
         nested ? "pl-9 pr-3" : "px-3",
@@ -310,7 +321,14 @@ function NavItemLink({
         )}
         aria-hidden
       />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{label}</span>
+        {hint ? (
+          <span className="block truncate text-[10px] font-normal leading-tight text-stone-400 dark:text-stone-500">
+            {hint}
+          </span>
+        ) : null}
+      </span>
       {badgeCount && badgeCount > 0 ? (
         <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
           {badgeCount}
