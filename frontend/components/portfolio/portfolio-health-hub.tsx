@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Activity, Bird, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
@@ -10,14 +10,12 @@ import {
   portfolioHealthHref,
   type PortfolioHealthTab,
 } from "@/lib/portfolio-health-links";
-import { useProjectContext } from "@/lib/project-context";
+import { usePortfolioProjectScope } from "@/lib/use-portfolio-project-scope";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
 import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
 import { PortfolioOverviewTab } from "./portfolio-overview-tab";
 import { PortfolioThreatsTab } from "./portfolio-threats-tab";
-
-const TAB_IDS = ["overview", "compliance", "threats", "monitoring", "biodiversity"] as const;
 
 export type { PortfolioHealthTab } from "@/lib/portfolio-health-links";
 
@@ -27,13 +25,7 @@ export function PortfolioHealthHub() {
   const tp = useTranslations("portfolio");
   const tc = useTranslations("chrome");
   const [tab, setTab] = useState<PortfolioHealthTab>("overview");
-  const { projectId: contextProjectId, selectedProject, projects } = useProjectContext();
-  const projectIdFromUrl = searchParams.get("project");
-  const projectId = projectIdFromUrl ?? contextProjectId;
-  const projectName =
-    projectId && selectedProject?.id === projectId
-      ? selectedProject.name
-      : projects.find((p) => p.id === projectId)?.name;
+  const { projectId, projectName } = usePortfolioProjectScope(tab);
 
   const TABS = [
     { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },

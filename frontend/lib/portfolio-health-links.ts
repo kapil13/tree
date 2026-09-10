@@ -26,14 +26,18 @@ export function portfolioHealthHref(
   return query ? `/portfolio-health?${query}` : "/portfolio-health";
 }
 
-export function portfolioComplianceHref(): string {
-  return portfolioHealthHref("compliance");
+export function portfolioComplianceHref(projectId?: string | null): string {
+  return portfolioHealthHref("compliance", { projectId });
 }
 
 export function portfolioMonitoringHref(projectId?: string | null): string {
   return portfolioHealthHref("monitoring", { projectId });
 }
 
-export function portfolioThreatsHref(): string {
-  return portfolioHealthHref("threats");
+export function portfolioThreatsHref(projectId?: string | null): string {
+  return portfolioHealthHref("threats", { projectId });
+}
+
+export function portfolioBiodiversityHref(projectId?: string | null): string {
+  return portfolioHealthHref("biodiversity", { projectId });
 }
