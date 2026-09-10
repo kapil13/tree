@@ -52,6 +52,7 @@ import { localizeExecutiveBriefLine } from "@/lib/localize-executive-brief";
 import type { AppLocale } from "@/i18n/request";
 import { DataTrustBanner } from "@/components/data-trust-banner";
 import { OrgAdminChecklist } from "@/components/onboarding/org-admin-checklist";
+import { useProjectContext } from "@/lib/project-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OperationalStatusBar } from "@/components/ui";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
@@ -114,6 +115,7 @@ function DashboardSkeleton() {
 
 export function ExecutiveDashboard() {
   const { user } = useAuth();
+  const { projectId } = useProjectContext();
   const locale = useLocale() as AppLocale;
   const t = useTranslations("dashboard");
   const te = useTranslations("executive");
@@ -808,6 +810,7 @@ export function ExecutiveDashboard() {
       <ProjectPerformancePanel
         monitoring={monitoring}
         complianceSummary={complianceSummary}
+        selectedProjectId={projectId}
       />
 
       {showPlantingFocus ? (

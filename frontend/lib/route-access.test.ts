@@ -53,4 +53,8 @@ describe("route-access feature flags", () => {
     expect(canAccessPath(fieldWorker, "/projects/new")).toBe(false);
     expect(canAccessPath(proUser, "/projects/new")).toBe(true);
   });
+
+  it("blocks billing when payments feature is disabled", () => {
+    expect(canAccessPath(proUser, "/settings/billing", flags("payments"))).toBe(false);
+  });
 });

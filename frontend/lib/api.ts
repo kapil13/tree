@@ -1818,6 +1818,42 @@ export const plantingProjects = {
       work_areas?: import("@/components/pest-intel-panel").PestIntel[];
     };
   },
+  async fieldBrief(projectId?: string) {
+    return (
+      await api.get<{
+        project_count: number;
+        tree_count: number;
+        open_violations: number;
+        survival_due: number;
+        unread_alerts: number;
+        plots_due: number;
+        projects: Array<{
+          id: string;
+          code: string;
+          name: string;
+          open_violations: number;
+          survival_due: number;
+        }>;
+        recent_violations: Array<{
+          id: string;
+          project_id: string;
+          project_name: string;
+          message: string;
+          tree_id: string | null;
+        }>;
+        plots_due_preview: Array<{
+          plot_id: string;
+          plot_code: string;
+          project_id: string;
+          project_name: string;
+          status: string;
+        }>;
+        scoped_project_id: string | null;
+      }>("/v1/planting-projects/field-brief", {
+        params: projectId ? { project_id: projectId } : undefined,
+      })
+    ).data;
+  },
   async fieldOpsSummary() {
     return (
       await api.get<{
@@ -3235,6 +3271,23 @@ export type VerificationSample = {
 };
 
 export const verificationWorkflow = {
+  async listSamples(options?: { projectId?: string; pendingOnly?: boolean }) {
+    return (
+      await api.get<
+        Array<
+          VerificationSample & {
+            project_name?: string;
+            project_code?: string;
+          }
+        >
+      >("/v1/verification/samples", {
+        params: {
+          project_id: options?.projectId,
+          pending_only: options?.pendingOnly ? true : undefined,
+        },
+      })
+    ).data;
+  },
   async createSample(projectId: string, payload: { sample_pct: number; method?: "random" | "stratified" }) {
     return (await api.post<VerificationSample>(`/v1/verification/projects/${projectId}/samples`, payload)).data;
   },

@@ -29,6 +29,19 @@ class ProjectMemberOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FieldBriefOut(BaseModel):
+    project_count: int
+    tree_count: int
+    open_violations: int
+    survival_due: int
+    unread_alerts: int = 0
+    plots_due: int = 0
+    projects: list[dict]
+    recent_violations: list[dict]
+    plots_due_preview: list[dict] = Field(default_factory=list)
+    scoped_project_id: str | None = None
+
+
 class FieldOpsSummaryOut(BaseModel):
     project_count: int
     tree_count: int

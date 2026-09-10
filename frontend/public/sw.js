@@ -1,12 +1,12 @@
 /* BYOT PWA service worker — cache supervisor tree list for offline use */
 
-const CACHE = "byot-pwa-v3";
+const CACHE = "byot-pwa-v4";
 const OFFLINE_TREE_URL = "/api/v1/trees?page_size=50";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(["/manifest.webmanifest", "/field-ops/offline-trees"]),
+      cache.addAll(["/manifest.webmanifest", "/field-ops/sync-queue"]),
     ),
   );
   self.skipWaiting();
@@ -56,7 +56,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(async () => {
-        const cached = await caches.match("/field-ops/offline-trees");
+        const cached = await caches.match("/field-ops/sync-queue");
         return cached ?? Response.error();
       }),
     );

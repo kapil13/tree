@@ -22,6 +22,7 @@ import {
   Sparkles,
   TreePine,
   Activity,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { AranyixMark } from "@/components/brand/aranyix-logo";
@@ -119,6 +120,12 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/bioacoustic", labelKey: "biodiversity", icon: Mic, audience: "professional", featureFlag: "bioacoustic" },
       { href: "/alerts", labelKey: "alerts", icon: Bell, audience: "all" },
+      {
+        href: "/verification",
+        labelKey: "verification",
+        icon: ShieldCheck,
+        audience: ["professional", "field_supervisor"],
+      },
     ],
   },
   {

@@ -30,6 +30,7 @@ import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { plantingProjects, trees } from "@/lib/api";
 import { fieldOpsHref } from "@/lib/field-ops-links";
 import { useAuth } from "@/lib/auth-store";
+import { useProjectContext } from "@/lib/project-context";
 import { useOfflineTreeQueue } from "@/lib/offline/use-offline-queue";
 import { scopedKey } from "@/lib/query-keys";
 import { cn } from "@/lib/cn";
@@ -50,34 +51,56 @@ function FieldDashboardSkeleton() {
 
 export function FieldWorkerDashboard() {
   const { user } = useAuth();
+  const { projectId } = useProjectContext();
   const { pendingCount, syncing, syncNow } = useOfflineTreeQueue();
   const tf = useTranslations("fieldWorker");
   const tfo = useTranslations("fieldOps");
   const to = useTranslations("opsStatus");
-  const [projectsQ, treesQ, fieldOpsQ] = useQueries({
+  const [projectsQ, treesQ, briefQ, fieldOpsQ] = useQueries({
     queries: [
       {
         queryKey: scopedKey(user, "projects-field-home"),
         queryFn: () => plantingProjects.list({ page: 1 }),
       },
       {
-        queryKey: scopedKey(user, "trees-field-home"),
-        queryFn: () => trees.list({ page_size: 8 }),
+        queryKey: scopedKey(user, "trees-field-home", projectId ?? "all"),
+        queryFn: () =>
+          trees.list({
+            page_size: 8,
+            ...(projectId ? { project_id: projectId } : {}),
+          }),
       },
       {
-        queryKey: scopedKey(user, "field-ops-summary-home"),
+        queryKey: scopedKey(user, "field-brief-home", projectId ?? "all"),
+        queryFn: () => plantingProjects.fieldBrief(projectId ?? undefined),
+      },
+      {
+        queryKey: scopedKey(user, "field-ops-summary-home", projectId ?? "all"),
         queryFn: () => plantingProjects.fieldOpsSummary(),
       },
     ],
   });
 
-  const projectItems = projectsQ.data?.items ?? [];
+  const projectItems = (projectsQ.data?.items ?? []).filter((p) =>
+    projectId ? p.id === projectId : true,
+  );
   const recentTrees = treesQ.data?.items ?? [];
-  const fieldOps = fieldOpsQ.data;
+  const brief = briefQ.data;
+  const fieldOpsRaw = fieldOpsQ.data;
+  const fieldOps = fieldOpsRaw
+    ? {
+        ...fieldOpsRaw,
+        projects: projectId
+          ? fieldOpsRaw.projects.filter((p) => p.id === projectId)
+          : fieldOpsRaw.projects,
+        open_violations: brief?.open_violations ?? fieldOpsRaw.open_violations,
+        survival_due: brief?.survival_due ?? fieldOpsRaw.survival_due,
+      }
+    : undefined;
   const projectsLoading = projectsQ.isLoading;
   const treesLoading = treesQ.isLoading;
 
-  if (projectsLoading || treesLoading || fieldOpsQ.isLoading) {
+  if (projectsLoading || treesLoading || briefQ.isLoading || fieldOpsQ.isLoading) {
     return <FieldDashboardSkeleton />;
   }
 
