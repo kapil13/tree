@@ -686,6 +686,49 @@
     "tabBioShort": "Bio",
     "ariaSections": "Portfolio health sections"
   },
+  "portfolioTabs": {
+    "common": {
+      "loading": "Loading portfolio data…",
+      "error": "Could not load this section. Check your session and try again.",
+      "retry": "Retry"
+    },
+    "scope": {
+      "showingProject": "Showing data for {project}",
+      "viewAllProjects": "View all projects"
+    },
+    "overview": {
+      "intro": "Portfolio posture at a glance. Click a metric to open the right section.",
+      "kpi": {
+        "trees": "Trees",
+        "violations": "Open violations",
+        "sitesNeedingScan": "Sites needing scan",
+        "unreadAlerts": "Unread alerts"
+      },
+      "attentionTitle": "Needs attention",
+      "attentionDesc": "Open violations or survival surveys due",
+      "attentionEmpty": "All projects look healthy — no urgent actions.",
+      "fixCompliance": "Fix compliance",
+      "reviewTrees": "Review trees",
+      "table": {
+        "project": "Project",
+        "segment": "Segment",
+        "violations": "Violations",
+        "geotagDue": "Geotag due"
+      }
+    },
+    "compliance": {
+      "intro": "Readiness, violations, and safeguard gaps across your planting projects."
+    },
+    "threats": {
+      "intro": "Weather, pest risk, integrations, and threat watch across work areas."
+    },
+    "monitoring": {
+      "intro": "Sites needing scans, alerts, and satellite follow-ups. NDVI is the everyday signal; SAR fills in during clouds and monsoon."
+    },
+    "biodiversity": {
+      "intro": "Soundscape recordings and species signals across your sites."
+    }
+  },
   "treesPage": {
     "purpose": "Set up & plant · Trees",
     "title": "Trees",

@@ -10,6 +10,7 @@ import {
   portfolioHealthHref,
   type PortfolioHealthTab,
 } from "@/lib/portfolio-health-links";
+import { useProjectContext } from "@/lib/project-context";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
 import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
@@ -26,7 +27,13 @@ export function PortfolioHealthHub() {
   const tp = useTranslations("portfolio");
   const tc = useTranslations("chrome");
   const [tab, setTab] = useState<PortfolioHealthTab>("overview");
-  const projectId = searchParams.get("project");
+  const { projectId: contextProjectId, selectedProject, projects } = useProjectContext();
+  const projectIdFromUrl = searchParams.get("project");
+  const projectId = projectIdFromUrl ?? contextProjectId;
+  const projectName =
+    projectId && selectedProject?.id === projectId
+      ? selectedProject.name
+      : projects.find((p) => p.id === projectId)?.name;
 
   const TABS = [
     { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },
@@ -67,7 +74,13 @@ export function PortfolioHealthHub() {
         onSelect={(id) => selectTab(id as PortfolioHealthTab)}
       />
 
-      {tab === "overview" && <PortfolioOverviewTab onSelectTab={selectTab} />}
+      {tab === "overview" && (
+        <PortfolioOverviewTab
+          onSelectTab={selectTab}
+          projectId={projectId}
+          projectName={projectName}
+        />
+      )}
       {tab === "compliance" && <PortfolioComplianceTab />}
       {tab === "threats" && <PortfolioThreatsTab />}
       {tab === "monitoring" && <PortfolioMonitoringTab projectId={projectId} />}
