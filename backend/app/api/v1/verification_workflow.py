@@ -19,7 +19,11 @@ from app.schemas.verification_workflow import (
     VerificationSampleCreate,
 )
 from app.services.audit import record_audit
-from app.services.planting_projects.access import can_manage_project, load_project, project_list_filter
+from app.services.planting_projects.access import (
+    can_manage_project,
+    load_project,
+    project_list_filter,
+)
 from app.services.verification.samples import (
     attest_verification_item,
     create_verification_sample,
