@@ -5,12 +5,19 @@ import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 
-export function PortfolioTabLoading({ label }: { label?: string }) {
+export function PortfolioTabLoading({
+  label,
+  hint,
+}: {
+  label?: string;
+  hint?: string;
+}) {
   const t = useTranslations("portfolioTabs.common");
 
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
       <p className="sr-only">{label ?? t("loading")}</p>
+      {hint ? <p className="text-xs text-stone-400 dark:text-stone-500">{hint}</p> : null}
       <PortfolioKpiGrid>
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={index} className="h-20 rounded-xl" />

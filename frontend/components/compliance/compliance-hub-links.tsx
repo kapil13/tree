@@ -13,19 +13,28 @@ import { cn } from "@/lib/cn";
 
 type ComplianceHubLinksProps = {
   projectId?: string;
+  omitPortfolio?: boolean;
   className?: string;
 };
 
-export function ComplianceHubLinks({ projectId, className }: ComplianceHubLinksProps) {
+export function ComplianceHubLinks({
+  projectId,
+  omitPortfolio = false,
+  className,
+}: ComplianceHubLinksProps) {
   const t = useTranslations("complianceHub");
 
   const links = [
-    {
-      href: portfolioComplianceHref(),
-      icon: ShieldCheck,
-      label: t("portfolioLabel"),
-      description: t("portfolioDesc"),
-    },
+    ...(!omitPortfolio
+      ? [
+          {
+            href: portfolioComplianceHref(),
+            icon: ShieldCheck,
+            label: t("portfolioLabel"),
+            description: t("portfolioDesc"),
+          },
+        ]
+      : []),
     ...(projectId
       ? [
           {

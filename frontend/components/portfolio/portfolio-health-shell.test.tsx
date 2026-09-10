@@ -54,6 +54,17 @@ describe("PortfolioKpiCard", () => {
   });
 });
 
+describe("ComplianceHubLinks omitPortfolio", () => {
+  it("filters portfolio link when omitPortfolio is true", async () => {
+    const { ComplianceHubLinks } = await import("@/components/compliance/compliance-hub-links");
+    const { container } = render(withIntl(<ComplianceHubLinks omitPortfolio />));
+    const links = container.querySelectorAll("a");
+    const hrefs = Array.from(links).map((a) => a.getAttribute("href"));
+    expect(hrefs).not.toContain("/portfolio-health?tab=compliance");
+    expect(hrefs.some((href) => href?.startsWith("/reports"))).toBe(true);
+  });
+});
+
 describe("PortfolioTabBanner", () => {
   it("shows scoped project copy", () => {
     render(

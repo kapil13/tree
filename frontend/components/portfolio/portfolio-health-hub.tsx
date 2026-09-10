@@ -81,10 +81,18 @@ export function PortfolioHealthHub() {
           projectName={projectName}
         />
       )}
-      {tab === "compliance" && <PortfolioComplianceTab />}
-      {tab === "threats" && <PortfolioThreatsTab />}
-      {tab === "monitoring" && <PortfolioMonitoringTab projectId={projectId} />}
-      {tab === "biodiversity" && <PortfolioBiodiversityTab />}
+      {tab === "compliance" && (
+        <PortfolioComplianceTab projectId={projectId} projectName={projectName} />
+      )}
+      {tab === "threats" && (
+        <PortfolioThreatsTab projectId={projectId} projectName={projectName} />
+      )}
+      {tab === "monitoring" && (
+        <PortfolioMonitoringTab projectId={projectId} projectName={projectName} />
+      )}
+      {tab === "biodiversity" && (
+        <PortfolioBiodiversityTab projectId={projectId} projectName={projectName} />
+      )}
     </div>
   );
 }
