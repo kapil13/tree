@@ -717,16 +717,145 @@
       }
     },
     "compliance": {
-      "intro": "आपकी रोपण परियोजनाओं में तैयारी, उल्लंघन और सुरक्षा अंतराल।"
+      "intro": "आपकी रोपण परियोजनाओं में तैयारी, उल्लंघन और सुरक्षा अंतराल।",
+      "kpi": {
+        "avgReadiness": "औसत तैयारी",
+        "openViolations": "खुले उल्लंघन",
+        "blockingViolations": "अवरोधक उल्लंघन",
+        "safeguardGaps": "सुरक्षा अंतराल"
+      },
+      "frameworkExports": {
+        "title": "फ्रेमवर्क निर्यात",
+        "desc": "रिपोर्ट से BRSR, ETF, SBTi FLAG, GBF और ISO 14064-1 पैक।",
+        "openReports": "रिपोर्ट खोलें"
+      },
+      "projectReadiness": {
+        "title": "परियोजना तैयारी",
+        "meta": "{projects} परियोजनाएँ · {below} 80% से कम तैयारी{gaps}",
+        "gapsSuffix": " · {count} में सुरक्षा अंतराल",
+        "empty": "आपके पोर्टफोलियो में अभी कोई रोपण परियोजना नहीं है।"
+      },
+      "priorityActions": "प्राथमिक कार्रवाई",
+      "safeguardsComplete": "पूर्ण",
+      "safeguardsMissing": "{count} लापता",
+      "openCompliance": "अनुपालन खोलें",
+      "table": {
+        "project": "परियोजना",
+        "framework": "फ्रेमवर्क",
+        "readiness": "तैयारी",
+        "violations": "उल्लंघन",
+        "safeguards": "सुरक्षा",
+        "steps": "{done}/{total} चरण"
+      }
     },
     "threats": {
-      "intro": "कार्य क्षेत्रों में मौसम, कीट जोखिम, एकीकरण और खतरा निगरानी।"
+      "intro": "कार्य क्षेत्रों में मौसम, कीट जोखिम, एकीकरण और खतरा निगरानी।",
+      "loadingHint": "आपके कार्य क्षेत्रों के लिए मौसम और खतरा डेटा लोड हो रहा है — इसमें 30 सेकंड तक लग सकते हैं।",
+      "refreshing": "रीफ्रेश हो रहा है…",
+      "kpi": {
+        "highestRisk": "उच्चतम पोर्टफोलियो जोखिम",
+        "weatherAlerts": "मौसम अलर्ट",
+        "pestSites": "उच्च कीट-जोखिम साइटें",
+        "speciesBaselines": "बेसलाइन में प्रजाति"
+      },
+      "fusion": {
+        "title": "Sentinel + Bhoonidhi फ्यूजन",
+        "summary": "{dual} दोहरे स्रोत · {stale} पुराना NDVI{sar}",
+        "sarSuffix": " · SAR अखंडता औसत {score}",
+        "empty": "अभी कोई परियोजना कार्य क्षेत्र नहीं।"
+      },
+      "integrations": "डेटा एकीकरण",
+      "weatherAlerts": "मौसम अलर्ट",
+      "viewProject": "परियोजना देखें",
+      "pestHotspots": "कीट और मौसम हॉटस्पॉट",
+      "earlyWarnings": "प्रारंभिक चेतावनी",
+      "threatWatch": "खतरा निगरानी साइटें",
+      "threatWatchEmpty": "अभी खतरा निगरानी डेटा वाला कोई कार्य क्षेत्र नहीं।",
+      "table": {
+        "workArea": "कार्य क्षेत्र",
+        "fusion": "फ्यूजन",
+        "ndvi": "NDVI",
+        "sarIntegrity": "SAR अखंडता",
+        "sarMode": "SAR मोड",
+        "trend": "प्रवृत्ति",
+        "bhoonidhiScenes": "Bhoonidhi दृश्य",
+        "action": "कार्रवाई",
+        "project": "परियोजना",
+        "risk": "जोखिम",
+        "pest": "कीट",
+        "rain48h": "48घं बारिश",
+        "trees": "पेड़",
+        "ndviTrend": "NDVI प्रवृत्ति"
+      }
     },
     "monitoring": {
-      "intro": "स्कैन, अलर्ट और उपग्रह फॉलो-अप की जरूरत वाली साइटें। NDVI दैनिक संकेत है; मानसून में SAR भरता है।"
+      "intro": "स्कैन, अलर्ट और उपग्रह फॉलो-अप की जरूरत वाली साइटें। NDVI दैनिक संकेत है; मानसून में SAR भरता है।",
+      "kpi": {
+        "sitesNeedingScan": "स्कैन की जरूरत वाली साइटें",
+        "atRiskSites": "जोखिम वाली साइटें",
+        "unreadAlerts": "अपठित अलर्ट",
+        "treesDueScan": "स्कैन के लिए पेड़"
+      },
+      "scanEngine": "स्कैन इंजन",
+      "scanEngineDetail": "{trees} पेड़ {tiles} टाइलों में नामांकित{batching}{watch}{firms}",
+      "tileBatched": " (टाइल-बैच)",
+      "watchAreas": " · {count} मैनुअल वॉच कार्य क्षेत्र",
+      "firmsLive": " · FIRMS लाइव",
+      "firmsFallback": " · FIRMS मौसमी फॉलबैक",
+      "exportsTitle": "SAR निर्यात",
+      "sarProviders": "SAR प्रदाता: {live} लाइव · {stub} स्टब",
+      "exportPdf": "SAR PDF निर्यात",
+      "exportCsv": "SAR CSV निर्यात",
+      "staleSar": "{count, plural, one {# कार्य क्षेत्र में} other {# कार्य क्षेत्रों में}} पिछले 35 दिनों में कोई SAR स्कैन नहीं। Satellite पेज से SAR स्कैन चलाएँ।",
+      "sarAlerts": "प्रकार के अनुसार SAR अलर्ट",
+      "fieldVerifications": "खुले SAR फील्ड सत्यापन",
+      "openCount": "{count} खुले",
+      "unreadAlerts": "प्रकार के अनुसार अपठित अलर्ट",
+      "workAreaStatus": "कार्य क्षेत्र उपग्रह स्थिति",
+      "recentJobs": "हाल की पृष्ठभूमि जॉब",
+      "jobsEmpty": "अभी कोई जॉब रन दर्ज नहीं।",
+      "openSatellite": "उपग्रह खोलें →",
+      "scanProject": "परियोजना स्कैन",
+      "neverScanned": "कभी नहीं",
+      "noSar": "कोई SAR नहीं",
+      "daysAgo": "{days}दिन पहले",
+      "table": {
+        "workArea": "कार्य क्षेत्र",
+        "project": "परियोजना",
+        "segment": "खंड",
+        "lastScan": "अंतिम स्कैन",
+        "ndvi": "NDVI",
+        "sarIntegrity": "SAR अखंडता",
+        "sarMode": "SAR मोड",
+        "recommendedAction": "अनुशंसित कार्रवाई",
+        "alert": "अलर्ट",
+        "severity": "गंभीरता",
+        "integrity": "अखंडता",
+        "job": "जॉब",
+        "status": "स्थिति",
+        "finished": "समाप्त",
+        "result": "परिणाम"
+      }
     },
     "biodiversity": {
-      "intro": "आपकी साइटों में ध्वनि दृश्य रिकॉर्डिंग और प्रजाति संकेत।"
+      "intro": "आपकी साइटों में ध्वनि दृश्य रिकॉर्डिंग और प्रजाति संकेत।",
+      "ctaTitle": "क्षेत्र में ध्वनि दृश्य रिकॉर्ड करें",
+      "ctaDesc": "प्रजाति पहचान और पारिस्थितिकी स्वास्थ्य के लिए छोटी परिवेश रिकॉर्डिंग करें।",
+      "openBiodiversity": "जैव विविधता खोलें",
+      "kpi": {
+        "analyzed": "विश्लेषित रिकॉर्डिंग",
+        "species": "पहचानी गई प्रजाति",
+        "healthScore": "औसत स्वास्थ्य स्कोर",
+        "sites": "ट्रैक की गई साइटें"
+      },
+      "emptyTitle": "अभी कोई जैव विविधता रिकॉर्डिंग नहीं",
+      "emptyDesc": "साइट ध्वनि दृश्य रिकॉर्ड करने के लिए जैव विविधता पर जाएँ। परिणाम यहाँ दिखेंगे।",
+      "startRecording": "रिकॉर्डिंग शुरू करें",
+      "sitesTitle": "साइटें",
+      "recordAtSite": "साइट पर रिकॉर्ड करें",
+      "recordView": "रिकॉर्ड / देखें",
+      "siteHa": "{ha} हे.",
+      "siteLabel": "साइट"
     }
   },
   "treesPage": {

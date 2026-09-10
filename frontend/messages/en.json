@@ -717,16 +717,145 @@
       }
     },
     "compliance": {
-      "intro": "Readiness, violations, and safeguard gaps across your planting projects."
+      "intro": "Readiness, violations, and safeguard gaps across your planting projects.",
+      "kpi": {
+        "avgReadiness": "Avg readiness",
+        "openViolations": "Open violations",
+        "blockingViolations": "Blocking violations",
+        "safeguardGaps": "Safeguard gaps"
+      },
+      "frameworkExports": {
+        "title": "Framework exports",
+        "desc": "Org-level BRSR, ETF, SBTi FLAG, GBF, and ISO 14064-1 packs from Reports.",
+        "openReports": "Open reports"
+      },
+      "projectReadiness": {
+        "title": "Project readiness",
+        "meta": "{projects} projects · {below} below 80% readiness{gaps}",
+        "gapsSuffix": " · {count} with safeguard gaps",
+        "empty": "No planting projects in your portfolio yet."
+      },
+      "priorityActions": "Priority actions",
+      "safeguardsComplete": "Complete",
+      "safeguardsMissing": "{count} missing",
+      "openCompliance": "Open compliance",
+      "table": {
+        "project": "Project",
+        "framework": "Framework",
+        "readiness": "Readiness",
+        "violations": "Violations",
+        "safeguards": "Safeguards",
+        "steps": "{done}/{total} steps"
+      }
     },
     "threats": {
-      "intro": "Weather, pest risk, integrations, and threat watch across work areas."
+      "intro": "Weather, pest risk, integrations, and threat watch across work areas.",
+      "loadingHint": "Fetching weather and threat data for your work areas — this can take up to 30 seconds.",
+      "refreshing": "Refreshing…",
+      "kpi": {
+        "highestRisk": "Highest portfolio risk",
+        "weatherAlerts": "Weather alerts",
+        "pestSites": "High pest-risk sites",
+        "speciesBaselines": "Species in baselines"
+      },
+      "fusion": {
+        "title": "Sentinel + Bhoonidhi fusion",
+        "summary": "{dual} dual-source · {stale} stale NDVI{sar}",
+        "sarSuffix": " · SAR integrity avg {score}",
+        "empty": "No project work areas yet."
+      },
+      "integrations": "Data integrations",
+      "weatherAlerts": "Weather alerts",
+      "viewProject": "View project",
+      "pestHotspots": "Pest & weather hotspots",
+      "earlyWarnings": "Early warnings",
+      "threatWatch": "Threat watch sites",
+      "threatWatchEmpty": "No work areas with threat watch data yet.",
+      "table": {
+        "workArea": "Work area",
+        "fusion": "Fusion",
+        "ndvi": "NDVI",
+        "sarIntegrity": "SAR integrity",
+        "sarMode": "SAR mode",
+        "trend": "Trend",
+        "bhoonidhiScenes": "Bhoonidhi scenes",
+        "action": "Action",
+        "project": "Project",
+        "risk": "Risk",
+        "pest": "Pest",
+        "rain48h": "Rain 48h",
+        "trees": "Trees",
+        "ndviTrend": "NDVI trend"
+      }
     },
     "monitoring": {
-      "intro": "Sites needing scans, alerts, and satellite follow-ups. NDVI is the everyday signal; SAR fills in during clouds and monsoon."
+      "intro": "Sites needing scans, alerts, and satellite follow-ups. NDVI is the everyday signal; SAR fills in during clouds and monsoon.",
+      "kpi": {
+        "sitesNeedingScan": "Sites needing scan",
+        "atRiskSites": "At-risk sites",
+        "unreadAlerts": "Unread alerts",
+        "treesDueScan": "Trees due for scan"
+      },
+      "scanEngine": "Scan engine",
+      "scanEngineDetail": "{trees} trees enrolled across {tiles} tiles{batching}{watch}{firms}",
+      "tileBatched": " (tile-batched)",
+      "watchAreas": " · {count} manual watch work area(s)",
+      "firmsLive": " · FIRMS live",
+      "firmsFallback": " · FIRMS seasonal fallback",
+      "exportsTitle": "SAR exports",
+      "sarProviders": "SAR providers: {live} live · {stub} stub",
+      "exportPdf": "Export SAR PDF",
+      "exportCsv": "Export SAR CSV",
+      "staleSar": "{count, plural, one {# work area has} other {# work areas have}} no SAR scan in the last 35 days. Run a SAR scan from the Satellite page.",
+      "sarAlerts": "SAR alerts by type",
+      "fieldVerifications": "Open SAR field verifications",
+      "openCount": "{count} open",
+      "unreadAlerts": "Unread alerts by type",
+      "workAreaStatus": "Work area satellite status",
+      "recentJobs": "Recent background jobs",
+      "jobsEmpty": "No job runs recorded yet.",
+      "openSatellite": "Open satellite →",
+      "scanProject": "Scan project",
+      "neverScanned": "Never",
+      "noSar": "No SAR",
+      "daysAgo": "{days}d ago",
+      "table": {
+        "workArea": "Work area",
+        "project": "Project",
+        "segment": "Segment",
+        "lastScan": "Last scan",
+        "ndvi": "NDVI",
+        "sarIntegrity": "SAR integrity",
+        "sarMode": "SAR mode",
+        "recommendedAction": "Recommended action",
+        "alert": "Alert",
+        "severity": "Severity",
+        "integrity": "Integrity",
+        "job": "Job",
+        "status": "Status",
+        "finished": "Finished",
+        "result": "Result"
+      }
     },
     "biodiversity": {
-      "intro": "Soundscape recordings and species signals across your sites."
+      "intro": "Soundscape recordings and species signals across your sites.",
+      "ctaTitle": "Record soundscapes in the field",
+      "ctaDesc": "Capture a short ambient recording to detect species and track ecosystem health for each site.",
+      "openBiodiversity": "Open biodiversity",
+      "kpi": {
+        "analyzed": "Analyzed recordings",
+        "species": "Species detected",
+        "healthScore": "Avg health score",
+        "sites": "Sites tracked"
+      },
+      "emptyTitle": "No biodiversity recordings yet",
+      "emptyDesc": "Go to Biodiversity to record a site soundscape. Results will show up here across your portfolio.",
+      "startRecording": "Start recording",
+      "sitesTitle": "Sites",
+      "recordAtSite": "Record at a site",
+      "recordView": "Record / view",
+      "siteHa": "{ha} ha",
+      "siteLabel": "Site"
     }
   },
   "treesPage": {

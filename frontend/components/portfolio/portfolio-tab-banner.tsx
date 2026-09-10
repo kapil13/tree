@@ -18,12 +18,14 @@ export function PortfolioTabBanner({
   title,
   description,
   action,
+  children,
   className,
 }: {
   variant: PortfolioTabBannerVariant;
   title?: string;
   description?: string;
   action?: { label: string; href: string };
+  children?: React.ReactNode;
   className?: string;
 }) {
   return (
@@ -39,6 +41,7 @@ export function PortfolioTabBanner({
         {description ? (
           <p className={cn(title && "mt-1", "text-stone-700 dark:text-stone-300")}>{description}</p>
         ) : null}
+        {children ? <div className={cn((title || description) && "mt-2")}>{children}</div> : null}
       </div>
       {action ? (
         <Link href={action.href} className="btn-secondary shrink-0 text-xs">
