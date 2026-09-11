@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { auditEngagements } from "@/lib/api";
 import { projectAuditIntakeHref } from "@/lib/audit-intake-links";
 import { fieldOpsHref } from "@/lib/field-ops-links";
-import { portfolioHealthHref } from "@/lib/portfolio-health-links";
+import { portfolioAuditHref } from "@/lib/portfolio-health-links";
 import { scopedKey } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
@@ -39,7 +39,7 @@ export function AuditPortfolioStrip({ className }: { className?: string }) {
             {t("subtitle", { count: data.estate_project_count })}
           </p>
         </div>
-        <Link href={portfolioHealthHref("overview")} className="dash-link">
+        <Link href={portfolioAuditHref()} className="dash-link">
           {t("portfolioLink")} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -49,28 +49,28 @@ export function AuditPortfolioStrip({ className }: { className?: string }) {
           {
             label: t("engagements"),
             value: fmtNum(data.engagement_count),
-            href: portfolioHealthHref("overview"),
+            href: portfolioAuditHref(),
             icon: ClipboardCheck,
             warn: false,
           },
           {
             label: t("plotsDue"),
             value: fmtNum(data.audit_plots_due),
-            href: fieldOpsHref(),
+            href: fieldOpsHref({ section: "audit" }),
             icon: MapPin,
             warn: warnPlots,
           },
           {
             label: t("inField"),
             value: fmtNum(data.engagements_in_field),
-            href: fieldOpsHref(),
+            href: portfolioAuditHref(),
             icon: MapPin,
             warn: warnField,
           },
           {
             label: t("attested"),
             value: fmtNum(data.engagements_attested),
-            href: portfolioHealthHref("overview"),
+            href: portfolioAuditHref(),
             icon: ShieldCheck,
             warn: false,
           },
@@ -108,7 +108,10 @@ export function AuditPortfolioStrip({ className }: { className?: string }) {
                     {t("plotsDueLabel")}
                   </p>
                 </div>
-                <Link href={fieldOpsHref()} className="text-xs font-medium text-forest-700 hover:underline">
+                <Link
+                  href={fieldOpsHref({ section: "audit" })}
+                  className="text-xs font-medium text-forest-700 hover:underline"
+                >
                   {t("openQueue")}
                 </Link>
               </li>

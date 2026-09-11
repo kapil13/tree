@@ -800,7 +800,7 @@
   "auditPortfolio": {
     "title": "Estate Watch audit portfolio",
     "subtitle": "{count, plural, one {# estate watch programme} other {# estate watch programmes}}",
-    "portfolioLink": "Portfolio health",
+    "portfolioLink": "Audit command center",
     "engagements": "Active engagements",
     "plotsDue": "Audit plots due",
     "plotsDueLabel": "plots due",
@@ -1055,6 +1055,8 @@
     "title": "Portfolio health",
     "description": "Start with overall posture, then drill into compliance risk, threats, satellite monitoring, and biodiversity signals across all projects.",
     "tabOverview": "Overview",
+    "tabAudit": "Estate Watch audit",
+    "tabAuditShort": "Audit",
     "tabCompliance": "Compliance",
     "tabThreats": "Threats & weather",
     "tabThreatsShort": "Threats",
@@ -1091,6 +1093,54 @@
     "scope": {
       "showingProject": "Showing data for {project}",
       "viewAllProjects": "View all projects"
+    },
+    "audit": {
+      "intro": "Estate Watch command center — engagement status, field plot queue, and attestation readiness across estate monitoring programmes.",
+      "empty": "No estate monitoring projects in your portfolio yet. Estate Watch audit appears here when programmes use the estate_monitoring scheme.",
+      "kpi": {
+        "engagements": "Active engagements",
+        "plotsDue": "Audit plots due",
+        "inField": "In field verification",
+        "exportReady": "Export ready",
+        "attested": "Attested"
+      },
+      "statusBreakdown": {
+        "title": "Engagement status",
+        "desc": "Rollup of Estate Watch phases across your estate programmes"
+      },
+      "engagements": {
+        "title": "Priority engagements",
+        "desc": "Projects needing field visits, export review, or attestation",
+        "empty": "No engagements need immediate action.",
+        "openFieldOps": "Open field queue"
+      },
+      "fieldQueue": {
+        "title": "Field plot queue",
+        "desc": "Risk-weighted sample plots waiting for verifier visits",
+        "empty": "All assigned audit plots are visited for the current scope.",
+        "openQueue": "Open field queue",
+        "recordVisit": "Record visit"
+      },
+      "crossLinks": {
+        "title": "Audit operations",
+        "desc": "Jump to field verification, mobile sync, and export workflows",
+        "fieldOps": "Field ops queue",
+        "fieldOpsDesc": "Record plot visits and upload field evidence",
+        "mobile": "Mobile verifier",
+        "mobileDesc": "Field team sync queue and attestation on mobile",
+        "reports": "Framework exports",
+        "reportsDesc": "BRSR and MRV report packs from Reports"
+      },
+      "openAudit": "Open audit",
+      "openAttestation": "Attestation",
+      "table": {
+        "project": "Project",
+        "segment": "Segment",
+        "status": "Status",
+        "plotsDue": "Plots due",
+        "plot": "Plot",
+        "risk": "Risk"
+      }
     },
     "overview": {
       "intro": "Portfolio posture at a glance. Click a metric to open the right section.",
