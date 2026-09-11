@@ -3669,7 +3669,18 @@ export const auditEngagements = {
         engagement_id: string;
         status: string;
         export_bundle_sha256?: string | null;
-        attestation?: Record<string, unknown> | null;
+        attestation?: {
+          id?: string;
+          verdict: string;
+          summary: string;
+          notes?: string | null;
+          status: string;
+          export_bundle_sha256?: string | null;
+          attestation_hash?: string | null;
+          epistemic_label?: string;
+          signed_at?: string | null;
+          reviewer_id?: string | null;
+        } | null;
         review_queue: {
           anomaly_count: number;
           pending_review_count: number;

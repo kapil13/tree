@@ -17,6 +17,13 @@ type ReviewItem = {
   latest_review?: { disposition: string; rationale: string } | null;
 };
 
+type AttestationRecord = {
+  status: string;
+  verdict: string;
+  summary: string;
+  attestation_hash?: string | null;
+};
+
 export function AuditAttestationPanel({
   engagementId,
   engagementStatus,
@@ -70,7 +77,7 @@ export function AuditAttestationPanel({
 
   const items = (data?.review_queue?.items ?? []) as ReviewItem[];
   const pending = data?.review_queue?.pending_review_count ?? 0;
-  const attestation = data?.attestation;
+  const attestation = data?.attestation as AttestationRecord | null | undefined;
 
   return (
     <section className="space-y-6">
@@ -141,8 +148,7 @@ export function AuditAttestationPanel({
                       )}
                     </div>
                   </div>
-                  {engagementStatus !== "attested" && (
-                    <div className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-800">
+                  <div className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-800">
                       {reviewingId === item.id ? (
                         <div className="space-y-2">
                           <select
@@ -192,8 +198,7 @@ export function AuditAttestationPanel({
                           {t("reviewAnomaly")}
                         </button>
                       )}
-                    </div>
-                  )}
+                  </div>
                 </article>
               ))
             )}
