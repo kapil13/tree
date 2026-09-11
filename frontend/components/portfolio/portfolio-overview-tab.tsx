@@ -5,7 +5,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Bell, Satellite, TreePine } from "lucide-react";
 import { auditEngagements, dashboard, plantingProjects } from "@/lib/api";
-import { fieldOpsHref } from "@/lib/field-ops-links";
+import { portfolioAuditHref } from "@/lib/portfolio-health-links";
 import { alertsHref } from "@/lib/alerts-links";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
@@ -30,7 +30,7 @@ export function PortfolioOverviewTab({
   projectId,
   projectName,
 }: {
-  onSelectTab: (tab: "compliance" | "threats" | "monitoring" | "biodiversity") => void;
+  onSelectTab: (tab: "audit" | "compliance" | "threats" | "monitoring" | "biodiversity") => void;
   projectId?: string | null;
   projectName?: string | null;
 }) {
@@ -118,7 +118,7 @@ export function PortfolioOverviewTab({
             label={t("kpi.auditPlotsDue")}
             value={String(auditPortfolio?.audit_plots_due ?? 0)}
             warn={(auditPortfolio?.audit_plots_due ?? 0) > 0}
-            href={fieldOpsHref({ section: "audit" })}
+            href={portfolioAuditHref(projectId)}
           />
         ) : null}
       </PortfolioKpiGrid>

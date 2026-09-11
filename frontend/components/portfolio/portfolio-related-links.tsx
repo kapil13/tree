@@ -16,6 +16,7 @@ import {
 import { projectAuditHref } from "@/lib/project-focused-ui";
 import { alertsHref } from "@/lib/alerts-links";
 import {
+  portfolioAuditHref,
   portfolioComplianceHref,
   portfolioMonitoringHref,
   portfolioThreatsHref,
@@ -34,16 +35,12 @@ export function PortfolioRelatedLinks({
   const t = useTranslations("portfolioTabs.common");
 
   const links = [
-    ...(projectId
-      ? [
-          {
-            href: projectAuditHref(projectId),
-            icon: ClipboardSignature,
-            label: t("relatedAudit"),
-            description: t("relatedAuditDesc"),
-          },
-        ]
-      : []),
+    {
+      href: projectId ? projectAuditHref(projectId) : portfolioAuditHref(),
+      icon: ClipboardSignature,
+      label: t("relatedAudit"),
+      description: t("relatedAuditDesc"),
+    },
     {
       href: portfolioComplianceHref(projectId),
       icon: ShieldCheck,

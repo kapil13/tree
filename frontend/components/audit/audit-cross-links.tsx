@@ -10,7 +10,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { fieldOpsHref } from "@/lib/field-ops-links";
-import { portfolioHealthHref } from "@/lib/portfolio-health-links";
+import { portfolioAuditHref } from "@/lib/portfolio-health-links";
 import { cn } from "@/lib/cn";
 
 export function AuditCrossLinks({
@@ -32,7 +32,7 @@ export function AuditCrossLinks({
       description: t("linkFieldOpsDesc"),
     },
     {
-      href: portfolioHealthHref("overview", { projectId }),
+      href: portfolioAuditHref(projectId),
       icon: LayoutGrid,
       label: t("linkPortfolio"),
       description: t("linkPortfolioDesc"),

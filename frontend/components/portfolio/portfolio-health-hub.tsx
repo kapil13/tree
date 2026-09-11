@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Activity, Bird, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Activity, Bird, ClipboardSignature, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
 import { PageHeader, SectionNav } from "@/components/ui";
 import {
   parsePortfolioHealthTab,
@@ -11,6 +11,7 @@ import {
   type PortfolioHealthTab,
 } from "@/lib/portfolio-health-links";
 import { usePortfolioProjectScope } from "@/lib/use-portfolio-project-scope";
+import { PortfolioAuditTab } from "./portfolio-audit-tab";
 import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
 import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
@@ -29,6 +30,7 @@ export function PortfolioHealthHub() {
 
   const TABS = [
     { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },
+    { id: "audit" as const, label: tp("tabAudit"), shortLabel: tp("tabAuditShort"), icon: ClipboardSignature },
     { id: "compliance" as const, label: tp("tabCompliance"), shortLabel: tp("tabCompliance"), icon: ShieldCheck },
     { id: "threats" as const, label: tp("tabThreats"), shortLabel: tp("tabThreatsShort"), icon: ShieldAlert },
     { id: "monitoring" as const, label: tp("tabMonitoring"), shortLabel: tp("tabMonitorShort"), icon: Activity },
@@ -72,6 +74,9 @@ export function PortfolioHealthHub() {
           projectId={projectId}
           projectName={projectName}
         />
+      )}
+      {tab === "audit" && (
+        <PortfolioAuditTab projectId={projectId} projectName={projectName} />
       )}
       {tab === "compliance" && (
         <PortfolioComplianceTab projectId={projectId} projectName={projectName} />

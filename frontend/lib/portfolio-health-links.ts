@@ -1,5 +1,6 @@
 export const PORTFOLIO_HEALTH_TAB_IDS = [
   "overview",
+  "audit",
   "compliance",
   "threats",
   "monitoring",
@@ -24,6 +25,10 @@ export function portfolioHealthHref(
   if (opts?.projectId) params.set("project", opts.projectId);
   const query = params.toString();
   return query ? `/portfolio-health?${query}` : "/portfolio-health";
+}
+
+export function portfolioAuditHref(projectId?: string | null): string {
+  return portfolioHealthHref("audit", { projectId });
 }
 
 export function portfolioComplianceHref(projectId?: string | null): string {

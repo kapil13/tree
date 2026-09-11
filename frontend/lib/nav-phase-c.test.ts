@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { alertsHref, portfolioAlertKindHref } from "./alerts-links";
 import { fieldOpsHref } from "./field-ops-links";
 import {
+  portfolioAuditHref,
   portfolioComplianceHref,
   portfolioHealthHref,
   portfolioMonitoringHref,
@@ -11,6 +12,8 @@ import {
 describe("nav phase C link helpers", () => {
   it("builds portfolio health hrefs with optional project scope", () => {
     expect(portfolioHealthHref()).toBe("/portfolio-health");
+    expect(portfolioAuditHref()).toBe("/portfolio-health?tab=audit");
+    expect(portfolioAuditHref("proj-1")).toBe("/portfolio-health?tab=audit&project=proj-1");
     expect(portfolioComplianceHref()).toBe("/portfolio-health?tab=compliance");
     expect(portfolioComplianceHref("proj-1")).toBe(
       "/portfolio-health?tab=compliance&project=proj-1",
