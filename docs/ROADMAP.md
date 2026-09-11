@@ -65,6 +65,11 @@ month; degradation alerts are firing on test plantations.
 * Biodiversity monitoring (acoustic + species sightings).
 * In-house ViT (`byot-vit-species`) promoted to primary.
 
+## Compliance & framework expansion
+
+Regulatory depth (India, UNFCCC, multilateral funders, optional UK) is tracked separately in
+[`docs/COMPLIANCE_FRAMEWORK_ROADMAP.md`](COMPLIANCE_FRAMEWORK_ROADMAP.md) — Phases 0 (surface existing profiles) through E (SBTi FLAG, GBF, EUDR).
+
 ---
 
 ## Per-sprint deliverables template
