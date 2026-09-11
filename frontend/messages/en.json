@@ -646,6 +646,7 @@
     "statusVerified": "Field verified",
     "generate": "Generate sampling plan",
     "regenerate": "Regenerate plan",
+    "generateSuccess": "Sampling plan created with {count} field plot(s).",
     "noPlots": "No sample plots yet — generate a risk-weighted plan.",
     "visitProgress": "{visited}/{total} plots visited",
     "completeVerification": "Mark field verification complete",

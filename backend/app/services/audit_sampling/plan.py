@@ -7,21 +7,22 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from geoalchemy2 import Geometry, WKTElement
-from sqlalchemy import cast, delete, func, select
+from geoalchemy2 import WKTElement
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_engagement import AuditEngagement, BoundaryVersion
 from app.models.audit_risk import AuditRiskAssessment
 from app.models.audit_sampling import AuditFieldPlot, AuditSamplingPlan
 from app.services.audit_sampling.stratify import stratified_plot_counts
+from app.services.geo import geography_as_geometry
 
 
 async def _point_in_boundary(
     db: AsyncSession, boundary_version_id: uuid.UUID, rng: random.Random
 ) -> tuple[float, float] | None:
     # boundary_versions.boundary is Geography — cast to geometry for ST_XMin/ST_Contains.
-    boundary_geom = cast(BoundaryVersion.boundary, Geometry)
+    boundary_geom = geography_as_geometry(BoundaryVersion.boundary)
     bbox = (
         await db.execute(
             select(
@@ -49,7 +50,19 @@ async def _point_in_boundary(
         ).scalar_one()
         if inside:
             return lon, lat
-    return None
+
+    # Fallback for small or awkward polygons when rejection sampling fails.
+    surface = (
+        await db.execute(
+            select(
+                func.ST_X(func.ST_PointOnSurface(boundary_geom)).label("lon"),
+                func.ST_Y(func.ST_PointOnSurface(boundary_geom)).label("lat"),
+            ).where(BoundaryVersion.id == boundary_version_id)
+        )
+    ).one_or_none()
+    if surface is None or surface.lon is None or surface.lat is None:
+        return None
+    return float(surface.lon), float(surface.lat)
 
 
 def _slug_block_name(name: str) -> str:
