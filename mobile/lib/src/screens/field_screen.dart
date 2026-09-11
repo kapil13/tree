@@ -252,10 +252,23 @@ class _FieldOpsBody extends ConsumerWidget {
                   subtitle: (raw)['message'] as String? ?? '',
                   onTap: () => context.go('/notifications'),
                 ),
+              PrototypeSectionHeader(
+                title: l10n.auditWorkspaceTitle,
+                linkLabel: l10n.viewAll,
+                onLink: () => context.push('/audit'),
+              ),
+              PrototypePriorityCard(
+                icon: '🛡',
+                title: l10n.auditWorkspaceTitle,
+                subtitle: auditPlotsDue > 0
+                    ? l10n.auditPlotsDueTitle(auditPlotsDue)
+                    : l10n.auditPlotsAllVisited,
+                onTap: () => context.push('/audit'),
+              ),
               if (auditPlots.isNotEmpty) ...[
                 PrototypeSectionHeader(
-                  title: 'Estate Watch audit plots',
-                  linkLabel: 'View all',
+                  title: l10n.auditPlotVisits,
+                  linkLabel: l10n.viewAll,
                   onLink: () => context.push('/audit-plots'),
                 ),
                 for (final raw in auditPlots.take(4))

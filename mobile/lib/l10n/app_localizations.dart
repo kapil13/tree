@@ -2761,6 +2761,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Register a tree'**
   String get registerTreeInField;
+
+  /// No description provided for @navSyncQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync queue'**
+  String get navSyncQueue;
+
+  /// No description provided for @auditWorkspaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estate Watch audit'**
+  String get auditWorkspaceTitle;
+
+  /// No description provided for @auditWorkspaceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Field verification, attestation, and sync status'**
+  String get auditWorkspaceSubtitle;
+
+  /// No description provided for @auditWorkspaceNoAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have access to Estate Watch audit tools.'**
+  String get auditWorkspaceNoAccess;
+
+  /// No description provided for @auditEngagements.
+  ///
+  /// In en, this message translates to:
+  /// **'Engagements'**
+  String get auditEngagements;
+
+  /// No description provided for @auditPlotsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Plots due'**
+  String get auditPlotsDue;
+
+  /// No description provided for @auditInField.
+  ///
+  /// In en, this message translates to:
+  /// **'In field'**
+  String get auditInField;
+
+  /// No description provided for @auditExportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Export ready'**
+  String get auditExportReady;
+
+  /// No description provided for @auditAttested.
+  ///
+  /// In en, this message translates to:
+  /// **'Attested'**
+  String get auditAttested;
+
+  /// No description provided for @auditNearestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest action'**
+  String get auditNearestAction;
+
+  /// No description provided for @auditPlotsDueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 plot needs a visit} other{{count} plots need visits}}'**
+  String auditPlotsDueTitle(int count);
+
+  /// No description provided for @auditPlotsDueSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture GPS, photos, and tree counts at assigned plots'**
+  String get auditPlotsDueSubtitle;
+
+  /// No description provided for @auditOpenPlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Open plots'**
+  String get auditOpenPlots;
+
+  /// No description provided for @auditAttestationAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Attestation'**
+  String get auditAttestationAction;
+
+  /// No description provided for @auditOpenAttestation.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & sign'**
+  String get auditOpenAttestation;
+
+  /// No description provided for @auditQuickLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick links'**
+  String get auditQuickLinks;
+
+  /// No description provided for @auditPlotVisits.
+  ///
+  /// In en, this message translates to:
+  /// **'Plot visits'**
+  String get auditPlotVisits;
+
+  /// No description provided for @auditPlotsAllVisited.
+  ///
+  /// In en, this message translates to:
+  /// **'All assigned plots visited for current scope'**
+  String get auditPlotsAllVisited;
+
+  /// No description provided for @auditAttestationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attestation'**
+  String get auditAttestationTitle;
+
+  /// No description provided for @auditAttestationMobileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review anomalies and sign off export bundles'**
+  String get auditAttestationMobileSubtitle;
+
+  /// No description provided for @auditAttestationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No engagement is ready for attestation yet.'**
+  String get auditAttestationUnavailable;
+
+  /// No description provided for @auditSyncQueueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed audit visits and offline uploads'**
+  String get auditSyncQueueHint;
+
+  /// No description provided for @auditProjectsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estate projects'**
+  String get auditProjectsTitle;
+
+  /// No description provided for @auditNoEstateProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No estate monitoring projects'**
+  String get auditNoEstateProjects;
+
+  /// No description provided for @auditNoEstateProjectsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Estate Watch engagements appear here when estate monitoring projects are assigned.'**
+  String get auditNoEstateProjectsHint;
+
+  /// No description provided for @auditAttestationLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Attestation locked'**
+  String get auditAttestationLocked;
+
+  /// No description provided for @auditAttestationExportRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete export readiness on web before mobile sign-off.'**
+  String get auditAttestationExportRequired;
+
+  /// No description provided for @auditAnomalyReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Anomaly reviews'**
+  String get auditAnomalyReviews;
+
+  /// No description provided for @auditNoAnomalies.
+  ///
+  /// In en, this message translates to:
+  /// **'No anomalies require review.'**
+  String get auditNoAnomalies;
+
+  /// No description provided for @auditReviewAnomaly.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get auditReviewAnomaly;
+
+  /// No description provided for @auditReviewSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Anomaly review saved'**
+  String get auditReviewSaved;
+
+  /// No description provided for @auditReviewRationaleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a rationale for this review.'**
+  String get auditReviewRationaleRequired;
+
+  /// No description provided for @auditDispositionUphold.
+  ///
+  /// In en, this message translates to:
+  /// **'Uphold'**
+  String get auditDispositionUphold;
+
+  /// No description provided for @auditDispositionOverturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Overturn'**
+  String get auditDispositionOverturn;
+
+  /// No description provided for @auditDispositionDefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Defer'**
+  String get auditDispositionDefer;
+
+  /// No description provided for @auditLeadSignOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead sign-off'**
+  String get auditLeadSignOff;
+
+  /// No description provided for @auditVerdictLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verdict'**
+  String get auditVerdictLabel;
+
+  /// No description provided for @auditVerdictApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get auditVerdictApproved;
+
+  /// No description provided for @auditVerdictConditional.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditional'**
+  String get auditVerdictConditional;
+
+  /// No description provided for @auditVerdictRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get auditVerdictRejected;
+
+  /// No description provided for @auditSignSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attestation summary'**
+  String get auditSignSummaryLabel;
+
+  /// No description provided for @auditSignSummaryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an attestation summary.'**
+  String get auditSignSummaryRequired;
+
+  /// No description provided for @auditSignNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get auditSignNotesLabel;
+
+  /// No description provided for @auditSignAttestation.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign attestation'**
+  String get auditSignAttestation;
+
+  /// No description provided for @auditSignSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Attestation signed'**
+  String get auditSignSaved;
+
+  /// No description provided for @auditCosignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-sign attestation'**
+  String get auditCosignTitle;
+
+  /// No description provided for @auditCosignNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-sign notes (optional)'**
+  String get auditCosignNotesLabel;
+
+  /// No description provided for @auditCosignAttestation.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-sign'**
+  String get auditCosignAttestation;
+
+  /// No description provided for @auditCosignSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-signature recorded'**
+  String get auditCosignSaved;
+
+  /// No description provided for @auditSignaturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {required} signatures'**
+  String auditSignaturesTitle(int count, int required);
+
+  /// No description provided for @auditPendingCosign.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 co-signature pending} other{{count} co-signatures pending}}'**
+  String auditPendingCosign(int count);
+
+  /// No description provided for @auditSignedVerdict.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed: {verdict}'**
+  String auditSignedVerdict(String verdict);
+
+  /// No description provided for @auditCreateVerifyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Create public verify link'**
+  String get auditCreateVerifyLink;
+
+  /// No description provided for @auditCopyVerifyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get auditCopyVerifyLink;
+
+  /// No description provided for @auditOpenVerifyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get auditOpenVerifyLink;
+
+  /// No description provided for @auditVerifyLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify link copied'**
+  String get auditVerifyLinkCopied;
+
+  /// No description provided for @auditSyncAuditVisits.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit plot visits'**
+  String get auditSyncAuditVisits;
+
+  /// No description provided for @auditSyncRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed visits'**
+  String get auditSyncRetryFailed;
+
+  /// No description provided for @auditSyncOpenWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Estate Watch'**
+  String get auditSyncOpenWorkspace;
+
+  /// No description provided for @auditSyncEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture plot visits from Field or Estate Watch audit'**
+  String get auditSyncEmptyHint;
 }
 
 class _AppLocalizationsDelegate

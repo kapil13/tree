@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../offline/audit_visit_queue.dart';
 import '../offline/bioacoustic_queue.dart';
@@ -57,6 +58,17 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         _auditItems = audit;
       });
     }
+  }
+
+  Future<void> _retryFailedAuditVisits() async {
+    final queue = ref.read(auditVisitQueueProvider);
+    final failed = (await queue.listAll())
+        .where((item) => item.status == AuditVisitQueueStatus.failed)
+        .toList();
+    for (final item in failed) {
+      await queue.markPending(item.id);
+    }
+    await _syncAll();
   }
 
   Future<void> _syncAll() async {
@@ -268,13 +280,15 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final pending = _treeItems.where((i) => i.status != TreeQueueStatus.syncing).length +
-        _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length +
-        _auditItems.where((i) => i.status != AuditVisitQueueStatus.syncing).length;
+    final treePending = _treeItems.where((i) => i.status != TreeQueueStatus.syncing).length;
+    final bioPending = _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length;
+    final auditPending = _auditItems.where((i) => i.status != AuditVisitQueueStatus.syncing).length;
+    final pending = treePending + bioPending + auditPending;
+    final auditFailed = _auditItems.where((i) => i.status == AuditVisitQueueStatus.failed).length;
 
     return Scaffold(
       backgroundColor: PrototypeColors.bgApp,
-      appBar: PrototypeBackBar(title: 'Sync queue'),
+      appBar: PrototypeBackBar(title: l10n.navSyncQueue),
       body: RefreshIndicator(
         color: PrototypeColors.brandCanopy,
         onRefresh: _syncAll,
@@ -297,7 +311,12 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Trees, audit visits, and bioacoustic recordings upload when online',
+                    '$treePending trees · $auditPending audit visits · $bioPending recordings',
+                    style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.auditSyncQueueHint,
                     style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                   ),
                   if (_status != null) ...[
@@ -335,7 +354,19 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
             ],
             if (_auditItems.isNotEmpty) ...[
               const SizedBox(height: 20),
-              const PrototypeSectionHeader(title: 'Audit plot visits'),
+              PrototypeSectionHeader(
+                title: l10n.auditSyncAuditVisits,
+                linkLabel: l10n.auditSyncOpenWorkspace,
+                onLink: () => context.push('/audit'),
+              ),
+              if (auditFailed > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: OutlinedButton(
+                    onPressed: _syncing ? null : _retryFailedAuditVisits,
+                    child: Text(l10n.auditSyncRetryFailed),
+                  ),
+                ),
               for (final item in _auditItems)
                 PrototypeRegistryRow(
                   code: item.payload['plot_code'] as String? ?? 'Plot',
@@ -370,10 +401,10 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                 ),
             ],
             if (_treeItems.isEmpty && _bioItems.isEmpty && _auditItems.isEmpty)
-              const PrototypeEmptyState(
+              PrototypeEmptyState(
                 icon: '✓',
                 title: 'All synced',
-                subtitle: 'No pending tree registrations, audit visits, or recordings',
+                subtitle: l10n.auditSyncEmptyHint,
               ),
           ],
         ),

@@ -613,5 +613,86 @@
   "viewAllProjects": "View all projects",
   "viewAll": "View all",
   "noProjectsAssigned": "No projects assigned yet.",
-  "registerTreeInField": "Register a tree"
+  "registerTreeInField": "Register a tree",
+  "navSyncQueue": "Sync queue",
+  "auditWorkspaceTitle": "Estate Watch audit",
+  "auditWorkspaceSubtitle": "Field verification, attestation, and sync status",
+  "auditWorkspaceNoAccess": "You do not have access to Estate Watch audit tools.",
+  "auditEngagements": "Engagements",
+  "auditPlotsDue": "Plots due",
+  "auditInField": "In field",
+  "auditExportReady": "Export ready",
+  "auditAttested": "Attested",
+  "auditNearestAction": "Nearest action",
+  "auditPlotsDueTitle": "{count, plural, =1{1 plot needs a visit} other{{count} plots need visits}}",
+  "@auditPlotsDueTitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "auditPlotsDueSubtitle": "Capture GPS, photos, and tree counts at assigned plots",
+  "auditOpenPlots": "Open plots",
+  "auditAttestationAction": "Attestation",
+  "auditOpenAttestation": "Review & sign",
+  "auditQuickLinks": "Quick links",
+  "auditPlotVisits": "Plot visits",
+  "auditPlotsAllVisited": "All assigned plots visited for current scope",
+  "auditAttestationTitle": "Attestation",
+  "auditAttestationMobileSubtitle": "Review anomalies and sign off export bundles",
+  "auditAttestationUnavailable": "No engagement is ready for attestation yet.",
+  "auditSyncQueueHint": "Retry failed audit visits and offline uploads",
+  "auditProjectsTitle": "Estate projects",
+  "auditNoEstateProjects": "No estate monitoring projects",
+  "auditNoEstateProjectsHint": "Estate Watch engagements appear here when estate monitoring projects are assigned.",
+  "auditAttestationLocked": "Attestation locked",
+  "auditAttestationExportRequired": "Complete export readiness on web before mobile sign-off.",
+  "auditAnomalyReviews": "Anomaly reviews",
+  "auditNoAnomalies": "No anomalies require review.",
+  "auditReviewAnomaly": "Review",
+  "auditReviewSaved": "Anomaly review saved",
+  "auditReviewRationaleRequired": "Enter a rationale for this review.",
+  "auditDispositionUphold": "Uphold",
+  "auditDispositionOverturn": "Overturn",
+  "auditDispositionDefer": "Defer",
+  "auditLeadSignOff": "Lead sign-off",
+  "auditVerdictLabel": "Verdict",
+  "auditVerdictApproved": "Approved",
+  "auditVerdictConditional": "Conditional",
+  "auditVerdictRejected": "Rejected",
+  "auditSignSummaryLabel": "Attestation summary",
+  "auditSignSummaryRequired": "Enter an attestation summary.",
+  "auditSignNotesLabel": "Notes (optional)",
+  "auditSignAttestation": "Sign attestation",
+  "auditSignSaved": "Attestation signed",
+  "auditCosignTitle": "Co-sign attestation",
+  "auditCosignNotesLabel": "Co-sign notes (optional)",
+  "auditCosignAttestation": "Co-sign",
+  "auditCosignSaved": "Co-signature recorded",
+  "auditSignaturesTitle": "{count} of {required} signatures",
+  "@auditSignaturesTitle": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "required": {"type": "int"}
+    }
+  },
+  "auditPendingCosign": "{count, plural, =1{1 co-signature pending} other{{count} co-signatures pending}}",
+  "@auditPendingCosign": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "auditSignedVerdict": "Signed: {verdict}",
+  "@auditSignedVerdict": {
+    "placeholders": {
+      "verdict": {"type": "String"}
+    }
+  },
+  "auditCreateVerifyLink": "Create public verify link",
+  "auditCopyVerifyLink": "Copy link",
+  "auditOpenVerifyLink": "Open",
+  "auditVerifyLinkCopied": "Verify link copied",
+  "auditSyncAuditVisits": "Audit plot visits",
+  "auditSyncRetryFailed": "Retry failed visits",
+  "auditSyncOpenWorkspace": "Open Estate Watch",
+  "auditSyncEmptyHint": "Capture plot visits from Field or Estate Watch audit"
 }

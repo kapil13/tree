@@ -610,6 +610,69 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
+  Future<Map<String, dynamic>> auditPortfolioSummary() async {
+    final r = await _dio.get('/audit-engagements/portfolio-summary');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getAuditAttestation(String engagementId) async {
+    final r = await _dio.get('/audit-engagements/$engagementId/attestation');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> reviewAuditAnomaly({
+    required String engagementId,
+    required String anomalyId,
+    required String disposition,
+    required String rationale,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/anomalies/$anomalyId/review',
+      data: {
+        'disposition': disposition,
+        'rationale': rationale,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> signAuditAttestation({
+    required String engagementId,
+    required String verdict,
+    required String summary,
+    String? notes,
+    bool allowPendingReviews = false,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/attestation/sign',
+      data: {
+        'verdict': verdict,
+        'summary': summary,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        'allow_pending_reviews': allowPendingReviews,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> cosignAuditAttestation({
+    required String engagementId,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/attestation/cosign',
+      data: {
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> createAuditVerificationLink(String engagementId) async {
+    final r = await _dio.post('/audit-engagements/$engagementId/verification-link');
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> monitoringSummary() async =>
       Map<String, dynamic>.from((await _dio.get('/planting-projects/monitoring-summary')).data);
 
