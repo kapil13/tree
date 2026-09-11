@@ -11,6 +11,7 @@ from app.models.audit_confidence import AuditConfidenceAssessment
 from app.models.audit_engagement import AuditEngagement, BoundaryVersion
 from app.models.audit_risk import AuditRiskAssessment
 from app.models.audit_sampling import AuditSamplingPlan
+from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
 
 
 async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dict[str, Any]:
@@ -104,6 +105,28 @@ async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dic
         },
     ]
 
+    reconciliation_aligned = 0
+    reconciliation_mismatch = 0
+    reconciliation_no_field = 0
+    if engagement.status in {"field_verified", "export_ready", "under_review", "attested"}:
+        reconciliation = await build_confidence_field_reconciliation(db, engagement.id)
+        reconciliation_aligned = reconciliation.get("aligned_count", 0)
+        reconciliation_mismatch = reconciliation.get("mismatch_count", 0)
+        reconciliation_no_field = reconciliation.get("no_field_data_count", 0)
+        sections.append(
+            {
+                "id": "reconciliation",
+                "label": "Confidence vs field reconciliation",
+                "met": reconciliation_mismatch == 0 and reconciliation_no_field == 0,
+                "detail": (
+                    None
+                    if reconciliation_mismatch == 0 and reconciliation_no_field == 0
+                    else f"{reconciliation_mismatch} mismatch(es), "
+                    f"{reconciliation_no_field} block(s) without field data"
+                ),
+            }
+        )
+
     ready = all(s["met"] for s in sections)
     exportable = engagement.status in {"field_verified", "export_ready"}
 
@@ -116,4 +139,7 @@ async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dic
         "sections": sections,
         "last_export_sha256": meta.get("export_bundle_sha256"),
         "exported_at": meta.get("exported_at"),
+        "reconciliation_aligned_count": reconciliation_aligned,
+        "reconciliation_mismatch_count": reconciliation_mismatch,
+        "reconciliation_no_field_count": reconciliation_no_field,
     }

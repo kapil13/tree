@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_engagement import AuditEngagement
 from app.models.planting_project import PlantingProject
 from app.services.audit_confidence.compute import confidence_map_summary
+from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
 from app.services.audit_intake.ops import engagement_detail
 from app.services.audit_risk.queue import anomalies_summary, auditor_queue_summary
 from app.services.audit_sampling.summary import sampling_plan_summary
@@ -66,6 +67,7 @@ async def build_audit_engagement_context(
         "intake": _json_safe(intake),
         "satellite": await satellite_timeline_summary(db, engagement.id),
         "confidence": await confidence_map_summary(db, engagement.id),
+        "reconciliation": await build_confidence_field_reconciliation(db, engagement.id),
         "risk": {
             "queue": await auditor_queue_summary(db, engagement.id),
             "anomalies": await anomalies_summary(db, engagement.id),

@@ -21,6 +21,32 @@ class ExportReadinessOut(BaseModel):
     sections: list[ExportSectionOut] = Field(default_factory=list)
     last_export_sha256: str | None = None
     exported_at: str | None = None
+    reconciliation_aligned_count: int = 0
+    reconciliation_mismatch_count: int = 0
+    reconciliation_no_field_count: int = 0
+
+
+class ReconciliationBlockOut(BaseModel):
+    boundary_version_id: str
+    boundary_name: str | None = None
+    confidence_grade: str | None = None
+    confidence_score: int | None = None
+    field_grade: str | None = None
+    field_signal: str | None = None
+    visit_count: int = 0
+    tree_presence_counts: dict[str, int] = Field(default_factory=dict)
+    outcome_counts: dict[str, int] = Field(default_factory=dict)
+    reconciliation: str
+    aligned: bool | None = None
+
+
+class ReconciliationOut(BaseModel):
+    engagement_id: str
+    block_count: int
+    aligned_count: int
+    mismatch_count: int
+    no_field_data_count: int
+    blocks: list[ReconciliationBlockOut] = Field(default_factory=list)
 
 
 class ExportSummaryOut(BaseModel):

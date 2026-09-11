@@ -53,6 +53,19 @@ export function AuditConfidencePanel({
   const t = useTranslations("auditConfidence");
   const qc = useQueryClient();
 
+  const showReconciliation =
+    engagementStatus === "sampling_planned" ||
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready" ||
+    engagementStatus === "under_review" ||
+    engagementStatus === "attested";
+
+  const { data: reconciliation } = useQuery({
+    queryKey: ["audit-reconciliation", engagementId],
+    queryFn: () => auditEngagements.getReconciliation(engagementId),
+    enabled: showReconciliation,
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["audit-confidence-map", engagementId],
     queryFn: () => auditEngagements.getConfidenceMap(engagementId),
@@ -73,6 +86,8 @@ export function AuditConfidencePanel({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["audit-confidence-map", engagementId] });
+      qc.invalidateQueries({ queryKey: ["audit-reconciliation", engagementId] });
+      qc.invalidateQueries({ queryKey: ["audit-export-readiness", engagementId] });
       qc.invalidateQueries({ queryKey: ["audit-engagement"] });
     },
   });
@@ -123,7 +138,11 @@ export function AuditConfidencePanel({
       </header>
 
       {boundaries.length > 0 && blocks.length > 0 && (
-        <AuditConfidenceMap boundaries={boundaries} blocks={blocks} />
+        <AuditConfidenceMap
+          boundaries={boundaries}
+          blocks={blocks}
+          reconciliationBlocks={reconciliation?.blocks ?? []}
+        />
       )}
 
       <div className="flex flex-wrap items-center gap-3">

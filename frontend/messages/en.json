@@ -630,6 +630,21 @@
     "signedVerdict": "Signed — {verdict}",
     "hash": "Attestation hash: {sha}…"
   },
+  "auditReconciliation": {
+    "title": "Confidence vs field reconciliation",
+    "subtitle": "Compare satellite-derived confidence grades with on-ground field visit outcomes per block.",
+    "fieldRequired": "Generate a sampling plan and record field visits to see reconciliation.",
+    "loading": "Loading reconciliation…",
+    "aligned": "{count} aligned",
+    "mismatch": "{count} mismatch",
+    "noField": "{count} no field data",
+    "noBlocks": "No blocks to reconcile yet.",
+    "block": "Block",
+    "satellite": "Satellite",
+    "field": "Field",
+    "visits": "Visits",
+    "status": "Status"
+  },
   "auditExport": {
     "title": "Evidence room & audit export",
     "subtitle": "Download a signed zip bundle with intake, satellite, confidence, risk, and field verification artefacts.",
@@ -639,7 +654,9 @@
     "download": "Download signed audit bundle",
     "lastExport": "Last export SHA-256: {sha}…",
     "notReady": "Complete earlier audit phases before exporting.",
-    "fieldVisitsRequired": "Record field visits and mark field verification complete before exporting."
+    "fieldVisitsRequired": "Record field visits and mark field verification complete before exporting.",
+    "reconciliationOk": "All {count} reconciled block(s) align between satellite confidence and field visits.",
+    "reconciliationWarning": "Reconciliation: {mismatch} mismatch(es) and {noField} block(s) without field data. Review before attestation."
   },
   "auditSampling": {
     "title": "Field sampling & verification",

@@ -4,6 +4,7 @@ import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../offline/audit_visit_queue.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/tree_registration_queue.dart';
 import '../providers.dart';
@@ -19,6 +20,7 @@ class SyncQueueScreen extends ConsumerStatefulWidget {
 class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
   List<QueuedTreeRegistration> _treeItems = [];
   List<QueuedBioacousticRecording> _bioItems = [];
+  List<QueuedAuditVisit> _auditItems = [];
   bool _syncing = false;
   String? _status;
 
@@ -28,26 +30,31 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     Future.microtask(() async {
       await ref.read(treeRegistrationQueueProvider).init();
       await ref.read(bioacousticQueueProvider).init();
+      await ref.read(auditVisitQueueProvider).init();
       _reload();
     });
     ref.read(treeRegistrationQueueProvider).addListener(_reload);
     ref.read(bioacousticQueueProvider).addListener(_reload);
+    ref.read(auditVisitQueueProvider).addListener(_reload);
   }
 
   @override
   void dispose() {
     ref.read(treeRegistrationQueueProvider).removeListener(_reload);
     ref.read(bioacousticQueueProvider).removeListener(_reload);
+    ref.read(auditVisitQueueProvider).removeListener(_reload);
     super.dispose();
   }
 
   Future<void> _reload() async {
     final trees = await ref.read(treeRegistrationQueueProvider).listAll();
     final bio = await ref.read(bioacousticQueueProvider).listAll();
+    final audit = await ref.read(auditVisitQueueProvider).listAll();
     if (mounted) {
       setState(() {
         _treeItems = trees;
         _bioItems = bio;
+        _auditItems = audit;
       });
     }
   }
@@ -61,14 +68,18 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     try {
       final treeSync = ref.read(treeRegistrationSyncProvider);
       final bioSync = ref.read(bioacousticSyncProvider);
+      final auditSync = ref.read(auditVisitSyncProvider);
       final treeCount = await treeSync.syncAll(() => ref.read(apiClientProvider.future));
       final bioCount = await bioSync.syncAll(() => ref.read(apiClientProvider.future));
+      final auditCount = await auditSync.syncAll(() => ref.read(apiClientProvider.future));
       ref.invalidate(treesProvider);
       ref.invalidate(bioacousticRecordingsProvider);
+      ref.invalidate(auditFieldPlotQueueProvider);
+      ref.invalidate(fieldOpsSummaryProvider);
       ref.invalidate(dashboardProvider);
       await _reload();
       if (mounted) {
-        setState(() => _status = 'Synced ${treeCount + bioCount} item(s)');
+        setState(() => _status = 'Synced ${treeCount + bioCount + auditCount} item(s)');
       }
     } catch (e) {
       if (mounted) setState(() => _status = l10n.retry);
@@ -258,7 +269,8 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final pending = _treeItems.where((i) => i.status != TreeQueueStatus.syncing).length +
-        _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length;
+        _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length +
+        _auditItems.where((i) => i.status != AuditVisitQueueStatus.syncing).length;
 
     return Scaffold(
       backgroundColor: PrototypeColors.bgApp,
@@ -285,7 +297,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Trees, photos, and bioacoustic recordings upload when online',
+                    'Trees, audit visits, and bioacoustic recordings upload when online',
                     style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                   ),
                   if (_status != null) ...[
@@ -321,6 +333,24 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   onTap: () => _previewTreeItem(item),
                 ),
             ],
+            if (_auditItems.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const PrototypeSectionHeader(title: 'Audit plot visits'),
+              for (final item in _auditItems)
+                PrototypeRegistryRow(
+                  code: item.payload['plot_code'] as String? ?? 'Plot',
+                  species: item.payload['tree_presence'] as String? ?? 'visit',
+                  meta: '${item.photoPaths.length} photo(s) · ${_auditQueueLabel(item.status)}',
+                  health: null,
+                  badges: [
+                    PrototypeStatusBadge(
+                      label: _auditQueueLabel(item.status),
+                      variant: item.status == AuditVisitQueueStatus.failed ? 'danger' : 'warn',
+                    ),
+                  ],
+                  onTap: () => _previewAuditItem(item),
+                ),
+            ],
             if (_bioItems.isNotEmpty) ...[
               const SizedBox(height: 20),
               PrototypeSectionHeader(title: l10n.bioOfflineQueue),
@@ -339,16 +369,84 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   onTap: () => _previewBioItem(item),
                 ),
             ],
-            if (_treeItems.isEmpty && _bioItems.isEmpty)
+            if (_treeItems.isEmpty && _bioItems.isEmpty && _auditItems.isEmpty)
               const PrototypeEmptyState(
                 icon: '✓',
                 title: 'All synced',
-                subtitle: 'No pending tree registrations or recordings',
+                subtitle: 'No pending tree registrations, audit visits, or recordings',
               ),
           ],
         ),
       ),
     );
+  }
+
+  void _previewAuditItem(QueuedAuditVisit item) {
+    final payload = item.payload;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PrototypeColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                payload['plot_code'] as String? ?? 'Audit plot visit',
+                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text('Presence: ${payload['tree_presence']}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Status: ${_auditQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Photos: ${item.photoPaths.length}', style: GoogleFonts.dmSans(fontSize: 13)),
+              if (item.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.errorMessage!,
+                  style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.statusDanger),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (item.status == AuditVisitQueueStatus.failed)
+                OutlinedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(auditVisitQueueProvider).markPending(item.id);
+                    await _syncAll();
+                  },
+                  child: const Text('Retry upload'),
+                ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _confirmDelete(
+                    title: 'Delete audit visit?',
+                    onDelete: () => ref.read(auditVisitQueueProvider).remove(item.id),
+                  );
+                },
+                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _auditQueueLabel(AuditVisitQueueStatus status) {
+    switch (status) {
+      case AuditVisitQueueStatus.pending:
+        return 'pending';
+      case AuditVisitQueueStatus.syncing:
+        return 'syncing';
+      case AuditVisitQueueStatus.failed:
+        return 'failed';
+    }
   }
 
   String _queueLabel(TreeQueueStatus status) {
