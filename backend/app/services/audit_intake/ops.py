@@ -20,13 +20,13 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.planting_project import PlantingProject
+from app.schemas.audit_engagement import MAX_AUDIT_BOUNDARY_VERTICES
 from app.services.audit_intake.claim_snapshot import (
     freeze_claim_snapshot,
     get_working_claim,
     latest_snapshot,
     update_working_claim,
 )
-from app.schemas.audit_engagement import MAX_AUDIT_BOUNDARY_VERTICES
 from app.services.audit_intake.gis_validation import validate_boundaries
 from app.services.audit_intake.intake_gate import evaluate_intake_gate
 from app.services.audit_intake.kml_import import parse_upload
