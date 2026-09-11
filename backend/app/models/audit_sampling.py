@@ -87,6 +87,7 @@ class AuditFieldPlot(UUIDPKMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("plan_id", "plot_code", name="audit_field_plots_code_uq"),
         Index("audit_field_plots_engagement_idx", "engagement_id"),
+        Index("audit_field_plots_engagement_status_idx", "engagement_id", "status"),
         Index("audit_field_plots_plan_idx", "plan_id"),
         Index("audit_field_plots_center_gix", "center", postgresql_using="gist"),
     )

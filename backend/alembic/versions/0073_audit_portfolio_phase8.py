@@ -16,13 +16,7 @@ def upgrade() -> None:
         "audit_field_plots",
         ["engagement_id", "status"],
     )
-    op.create_index(
-        "audit_engagements_status_idx",
-        "audit_engagements",
-        ["status"],
-    )
 
 
 def downgrade() -> None:
-    op.drop_index("audit_engagements_status_idx", table_name="audit_engagements")
     op.drop_index("audit_field_plots_engagement_status_idx", table_name="audit_field_plots")
