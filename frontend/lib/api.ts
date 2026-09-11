@@ -3923,6 +3923,90 @@ export const auditEngagements = {
       })
     ).data;
   },
+  async crossOrgSummary() {
+    return (
+      await api.get<{
+        organization_count: number;
+        engagement_count: number;
+        attested_count: number;
+        in_field_count: number;
+        organizations: Array<{
+          organization_id: string | null;
+          organization_name: string;
+          project_count: number;
+          engagement_count: number;
+          attested_count: number;
+          in_field_count: number;
+          projects: Array<{
+            id: string;
+            code: string;
+            name: string;
+            engagement_id: string | null;
+            engagement_status: string;
+            cycle_number: number;
+          }>;
+        }>;
+      }>("/v1/audit-engagements/cross-org-summary")
+    ).data;
+  },
+  async getIntegrityBridge(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        project_id: string;
+        tree_count: number;
+        audit_ready_count: number;
+        audit_ready_pct: number;
+        blocking_count: number;
+        blocking_trees: Array<{
+          tree_id: string;
+          public_code: string;
+          verification_status: string;
+          fusion_score: number | null;
+          credit_eligible: boolean;
+          reasons: string[];
+        }>;
+        export_ready: boolean;
+        export_exportable: boolean;
+        export_sections: Array<{ id: string; label: string; met: boolean; detail?: string | null }>;
+        integrity_gate_passed: boolean;
+        recommendations: string[];
+        message: string;
+      }>(`/v1/audit-engagements/${engagementId}/integrity-bridge`)
+    ).data;
+  },
+  async getAuditCycles(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        current_cycle: number;
+        status: string;
+        cycles: Array<{
+          cycle_number: number;
+          attested_at?: string | null;
+          attestation_hash?: string | null;
+          export_bundle_sha256?: string | null;
+          verdict?: string | null;
+          status: string;
+          archived_at: string;
+          notes?: string | null;
+        }>;
+        reaudit_started_at?: string | null;
+      }>(`/v1/audit-engagements/${engagementId}/cycles`)
+    ).data;
+  },
+  async startReaudit(engagementId: string, payload?: { notes?: string }) {
+    return (
+      await api.post<{
+        engagement_id: string;
+        status: string;
+        current_cycle: number;
+        archived_cycles: number;
+        plots_reset: number;
+        message: string;
+      }>(`/v1/audit-engagements/${engagementId}/reaudit`, payload ?? {})
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =
