@@ -2,6 +2,7 @@ from app.models.ai_scan_wallet import UserAiScanWallet
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.audit_chain_root import AuditChainRoot
+from app.models.audit_confidence import AuditConfidenceAssessment
 from app.models.audit_engagement import (
     AuditEngagement,
     BoundaryVersion,
@@ -98,6 +99,7 @@ __all__ = [
     "PlausibilityAssessment",
     "AuditSatelliteBaseline",
     "AuditTemporalObservation",
+    "AuditConfidenceAssessment",
     "CarbonCalculation",
     "CitizenProfile",
     "ComplianceChecklistOverride",

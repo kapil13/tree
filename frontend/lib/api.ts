@@ -3545,6 +3545,24 @@ export const auditEngagements = {
       )
     ).data;
   },
+  async computeConfidenceMap(engagementId: string) {
+    return (
+      await api.post<{ computed: number; grade_counts: Record<string, number> }>(
+        `/v1/audit-engagements/${engagementId}/confidence-map/compute`,
+      )
+    ).data;
+  },
+  async getConfidenceMap(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        block_count: number;
+        assessed_count: number;
+        grade_counts: Record<string, number>;
+        blocks: Array<Record<string, unknown>>;
+      }>(`/v1/audit-engagements/${engagementId}/confidence-map`)
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =

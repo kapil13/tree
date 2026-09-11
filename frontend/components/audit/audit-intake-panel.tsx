@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
+import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -361,9 +362,19 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         {t("refresh")}
       </button>
 
-      {(engagement.status === "intake_complete" || engagement.status === "analysis_ready") && (
+      {(engagement.status === "intake_complete" ||
+        engagement.status === "analysis_ready" ||
+        engagement.status === "confidence_mapped") && (
         <AuditSatellitePanel
           projectId={projectId}
+          engagementId={engagement.id}
+          engagementStatus={engagement.status}
+        />
+      )}
+
+      {(engagement.status === "analysis_ready" ||
+        engagement.status === "confidence_mapped") && (
+        <AuditConfidencePanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
         />
