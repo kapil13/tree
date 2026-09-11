@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Bell, Satellite, TreePine } from "lucide-react";
-import { dashboard, plantingProjects } from "@/lib/api";
+import { auditEngagements, dashboard, plantingProjects } from "@/lib/api";
+import { fieldOpsHref } from "@/lib/field-ops-links";
 import { alertsHref } from "@/lib/alerts-links";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
@@ -35,25 +36,27 @@ export function PortfolioOverviewTab({
 }) {
   const t = useTranslations("portfolioTabs.overview");
 
-  const [dashQ, monitoringQ, fieldOpsQ] = useQueries({
+  const [dashQ, monitoringQ, fieldOpsQ, auditQ] = useQueries({
     queries: [
       { queryKey: ["dashboard-portfolio"], queryFn: dashboard.get, staleTime: 60_000 },
       { queryKey: ["monitoring-summary"], queryFn: () => plantingProjects.monitoringSummary() },
       { queryKey: ["field-ops-summary"], queryFn: () => plantingProjects.fieldOpsSummary() },
+      { queryKey: ["audit-portfolio-summary"], queryFn: () => auditEngagements.portfolioSummary() },
     ],
   });
 
-  if (dashQ.isLoading || monitoringQ.isLoading || fieldOpsQ.isLoading) {
+  if (dashQ.isLoading || monitoringQ.isLoading || fieldOpsQ.isLoading || auditQ.isLoading) {
     return <PortfolioTabLoading />;
   }
 
-  if (dashQ.error || monitoringQ.error || fieldOpsQ.error) {
+  if (dashQ.error || monitoringQ.error || fieldOpsQ.error || auditQ.error) {
     return (
       <PortfolioTabError
         onRetry={() => {
           void dashQ.refetch();
           void monitoringQ.refetch();
           void fieldOpsQ.refetch();
+          void auditQ.refetch();
         }}
       />
     );
@@ -62,6 +65,7 @@ export function PortfolioOverviewTab({
   const kpi = dashQ.data?.kpi;
   const monitoring = monitoringQ.data;
   const fieldOps = fieldOpsQ.data;
+  const auditPortfolio = auditQ.data;
   const unreadAlerts = Object.values(monitoring?.unread_alerts_by_kind ?? {}).reduce(
     (a, b) => a + b,
     0,
@@ -108,6 +112,15 @@ export function PortfolioOverviewTab({
           warn={unreadAlerts > 0}
           href={alertsHref()}
         />
+        {(auditPortfolio?.estate_project_count ?? 0) > 0 ? (
+          <PortfolioKpiCard
+            icon={AlertTriangle}
+            label={t("kpi.auditPlotsDue")}
+            value={String(auditPortfolio?.audit_plots_due ?? 0)}
+            warn={(auditPortfolio?.audit_plots_due ?? 0) > 0}
+            href={fieldOpsHref()}
+          />
+        ) : null}
       </PortfolioKpiGrid>
 
       <PortfolioRelatedLinks projectId={projectId} />

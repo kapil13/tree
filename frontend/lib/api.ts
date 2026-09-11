@@ -1827,6 +1827,7 @@ export const plantingProjects = {
         survival_due: number;
         unread_alerts: number;
         plots_due: number;
+        audit_plots_due: number;
         projects: Array<{
           id: string;
           code: string;
@@ -1848,6 +1849,15 @@ export const plantingProjects = {
           project_name: string;
           status: string;
         }>;
+        audit_plots_due_preview: Array<{
+          plot_id: string;
+          plot_code: string;
+          engagement_id: string;
+          project_id: string;
+          project_name: string;
+          risk_level: string;
+          status: string;
+        }>;
         scoped_project_id: string | null;
       }>("/v1/planting-projects/field-brief", {
         params: projectId ? { project_id: projectId } : undefined,
@@ -1861,6 +1871,7 @@ export const plantingProjects = {
         tree_count: number;
         open_violations: number;
         survival_due: number;
+        audit_plots_due: number;
         by_segment: Record<string, number>;
         by_scheme: Record<string, number>;
         projects: Array<{
@@ -1872,6 +1883,7 @@ export const plantingProjects = {
           status: string;
           open_violations: number;
           survival_due: number;
+          audit_plots_due?: number;
           tree_count: number;
           target_tree_count: number | null;
           progress_pct: number | null;
@@ -3715,6 +3727,54 @@ export const auditEngagements = {
         attestation_hash?: string | null;
         status: string;
       }>(`/v1/audit-engagements/${engagementId}/attestation/sign`, payload)
+    ).data;
+  },
+  async portfolioSummary() {
+    return (
+      await api.get<{
+        estate_project_count: number;
+        engagement_count: number;
+        audit_plots_due: number;
+        engagements_in_field: number;
+        engagements_export_ready: number;
+        engagements_attested: number;
+        by_status: Record<string, number>;
+        by_segment: Record<string, number>;
+        by_scheme: Record<string, number>;
+        projects: Array<{
+          id: string;
+          code: string;
+          name: string;
+          segment: string;
+          scheme_code: string | null;
+          engagement_id: string | null;
+          engagement_status: string;
+          audit_plots_due: number;
+        }>;
+      }>("/v1/audit-engagements/portfolio-summary")
+    ).data;
+  },
+  async fieldPlotQueue(projectId?: string, limit = 50) {
+    return (
+      await api.get<{
+        total_due: number;
+        items: Array<{
+          plot_id: string;
+          plot_code: string;
+          engagement_id: string;
+          project_id: string;
+          project_code: string;
+          project_name: string;
+          risk_level: string;
+          priority_rank: number;
+          status: string;
+          engagement_status: string;
+          center: { type: string; coordinates: [number, number] };
+        }>;
+        scoped_project_id: string | null;
+      }>("/v1/audit-engagements/field-plot-queue", {
+        params: { project_id: projectId, limit },
+      })
     ).data;
   },
 };

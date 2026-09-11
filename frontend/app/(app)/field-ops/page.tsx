@@ -26,6 +26,7 @@ import {
   buildFieldOpsTasks,
   FieldOpsTaskQueue,
 } from "@/components/field-ops/field-ops-task-queue";
+import { AuditPlotVisitQueue } from "@/components/field-ops/audit-plot-visit-queue";
 import { PlotVisitQueue } from "@/components/field-ops/plot-visit-queue";
 import { cn } from "@/lib/cn";
 
@@ -146,6 +147,8 @@ export default function FieldOpsPage() {
       />
 
       <FieldOpsTaskQueue tasks={fieldTasks} />
+
+      <AuditPlotVisitQueue />
 
       <PlotVisitQueue />
 

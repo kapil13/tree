@@ -163,6 +163,7 @@ class _FieldOpsBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final summaryAsync = ref.watch(fieldOpsSummaryProvider);
+    final auditPlotsAsync = ref.watch(auditFieldPlotQueueProvider);
     final alertsAsync = ref.watch(alertsProvider);
     final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
 
@@ -176,11 +177,20 @@ class _FieldOpsBody extends ConsumerWidget {
             .where((p) => ((p as Map)['survival_due'] as num?)?.toInt() != null &&
                 (p['survival_due'] as num).toInt() > 0)
             .toList();
+        final auditPlots = auditPlotsAsync.maybeWhen(
+          data: (queue) => List<dynamic>.from(queue['items'] ?? []),
+          orElse: () => <dynamic>[],
+        );
+        final auditPlotsDue = (summary['audit_plots_due'] as num?)?.toInt() ??
+            auditPlots.length;
         final nextViolation = violations.isNotEmpty ? violations.first as Map : null;
 
         return RefreshIndicator(
           color: PrototypeColors.brandCanopy,
-          onRefresh: () async => ref.invalidate(fieldOpsSummaryProvider),
+          onRefresh: () async {
+            ref.invalidate(fieldOpsSummaryProvider);
+            ref.invalidate(auditFieldPlotQueueProvider);
+          },
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
@@ -213,6 +223,8 @@ class _FieldOpsBody extends ConsumerWidget {
                   PrototypeSignal(value: '${summary['tree_count'] ?? 0}', label: l10n.trees),
                   PrototypeSignal(value: '${summary['open_violations'] ?? 0}', label: 'Violations'),
                   PrototypeSignal(value: '${summary['survival_due'] ?? 0}', label: 'Survival'),
+                  if (auditPlotsDue > 0)
+                    PrototypeSignal(value: '$auditPlotsDue', label: 'Audit plots'),
                 ],
               ),
               PrototypeSectionHeader(
@@ -240,6 +252,21 @@ class _FieldOpsBody extends ConsumerWidget {
                   subtitle: (raw)['message'] as String? ?? '',
                   onTap: () => context.go('/notifications'),
                 ),
+              if (auditPlots.isNotEmpty) ...[
+                PrototypeSectionHeader(
+                  title: 'Estate Watch audit plots',
+                  linkLabel: 'View all',
+                  onLink: () => context.push('/audit-plots'),
+                ),
+                for (final raw in auditPlots.take(4))
+                  PrototypePriorityCard(
+                    icon: '📍',
+                    title: (raw as Map)['plot_code'] as String? ?? 'Audit plot',
+                    subtitle:
+                        '${raw['project_name'] ?? ''} · ${raw['risk_level'] ?? ''} risk',
+                    onTap: () => context.push('/audit-plots'),
+                  ),
+              ],
               if (withSurvival.isNotEmpty) ...[
                 PrototypeSectionHeader(title: l10n.survivalDueByProject),
                 for (final raw in withSurvival.take(5))

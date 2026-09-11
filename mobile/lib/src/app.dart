@@ -41,6 +41,7 @@ import 'screens/sync_queue_screen.dart';
 import 'screens/alert_detail_screen.dart';
 import 'screens/evidence_screen.dart';
 import 'screens/biodiversity_screen.dart';
+import 'screens/audit_plot_visit_screen.dart';
 import 'widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -220,6 +221,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => EvidenceScreen(projectId: state.uri.queryParameters['project']),
       ),
       GoRoute(path: '/biodiversity', builder: (_, __) => const BiodiversityScreen()),
+      GoRoute(path: '/audit-plots', builder: (_, __) => const AuditPlotVisitScreen()),
     ],
   );
 });

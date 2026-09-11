@@ -36,9 +36,11 @@ class FieldBriefOut(BaseModel):
     survival_due: int
     unread_alerts: int = 0
     plots_due: int = 0
+    audit_plots_due: int = 0
     projects: list[dict]
     recent_violations: list[dict]
     plots_due_preview: list[dict] = Field(default_factory=list)
+    audit_plots_due_preview: list[dict] = Field(default_factory=list)
     scoped_project_id: str | None = None
 
 
@@ -47,6 +49,7 @@ class FieldOpsSummaryOut(BaseModel):
     tree_count: int
     open_violations: int
     survival_due: int
+    audit_plots_due: int = 0
     by_segment: dict[str, int]
     by_scheme: dict[str, int] = Field(default_factory=dict)
     projects: list[dict]

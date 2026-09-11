@@ -120,6 +120,12 @@ final fieldOpsSummaryProvider = FutureProvider.autoDispose((ref) async {
   return api.fieldOpsSummary();
 });
 
+final auditFieldPlotQueueProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  final projectId = ref.watch(selectedProjectIdProvider);
+  return api.auditFieldPlotQueue(projectId: projectId);
+});
+
 final monitoringSummaryProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   try {

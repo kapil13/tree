@@ -569,6 +569,37 @@ class ApiClient {
   Future<Map<String, dynamic>> fieldOpsSummary() async =>
       Map<String, dynamic>.from((await _dio.get('/planting-projects/field-ops-summary')).data);
 
+  Future<Map<String, dynamic>> auditFieldPlotQueue({String? projectId, int limit = 50}) async {
+    final r = await _dio.get(
+      '/audit-engagements/field-plot-queue',
+      queryParameters: {
+        if (projectId != null) 'project_id': projectId,
+        'limit': limit,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> recordAuditFieldVisit({
+    required String engagementId,
+    required String plotId,
+    int? treesObserved,
+    int? treesAlive,
+    String verificationOutcome = 'inconclusive',
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/field-plots/$plotId/visits',
+      data: {
+        if (treesObserved != null) 'trees_observed': treesObserved,
+        if (treesAlive != null) 'trees_alive': treesAlive,
+        'verification_outcome': verificationOutcome,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
   Future<Map<String, dynamic>> monitoringSummary() async =>
       Map<String, dynamic>.from((await _dio.get('/planting-projects/monitoring-summary')).data);
 

@@ -56,6 +56,7 @@ import { useProjectContext } from "@/lib/project-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OperationalStatusBar } from "@/components/ui";
 import { RadialGauge } from "@/components/dashboard/radial-gauge";
+import { AuditPortfolioStrip } from "@/components/audit/audit-portfolio-strip";
 import { ThreatWatchPanel } from "@/components/dashboard/threat-watch-panel";
 import {
   SarIntelligencePanel,
@@ -812,6 +813,8 @@ export function ExecutiveDashboard() {
         complianceSummary={complianceSummary}
         selectedProjectId={projectId}
       />
+
+      <AuditPortfolioStrip />
 
       {showPlantingFocus ? (
         <CommandCenterEvidence title={te("plantingFocus")} description={te("plantingFocusDesc")}>
