@@ -144,6 +144,8 @@ async def sampling_plan_summary(db: AsyncSession, engagement_id: uuid.UUID) -> d
             "plots_per_high": plan.plots_per_high,
             "plots_per_medium": plan.plots_per_medium,
             "plots_per_low": plan.plots_per_low,
+            "ha_per_plot": float(plan.ha_per_plot) if plan.ha_per_plot is not None else None,
+            "min_plots_per_block": plan.min_plots_per_block,
             "total_plots": plan.total_plots,
             "status": plan.status,
             "epistemic_label": plan.epistemic_label,

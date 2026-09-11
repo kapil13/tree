@@ -679,7 +679,19 @@
     "gpsCaptured": "GPS captured: {lat}, {lng}",
     "capturingGps": "Capturing GPS…",
     "refreshGps": "Refresh GPS",
-    "visitSavedWithWarnings": "Visit saved with location warnings: {warnings}"
+    "visitSavedWithWarnings": "Visit saved with location warnings: {warnings}",
+    "samplingControls": "Sampling design",
+    "samplingMode": "Sampling mode",
+    "modeRiskWeighted": "Risk-weighted only",
+    "modeAreaCoverage": "Area coverage only",
+    "modeHybrid": "Hybrid (coverage + risk)",
+    "haPerPlot": "Hectares per plot",
+    "minPlotsPerBlock": "Minimum plots per block",
+    "plotsPerLow": "Plots per low-risk block",
+    "samplingModeHint": "Hybrid ensures every block gets coverage plots inside its boundary, plus extra plots on risky blocks.",
+    "previewPlots": "Preview plot count",
+    "previewing": "Calculating…",
+    "previewResult": "Estimated {count} field plot(s)"
   },
   "auditPortfolio": {
     "title": "Estate Watch audit portfolio",

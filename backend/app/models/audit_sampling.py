@@ -38,6 +38,8 @@ class AuditSamplingPlan(UUIDPKMixin, TimestampMixin, Base):
     plots_per_high: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     plots_per_medium: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     plots_per_low: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ha_per_plot: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    min_plots_per_block: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     layout_seed: Mapped[int | None] = mapped_column(Integer)
     total_plots: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")

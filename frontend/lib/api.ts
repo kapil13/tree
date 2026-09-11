@@ -3625,7 +3625,39 @@ export const auditEngagements = {
       }>(`/v1/audit-engagements/${engagementId}/auditor-queue`)
     ).data;
   },
-  async generateSamplingPlan(engagementId: string, params?: Record<string, number>) {
+  async previewSamplingPlan(
+    engagementId: string,
+    params: {
+      sampling_mode?: "risk_weighted" | "area_coverage" | "hybrid";
+      plots_per_critical?: number;
+      plots_per_high?: number;
+      plots_per_medium?: number;
+      plots_per_low?: number;
+      ha_per_plot?: number;
+      min_plots_per_block?: number;
+    },
+  ) {
+    return (
+      await api.post<{
+        total_plots: number;
+        sampling_mode: string;
+        blocks: Array<Record<string, unknown>>;
+      }>(`/v1/audit-engagements/${engagementId}/sampling-plan/preview`, params)
+    ).data;
+  },
+  async generateSamplingPlan(
+    engagementId: string,
+    params?: {
+      sampling_mode?: "risk_weighted" | "area_coverage" | "hybrid";
+      plots_per_critical?: number;
+      plots_per_high?: number;
+      plots_per_medium?: number;
+      plots_per_low?: number;
+      ha_per_plot?: number;
+      min_plots_per_block?: number;
+      layout_seed?: number;
+    },
+  ) {
     return (
       await api.post<{
         total_plots: number;

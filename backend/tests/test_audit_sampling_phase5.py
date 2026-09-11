@@ -25,10 +25,32 @@ def test_stratified_plot_counts_skips_low_risk():
         {"boundary_version_id": "b", "risk_level": "low", "priority_rank": 2},
         {"boundary_version_id": "c", "risk_level": "high", "priority_rank": 3},
     ]
-    result = stratified_plot_counts(queue)
+    result = stratified_plot_counts(queue, sampling_mode="risk_weighted")
     assert len(result) == 2
     assert result[0]["plot_count"] == 3
     assert result[1]["plot_count"] == 2
+
+
+def test_hybrid_sampling_ensures_block_coverage():
+    from app.services.audit_sampling.stratify import stratified_plot_counts
+
+    queue = [
+        {
+            "boundary_version_id": "a",
+            "risk_level": "low",
+            "priority_rank": 1,
+            "area_ha_measured": 120.0,
+        },
+    ]
+    result = stratified_plot_counts(
+        queue,
+        sampling_mode="hybrid",
+        plots_per_low=0,
+        ha_per_plot=50.0,
+        min_plots_per_block=1,
+    )
+    assert len(result) == 1
+    assert result[0]["plot_count"] == 3  # ceil(120/50)=3 beats risk 0
 
 
 def test_stratified_custom_rates():

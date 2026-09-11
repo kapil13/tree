@@ -6,6 +6,7 @@ import random
 import re
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from geoalchemy2 import WKTElement
 from sqlalchemy import delete, func, select
@@ -14,7 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_engagement import AuditEngagement, BoundaryVersion
 from app.models.audit_risk import AuditRiskAssessment
 from app.models.audit_sampling import AuditFieldPlot, AuditSamplingPlan
-from app.services.audit_sampling.stratify import stratified_plot_counts
+from app.services.audit_sampling.stratify import (
+    SamplingMode,
+    estimate_total_plots,
+    stratified_plot_counts,
+)
 from app.services.geo import geography_as_geometry
 
 
@@ -70,19 +75,19 @@ def _slug_block_name(name: str) -> str:
     return slug or "BLOCK"
 
 
-async def generate_sampling_plan(
+async def preview_sampling_plan(
     db: AsyncSession,
     engagement: AuditEngagement,
-    *,
-    plots_per_critical: int = 3,
-    plots_per_high: int = 2,
-    plots_per_medium: int = 1,
-    plots_per_low: int = 0,
-    layout_seed: int | None = None,
-) -> AuditSamplingPlan:
-    if engagement.status not in {"risk_assessed", "sampling_planned", "field_verified"}:
-        raise ValueError("risk_not_assessed")
+    **params: Any,
+) -> dict[str, Any]:
+    queue_blocks = await _queue_blocks_for_engagement(db, engagement)
+    return estimate_total_plots(queue_blocks, **params)
 
+
+async def _queue_blocks_for_engagement(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+) -> list[dict[str, Any]]:
     risk_rows = (
         (
             await db.execute(
@@ -109,22 +114,63 @@ async def generate_sampling_plan(
     boundary_map = {b.id: b for b in boundaries}
     name_map = {b.id: b.name for b in boundaries}
 
-    queue_blocks = [
+    return [
         {
             "boundary_version_id": str(r.boundary_version_id),
             "risk_assessment_id": str(r.id),
             "risk_level": r.risk_level,
             "priority_rank": r.priority_rank,
             "boundary_name": name_map.get(r.boundary_version_id),
+            "area_ha_measured": float(boundary_map[r.boundary_version_id].area_ha_measured)
+            if r.boundary_version_id in boundary_map
+            and boundary_map[r.boundary_version_id].area_ha_measured is not None
+            else None,
+            "area_ha_claimed": float(boundary_map[r.boundary_version_id].area_ha_claimed)
+            if r.boundary_version_id in boundary_map
+            and boundary_map[r.boundary_version_id].area_ha_claimed is not None
+            else None,
         }
         for r in risk_rows
     ]
+
+
+async def generate_sampling_plan(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    *,
+    plots_per_critical: int = 3,
+    plots_per_high: int = 2,
+    plots_per_medium: int = 1,
+    plots_per_low: int = 0,
+    sampling_mode: SamplingMode = "risk_weighted",
+    ha_per_plot: float = 50.0,
+    min_plots_per_block: int = 1,
+    layout_seed: int | None = None,
+) -> AuditSamplingPlan:
+    if engagement.status not in {"risk_assessed", "sampling_planned", "field_verified"}:
+        raise ValueError("risk_not_assessed")
+
+    queue_blocks = await _queue_blocks_for_engagement(db, engagement)
+    boundaries = (
+        (
+            await db.execute(
+                select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    boundary_map = {b.id: b for b in boundaries}
+
     stratified = stratified_plot_counts(
         queue_blocks,
         plots_per_critical=plots_per_critical,
         plots_per_high=plots_per_high,
         plots_per_medium=plots_per_medium,
         plots_per_low=plots_per_low,
+        sampling_mode=sampling_mode,
+        ha_per_plot=ha_per_plot,
+        min_plots_per_block=min_plots_per_block,
     )
     if not stratified:
         raise ValueError("no_plots_required")
@@ -146,11 +192,13 @@ async def generate_sampling_plan(
         plan = AuditSamplingPlan(engagement_id=engagement.id)
         db.add(plan)
 
-    plan.stratification = "risk_weighted"
+    plan.stratification = sampling_mode
     plan.plots_per_critical = plots_per_critical
     plan.plots_per_high = plots_per_high
     plan.plots_per_medium = plots_per_medium
     plan.plots_per_low = plots_per_low
+    plan.ha_per_plot = ha_per_plot if sampling_mode != "risk_weighted" else None
+    plan.min_plots_per_block = max(1, min_plots_per_block)
     plan.layout_seed = seed
     plan.status = "active"
     plan.epistemic_label = "ESTIMATION"

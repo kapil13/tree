@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_engagement import AuditEngagement
 from app.models.planting_project import PlantingProject
 from app.services.audit_export.context import EXPORT_VERSION, build_audit_engagement_context
+from app.services.audit_export.field_verification import build_field_verification_pack
 from app.services.audit_export.pdf import render_audit_engagement_pdf
 from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
 
@@ -24,15 +25,20 @@ This archive contains audit-ready evidence from the Estate Watch audit engine
 (intake, satellite timeline, confidence map, risk queue, field sampling).
 
 Contents:
-- manifest.json           SHA-256 hashes for every file
-- audit-context.json      Full structured audit context
-- claim-snapshot.json     Latest frozen claim register (if present)
-- confidence-map.json     Per-block confidence grades
-- risk-queue.json         Auditor priority queue and anomalies
-- sampling-plan.json      Field plots and visit outcomes
-- satellite-timeline.json T0 baseline and temporal NDVI phases
-- audit-report.pdf        Human-readable summary report
-- signature.json          Ed25519 detached signature metadata
+- manifest.json                              SHA-256 hashes for every file
+- audit-context.json                         Full structured audit context
+- claim-snapshot.json                        Latest frozen claim register (if present)
+- confidence-map.json                        Per-block confidence grades
+- risk-queue.json                            Auditor priority queue and anomalies
+- sampling-plan.json                         Field plots and visit outcomes
+- satellite-timeline.json                      T0 baseline and temporal NDVI phases
+- boundaries.geojson                         Audit block polygons
+- field-verification/field-visits.json       Full field visit history
+- field-verification/field-visits-summary.csv  Verifier-friendly visit table
+- field-verification/field-verification-map.pdf Plot outcomes summary
+- field-verification/photos/                 On-site visit photos
+- audit-report.pdf                           Human-readable summary report
+- signature.json                             Ed25519 signature (hash excludes this file)
 
 DISCLAIMER: Supports audit preparation only — not certification or fraud findings.
 """
@@ -63,6 +69,7 @@ async def build_audit_engagement_bundle(
         raise ValueError("field_verification_incomplete")
 
     ctx = await build_audit_engagement_context(db, engagement, project)
+    field_pack = await build_field_verification_pack(db, engagement.id)
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -108,6 +115,9 @@ async def build_audit_engagement_bundle(
             json.dumps(ctx.get("satellite") or {}, indent=2, default=str).encode("utf-8"),
             manifest_files,
         )
+        for path, data in sorted(field_pack.items()):
+            _add_file(zf, path, data, manifest_files)
+
         pdf = render_audit_engagement_pdf(ctx)
         _add_file(zf, "audit-report.pdf", pdf, manifest_files)
 
@@ -127,14 +137,30 @@ async def build_audit_engagement_bundle(
             manifest_files,
         )
 
-    zip_bytes = buf.getvalue()
-    bundle_sha256 = zip_content_hash(zip_bytes)
-    signature = sign_evidence_zip(zip_bytes) if sign else None
+    zip_bytes_unsigned = buf.getvalue()
+    signature = sign_evidence_zip(zip_bytes_unsigned) if sign else None
+
+    if signature is not None:
+        sig_buf = io.BytesIO(zip_bytes_unsigned)
+        with zipfile.ZipFile(sig_buf, mode="a", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(
+                "signature.json",
+                json.dumps(signature.to_dict(), indent=2).encode("utf-8"),
+            )
+        zip_bytes = sig_buf.getvalue()
+    else:
+        zip_bytes = zip_bytes_unsigned
+
+    bundle_sha256 = zip_content_hash(zip_bytes_unsigned)
 
     engagement.status = "export_ready"
     meta = dict(engagement.metadata_ or {})
     meta["exported_at"] = datetime.now(UTC).isoformat()
     meta["export_bundle_sha256"] = bundle_sha256
+    meta["export_zip_size_bytes"] = len(zip_bytes)
+    meta["export_file_count"] = len(manifest_files)
+    if signature is not None:
+        meta["export_signature_key_id"] = signature.key_id
     engagement.metadata_ = meta
 
     summary = {
