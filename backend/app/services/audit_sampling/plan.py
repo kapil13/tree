@@ -7,8 +7,8 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from geoalchemy2 import WKTElement
-from sqlalchemy import func, select
+from geoalchemy2 import Geometry, WKTElement
+from sqlalchemy import cast, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_engagement import AuditEngagement, BoundaryVersion
@@ -20,13 +20,15 @@ from app.services.audit_sampling.stratify import stratified_plot_counts
 async def _point_in_boundary(
     db: AsyncSession, boundary_version_id: uuid.UUID, rng: random.Random
 ) -> tuple[float, float] | None:
+    # boundary_versions.boundary is Geography — cast to geometry for ST_XMin/ST_Contains.
+    boundary_geom = cast(BoundaryVersion.boundary, Geometry)
     bbox = (
         await db.execute(
             select(
-                func.ST_XMin(BoundaryVersion.boundary).label("xmin"),
-                func.ST_XMax(BoundaryVersion.boundary).label("xmax"),
-                func.ST_YMin(BoundaryVersion.boundary).label("ymin"),
-                func.ST_YMax(BoundaryVersion.boundary).label("ymax"),
+                func.ST_XMin(boundary_geom).label("xmin"),
+                func.ST_XMax(boundary_geom).label("xmax"),
+                func.ST_YMin(boundary_geom).label("ymin"),
+                func.ST_YMax(boundary_geom).label("ymax"),
             ).where(BoundaryVersion.id == boundary_version_id)
         )
     ).one()
@@ -37,14 +39,12 @@ async def _point_in_boundary(
     for _ in range(40):
         lon = rng.uniform(xmin, xmax)
         lat = rng.uniform(ymin, ymax)
+        point = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
         inside = (
             await db.execute(
-                select(
-                    func.ST_Contains(
-                        BoundaryVersion.boundary,
-                        func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326),
-                    )
-                ).where(BoundaryVersion.id == boundary_version_id)
+                select(func.ST_Contains(boundary_geom, point)).where(
+                    BoundaryVersion.id == boundary_version_id
+                )
             )
         ).scalar_one()
         if inside:
@@ -128,13 +128,10 @@ async def generate_sampling_plan(
 
     if existing:
         plan = existing
-        for plot in list(plan.plots):
-            await db.delete(plot)
-        await db.flush()
+        await db.execute(delete(AuditFieldPlot).where(AuditFieldPlot.plan_id == plan.id))
     else:
         plan = AuditSamplingPlan(engagement_id=engagement.id)
         db.add(plan)
-        await db.flush()
 
     plan.stratification = "risk_weighted"
     plan.plots_per_critical = plots_per_critical
@@ -145,6 +142,7 @@ async def generate_sampling_plan(
     plan.status = "active"
     plan.epistemic_label = "ESTIMATION"
     plan.planned_at = planned_at
+    await db.flush()
 
     created_plots: list[AuditFieldPlot] = []
     for block in stratified:
@@ -183,4 +181,5 @@ async def generate_sampling_plan(
     meta["sampling_planned_at"] = planned_at.isoformat()
     engagement.metadata_ = meta
     await db.flush()
+    await db.refresh(plan)
     return plan
