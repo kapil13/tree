@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from app.services.audit_intake.claim_snapshot import content_hash
 from app.services.audit_intake.gis_validation import validate_boundaries
 from app.services.audit_intake.intake_gate import evaluate_intake_gate
@@ -121,6 +125,41 @@ def test_parse_kml_rejects_invalid_xml():
 
     with pytest.raises(ValueError, match="kml_parse_failed"):
         parse_kml_bytes(b"not xml")
+
+
+@pytest.mark.asyncio
+async def test_complete_intake_refreshes_engagement_after_flush(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.services.audit_intake.ops import complete_intake
+
+    engagement = SimpleNamespace(
+        status="draft",
+        intake_completed_at=None,
+    )
+    project = SimpleNamespace(id="00000000-0000-0000-0000-000000000002")
+    calls = 0
+
+    async def fake_engagement_detail(db, eng, proj):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return {"intake_gate": {"ready": True}}
+        return {"status": "intake_complete", "intake_gate": {"ready": True}}
+
+    refresh = AsyncMock()
+    db = SimpleNamespace(flush=AsyncMock(), refresh=refresh)
+    monkeypatch.setattr(
+        "app.services.audit_intake.ops.engagement_detail",
+        fake_engagement_detail,
+    )
+
+    result = await complete_intake(db, engagement, project)
+
+    assert result["status"] == "intake_complete"
+    assert engagement.status == "intake_complete"
+    assert engagement.intake_completed_at is not None
+    refresh.assert_awaited_once_with(engagement)
 
 
 def test_intake_gate_ready():

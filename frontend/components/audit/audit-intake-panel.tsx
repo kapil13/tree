@@ -155,7 +155,14 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       setActionMessage("Intake marked complete.");
       invalidate();
     },
-    onError: (e) => setActionError(errorMessage(e)),
+    onError: (e) => {
+      const msg = errorMessage(e);
+      setActionError(
+        msg === "Request failed with status code 500"
+          ? "Could not mark intake complete due to a server error. Refresh the page — if status already shows intake complete, continue to satellite analysis."
+          : msg,
+      );
+    },
   });
 
   async function handleDocumentUpload(file: File) {
