@@ -120,6 +120,9 @@ def _serialize_detail(raw: dict) -> AuditEngagementDetailOut:
         plausibility=[
             PlausibilityAssessmentOut.model_validate(p) for p in raw.get("plausibility", [])
         ],
+        claim_snapshots=[
+            ClaimSnapshotOut.model_validate(s) for s in raw.get("claim_snapshots", [])
+        ],
         latest_gis_validation=GisValidationRunOut.model_validate(gis) if gis else None,
         intake_gate=IntakeGateOut.model_validate(gate) if gate else None,
     )

@@ -153,6 +153,7 @@ class AuditEngagementDetailOut(AuditEngagementOut):
     documents: list[ClaimDocumentOut] = Field(default_factory=list)
     exclusions: list[PlantabilityExclusionOut] = Field(default_factory=list)
     plausibility: list[PlausibilityAssessmentOut] = Field(default_factory=list)
+    claim_snapshots: list[ClaimSnapshotOut] = Field(default_factory=list)
     latest_gis_validation: GisValidationRunOut | None = None
     intake_gate: IntakeGateOut | None = None
 
