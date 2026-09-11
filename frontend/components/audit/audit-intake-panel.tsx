@@ -628,6 +628,7 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
           <AuditSamplingPanel
             engagementId={engagement.id}
             engagementStatus={engagement.status}
+            boundaries={engagement.boundaries}
           />
           <AuditExportPanel
             engagementId={engagement.id}

@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_engagement import AuditEngagement
 from app.models.audit_risk import AuditAnomalyEvent
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
+from app.schemas.audit_sampling import TREE_PRESENCE_VALUES
+from app.services.audit_sampling.location import check_visit_location
 
 VerificationOutcome = str  # claim_supported | claim_unsupported | inconclusive
 
@@ -56,6 +58,10 @@ async def record_field_visit(
     engagement: AuditEngagement,
     plot_id: uuid.UUID,
     visitor_id: uuid.UUID,
+    tree_presence: str,
+    photo_keys: list[str],
+    visitor_lat: float,
+    visitor_lon: float,
     trees_observed: int | None = None,
     trees_alive: int | None = None,
     canopy_cover_pct: float | None = None,
@@ -65,6 +71,9 @@ async def record_field_visit(
 ) -> AuditFieldVisit:
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
+
+    if tree_presence not in TREE_PRESENCE_VALUES:
+        raise ValueError("invalid_tree_presence")
 
     plot = (
         await db.execute(
@@ -80,17 +89,38 @@ async def record_field_visit(
     if verification_outcome not in {"claim_supported", "claim_unsupported", "inconclusive"}:
         raise ValueError("invalid_outcome")
 
+    if not photo_keys:
+        raise ValueError("photo_required")
+
+    location = await check_visit_location(
+        db,
+        plot=plot,
+        visitor_lon=visitor_lon,
+        visitor_lat=visitor_lat,
+    )
+    location_warnings = list(location.get("location_warnings") or [])
+
+    merged_signals = dict(signals or {})
+    if location_warnings:
+        merged_signals["location_warnings"] = location_warnings
+
     visit = AuditFieldVisit(
         plot_id=plot.id,
         visited_at=datetime.now(UTC),
         visitor_id=visitor_id,
+        tree_presence=tree_presence,
+        visitor_lat=visitor_lat,
+        visitor_lon=visitor_lon,
+        distance_from_plot_m=location.get("distance_from_plot_m"),
+        inside_boundary=location.get("inside_boundary"),
+        photo_keys=photo_keys,
         trees_observed=trees_observed,
         trees_alive=trees_alive,
         canopy_cover_pct=canopy_cover_pct,
         verification_outcome=verification_outcome,
         notes=notes,
         epistemic_label="OBSERVATION",
-        signals=signals or {},
+        signals=merged_signals,
     )
     db.add(visit)
     plot.status = "visited"

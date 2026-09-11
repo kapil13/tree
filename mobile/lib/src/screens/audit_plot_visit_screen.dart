@@ -1,8 +1,11 @@
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/stack_route_scaffold.dart';
@@ -21,9 +24,15 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
   final _treesObservedController = TextEditingController();
   final _treesAliveController = TextEditingController();
   final _notesController = TextEditingController();
+  String _treePresence = 'present';
   String _outcome = 'inconclusive';
+  final List<String> _photoKeys = [];
+  LocationCaptureResult? _gps;
   bool _saving = false;
+  bool _gpsBusy = false;
+  bool _photoBusy = false;
   String? _error;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -39,9 +48,66 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
     super.dispose();
   }
 
+  Future<void> _captureGps() async {
+    setState(() {
+      _gpsBusy = true;
+      _error = null;
+    });
+    try {
+      final pos = await captureLocation();
+      if (!mounted) return;
+      setState(() => _gps = pos);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _gpsBusy = false);
+    }
+  }
+
+  Future<void> _addPhoto() async {
+    final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (image == null) return;
+    setState(() {
+      _photoBusy = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final key = await api.uploadImageFile(image.path, filename: image.name);
+      if (!mounted) return;
+      setState(() => _photoKeys.add(key));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Future<void> _openMaps(Map<String, dynamic> plot) async {
+    final center = plot['center'] as Map<String, dynamic>?;
+    final coords = center?['coordinates'] as List?;
+    if (coords == null || coords.length < 2) return;
+    final lng = (coords[0] as num).toDouble();
+    final lat = (coords[1] as num).toDouble();
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   Future<void> _submitVisit() async {
     final plot = _activePlot;
     if (plot == null) return;
+    if (_gps == null) {
+      setState(() => _error = 'Capture GPS before saving the visit.');
+      return;
+    }
+    if (_photoKeys.isEmpty) {
+      setState(() => _error = 'Add at least one field photo.');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -51,6 +117,10 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
       await api.recordAuditFieldVisit(
         engagementId: plot['engagement_id'] as String,
         plotId: plot['plot_id'] as String,
+        treePresence: _treePresence,
+        photoKeys: _photoKeys,
+        visitorLat: _gps!.latitude,
+        visitorLon: _gps!.longitude,
         treesObserved: int.tryParse(_treesObservedController.text.trim()),
         treesAlive: int.tryParse(_treesAliveController.text.trim()),
         verificationOutcome: _outcome,
@@ -64,7 +134,10 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
         _treesObservedController.clear();
         _treesAliveController.clear();
         _notesController.clear();
+        _treePresence = 'present';
         _outcome = 'inconclusive';
+        _photoKeys.clear();
+        _gps = null;
         _saving = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,9 +186,9 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (items.isEmpty)
-                  Text(
+                  const Text(
                     'All assigned audit plots are visited for the current scope.',
-                    style: const TextStyle(color: AranyixColors.onSurfaceMuted),
+                    style: TextStyle(color: AranyixColors.onSurfaceMuted),
                   )
                 else
                   for (final plot in items)
@@ -126,9 +199,26 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                         subtitle: Text(
                           '${plot['project_name'] ?? ''} · ${plot['risk_level'] ?? ''} risk',
                         ),
-                        trailing: FilledButton(
-                          onPressed: () => setState(() => _activePlot = plot),
-                          child: Text(l10n.resolve),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Navigate to plot',
+                              icon: const Icon(Icons.navigation_outlined),
+                              onPressed: () => _openMaps(plot),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                setState(() {
+                                  _activePlot = plot;
+                                  _gps = null;
+                                  _photoKeys.clear();
+                                });
+                                _captureGps();
+                              },
+                              child: Text(l10n.resolve),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -137,6 +227,42 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                   Text(
                     'Visit ${_activePlot!['plot_code']}',
                     style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _gpsBusy ? null : _captureGps,
+                        icon: const Icon(Icons.my_location, size: 18),
+                        label: Text(_gpsBusy ? 'Capturing GPS…' : 'Refresh GPS'),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _openMaps(_activePlot!),
+                        icon: const Icon(Icons.map_outlined, size: 18),
+                        label: const Text('Navigate'),
+                      ),
+                    ],
+                  ),
+                  if (_gps != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'GPS: ${_gps!.latitude.toStringAsFixed(5)}, ${_gps!.longitude.toStringAsFixed(5)}',
+                        style: const TextStyle(color: Colors.green, fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _treePresence,
+                    decoration: const InputDecoration(labelText: 'Tree presence'),
+                    items: const [
+                      DropdownMenuItem(value: 'present', child: Text('Trees present')),
+                      DropdownMenuItem(value: 'absent', child: Text('No trees / bare ground')),
+                      DropdownMenuItem(value: 'sparse', child: Text('Sparse / scattered')),
+                      DropdownMenuItem(value: 'not_assessable', child: Text('Cannot assess')),
+                    ],
+                    onChanged: (v) => setState(() => _treePresence = v ?? 'present'),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -166,6 +292,16 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                     controller: _notesController,
                     maxLines: 3,
                     decoration: const InputDecoration(labelText: 'Field notes'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _photoBusy || _photoKeys.length >= 5 ? null : _addPhoto,
+                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                    label: Text(
+                      _photoBusy
+                          ? 'Uploading photo…'
+                          : 'Add field photo (${_photoKeys.length}/5)',
+                    ),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 8),
