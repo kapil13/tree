@@ -3082,6 +3082,62 @@ export type AuditBundle = {
   bundle_hash: string;
 };
 
+export type MonitoringPlan = {
+  id: string;
+  project_id: string;
+  fence_id?: string | null;
+  scheme_code?: string | null;
+  protocol_key: string;
+  label: string;
+  cadence_days: number;
+  min_recordings_per_cycle: number;
+  season_class: string;
+  next_due_at: string;
+  last_completed_at?: string | null;
+  status: string;
+  recordings_in_cycle: number;
+  guidance?: string | null;
+};
+
+export type BaselineDelta = {
+  fence_id: string;
+  snapshot_id?: string | null;
+  snapshot_captured_at?: string | null;
+  baseline_species_count: number;
+  detected_accepted_count: number;
+  confirmed_overlap: string[];
+  novel_detections: string[];
+  baseline_not_yet_detected: string[];
+  overlap_pct: number;
+};
+
+export type FenceTrends = {
+  fence_id: string;
+  recording_count: number;
+  confidence_trend: string;
+  species_trend: string;
+  series: Array<{
+    recording_id: string;
+    recorded_at?: string | null;
+    accepted_species_count: number;
+    biodiversity_confidence_score: number;
+    shannon_diversity_index?: number | null;
+  }>;
+};
+
+export type ComplianceEvidenceLink = {
+  id: string;
+  recording_id: string;
+  checklist_code: string;
+  checklist_item_id: string;
+  linked_at: string;
+  notes?: string | null;
+  export_ready: boolean;
+  export_blockers: string[];
+  recorded_at?: string | null;
+  accepted_species_count?: number | null;
+};
+
 export type BiodiversityMapFeature = {
   type: "Feature";
   geometry: { type: string; coordinates: number[] | number[][][] };
@@ -3248,6 +3304,45 @@ export const bioacoustic = {
   },
   async auditBundle(fenceId: string) {
     return (await api.get<AuditBundle>(`/v1/bioacoustic/fences/${fenceId}/audit-bundle`)).data;
+  },
+  async ensureMonitoringPlans(projectId: string) {
+    return (
+      await api.post<MonitoringPlan[]>(`/v1/bioacoustic/projects/${projectId}/monitoring-plans/ensure`)
+    ).data;
+  },
+  async monitoringPlans(projectId: string) {
+    return (
+      await api.get<MonitoringPlan[]>(`/v1/bioacoustic/projects/${projectId}/monitoring-plans`)
+    ).data;
+  },
+  async baselineDelta(fenceId: string) {
+    return (await api.get<BaselineDelta>(`/v1/bioacoustic/fences/${fenceId}/baseline-delta`)).data;
+  },
+  async trends(fenceId: string) {
+    return (await api.get<FenceTrends>(`/v1/bioacoustic/fences/${fenceId}/trends`)).data;
+  },
+  async linkComplianceEvidence(
+    recordingId: string,
+    payload: {
+      project_id: string;
+      checklist_code: string;
+      checklist_item_id: string;
+      notes?: string;
+    },
+  ) {
+    return (
+      await api.post<ComplianceEvidenceLink>(
+        `/v1/bioacoustic/recordings/${recordingId}/compliance-evidence`,
+        payload,
+      )
+    ).data;
+  },
+  async complianceEvidence(projectId: string, checklistCode?: string) {
+    return (
+      await api.get<ComplianceEvidenceLink[]>(`/v1/bioacoustic/projects/${projectId}/compliance-evidence`, {
+        params: checklistCode ? { checklist_code: checklistCode } : undefined,
+      })
+    ).data;
   },
   async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
     return (

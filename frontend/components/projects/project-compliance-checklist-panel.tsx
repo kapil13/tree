@@ -7,6 +7,7 @@ import {
   type ChecklistAnswer,
   type ChecklistCode,
   type ChecklistEligibilityStatus,
+  bioacoustic,
   compliance,
   errorMessage,
 } from "@/lib/api";
@@ -75,6 +76,12 @@ export function ProjectComplianceChecklistPanel({
   } = useQuery({
     queryKey: ["project-checklist", projectId, checklistCode],
     queryFn: () => compliance.projectChecklist(projectId, checklistCode),
+  });
+
+  const { data: bioEvidence = [] } = useQuery({
+    queryKey: ["project-bio-evidence", projectId, checklistCode],
+    queryFn: () => bioacoustic.complianceEvidence(projectId, checklistCode),
+    enabled: Boolean(projectId),
   });
 
   useEffect(() => {
@@ -209,6 +216,19 @@ export function ProjectComplianceChecklistPanel({
                             Auto-checked from project data
                           </p>
                         )}
+                        {(item.id === "ps6_biodiversity" || item.id === "ses_biodiversity") &&
+                          bioEvidence.filter((e) => e.checklist_item_id === item.id).length > 0 && (
+                            <ul className="mt-2 space-y-1 text-xs text-stone-600">
+                              {bioEvidence
+                                .filter((e) => e.checklist_item_id === item.id)
+                                .map((e) => (
+                                  <li key={e.id}>
+                                    Recording {e.recorded_at?.slice(0, 10) ?? e.recording_id.slice(0, 8)} ·{" "}
+                                    {e.export_ready ? "export-ready" : `blocked: ${e.export_blockers.join(", ")}`}
+                                  </li>
+                                ))}
+                            </ul>
+                          )}
                       </div>
                       <select
                         className="input w-28 text-xs"
