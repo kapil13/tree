@@ -14,6 +14,7 @@ from app.models.report import Report
 from app.models.tree import Tree
 from app.models.user import User
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
+from app.services.bioacoustic.methodology import assert_recordings_exportable
 from app.services.data_scope import apply_tree_scope
 from app.services.reports import (
     render_bioacoustic_report_pdf,
@@ -87,13 +88,22 @@ async def generate_report_bytes(
             .order_by(BioacousticRecording.recorded_at.desc())
             .limit(20)
         )
-        for rec in rec_res.scalars().all():
+        rec_rows = list(rec_res.scalars().all())
+        if rpt.kind == "biodiversity":
+            assert_recordings_exportable(rec_rows)
+        for rec in rec_rows:
             recordings.append(
                 {
                     "recorded_at": rec.recorded_at.isoformat(),
                     "duration_seconds": float(rec.duration_seconds),
-                    "bioacoustic_health_score": float(rec.bioacoustic_health_score or 0),
-                    "total_species_count": rec.total_species_count,
+                    "biodiversity_confidence_score": float(
+                        rec.biodiversity_confidence_score or rec.bioacoustic_health_score or 0
+                    ),
+                    "bioacoustic_health_score": float(
+                        rec.biodiversity_confidence_score or rec.bioacoustic_health_score or 0
+                    ),
+                    "accepted_species_count": rec.accepted_species_count,
+                    "total_species_count": rec.accepted_species_count or rec.total_species_count,
                 }
             )
 

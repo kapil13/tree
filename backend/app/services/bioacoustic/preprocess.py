@@ -83,7 +83,8 @@ def preprocess_audio(audio_bytes: bytes, *, s3_key: str) -> dict[str, Any]:
     WAV conversion for BirdNET plus analysis metadata.
     Falls back to fingerprint-only metadata when ffmpeg is unavailable.
     """
-    digest = hashlib.sha256(audio_bytes).hexdigest()[:16]
+    audio_sha256 = hashlib.sha256(audio_bytes).hexdigest()
+    digest = audio_sha256[:16]
     wav_path = convert_to_wav(audio_bytes, suffix=Path(s3_key).suffix or ".m4a")
     duration_s = 0.0
     sample_rate = 48000
@@ -107,6 +108,7 @@ def preprocess_audio(audio_bytes: bytes, *, s3_key: str) -> dict[str, Any]:
         "spectrogram_generated": False,
         "spectrogram_s3_key": f"bioacoustic/spectrograms/{digest}.png",
         "audio_fingerprint": digest,
+        "audio_sha256": audio_sha256,
         "source_key": s3_key,
         "wav_temp_path": wav_path,
     }

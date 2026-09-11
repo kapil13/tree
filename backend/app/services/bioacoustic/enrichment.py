@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.config import settings
 from app.services.bioacoustic.gbif_client import match_species, taxon_group_from_gbif
 from app.services.bioacoustic.iucn_api_client import resolve_iucn
 
@@ -28,9 +27,6 @@ def enrich_detection(
     if gbif and gbif.get("vernacularName"):
         vernacular = gbif["vernacularName"]
 
-    review_threshold = settings.bioacoustic_review_confidence
-    needs_review = confidence < review_threshold
-
     return {
         "scientific_name": canonical_name,
         "common_name": vernacular,
@@ -38,9 +34,7 @@ def enrich_detection(
         "confidence": confidence,
         "call_count": call_count,
         "time_intervals": time_intervals or [],
-        "needs_review": needs_review,
-        "included_in_richness": not needs_review,
-        "is_native": regional_occurrence_match is True,
+        "regionally_plausible": regional_occurrence_match is True,
         "is_invasive": False,
         "gbif_usage_key": gbif.get("usageKey") if gbif else None,
         "gbif_match_type": gbif.get("matchType") if gbif else None,

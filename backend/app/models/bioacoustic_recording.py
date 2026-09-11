@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from geoalchemy2 import Geography
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,7 +30,17 @@ class BioacousticRecording(UUIDPKMixin, TimestampMixin, Base):
     s3_key: Mapped[str] = mapped_column(String(512), nullable=False)
     duration_seconds: Mapped[float] = mapped_column(Numeric(8, 2), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    recording_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    recording_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     location: Mapped[Any | None] = mapped_column(Geography(geometry_type="POINT", srid=4326))
+    gps_accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    gps_source: Mapped[str | None] = mapped_column(String(32))
+    gps_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    gps_fallback: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    latest_analysis_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("bioacoustic_analysis_runs.id", ondelete="SET NULL", use_alter=True),
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     spectrogram_s3_key: Mapped[str | None] = mapped_column(String(512))
     preprocessing: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
@@ -38,8 +48,11 @@ class BioacousticRecording(UUIDPKMixin, TimestampMixin, Base):
         JSONB, nullable=False, default=list
     )
     total_species_count: Mapped[int | None] = mapped_column()
+    accepted_species_count: Mapped[int | None] = mapped_column()
+    acoustic_signals_count: Mapped[int | None] = mapped_column()
     total_calls_detected: Mapped[int | None] = mapped_column()
     shannon_diversity_index: Mapped[float | None] = mapped_column(Numeric(8, 4))
+    biodiversity_confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
     bioacoustic_health_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
     ai_confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 4))
     simpson_diversity_index: Mapped[float | None] = mapped_column(Numeric(8, 4))
@@ -55,6 +68,17 @@ class BioacousticRecording(UUIDPKMixin, TimestampMixin, Base):
     owner = relationship("User", foreign_keys=[owner_user_id])
     organization = relationship("Organization")
     plantation_fence = relationship("PlantationFence")
+    analysis_runs = relationship(
+        "BioacousticAnalysisRun",
+        back_populates="recording",
+        foreign_keys="BioacousticAnalysisRun.recording_id",
+        order_by="BioacousticAnalysisRun.run_number",
+    )
+    latest_analysis_run = relationship(
+        "BioacousticAnalysisRun",
+        foreign_keys=[latest_analysis_run_id],
+        uselist=False,
+    )
 
     __table_args__ = (
         Index("bioacoustic_owner_idx", "owner_user_id", "recorded_at"),

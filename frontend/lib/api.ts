@@ -2573,9 +2573,11 @@ export type FenceBiodiversity = {
   fence_id: string;
   fence_name: string;
   recording_count: number;
+  avg_confidence_score?: number;
   avg_health_score: number;
   avg_shannon_index: number;
   avg_simpson_index: number;
+  total_accepted_species?: number;
   total_species_detected: number;
   threatened_species_count: number;
   taxon_breakdown: Record<string, number>;
@@ -2600,6 +2602,7 @@ export type EcosystemHealth = {
   correlation_score: number | null;
   ecosystem_health_score: number;
   interpretation: string;
+  ndvi_disclaimer?: string;
 };
 
 export const weather = {
@@ -2902,12 +2905,15 @@ export const assistant = {
   },
 };
 
+export type BioacousticDetectionTier = "accepted" | "probable" | "review_required";
+
 export type BioacousticSpecies = {
   scientific_name: string;
   common_name: string;
   taxon_group: string;
   confidence: number;
   call_count: number;
+  detection_tier?: BioacousticDetectionTier;
   iucn_status: string;
   population_trend: string;
   threat_status: string;
@@ -2915,8 +2921,9 @@ export type BioacousticSpecies = {
   iucn_url: string | null;
   gbif_usage_key?: number | null;
   regional_occurrence_match?: boolean | null;
+  regionally_plausible?: boolean | null;
   needs_review?: boolean;
-  is_native?: boolean;
+  included_in_richness?: boolean;
   time_intervals?: Array<{ start_sec: number; end_sec: number }>;
   metadata_sources?: { gbif?: boolean; iucn?: string };
   pipeline_source?: string;
@@ -2946,12 +2953,19 @@ export type BioacousticRecording = {
   s3_key: string;
   duration_seconds: number;
   recorded_at: string;
+  recording_started_at?: string | null;
+  recording_ended_at?: string | null;
   latitude: number | null;
   longitude: number | null;
+  gps_accuracy_m?: number | null;
+  gps_source?: string | null;
+  gps_verified?: boolean;
+  gps_fallback?: boolean;
   plantation_fence_id: string | null;
   status: string;
   preprocessing?: {
     analysis_pipeline?: string;
+    methodology_version?: string;
     spl_metrics?: {
       avg_db_spl_approx?: number;
       max_db_spl_approx?: number;
@@ -2963,12 +2977,18 @@ export type BioacousticRecording = {
     ecoacoustic_indices?: EcoacousticIndices;
   };
   species_detections: BioacousticSpecies[];
+  accepted_species_count?: number | null;
+  acoustic_signals_count?: number | null;
   total_species_count: number | null;
   total_calls_detected: number | null;
   shannon_diversity_index: number | null;
   simpson_diversity_index: number | null;
+  biodiversity_confidence_score?: number | null;
   bioacoustic_health_score: number | null;
   ai_confidence_score: number | null;
+  latest_analysis_run_id?: string | null;
+  methodology_version?: string | null;
+  scientific_limitations?: string[];
   analysis_summary: string | null;
   analysis_error: string | null;
   analyzed_at: string | null;

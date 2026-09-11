@@ -20,6 +20,7 @@ from app.models.audit_engagement import (
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
 from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
+from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.citizen_profile import CitizenProfile
@@ -90,6 +91,7 @@ from app.models.webhook import OrganizationWebhook, WebhookDelivery
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 
 __all__ = [
+    "BioacousticAnalysisRun",
     "BioacousticRecording",
     "Alert",
     "UserAiScanWallet",
