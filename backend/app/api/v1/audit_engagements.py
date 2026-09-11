@@ -775,6 +775,7 @@ async def mark_engagement_analysis_ready(
         request=request,
     )
     await db.commit()
+    await db.refresh(row)
     raw = await engagement_detail(db, row, project)
     return _serialize_detail(raw)
 

@@ -62,3 +62,38 @@ async def test_mark_analysis_ready_requires_baselines(monkeypatch):
 
     with pytest.raises(ValueError, match="no_boundaries"):
         await mark_analysis_ready(db, engagement)
+
+
+@pytest.mark.asyncio
+async def test_mark_analysis_ready_refreshes_engagement_after_flush(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.services.audit_satellite.timeline import mark_analysis_ready
+
+    engagement = SimpleNamespace(
+        id="00000000-0000-0000-0000-000000000001",
+        status="intake_complete",
+        metadata_={},
+    )
+    boundary = SimpleNamespace(id="b1")
+    baseline = SimpleNamespace(backfill_status="found")
+    observation = SimpleNamespace(id="o1")
+
+    async def fake_execute(stmt):
+        mock = SimpleNamespace()
+        sql = str(stmt)
+        if "audit_satellite_baseline" in sql:
+            mock.scalars = lambda: SimpleNamespace(all=lambda: [baseline])
+        elif "boundary_version" in sql:
+            mock.scalars = lambda: SimpleNamespace(all=lambda: [boundary])
+        else:
+            mock.scalars = lambda: SimpleNamespace(all=lambda: [observation])
+        return mock
+
+    refresh = AsyncMock()
+    db = SimpleNamespace(execute=fake_execute, flush=AsyncMock(), refresh=refresh)
+
+    result = await mark_analysis_ready(db, engagement)
+
+    assert result.status == "analysis_ready"
+    refresh.assert_awaited_once_with(engagement)

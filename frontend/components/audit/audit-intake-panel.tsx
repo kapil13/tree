@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucid
 import { auditEngagements, errorMessage, uploads, type AuditEngagementDetail } from "@/lib/api";
 import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
+import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditExportPanel } from "@/components/audit/audit-export-panel";
 import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
@@ -608,79 +609,35 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         {t("refresh")}
       </button>
 
-      {(engagement.status === "intake_complete" ||
-        engagement.status === "analysis_ready" ||
-        engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed" ||
-        engagement.status === "sampling_planned" ||
-        engagement.status === "field_verified" ||
-        engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditSatellitePanel
-          projectId={projectId}
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
-      )}
-
-      {(engagement.status === "analysis_ready" ||
-        engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed" ||
-        engagement.status === "sampling_planned" ||
-        engagement.status === "field_verified" ||
-        engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditConfidencePanel
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
-      )}
-
-      {(engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed" ||
-        engagement.status === "sampling_planned" ||
-        engagement.status === "field_verified" ||
-        engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditRiskPanel
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
-      )}
-
-      {(engagement.status === "risk_assessed" ||
-        engagement.status === "sampling_planned" ||
-        engagement.status === "field_verified" ||
-        engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditSamplingPanel
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
-      )}
-
-      {(engagement.status === "sampling_planned" ||
-        engagement.status === "field_verified" ||
-        engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditExportPanel
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
-      )}
-
-      {(engagement.status === "export_ready" ||
-        engagement.status === "under_review" ||
-        engagement.status === "attested") && (
-        <AuditAttestationPanel
-          engagementId={engagement.id}
-          engagementStatus={engagement.status}
-        />
+      {engagement.status !== "draft" && (
+        <div className="space-y-8 border-t border-stone-200 pt-8 dark:border-stone-700">
+          <AuditPhaseRoadmap status={engagement.status} />
+          <AuditSatellitePanel
+            projectId={projectId}
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+          <AuditConfidencePanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+          <AuditRiskPanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+          <AuditSamplingPanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+          <AuditExportPanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+          <AuditAttestationPanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
+          />
+        </div>
       )}
     </div>
   );

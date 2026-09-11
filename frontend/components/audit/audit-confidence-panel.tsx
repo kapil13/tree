@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Grid3x3, Map } from "lucide-react";
-import { auditEngagements } from "@/lib/api";
+import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { cn } from "@/lib/cn";
 
 const GRADE_STYLES: Record<string, string> = {
@@ -65,22 +66,22 @@ export function AuditConfidencePanel({
     mutationFn: () => auditEngagements.computeConfidenceMap(engagementId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["audit-confidence-map", engagementId] });
+      qc.invalidateQueries({ queryKey: ["audit-engagement"] });
     },
   });
 
-  if (
-    engagementStatus !== "analysis_ready" &&
-    engagementStatus !== "confidence_mapped" &&
-    engagementStatus !== "risk_assessed" &&
-    engagementStatus !== "sampling_planned" &&
-    engagementStatus !== "field_verified" &&
-    engagementStatus !== "export_ready" &&
-    engagementStatus !== "under_review" &&
-    engagementStatus !== "attested"
-  ) {
-    return (
-      <section className="card text-sm text-stone-500">{t("analysisRequired")}</section>
-    );
+  const unlocked =
+    engagementStatus === "analysis_ready" ||
+    engagementStatus === "confidence_mapped" ||
+    engagementStatus === "risk_assessed" ||
+    engagementStatus === "sampling_planned" ||
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready" ||
+    engagementStatus === "under_review" ||
+    engagementStatus === "attested";
+
+  if (!unlocked) {
+    return <AuditLockedSection title={t("title")} message={t("analysisRequired")} />;
   }
 
   if (isLoading) {
@@ -112,11 +113,14 @@ export function AuditConfidencePanel({
         <button
           type="button"
           className="btn-primary text-sm"
-          disabled={compute.isPending}
+          disabled={compute.isPending || engagementStatus !== "analysis_ready"}
           onClick={() => compute.mutate()}
         >
           {t("compute")}
         </button>
+        {compute.isError && (
+          <p className="text-sm text-rose-700">{errorMessage(compute.error)}</p>
+        )}
         {Object.keys(gradeCounts).length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
             {(["green", "amber", "red", "grey"] as const).map((g) =>

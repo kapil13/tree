@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Gavel, ShieldCheck } from "lucide-react";
 import { auditEngagements } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { cn } from "@/lib/cn";
 
 type ReviewItem = {
@@ -68,7 +69,7 @@ export function AuditAttestationPanel({
   });
 
   if (!enabled) {
-    return <section className="card text-sm text-stone-500">{t("exportRequired")}</section>;
+    return <AuditLockedSection title={t("title")} message={t("exportRequired")} />;
   }
 
   if (isLoading) {

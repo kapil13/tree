@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ClipboardList, MapPin, CheckCircle2 } from "lucide-react";
-import { auditEngagements } from "@/lib/api";
+import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { cn } from "@/lib/cn";
 
 const RISK_STYLES: Record<string, string> = {
@@ -98,7 +99,7 @@ export function AuditSamplingPanel({
   });
 
   if (!enabled) {
-    return <section className="card text-sm text-stone-500">{t("riskRequired")}</section>;
+    return <AuditLockedSection title={t("title")} message={t("riskRequired")} />;
   }
 
   if (isLoading) {
@@ -136,15 +137,15 @@ export function AuditSamplingPanel({
           className="btn-primary text-sm"
           disabled={
             generate.isPending ||
-            engagementStatus === "field_verified" ||
-            engagementStatus === "export_ready" ||
-            engagementStatus === "under_review" ||
-            engagementStatus === "attested"
+            (engagementStatus !== "risk_assessed" && engagementStatus !== "sampling_planned")
           }
           onClick={() => generate.mutate()}
         >
           {data?.has_plan ? t("regenerate") : t("generate")}
         </button>
+        {generate.isError && (
+          <p className="text-sm text-rose-700">{errorMessage(generate.error)}</p>
+        )}
         {stats.total > 0 && (
           <span className="text-xs text-stone-500">
             {t("visitProgress", { visited: stats.visited, total: stats.total })}

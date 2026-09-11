@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import Link from "next/link";
 import { Satellite, TrendingUp } from "lucide-react";
-import { auditEngagements } from "@/lib/api";
+import { auditEngagements, errorMessage } from "@/lib/api";
 import { satelliteHref } from "@/lib/satellite-links";
 import { cn } from "@/lib/cn";
 
@@ -39,6 +40,8 @@ export function AuditSatellitePanel({
 }) {
   const t = useTranslations("auditSatellite");
   const qc = useQueryClient();
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: timeline, isLoading } = useQuery({
     queryKey: ["audit-satellite-timeline", engagementId],
@@ -60,21 +63,36 @@ export function AuditSatellitePanel({
     qc.invalidateQueries({ queryKey: ["audit-engagement", projectId] });
   };
 
+  const onMutationSuccess = (message: string) => {
+    setActionError(null);
+    setActionMessage(message);
+    invalidate();
+  };
+
+  const onMutationError = (err: unknown) => {
+    setActionMessage(null);
+    setActionError(errorMessage(err));
+  };
+
   const promote = useMutation({
     mutationFn: () => auditEngagements.promoteBoundaries(engagementId),
-    onSuccess: invalidate,
+    onSuccess: () => onMutationSuccess(t("promoteSuccess")),
+    onError: onMutationError,
   });
   const t0 = useMutation({
     mutationFn: () => auditEngagements.establishT0Baseline(engagementId),
-    onSuccess: invalidate,
+    onSuccess: () => onMutationSuccess(t("t0Success")),
+    onError: onMutationError,
   });
   const temporal = useMutation({
     mutationFn: () => auditEngagements.runTemporalAnalysis(engagementId),
-    onSuccess: invalidate,
+    onSuccess: () => onMutationSuccess(t("temporalSuccess")),
+    onError: onMutationError,
   });
   const analysisReady = useMutation({
     mutationFn: () => auditEngagements.markAnalysisReady(engagementId),
-    onSuccess: invalidate,
+    onSuccess: () => onMutationSuccess(t("analysisReadySuccess")),
+    onError: onMutationError,
   });
 
   if (engagementStatus === "draft") {
@@ -90,6 +108,10 @@ export function AuditSatellitePanel({
   }
 
   const blocks = (timeline?.blocks ?? []) as TimelineBlock[];
+  const canMarkReady =
+    engagementStatus === "intake_complete" &&
+    blocks.length > 0 &&
+    blocks.every((block) => block.baseline?.backfill_status === "found");
   const isReady =
     engagementStatus === "analysis_ready" ||
     engagementStatus === "confidence_mapped" ||
@@ -118,6 +140,12 @@ export function AuditSatellitePanel({
         <p className="text-xs text-stone-500">{t("auditModeNote")}</p>
       </header>
 
+      {engagementStatus === "intake_complete" && !isReady && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {t("nextStepHint")}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -145,13 +173,27 @@ export function AuditSatellitePanel({
         </button>
         <button
           type="button"
-          className="btn-primary text-sm"
+          className={cn(
+            "text-sm",
+            canMarkReady && !isReady ? "btn-primary ring-2 ring-forest-300" : "btn-primary",
+          )}
           disabled={analysisReady.isPending || isReady}
           onClick={() => analysisReady.mutate()}
         >
           {t("markReady")}
         </button>
       </div>
+
+      {actionMessage && (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          {actionMessage}
+        </p>
+      )}
+      {actionError && (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+          {actionError}
+        </p>
+      )}
 
       {timeline && (
         <p className="text-xs text-stone-500">

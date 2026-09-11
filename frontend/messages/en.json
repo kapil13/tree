@@ -530,6 +530,40 @@
     "alreadyComplete": "Intake already complete",
     "refresh": "Refresh"
   },
+  "auditRoadmap": {
+    "title": "Estate Watch audit pipeline",
+    "subtitle": "Work through each phase on this page — later steps unlock after the previous action succeeds.",
+    "steps": {
+      "satellite": {
+        "title": "Satellite analysis",
+        "action": "Mark analysis ready"
+      },
+      "confidence": {
+        "title": "Confidence map",
+        "action": "Compute confidence map"
+      },
+      "risk": {
+        "title": "Risk & anomaly",
+        "action": "Run risk scan"
+      },
+      "sampling": {
+        "title": "Field sampling",
+        "action": "Generate sampling plan"
+      },
+      "field": {
+        "title": "Field verification",
+        "action": "Record visits on web or Field ops"
+      },
+      "export": {
+        "title": "Evidence export",
+        "action": "Download signed audit bundle"
+      },
+      "attestation": {
+        "title": "Attestation",
+        "action": "Sign auditor attestation"
+      }
+    }
+  },
   "auditSatellite": {
     "title": "Satellite & temporal analysis",
     "subtitle": "Establish T0 baseline at planting date, build T0–T4 vegetation timeline, and prepare for confidence mapping.",
@@ -537,10 +571,15 @@
     "intakeRequired": "Complete audit intake before starting satellite analysis.",
     "loading": "Loading satellite timeline…",
     "statusReady": "Analysis ready",
+    "nextStepHint": "When every plot has a T0 baseline and timeline, click Mark analysis ready above to unlock the confidence map and risk engine below.",
     "promoteBoundaries": "Promote to work areas",
     "establishT0": "Establish T0 baseline",
     "runTemporal": "Build T0–T4 timeline",
     "markReady": "Mark analysis ready",
+    "promoteSuccess": "Boundaries promoted to work areas.",
+    "t0Success": "T0 baselines established.",
+    "temporalSuccess": "T0–T4 timeline built.",
+    "analysisReadySuccess": "Analysis marked ready — confidence map and risk engine are now unlocked.",
     "summary": "{blocks} block(s) · {t0} T0 baseline(s) found",
     "noBlocks": "No blocks — import boundaries during intake first.",
     "openSatellite": "Open satellite map",
@@ -595,7 +634,8 @@
     "statusExported": "Export ready",
     "download": "Download signed audit bundle",
     "lastExport": "Last export SHA-256: {sha}…",
-    "notReady": "Complete field verification before exporting."
+    "notReady": "Complete earlier audit phases before exporting.",
+    "fieldVisitsRequired": "Record field visits and mark field verification complete before exporting."
   },
   "auditSampling": {
     "title": "Field sampling & verification",

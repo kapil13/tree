@@ -279,4 +279,6 @@ async def mark_analysis_ready(
     meta["analysis_ready_at"] = datetime.now(UTC).isoformat()
     engagement.metadata_ = meta
     await db.flush()
+    # flush() expires ORM attributes; refresh before re-serializing detail payload.
+    await db.refresh(engagement)
     return engagement
