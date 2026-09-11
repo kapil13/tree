@@ -11,6 +11,7 @@ from app.schemas.audit_attestation import (
     AnomalyReviewCreate,
     AnomalyReviewOut,
     AnomalyReviewQueueOut,
+    AttestationCosignCreate,
     AttestationOut,
     AttestationSignCreate,
     AttestationSummaryOut,
@@ -1220,6 +1221,39 @@ async def download_audit_export(
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
+    from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
+    from app.services.webhooks.audit_events import emit_audit_webhook
+
+    reconciliation = await build_confidence_field_reconciliation(db, row.id)
+    await emit_audit_webhook(
+        db,
+        organization_id=row.organization_id or project.organization_id,
+        event_type="audit.export_ready",
+        payload={
+            "engagement_id": str(row.id),
+            "project_id": str(project.id),
+            "project_code": project.code,
+            "status": row.status,
+            "export_bundle_sha256": summary.get("bundle_sha256"),
+            "file_count": summary.get("file_count"),
+            "signed": summary.get("signed"),
+        },
+    )
+    if reconciliation.get("mismatch_count", 0) > 0:
+        await emit_audit_webhook(
+            db,
+            organization_id=row.organization_id or project.organization_id,
+            event_type="audit.reconciliation_mismatch",
+            payload={
+                "engagement_id": str(row.id),
+                "project_id": str(project.id),
+                "project_code": project.code,
+                "mismatch_count": reconciliation.get("mismatch_count", 0),
+                "no_field_data_count": reconciliation.get("no_field_data_count", 0),
+                "aligned_count": reconciliation.get("aligned_count", 0),
+            },
+        )
+
     safe_code = project.code.replace("/", "-")
 
     await record_audit(
@@ -1293,7 +1327,7 @@ async def get_engagement_attestation(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
-    summary = await attestation_summary(db, row)
+    summary = await attestation_summary(db, row, current_user_id=user.id)
     return AttestationSummaryOut.model_validate(summary)
 
 
@@ -1377,7 +1411,7 @@ async def review_engagement_anomaly(
     )
 
 
-@router.post("/{engagement_id}/attestation/sign", response_model=AttestationOut)
+@router.post("/{engagement_id}/attestation/sign")
 async def sign_engagement_attestation(
     engagement_id: uuid.UUID,
     body: AttestationSignCreate,
@@ -1408,6 +1442,7 @@ async def sign_engagement_attestation(
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
+    attestation_hash = getattr(attestation, "attestation_hash", None)
     await record_audit(
         db,
         actor=user,
@@ -1417,19 +1452,161 @@ async def sign_engagement_attestation(
         request=request,
         diff={
             "verdict": body.verdict,
-            "attestation_hash": attestation.attestation_hash,
+            "attestation_hash": attestation_hash,
+            "status": row.status,
         },
     )
     await db.commit()
-    return AttestationOut(
+
+    if hasattr(attestation, "attestation_hash") and attestation.attestation_hash:
+        return AttestationOut(
+            id=str(attestation.id),
+            verdict=attestation.verdict,
+            summary=attestation.summary,
+            notes=attestation.notes,
+            status=attestation.status,
+            export_bundle_sha256=attestation.export_bundle_sha256,
+            attestation_hash=attestation.attestation_hash,
+            epistemic_label=attestation.epistemic_label,
+            signed_at=attestation.signed_at,
+            reviewer_id=str(attestation.reviewer_id) if attestation.reviewer_id else None,
+        )
+
+    from app.schemas.audit_attestation import AttestationSignatureOut
+
+    return AttestationSignatureOut(
         id=str(attestation.id),
+        role=attestation.role,
         verdict=attestation.verdict,
         summary=attestation.summary,
         notes=attestation.notes,
-        status=attestation.status,
-        export_bundle_sha256=attestation.export_bundle_sha256,
-        attestation_hash=attestation.attestation_hash,
+        signature_hash=attestation.signature_hash,
         epistemic_label=attestation.epistemic_label,
         signed_at=attestation.signed_at,
         reviewer_id=str(attestation.reviewer_id) if attestation.reviewer_id else None,
+    )
+
+
+@router.post("/{engagement_id}/attestation/cosign")
+async def cosign_engagement_attestation(
+    engagement_id: uuid.UUID,
+    body: AttestationCosignCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+):
+    from app.models.audit_attestation import AuditAttestationSignature, AuditReviewerAttestation
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_attestation.attest import cosign_attestation
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        result = await cosign_attestation(db, row, reviewer_id=user.id, notes=body.notes)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    attestation_hash = getattr(result, "attestation_hash", None)
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.attestation.cosign",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={
+            "attestation_hash": attestation_hash,
+            "status": row.status,
+        },
+    )
+    await db.commit()
+
+    if isinstance(result, AuditReviewerAttestation):
+        return AttestationOut(
+            id=str(result.id),
+            verdict=result.verdict,
+            summary=result.summary,
+            notes=result.notes,
+            status=result.status,
+            export_bundle_sha256=result.export_bundle_sha256,
+            attestation_hash=result.attestation_hash,
+            epistemic_label=result.epistemic_label,
+            signed_at=result.signed_at,
+            reviewer_id=str(result.reviewer_id) if result.reviewer_id else None,
+        )
+
+    sig: AuditAttestationSignature = result
+    from app.schemas.audit_attestation import AttestationSignatureOut
+
+    return AttestationSignatureOut(
+        id=str(sig.id),
+        role=sig.role,
+        verdict=sig.verdict,
+        summary=sig.summary,
+        notes=sig.notes,
+        signature_hash=sig.signature_hash,
+        epistemic_label=sig.epistemic_label,
+        signed_at=sig.signed_at,
+        reviewer_id=str(sig.reviewer_id) if sig.reviewer_id else None,
+    )
+
+
+@router.post("/{engagement_id}/verification-link")
+async def create_audit_verification_link(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+):
+    from app.models.audit_engagement import AuditEngagement
+    from app.schemas.public_verification import VerificationLinkOut
+    from app.services.public_verification.builder import create_verification_link, public_verify_url
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    link = await create_verification_link(
+        db,
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        organization_id=row.organization_id or project.organization_id,
+        label=f"Estate Watch audit — {project.code}",
+        created_by_user_id=user.id,
+    )
+    meta = dict(row.metadata_ or {})
+    meta["public_verify_url"] = public_verify_url(link.token)
+    row.metadata_ = meta
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.verification_link.create",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"token_preview": link.token[:8]},
+    )
+    await db.commit()
+    await db.refresh(link)
+    return VerificationLinkOut(
+        id=link.id,
+        token=link.token,
+        resource_type=link.resource_type,
+        resource_id=link.resource_id,
+        label=link.label,
+        public_url=public_verify_url(link.token),
+        expires_at=link.expires_at,
+        revoked_at=link.revoked_at,
+        view_count=link.view_count,
+        last_viewed_at=link.last_viewed_at,
+        created_at=link.created_at,
     )

@@ -38,6 +38,22 @@ class AttestationSignCreate(BaseModel):
     allow_pending_reviews: bool = False
 
 
+class AttestationCosignCreate(BaseModel):
+    notes: str | None = None
+
+
+class AttestationSignatureOut(BaseModel):
+    id: str
+    role: str
+    verdict: str
+    summary: str
+    notes: str | None = None
+    signature_hash: str
+    epistemic_label: str
+    signed_at: datetime
+    reviewer_id: str | None = None
+
+
 class AttestationOut(BaseModel):
     id: str
     verdict: str
@@ -56,5 +72,10 @@ class AttestationSummaryOut(BaseModel):
     status: str
     export_bundle_sha256: str | None = None
     attestation: AttestationOut | None = None
+    signatures: list[AttestationSignatureOut] = Field(default_factory=list)
+    required_signatures: int = 2
+    pending_cosignatures: int = 0
     review_queue: AnomalyReviewQueueOut
     can_sign: bool
+    can_cosign: bool = False
+    public_verify_url: str | None = None

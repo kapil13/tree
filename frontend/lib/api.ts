@@ -3815,6 +3815,19 @@ export const auditEngagements = {
           items: Array<Record<string, unknown>>;
         };
         can_sign: boolean;
+        can_cosign?: boolean;
+        required_signatures?: number;
+        pending_cosignatures?: number;
+        public_verify_url?: string | null;
+        signatures?: Array<{
+          id: string;
+          role: string;
+          verdict: string;
+          summary: string;
+          signature_hash: string;
+          signed_at: string;
+          reviewer_id?: string | null;
+        }>;
       }>(`/v1/audit-engagements/${engagementId}/attestation`)
     ).data;
   },
@@ -3834,16 +3847,33 @@ export const auditEngagements = {
   },
   async signAttestation(
     engagementId: string,
-    payload: { verdict: string; summary: string; notes?: string },
+    payload: { verdict: string; summary: string; notes?: string; allow_pending_reviews?: boolean },
   ) {
     return (
-      await api.post<{
-        id: string;
-        verdict: string;
-        attestation_hash?: string | null;
-        status: string;
-      }>(`/v1/audit-engagements/${engagementId}/attestation/sign`, payload)
+      await api.post<Record<string, unknown>>(
+        `/v1/audit-engagements/${engagementId}/attestation/sign`,
+        payload,
+      )
     ).data;
+  },
+  async cosignAttestation(engagementId: string, payload?: { notes?: string }) {
+    return (
+      await api.post<Record<string, unknown>>(
+        `/v1/audit-engagements/${engagementId}/attestation/cosign`,
+        payload ?? {},
+      )
+    ).data;
+  },
+  async createAuditVerificationLink(engagementId: string) {
+    return (
+      await api.post<{
+        public_url: string;
+        token: string;
+      }>(`/v1/audit-engagements/${engagementId}/verification-link`)
+    ).data;
+  },
+  async publicVerify(digest: string) {
+    return (await api.get<Record<string, unknown>>(`/v1/public/verify/audit/${digest}`)).data;
   },
   async portfolioSummary() {
     return (

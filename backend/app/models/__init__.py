@@ -1,7 +1,11 @@
 from app.models.ai_scan_wallet import UserAiScanWallet
 from app.models.alert import Alert
 from app.models.audit import AuditLog
-from app.models.audit_attestation import AuditAnomalyReview, AuditReviewerAttestation
+from app.models.audit_attestation import (
+    AuditAnomalyReview,
+    AuditAttestationSignature,
+    AuditReviewerAttestation,
+)
 from app.models.audit_chain_root import AuditChainRoot
 from app.models.audit_confidence import AuditConfidenceAssessment
 from app.models.audit_engagement import (
@@ -103,6 +107,7 @@ __all__ = [
     "AuditSatelliteBaseline",
     "AuditTemporalObservation",
     "AuditAnomalyReview",
+    "AuditAttestationSignature",
     "AuditReviewerAttestation",
     "AuditConfidenceAssessment",
     "AuditAnomalyEvent",

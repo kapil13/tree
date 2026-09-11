@@ -16,6 +16,34 @@ AttestationVerdict = str  # approved | rejected | conditional
 ReviewDisposition = str  # uphold | overturn | defer
 
 
+class AuditAttestationSignature(UUIDPKMixin, Base):
+    """Individual auditor signature — lead plus optional co-signers."""
+
+    __tablename__ = "audit_attestation_signatures"
+
+    engagement_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
+    )
+    reviewer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="lead")
+    verdict: Mapped[str] = mapped_column(String(32), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    notes: Mapped[str | None] = mapped_column(Text)
+    signature_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    epistemic_label: Mapped[str] = mapped_column(String(16), nullable=False, default="ATTESTATION")
+    signed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    engagement = relationship("AuditEngagement", backref="attestation_signatures")
+
+    __table_args__ = (
+        UniqueConstraint("engagement_id", "reviewer_id", name="audit_attestation_signatures_eng_reviewer_uq"),
+        Index("audit_attestation_signatures_engagement_idx", "engagement_id"),
+        Index("audit_attestation_signatures_hash_idx", "signature_hash"),
+    )
+
+
 class AuditReviewerAttestation(UUIDPKMixin, TimestampMixin, Base):
     """Independent reviewer sign-off on an exported audit engagement."""
 
