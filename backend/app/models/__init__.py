@@ -21,8 +21,10 @@ from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
 from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
 from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
+from app.models.bioacoustic_compliance_evidence import BioacousticComplianceEvidence
 from app.models.bioacoustic_detection_review import BioacousticDetectionReview
 from app.models.bioacoustic_monitoring_period import BioacousticMonitoringPeriod
+from app.models.bioacoustic_monitoring_plan import BioacousticMonitoringPlan
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.citizen_profile import CitizenProfile
@@ -94,8 +96,10 @@ from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnaps
 
 __all__ = [
     "BioacousticAnalysisRun",
+    "BioacousticComplianceEvidence",
     "BioacousticDetectionReview",
     "BioacousticMonitoringPeriod",
+    "BioacousticMonitoringPlan",
     "BioacousticRecording",
     "Alert",
     "UserAiScanWallet",

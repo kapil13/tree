@@ -2,9 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bird, Download, Mic, ShieldCheck, Square } from "lucide-react";
+import { BiodiversityBaselineDelta } from "@/components/bioacoustic/biodiversity-baseline-delta";
 import { BiodiversityInterpretationChain } from "@/components/bioacoustic/biodiversity-interpretation-chain";
 import { BiodiversityMap } from "@/components/bioacoustic/biodiversity-map";
+import { BiodiversityMonitoringPlans } from "@/components/bioacoustic/biodiversity-monitoring-plans";
 import { BiodiversityReviewQueue } from "@/components/bioacoustic/biodiversity-review-queue";
+import { BiodiversityTrendsPanel } from "@/components/bioacoustic/biodiversity-trends-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -16,6 +19,7 @@ import { EmptyState, InsightPanel, MetricGrid, OperationalStatusBar, PageHeader 
 import {
   bioacoustic,
   errorMessage,
+  plantingProjects,
   plantationFences,
   type BioacousticRecording,
   type EcoacousticIndices,
@@ -94,6 +98,7 @@ export default function BioacousticPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [periodA, setPeriodA] = useState<string>("");
   const [periodB, setPeriodB] = useState<string>("");
+  const [projectId, setProjectId] = useState<string>("");
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -168,6 +173,44 @@ export default function BioacousticPage() {
     queryKey: ["bio-interpretation-chain", selectedRecordingId],
     queryFn: () => bioacoustic.interpretationChain(selectedRecordingId!),
     enabled: Boolean(selectedRecordingId),
+  });
+
+  const { data: projects } = useQuery({
+    queryKey: ["planting-projects-bio"],
+    queryFn: () => plantingProjects.list({ page_size: 50 }),
+  });
+
+  const { data: trends } = useQuery({
+    queryKey: ["bio-trends", fenceId],
+    queryFn: () => bioacoustic.trends(fenceId),
+    enabled: Boolean(fenceId),
+  });
+
+  const { data: baselineDelta } = useQuery({
+    queryKey: ["bio-baseline-delta", fenceId],
+    queryFn: () => bioacoustic.baselineDelta(fenceId),
+    enabled: Boolean(fenceId),
+  });
+
+  const { data: monitoringPlans, refetch: refetchPlans } = useQuery({
+    queryKey: ["bio-monitoring-plans", projectId],
+    queryFn: () => bioacoustic.monitoringPlans(projectId),
+    enabled: Boolean(projectId),
+  });
+
+  const ensurePlansMut = useMutation({
+    mutationFn: () => bioacoustic.ensureMonitoringPlans(projectId),
+    onSuccess: () => refetchPlans(),
+  });
+
+  const linkComplianceMut = useMutation({
+    mutationFn: (recordingId: string) =>
+      bioacoustic.linkComplianceEvidence(recordingId, {
+        project_id: projectId,
+        checklist_code: "world_bank_esf",
+        checklist_item_id: "ps6_biodiversity",
+      }),
+    onSuccess: () => setStatus("Recording linked to PS6 biodiversity evidence."),
   });
 
   const bioStatus = bioacousticOperationalStatus(to, {
@@ -512,6 +555,55 @@ export default function BioacousticPage() {
       </CommandCenterEvidence>
 
       <CommandCenterEvidence
+        title="Scheme monitoring plans"
+        description="Cadence and due status driven by plantation scheme bio protocols"
+      >
+        <div className="mb-3 flex flex-wrap items-end gap-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-stone-600">Project</label>
+            <select
+              className="input text-sm"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+            >
+              <option value="">Select project…</option>
+              {projects?.items.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          {projectId && (
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={ensurePlansMut.isPending}
+              onClick={() => ensurePlansMut.mutate()}
+            >
+              Initialize plans
+            </button>
+          )}
+        </div>
+        <BiodiversityMonitoringPlans plans={monitoringPlans ?? []} />
+      </CommandCenterEvidence>
+
+      {fenceId ? (
+        <>
+          <CommandCenterEvidence
+            title="Baseline vs detected delta"
+            description="GBIF regional baseline snapshot compared with accepted acoustic detections"
+          >
+            <BiodiversityBaselineDelta delta={baselineDelta} />
+          </CommandCenterEvidence>
+          <CommandCenterEvidence
+            title="Biodiversity trends"
+            description="Confidence and accepted-species trajectories across analyzed recordings"
+          >
+            <BiodiversityTrendsPanel trends={trends} />
+          </CommandCenterEvidence>
+        </>
+      ) : null}
+
+      <CommandCenterEvidence
         title="Biodiversity map"
         description="Recording points styled by detection tier; site boundaries when linked"
       >
@@ -585,6 +677,16 @@ export default function BioacousticPage() {
             </audio>
           ) : null}
           <BiodiversityInterpretationChain chain={interpretationChain} />
+          {projectId && (
+            <button
+              type="button"
+              className="btn-secondary mt-3 text-sm"
+              disabled={linkComplianceMut.isPending}
+              onClick={() => linkComplianceMut.mutate(selectedRecordingId)}
+            >
+              Link to PS6 compliance evidence
+            </button>
+          )}
         </CommandCenterEvidence>
       ) : null}
 

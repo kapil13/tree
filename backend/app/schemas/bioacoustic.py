@@ -381,3 +381,68 @@ class AuditBundleOut(BaseModel):
     recordings: list[dict[str, Any]]
     reviewer_log: list[dict[str, Any]]
     bundle_hash: str
+
+
+class MonitoringPlanOut(BaseModel):
+    id: str
+    project_id: str
+    fence_id: str | None = None
+    scheme_code: str | None = None
+    protocol_key: str
+    label: str
+    cadence_days: int
+    min_recordings_per_cycle: int
+    season_class: str
+    next_due_at: str
+    last_completed_at: str | None = None
+    status: str
+    recordings_in_cycle: int = 0
+    guidance: str | None = None
+
+
+class BaselineDeltaOut(BaseModel):
+    fence_id: str
+    snapshot_id: str | None = None
+    snapshot_captured_at: str | None = None
+    baseline_species_count: int
+    detected_accepted_count: int
+    confirmed_overlap: list[str] = Field(default_factory=list)
+    novel_detections: list[str] = Field(default_factory=list)
+    baseline_not_yet_detected: list[str] = Field(default_factory=list)
+    overlap_pct: float = 0.0
+
+
+class TrendPointOut(BaseModel):
+    recording_id: str
+    recorded_at: str | None = None
+    accepted_species_count: int
+    biodiversity_confidence_score: float
+    shannon_diversity_index: float | None = None
+
+
+class FenceTrendsOut(BaseModel):
+    fence_id: str
+    recording_count: int
+    confidence_trend: str
+    species_trend: str
+    series: list[TrendPointOut] = Field(default_factory=list)
+
+
+class ComplianceEvidenceCreate(BaseModel):
+    project_id: uuid.UUID
+    checklist_code: str = Field(..., min_length=1, max_length=64)
+    checklist_item_id: str = Field(..., min_length=1, max_length=64)
+    notes: str | None = Field(None, max_length=2000)
+
+
+class ComplianceEvidenceOut(BaseModel):
+    id: str
+    recording_id: str
+    checklist_code: str
+    checklist_item_id: str
+    linked_at: str
+    notes: str | None = None
+    export_ready: bool = False
+    export_blockers: list[str] = Field(default_factory=list)
+    recorded_at: str | None = None
+    accepted_species_count: int | None = None
