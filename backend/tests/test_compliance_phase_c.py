@@ -151,6 +151,8 @@ async def test_ps6_and_ses_auto_signals(monkeypatch):
     sar_empty.scalars.return_value.all.return_value = []
     bio_count = MagicMock()
     bio_count.scalar_one.return_value = 2
+    evidence_empty = MagicMock()
+    evidence_empty.scalars.return_value.all.return_value = []
     doc_types_result = MagicMock()
     doc_types_result.scalars.return_value.all.return_value = [
         "gram_sabha_resolution",
@@ -171,6 +173,7 @@ async def test_ps6_and_ses_auto_signals(monkeypatch):
             sar_empty,
             doc_types_result,
             bio_count,
+            evidence_empty,
         ]
     )
 

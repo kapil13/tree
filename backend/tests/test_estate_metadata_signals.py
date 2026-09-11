@@ -45,6 +45,8 @@ async def test_estate_metadata_complete_signal(monkeypatch):
     serial_empty.scalars.return_value.all.return_value = []
     sar_empty = MagicMock()
     sar_empty.scalars.return_value.all.return_value = []
+    bio_count = MagicMock()
+    bio_count.scalar_one.return_value = 0
 
     async def fake_standard(db_, proj):
         return SimpleNamespace(id=uuid.uuid4())
@@ -67,8 +69,9 @@ async def test_estate_metadata_complete_signal(monkeypatch):
             fences_empty,
             ledger_none,
             risk_none,
-            serial_empty,
             sar_empty,
+            serial_empty,
+            bio_count,
         ]
     )
 

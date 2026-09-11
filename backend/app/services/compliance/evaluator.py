@@ -387,7 +387,9 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     from app.services.bioacoustic.compliance_evidence import count_export_ready_evidence
 
     has_bio = bio_count > 0
-    linked_ready = await count_export_ready_evidence(db, project.id)
+    linked_ready = (
+        await count_export_ready_evidence(db, project.id) if has_bio else 0
+    )
     sat_ok = signals.get("satellite_coverage") in ("yes", "partial")
     native_ok = signals.get("native_species_tracked") in ("yes", "partial")
     if linked_ready >= 1 and has_bio and (native_ok or sat_ok):
