@@ -6,7 +6,7 @@ import type { PlantingProject } from "@/lib/api";
 import { PROJECT_FOCUSED_LAYOUT_MARKER } from "@/lib/project-focused-ui";
 import { satelliteHref } from "@/lib/satellite-links";
 import { ProjectWorkspaceNav } from "@/components/projects/project-workspace-nav";
-import type { ProjectSecondaryTab } from "@/lib/project-focused-ui";
+import type { ProjectWorkspaceSection } from "@/lib/project-focused-ui";
 import { OperationalStatusBar, type OperationalTone } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
@@ -19,7 +19,7 @@ type ProjectWorkspaceShellProps = {
   monitoringMode?: boolean;
   satelliteWatchEnabled?: boolean;
   primaryWorkAreaId?: string | null;
-  activeSection: "overview" | ProjectSecondaryTab;
+  activeSection: ProjectWorkspaceSection;
   openViolations?: number;
   children: React.ReactNode;
 };

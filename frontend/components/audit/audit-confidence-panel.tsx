@@ -2,10 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Grid3x3, Map } from "lucide-react";
+import { Grid3x3, Map, MapPin } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
 import { AuditConfidenceMap } from "@/components/audit/audit-confidence-map";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { type AuditBoundary } from "@/lib/audit-field-visit";
 import { cn } from "@/lib/cn";
 
@@ -23,12 +24,30 @@ const GRADE_DOT: Record<string, string> = {
   grey: "bg-stone-400",
 };
 
-const GRADE_EMOJI: Record<string, string> = {
-  green: "🟢",
-  amber: "🟡",
-  red: "🔴",
-  grey: "⚪",
+const GRADE_LABEL: Record<string, string> = {
+  green: "Plausible",
+  amber: "Uncertain",
+  red: "Inconsistent",
+  grey: "No data",
 };
+
+function GradeBadge({ grade, count }: { grade: string; count?: number }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1",
+        GRADE_STYLES[grade] ?? GRADE_STYLES.grey,
+      )}
+    >
+      <span
+        className={cn("h-2 w-2 shrink-0 rounded-full", GRADE_DOT[grade] ?? GRADE_DOT.grey)}
+        aria-hidden
+      />
+      {GRADE_LABEL[grade] ?? grade}
+      {count != null ? ` · ${count}` : null}
+    </span>
+  );
+}
 
 type ConfidenceBlock = {
   id: string;
@@ -120,23 +139,19 @@ export function AuditConfidencePanel({
   const gradeCounts = data?.grade_counts ?? {};
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Map className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-          {engagementStatus === "confidence_mapped" && (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
-              {t("statusMapped")}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
-      </header>
-
+    <AuditPanelShell
+      icon={Map}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      epistemicNote={t("epistemicNote")}
+      statusBadge={
+        engagementStatus === "confidence_mapped" ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+            {t("statusMapped")}
+          </span>
+        ) : undefined
+      }
+    >
       {boundaries.length > 0 && blocks.length > 0 && (
         <AuditConfidenceMap
           boundaries={boundaries}
@@ -168,45 +183,35 @@ export function AuditConfidencePanel({
           <p className="text-sm text-rose-700">{errorMessage(compute.error)}</p>
         )}
         {Object.keys(gradeCounts).length > 0 && (
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap gap-2">
             {(["green", "amber", "red", "grey"] as const).map((g) =>
-              gradeCounts[g] ? (
-                <span key={g} className={cn("rounded-full px-2 py-0.5 ring-1", GRADE_STYLES[g])}>
-                  {GRADE_EMOJI[g]} {gradeCounts[g]}
-                </span>
-              ) : null,
+              gradeCounts[g] ? <GradeBadge key={g} grade={g} count={gradeCounts[g]} /> : null,
             )}
           </div>
         )}
       </div>
 
-      <div className="space-y-4">
-        {blocks.length === 0 ? (
-          <p className="text-sm text-stone-500">{t("noBlocks")}</p>
-        ) : (
-          blocks.map((block) => (
+      {blocks.length === 0 ? (
+        <p className="text-sm text-stone-500">{t("noBlocks")}</p>
+      ) : (
+        <div className="space-y-4">
+          {blocks.map((block) => (
             <article
               key={block.id}
               className="rounded-xl border border-stone-200 p-4 dark:border-stone-700"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-medium text-stone-900 dark:text-stone-100">
-                    {GRADE_EMOJI[block.confidence_grade] ?? "⚪"} {block.boundary_name}
+                  <h3 className="flex items-center gap-2 font-medium text-stone-900 dark:text-stone-100">
+                    <MapPin className="h-4 w-4 text-stone-400" aria-hidden />
+                    {block.boundary_name}
                   </h3>
                   <p className="mt-1 text-sm text-stone-600">{block.summary}</p>
                   <p className="mt-1 text-xs text-stone-400">
                     {t("score", { score: block.confidence_score })} · {block.epistemic_label}
                   </p>
                 </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold uppercase ring-1",
-                    GRADE_STYLES[block.confidence_grade] ?? GRADE_STYLES.grey,
-                  )}
-                >
-                  {block.confidence_grade}
-                </span>
+                <GradeBadge grade={block.confidence_grade} />
               </div>
               {block.grid_cells && block.grid_cells.length > 0 && (
                 <div className="mt-4">
@@ -231,9 +236,9 @@ export function AuditConfidencePanel({
                 </div>
               )}
             </article>
-          ))
-        )}
-      </div>
-    </section>
+          ))}
+        </div>
+      )}
+    </AuditPanelShell>
   );
 }

@@ -6,14 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
 import { auditEngagements, errorMessage, uploads, type AuditEngagementDetail } from "@/lib/api";
 import { AuditBoundaryDrawMap } from "@/components/audit/audit-boundary-draw-map";
-import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
-import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
-import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
-import { AuditReconciliationPanel } from "@/components/audit/audit-reconciliation-panel";
-import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
-import { AuditExportPanel } from "@/components/audit/audit-export-panel";
-import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
-import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { cn } from "@/lib/cn";
 
 const STEPS = ["claim", "boundaries", "documents", "validation", "complete"] as const;
@@ -35,7 +27,13 @@ const VERDICT_COLORS: Record<string, string> = {
   cannot_assess: "text-stone-600 bg-stone-100 ring-stone-200",
 };
 
-export function AuditIntakePanel({ projectId }: { projectId: string }) {
+export function AuditIntakePanel({
+  projectId,
+  wizardOnly = false,
+}: {
+  projectId: string;
+  wizardOnly?: boolean;
+}) {
   const t = useTranslations("auditIntake");
   const qc = useQueryClient();
   const [step, setStep] = useState<StepId>("claim");
@@ -218,16 +216,20 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (isLoading) {
+  if (!wizardOnly && isLoading) {
     return <p className="text-sm text-stone-500">{t("loading")}</p>;
   }
 
-  if (error || !data) {
+  if (!wizardOnly && (error || !data)) {
     return (
       <p className="text-sm text-rose-600">
         {t("loadError")}
       </p>
     );
+  }
+
+  if (wizardOnly && (isLoading || !data)) {
+    return null;
   }
 
   const engagement = data as AuditEngagementDetail;
@@ -236,6 +238,7 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-6">
+      {!wizardOnly && (
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <Shield className="h-6 w-6 text-forest-700" aria-hidden />
@@ -254,6 +257,7 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         <p className="max-w-2xl text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
         <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
       </header>
+      )}
 
       {(actionMessage || actionError) && (
         <div
@@ -678,45 +682,10 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         </section>
       )}
 
-      <button type="button" className="text-xs text-stone-500 underline" onClick={() => refetch()}>
-        {t("refresh")}
-      </button>
-
-      {engagement.status !== "draft" && (
-        <div className="space-y-8 border-t border-stone-200 pt-8 dark:border-stone-700">
-          <AuditPhaseRoadmap status={engagement.status} />
-          <AuditSatellitePanel
-            projectId={projectId}
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-          />
-          <AuditConfidencePanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-            boundaries={engagement.boundaries}
-          />
-          <AuditRiskPanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-          />
-          <AuditSamplingPanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-            boundaries={engagement.boundaries}
-          />
-          <AuditReconciliationPanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-          />
-          <AuditExportPanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-          />
-          <AuditAttestationPanel
-            engagementId={engagement.id}
-            engagementStatus={engagement.status}
-          />
-        </div>
+      {!wizardOnly && (
+        <button type="button" className="text-xs text-stone-500 underline" onClick={() => refetch()}>
+          {t("refresh")}
+        </button>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-export const FIELD_OPS_SECTION_IDS = ["attention"] as const;
+export const FIELD_OPS_SECTION_IDS = ["attention", "audit"] as const;
 
 export type FieldOpsSection = (typeof FIELD_OPS_SECTION_IDS)[number];
 
@@ -11,5 +11,6 @@ export function parseFieldOpsSection(value: string | null): FieldOpsSection | nu
 
 export function fieldOpsHref(opts?: { section?: FieldOpsSection }): string {
   if (opts?.section === "attention") return "/field-ops?section=attention";
+  if (opts?.section === "audit") return "/field-ops?section=audit";
   return "/field-ops";
 }

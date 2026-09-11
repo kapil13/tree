@@ -56,8 +56,9 @@ export default function FieldOpsPage() {
   });
 
   useEffect(() => {
-    if (searchParams.get("section") !== "attention") return;
-    const el = document.getElementById("attention");
+    const section = searchParams.get("section");
+    if (section !== "attention" && section !== "audit") return;
+    const el = document.getElementById(section);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [searchParams, data]);
 
@@ -148,7 +149,9 @@ export default function FieldOpsPage() {
 
       <FieldOpsTaskQueue tasks={fieldTasks} />
 
-      <AuditPlotVisitQueue />
+      <div id="audit">
+        <AuditPlotVisitQueue />
+      </div>
 
       <PlotVisitQueue />
 

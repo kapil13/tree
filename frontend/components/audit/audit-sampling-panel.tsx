@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ClipboardList, MapPin, CheckCircle2, Navigation } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import {
   AuditFieldVisitForm,
   type AuditFieldVisitPayload,
@@ -124,26 +125,24 @@ export function AuditSamplingPanel({
   const allVisited = stats.total > 0 && stats.planned === 0;
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <ClipboardList className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-          {(engagementStatus === "field_verified" ||
-            engagementStatus === "export_ready" ||
-            engagementStatus === "under_review" ||
-            engagementStatus === "attested") && (
+    <AuditPanelShell
+      icon={ClipboardList}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      epistemicNote={t("epistemicNote")}
+      statusBadge={
+        engagementStatus === "field_verified" ||
+        engagementStatus === "export_ready" ||
+        engagementStatus === "under_review" ||
+        engagementStatus === "attested"
+          ? (
             <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
               {t("statusVerified")}
             </span>
-          )}
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
-      </header>
-
+          )
+          : undefined
+      }
+    >
       <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 dark:border-stone-700">
         <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{t("samplingControls")}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -195,6 +194,40 @@ export function AuditSamplingPanel({
             />
           </label>
         </div>
+        {samplingMode !== "area_coverage" ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="text-xs text-stone-600">
+              {t("plotsPerCritical")}
+              <input
+                className="input mt-1 w-full text-sm"
+                type="number"
+                min={0}
+                value={plotsPerCritical}
+                onChange={(e) => setPlotsPerCritical(e.target.value)}
+              />
+            </label>
+            <label className="text-xs text-stone-600">
+              {t("plotsPerHigh")}
+              <input
+                className="input mt-1 w-full text-sm"
+                type="number"
+                min={0}
+                value={plotsPerHigh}
+                onChange={(e) => setPlotsPerHigh(e.target.value)}
+              />
+            </label>
+            <label className="text-xs text-stone-600">
+              {t("plotsPerMedium")}
+              <input
+                className="input mt-1 w-full text-sm"
+                type="number"
+                min={0}
+                value={plotsPerMedium}
+                onChange={(e) => setPlotsPerMedium(e.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
         <p className="mt-2 text-xs text-stone-500">{t("samplingModeHint")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
@@ -343,6 +376,6 @@ export function AuditSamplingPanel({
           })
         )}
       </div>
-    </section>
+    </AuditPanelShell>
   );
 }

@@ -68,10 +68,6 @@ export function AuditPlotVisitQueue() {
     },
   });
 
-  if (!plotsQ.isLoading && duePlots.length === 0) {
-    return null;
-  }
-
   return (
     <section className="rounded-xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
       <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
@@ -83,6 +79,8 @@ export function AuditPlotVisitQueue() {
       </div>
       {plotsQ.isLoading ? (
         <p className="px-4 py-6 text-sm text-stone-500">{t("loading")}</p>
+      ) : duePlots.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-stone-500">{t("queueEmpty")}</p>
       ) : (
         <ul className="divide-y divide-stone-100 dark:divide-stone-800">
           {duePlots.slice(0, 8).map((plot) => {
