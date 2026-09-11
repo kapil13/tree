@@ -3655,6 +3655,13 @@ export const auditEngagements = {
         id: string;
         plot_id: string;
         verification_outcome: string;
+        tree_presence?: string | null;
+        visitor_lat?: number | null;
+        visitor_lon?: number | null;
+        distance_from_plot_m?: number | null;
+        inside_boundary?: boolean | null;
+        photo_keys?: string[];
+        location_warnings?: string[];
         visited_at: string;
       }>(`/v1/audit-engagements/${engagementId}/field-plots/${plotId}/visits`, payload)
     ).data;

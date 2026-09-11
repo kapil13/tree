@@ -1004,12 +1004,22 @@ async def record_engagement_field_visit(
     if project is None or not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
+    for key in body.photo_keys:
+        try:
+            assert_owned_upload_key(user.id, key, folders=("images", "audit"))
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
     try:
         visit = await record_field_visit(
             db,
             engagement=row,
             plot_id=plot_id,
             visitor_id=user.id,
+            tree_presence=body.tree_presence,
+            photo_keys=body.photo_keys,
+            visitor_lat=body.visitor_lat,
+            visitor_lon=body.visitor_lon,
             trees_observed=body.trees_observed,
             trees_alive=body.trees_alive,
             canopy_cover_pct=body.canopy_cover_pct,
@@ -1027,16 +1037,30 @@ async def record_engagement_field_visit(
         resource_type="audit_engagement",
         resource_id=row.id,
         request=request,
-        diff={"plot_id": str(plot_id), "outcome": body.verification_outcome},
+        diff={
+            "plot_id": str(plot_id),
+            "outcome": body.verification_outcome,
+            "tree_presence": body.tree_presence,
+        },
     )
     await db.commit()
+    location_warnings = list((visit.signals or {}).get("location_warnings") or [])
     return FieldVisitOut(
         id=str(visit.id),
         plot_id=str(visit.plot_id),
         verification_outcome=visit.verification_outcome,
+        tree_presence=visit.tree_presence,
         trees_observed=visit.trees_observed,
         trees_alive=visit.trees_alive,
         canopy_cover_pct=float(visit.canopy_cover_pct) if visit.canopy_cover_pct else None,
+        visitor_lat=float(visit.visitor_lat) if visit.visitor_lat is not None else None,
+        visitor_lon=float(visit.visitor_lon) if visit.visitor_lon is not None else None,
+        distance_from_plot_m=float(visit.distance_from_plot_m)
+        if visit.distance_from_plot_m is not None
+        else None,
+        inside_boundary=visit.inside_boundary,
+        photo_keys=list(visit.photo_keys or []),
+        location_warnings=location_warnings,
         visited_at=visit.visited_at,
         notes=visit.notes,
         epistemic_label=visit.epistemic_label,

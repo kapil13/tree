@@ -3,9 +3,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { ClipboardList, MapPin, CheckCircle2 } from "lucide-react";
+import { ClipboardList, MapPin, CheckCircle2, Navigation } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import {
+  AuditFieldVisitForm,
+  type AuditFieldVisitPayload,
+} from "@/components/audit/audit-field-visit-form";
+import { AuditSamplingMap } from "@/components/audit/audit-sampling-map";
+import {
+  type AuditBoundary,
+  type AuditSamplingPlot,
+  mapsDirectionsUrl,
+  plotLatLng,
+} from "@/lib/audit-field-visit";
 import { cn } from "@/lib/cn";
 
 const RISK_STYLES: Record<string, string> = {
@@ -15,38 +26,18 @@ const RISK_STYLES: Record<string, string> = {
   low: "bg-emerald-100 text-emerald-800 ring-emerald-300",
 };
 
-type SamplingPlot = {
-  id: string;
-  plot_code: string;
-  boundary_name?: string | null;
-  risk_level: string;
-  priority_rank: number;
-  status: string;
-  center?: { coordinates: [number, number] };
-  latest_visit?: {
-    verification_outcome: string;
-    trees_observed?: number | null;
-    visited_at: string;
-  } | null;
-};
-
 export function AuditSamplingPanel({
   engagementId,
   engagementStatus,
+  boundaries = [],
 }: {
   engagementId: string;
   engagementStatus: string;
+  boundaries?: AuditBoundary[];
 }) {
   const t = useTranslations("auditSampling");
   const qc = useQueryClient();
   const [selectedPlot, setSelectedPlot] = useState<string | null>(null);
-  const [visitForm, setVisitForm] = useState({
-    trees_observed: "",
-    trees_alive: "",
-    canopy_cover_pct: "",
-    verification_outcome: "inconclusive",
-    notes: "",
-  });
 
   const enabled =
     engagementStatus === "risk_assessed" ||
@@ -75,22 +66,15 @@ export function AuditSamplingPanel({
   });
 
   const recordVisit = useMutation({
-    mutationFn: (plotId: string) =>
-      auditEngagements.recordFieldVisit(engagementId, plotId, {
-        trees_observed: visitForm.trees_observed ? Number(visitForm.trees_observed) : undefined,
-        trees_alive: visitForm.trees_alive ? Number(visitForm.trees_alive) : undefined,
-        canopy_cover_pct: visitForm.canopy_cover_pct
-          ? Number(visitForm.canopy_cover_pct)
-          : undefined,
-        verification_outcome: visitForm.verification_outcome as
-          | "claim_supported"
-          | "claim_unsupported"
-          | "inconclusive",
-        notes: visitForm.notes || undefined,
-      }),
-    onSuccess: () => {
+    mutationFn: ({ plotId, payload }: { plotId: string; payload: AuditFieldVisitPayload }) =>
+      auditEngagements.recordFieldVisit(engagementId, plotId, payload),
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["audit-sampling-plan", engagementId] });
       setSelectedPlot(null);
+      const warnings = result.location_warnings ?? [];
+      if (warnings.length > 0) {
+        setActionMessage(t("visitSavedWithWarnings", { warnings: warnings.join(", ") }));
+      }
     },
   });
 
@@ -110,7 +94,7 @@ export function AuditSamplingPanel({
     return <p className="text-sm text-stone-500">{t("loading")}</p>;
   }
 
-  const plots = (data?.plots ?? []) as SamplingPlot[];
+  const plots = (data?.plots ?? []) as AuditSamplingPlot[];
   const stats = data?.visit_stats ?? { total: 0, visited: 0, planned: 0 };
   const allVisited = stats.total > 0 && stats.planned === 0;
 
@@ -172,126 +156,97 @@ export function AuditSamplingPanel({
         )}
       </div>
 
+      {plots.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+            {t("mapLegend")}
+          </p>
+          <AuditSamplingMap boundaries={boundaries} plots={plots} />
+        </div>
+      ) : null}
+
       <div className="space-y-3">
         {plots.length === 0 ? (
           <p className="text-sm text-stone-500">{t("noPlots")}</p>
         ) : (
-          plots.map((plot) => (
-            <article
-              key={plot.id}
-              className="rounded-xl border border-stone-200 p-4 dark:border-stone-700"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs text-stone-500">
-                    #{plot.priority_rank} · {plot.plot_code}
-                  </p>
-                  <h3 className="font-medium text-stone-900 dark:text-stone-100">
-                    <MapPin className="mr-1 inline h-3.5 w-3.5" aria-hidden />
-                    {plot.boundary_name}
-                  </h3>
-                  {plot.center?.coordinates && (
-                    <p className="mt-1 text-xs text-stone-400">
-                      {plot.center.coordinates[1].toFixed(5)},{" "}
-                      {plot.center.coordinates[0].toFixed(5)}
+          plots.map((plot) => {
+            const pos = plotLatLng(plot);
+            return (
+              <article
+                key={plot.id}
+                className="rounded-xl border border-stone-200 p-4 dark:border-stone-700"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-stone-500">
+                      #{plot.priority_rank} · {plot.plot_code}
                     </p>
-                  )}
-                  {plot.latest_visit && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-emerald-700">
-                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                      {t("visited", { outcome: plot.latest_visit.verification_outcome })}
-                    </p>
-                  )}
+                    <h3 className="font-medium text-stone-900 dark:text-stone-100">
+                      <MapPin className="mr-1 inline h-3.5 w-3.5" aria-hidden />
+                      {plot.boundary_name}
+                    </h3>
+                    {pos ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <p className="text-xs text-stone-400">
+                          {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}
+                        </p>
+                        <a
+                          href={mapsDirectionsUrl(pos.lat, pos.lng)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline"
+                        >
+                          <Navigation className="h-3 w-3" aria-hidden />
+                          {t("openInMaps")}
+                        </a>
+                      </div>
+                    ) : null}
+                    {plot.latest_visit && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                        {t("visited", {
+                          outcome: plot.latest_visit.verification_outcome,
+                          presence: plot.latest_visit.tree_presence ?? "—",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold uppercase ring-1",
+                      RISK_STYLES[plot.risk_level] ?? RISK_STYLES.medium,
+                    )}
+                  >
+                    {plot.risk_level}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold uppercase ring-1",
-                    RISK_STYLES[plot.risk_level] ?? RISK_STYLES.medium,
-                  )}
-                >
-                  {plot.risk_level}
-                </span>
-              </div>
 
-              {plot.status !== "visited" && engagementStatus === "sampling_planned" && (
-                <div className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-800">
-                  {selectedPlot === plot.id ? (
-                    <div className="space-y-2">
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        <input
-                          className="input text-sm"
-                          placeholder={t("treesObserved")}
-                          value={visitForm.trees_observed}
-                          onChange={(e) =>
-                            setVisitForm((f) => ({ ...f, trees_observed: e.target.value }))
-                          }
-                        />
-                        <input
-                          className="input text-sm"
-                          placeholder={t("treesAlive")}
-                          value={visitForm.trees_alive}
-                          onChange={(e) =>
-                            setVisitForm((f) => ({ ...f, trees_alive: e.target.value }))
-                          }
-                        />
-                        <input
-                          className="input text-sm"
-                          placeholder={t("canopyCover")}
-                          value={visitForm.canopy_cover_pct}
-                          onChange={(e) =>
-                            setVisitForm((f) => ({ ...f, canopy_cover_pct: e.target.value }))
-                          }
-                        />
-                      </div>
-                      <select
-                        className="input text-sm"
-                        value={visitForm.verification_outcome}
-                        onChange={(e) =>
-                          setVisitForm((f) => ({ ...f, verification_outcome: e.target.value }))
-                        }
-                      >
-                        <option value="inconclusive">{t("outcomeInconclusive")}</option>
-                        <option value="claim_supported">{t("outcomeSupported")}</option>
-                        <option value="claim_unsupported">{t("outcomeUnsupported")}</option>
-                      </select>
-                      <textarea
-                        className="input text-sm"
-                        rows={2}
-                        placeholder={t("notes")}
-                        value={visitForm.notes}
-                        onChange={(e) => setVisitForm((f) => ({ ...f, notes: e.target.value }))}
+                {plot.status !== "visited" && engagementStatus === "sampling_planned" && (
+                  <div className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-800">
+                    {selectedPlot === plot.id ? (
+                      <AuditFieldVisitForm
+                        plot={plot}
+                        saving={recordVisit.isPending}
+                        onSubmit={(payload) => recordVisit.mutate({ plotId: plot.id, payload })}
+                        onCancel={() => setSelectedPlot(null)}
                       />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="btn-primary text-sm"
-                          disabled={recordVisit.isPending}
-                          onClick={() => recordVisit.mutate(plot.id)}
-                        >
-                          {t("saveVisit")}
-                        </button>
-                        <button
-                          type="button"
-                          className="text-sm text-stone-500"
-                          onClick={() => setSelectedPlot(null)}
-                        >
-                          {t("cancel")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="text-sm text-forest-700 underline"
-                      onClick={() => setSelectedPlot(plot.id)}
-                    >
-                      {t("recordVisit")}
-                    </button>
-                  )}
-                </div>
-              )}
-            </article>
-          ))
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-sm text-forest-700 underline"
+                        onClick={() => setSelectedPlot(plot.id)}
+                      >
+                        {t("recordVisit")}
+                      </button>
+                    )}
+                    {recordVisit.isError && selectedPlot === plot.id ? (
+                      <p className="mt-2 text-xs text-rose-700">{errorMessage(recordVisit.error)}</p>
+                    ) : null}
+                  </div>
+                )}
+              </article>
+            );
+          })
         )}
       </div>
     </section>

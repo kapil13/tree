@@ -105,11 +105,26 @@ async def sampling_plan_summary(db: AsyncSession, engagement_id: uuid.UUID) -> d
                     {
                         "id": str(latest.id),
                         "verification_outcome": latest.verification_outcome,
+                        "tree_presence": latest.tree_presence,
                         "trees_observed": latest.trees_observed,
                         "trees_alive": latest.trees_alive,
                         "canopy_cover_pct": float(latest.canopy_cover_pct)
                         if latest.canopy_cover_pct is not None
                         else None,
+                        "visitor_lat": float(latest.visitor_lat)
+                        if latest.visitor_lat is not None
+                        else None,
+                        "visitor_lon": float(latest.visitor_lon)
+                        if latest.visitor_lon is not None
+                        else None,
+                        "distance_from_plot_m": float(latest.distance_from_plot_m)
+                        if latest.distance_from_plot_m is not None
+                        else None,
+                        "inside_boundary": latest.inside_boundary,
+                        "photo_keys": list(latest.photo_keys or []),
+                        "location_warnings": list(
+                            (latest.signals or {}).get("location_warnings") or []
+                        ),
                         "visited_at": latest.visited_at.isoformat(),
                         "notes": latest.notes,
                     }

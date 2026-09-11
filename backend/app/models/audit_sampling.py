@@ -7,7 +7,17 @@ from datetime import datetime
 from typing import Any
 
 from geoalchemy2 import Geography
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -108,6 +118,12 @@ class AuditFieldVisit(UUIDPKMixin, TimestampMixin, Base):
     trees_observed: Mapped[int | None] = mapped_column(Integer)
     trees_alive: Mapped[int | None] = mapped_column(Integer)
     canopy_cover_pct: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    tree_presence: Mapped[str | None] = mapped_column(String(32))
+    visitor_lat: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    visitor_lon: Mapped[float | None] = mapped_column(Numeric(9, 6))
+    distance_from_plot_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    inside_boundary: Mapped[bool | None] = mapped_column(Boolean)
+    photo_keys: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     verification_outcome: Mapped[str] = mapped_column(
         String(32), nullable=False, default="inconclusive"
     )

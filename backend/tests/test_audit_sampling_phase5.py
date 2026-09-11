@@ -119,4 +119,37 @@ async def test_record_visit_requires_sampling_planned():
             engagement=engagement,
             plot_id=uuid4(),
             visitor_id=uuid4(),
+            tree_presence="present",
+            photo_keys=["images/test/photo.jpg"],
+            visitor_lat=28.0,
+            visitor_lon=77.0,
         )
+
+
+def test_field_visit_create_requires_photo():
+    from pydantic import ValidationError
+
+    from app.schemas.audit_sampling import FieldVisitCreate
+
+    with pytest.raises(ValidationError):
+        FieldVisitCreate(
+            tree_presence="present",
+            photo_keys=[],
+            visitor_lat=28.0,
+            visitor_lon=77.0,
+        )
+
+
+def test_field_visit_create_accepts_evidence_payload():
+    from app.schemas.audit_sampling import FieldVisitCreate
+
+    body = FieldVisitCreate(
+        tree_presence="absent",
+        photo_keys=["images/user-id/plot.jpg"],
+        visitor_lat=28.6129,
+        visitor_lon=77.2295,
+        trees_observed=0,
+        verification_outcome="claim_unsupported",
+    )
+    assert body.tree_presence == "absent"
+    assert body.photo_keys == ["images/user-id/plot.jpg"]

@@ -583,16 +583,26 @@ class ApiClient {
   Future<Map<String, dynamic>> recordAuditFieldVisit({
     required String engagementId,
     required String plotId,
+    required String treePresence,
+    required List<String> photoKeys,
+    required double visitorLat,
+    required double visitorLon,
     int? treesObserved,
     int? treesAlive,
+    double? canopyCoverPct,
     String verificationOutcome = 'inconclusive',
     String? notes,
   }) async {
     final r = await _dio.post(
       '/audit-engagements/$engagementId/field-plots/$plotId/visits',
       data: {
+        'tree_presence': treePresence,
+        'photo_keys': photoKeys,
+        'visitor_lat': visitorLat,
+        'visitor_lon': visitorLon,
         if (treesObserved != null) 'trees_observed': treesObserved,
         if (treesAlive != null) 'trees_alive': treesAlive,
+        if (canopyCoverPct != null) 'canopy_cover_pct': canopyCoverPct,
         'verification_outcome': verificationOutcome,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
