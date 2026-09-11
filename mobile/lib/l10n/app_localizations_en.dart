@@ -1455,4 +1455,215 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get registerTreeInField => 'Register a tree';
+
+  @override
+  String get navSyncQueue => 'Sync queue';
+
+  @override
+  String get auditWorkspaceTitle => 'Estate Watch audit';
+
+  @override
+  String get auditWorkspaceSubtitle =>
+      'Field verification, attestation, and sync status';
+
+  @override
+  String get auditWorkspaceNoAccess =>
+      'You do not have access to Estate Watch audit tools.';
+
+  @override
+  String get auditEngagements => 'Engagements';
+
+  @override
+  String get auditPlotsDue => 'Plots due';
+
+  @override
+  String get auditInField => 'In field';
+
+  @override
+  String get auditExportReady => 'Export ready';
+
+  @override
+  String get auditAttested => 'Attested';
+
+  @override
+  String get auditNearestAction => 'Nearest action';
+
+  @override
+  String auditPlotsDueTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plots need visits',
+      one: '1 plot needs a visit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auditPlotsDueSubtitle =>
+      'Capture GPS, photos, and tree counts at assigned plots';
+
+  @override
+  String get auditOpenPlots => 'Open plots';
+
+  @override
+  String get auditAttestationAction => 'Attestation';
+
+  @override
+  String get auditOpenAttestation => 'Review & sign';
+
+  @override
+  String get auditQuickLinks => 'Quick links';
+
+  @override
+  String get auditPlotVisits => 'Plot visits';
+
+  @override
+  String get auditPlotsAllVisited =>
+      'All assigned plots visited for current scope';
+
+  @override
+  String get auditAttestationTitle => 'Attestation';
+
+  @override
+  String get auditAttestationMobileSubtitle =>
+      'Review anomalies and sign off export bundles';
+
+  @override
+  String get auditAttestationUnavailable =>
+      'No engagement is ready for attestation yet.';
+
+  @override
+  String get auditSyncQueueHint =>
+      'Retry failed audit visits and offline uploads';
+
+  @override
+  String get auditProjectsTitle => 'Estate projects';
+
+  @override
+  String get auditNoEstateProjects => 'No estate monitoring projects';
+
+  @override
+  String get auditNoEstateProjectsHint =>
+      'Estate Watch engagements appear here when estate monitoring projects are assigned.';
+
+  @override
+  String get auditAttestationLocked => 'Attestation locked';
+
+  @override
+  String get auditAttestationExportRequired =>
+      'Complete export readiness on web before mobile sign-off.';
+
+  @override
+  String get auditAnomalyReviews => 'Anomaly reviews';
+
+  @override
+  String get auditNoAnomalies => 'No anomalies require review.';
+
+  @override
+  String get auditReviewAnomaly => 'Review';
+
+  @override
+  String get auditReviewSaved => 'Anomaly review saved';
+
+  @override
+  String get auditReviewRationaleRequired =>
+      'Enter a rationale for this review.';
+
+  @override
+  String get auditDispositionUphold => 'Uphold';
+
+  @override
+  String get auditDispositionOverturn => 'Overturn';
+
+  @override
+  String get auditDispositionDefer => 'Defer';
+
+  @override
+  String get auditLeadSignOff => 'Lead sign-off';
+
+  @override
+  String get auditVerdictLabel => 'Verdict';
+
+  @override
+  String get auditVerdictApproved => 'Approved';
+
+  @override
+  String get auditVerdictConditional => 'Conditional';
+
+  @override
+  String get auditVerdictRejected => 'Rejected';
+
+  @override
+  String get auditSignSummaryLabel => 'Attestation summary';
+
+  @override
+  String get auditSignSummaryRequired => 'Enter an attestation summary.';
+
+  @override
+  String get auditSignNotesLabel => 'Notes (optional)';
+
+  @override
+  String get auditSignAttestation => 'Sign attestation';
+
+  @override
+  String get auditSignSaved => 'Attestation signed';
+
+  @override
+  String get auditCosignTitle => 'Co-sign attestation';
+
+  @override
+  String get auditCosignNotesLabel => 'Co-sign notes (optional)';
+
+  @override
+  String get auditCosignAttestation => 'Co-sign';
+
+  @override
+  String get auditCosignSaved => 'Co-signature recorded';
+
+  @override
+  String auditSignaturesTitle(int count, int required) {
+    return '$count of $required signatures';
+  }
+
+  @override
+  String auditPendingCosign(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count co-signatures pending',
+      one: '1 co-signature pending',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String auditSignedVerdict(String verdict) {
+    return 'Signed: $verdict';
+  }
+
+  @override
+  String get auditCreateVerifyLink => 'Create public verify link';
+
+  @override
+  String get auditCopyVerifyLink => 'Copy link';
+
+  @override
+  String get auditOpenVerifyLink => 'Open';
+
+  @override
+  String get auditVerifyLinkCopied => 'Verify link copied';
+
+  @override
+  String get auditSyncAuditVisits => 'Audit plot visits';
+
+  @override
+  String get auditSyncRetryFailed => 'Retry failed visits';
+
+  @override
+  String get auditSyncOpenWorkspace => 'Open Estate Watch';
+
+  @override
+  String get auditSyncEmptyHint =>
+      'Capture plot visits from Field or Estate Watch audit';
 }

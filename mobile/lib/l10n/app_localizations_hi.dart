@@ -1451,4 +1451,214 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get registerTreeInField => 'पेड़ पंजीकृत करें';
+
+  @override
+  String get navSyncQueue => 'सिंक कतार';
+
+  @override
+  String get auditWorkspaceTitle => 'एस्टेट वॉच ऑडिट';
+
+  @override
+  String get auditWorkspaceSubtitle =>
+      'क्षेत्र सत्यापन, प्रमाणन और सिंक स्थिति';
+
+  @override
+  String get auditWorkspaceNoAccess =>
+      'आपके पास एस्टेट वॉच ऑडिट टूल की पहुँच नहीं है।';
+
+  @override
+  String get auditEngagements => 'एंगेजमेंट';
+
+  @override
+  String get auditPlotsDue => 'प्लॉट बाकी';
+
+  @override
+  String get auditInField => 'क्षेत्र में';
+
+  @override
+  String get auditExportReady => 'निर्यात तैयार';
+
+  @override
+  String get auditAttested => 'प्रमाणित';
+
+  @override
+  String get auditNearestAction => 'निकटतम कार्य';
+
+  @override
+  String auditPlotsDueTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count प्लॉट पर विज़िट बाकी',
+      one: '1 प्लॉट पर विज़िट बाकी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auditPlotsDueSubtitle =>
+      'निर्धारित प्लॉट पर GPS, फ़ोटो और पेड़ गिनती दर्ज करें';
+
+  @override
+  String get auditOpenPlots => 'प्लॉट खोलें';
+
+  @override
+  String get auditAttestationAction => 'प्रमाणन';
+
+  @override
+  String get auditOpenAttestation => 'समीक्षा और हस्ताक्षर';
+
+  @override
+  String get auditQuickLinks => 'त्वरित लिंक';
+
+  @override
+  String get auditPlotVisits => 'प्लॉट विज़िट';
+
+  @override
+  String get auditPlotsAllVisited => 'वर्तमान स्कोप के सभी प्लॉट देखे गए';
+
+  @override
+  String get auditAttestationTitle => 'प्रमाणन';
+
+  @override
+  String get auditAttestationMobileSubtitle =>
+      'विसंगतियों की समीक्षा करें और निर्यात बंडल पर हस्ताक्षर करें';
+
+  @override
+  String get auditAttestationUnavailable =>
+      'अभी कोई एंगेजमेंट प्रमाणन के लिए तैयार नहीं है।';
+
+  @override
+  String get auditSyncQueueHint =>
+      'विफल ऑडिट विज़िट और ऑफ़लाइन अपलोड पुनः प्रयास करें';
+
+  @override
+  String get auditProjectsTitle => 'एस्टेट परियोजनाएँ';
+
+  @override
+  String get auditNoEstateProjects => 'कोई एस्टेट मॉनिटरिंग परियोजना नहीं';
+
+  @override
+  String get auditNoEstateProjectsHint =>
+      'एस्टेट मॉनिटरिंग परियोजनाएँ असाइन होने पर यहाँ दिखेंगी।';
+
+  @override
+  String get auditAttestationLocked => 'प्रमाणन लॉक';
+
+  @override
+  String get auditAttestationExportRequired =>
+      'मोबाइल हस्ताक्षर से पहले वेब पर निर्यात तैयारी पूरी करें।';
+
+  @override
+  String get auditAnomalyReviews => 'विसंगति समीक्षा';
+
+  @override
+  String get auditNoAnomalies => 'कोई विसंगति समीक्षा की प्रतीक्षा में नहीं।';
+
+  @override
+  String get auditReviewAnomaly => 'समीक्षा';
+
+  @override
+  String get auditReviewSaved => 'विसंगति समीक्षा सहेजी';
+
+  @override
+  String get auditReviewRationaleRequired =>
+      'इस समीक्षा के लिए कारण दर्ज करें।';
+
+  @override
+  String get auditDispositionUphold => 'पुष्टि';
+
+  @override
+  String get auditDispositionOverturn => 'रद्द';
+
+  @override
+  String get auditDispositionDefer => 'स्थगित';
+
+  @override
+  String get auditLeadSignOff => 'मुख्य हस्ताक्षर';
+
+  @override
+  String get auditVerdictLabel => 'निर्णय';
+
+  @override
+  String get auditVerdictApproved => 'स्वीकृत';
+
+  @override
+  String get auditVerdictConditional => 'सशर्त';
+
+  @override
+  String get auditVerdictRejected => 'अस्वीकृत';
+
+  @override
+  String get auditSignSummaryLabel => 'प्रमाणन सार';
+
+  @override
+  String get auditSignSummaryRequired => 'प्रमाणन सार दर्ज करें।';
+
+  @override
+  String get auditSignNotesLabel => 'नोट्स (वैकल्पिक)';
+
+  @override
+  String get auditSignAttestation => 'प्रमाणन पर हस्ताक्षर';
+
+  @override
+  String get auditSignSaved => 'प्रमाणन हस्ताक्षरित';
+
+  @override
+  String get auditCosignTitle => 'सह-हस्ताक्षर';
+
+  @override
+  String get auditCosignNotesLabel => 'सह-हस्ताक्षर नोट्स (वैकल्पिक)';
+
+  @override
+  String get auditCosignAttestation => 'सह-हस्ताक्षर करें';
+
+  @override
+  String get auditCosignSaved => 'सह-हस्ताक्षर दर्ज';
+
+  @override
+  String auditSignaturesTitle(int count, int required) {
+    return '$count में से $required हस्ताक्षर';
+  }
+
+  @override
+  String auditPendingCosign(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count सह-हस्ताक्षर बाकी',
+      one: '1 सह-हस्ताक्षर बाकी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String auditSignedVerdict(String verdict) {
+    return 'हस्ताक्षरित: $verdict';
+  }
+
+  @override
+  String get auditCreateVerifyLink => 'सार्वजनिक सत्यापन लिंक बनाएँ';
+
+  @override
+  String get auditCopyVerifyLink => 'लिंक कॉपी करें';
+
+  @override
+  String get auditOpenVerifyLink => 'खोलें';
+
+  @override
+  String get auditVerifyLinkCopied => 'सत्यापन लिंक कॉपी हुआ';
+
+  @override
+  String get auditSyncAuditVisits => 'ऑडिट प्लॉट विज़िट';
+
+  @override
+  String get auditSyncRetryFailed => 'विफल विज़िट पुनः प्रयास';
+
+  @override
+  String get auditSyncOpenWorkspace => 'एस्टेट वॉच खोलें';
+
+  @override
+  String get auditSyncEmptyHint =>
+      'फ़ील्ड या एस्टेट वॉच ऑडिट से प्लॉट विज़िट कैप्चर करें';
 }

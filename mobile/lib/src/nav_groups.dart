@@ -69,6 +69,13 @@ const mobileNavGroups = [
         audience: 'can_write',
         excludeViewers: true,
       ),
+      MobileNavItem(
+        route: '/audit',
+        labelKey: 'auditWorkspaceTitle',
+        icon: Icons.verified_user_outlined,
+        audience: ['professional', 'field_supervisor', 'field_worker'],
+        excludeViewers: true,
+      ),
     ],
   ),
   MobileNavGroup(

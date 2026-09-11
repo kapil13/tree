@@ -140,6 +140,17 @@ final auditFieldPlotQueueProvider = FutureProvider.autoDispose((ref) async {
   return api.auditFieldPlotQueue(projectId: projectId);
 });
 
+final auditPortfolioSummaryProvider = FutureProvider.autoDispose((ref) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.auditPortfolioSummary();
+});
+
+final auditAttestationProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, engagementId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.getAuditAttestation(engagementId);
+});
+
 final monitoringSummaryProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
   try {
