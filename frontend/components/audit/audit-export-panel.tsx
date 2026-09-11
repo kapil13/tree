@@ -78,6 +78,20 @@ export function AuditExportPanel({
         <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
       </header>
 
+      {(readiness?.reconciliation_mismatch_count ?? 0) > 0 ||
+      (readiness?.reconciliation_no_field_count ?? 0) > 0 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {t("reconciliationWarning", {
+            mismatch: readiness?.reconciliation_mismatch_count ?? 0,
+            noField: readiness?.reconciliation_no_field_count ?? 0,
+          })}
+        </div>
+      ) : (readiness?.reconciliation_aligned_count ?? 0) > 0 ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          {t("reconciliationOk", { count: readiness?.reconciliation_aligned_count ?? 0 })}
+        </div>
+      ) : null}
+
       {sections.length > 0 && (
         <ul className="space-y-2 rounded-xl border border-stone-200 p-4 dark:border-stone-700">
           {sections.map((section) => (

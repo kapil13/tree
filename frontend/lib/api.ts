@@ -3616,6 +3616,28 @@ export const auditEngagements = {
       )
     ).data;
   },
+  async getReconciliation(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        block_count: number;
+        aligned_count: number;
+        mismatch_count: number;
+        no_field_data_count: number;
+        blocks: Array<{
+          boundary_version_id: string;
+          boundary_name?: string | null;
+          confidence_grade?: string | null;
+          confidence_score?: number | null;
+          field_grade?: string | null;
+          field_signal?: string | null;
+          visit_count: number;
+          reconciliation: string;
+          aligned?: boolean | null;
+        }>;
+      }>(`/v1/audit-engagements/${engagementId}/confidence-vs-field-reconciliation`)
+    ).data;
+  },
   async getConfidenceMap(engagementId: string) {
     return (
       await api.get<{
@@ -3757,6 +3779,9 @@ export const auditEngagements = {
         }>;
         last_export_sha256?: string | null;
         exported_at?: string | null;
+        reconciliation_aligned_count?: number;
+        reconciliation_mismatch_count?: number;
+        reconciliation_no_field_count?: number;
       }>(`/v1/audit-engagements/${engagementId}/export/readiness`)
     ).data;
   },

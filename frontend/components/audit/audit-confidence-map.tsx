@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { APIProvider, Map as GoogleMap, Polygon } from "@vis.gl/react-google-maps";
 import { type AuditBoundary, geoJsonRingToPaths } from "@/lib/audit-field-visit";
 import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
@@ -17,21 +17,24 @@ type ConfidenceBlock = {
   boundary_version_id?: string;
   boundary_name?: string | null;
   confidence_grade: string;
+  field_grade?: string | null;
 };
 
 export function AuditConfidenceMap({
   boundaries,
   blocks,
+  reconciliationBlocks = [],
   height = "360px",
 }: {
   boundaries: AuditBoundary[];
   blocks: ConfidenceBlock[];
+  reconciliationBlocks?: Array<{ boundary_version_id: string; field_grade?: string | null }>;
   height?: string;
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   const gradeByBoundary = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new globalThis.Map<string, string>();
     for (const block of blocks) {
       if (block.boundary_version_id) {
         map.set(block.boundary_version_id, block.confidence_grade);
@@ -40,6 +43,16 @@ export function AuditConfidenceMap({
     return map;
   }, [blocks]);
 
+  const fieldGradeByBoundary = useMemo(() => {
+    const map = new globalThis.Map<string, string>();
+    for (const block of reconciliationBlocks) {
+      if (block.field_grade) {
+        map.set(block.boundary_version_id, block.field_grade);
+      }
+    }
+    return map;
+  }, [reconciliationBlocks]);
+
   const boundaryLayers = useMemo(
     () =>
       boundaries.map((b) => ({
@@ -47,8 +60,9 @@ export function AuditConfidenceMap({
         name: b.name,
         paths: geoJsonRingToPaths(b.boundary),
         grade: gradeByBoundary.get(b.id) ?? "grey",
+        fieldGrade: fieldGradeByBoundary.get(b.id),
       })),
-    [boundaries, gradeByBoundary],
+    [boundaries, gradeByBoundary, fieldGradeByBoundary],
   );
 
   const center = useMemo(() => {
@@ -84,9 +98,12 @@ export function AuditConfidenceMap({
               className={cn("h-3 w-3 rounded-sm ring-1 ring-black/10")}
               style={{ backgroundColor: GRADE_FILL[grade].fill }}
             />
-            {grade}
+            {grade} (satellite)
           </span>
         ))}
+        {reconciliationBlocks.length > 0 && (
+          <span className="text-stone-500">· dashed outline = field grade</span>
+        )}
       </div>
       <div className="overflow-hidden rounded-xl border border-stone-200" style={{ height }}>
         <APIProvider apiKey={apiKey}>
@@ -100,16 +117,28 @@ export function AuditConfidenceMap({
           >
             {boundaryLayers.map((b) => {
               const colors = GRADE_FILL[b.grade] ?? GRADE_FILL.grey;
+              const fieldColors = b.fieldGrade ? GRADE_FILL[b.fieldGrade] : null;
               if (b.paths.length === 0) return null;
               return (
-                <Polygon
-                  key={b.id}
-                  paths={b.paths}
-                  fillColor={colors.fill}
-                  fillOpacity={0.45}
-                  strokeColor={colors.stroke}
-                  strokeWeight={2}
-                />
+                <Fragment key={b.id}>
+                  <Polygon
+                    paths={b.paths}
+                    fillColor={colors.fill}
+                    fillOpacity={0.45}
+                    strokeColor={colors.stroke}
+                    strokeWeight={2}
+                  />
+                  {fieldColors ? (
+                    <Polygon
+                      paths={b.paths}
+                      fillColor={fieldColors.fill}
+                      fillOpacity={0}
+                      strokeColor={fieldColors.stroke}
+                      strokeWeight={3}
+                      strokeOpacity={0.9}
+                    />
+                  ) : null}
+                </Fragment>
               );
             })}
           </GoogleMap>

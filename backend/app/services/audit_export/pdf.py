@@ -52,6 +52,46 @@ def render_audit_engagement_pdf(ctx: dict[str, Any]) -> bytes:
         story.append(t)
     story.append(Spacer(1, 12))
 
+    reconciliation = ctx.get("reconciliation") or {}
+    if reconciliation.get("block_count"):
+        story.append(Paragraph("Confidence vs field reconciliation", styles["Heading2"]))
+        story.append(
+            Paragraph(
+                f"Aligned: {reconciliation.get('aligned_count', 0)} · "
+                f"Mismatch: {reconciliation.get('mismatch_count', 0)} · "
+                f"No field data: {reconciliation.get('no_field_data_count', 0)}",
+                styles["Normal"],
+            )
+        )
+        recon_rows = [["Block", "Satellite", "Field", "Visits", "Status"]]
+        for block in reconciliation.get("blocks") or []:
+            recon_rows.append(
+                [
+                    str(block.get("boundary_name", ""))[:24],
+                    str(block.get("confidence_grade") or "—"),
+                    str(block.get("field_grade") or "—"),
+                    str(block.get("visit_count", 0)),
+                    str(block.get("reconciliation", "")),
+                ]
+            )
+        if len(recon_rows) > 1:
+            t = Table(
+                recon_rows,
+                colWidths=[45 * mm, 22 * mm, 22 * mm, 18 * mm, 35 * mm],
+                repeatRows=1,
+            )
+            t.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e7e5e4")),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        ("FONTSIZE", (0, 0), (-1, -1), 8),
+                    ]
+                )
+            )
+            story.append(t)
+        story.append(Spacer(1, 12))
+
     risk = ctx.get("risk") or {}
     queue = risk.get("queue") or {}
     story.append(Paragraph("Auditor priority queue (top blocks)", styles["Heading2"]))

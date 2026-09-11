@@ -9,6 +9,7 @@ import { AuditBoundaryDrawMap } from "@/components/audit/audit-boundary-draw-map
 import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
+import { AuditReconciliationPanel } from "@/components/audit/audit-reconciliation-panel";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditExportPanel } from "@/components/audit/audit-export-panel";
 import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
@@ -702,6 +703,10 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
             engagementId={engagement.id}
             engagementStatus={engagement.status}
             boundaries={engagement.boundaries}
+          />
+          <AuditReconciliationPanel
+            engagementId={engagement.id}
+            engagementStatus={engagement.status}
           />
           <AuditExportPanel
             engagementId={engagement.id}

@@ -32,7 +32,7 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
-from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut
+from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut, ReconciliationOut
 from app.schemas.audit_portfolio import AuditFieldPlotQueueOut, AuditPortfolioSummaryOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_sampling import (
@@ -849,6 +849,29 @@ async def get_confidence_map(
 
     summary = await confidence_map_summary(db, row.id)
     return ConfidenceMapOut.model_validate(summary)
+
+
+@router.get(
+    "/{engagement_id}/confidence-vs-field-reconciliation",
+    response_model=ReconciliationOut,
+)
+async def get_confidence_field_reconciliation(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> ReconciliationOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await build_confidence_field_reconciliation(db, row.id)
+    return ReconciliationOut.model_validate(summary)
 
 
 @router.post("/{engagement_id}/risk-scan", response_model=RiskScanOut)
