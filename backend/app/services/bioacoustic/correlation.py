@@ -202,23 +202,24 @@ async def correlate_fence_ecosystem(
             correlation_score = round(num / den, 3) if den else None
 
     taxon = bio.get("taxon_breakdown") or {}
+    bio_confidence = bio.get("avg_confidence_score") or bio.get("avg_health_score")
     interpretation = (
         _interpret_ecosystem(
-        bio_health=bio.get("avg_health_score"),
-        ndvi_mean=ndvi_mean,
-        ndvi_trend=ndvi_trend,
-        insect_calls=int(taxon.get("insect", 0)),
-        frog_calls=int(taxon.get("frog", 0)),
-        pest_flag=bool(sat.pest_control_needed) if sat else False,
+            bio_health=bio_confidence,
+            ndvi_mean=ndvi_mean,
+            ndvi_trend=ndvi_trend,
+            insect_calls=int(taxon.get("insect", 0)),
+            frog_calls=int(taxon.get("frog", 0)),
+            pest_flag=bool(sat.pest_control_needed) if sat else False,
         )
-        + " NDVI co-occurrence screening does not prove ecological causation."
+        + " NDVI is shown for co-occurrence screening only — it does not prove ecological causation "
+        "and is not combined into a single ecosystem health score."
     )
 
-    ecosystem_score = 0.0
-    if bio.get("avg_health_score"):
-        ecosystem_score += 0.5 * float(bio["avg_health_score"])
-    if ndvi_mean is not None:
-        ecosystem_score += 0.5 * min(ndvi_mean / 0.7, 1.0) * 100
+    ndvi_disclaimer = (
+        "NDVI co-occurrence screening does not prove ecological causation. "
+        "Use acoustic Biodiversity Confidence and accepted species evidence separately from canopy NDVI."
+    )
 
     return {
         "fence_id": str(fence.id),
@@ -239,6 +240,7 @@ async def correlate_fence_ecosystem(
             "pest_control_needed": sat.pest_control_needed if sat else False,
         },
         "correlation_score": correlation_score,
-        "ecosystem_health_score": round(ecosystem_score, 2),
+        "ecosystem_health_score": round(float(bio_confidence or 0), 2),
+        "ndvi_disclaimer": ndvi_disclaimer,
         "interpretation": interpretation,
     }
