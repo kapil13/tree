@@ -199,7 +199,9 @@ async def resolve_public_verification(
         payload = await build_tree_verification_payload(db, tree)
     elif link.resource_type == "audit_engagement":
         from app.models.audit_engagement import AuditEngagement
-        from app.services.public_verification.audit import build_audit_engagement_verification_payload
+        from app.services.public_verification.audit import (
+            build_audit_engagement_verification_payload,
+        )
 
         engagement = await db.get(AuditEngagement, link.resource_id)
         if engagement is None:

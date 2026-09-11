@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0076_audit_phase9_sprint5"
 down_revision = "0075_audit_sampling_hybrid"
