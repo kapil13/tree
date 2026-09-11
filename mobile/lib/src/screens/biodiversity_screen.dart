@@ -131,7 +131,10 @@ class BiodiversityScreen extends ConsumerWidget {
   ) {
     final taxa = (summary['species_richness'] as num?)?.toInt() ?? (summary['total_species_detected'] as num?)?.toInt() ?? 0;
     final shannon = summary['shannon_diversity_index'];
-    final fusion = (summary['bioacoustic_health_score'] as num?)?.toInt() ?? (summary['health_score'] as num?)?.toInt() ?? 0;
+    final fusion = (summary['biodiversity_confidence_score'] as num?)?.toInt() ??
+        (summary['bioacoustic_health_score'] as num?)?.toInt() ??
+        (summary['health_score'] as num?)?.toInt() ??
+        0;
     final recordings = (summary['recordings_total'] as num?)?.toInt() ?? (summary['total_recordings'] as num?)?.toInt() ?? 0;
 
     return ListView(
@@ -143,12 +146,12 @@ class BiodiversityScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: 'Shannon'),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: '$fusion', label: 'Fusion score'),
+            PrototypeStatBox(value: '$fusion', label: 'Confidence'),
           ],
         ),
         const SizedBox(height: 12),
         Text(
-          'Fused from bioacoustic ($recordings recordings) + satellite ecosystem signals',
+          'Biodiversity Confidence from $recordings analyzed recordings (evidence quality, not habitat health)',
           style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
         ),
         if (coords != null) ...[
@@ -173,10 +176,12 @@ class BiodiversityScreen extends ConsumerWidget {
             return Column(
               children: fences.take(8).map((raw) {
                 final f = raw as Map<String, dynamic>;
-                final score = (f['bioacoustic_health_score'] as num?)?.toInt() ?? fusion;
+                final score = (f['biodiversity_confidence_score'] as num?)?.toInt() ??
+                    (f['bioacoustic_health_score'] as num?)?.toInt() ??
+                    fusion;
                 return PrototypeConnectedProject(
                   name: f['name'] as String? ?? 'Site',
-                  meta: 'Acoustic health $score/100',
+                  meta: 'Confidence $score/100',
                   badge: score >= 75 ? 'Strong' : 'Watch',
                   badgeOk: score >= 75,
                   onTap: () => context.go('/map'),
@@ -216,7 +221,7 @@ class BiodiversityScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: 'Shannon'),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: '$fusion', label: 'Fusion score'),
+            PrototypeStatBox(value: '$fusion', label: 'Confidence'),
           ],
         ),
         if (coords != null) ...[
