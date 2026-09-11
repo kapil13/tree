@@ -4,8 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
-import { Satellite, TrendingUp } from "lucide-react";
+import { Satellite } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { satelliteHref } from "@/lib/satellite-links";
 import { cn } from "@/lib/cn";
 
@@ -96,11 +98,7 @@ export function AuditSatellitePanel({
   });
 
   if (engagementStatus === "draft") {
-    return (
-      <section className="card text-sm text-stone-500">
-        {t("intakeRequired")}
-      </section>
-    );
+    return <AuditLockedSection title={t("title")} message={t("intakeRequired")} />;
   }
 
   if (isLoading) {
@@ -123,22 +121,20 @@ export function AuditSatellitePanel({
     engagementStatus === "attested";
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Satellite className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-          {isReady && (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
-              {t("statusReady")}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("auditModeNote")}</p>
-      </header>
+    <AuditPanelShell
+      icon={Satellite}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      epistemicNote={t("epistemicNote")}
+      statusBadge={
+        isReady ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+            {t("statusReady")}
+          </span>
+        ) : undefined
+      }
+    >
+      <p className="text-xs text-stone-500">{t("auditModeNote")}</p>
 
       {engagementStatus === "intake_complete" && !isReady && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -279,11 +275,6 @@ export function AuditSatellitePanel({
           ))
         )}
       </div>
-
-      <p className="flex items-center gap-2 text-xs text-stone-500">
-        <TrendingUp className="h-3.5 w-3.5" aria-hidden />
-        {t("epistemicNote")}
-      </p>
-    </section>
+    </AuditPanelShell>
   );
 }

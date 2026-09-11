@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Gavel, ShieldCheck } from "lucide-react";
 import { auditEngagements } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
 
 type ReviewItem = {
@@ -81,23 +82,19 @@ export function AuditAttestationPanel({
   const attestation = data?.attestation as AttestationRecord | null | undefined;
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Gavel className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-          {engagementStatus === "attested" && (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
-              {t("statusAttested")}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
-      </header>
-
+    <AuditPanelShell
+      icon={Gavel}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      epistemicNote={t("epistemicNote")}
+      statusBadge={
+        engagementStatus === "attested" ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+            {t("statusAttested")}
+          </span>
+        ) : undefined
+      }
+    >
       {attestation?.status === "signed" && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
           <p className="flex items-center gap-2 font-medium text-emerald-900">
@@ -243,6 +240,6 @@ export function AuditAttestationPanel({
           )}
         </>
       )}
-    </section>
+    </AuditPanelShell>
   );
 }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle, ListOrdered, ShieldAlert } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
 
 const RISK_STYLES: Record<string, string> = {
@@ -100,23 +101,19 @@ export function AuditRiskPanel({
   const severityCounts = anomalies?.severity_counts ?? {};
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <ShieldAlert className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-          {engagementStatus === "risk_assessed" && (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
-              {t("statusAssessed")}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
-      </header>
-
+    <AuditPanelShell
+      icon={ShieldAlert}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      epistemicNote={t("epistemicNote")}
+      statusBadge={
+        engagementStatus === "risk_assessed" ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+            {t("statusAssessed")}
+          </span>
+        ) : undefined
+      }
+    >
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -209,6 +206,6 @@ export function AuditRiskPanel({
           })}
         </div>
       )}
-    </section>
+    </AuditPanelShell>
   );
 }
