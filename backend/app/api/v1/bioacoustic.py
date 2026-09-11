@@ -13,26 +13,37 @@ from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
 from app.models.bioacoustic_monitoring_period import BioacousticMonitoringPeriod
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.plantation_fence import PlantationFence
+from app.models.planting_project import PlantingProject
 from app.schemas.bioacoustic import (
     AudioUrlOut,
     AuditBundleOut,
+    BaselineDeltaOut,
     BioacousticAnalysisRunOut,
     BioacousticAnalyzeResponse,
     BioacousticRecordingCreate,
     BioacousticRecordingOut,
     BioacousticSummary,
+    ComplianceEvidenceCreate,
+    ComplianceEvidenceOut,
     DetectionReviewCreate,
     DetectionReviewOut,
+    FenceTrendsOut,
     HotspotOut,
     InterpretationChainOut,
     MonitoringPeriodCreate,
     MonitoringPeriodOut,
+    MonitoringPlanOut,
     PeriodComparisonOut,
     RegionalFaunaOut,
     ReviewQueueItem,
 )
 from app.schemas.cursor_page import CursorPage
 from app.services.bioacoustic.audit_bundle import build_audit_bundle
+from app.services.bioacoustic.baseline_delta import compute_baseline_delta
+from app.services.bioacoustic.compliance_evidence import (
+    link_recording_to_checklist,
+    list_project_bioacoustic_evidence,
+)
 from app.services.bioacoustic.confidence import METHODOLOGY_VERSION
 from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED
 from app.services.bioacoustic.hotspots import compute_hotspots
@@ -44,9 +55,14 @@ from app.services.bioacoustic.monitoring_periods import (
     create_monitoring_period,
     list_monitoring_periods,
 )
+from app.services.bioacoustic.monitoring_plans import (
+    ensure_monitoring_plans_for_project,
+    list_monitoring_plans,
+)
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
 from app.services.bioacoustic.review import list_review_queue, submit_detection_review
+from app.services.bioacoustic.trends import compute_fence_trends
 from app.services.data_scope import apply_owner_org_scope
 from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
 from app.services.platform.governance import assert_org_feature_enabled
@@ -623,3 +639,156 @@ async def fence_audit_bundle(
     )
     bundle = await build_audit_bundle(db, fence, recordings)
     return AuditBundleOut(**bundle)
+
+
+@router.post("/projects/{project_id}/monitoring-plans/ensure", response_model=list[MonitoringPlanOut])
+async def ensure_project_monitoring_plans(
+    project_id: uuid.UUID,
+    user: WriteProfessional,
+    db: DB,
+) -> list[MonitoringPlanOut]:
+    await assert_org_feature_enabled(db, user, "bioacoustic")
+    project = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantingProject).where(PlantingProject.id == project_id),
+                user,
+                owner_col=PlantingProject.owner_user_id,
+                org_col=PlantingProject.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    await ensure_monitoring_plans_for_project(db, project)
+    await db.commit()
+    plans = await list_monitoring_plans(db, project_id)
+    return [MonitoringPlanOut(**p) for p in plans]
+
+
+@router.get("/projects/{project_id}/monitoring-plans", response_model=list[MonitoringPlanOut])
+async def get_project_monitoring_plans(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> list[MonitoringPlanOut]:
+    project = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantingProject).where(PlantingProject.id == project_id),
+                user,
+                owner_col=PlantingProject.owner_user_id,
+                org_col=PlantingProject.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    plans = await list_monitoring_plans(db, project_id)
+    return [MonitoringPlanOut(**p) for p in plans]
+
+
+@router.get("/fences/{fence_id}/baseline-delta", response_model=BaselineDeltaOut)
+async def fence_baseline_delta(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> BaselineDeltaOut:
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    data = await compute_baseline_delta(db, fence_id)
+    return BaselineDeltaOut(**data)
+
+
+@router.get("/fences/{fence_id}/trends", response_model=FenceTrendsOut)
+async def fence_biodiversity_trends(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> FenceTrendsOut:
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    data = await compute_fence_trends(db, fence_id)
+    return FenceTrendsOut(**data)
+
+
+@router.post(
+    "/recordings/{recording_id}/compliance-evidence",
+    response_model=ComplianceEvidenceOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def link_compliance_evidence(
+    recording_id: uuid.UUID,
+    payload: ComplianceEvidenceCreate,
+    user: WriteProfessional,
+    db: DB,
+) -> ComplianceEvidenceOut:
+    await assert_org_feature_enabled(db, user, "bioacoustic")
+    rec = (
+        await db.execute(
+            _scope(select(BioacousticRecording).where(BioacousticRecording.id == recording_id), user)
+        )
+    ).scalar_one_or_none()
+    if rec is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    try:
+        row = await link_recording_to_checklist(
+            db,
+            recording=rec,
+            project_id=payload.project_id,
+            checklist_code=payload.checklist_code,
+            checklist_item_id=payload.checklist_item_id,
+            linked_by_user_id=user.id,
+            notes=payload.notes,
+        )
+        await db.commit()
+        items = await list_project_bioacoustic_evidence(db, payload.project_id, payload.checklist_code)
+        match = next((i for i in items if i["id"] == str(row.id)), None)
+        if match is None:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="link_failed")
+        return ComplianceEvidenceOut(**match)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_id}/compliance-evidence", response_model=list[ComplianceEvidenceOut])
+async def project_compliance_evidence(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    checklist_code: str | None = None,
+) -> list[ComplianceEvidenceOut]:
+    project = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantingProject).where(PlantingProject.id == project_id),
+                user,
+                owner_col=PlantingProject.owner_user_id,
+                org_col=PlantingProject.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    items = await list_project_bioacoustic_evidence(db, project_id, checklist_code)
+    return [ComplianceEvidenceOut(**i) for i in items]
