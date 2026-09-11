@@ -546,6 +546,16 @@
     "score": "Score {score}/100",
     "gridPreview": "Zone preview (3×3)"
   },
+  "auditExport": {
+    "title": "Evidence room & audit export",
+    "subtitle": "Download a signed zip bundle with intake, satellite, confidence, risk, and field verification artefacts.",
+    "epistemicNote": "Signed export supports audit preparation — not certification or fraud findings.",
+    "loading": "Checking export readiness…",
+    "statusExported": "Export ready",
+    "download": "Download signed audit bundle",
+    "lastExport": "Last export SHA-256: {sha}…",
+    "notReady": "Complete field verification before exporting."
+  },
   "auditSampling": {
     "title": "Field sampling & verification",
     "subtitle": "Generate risk-weighted sample plots from the auditor queue and record field visit outcomes.",

@@ -50,7 +50,8 @@ export function AuditSamplingPanel({
   const enabled =
     engagementStatus === "risk_assessed" ||
     engagementStatus === "sampling_planned" ||
-    engagementStatus === "field_verified";
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready";
 
   const { data, isLoading } = useQuery({
     queryKey: ["audit-sampling-plan", engagementId],
@@ -114,7 +115,8 @@ export function AuditSamplingPanel({
           <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
             {t("title")}
           </h2>
-          {engagementStatus === "field_verified" && (
+          {(engagementStatus === "field_verified" ||
+            engagementStatus === "export_ready") && (
             <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
               {t("statusVerified")}
             </span>
@@ -128,7 +130,11 @@ export function AuditSamplingPanel({
         <button
           type="button"
           className="btn-primary text-sm"
-          disabled={generate.isPending || engagementStatus === "field_verified"}
+          disabled={
+            generate.isPending ||
+            engagementStatus === "field_verified" ||
+            engagementStatus === "export_ready"
+          }
           onClick={() => generate.mutate()}
         >
           {data?.has_plan ? t("regenerate") : t("generate")}

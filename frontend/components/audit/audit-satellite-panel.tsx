@@ -49,7 +49,8 @@ export function AuditSatellitePanel({
       engagementStatus === "confidence_mapped" ||
       engagementStatus === "risk_assessed" ||
       engagementStatus === "sampling_planned" ||
-      engagementStatus === "field_verified",
+      engagementStatus === "field_verified" ||
+      engagementStatus === "export_ready",
   });
 
   const invalidate = () => {
@@ -92,7 +93,8 @@ export function AuditSatellitePanel({
     engagementStatus === "confidence_mapped" ||
     engagementStatus === "risk_assessed" ||
     engagementStatus === "sampling_planned" ||
-    engagementStatus === "field_verified";
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready";
 
   return (
     <section className="space-y-6">
