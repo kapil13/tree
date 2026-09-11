@@ -50,7 +50,9 @@ export function AuditRiskPanel({
       engagementStatus === "risk_assessed" ||
       engagementStatus === "sampling_planned" ||
       engagementStatus === "field_verified" ||
-      engagementStatus === "export_ready",
+      engagementStatus === "export_ready" ||
+      engagementStatus === "under_review" ||
+      engagementStatus === "attested",
   });
 
   const { data: anomalies } = useQuery({
@@ -61,7 +63,9 @@ export function AuditRiskPanel({
       engagementStatus === "risk_assessed" ||
       engagementStatus === "sampling_planned" ||
       engagementStatus === "field_verified" ||
-      engagementStatus === "export_ready",
+      engagementStatus === "export_ready" ||
+      engagementStatus === "under_review" ||
+      engagementStatus === "attested",
   });
 
   const scan = useMutation({
@@ -78,7 +82,9 @@ export function AuditRiskPanel({
     engagementStatus !== "risk_assessed" &&
     engagementStatus !== "sampling_planned" &&
     engagementStatus !== "field_verified" &&
-    engagementStatus !== "export_ready"
+    engagementStatus !== "export_ready" &&
+    engagementStatus !== "under_review" &&
+    engagementStatus !== "attested"
   ) {
     return <section className="card text-sm text-stone-500">{t("confidenceRequired")}</section>;
   }

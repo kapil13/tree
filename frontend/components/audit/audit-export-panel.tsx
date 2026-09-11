@@ -25,7 +25,10 @@ export function AuditExportPanel({
   const qc = useQueryClient();
 
   const enabled =
-    engagementStatus === "field_verified" || engagementStatus === "export_ready";
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready" ||
+    engagementStatus === "under_review" ||
+    engagementStatus === "attested";
 
   const { data: readiness, isLoading } = useQuery({
     queryKey: ["audit-export-readiness", engagementId],
@@ -62,7 +65,9 @@ export function AuditExportPanel({
           <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
             {t("title")}
           </h2>
-          {engagementStatus === "export_ready" && (
+          {(engagementStatus === "export_ready" ||
+            engagementStatus === "under_review" ||
+            engagementStatus === "attested") && (
             <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
               {t("statusExported")}
             </span>
