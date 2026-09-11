@@ -62,12 +62,16 @@ export function AuditSamplingPanel({
     enabled,
   });
 
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
   const generate = useMutation({
     mutationFn: () => auditEngagements.generateSamplingPlan(engagementId),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setActionMessage(t("generateSuccess", { count: result.total_plots }));
       qc.invalidateQueries({ queryKey: ["audit-sampling-plan", engagementId] });
       qc.invalidateQueries({ queryKey: ["audit-engagement"] });
     },
+    onError: () => setActionMessage(null),
   });
 
   const recordVisit = useMutation({
@@ -143,6 +147,11 @@ export function AuditSamplingPanel({
         >
           {data?.has_plan ? t("regenerate") : t("generate")}
         </button>
+        {actionMessage && (
+          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            {actionMessage}
+          </p>
+        )}
         {generate.isError && (
           <p className="text-sm text-rose-700">{errorMessage(generate.error)}</p>
         )}

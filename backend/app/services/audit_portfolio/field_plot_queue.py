@@ -5,21 +5,23 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_engagement import AuditEngagement
 from app.models.audit_sampling import AuditFieldPlot
 from app.models.planting_project import PlantingProject
+from app.services.geo import geography_point_xy
 from app.services.planting_projects.access import project_list_filter
 
 
 async def _plot_center_dict(db: AsyncSession, plot: AuditFieldPlot) -> dict[str, float]:
+    lon_expr, lat_expr = geography_point_xy(AuditFieldPlot.center)
     row = (
         await db.execute(
             select(
-                func.ST_X(AuditFieldPlot.center).label("lon"),
-                func.ST_Y(AuditFieldPlot.center).label("lat"),
+                lon_expr.label("lon"),
+                lat_expr.label("lat"),
             ).where(AuditFieldPlot.id == plot.id)
         )
     ).one_or_none()

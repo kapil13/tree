@@ -5,9 +5,22 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely.geometry import LineString, Point, Polygon, mapping, shape
 from shapely.ops import transform
+from sqlalchemy import cast, func
+
+
+def geography_as_geometry(column: Any) -> Any:
+    """Cast a PostGIS geography column to geometry for ST_X/ST_Contains helpers."""
+    return cast(column, Geometry)
+
+
+def geography_point_xy(column: Any) -> tuple[Any, Any]:
+    """Return (lon_expr, lat_expr) for a geography POINT column."""
+    geom = geography_as_geometry(column)
+    return func.ST_X(geom), func.ST_Y(geom)
 
 
 def geojson_point_to_wkt(geojson: dict[str, Any]) -> str:
