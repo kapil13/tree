@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { GitCompare } from "lucide-react";
 import { auditEngagements } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
 
 const GRADE_STYLES: Record<string, string> = {
@@ -65,17 +66,7 @@ export function AuditReconciliationPanel({
   const blocks = (data?.blocks ?? []) as ReconciliationBlock[];
 
   return (
-    <section className="space-y-4">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <GitCompare className="h-6 w-6 text-forest-700" aria-hidden />
-          <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
-            {t("title")}
-          </h2>
-        </div>
-        <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-      </header>
-
+    <AuditPanelShell icon={GitCompare} title={t("title")} subtitle={t("subtitle")}>
       {data && (
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-800 ring-1 ring-emerald-200">
@@ -151,6 +142,6 @@ export function AuditReconciliationPanel({
           </table>
         </div>
       )}
-    </section>
+    </AuditPanelShell>
   );
 }

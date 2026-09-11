@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
 import { auditEngagements, errorMessage, uploads, type AuditEngagementDetail } from "@/lib/api";
 import { AuditBoundaryDrawMap } from "@/components/audit/audit-boundary-draw-map";
+import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
 
 const STEPS = ["claim", "boundaries", "documents", "validation", "complete"] as const;
@@ -236,29 +237,21 @@ export function AuditIntakePanel({
   const gate = engagement.intake_gate;
   const isComplete = engagement.status === "intake_complete";
 
-  return (
-    <div className="space-y-6">
-      {!wizardOnly && (
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Shield className="h-6 w-6 text-forest-700" aria-hidden />
-          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">{t("title")}</h1>
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
-              isComplete
-                ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                : "bg-amber-50 text-amber-800 ring-amber-200",
-            )}
-          >
-            {isComplete ? t("statusComplete") : t("statusDraft")}
-          </span>
-        </div>
-        <p className="max-w-2xl text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
-        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
-      </header>
+  const statusBadge = (
+    <span
+      className={cn(
+        "rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
+        isComplete
+          ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+          : "bg-amber-50 text-amber-800 ring-amber-200",
       )}
+    >
+      {isComplete ? t("statusComplete") : t("statusDraft")}
+    </span>
+  );
 
+  const intakeBody = (
+    <>
       {(actionMessage || actionError) && (
         <div
           className={cn(
@@ -687,6 +680,35 @@ export function AuditIntakePanel({
           {t("refresh")}
         </button>
       )}
+    </>
+  );
+
+  if (wizardOnly) {
+    return (
+      <AuditPanelShell
+        icon={Shield}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        epistemicNote={t("epistemicNote")}
+        statusBadge={statusBadge}
+      >
+        {intakeBody}
+      </AuditPanelShell>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <header className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <Shield className="h-6 w-6 text-forest-700" aria-hidden />
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">{t("title")}</h1>
+          {statusBadge}
+        </div>
+        <p className="max-w-2xl text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
+        <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
+      </header>
+      {intakeBody}
     </div>
   );
 }
