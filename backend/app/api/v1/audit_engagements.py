@@ -23,6 +23,11 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
+from app.schemas.audit_satellite import (
+    AuditBaselineOut,
+    PromoteBoundariesOut,
+    SatelliteTimelineOut,
+)
 from app.services.audit import record_audit
 from app.services.audit_intake.claim_snapshot import freeze_claim_snapshot, update_working_claim
 from app.services.audit_intake.ops import (
@@ -530,4 +535,198 @@ async def intake_complete(
         request=request,
     )
     await db.commit()
+    return _serialize_detail(raw)
+
+
+@router.post("/{engagement_id}/promote-boundaries", response_model=PromoteBoundariesOut)
+async def promote_boundaries(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> PromoteBoundariesOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_satellite.promote import promote_boundaries_to_work_areas
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if row.status not in {"intake_complete", "analysis_ready"}:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="intake_not_complete")
+
+    try:
+        promoted = await promote_boundaries_to_work_areas(
+            db,
+            row,
+            project,
+            owner_user_id=user.id,
+            organization_id=user.organization_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.boundaries.promote",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"count": len(promoted)},
+    )
+    await db.commit()
+    return PromoteBoundariesOut(promoted=promoted, count=len(promoted))
+
+
+@router.post("/{engagement_id}/baseline/t0", response_model=list[AuditBaselineOut])
+async def establish_t0_baseline(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> list[AuditBaselineOut]:
+    from sqlalchemy import select
+
+    from app.models.audit_engagement import AuditEngagement, BoundaryVersion
+    from app.services.audit_satellite.baseline import establish_t0_baselines
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        baselines = await establish_t0_baselines(db, row, project)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    boundaries = (
+        await db.execute(
+            select(BoundaryVersion).where(BoundaryVersion.engagement_id == row.id)
+        )
+    ).scalars().all()
+    name_map = {b.id: b.name for b in boundaries}
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.baseline.t0",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"count": len(baselines)},
+    )
+    await db.commit()
+    return [
+        AuditBaselineOut(
+            id=bl.id,
+            boundary_version_id=bl.boundary_version_id,
+            boundary_name=name_map.get(bl.boundary_version_id),
+            fence_id=bl.fence_id,
+            planting_date=bl.planting_date.isoformat() if bl.planting_date else None,
+            t0_scene_acquired_at=bl.t0_scene_acquired_at,
+            t0_scene_id=bl.t0_scene_id,
+            t0_provider=bl.t0_provider,
+            t0_ndvi_mean=float(bl.t0_ndvi_mean) if bl.t0_ndvi_mean is not None else None,
+            t0_evi_mean=float(bl.t0_evi_mean) if bl.t0_evi_mean is not None else None,
+            backfill_status=bl.backfill_status,
+            epistemic_label=bl.epistemic_label,
+        )
+        for bl in baselines
+    ]
+
+
+@router.post("/{engagement_id}/temporal-analysis")
+async def run_temporal_analysis(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+    months: int = 60,
+) -> dict[str, int]:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_satellite.timeline import build_temporal_timeline
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        obs = await build_temporal_timeline(db, row, project, months=months)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.temporal.analysis",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"observations": len(obs)},
+    )
+    await db.commit()
+    return {"observations": len(obs)}
+
+
+@router.get("/{engagement_id}/satellite-timeline", response_model=SatelliteTimelineOut)
+async def get_satellite_timeline(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> SatelliteTimelineOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_satellite.timeline import satellite_timeline_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await satellite_timeline_summary(db, row.id)
+    return SatelliteTimelineOut.model_validate(summary)
+
+
+@router.post("/{engagement_id}/analysis-ready", response_model=AuditEngagementDetailOut)
+async def mark_engagement_analysis_ready(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AuditEngagementDetailOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_satellite.timeline import mark_analysis_ready
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        await mark_analysis_ready(db, row)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.analysis.ready",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+    )
+    await db.commit()
+    raw = await engagement_detail(db, row, project)
     return _serialize_detail(raw)

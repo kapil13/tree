@@ -516,6 +516,24 @@
     "alreadyComplete": "इनटेक पहले से पूर्ण",
     "refresh": "रीफ्रेश"
   },
+  "auditSatellite": {
+    "title": "उपग्रह और कालिक विश्लेषण",
+    "subtitle": "रोपण तिथि पर T0 आधार रेखा स्थापित करें, T0–T4 वनस्पति समयरेखा बनाएँ।",
+    "auditModeNote": "ऑडिट मोड: स्टब प्रदाता अस्वीकृत — केवल लाइव Sentinel-2 अवलोकन।",
+    "intakeRequired": "उपग्रह विश्लेषण से पहले ऑडिट इनटेक पूर्ण करें।",
+    "loading": "उपग्रह समयरेखा लोड हो रही है…",
+    "statusReady": "विश्लेषण तैयार",
+    "promoteBoundaries": "कार्य क्षेत्र में प्रोमोट करें",
+    "establishT0": "T0 आधार रेखा स्थापित करें",
+    "runTemporal": "T0–T4 समयरेखा बनाएँ",
+    "markReady": "विश्लेषण तैयार चिह्नित करें",
+    "summary": "{blocks} ब्लॉक · {t0} T0 आधार रेखा",
+    "noBlocks": "कोई ब्लॉक नहीं — पहले इनटेक में सीमाएँ आयात करें।",
+    "openSatellite": "उपग्रह मानचित्र खोलें",
+    "phase": "चरण",
+    "date": "तिथि",
+    "epistemicNote": "सभी मान OBSERVATION (मापे गए) — सत्यापित दावे नहीं।"
+  },
   "projectCompliance": {
     "sectionsAria": "अनुपालन अनुभाग",
     "sectionOverview": "तैयारी अवलोकन",

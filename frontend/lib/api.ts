@@ -3504,6 +3504,47 @@ export const auditEngagements = {
       )
     ).data;
   },
+  async promoteBoundaries(engagementId: string) {
+    return (
+      await api.post<{ promoted: Array<Record<string, unknown>>; count: number }>(
+        `/v1/audit-engagements/${engagementId}/promote-boundaries`,
+      )
+    ).data;
+  },
+  async establishT0Baseline(engagementId: string) {
+    return (
+      await api.post<Array<Record<string, unknown>>>(
+        `/v1/audit-engagements/${engagementId}/baseline/t0`,
+      )
+    ).data;
+  },
+  async runTemporalAnalysis(engagementId: string, months = 60) {
+    return (
+      await api.post<{ observations: number }>(
+        `/v1/audit-engagements/${engagementId}/temporal-analysis`,
+        null,
+        { params: { months } },
+      )
+    ).data;
+  },
+  async getSatelliteTimeline(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        block_count: number;
+        t0_baselines_found: number;
+        audit_mode: boolean;
+        blocks: Array<Record<string, unknown>>;
+      }>(`/v1/audit-engagements/${engagementId}/satellite-timeline`)
+    ).data;
+  },
+  async markAnalysisReady(engagementId: string) {
+    return (
+      await api.post<AuditEngagementDetail>(
+        `/v1/audit-engagements/${engagementId}/analysis-ready`,
+      )
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =
