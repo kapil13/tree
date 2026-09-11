@@ -43,7 +43,10 @@ export function AuditSatellitePanel({
   const { data: timeline, isLoading } = useQuery({
     queryKey: ["audit-satellite-timeline", engagementId],
     queryFn: () => auditEngagements.getSatelliteTimeline(engagementId),
-    enabled: engagementStatus !== "draft",
+    enabled:
+      engagementStatus === "intake_complete" ||
+      engagementStatus === "analysis_ready" ||
+      engagementStatus === "confidence_mapped",
   });
 
   const invalidate = () => {
@@ -81,7 +84,8 @@ export function AuditSatellitePanel({
   }
 
   const blocks = (timeline?.blocks ?? []) as TimelineBlock[];
-  const isReady = engagementStatus === "analysis_ready";
+  const isReady =
+    engagementStatus === "analysis_ready" || engagementStatus === "confidence_mapped";
 
   return (
     <section className="space-y-6">

@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.schemas.audit_confidence import ConfidenceComputeOut, ConfidenceMapOut
 from app.schemas.audit_engagement import (
     AuditEngagementDetailOut,
     AuditEngagementOut,
@@ -730,3 +731,62 @@ async def mark_engagement_analysis_ready(
     await db.commit()
     raw = await engagement_detail(db, row, project)
     return _serialize_detail(raw)
+
+
+@router.post("/{engagement_id}/confidence-map/compute", response_model=ConfidenceComputeOut)
+async def compute_confidence_map(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> ConfidenceComputeOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_confidence.compute import compute_confidence_map
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        assessments = await compute_confidence_map(db, row)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    grade_counts: dict[str, int] = {}
+    for a in assessments:
+        grade_counts[a.confidence_grade] = grade_counts.get(a.confidence_grade, 0) + 1
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.confidence.compute",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"computed": len(assessments), "grade_counts": grade_counts},
+    )
+    await db.commit()
+    return ConfidenceComputeOut(computed=len(assessments), grade_counts=grade_counts)
+
+
+@router.get("/{engagement_id}/confidence-map", response_model=ConfidenceMapOut)
+async def get_confidence_map(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> ConfidenceMapOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_confidence.compute import confidence_map_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await confidence_map_summary(db, row.id)
+    return ConfidenceMapOut.model_validate(summary)

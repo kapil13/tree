@@ -534,6 +534,18 @@
     "date": "Date",
     "epistemicNote": "All values are OBSERVATION (measured) — not verified plantation claims."
   },
+  "auditConfidence": {
+    "title": "Plantation confidence map",
+    "subtitle": "Fuse plausibility, GIS, T0 baseline, and temporal NDVI into per-block confidence grades.",
+    "epistemicNote": "Grades are ESTIMATION — 🟢 plausible, 🟡 uncertain, 🔴 inconsistent, ⚪ no data. Never verified or fraud.",
+    "analysisRequired": "Complete satellite analysis (mark analysis ready) before computing the confidence map.",
+    "loading": "Loading confidence map…",
+    "statusMapped": "Confidence mapped",
+    "compute": "Compute confidence map",
+    "noBlocks": "No assessments yet — compute the confidence map.",
+    "score": "Score {score}/100",
+    "gridPreview": "Zone preview (3×3)"
+  },
   "projectCompliance": {
     "sectionsAria": "Compliance sections",
     "sectionOverview": "Readiness overview",
