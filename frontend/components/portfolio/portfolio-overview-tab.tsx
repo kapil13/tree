@@ -118,7 +118,7 @@ export function PortfolioOverviewTab({
             label={t("kpi.auditPlotsDue")}
             value={String(auditPortfolio?.audit_plots_due ?? 0)}
             warn={(auditPortfolio?.audit_plots_due ?? 0) > 0}
-            href={fieldOpsHref()}
+            href={fieldOpsHref({ section: "audit" })}
           />
         ) : null}
       </PortfolioKpiGrid>

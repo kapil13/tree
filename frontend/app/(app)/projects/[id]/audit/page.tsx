@@ -1,17 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AuditIntakePanel } from "@/components/audit/audit-intake-panel";
+import { AuditWorkspace } from "@/components/audit/audit-workspace";
 import { ProjectWorkspaceShell } from "@/components/projects/project-workspace-shell";
 import { useProjectWorkspace } from "@/lib/use-project-workspace";
 import { isMonitoringOnlyProject } from "@/lib/project-monitoring";
-import Link from "next/link";
 import { projectOverviewHref } from "@/lib/project-focused-ui";
+import { satelliteHref } from "@/lib/satellite-links";
 
-export default function ProjectAuditIntakePage() {
+export default function ProjectAuditPage() {
   const params = useParams();
   const projectId = params.id as string;
-  const { project, registerHref, setupStatus, isLoading } = useProjectWorkspace(projectId);
+  const { project, workAreas, registerHref, setupStatus, isLoading } = useProjectWorkspace(projectId);
 
   if (isLoading || !project) {
     return <p className="text-sm text-stone-500">Loading…</p>;
@@ -21,7 +22,7 @@ export default function ProjectAuditIntakePage() {
     return (
       <div className="card space-y-2">
         <p className="text-sm text-stone-600">
-          Audit intake is available for Estate &amp; Forest Watch projects only.
+          Audit is available for Estate &amp; Forest Watch projects only.
         </p>
         <Link href={projectOverviewHref(projectId)} className="text-sm text-forest-700 underline">
           Back to project overview
@@ -31,6 +32,10 @@ export default function ProjectAuditIntakePage() {
   }
 
   const openViolations = project.summary?.open_violations ?? 0;
+  const satHref = satelliteHref({
+    fenceId: workAreas[0]?.id,
+    projectId,
+  });
 
   return (
     <ProjectWorkspaceShell
@@ -41,10 +46,11 @@ export default function ProjectAuditIntakePage() {
       registerBlockReason={setupStatus?.blockReason}
       monitoringMode={true}
       satelliteWatchEnabled={setupStatus?.satelliteWatchEnabled ?? true}
-      activeSection="overview"
+      primaryWorkAreaId={workAreas[0]?.id}
+      activeSection="audit"
       openViolations={openViolations}
     >
-      <AuditIntakePanel projectId={projectId} />
+      <AuditWorkspace projectId={projectId} satelliteHref={satHref} />
     </ProjectWorkspaceShell>
   );
 }

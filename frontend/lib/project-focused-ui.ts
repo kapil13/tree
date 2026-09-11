@@ -8,7 +8,7 @@ export const PROJECT_SECONDARY_TABS = [
 
 export type ProjectSecondaryTab = (typeof PROJECT_SECONDARY_TABS)[number];
 
-export type ProjectWorkspaceSection = "overview" | ProjectSecondaryTab;
+export type ProjectWorkspaceSection = "overview" | "audit" | ProjectSecondaryTab;
 
 export function parseProjectSecondaryTab(
   value: string | null,
@@ -27,6 +27,10 @@ export function parseProjectSecondarySegment(
 
 export function projectOverviewHref(projectId: string): string {
   return `/projects/${projectId}`;
+}
+
+export function projectAuditHref(projectId: string): string {
+  return `/projects/${projectId}/audit`;
 }
 
 export function projectSetupHref(projectId: string, step?: 1 | 2 | 3 | 4): string {
@@ -98,14 +102,25 @@ export const PROJECT_WORKSPACE_NAV: Array<{
 const MONITORING_CREDITS_LABEL = "Reports & sampling";
 const MONITORING_CREDITS_SHORT = "Reports";
 
+const AUDIT_NAV_ITEM = {
+  id: "audit" as const,
+  label: "Audit",
+  shortLabel: "Audit",
+};
+
 /** Project sub-nav tuned for estate monitoring vs planting programmes. */
-export function getProjectWorkspaceNav(monitoringMode = false): typeof PROJECT_WORKSPACE_NAV {
-  if (!monitoringMode) return PROJECT_WORKSPACE_NAV;
-  return PROJECT_WORKSPACE_NAV.map((item) =>
-    item.id === "credits"
-      ? { ...item, label: MONITORING_CREDITS_LABEL, shortLabel: MONITORING_CREDITS_SHORT }
-      : item,
-  );
+export function getProjectWorkspaceNav(
+  monitoringMode = false,
+): Array<{ id: ProjectWorkspaceSection; label: string; shortLabel: string }> {
+  const base = monitoringMode
+    ? PROJECT_WORKSPACE_NAV.map((item) =>
+        item.id === "credits"
+          ? { ...item, label: MONITORING_CREDITS_LABEL, shortLabel: MONITORING_CREDITS_SHORT }
+          : item,
+      )
+    : [...PROJECT_WORKSPACE_NAV];
+  if (!monitoringMode) return base;
+  return [base[0], AUDIT_NAV_ITEM, ...base.slice(1)];
 }
 
 /** Marker string embedded in the focused layout for deploy verification. */

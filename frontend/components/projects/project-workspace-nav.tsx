@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   ClipboardCheck,
+  ClipboardSignature,
   Coins,
   LayoutDashboard,
   Settings2,
@@ -13,6 +14,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import {
   getProjectWorkspaceNav,
+  projectAuditHref,
   projectOverviewHref,
   projectSecondaryHref,
   type ProjectSecondaryTab,
@@ -21,22 +23,25 @@ import {
 
 const SECTION_ICONS: Record<ProjectWorkspaceSection, LucideIcon> = {
   overview: LayoutDashboard,
+  audit: ClipboardSignature,
   compliance: ClipboardCheck,
   credits: Coins,
   team: Users,
   settings: Settings2,
 };
 
-const NAV_LABEL_KEYS: Record<ProjectWorkspaceSection, string> = {
+const NAV_LABEL_KEYS: Partial<Record<ProjectWorkspaceSection, string>> = {
   overview: "navOverview",
+  audit: "navAudit",
   compliance: "navCompliance",
   credits: "navCredits",
   team: "navTeam",
   settings: "navSettings",
 };
 
-const NAV_SHORT_LABEL_KEYS: Record<ProjectWorkspaceSection, string> = {
+const NAV_SHORT_LABEL_KEYS: Partial<Record<ProjectWorkspaceSection, string>> = {
   overview: "navOverviewShort",
+  audit: "navAuditShort",
   compliance: "navComplianceShort",
   credits: "navCreditsShort",
   team: "navTeamShort",
@@ -72,15 +77,19 @@ export function ProjectWorkspaceNav({
           const href =
             item.id === "overview"
               ? projectOverviewHref(projectId)
-              : projectSecondaryHref(projectId, item.id as ProjectSecondaryTab);
+              : item.id === "audit"
+                ? projectAuditHref(projectId)
+                : projectSecondaryHref(projectId, item.id as ProjectSecondaryTab);
           const Icon = SECTION_ICONS[item.id];
           const showViolationBadge = item.id === "compliance" && openViolations > 0;
           const labelKey =
-            item.id === "credits" && monitoringMode ? "navCreditsMonitoring" : NAV_LABEL_KEYS[item.id];
+            item.id === "credits" && monitoringMode
+              ? "navCreditsMonitoring"
+              : NAV_LABEL_KEYS[item.id] ?? "navOverview";
           const shortLabelKey =
             item.id === "credits" && monitoringMode
               ? "navCreditsMonitoringShort"
-              : NAV_SHORT_LABEL_KEYS[item.id];
+              : NAV_SHORT_LABEL_KEYS[item.id] ?? "navOverviewShort";
 
           return (
             <Link

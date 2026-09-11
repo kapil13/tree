@@ -41,20 +41,43 @@ function statusIndex(status: string): number {
   return idx >= 0 ? idx : 0;
 }
 
-export function AuditPhaseRoadmap({ status }: { status: string }) {
+export function AuditPhaseRoadmap({
+  status,
+  activePhase,
+  onSelectPhase,
+}: {
+  status: string;
+  activePhase?: string;
+  onSelectPhase?: (phase: string) => void;
+}) {
   const t = useTranslations("auditRoadmap");
   const currentIdx = statusIndex(status);
 
+  const phaseToStep: Record<string, string> = {
+    intake: "satellite",
+    satellite: "satellite",
+    confidence: "confidence",
+    risk: "risk",
+    sampling: "field",
+    reconciliation: "field",
+    export: "export",
+    attestation: "attestation",
+  };
+
   return (
-    <section className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-900/40">
+    <section className="dash-panel">
       <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{t("title")}</h2>
       <p className="mt-1 text-xs text-stone-500">{t("subtitle")}</p>
       <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {STEP_IDS.map((stepId) => {
           const unlockIdx = statusIndex(STEP_UNLOCK_STATUS[stepId]);
           const done = currentIdx > unlockIdx || status === "attested";
-          const active = currentIdx === unlockIdx && status !== "attested";
+          const active =
+            activePhase && phaseToStep[activePhase] === stepId
+              ? true
+              : currentIdx === unlockIdx && status !== "attested";
           const locked = currentIdx < unlockIdx;
+          const clickable = Boolean(onSelectPhase);
 
           return (
             <li
@@ -64,7 +87,43 @@ export function AuditPhaseRoadmap({ status }: { status: string }) {
                 done && "border-emerald-200 bg-emerald-50/80 text-emerald-900",
                 active && "border-forest-300 bg-white ring-1 ring-forest-200 dark:bg-stone-950",
                 locked && "border-stone-200 bg-white/60 text-stone-500 dark:bg-stone-950/40",
+                clickable && "cursor-pointer hover:border-forest-200",
               )}
+              onClick={
+                clickable
+                  ? () => {
+                      const phaseMap: Record<string, string> = {
+                        satellite: "satellite",
+                        confidence: "confidence",
+                        risk: "risk",
+                        field: "sampling",
+                        export: "export",
+                        attestation: "attestation",
+                      };
+                      onSelectPhase?.(phaseMap[stepId] ?? stepId);
+                    }
+                  : undefined
+              }
+              onKeyDown={
+                clickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        const phaseMap: Record<string, string> = {
+                          satellite: "satellite",
+                          confidence: "confidence",
+                          risk: "risk",
+                          field: "sampling",
+                          export: "export",
+                          attestation: "attestation",
+                        };
+                        onSelectPhase?.(phaseMap[stepId] ?? stepId);
+                      }
+                    }
+                  : undefined
+              }
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
             >
               {done ? (
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
