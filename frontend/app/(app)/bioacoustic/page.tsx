@@ -1,7 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Bird, Mic, ShieldCheck, Square } from "lucide-react";
+import { AlertTriangle, Bird, Download, Mic, ShieldCheck, Square } from "lucide-react";
+import { BiodiversityInterpretationChain } from "@/components/bioacoustic/biodiversity-interpretation-chain";
+import { BiodiversityMap } from "@/components/bioacoustic/biodiversity-map";
+import { BiodiversityReviewQueue } from "@/components/bioacoustic/biodiversity-review-queue";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -87,6 +90,10 @@ export default function BioacousticPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fenceId, setFenceId] = useState<string>("");
+  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [periodA, setPeriodA] = useState<string>("");
+  const [periodB, setPeriodB] = useState<string>("");
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -127,6 +134,40 @@ export default function BioacousticPage() {
   const { data: summary } = useQuery({
     queryKey: ["bio-summary", fenceId],
     queryFn: () => bioacoustic.summary(fenceId || undefined),
+  });
+
+  const { data: reviewQueue } = useQuery({
+    queryKey: ["bio-review-queue", fenceId],
+    queryFn: () => bioacoustic.reviewQueue(fenceId || undefined),
+  });
+
+  const { data: mapLayer } = useQuery({
+    queryKey: ["bio-map-layer", fenceId],
+    queryFn: () => bioacoustic.mapLayer(fenceId || undefined),
+  });
+
+  const { data: hotspots } = useQuery({
+    queryKey: ["bio-hotspots", fenceId],
+    queryFn: () => bioacoustic.hotspots(fenceId),
+    enabled: Boolean(fenceId),
+  });
+
+  const { data: monitoringPeriods } = useQuery({
+    queryKey: ["bio-monitoring-periods", fenceId],
+    queryFn: () => bioacoustic.monitoringPeriods(fenceId),
+    enabled: Boolean(fenceId),
+  });
+
+  const { data: periodComparison } = useQuery({
+    queryKey: ["bio-period-compare", periodA, periodB],
+    queryFn: () => bioacoustic.comparePeriods(periodA, periodB),
+    enabled: Boolean(periodA && periodB),
+  });
+
+  const { data: interpretationChain } = useQuery({
+    queryKey: ["bio-interpretation-chain", selectedRecordingId],
+    queryFn: () => bioacoustic.interpretationChain(selectedRecordingId!),
+    enabled: Boolean(selectedRecordingId),
   });
 
   const bioStatus = bioacousticOperationalStatus(to, {
@@ -260,6 +301,32 @@ export default function BioacousticPage() {
       setError(errorMessage(e));
     }
   }, [fenceId, qc, stopRecording, stopSplMonitor]);
+
+  async function loadAudio(recordingId: string) {
+    try {
+      const data = await bioacoustic.audioUrl(recordingId);
+      setAudioUrl(data.url);
+      setSelectedRecordingId(recordingId);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
+
+  async function downloadAuditBundle() {
+    if (!fenceId) return;
+    try {
+      const bundle = await bioacoustic.auditBundle(fenceId);
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bioacoustic-audit-bundle-${fenceId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
 
   async function downloadReport(kind: "biodiversity" | "esg") {
     if (!fenceId) {
@@ -433,6 +500,93 @@ export default function BioacousticPage() {
           {ecosystem.interpretation}
         </p>
       ) : null}
+      {ecosystem?.ndvi_disclaimer ? (
+        <p className="text-xs text-stone-500">{ecosystem.ndvi_disclaimer}</p>
+      ) : null}
+
+      <CommandCenterEvidence
+        title="Expert review queue"
+        description="Confirm or reject detections flagged for human verification before export"
+      >
+        <BiodiversityReviewQueue items={reviewQueue ?? []} />
+      </CommandCenterEvidence>
+
+      <CommandCenterEvidence
+        title="Biodiversity map"
+        description="Recording points styled by detection tier; site boundaries when linked"
+      >
+        <BiodiversityMap layer={mapLayer} />
+      </CommandCenterEvidence>
+
+      {fenceId && hotspots && hotspots.length > 0 ? (
+        <CommandCenterEvidence
+          title="Evidence hotspots"
+          description="Species with repeated independent acoustic evidence (not single-score rankings)"
+        >
+          <ul className="space-y-1 text-sm">
+            {hotspots.slice(0, 10).map((h) => (
+              <li key={`${h.scientific_name}-${h.latitude}`} className="flex justify-between gap-2">
+                <span className="italic">{h.scientific_name}</span>
+                <span className="text-stone-500">{h.recording_count} recordings</span>
+              </li>
+            ))}
+          </ul>
+        </CommandCenterEvidence>
+      ) : null}
+
+      {fenceId && monitoringPeriods && monitoringPeriods.length >= 2 ? (
+        <CommandCenterEvidence
+          title="Monitoring period comparison"
+          description="Same-site temporal comparison with season and duration compatibility checks"
+        >
+          <div className="mb-3 flex flex-wrap gap-2">
+            <select className="input text-sm" value={periodA} onChange={(e) => setPeriodA(e.target.value)}>
+              <option value="">Period A</option>
+              {monitoringPeriods.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            <select className="input text-sm" value={periodB} onChange={(e) => setPeriodB(e.target.value)}>
+              <option value="">Period B</option>
+              {monitoringPeriods.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+            {fenceId && (
+              <button type="button" className="btn-secondary text-sm" onClick={() => void downloadAuditBundle()}>
+                <Download className="mr-1 inline h-3.5 w-3.5" />
+                Audit bundle
+              </button>
+            )}
+          </div>
+          {periodComparison ? (
+            <div className="text-sm text-stone-700">
+              <p>
+                Comparable: {periodComparison.comparable ? "yes" : "no"} · Confidence Δ{" "}
+                {periodComparison.confidence_delta}
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                Gained: {periodComparison.species_gained.length} · Lost: {periodComparison.species_lost.length} ·
+                Retained: {periodComparison.species_retained.length}
+              </p>
+            </div>
+          ) : null}
+        </CommandCenterEvidence>
+      ) : null}
+
+      {selectedRecordingId && interpretationChain ? (
+        <CommandCenterEvidence
+          title="Detection → Evidence → Indicator → Interpretation"
+          description="Audit chain for selected recording"
+        >
+          {audioUrl ? (
+            <audio controls src={audioUrl} className="mb-3 w-full max-w-md" preload="metadata">
+              Recording playback
+            </audio>
+          ) : null}
+          <BiodiversityInterpretationChain chain={interpretationChain} />
+        </CommandCenterEvidence>
+      ) : null}
 
       <CommandCenterEvidence
         title="Regional fauna & diversity indices"
@@ -492,14 +646,23 @@ export default function BioacousticPage() {
                     </div>
                   </div>
                   {r.status === "analyzed" && (
-                    <button
-                      type="button"
-                      className="btn-secondary text-sm"
-                      disabled={analyzeMut.isPending}
-                      onClick={() => analyzeMut.mutate({ id: r.id, force: true })}
-                    >
-                      Re-assess
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="btn-secondary text-sm"
+                        disabled={analyzeMut.isPending}
+                        onClick={() => analyzeMut.mutate({ id: r.id, force: true })}
+                      >
+                        Re-assess
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary text-sm"
+                        onClick={() => void loadAudio(r.id)}
+                      >
+                        Chain & audio
+                      </button>
+                    </div>
                   )}
                   {r.status !== "analyzed" && r.status !== "failed" && (
                     <button
