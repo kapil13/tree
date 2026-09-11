@@ -55,7 +55,8 @@ export function AuditConfidencePanel({
       engagementStatus === "confidence_mapped" ||
       engagementStatus === "risk_assessed" ||
       engagementStatus === "sampling_planned" ||
-      engagementStatus === "field_verified",
+      engagementStatus === "field_verified" ||
+      engagementStatus === "export_ready",
   });
 
   const compute = useMutation({
@@ -70,7 +71,8 @@ export function AuditConfidencePanel({
     engagementStatus !== "confidence_mapped" &&
     engagementStatus !== "risk_assessed" &&
     engagementStatus !== "sampling_planned" &&
-    engagementStatus !== "field_verified"
+    engagementStatus !== "field_verified" &&
+    engagementStatus !== "export_ready"
   ) {
     return (
       <section className="card text-sm text-stone-500">{t("analysisRequired")}</section>

@@ -3638,6 +3638,31 @@ export const auditEngagements = {
       )
     ).data;
   },
+  async getExportReadiness(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        status: string;
+        block_count: number;
+        ready: boolean;
+        exportable: boolean;
+        sections: Array<{
+          id: string;
+          label: string;
+          met: boolean;
+          detail?: string | null;
+        }>;
+        last_export_sha256?: string | null;
+        exported_at?: string | null;
+      }>(`/v1/audit-engagements/${engagementId}/export/readiness`)
+    ).data;
+  },
+  async downloadExportBundle(engagementId: string) {
+    const response = await api.get(`/v1/audit-engagements/${engagementId}/export`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  },
 };
 
 export type FrameworkProfileCode =

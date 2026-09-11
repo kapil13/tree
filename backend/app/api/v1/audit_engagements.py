@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile, status
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.schemas.audit_confidence import ConfidenceComputeOut, ConfidenceMapOut
@@ -24,6 +24,7 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
+from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_sampling import (
     FieldVerificationCompleteOut,
@@ -1041,3 +1042,102 @@ async def complete_engagement_field_verification(
     )
     await db.commit()
     return FieldVerificationCompleteOut.model_validate(result)
+
+
+@router.get("/{engagement_id}/export/readiness", response_model=ExportReadinessOut)
+async def get_export_readiness(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> ExportReadinessOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.readiness import export_readiness
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await export_readiness(db, row)
+    return ExportReadinessOut.model_validate(summary)
+
+
+@router.get("/{engagement_id}/export")
+async def download_audit_export(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> Response:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.bundle import build_audit_engagement_bundle
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        zip_bytes, summary, signature = await build_audit_engagement_bundle(db, row, project)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    safe_code = project.code.replace("/", "-")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.export.generate",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={**summary, "signature_key_id": signature.key_id if signature else None},
+    )
+    await db.commit()
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{safe_code}-estate-watch-audit.zip"',
+    }
+    if signature is not None:
+        headers["X-BYOT-Evidence-SHA256"] = signature.zip_sha256
+        headers["X-BYOT-Evidence-Signature"] = signature.signature_b64
+        headers["X-BYOT-Evidence-Key-Id"] = signature.key_id
+
+    return Response(content=zip_bytes, media_type="application/zip", headers=headers)
+
+
+@router.get("/{engagement_id}/export/summary", response_model=ExportSummaryOut)
+async def get_audit_export_summary(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> ExportSummaryOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    meta = row.metadata_ or {}
+    sha = meta.get("export_bundle_sha256")
+    if not sha:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_generated")
+
+    return ExportSummaryOut(
+        engagement_id=str(row.id),
+        project_id=str(project.id),
+        project_code=project.code,
+        file_count=0,
+        bundle_sha256=sha,
+        zip_size_bytes=0,
+        signed=True,
+        signature_key_id=None,
+        status=row.status,
+    )
