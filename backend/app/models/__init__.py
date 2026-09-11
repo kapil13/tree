@@ -13,6 +13,7 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
+from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
 from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
@@ -103,6 +104,9 @@ __all__ = [
     "AuditConfidenceAssessment",
     "AuditAnomalyEvent",
     "AuditRiskAssessment",
+    "AuditSamplingPlan",
+    "AuditFieldPlot",
+    "AuditFieldVisit",
     "CarbonCalculation",
     "CitizenProfile",
     "ComplianceChecklistOverride",

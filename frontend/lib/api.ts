@@ -3597,6 +3597,47 @@ export const auditEngagements = {
       }>(`/v1/audit-engagements/${engagementId}/auditor-queue`)
     ).data;
   },
+  async generateSamplingPlan(engagementId: string, params?: Record<string, number>) {
+    return (
+      await api.post<{
+        total_plots: number;
+        status: string;
+        stratification: string;
+      }>(`/v1/audit-engagements/${engagementId}/sampling-plan/generate`, params ?? {})
+    ).data;
+  },
+  async getSamplingPlan(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        has_plan: boolean;
+        plan: Record<string, unknown> | null;
+        plots: Array<Record<string, unknown>>;
+        visit_stats: { total: number; visited: number; planned: number };
+      }>(`/v1/audit-engagements/${engagementId}/sampling-plan`)
+    ).data;
+  },
+  async recordFieldVisit(
+    engagementId: string,
+    plotId: string,
+    payload: Record<string, unknown>,
+  ) {
+    return (
+      await api.post<{
+        id: string;
+        plot_id: string;
+        verification_outcome: string;
+        visited_at: string;
+      }>(`/v1/audit-engagements/${engagementId}/field-plots/${plotId}/visits`, payload)
+    ).data;
+  },
+  async completeFieldVerification(engagementId: string) {
+    return (
+      await api.post<{ plots_visited: number; status: string }>(
+        `/v1/audit-engagements/${engagementId}/field-verification/complete`,
+      )
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =

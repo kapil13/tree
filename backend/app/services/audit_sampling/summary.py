@@ -1,0 +1,141 @@
+"""Sampling plan and field visit summaries."""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit_engagement import BoundaryVersion
+from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
+
+
+async def _plot_center_dict(db: AsyncSession, plot: AuditFieldPlot) -> dict[str, float]:
+    row = (
+        await db.execute(
+            select(
+                func.ST_X(AuditFieldPlot.center).label("lon"),
+                func.ST_Y(AuditFieldPlot.center).label("lat"),
+            ).where(AuditFieldPlot.id == plot.id)
+        )
+    ).one_or_none()
+    if row is None:
+        return {"lon": 0.0, "lat": 0.0}
+    return {"lon": float(row.lon), "lat": float(row.lat)}
+
+
+async def sampling_plan_summary(db: AsyncSession, engagement_id: uuid.UUID) -> dict[str, Any]:
+    plan = (
+        await db.execute(
+            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement_id)
+        )
+    ).scalar_one_or_none()
+
+    boundaries = (
+        (
+            await db.execute(
+                select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    name_map = {b.id: b.name for b in boundaries}
+
+    if plan is None:
+        return {
+            "engagement_id": str(engagement_id),
+            "has_plan": False,
+            "plan": None,
+            "plots": [],
+            "visit_stats": {"total": 0, "visited": 0, "planned": 0},
+        }
+
+    plots = (
+        (
+            await db.execute(
+                select(AuditFieldPlot)
+                .where(AuditFieldPlot.plan_id == plan.id)
+                .order_by(AuditFieldPlot.priority_rank.asc(), AuditFieldPlot.plot_code.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    plot_ids = [p.id for p in plots]
+    visits_by_plot: dict[uuid.UUID, list[AuditFieldVisit]] = {}
+    if plot_ids:
+        visits = (
+            (
+                await db.execute(
+                    select(AuditFieldVisit)
+                    .where(AuditFieldVisit.plot_id.in_(plot_ids))
+                    .order_by(AuditFieldVisit.visited_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for v in visits:
+            visits_by_plot.setdefault(v.plot_id, []).append(v)
+
+    plot_rows: list[dict[str, Any]] = []
+    visited_count = 0
+    for plot in plots:
+        if plot.status == "visited":
+            visited_count += 1
+        center = await _plot_center_dict(db, plot)
+        latest = visits_by_plot.get(plot.id, [None])[0]
+        plot_rows.append(
+            {
+                "id": str(plot.id),
+                "plot_code": plot.plot_code,
+                "boundary_version_id": str(plot.boundary_version_id),
+                "boundary_name": name_map.get(plot.boundary_version_id),
+                "risk_level": plot.risk_level,
+                "priority_rank": plot.priority_rank,
+                "status": plot.status,
+                "center": {"type": "Point", "coordinates": [center["lon"], center["lat"]]},
+                "latest_visit": (
+                    {
+                        "id": str(latest.id),
+                        "verification_outcome": latest.verification_outcome,
+                        "trees_observed": latest.trees_observed,
+                        "trees_alive": latest.trees_alive,
+                        "canopy_cover_pct": float(latest.canopy_cover_pct)
+                        if latest.canopy_cover_pct is not None
+                        else None,
+                        "visited_at": latest.visited_at.isoformat(),
+                        "notes": latest.notes,
+                    }
+                    if latest
+                    else None
+                ),
+            }
+        )
+
+    return {
+        "engagement_id": str(engagement_id),
+        "has_plan": True,
+        "plan": {
+            "id": str(plan.id),
+            "stratification": plan.stratification,
+            "plots_per_critical": plan.plots_per_critical,
+            "plots_per_high": plan.plots_per_high,
+            "plots_per_medium": plan.plots_per_medium,
+            "plots_per_low": plan.plots_per_low,
+            "total_plots": plan.total_plots,
+            "status": plan.status,
+            "epistemic_label": plan.epistemic_label,
+            "planned_at": plan.planned_at.isoformat() if plan.planned_at else None,
+        },
+        "plots": plot_rows,
+        "visit_stats": {
+            "total": len(plots),
+            "visited": visited_count,
+            "planned": len(plots) - visited_count,
+        },
+    }
