@@ -18,6 +18,7 @@ from app.models.audit_engagement import (
 )
 from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.services.audit_confidence.field_signals import field_signals_by_boundary
 from app.services.audit_confidence.fusion import fuse_block_confidence
 from app.services.satellite.sar_service import is_sar_provider_record
 
@@ -71,12 +72,25 @@ async def _sar_integrity_score(
     return None
 
 
+_INITIAL_STATUSES = {"analysis_ready", "confidence_mapped"}
+_FIELD_REFRESH_STATUSES = {
+    "confidence_mapped",
+    "risk_assessed",
+    "sampling_planned",
+    "field_verified",
+    "export_ready",
+}
+
+
 async def compute_confidence_map(
     db: AsyncSession,
     engagement: AuditEngagement,
+    *,
+    include_field_signals: bool = False,
 ) -> list[AuditConfidenceAssessment]:
-    if engagement.status not in {"analysis_ready", "confidence_mapped"}:
-        raise ValueError("analysis_not_ready")
+    allowed = _FIELD_REFRESH_STATUSES if include_field_signals else _INITIAL_STATUSES
+    if engagement.status not in allowed:
+        raise ValueError("analysis_not_ready" if not include_field_signals else "field_refresh_not_allowed")
 
     boundaries = (
         await db.execute(
@@ -118,6 +132,9 @@ async def compute_confidence_map(
 
     gis_run = await _latest_gis_run(db, engagement.id)
     gis_status = gis_run.status if gis_run else None
+    field_by_boundary = (
+        await field_signals_by_boundary(db, engagement.id) if include_field_signals else {}
+    )
 
     results: list[AuditConfidenceAssessment] = []
     for bv in boundaries:
@@ -125,6 +142,7 @@ async def compute_confidence_map(
         baseline = baseline_map.get(bv.id)
         current = current_map.get(bv.id)
         sar_score = await _sar_integrity_score(db, bv.fence_id)
+        field_ctx = field_by_boundary.get(bv.id, {})
 
         fused = fuse_block_confidence(
             block_name=bv.name,
@@ -137,6 +155,9 @@ async def compute_confidence_map(
             current_ndvi=float(current.ndvi_mean) if current and current.ndvi_mean else None,
             change_vs_t0=float(current.change_vs_t0) if current and current.change_vs_t0 else None,
             sar_integrity_score=sar_score,
+            field_visit_count=int(field_ctx.get("visit_count") or 0),
+            field_grade=field_ctx.get("field_grade"),
+            field_signal=field_ctx.get("field_signal"),
         )
 
         existing = (
@@ -168,9 +189,12 @@ async def compute_confidence_map(
         row.computed_at = datetime.now(UTC)
         results.append(row)
 
-    engagement.status = "confidence_mapped"
     meta = dict(engagement.metadata_ or {})
-    meta["confidence_mapped_at"] = datetime.now(UTC).isoformat()
+    if include_field_signals:
+        meta["confidence_refreshed_with_field_at"] = datetime.now(UTC).isoformat()
+    else:
+        engagement.status = "confidence_mapped"
+        meta["confidence_mapped_at"] = datetime.now(UTC).isoformat()
     engagement.metadata_ = meta
     await db.flush()
     return results

@@ -787,6 +787,7 @@ async def compute_confidence_map(
     request: Request,
     user: WriteAccess,
     db: DB,
+    include_field_signals: bool = False,
 ) -> ConfidenceComputeOut:
     from app.models.audit_engagement import AuditEngagement
     from app.services.audit_confidence.compute import compute_confidence_map
@@ -799,7 +800,9 @@ async def compute_confidence_map(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
     try:
-        assessments = await compute_confidence_map(db, row)
+        assessments = await compute_confidence_map(
+            db, row, include_field_signals=include_field_signals
+        )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
@@ -810,11 +813,19 @@ async def compute_confidence_map(
     await record_audit(
         db,
         actor=user,
-        action="audit_engagement.confidence.compute",
+        action=(
+            "audit_engagement.confidence.refresh_field"
+            if include_field_signals
+            else "audit_engagement.confidence.compute"
+        ),
         resource_type="audit_engagement",
         resource_id=row.id,
         request=request,
-        diff={"computed": len(assessments), "grade_counts": grade_counts},
+        diff={
+            "computed": len(assessments),
+            "grade_counts": grade_counts,
+            "include_field_signals": include_field_signals,
+        },
     )
     await db.commit()
     return ConfidenceComputeOut(computed=len(assessments), grade_counts=grade_counts)

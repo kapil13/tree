@@ -69,6 +69,9 @@ def fuse_block_confidence(
     current_ndvi: float | None,
     change_vs_t0: float | None,
     sar_integrity_score: float | None,
+    field_visit_count: int = 0,
+    field_grade: str | None = None,
+    field_signal: str | None = None,
 ) -> dict[str, Any]:
     """Fuse signals into confidence score, grade, summary, and grid preview."""
     signals: dict[str, Any] = {
@@ -134,6 +137,20 @@ def fuse_block_confidence(
             notes.append("Low SAR integrity score")
         elif sar_integrity_score >= 70:
             score += 5
+
+    if field_visit_count > 0 and field_grade:
+        signals["field_visit_count"] = field_visit_count
+        signals["field_grade"] = field_grade
+        signals["field_signal"] = field_signal
+        if field_grade == GRADE_GREEN:
+            score += 12
+            notes.append(f"{field_visit_count} field visit(s) support claim")
+        elif field_grade == GRADE_RED:
+            score -= 25
+            notes.append(f"{field_visit_count} field visit(s) contradict claim")
+        elif field_grade == GRADE_AMBER:
+            score -= 6
+            notes.append("Mixed field verification signals")
 
     score = max(0, min(100, score))
     grade = _grade_from_score(score, has_data)

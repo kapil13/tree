@@ -103,6 +103,10 @@ async def test_build_bundle_contains_manifest():
             new=AsyncMock(return_value={}),
         ),
         patch(
+            "app.services.audit_export.bundle.build_confidence_field_reconciliation",
+            new=AsyncMock(return_value={"blocks": []}),
+        ),
+        patch(
             "app.services.audit_export.bundle.sign_evidence_zip",
             return_value=sig,
         ),

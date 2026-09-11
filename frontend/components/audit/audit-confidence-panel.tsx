@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Grid3x3, Map } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditConfidenceMap } from "@/components/audit/audit-confidence-map";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
+import { type AuditBoundary } from "@/lib/audit-field-visit";
 import { cn } from "@/lib/cn";
 
 const GRADE_STYLES: Record<string, string> = {
@@ -30,6 +32,7 @@ const GRADE_EMOJI: Record<string, string> = {
 
 type ConfidenceBlock = {
   id: string;
+  boundary_version_id?: string;
   boundary_name?: string | null;
   confidence_grade: string;
   confidence_score: number;
@@ -41,9 +44,11 @@ type ConfidenceBlock = {
 export function AuditConfidencePanel({
   engagementId,
   engagementStatus,
+  boundaries = [],
 }: {
   engagementId: string;
   engagementStatus: string;
+  boundaries?: AuditBoundary[];
 }) {
   const t = useTranslations("auditConfidence");
   const qc = useQueryClient();
@@ -63,12 +68,20 @@ export function AuditConfidencePanel({
   });
 
   const compute = useMutation({
-    mutationFn: () => auditEngagements.computeConfidenceMap(engagementId),
+    mutationFn: (includeFieldSignals: boolean = false) => {
+      return auditEngagements.computeConfidenceMap(engagementId, { includeFieldSignals });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["audit-confidence-map", engagementId] });
       qc.invalidateQueries({ queryKey: ["audit-engagement"] });
     },
   });
+
+  const canComputeInitial = engagementStatus === "analysis_ready";
+  const canRefreshWithField =
+    engagementStatus === "sampling_planned" ||
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready";
 
   const unlocked =
     engagementStatus === "analysis_ready" ||
@@ -109,15 +122,29 @@ export function AuditConfidencePanel({
         <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
       </header>
 
+      {boundaries.length > 0 && blocks.length > 0 && (
+        <AuditConfidenceMap boundaries={boundaries} blocks={blocks} />
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           className="btn-primary text-sm"
-          disabled={compute.isPending || engagementStatus !== "analysis_ready"}
-          onClick={() => compute.mutate()}
+          disabled={compute.isPending || !canComputeInitial}
+          onClick={() => compute.mutate(false)}
         >
           {t("compute")}
         </button>
+        {canRefreshWithField && (
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            disabled={compute.isPending}
+            onClick={() => compute.mutate(true)}
+          >
+            {t("refreshWithField")}
+          </button>
+        )}
         {compute.isError && (
           <p className="text-sm text-rose-700">{errorMessage(compute.error)}</p>
         )}

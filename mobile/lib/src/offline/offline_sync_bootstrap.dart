@@ -34,6 +34,7 @@ class _OfflineSyncBootstrapState extends ConsumerState<OfflineSyncBootstrap> {
     } else {
       ref.read(bioacousticSyncProvider).stopListening();
       ref.read(treeRegistrationSyncProvider).stopListening();
+      ref.read(auditVisitSyncProvider).stopListening();
     }
   }
 
@@ -50,6 +51,12 @@ class _OfflineSyncBootstrapState extends ConsumerState<OfflineSyncBootstrap> {
     final treeSync = ref.read(treeRegistrationSyncProvider);
     treeSync.startListening(() => ref.read(apiClientProvider.future));
     await treeSync.syncAll(() => ref.read(apiClientProvider.future));
+
+    final auditQueue = ref.read(auditVisitQueueProvider);
+    await auditQueue.init();
+    final auditSync = ref.read(auditVisitSyncProvider);
+    auditSync.startListening(() => ref.read(apiClientProvider.future));
+    await auditSync.syncAll(() => ref.read(apiClientProvider.future));
   }
 
   @override

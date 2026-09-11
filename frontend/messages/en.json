@@ -528,6 +528,9 @@
     "gateTitle": "Intake gate",
     "completeIntake": "Mark intake complete",
     "alreadyComplete": "Intake already complete",
+    "exclusionsTitle": "Plantability exclusions",
+    "exclusionsHint": "Draw roads, buildings, or water bodies that should be excluded from planting area calculations.",
+    "noExclusions": "No exclusions drawn yet.",
     "refresh": "Refresh"
   },
   "auditRoadmap": {
@@ -595,6 +598,7 @@
     "loading": "Loading confidence map…",
     "statusMapped": "Confidence mapped",
     "compute": "Compute confidence map",
+    "refreshWithField": "Refresh with field signals",
     "noBlocks": "No assessments yet — compute the confidence map.",
     "score": "Score {score}/100",
     "gridPreview": "Zone preview (3×3)"

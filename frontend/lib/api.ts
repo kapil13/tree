@@ -3501,6 +3501,33 @@ export const auditEngagements = {
   ) {
     return (await api.post(`/v1/audit-engagements/${engagementId}/documents`, payload)).data;
   },
+  async addBoundary(
+    engagementId: string,
+    payload: {
+      name: string;
+      boundary: { type: "Polygon"; coordinates: number[][][] };
+      area_ha_claimed?: number;
+      block_type?: string;
+      source?: string;
+    },
+  ) {
+    return (
+      await api.post<AuditEngagementDetail["boundaries"][number]>(
+        `/v1/audit-engagements/${engagementId}/boundaries`,
+        payload,
+      )
+    ).data;
+  },
+  async addExclusion(
+    engagementId: string,
+    payload: {
+      name: string;
+      exclusion_type: string;
+      boundary: { type: "Polygon"; coordinates: number[][][] };
+    },
+  ) {
+    return (await api.post(`/v1/audit-engagements/${engagementId}/exclusions`, payload)).data;
+  },
   async importKml(engagementId: string, file: File) {
     const form = new FormData();
     form.append("file", file);
@@ -3573,10 +3600,19 @@ export const auditEngagements = {
       )
     ).data;
   },
-  async computeConfidenceMap(engagementId: string) {
+  async computeConfidenceMap(
+    engagementId: string,
+    options?: { includeFieldSignals?: boolean },
+  ) {
     return (
       await api.post<{ computed: number; grade_counts: Record<string, number> }>(
         `/v1/audit-engagements/${engagementId}/confidence-map/compute`,
+        null,
+        {
+          params: {
+            include_field_signals: options?.includeFieldSignals ?? false,
+          },
+        },
       )
     ).data;
   },
