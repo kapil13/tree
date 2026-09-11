@@ -50,6 +50,68 @@ async def test_generate_requires_risk_assessed():
 
 
 @pytest.mark.asyncio
+async def test_generate_sampling_plan_places_plots_in_geography_boundary():
+    from datetime import UTC, datetime
+
+    from sqlalchemy import delete, select
+
+    from app.core.database import AsyncSessionLocal
+    from app.models.audit_engagement import AuditEngagement, BoundaryVersion
+    from app.models.audit_risk import AuditRiskAssessment
+    from app.models.audit_sampling import AuditSamplingPlan
+    from app.services.audit_sampling.plan import generate_sampling_plan
+
+    async with AsyncSessionLocal() as db:
+        engagement = (
+            await db.execute(
+                select(AuditEngagement).where(AuditEngagement.status == "intake_complete").limit(1)
+            )
+        ).scalar_one_or_none()
+        if engagement is None:
+            pytest.skip("no intake_complete engagement in database")
+
+        engagement.status = "risk_assessed"
+        boundary = (
+            await db.execute(
+                select(BoundaryVersion)
+                .where(BoundaryVersion.engagement_id == engagement.id)
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if boundary is None:
+            pytest.skip("engagement has no boundaries")
+
+        await db.execute(
+            delete(AuditRiskAssessment).where(
+                AuditRiskAssessment.engagement_id == engagement.id
+            )
+        )
+        await db.execute(
+            delete(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement.id)
+        )
+        db.add(
+            AuditRiskAssessment(
+                engagement_id=engagement.id,
+                boundary_version_id=boundary.id,
+                risk_score=80,
+                risk_level="high",
+                priority_rank=1,
+                anomaly_count=1,
+                recommended_action="Verify on ground",
+                epistemic_label="ESTIMATION",
+                assessed_at=datetime.now(UTC),
+            )
+        )
+        await db.flush()
+
+        plan = await generate_sampling_plan(db, engagement)
+        await db.rollback()
+
+        assert plan.total_plots > 0
+        assert engagement.status == "sampling_planned"
+
+
+@pytest.mark.asyncio
 async def test_record_visit_requires_sampling_planned():
     from types import SimpleNamespace
     from uuid import uuid4
