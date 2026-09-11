@@ -29,9 +29,13 @@ def derive_field_grade(
 
     if absent > 0 or unsupported > 0:
         return "red", "field_negative"
-    if present > 0 and sparse == 0 and unsupported == 0:
-        if supported > 0 or visit_count == present:
-            return "green", "field_positive"
+    if (
+        present > 0
+        and sparse == 0
+        and unsupported == 0
+        and (supported > 0 or visit_count == present)
+    ):
+        return "green", "field_positive"
     if sparse > 0 or (present > 0 and sparse > 0):
         return "amber", "field_mixed"
     return "amber", "field_mixed"
