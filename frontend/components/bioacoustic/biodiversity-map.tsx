@@ -3,18 +3,8 @@
 import { useMemo } from "react";
 import { APIProvider, Map, Marker, Polygon } from "@vis.gl/react-google-maps";
 import { geoJsonRingToPaths } from "@/lib/audit-field-visit";
+import type { BiodiversityMapLayer } from "@/lib/api";
 import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
-
-type GeoFeature = {
-  type: "Feature";
-  geometry: { type: string; coordinates: number[] | number[][][] };
-  properties: Record<string, unknown>;
-};
-
-export type BiodiversityMapLayer = {
-  type: "FeatureCollection";
-  features: GeoFeature[];
-};
 
 const TIER_COLORS: Record<string, string> = {
   accepted: "#15803d",

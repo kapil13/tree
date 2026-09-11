@@ -5,11 +5,19 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED, TIER_REVIEW_REQUIRED, apply_detection_tiers
+from app.services.bioacoustic.detection_tiers import (
+    TIER_ACCEPTED,
+    TIER_REVIEW_REQUIRED,
+    apply_detection_tiers,
+)
 from app.services.bioacoustic.enrichment import enrich_detection
 from app.services.bioacoustic.hotspots import compute_hotspots
 from app.services.bioacoustic.methodology import recording_export_blockers
-from app.services.bioacoustic.monitoring_periods import compare_monitoring_periods, duration_compatible, seasons_compatible
+from app.services.bioacoustic.monitoring_periods import (
+    compare_monitoring_periods,
+    duration_compatible,
+    seasons_compatible,
+)
 from app.services.bioacoustic.review import (
     DECISION_CONFIRMED,
     apply_reviews_to_detections,

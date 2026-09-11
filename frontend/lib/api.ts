@@ -3082,6 +3082,17 @@ export type AuditBundle = {
   bundle_hash: string;
 };
 
+export type BiodiversityMapFeature = {
+  type: "Feature";
+  geometry: { type: string; coordinates: number[] | number[][][] };
+  properties: Record<string, unknown>;
+};
+
+export type BiodiversityMapLayer = {
+  type: "FeatureCollection";
+  features: BiodiversityMapFeature[];
+};
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -3209,10 +3220,9 @@ export const bioacoustic = {
   },
   async mapLayer(plantationFenceId?: string) {
     return (
-      await api.get<{ type: string; features: Record<string, unknown>[] }>(
-        "/v1/bioacoustic/map-layer",
-        { params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined },
-      )
+      await api.get<BiodiversityMapLayer>("/v1/bioacoustic/map-layer", {
+        params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined,
+      })
     ).data;
   },
   async hotspots(plantationFenceId: string) {
