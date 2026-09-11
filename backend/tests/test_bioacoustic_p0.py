@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
-import uuid
-
 from app.services.bioacoustic.confidence import biodiversity_confidence_score
 from app.services.bioacoustic.detection_tiers import (
     TIER_ACCEPTED,
     TIER_PROBABLE,
     TIER_REVIEW_REQUIRED,
     apply_detection_tiers,
-    assign_detection_tier,
 )
 from app.services.bioacoustic.enrichment import enrich_detection
-from app.services.bioacoustic.metrics import aggregate_assessment_metrics, shannon_diversity_index
 from app.services.bioacoustic.methodology import recording_export_blockers
+from app.services.bioacoustic.metrics import aggregate_assessment_metrics, shannon_diversity_index
 
 
 def _det(confidence: float, iucn: str = "Least Concern", regional: bool | None = True, intervals: int = 2):
