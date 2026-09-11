@@ -15,6 +15,7 @@ from app.models.audit_engagement import AuditEngagement
 from app.models.planting_project import PlantingProject
 from app.services.audit_export.context import EXPORT_VERSION, build_audit_engagement_context
 from app.services.audit_export.field_verification import build_field_verification_pack
+from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
 from app.services.audit_export.pdf import render_audit_engagement_pdf
 from app.services.evidence.signing import EvidenceSignature, sign_evidence_zip, zip_content_hash
 
@@ -29,6 +30,7 @@ Contents:
 - audit-context.json                         Full structured audit context
 - claim-snapshot.json                        Latest frozen claim register (if present)
 - confidence-map.json                        Per-block confidence grades
+- confidence-vs-field-reconciliation.json  Satellite confidence vs field visit alignment
 - risk-queue.json                            Auditor priority queue and anomalies
 - sampling-plan.json                         Field plots and visit outcomes
 - satellite-timeline.json                      T0 baseline and temporal NDVI phases
@@ -70,6 +72,7 @@ async def build_audit_engagement_bundle(
 
     ctx = await build_audit_engagement_context(db, engagement, project)
     field_pack = await build_field_verification_pack(db, engagement.id)
+    reconciliation = await build_confidence_field_reconciliation(db, engagement.id)
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -95,6 +98,12 @@ async def build_audit_engagement_bundle(
             zf,
             "confidence-map.json",
             json.dumps(ctx.get("confidence") or {}, indent=2, default=str).encode("utf-8"),
+            manifest_files,
+        )
+        _add_file(
+            zf,
+            "confidence-vs-field-reconciliation.json",
+            json.dumps(reconciliation, indent=2, default=str).encode("utf-8"),
             manifest_files,
         )
         _add_file(

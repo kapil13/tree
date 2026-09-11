@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
 import { auditEngagements, errorMessage, uploads, type AuditEngagementDetail } from "@/lib/api";
+import { AuditBoundaryDrawMap } from "@/components/audit/audit-boundary-draw-map";
 import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
@@ -144,6 +145,34 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
     onSuccess: (results) => {
       setActionError(null);
       setActionMessage(`Plausibility assessed for ${results.length} block(s).`);
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
+  });
+
+  const addBoundary = useMutation({
+    mutationFn: (payload: {
+      name: string;
+      boundary: { type: "Polygon"; coordinates: number[][][] };
+      area_ha_claimed?: number;
+    }) => auditEngagements.addBoundary(data!.id, payload),
+    onSuccess: () => {
+      setActionError(null);
+      setActionMessage("Boundary saved.");
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
+  });
+
+  const addExclusion = useMutation({
+    mutationFn: (payload: {
+      name: string;
+      exclusion_type: string;
+      boundary: { type: "Polygon"; coordinates: number[][][] };
+    }) => auditEngagements.addExclusion(data!.id, payload),
+    onSuccess: () => {
+      setActionError(null);
+      setActionMessage("Exclusion saved.");
       invalidate();
     },
     onError: (e) => setActionError(errorMessage(e)),
@@ -386,6 +415,18 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
               }}
             />
           </label>
+          <AuditBoundaryDrawMap
+            boundaries={engagement.boundaries}
+            exclusions={engagement.exclusions.map((e) => ({
+              id: String(e.id ?? ""),
+              name: String(e.name ?? "Exclusion"),
+              boundary: e.boundary as { type: "Polygon"; coordinates: number[][][] },
+            }))}
+            disabled={isComplete || addBoundary.isPending}
+            onSaveBoundary={async (payload) => {
+              await addBoundary.mutateAsync(payload);
+            }}
+          />
           {engagement.boundaries.length === 0 ? (
             <p className="text-sm text-stone-500">{t("noBoundaries")}</p>
           ) : (
@@ -406,6 +447,37 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
               ))}
             </ul>
           )}
+          <div className="border-t border-stone-100 pt-4 dark:border-stone-800">
+            <h3 className="mb-2 text-sm font-semibold">{t("exclusionsTitle")}</h3>
+            <p className="mb-3 text-xs text-stone-500">{t("exclusionsHint")}</p>
+            <AuditBoundaryDrawMap
+              boundaries={engagement.boundaries}
+              exclusions={engagement.exclusions.map((e) => ({
+                id: String(e.id ?? ""),
+                name: String(e.name ?? "Exclusion"),
+                boundary: e.boundary as { type: "Polygon"; coordinates: number[][][] },
+              }))}
+              mode="exclusion"
+              disabled={isComplete || addExclusion.isPending}
+              onSaveExclusion={async (payload) => {
+                await addExclusion.mutateAsync(payload);
+              }}
+            />
+            {engagement.exclusions.length === 0 ? (
+              <p className="mt-2 text-sm text-stone-500">{t("noExclusions")}</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {engagement.exclusions.map((e) => (
+                  <li
+                    key={String(e.id)}
+                    className="rounded-lg border border-rose-100 bg-rose-50/50 px-3 py-2 text-sm text-rose-900"
+                  >
+                    {String(e.name ?? "Exclusion")} · {String(e.exclusion_type ?? "other")}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
       )}
 
@@ -620,6 +692,7 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
           <AuditConfidencePanel
             engagementId={engagement.id}
             engagementStatus={engagement.status}
+            boundaries={engagement.boundaries}
           />
           <AuditRiskPanel
             engagementId={engagement.id}

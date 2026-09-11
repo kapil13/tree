@@ -167,6 +167,17 @@ async def complete_field_verification(
     engagement.metadata_ = meta
     await db.flush()
 
+    try:
+        from app.services.audit_confidence.compute import compute_confidence_map
+
+        await compute_confidence_map(db, engagement, include_field_signals=True)
+        meta = dict(engagement.metadata_ or {})
+        meta["confidence_auto_refreshed_after_field"] = True
+        engagement.metadata_ = meta
+        await db.flush()
+    except ValueError:
+        pass
+
     return {
         "plots_visited": len(plots),
         "status": engagement.status,

@@ -3,6 +3,8 @@ import 'api/api_client.dart';
 import 'project_context.dart';
 import 'offline/bioacoustic_queue.dart';
 import 'offline/bioacoustic_sync.dart';
+import 'offline/audit_visit_queue.dart';
+import 'offline/audit_visit_sync.dart';
 import 'offline/tree_registration_queue.dart';
 import 'offline/tree_registration_sync.dart';
 
@@ -31,6 +33,18 @@ final treeRegistrationQueueProvider = ChangeNotifierProvider<TreeRegistrationQue
 final treeRegistrationSyncProvider = ChangeNotifierProvider<TreeRegistrationSyncService>((ref) {
   final queue = ref.watch(treeRegistrationQueueProvider);
   final sync = TreeRegistrationSyncService(queue);
+  ref.onDispose(sync.dispose);
+  return sync;
+});
+
+final auditVisitQueueProvider = ChangeNotifierProvider<AuditVisitQueue>((ref) {
+  final queue = AuditVisitQueue();
+  return queue;
+});
+
+final auditVisitSyncProvider = ChangeNotifierProvider<AuditVisitSyncService>((ref) {
+  final queue = ref.watch(auditVisitQueueProvider);
+  final sync = AuditVisitSyncService(queue);
   ref.onDispose(sync.dispose);
   return sync;
 });

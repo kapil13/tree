@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
 
 import '../api/api_errors.dart';
 import '../location_helper.dart';
@@ -27,6 +30,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
   String _treePresence = 'present';
   String _outcome = 'inconclusive';
   final List<String> _photoKeys = [];
+  final List<String> _localPhotoPaths = [];
   LocationCaptureResult? _gps;
   bool _saving = false;
   bool _gpsBusy = false;
@@ -73,13 +77,22 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
       _error = null;
     });
     try {
-      final api = await ref.read(apiClientProvider.future);
-      final key = await api.uploadImageFile(image.path, filename: image.name);
-      if (!mounted) return;
-      setState(() => _photoKeys.add(key));
+      final sync = ref.read(auditVisitSyncProvider);
+      if (await sync.isOnline()) {
+        final api = await ref.read(apiClientProvider.future);
+        final key = await api.uploadImageFile(image.path, filename: image.name);
+        if (!mounted) return;
+        setState(() => _photoKeys.add(key));
+      } else {
+        if (!mounted) return;
+        setState(() => _localPhotoPaths.add(image.path));
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = apiErrorMessage(e));
+      setState(() {
+        _localPhotoPaths.add(image.path);
+        _error = null;
+      });
     } finally {
       if (mounted) setState(() => _photoBusy = false);
     }
@@ -104,7 +117,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
       setState(() => _error = 'Capture GPS before saving the visit.');
       return;
     }
-    if (_photoKeys.isEmpty) {
+    if (_photoKeys.isEmpty && _localPhotoPaths.isEmpty) {
       setState(() => _error = 'Add at least one field photo.');
       return;
     }
@@ -113,19 +126,45 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
       _error = null;
     });
     try {
-      final api = await ref.read(apiClientProvider.future);
-      await api.recordAuditFieldVisit(
-        engagementId: plot['engagement_id'] as String,
-        plotId: plot['plot_id'] as String,
-        treePresence: _treePresence,
-        photoKeys: _photoKeys,
-        visitorLat: _gps!.latitude,
-        visitorLon: _gps!.longitude,
-        treesObserved: int.tryParse(_treesObservedController.text.trim()),
-        treesAlive: int.tryParse(_treesAliveController.text.trim()),
-        verificationOutcome: _outcome,
-        notes: _notesController.text.trim(),
-      );
+      final sync = ref.read(auditVisitSyncProvider);
+      final payload = {
+        'engagement_id': plot['engagement_id'] as String,
+        'plot_id': plot['plot_id'] as String,
+        'tree_presence': _treePresence,
+        'photo_keys': _photoKeys,
+        'visitor_lat': _gps!.latitude,
+        'visitor_lon': _gps!.longitude,
+        'trees_observed': int.tryParse(_treesObservedController.text.trim()),
+        'trees_alive': int.tryParse(_treesAliveController.text.trim()),
+        'verification_outcome': _outcome,
+        'notes': _notesController.text.trim(),
+        'plot_code': plot['plot_code'],
+      };
+
+      final queuedOffline = _localPhotoPaths.isNotEmpty || !await sync.isOnline();
+      if (!queuedOffline) {
+        final api = await ref.read(apiClientProvider.future);
+        await api.recordAuditFieldVisit(
+          engagementId: payload['engagement_id'] as String,
+          plotId: payload['plot_id'] as String,
+          treePresence: _treePresence,
+          photoKeys: _photoKeys,
+          visitorLat: _gps!.latitude,
+          visitorLon: _gps!.longitude,
+          treesObserved: payload['trees_observed'] as int?,
+          treesAlive: payload['trees_alive'] as int?,
+          verificationOutcome: _outcome,
+          notes: payload['notes'] as String?,
+        );
+      } else {
+        final queue = ref.read(auditVisitQueueProvider);
+        await queue.enqueue(
+          id: const Uuid().v4(),
+          payload: payload,
+          localPhotoPaths: _localPhotoPaths,
+        );
+        unawaited(sync.syncAll(() => ref.read(apiClientProvider.future)));
+      }
       ref.invalidate(auditFieldPlotQueueProvider);
       ref.invalidate(fieldOpsSummaryProvider);
       if (!mounted) return;
@@ -137,11 +176,16 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
         _treePresence = 'present';
         _outcome = 'inconclusive';
         _photoKeys.clear();
+        _localPhotoPaths.clear();
         _gps = null;
         _saving = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Audit plot visit saved')),
+        SnackBar(
+          content: Text(
+            queuedOffline ? 'Visit queued for sync when online' : 'Audit plot visit saved',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -213,6 +257,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                                   _activePlot = plot;
                                   _gps = null;
                                   _photoKeys.clear();
+                                  _localPhotoPaths.clear();
                                 });
                                 _captureGps();
                               },
@@ -295,12 +340,15 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
-                    onPressed: _photoBusy || _photoKeys.length >= 5 ? null : _addPhoto,
+                    onPressed:
+                        _photoBusy || (_photoKeys.length + _localPhotoPaths.length) >= 5
+                            ? null
+                            : _addPhoto,
                     icon: const Icon(Icons.camera_alt_outlined, size: 18),
                     label: Text(
                       _photoBusy
                           ? 'Uploading photo…'
-                          : 'Add field photo (${_photoKeys.length}/5)',
+                          : 'Add field photo (${_photoKeys.length + _localPhotoPaths.length}/5)',
                     ),
                   ),
                   if (_error != null) ...[
