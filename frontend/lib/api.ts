@@ -3663,6 +3663,60 @@ export const auditEngagements = {
     });
     return response.data as Blob;
   },
+  async getAttestation(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        status: string;
+        export_bundle_sha256?: string | null;
+        attestation?: {
+          id?: string;
+          verdict: string;
+          summary: string;
+          notes?: string | null;
+          status: string;
+          export_bundle_sha256?: string | null;
+          attestation_hash?: string | null;
+          epistemic_label?: string;
+          signed_at?: string | null;
+          reviewer_id?: string | null;
+        } | null;
+        review_queue: {
+          anomaly_count: number;
+          pending_review_count: number;
+          items: Array<Record<string, unknown>>;
+        };
+        can_sign: boolean;
+      }>(`/v1/audit-engagements/${engagementId}/attestation`)
+    ).data;
+  },
+  async reviewAnomaly(
+    engagementId: string,
+    anomalyId: string,
+    payload: { disposition: string; rationale: string },
+  ) {
+    return (
+      await api.post<{
+        id: string;
+        anomaly_id: string;
+        disposition: string;
+        new_status: string;
+      }>(`/v1/audit-engagements/${engagementId}/anomalies/${anomalyId}/review`, payload)
+    ).data;
+  },
+  async signAttestation(
+    engagementId: string,
+    payload: { verdict: string; summary: string; notes?: string },
+  ) {
+    return (
+      await api.post<{
+        id: string;
+        verdict: string;
+        attestation_hash?: string | null;
+        status: string;
+      }>(`/v1/audit-engagements/${engagementId}/attestation/sign`, payload)
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =

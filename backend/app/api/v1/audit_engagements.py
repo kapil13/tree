@@ -7,6 +7,14 @@ import uuid
 from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile, status
 
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.schemas.audit_attestation import (
+    AnomalyReviewCreate,
+    AnomalyReviewOut,
+    AnomalyReviewQueueOut,
+    AttestationOut,
+    AttestationSignCreate,
+    AttestationSummaryOut,
+)
 from app.schemas.audit_confidence import ConfidenceComputeOut, ConfidenceMapOut
 from app.schemas.audit_engagement import (
     AuditEngagementDetailOut,
@@ -1140,4 +1148,162 @@ async def get_audit_export_summary(
         signed=True,
         signature_key_id=None,
         status=row.status,
+    )
+
+
+@router.get("/{engagement_id}/attestation", response_model=AttestationSummaryOut)
+async def get_engagement_attestation(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AttestationSummaryOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_attestation.attest import attestation_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await attestation_summary(db, row)
+    return AttestationSummaryOut.model_validate(summary)
+
+
+@router.get("/{engagement_id}/anomaly-reviews", response_model=AnomalyReviewQueueOut)
+async def get_anomaly_review_queue(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AnomalyReviewQueueOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_attestation.review import anomaly_review_queue
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await anomaly_review_queue(db, row.id)
+    return AnomalyReviewQueueOut.model_validate(summary)
+
+
+@router.post(
+    "/{engagement_id}/anomalies/{anomaly_id}/review",
+    response_model=AnomalyReviewOut,
+)
+async def review_engagement_anomaly(
+    engagement_id: uuid.UUID,
+    anomaly_id: uuid.UUID,
+    body: AnomalyReviewCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AnomalyReviewOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_attestation.review import review_anomaly
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        review = await review_anomaly(
+            db,
+            row,
+            anomaly_id=anomaly_id,
+            reviewer_id=user.id,
+            disposition=body.disposition,
+            rationale=body.rationale,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.anomaly.review",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={
+            "anomaly_id": str(anomaly_id),
+            "disposition": body.disposition,
+            "new_status": review.new_status,
+        },
+    )
+    await db.commit()
+    return AnomalyReviewOut(
+        id=str(review.id),
+        anomaly_id=str(review.anomaly_id),
+        disposition=review.disposition,
+        previous_status=review.previous_status,
+        new_status=review.new_status,
+        rationale=review.rationale,
+        reviewed_at=review.reviewed_at,
+        epistemic_label=review.epistemic_label,
+    )
+
+
+@router.post("/{engagement_id}/attestation/sign", response_model=AttestationOut)
+async def sign_engagement_attestation(
+    engagement_id: uuid.UUID,
+    body: AttestationSignCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AttestationOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_attestation.attest import sign_attestation
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        attestation = await sign_attestation(
+            db,
+            row,
+            reviewer_id=user.id,
+            verdict=body.verdict,
+            summary=body.summary,
+            notes=body.notes,
+            allow_pending_reviews=body.allow_pending_reviews,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.attestation.sign",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={
+            "verdict": body.verdict,
+            "attestation_hash": attestation.attestation_hash,
+        },
+    )
+    await db.commit()
+    return AttestationOut(
+        id=str(attestation.id),
+        verdict=attestation.verdict,
+        summary=attestation.summary,
+        notes=attestation.notes,
+        status=attestation.status,
+        export_bundle_sha256=attestation.export_bundle_sha256,
+        attestation_hash=attestation.attestation_hash,
+        epistemic_label=attestation.epistemic_label,
+        signed_at=attestation.signed_at,
+        reviewer_id=str(attestation.reviewer_id) if attestation.reviewer_id else None,
     )

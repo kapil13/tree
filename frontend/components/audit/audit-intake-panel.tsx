@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
+import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditExportPanel } from "@/components/audit/audit-export-panel";
@@ -371,7 +372,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         engagement.status === "risk_assessed" ||
         engagement.status === "sampling_planned" ||
         engagement.status === "field_verified" ||
-        engagement.status === "export_ready") && (
+        engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
         <AuditSatellitePanel
           projectId={projectId}
           engagementId={engagement.id}
@@ -384,7 +387,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         engagement.status === "risk_assessed" ||
         engagement.status === "sampling_planned" ||
         engagement.status === "field_verified" ||
-        engagement.status === "export_ready") && (
+        engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
         <AuditConfidencePanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
@@ -395,7 +400,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         engagement.status === "risk_assessed" ||
         engagement.status === "sampling_planned" ||
         engagement.status === "field_verified" ||
-        engagement.status === "export_ready") && (
+        engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
         <AuditRiskPanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
@@ -405,7 +412,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       {(engagement.status === "risk_assessed" ||
         engagement.status === "sampling_planned" ||
         engagement.status === "field_verified" ||
-        engagement.status === "export_ready") && (
+        engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
         <AuditSamplingPanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
@@ -414,8 +423,19 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
 
       {(engagement.status === "sampling_planned" ||
         engagement.status === "field_verified" ||
-        engagement.status === "export_ready") && (
+        engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
         <AuditExportPanel
+          engagementId={engagement.id}
+          engagementStatus={engagement.status}
+        />
+      )}
+
+      {(engagement.status === "export_ready" ||
+        engagement.status === "under_review" ||
+        engagement.status === "attested") && (
+        <AuditAttestationPanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
         />
