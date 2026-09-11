@@ -29,7 +29,7 @@ from app.services.audit_intake.gis_validation import validate_boundaries
 from app.services.audit_intake.intake_gate import evaluate_intake_gate
 from app.services.audit_intake.kml_import import parse_upload
 from app.services.audit_intake.plausibility import assess_block_plausibility
-from app.services.geo import geojson_polygon_to_wkt, geography_to_geojson_polygon
+from app.services.geo import geography_to_geojson_polygon, geojson_polygon_to_wkt
 
 ALLOWED_DOC_TYPES = frozenset(
     [

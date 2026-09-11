@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import json
-
 from app.services.audit_intake.claim_snapshot import content_hash
 from app.services.audit_intake.gis_validation import validate_boundaries
 from app.services.audit_intake.intake_gate import evaluate_intake_gate
 from app.services.audit_intake.kml_import import parse_kml_bytes
 from app.services.audit_intake.plausibility import assess_block_plausibility
-
 
 SAMPLE_KML = b"""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">

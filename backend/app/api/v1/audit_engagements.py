@@ -464,8 +464,9 @@ async def run_plausibility_endpoint(
     if project is None or not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
-    from app.models.audit_engagement import BoundaryVersion
     from sqlalchemy import select
+
+    from app.models.audit_engagement import BoundaryVersion
 
     assessments = await run_plausibility(db, row, project)
     boundaries = (
