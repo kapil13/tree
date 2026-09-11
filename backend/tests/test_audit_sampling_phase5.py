@@ -50,6 +50,26 @@ async def test_generate_requires_risk_assessed():
 
 
 @pytest.mark.asyncio
+async def test_sampling_plan_summary_reads_geography_plot_centers():
+    from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.models.audit_sampling import AuditFieldPlot
+    from app.services.audit_sampling.summary import sampling_plan_summary
+
+    async with AsyncSessionLocal() as db:
+        plot = (await db.execute(select(AuditFieldPlot).limit(1))).scalar_one_or_none()
+        if plot is None:
+            pytest.skip("no audit field plots in database")
+
+        summary = await sampling_plan_summary(db, plot.engagement_id)
+
+    assert summary["has_plan"] is True
+    assert summary["plots"]
+    assert summary["plots"][0]["center"]["coordinates"][0] != 0.0
+
+
+@pytest.mark.asyncio
 async def test_generate_sampling_plan_places_plots_in_geography_boundary():
     from datetime import UTC, datetime
 
