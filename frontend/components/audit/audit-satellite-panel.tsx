@@ -46,7 +46,8 @@ export function AuditSatellitePanel({
     enabled:
       engagementStatus === "intake_complete" ||
       engagementStatus === "analysis_ready" ||
-      engagementStatus === "confidence_mapped",
+      engagementStatus === "confidence_mapped" ||
+      engagementStatus === "risk_assessed",
   });
 
   const invalidate = () => {
@@ -85,7 +86,9 @@ export function AuditSatellitePanel({
 
   const blocks = (timeline?.blocks ?? []) as TimelineBlock[];
   const isReady =
-    engagementStatus === "analysis_ready" || engagementStatus === "confidence_mapped";
+    engagementStatus === "analysis_ready" ||
+    engagementStatus === "confidence_mapped" ||
+    engagementStatus === "risk_assessed";
 
   return (
     <section className="space-y-6">

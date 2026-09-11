@@ -3563,6 +3563,40 @@ export const auditEngagements = {
       }>(`/v1/audit-engagements/${engagementId}/confidence-map`)
     ).data;
   },
+  async runRiskScan(engagementId: string) {
+    return (
+      await api.post<{
+        anomalies_detected: number;
+        blocks_assessed: number;
+        alerts_created: number;
+        severity_counts: Record<string, number>;
+      }>(`/v1/audit-engagements/${engagementId}/risk-scan`)
+    ).data;
+  },
+  async getRiskAnomalies(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        anomaly_count: number;
+        severity_counts: Record<string, number>;
+        type_counts: Record<string, number>;
+        anomalies: Array<Record<string, unknown>>;
+      }>(`/v1/audit-engagements/${engagementId}/risk-anomalies`)
+    ).data;
+  },
+  async getAuditorQueue(engagementId: string) {
+    return (
+      await api.get<{
+        engagement_id: string;
+        block_count: number;
+        assessed_count: number;
+        anomaly_count: number;
+        open_anomaly_count: number;
+        level_counts: Record<string, number>;
+        queue: Array<Record<string, unknown>>;
+      }>(`/v1/audit-engagements/${engagementId}/auditor-queue`)
+    ).data;
+  },
 };
 
 export type FrameworkProfileCode =
