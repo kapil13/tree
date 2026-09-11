@@ -12,12 +12,24 @@ TreePresence = Literal["present", "absent", "sparse", "not_assessable"]
 TREE_PRESENCE_VALUES = frozenset({"present", "absent", "sparse", "not_assessable"})
 
 
+SamplingMode = Literal["risk_weighted", "area_coverage", "hybrid"]
+
+
 class SamplingPlanParams(BaseModel):
+    sampling_mode: SamplingMode = "risk_weighted"
     plots_per_critical: int = Field(default=3, ge=0, le=10)
     plots_per_high: int = Field(default=2, ge=0, le=10)
     plots_per_medium: int = Field(default=1, ge=0, le=10)
     plots_per_low: int = Field(default=0, ge=0, le=10)
+    ha_per_plot: float = Field(default=50.0, ge=5.0, le=5000.0)
+    min_plots_per_block: int = Field(default=1, ge=1, le=10)
     layout_seed: int | None = None
+
+
+class SamplingPlanPreviewOut(BaseModel):
+    total_plots: int
+    sampling_mode: str
+    blocks: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class SamplingPlanGenerateOut(BaseModel):

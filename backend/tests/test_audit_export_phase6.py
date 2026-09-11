@@ -21,7 +21,22 @@ def test_render_audit_pdf_minimal():
             "engagement": {"status": "field_verified"},
             "confidence": {"grade_counts": {"green": 2}},
             "risk": {"queue": {"queue": []}},
-            "sampling": {"visit_stats": {"visited": 1, "total": 1}},
+            "sampling": {
+                "visit_stats": {"visited": 1, "total": 1},
+                "plots": [
+                    {
+                        "plot_code": "A-P01",
+                        "boundary_name": "Block A",
+                        "latest_visit": {
+                            "tree_presence": "present",
+                            "verification_outcome": "claim_supported",
+                            "trees_observed": 5,
+                            "inside_boundary": True,
+                            "visited_at": "2026-01-01T10:00:00+00:00",
+                        },
+                    }
+                ],
+            },
             "satellite": {"block_count": 1, "t0_baselines_found": 1},
         }
     )
@@ -76,12 +91,16 @@ async def test_build_bundle_contains_manifest():
     sig.key_id = "abc123"
     sig.zip_sha256 = "deadbeef"
     sig.signature_b64 = "sig"
-    sig.to_dict = MagicMock(return_value={})
+    sig.to_dict = MagicMock(return_value={"key_id": "abc123", "zip_sha256": "deadbeef"})
 
     with (
         patch(
             "app.services.audit_export.bundle.build_audit_engagement_context",
             new=AsyncMock(return_value=ctx),
+        ),
+        patch(
+            "app.services.audit_export.bundle.build_field_verification_pack",
+            new=AsyncMock(return_value={}),
         ),
         patch(
             "app.services.audit_export.bundle.sign_evidence_zip",
@@ -102,5 +121,8 @@ async def test_build_bundle_contains_manifest():
         assert "manifest.json" in names
         assert "audit-context.json" in names
         assert "audit-report.pdf" in names
+        assert "signature.json" in names
         manifest = json.loads(zf.read("manifest.json"))
         assert manifest["bundle_version"] == "estate-watch-audit-1.0.0"
+        signature = json.loads(zf.read("signature.json"))
+        assert signature["key_id"] == "abc123"

@@ -41,6 +41,7 @@ from app.schemas.audit_sampling import (
     FieldVisitOut,
     SamplingPlanGenerateOut,
     SamplingPlanParams,
+    SamplingPlanPreviewOut,
     SamplingPlanSummaryOut,
 )
 from app.schemas.audit_satellite import (
@@ -914,6 +915,41 @@ async def get_auditor_queue(
     return AuditorQueueOut.model_validate(summary)
 
 
+@router.post("/{engagement_id}/sampling-plan/preview", response_model=SamplingPlanPreviewOut)
+async def preview_engagement_sampling_plan(
+    engagement_id: uuid.UUID,
+    body: SamplingPlanParams,
+    user: CurrentUser,
+    db: DB,
+) -> SamplingPlanPreviewOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_sampling.plan import preview_sampling_plan
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    try:
+        preview = await preview_sampling_plan(
+            db,
+            row,
+            sampling_mode=body.sampling_mode,
+            plots_per_critical=body.plots_per_critical,
+            plots_per_high=body.plots_per_high,
+            plots_per_medium=body.plots_per_medium,
+            plots_per_low=body.plots_per_low,
+            ha_per_plot=body.ha_per_plot,
+            min_plots_per_block=body.min_plots_per_block,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    return SamplingPlanPreviewOut.model_validate(preview)
+
+
 @router.post("/{engagement_id}/sampling-plan/generate", response_model=SamplingPlanGenerateOut)
 async def generate_engagement_sampling_plan(
     engagement_id: uuid.UUID,
@@ -936,10 +972,13 @@ async def generate_engagement_sampling_plan(
         plan = await generate_sampling_plan(
             db,
             row,
+            sampling_mode=body.sampling_mode,
             plots_per_critical=body.plots_per_critical,
             plots_per_high=body.plots_per_high,
             plots_per_medium=body.plots_per_medium,
             plots_per_low=body.plots_per_low,
+            ha_per_plot=body.ha_per_plot,
+            min_plots_per_block=body.min_plots_per_block,
             layout_seed=body.layout_seed,
         )
     except ValueError as exc:
@@ -1195,11 +1234,11 @@ async def get_audit_export_summary(
         engagement_id=str(row.id),
         project_id=str(project.id),
         project_code=project.code,
-        file_count=0,
+        file_count=int(meta.get("export_file_count") or 0),
         bundle_sha256=sha,
-        zip_size_bytes=0,
+        zip_size_bytes=int(meta.get("export_zip_size_bytes") or 0),
         signed=True,
-        signature_key_id=None,
+        signature_key_id=meta.get("export_signature_key_id"),
         status=row.status,
     )
 

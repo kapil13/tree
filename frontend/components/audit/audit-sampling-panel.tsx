@@ -38,6 +38,16 @@ export function AuditSamplingPanel({
   const t = useTranslations("auditSampling");
   const qc = useQueryClient();
   const [selectedPlot, setSelectedPlot] = useState<string | null>(null);
+  const [samplingMode, setSamplingMode] = useState<
+    "risk_weighted" | "area_coverage" | "hybrid"
+  >("hybrid");
+  const [haPerPlot, setHaPerPlot] = useState("50");
+  const [minPlotsPerBlock, setMinPlotsPerBlock] = useState("1");
+  const [plotsPerCritical, setPlotsPerCritical] = useState("3");
+  const [plotsPerHigh, setPlotsPerHigh] = useState("2");
+  const [plotsPerMedium, setPlotsPerMedium] = useState("1");
+  const [plotsPerLow, setPlotsPerLow] = useState("1");
+  const [previewTotal, setPreviewTotal] = useState<number | null>(null);
 
   const enabled =
     engagementStatus === "risk_assessed" ||
@@ -55,8 +65,23 @@ export function AuditSamplingPanel({
 
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  const samplingParams = {
+    sampling_mode: samplingMode,
+    ha_per_plot: Number(haPerPlot) || 50,
+    min_plots_per_block: Number(minPlotsPerBlock) || 1,
+    plots_per_critical: Number(plotsPerCritical) || 0,
+    plots_per_high: Number(plotsPerHigh) || 0,
+    plots_per_medium: Number(plotsPerMedium) || 0,
+    plots_per_low: Number(plotsPerLow) || 0,
+  };
+
+  const preview = useMutation({
+    mutationFn: () => auditEngagements.previewSamplingPlan(engagementId, samplingParams),
+    onSuccess: (result) => setPreviewTotal(result.total_plots),
+  });
+
   const generate = useMutation({
-    mutationFn: () => auditEngagements.generateSamplingPlan(engagementId),
+    mutationFn: () => auditEngagements.generateSamplingPlan(engagementId, samplingParams),
     onSuccess: (result) => {
       setActionMessage(t("generateSuccess", { count: result.total_plots }));
       qc.invalidateQueries({ queryKey: ["audit-sampling-plan", engagementId] });
@@ -118,6 +143,75 @@ export function AuditSamplingPanel({
         <p className="text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
         <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
       </header>
+
+      <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 dark:border-stone-700">
+        <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{t("samplingControls")}</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-xs text-stone-600">
+            {t("samplingMode")}
+            <select
+              className="input mt-1 w-full text-sm"
+              value={samplingMode}
+              onChange={(e) =>
+                setSamplingMode(e.target.value as "risk_weighted" | "area_coverage" | "hybrid")
+              }
+            >
+              <option value="risk_weighted">{t("modeRiskWeighted")}</option>
+              <option value="area_coverage">{t("modeAreaCoverage")}</option>
+              <option value="hybrid">{t("modeHybrid")}</option>
+            </select>
+          </label>
+          <label className="text-xs text-stone-600">
+            {t("haPerPlot")}
+            <input
+              className="input mt-1 w-full text-sm"
+              type="number"
+              min={5}
+              value={haPerPlot}
+              disabled={samplingMode === "risk_weighted"}
+              onChange={(e) => setHaPerPlot(e.target.value)}
+            />
+          </label>
+          <label className="text-xs text-stone-600">
+            {t("minPlotsPerBlock")}
+            <input
+              className="input mt-1 w-full text-sm"
+              type="number"
+              min={1}
+              value={minPlotsPerBlock}
+              disabled={samplingMode === "risk_weighted"}
+              onChange={(e) => setMinPlotsPerBlock(e.target.value)}
+            />
+          </label>
+          <label className="text-xs text-stone-600">
+            {t("plotsPerLow")}
+            <input
+              className="input mt-1 w-full text-sm"
+              type="number"
+              min={0}
+              value={plotsPerLow}
+              disabled={samplingMode === "area_coverage"}
+              onChange={(e) => setPlotsPerLow(e.target.value)}
+            />
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-stone-500">{t("samplingModeHint")}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            disabled={preview.isPending}
+            onClick={() => preview.mutate()}
+          >
+            {preview.isPending ? t("previewing") : t("previewPlots")}
+          </button>
+          {previewTotal != null && (
+            <span className="text-sm text-forest-800">
+              {t("previewResult", { count: previewTotal })}
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

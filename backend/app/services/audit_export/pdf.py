@@ -81,6 +81,40 @@ def render_audit_engagement_pdf(ctx: dict[str, Any]) -> bytes:
             styles["Normal"],
         )
     )
+    field_rows = [["Plot", "Block", "Presence", "Outcome", "Trees", "Inside", "Visited"]]
+    for plot in sampling.get("plots") or []:
+        visit = plot.get("latest_visit") or {}
+        if not visit:
+            continue
+        field_rows.append(
+            [
+                str(plot.get("plot_code", ""))[:16],
+                str(plot.get("boundary_name", ""))[:20],
+                str(visit.get("tree_presence") or "—"),
+                str(visit.get("verification_outcome") or "—"),
+                str(visit.get("trees_observed") or "—"),
+                "yes"
+                if visit.get("inside_boundary") is True
+                else ("no" if visit.get("inside_boundary") is False else "—"),
+                str(visit.get("visited_at", ""))[:19],
+            ]
+        )
+    if len(field_rows) > 1:
+        t = Table(
+            field_rows,
+            colWidths=[22 * mm, 32 * mm, 20 * mm, 24 * mm, 14 * mm, 14 * mm, 28 * mm],
+            repeatRows=1,
+        )
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e7e5e4")),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
+        story.append(t)
     story.append(Spacer(1, 12))
 
     satellite = ctx.get("satellite") or {}
