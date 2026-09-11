@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.planting_compliance_violation import PlantingComplianceViolation
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
+from app.services.audit_portfolio.portfolio_summary import count_audit_plots_due_for_projects
 from app.services.planting_projects.access import list_accessible_project_ids, project_list_filter
 from app.services.planting_projects.service import project_summary
 from app.services.planting_projects.survival_survey import survival_due_summary
@@ -22,6 +23,7 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
 
     total_open_violations = 0
     total_survival_due = 0
+    total_audit_plots_due = 0
     total_trees = 0
     by_segment: dict[str, int] = {}
     by_scheme: dict[str, int] = {}
@@ -88,6 +90,14 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
     violation_feed.sort(key=lambda x: x.get("created_at") or "", reverse=True)
     violation_feed = violation_feed[:25]
 
+    audit_due_by_project = await count_audit_plots_due_for_projects(
+        db, [project.id for project in projects]
+    )
+    for row in project_rows:
+        due = audit_due_by_project.get(row["id"], 0)
+        row["audit_plots_due"] = due
+        total_audit_plots_due += due
+
     accessible = await list_accessible_project_ids(user, db)
     if accessible is not None:
         tree_total_stmt = select(func.count()).where(
@@ -103,6 +113,7 @@ async def build_field_ops_summary(db: AsyncSession, user) -> dict[str, Any]:
         "tree_count": total_trees,
         "open_violations": total_open_violations,
         "survival_due": total_survival_due,
+        "audit_plots_due": total_audit_plots_due,
         "by_segment": by_segment,
         "by_scheme": by_scheme,
         "projects": project_rows,

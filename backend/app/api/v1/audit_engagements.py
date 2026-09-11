@@ -33,6 +33,7 @@ from app.schemas.audit_engagement import (
     WorkingClaimUpdate,
 )
 from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut
+from app.schemas.audit_portfolio import AuditFieldPlotQueueOut, AuditPortfolioSummaryOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_sampling import (
     FieldVerificationCompleteOut,
@@ -122,6 +123,29 @@ def _serialize_detail(raw: dict) -> AuditEngagementDetailOut:
         latest_gis_validation=GisValidationRunOut.model_validate(gis) if gis else None,
         intake_gate=IntakeGateOut.model_validate(gate) if gate else None,
     )
+
+
+@router.get("/portfolio-summary", response_model=AuditPortfolioSummaryOut)
+async def get_audit_portfolio_summary(user: CurrentUser, db: DB) -> AuditPortfolioSummaryOut:
+    from app.services.audit_portfolio.portfolio_summary import build_audit_portfolio_summary
+
+    summary = await build_audit_portfolio_summary(db, user)
+    return AuditPortfolioSummaryOut.model_validate(summary)
+
+
+@router.get("/field-plot-queue", response_model=AuditFieldPlotQueueOut)
+async def get_audit_field_plot_queue(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+    limit: int = 50,
+) -> AuditFieldPlotQueueOut:
+    from app.services.audit_portfolio.field_plot_queue import build_audit_field_plot_queue
+
+    summary = await build_audit_field_plot_queue(
+        db, user, project_id=project_id, limit=min(limit, 100)
+    )
+    return AuditFieldPlotQueueOut.model_validate(summary)
 
 
 @router.get("/projects/{project_id}", response_model=AuditEngagementDetailOut)

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
 from app.models.planting_project import PlantingProject
+from app.services.audit_portfolio.field_plot_queue import build_audit_field_plot_queue
 from app.services.planting_projects.access import project_list_filter
 from app.services.planting_projects.field_ops import build_field_ops_summary
 from app.services.plot_monitoring.ops import list_plots
@@ -70,6 +71,12 @@ async def build_field_brief(
                     }
                 )
 
+    audit_queue = await build_audit_field_plot_queue(
+        db, user, project_id=project_id, limit=12
+    )
+    audit_plots_due_preview = audit_queue.get("items") or []
+    audit_plots_due = int(audit_queue.get("total_due") or 0)
+
     return {
         "project_count": summary.get("project_count", 0),
         "tree_count": summary.get("tree_count", 0),
@@ -77,8 +84,10 @@ async def build_field_brief(
         "survival_due": summary.get("survival_due", 0),
         "unread_alerts": unread_alerts,
         "plots_due": plots_due,
+        "audit_plots_due": audit_plots_due,
         "projects": projects,
         "recent_violations": summary.get("recent_violations") or [],
         "plots_due_preview": plots_due_preview,
+        "audit_plots_due_preview": audit_plots_due_preview,
         "scoped_project_id": str(project_id) if project_id else None,
     }

@@ -607,6 +607,33 @@
     "outcomeUnsupported": "Claim unsupported on ground",
     "visited": "Visited — {outcome}"
   },
+  "auditPortfolio": {
+    "title": "Estate Watch audit portfolio",
+    "subtitle": "{count, plural, one {# estate watch programme} other {# estate watch programmes}}",
+    "portfolioLink": "Portfolio health",
+    "engagements": "Active engagements",
+    "plotsDue": "Audit plots due",
+    "plotsDueLabel": "plots due",
+    "inField": "In field verification",
+    "attested": "Attested",
+    "openQueue": "Open field queue",
+    "queueTitle": "Estate Watch audit plots",
+    "queueDesc": "Risk-weighted sample plots waiting for verifier visits",
+    "loading": "Loading audit plots…",
+    "openAudit": "Open audit",
+    "recordVisit": "Record visit",
+    "visitPlot": "Visit {code}",
+    "treesObserved": "Trees observed",
+    "treesAlive": "Trees alive",
+    "outcome": "Verification outcome",
+    "outcomeInconclusive": "Inconclusive",
+    "outcomeSupported": "Claim supported on ground",
+    "outcomeUnsupported": "Claim unsupported on ground",
+    "notes": "Field notes",
+    "saveVisit": "Save visit",
+    "saving": "Saving…",
+    "cancel": "Cancel"
+  },
   "auditRisk": {
     "title": "Risk & anomaly engine",
     "subtitle": "Detect NDVI drops, growth deviations, confidence gaps, and plausibility concerns — rank blocks for auditor review.",
@@ -869,7 +896,8 @@
         "trees": "Trees",
         "violations": "Open violations",
         "sitesNeedingScan": "Sites needing scan",
-        "unreadAlerts": "Unread alerts"
+        "unreadAlerts": "Unread alerts",
+        "auditPlotsDue": "Audit plots due"
       },
       "attentionTitle": "Needs attention",
       "attentionDesc": "Open violations or survival surveys due",

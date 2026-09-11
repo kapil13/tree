@@ -607,6 +607,33 @@
     "outcomeUnsupported": "दावा मैदान पर असमर्थित",
     "visited": "विज़िट — {outcome}"
   },
+  "auditPortfolio": {
+    "title": "एस्टेट वॉच ऑडिट पोर्टफोलियो",
+    "subtitle": "{count, plural, one {# एस्टेट वॉच कार्यक्रम} other {# एस्टेट वॉच कार्यक्रम}}",
+    "portfolioLink": "पोर्टफोलियो स्वास्थ्य",
+    "engagements": "सक्रिय एंगेजमेंट",
+    "plotsDue": "ऑडिट प्लॉट बाकी",
+    "plotsDueLabel": "प्लॉट बाकी",
+    "inField": "फील्ड सत्यापन में",
+    "attested": "प्रमाणित",
+    "openQueue": "फील्ड कतार खोलें",
+    "queueTitle": "एस्टेट वॉच ऑडिट प्लॉट",
+    "queueDesc": "सत्यापनकर्ता विज़िट के लिए जोखिम-भारित नमूना प्लॉट",
+    "loading": "ऑडिट प्लॉट लोड हो रहे हैं…",
+    "openAudit": "ऑडिट खोलें",
+    "recordVisit": "विज़िट दर्ज करें",
+    "visitPlot": "{code} विज़िट",
+    "treesObserved": "देखे गए पेड़",
+    "treesAlive": "जीवित पेड़",
+    "outcome": "सत्यापन परिणाम",
+    "outcomeInconclusive": "अनिर्णायक",
+    "outcomeSupported": "दावा मैदान पर समर्थित",
+    "outcomeUnsupported": "दावा मैदान पर असमर्थित",
+    "notes": "फील्ड नोट्स",
+    "saveVisit": "विज़िट सहेजें",
+    "saving": "सहेजा जा रहा है…",
+    "cancel": "रद्द करें"
+  },
   "auditRisk": {
     "title": "जोखिम और विसंगति इंजन",
     "subtitle": "NDVI गिरावट, वृद्धि विचलन, विश्वास अंतराल और संभाव्यता चिंताओं का पता लगाएँ — ऑडिटर समीक्षा के लिए ब्लॉक क्रमबद्ध करें।",
@@ -869,7 +896,8 @@
         "trees": "पेड़",
         "violations": "खुले उल्लंघन",
         "sitesNeedingScan": "स्कैन की जरूरत वाली साइटें",
-        "unreadAlerts": "अपठित अलर्ट"
+        "unreadAlerts": "अपठित अलर्ट",
+        "auditPlotsDue": "ऑडिट प्लॉट बाकी"
       },
       "attentionTitle": "ध्यान देने की जरूरत",
       "attentionDesc": "खुले उल्लंघन या जीवितता सर्वेक्षण बकाया",
