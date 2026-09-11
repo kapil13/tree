@@ -409,6 +409,10 @@ async def import_kml_boundaries(
     data = await file.read()
     try:
         created = await import_kml(db, row, filename=file.filename or "upload.kml", data=data)
+        result = KmlImportResult(
+            imported=len(created),
+            boundaries=[BoundaryVersionOut.model_validate(_boundary_out(b)) for b in created],
+        )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
@@ -422,10 +426,7 @@ async def import_kml_boundaries(
         diff={"imported": len(created)},
     )
     await db.commit()
-    return KmlImportResult(
-        imported=len(created),
-        boundaries=[BoundaryVersionOut.model_validate(_boundary_out(b)) for b in created],
-    )
+    return result
 
 
 @router.post("/{engagement_id}/exclusions", response_model=PlantabilityExclusionOut)

@@ -6,9 +6,43 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from app.schemas.plantation_fence import GeoJsonPolygon
+# Audit KML imports often exceed the 200-vertex cap used for hand-drawn work areas.
+MAX_AUDIT_BOUNDARY_VERTICES = 10_000
+
+
+class AuditGeoJsonPolygon(BaseModel):
+    type: str = "Polygon"
+    coordinates: list[list[list[float]]]
+
+    @field_validator("type")
+    @classmethod
+    def _type_polygon(cls, v: str) -> str:
+        if v != "Polygon":
+            raise ValueError("only Polygon geometry is supported")
+        return v
+
+    @field_validator("coordinates")
+    @classmethod
+    def _valid_ring(cls, v: list[list[list[float]]]) -> list[list[list[float]]]:
+        if not v or not v[0]:
+            raise ValueError("polygon must have at least one ring")
+        ring = v[0]
+        if len(ring) < 4:
+            raise ValueError("polygon ring needs at least 4 positions")
+        if len(ring) > MAX_AUDIT_BOUNDARY_VERTICES:
+            raise ValueError(
+                f"polygon has too many vertices (max {MAX_AUDIT_BOUNDARY_VERTICES})"
+            )
+        for lng, lat in ring:
+            if not (-180 <= lng <= 180 and -90 <= lat <= 90):
+                raise ValueError("invalid coordinates")
+        first, last = ring[0], ring[-1]
+        if first[0] != last[0] or first[1] != last[1]:
+            ring = [*ring, first]
+            v = [ring, *v[1:]]
+        return v
 
 
 class WorkingClaimData(BaseModel):
@@ -58,7 +92,7 @@ class ClaimDocumentOut(BaseModel):
 class BoundaryVersionCreate(BaseModel):
     name: str
     block_type: str | None = None
-    boundary: GeoJsonPolygon
+    boundary: AuditGeoJsonPolygon
     area_ha_claimed: float | None = None
     source: str = "drawn"
     link_fence_id: uuid.UUID | None = None
@@ -69,7 +103,7 @@ class BoundaryVersionOut(BaseModel):
     name: str
     block_type: str | None = None
     source: str
-    boundary: GeoJsonPolygon
+    boundary: AuditGeoJsonPolygon
     area_ha_claimed: float | None = None
     area_ha_measured: float | None = None
     fence_id: uuid.UUID | None = None
@@ -82,14 +116,14 @@ class BoundaryVersionOut(BaseModel):
 class PlantabilityExclusionCreate(BaseModel):
     exclusion_type: str = "other"
     name: str = ""
-    boundary: GeoJsonPolygon
+    boundary: AuditGeoJsonPolygon
 
 
 class PlantabilityExclusionOut(BaseModel):
     id: uuid.UUID
     exclusion_type: str
     name: str
-    boundary: GeoJsonPolygon
+    boundary: AuditGeoJsonPolygon
     area_ha: float | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime

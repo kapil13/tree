@@ -72,7 +72,10 @@ def _extract_placemarks(root: ET.Element) -> list[dict[str, Any]]:
 
 def parse_kml_bytes(data: bytes) -> list[dict[str, Any]]:
     """Parse KML bytes and return placemark polygons as GeoJSON dicts."""
-    root = ET.fromstring(data)
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError as exc:
+        raise ValueError("kml_parse_failed") from exc
     return _extract_placemarks(root)
 
 

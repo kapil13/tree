@@ -118,7 +118,14 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       setActionMessage(`Imported ${result.imported} boundary block(s).`);
       invalidate();
     },
-    onError: (e) => setActionError(errorMessage(e)),
+    onError: (e) => {
+      const msg = errorMessage(e);
+      setActionError(
+        msg === "Request failed with status code 500"
+          ? "KML import failed on the server. Try simplifying the polygon (fewer points) or re-exporting as .kml with closed polygon rings."
+          : msg,
+      );
+    },
   });
 
   const runGis = useMutation({
