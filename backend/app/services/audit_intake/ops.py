@@ -485,9 +485,12 @@ async def complete_intake(
     if not gate["ready"]:
         raise ValueError("intake_gate_not_ready")
 
+    completed_at = datetime.now(UTC)
     engagement.status = "intake_complete"
-    engagement.intake_completed_at = datetime.now(UTC)
+    engagement.intake_completed_at = completed_at
     await db.flush()
+    # flush() expires ORM attributes; refresh before re-serializing detail payload.
+    await db.refresh(engagement)
     return await engagement_detail(db, engagement, project)
 
 
