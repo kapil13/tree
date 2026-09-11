@@ -3010,6 +3010,89 @@ export type BioacousticAnalyzeJob = {
   celery_task_id: string | null;
 };
 
+export type ReviewQueueItem = {
+  recording_id: string;
+  analysis_run_id?: string | null;
+  recorded_at?: string | null;
+  plantation_fence_id?: string | null;
+  scientific_name?: string | null;
+  common_name?: string | null;
+  taxon_group?: string | null;
+  confidence?: number | null;
+  detection_tier?: string | null;
+  iucn_status?: string | null;
+  needs_review?: boolean;
+};
+
+export type InterpretationChain = {
+  recording_id: string;
+  status: string;
+  chain: Array<{
+    stage?: string;
+    title?: string;
+    summary?: string;
+    export_blockers?: string[];
+    limitations?: string[];
+  }>;
+};
+
+export type Hotspot = {
+  scientific_name: string;
+  recording_count: number;
+  recording_ids: string[];
+  longitude: number;
+  latitude: number;
+  definition: string;
+};
+
+export type MonitoringPeriod = {
+  id: string;
+  fence_id: string;
+  label: string;
+  period_start: string;
+  period_end: string;
+  season_class: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type PeriodComparison = {
+  period_a_id: string;
+  period_b_id: string;
+  fence_id: string;
+  comparable: boolean;
+  compatibility: Record<string, boolean | string>;
+  period_a: Record<string, unknown>;
+  period_b: Record<string, unknown>;
+  species_gained: string[];
+  species_lost: string[];
+  species_retained: string[];
+  confidence_delta: number;
+};
+
+export type AuditBundle = {
+  bundle_type: string;
+  generated_at: string;
+  methodology_version: string;
+  fence_id: string;
+  fence_name: string;
+  recording_count: number;
+  recordings: Record<string, unknown>[];
+  reviewer_log: Record<string, unknown>[];
+  bundle_hash: string;
+};
+
+export type BiodiversityMapFeature = {
+  type: "Feature";
+  geometry: { type: string; coordinates: number[] | number[][][] };
+  properties: Record<string, unknown>;
+};
+
+export type BiodiversityMapLayer = {
+  type: "FeatureCollection";
+  features: BiodiversityMapFeature[];
+};
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -3107,6 +3190,64 @@ export const bioacoustic = {
         },
       })
     ).data;
+  },
+  async reviewQueue(plantationFenceId?: string) {
+    return (
+      await api.get<ReviewQueueItem[]>("/v1/bioacoustic/review-queue", {
+        params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined,
+      })
+    ).data;
+  },
+  async submitReview(
+    recordingId: string,
+    payload: { scientific_name: string; decision: string; notes?: string; analysis_run_id?: string },
+  ) {
+    return (
+      await api.post(`/v1/bioacoustic/recordings/${recordingId}/reviews`, payload)
+    ).data;
+  },
+  async audioUrl(recordingId: string) {
+    return (
+      await api.get<{ recording_id: string; url: string; expires_in: number }>(
+        `/v1/bioacoustic/recordings/${recordingId}/audio-url`,
+      )
+    ).data;
+  },
+  async interpretationChain(recordingId: string) {
+    return (
+      await api.get<InterpretationChain>(`/v1/bioacoustic/recordings/${recordingId}/interpretation-chain`)
+    ).data;
+  },
+  async mapLayer(plantationFenceId?: string) {
+    return (
+      await api.get<BiodiversityMapLayer>("/v1/bioacoustic/map-layer", {
+        params: plantationFenceId ? { plantation_fence_id: plantationFenceId } : undefined,
+      })
+    ).data;
+  },
+  async hotspots(plantationFenceId: string) {
+    return (
+      await api.get<Hotspot[]>("/v1/bioacoustic/hotspots", {
+        params: { plantation_fence_id: plantationFenceId },
+      })
+    ).data;
+  },
+  async monitoringPeriods(fenceId: string) {
+    return (
+      await api.get<MonitoringPeriod[]>("/v1/bioacoustic/monitoring-periods", {
+        params: { fence_id: fenceId },
+      })
+    ).data;
+  },
+  async comparePeriods(periodAId: string, periodBId: string) {
+    return (
+      await api.get<PeriodComparison>(
+        `/v1/bioacoustic/monitoring-periods/${periodAId}/compare/${periodBId}`,
+      )
+    ).data;
+  },
+  async auditBundle(fenceId: string) {
+    return (await api.get<AuditBundle>(`/v1/bioacoustic/fences/${fenceId}/audit-bundle`)).data;
   },
   async queueReport(plantationFenceId: string, kind: "biodiversity" | "esg" = "biodiversity") {
     return (

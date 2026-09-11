@@ -10,6 +10,11 @@ from app.services.bioacoustic.detection_tiers import (
     TIER_REVIEW_REQUIRED,
     exportable_detections,
 )
+from app.services.bioacoustic.review import (
+    DECISION_CONFIRMED,
+    apply_reviews_to_detections,
+    reviews_index,
+)
 
 _STUB_PIPELINES = frozenset({"stub-bioacoustic-v1", "stub"})
 _THREATENED = frozenset({"Critically Endangered", "Endangered", "Vulnerable"})
@@ -77,22 +82,41 @@ def recording_has_stub_pipeline(recording: Any) -> bool:
     return any(stub in pipeline for stub in _STUB_PIPELINES)
 
 
-def recording_export_blockers(recording: Any) -> list[str]:
+def recording_export_blockers(recording: Any, *, reviews: list[Any] | None = None) -> list[str]:
     blockers: list[str] = []
     if recording_has_stub_pipeline(recording):
         blockers.append("stub_pipeline")
     if getattr(recording, "gps_fallback", False):
         blockers.append("gps_fallback_unverified")
-    detections = getattr(recording, "species_detections", None) or []
-    threatened_review = [
-        d.get("scientific_name")
-        for d in detections
-        if d.get("iucn_status") in _THREATENED and d.get("detection_tier") != TIER_ACCEPTED
-    ]
+
+    raw_detections = getattr(recording, "species_detections", None) or []
+    review_rows = reviews if reviews is not None else list(getattr(recording, "detection_reviews", None) or [])
+    run_id = getattr(recording, "latest_analysis_run_id", None)
+    detections = (
+        apply_reviews_to_detections(raw_detections, review_rows, analysis_run_id=run_id)
+        if review_rows
+        else raw_detections
+    )
+
+    idx = reviews_index(review_rows) if review_rows else {}
+    threatened_review = []
+    for d in detections:
+        if d.get("iucn_status") not in _THREATENED:
+            continue
+        name = d.get("scientific_name", "")
+        key = (name, str(run_id) if run_id else None)
+        review = idx.get(key)
+        if review and review.decision == DECISION_CONFIRMED:
+            continue
+        if d.get("detection_tier") != TIER_ACCEPTED:
+            threatened_review.append(name)
+
     if threatened_review:
         blockers.append("threatened_taxa_require_review")
+
     review_pending = [d for d in detections if d.get("detection_tier") == TIER_REVIEW_REQUIRED]
-    if review_pending and not exportable_detections(detections):
+    exportable = exportable_detections(detections)
+    if review_pending and not exportable:
         blockers.append("no_accepted_detections")
     return blockers
 

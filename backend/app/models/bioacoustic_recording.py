@@ -41,6 +41,10 @@ class BioacousticRecording(UUIDPKMixin, TimestampMixin, Base):
         UUID(as_uuid=True),
         ForeignKey("bioacoustic_analysis_runs.id", ondelete="SET NULL", use_alter=True),
     )
+    monitoring_period_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("bioacoustic_monitoring_periods.id", ondelete="SET NULL"),
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     spectrogram_s3_key: Mapped[str | None] = mapped_column(String(512))
     preprocessing: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
@@ -78,6 +82,16 @@ class BioacousticRecording(UUIDPKMixin, TimestampMixin, Base):
         "BioacousticAnalysisRun",
         foreign_keys=[latest_analysis_run_id],
         uselist=False,
+    )
+    monitoring_period = relationship(
+        "BioacousticMonitoringPeriod",
+        back_populates="recordings",
+        foreign_keys=[monitoring_period_id],
+    )
+    detection_reviews = relationship(
+        "BioacousticDetectionReview",
+        back_populates="recording",
+        foreign_keys="BioacousticDetectionReview.recording_id",
     )
 
     __table_args__ = (
