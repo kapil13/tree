@@ -25,6 +25,14 @@ from app.schemas.audit_engagement import (
     WorkingClaimUpdate,
 )
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
+from app.schemas.audit_sampling import (
+    FieldVerificationCompleteOut,
+    FieldVisitCreate,
+    FieldVisitOut,
+    SamplingPlanGenerateOut,
+    SamplingPlanParams,
+    SamplingPlanSummaryOut,
+)
 from app.schemas.audit_satellite import (
     AuditBaselineOut,
     PromoteBoundariesOut,
@@ -866,3 +874,170 @@ async def get_auditor_queue(
 
     summary = await auditor_queue_summary(db, row.id)
     return AuditorQueueOut.model_validate(summary)
+
+
+@router.post("/{engagement_id}/sampling-plan/generate", response_model=SamplingPlanGenerateOut)
+async def generate_engagement_sampling_plan(
+    engagement_id: uuid.UUID,
+    body: SamplingPlanParams,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> SamplingPlanGenerateOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_sampling.plan import generate_sampling_plan
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        plan = await generate_sampling_plan(
+            db,
+            row,
+            plots_per_critical=body.plots_per_critical,
+            plots_per_high=body.plots_per_high,
+            plots_per_medium=body.plots_per_medium,
+            plots_per_low=body.plots_per_low,
+            layout_seed=body.layout_seed,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.sampling.generate",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"total_plots": plan.total_plots},
+    )
+    await db.commit()
+    return SamplingPlanGenerateOut(
+        total_plots=plan.total_plots,
+        status=plan.status,
+        stratification=plan.stratification,
+    )
+
+
+@router.get("/{engagement_id}/sampling-plan", response_model=SamplingPlanSummaryOut)
+async def get_engagement_sampling_plan(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> SamplingPlanSummaryOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_sampling.summary import sampling_plan_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await sampling_plan_summary(db, row.id)
+    return SamplingPlanSummaryOut.model_validate(summary)
+
+
+@router.post(
+    "/{engagement_id}/field-plots/{plot_id}/visits",
+    response_model=FieldVisitOut,
+)
+async def record_engagement_field_visit(
+    engagement_id: uuid.UUID,
+    plot_id: uuid.UUID,
+    body: FieldVisitCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> FieldVisitOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_sampling.visits import record_field_visit
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        visit = await record_field_visit(
+            db,
+            engagement=row,
+            plot_id=plot_id,
+            visitor_id=user.id,
+            trees_observed=body.trees_observed,
+            trees_alive=body.trees_alive,
+            canopy_cover_pct=body.canopy_cover_pct,
+            verification_outcome=body.verification_outcome,
+            notes=body.notes,
+            signals=body.signals,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.field.visit",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"plot_id": str(plot_id), "outcome": body.verification_outcome},
+    )
+    await db.commit()
+    return FieldVisitOut(
+        id=str(visit.id),
+        plot_id=str(visit.plot_id),
+        verification_outcome=visit.verification_outcome,
+        trees_observed=visit.trees_observed,
+        trees_alive=visit.trees_alive,
+        canopy_cover_pct=float(visit.canopy_cover_pct) if visit.canopy_cover_pct else None,
+        visited_at=visit.visited_at,
+        notes=visit.notes,
+        epistemic_label=visit.epistemic_label,
+    )
+
+
+@router.post(
+    "/{engagement_id}/field-verification/complete",
+    response_model=FieldVerificationCompleteOut,
+)
+async def complete_engagement_field_verification(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> FieldVerificationCompleteOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_sampling.visits import complete_field_verification
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        result = await complete_field_verification(db, row)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.field.complete",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff=result,
+    )
+    await db.commit()
+    return FieldVerificationCompleteOut.model_validate(result)

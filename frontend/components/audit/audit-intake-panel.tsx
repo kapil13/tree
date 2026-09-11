@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
+import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -366,7 +367,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       {(engagement.status === "intake_complete" ||
         engagement.status === "analysis_ready" ||
         engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed") && (
+        engagement.status === "risk_assessed" ||
+        engagement.status === "sampling_planned" ||
+        engagement.status === "field_verified") && (
         <AuditSatellitePanel
           projectId={projectId}
           engagementId={engagement.id}
@@ -376,7 +379,9 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
 
       {(engagement.status === "analysis_ready" ||
         engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed") && (
+        engagement.status === "risk_assessed" ||
+        engagement.status === "sampling_planned" ||
+        engagement.status === "field_verified") && (
         <AuditConfidencePanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
@@ -384,8 +389,19 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       )}
 
       {(engagement.status === "confidence_mapped" ||
-        engagement.status === "risk_assessed") && (
+        engagement.status === "risk_assessed" ||
+        engagement.status === "sampling_planned" ||
+        engagement.status === "field_verified") && (
         <AuditRiskPanel
+          engagementId={engagement.id}
+          engagementStatus={engagement.status}
+        />
+      )}
+
+      {(engagement.status === "risk_assessed" ||
+        engagement.status === "sampling_planned" ||
+        engagement.status === "field_verified") && (
+        <AuditSamplingPanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
         />

@@ -45,13 +45,21 @@ export function AuditRiskPanel({
   const { data: queue, isLoading: queueLoading } = useQuery({
     queryKey: ["audit-auditor-queue", engagementId],
     queryFn: () => auditEngagements.getAuditorQueue(engagementId),
-    enabled: engagementStatus === "confidence_mapped" || engagementStatus === "risk_assessed",
+    enabled:
+      engagementStatus === "confidence_mapped" ||
+      engagementStatus === "risk_assessed" ||
+      engagementStatus === "sampling_planned" ||
+      engagementStatus === "field_verified",
   });
 
   const { data: anomalies } = useQuery({
     queryKey: ["audit-risk-anomalies", engagementId],
     queryFn: () => auditEngagements.getRiskAnomalies(engagementId),
-    enabled: engagementStatus === "confidence_mapped" || engagementStatus === "risk_assessed",
+    enabled:
+      engagementStatus === "confidence_mapped" ||
+      engagementStatus === "risk_assessed" ||
+      engagementStatus === "sampling_planned" ||
+      engagementStatus === "field_verified",
   });
 
   const scan = useMutation({
@@ -63,7 +71,12 @@ export function AuditRiskPanel({
     },
   });
 
-  if (engagementStatus !== "confidence_mapped" && engagementStatus !== "risk_assessed") {
+  if (
+    engagementStatus !== "confidence_mapped" &&
+    engagementStatus !== "risk_assessed" &&
+    engagementStatus !== "sampling_planned" &&
+    engagementStatus !== "field_verified"
+  ) {
     return <section className="card text-sm text-stone-500">{t("confidenceRequired")}</section>;
   }
 
