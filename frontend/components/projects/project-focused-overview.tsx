@@ -337,6 +337,7 @@ export function ProjectFocusedOverview({
 
       <ProjectModuleLinks
         projectId={projectId}
+        project={project}
         satelliteHref={satelliteDashboardHref}
         openViolations={openViolations}
       />

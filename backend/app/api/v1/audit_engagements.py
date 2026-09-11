@@ -1,0 +1,532 @@
+"""Estate Watch audit intake API (Phase 1)."""
+
+from __future__ import annotations
+
+import uuid
+
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
+
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.schemas.audit_engagement import (
+    AuditEngagementDetailOut,
+    AuditEngagementOut,
+    BoundaryVersionCreate,
+    BoundaryVersionOut,
+    ClaimDocumentCreate,
+    ClaimDocumentOut,
+    ClaimSnapshotOut,
+    GisValidationRunOut,
+    IntakeGateOut,
+    KmlImportResult,
+    PlantabilityExclusionCreate,
+    PlantabilityExclusionOut,
+    PlausibilityAssessmentOut,
+    WorkingClaimUpdate,
+)
+from app.services.audit import record_audit
+from app.services.audit_intake.claim_snapshot import freeze_claim_snapshot, update_working_claim
+from app.services.audit_intake.ops import (
+    complete_intake,
+    create_boundary,
+    create_claim_document,
+    create_exclusion,
+    engagement_detail,
+    engagement_summary,
+    get_engagement_by_project,
+    get_or_create_engagement,
+    import_kml,
+    run_gis_validation,
+    run_plausibility,
+)
+from app.services.planting_projects.access import can_manage_project, load_project
+from app.services.schemes.monitoring import is_monitoring_scheme
+from app.services.storage.key_ownership import assert_owned_upload_key
+
+router = APIRouter(prefix="/audit-engagements", tags=["audit-engagements"])
+
+
+async def _require_monitoring_project(project) -> None:
+    if not is_monitoring_scheme(project.scheme_code):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="audit_intake_requires_estate_monitoring_scheme",
+        )
+
+
+async def _load_engagement_for_project(
+    db, project_id: uuid.UUID, user: CurrentUser
+):
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    await _require_monitoring_project(project)
+    engagement = await get_engagement_by_project(db, project.id)
+    if engagement is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    return project, engagement
+
+
+def _serialize_summary(raw: dict) -> AuditEngagementOut:
+    snap = raw.get("latest_snapshot")
+    return AuditEngagementOut(
+        id=raw["id"],
+        project_id=raw["project_id"],
+        status=raw["status"],
+        intake_completed_at=raw.get("intake_completed_at"),
+        working_claim=raw.get("working_claim") or {},
+        latest_snapshot=ClaimSnapshotOut.model_validate(snap) if snap else None,
+        boundary_count=raw.get("boundary_count", 0),
+        document_count=raw.get("document_count", 0),
+        exclusion_count=raw.get("exclusion_count", 0),
+        created_at=raw["created_at"],
+        updated_at=raw["updated_at"],
+    )
+
+
+def _serialize_detail(raw: dict) -> AuditEngagementDetailOut:
+    base = _serialize_summary(raw)
+    gis = raw.get("latest_gis_validation")
+    gate = raw.get("intake_gate")
+    return AuditEngagementDetailOut(
+        **base.model_dump(),
+        boundaries=[BoundaryVersionOut.model_validate(b) for b in raw.get("boundaries", [])],
+        documents=[ClaimDocumentOut.model_validate(d) for d in raw.get("documents", [])],
+        exclusions=[PlantabilityExclusionOut.model_validate(e) for e in raw.get("exclusions", [])],
+        plausibility=[
+            PlausibilityAssessmentOut.model_validate(p) for p in raw.get("plausibility", [])
+        ],
+        latest_gis_validation=GisValidationRunOut.model_validate(gis) if gis else None,
+        intake_gate=IntakeGateOut.model_validate(gate) if gate else None,
+    )
+
+
+@router.get("/projects/{project_id}", response_model=AuditEngagementDetailOut)
+async def get_project_audit_engagement(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditEngagementDetailOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    await _require_monitoring_project(project)
+    engagement = await get_engagement_by_project(db, project.id)
+    if engagement is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    raw = await engagement_detail(db, engagement, project)
+    return _serialize_detail(raw)
+
+
+@router.post("/projects/{project_id}", response_model=AuditEngagementDetailOut)
+async def create_project_audit_engagement(
+    project_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AuditEngagementDetailOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    await _require_monitoring_project(project)
+
+    existing = await get_engagement_by_project(db, project.id)
+    if existing:
+        raw = await engagement_detail(db, existing, project)
+        return _serialize_detail(raw)
+
+    engagement = await get_or_create_engagement(db, project, created_by_user_id=user.id)
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.create",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"engagement_id": str(engagement.id)},
+    )
+    await db.commit()
+    raw = await engagement_detail(db, engagement, project)
+    return _serialize_detail(raw)
+
+
+@router.get("/{engagement_id}", response_model=AuditEngagementDetailOut)
+async def get_audit_engagement(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditEngagementDetailOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    raw = await engagement_detail(db, row, project)
+    return _serialize_detail(raw)
+
+
+@router.put("/{engagement_id}/claim", response_model=AuditEngagementOut)
+async def update_claim(
+    engagement_id: uuid.UUID,
+    payload: WorkingClaimUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AuditEngagementOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if row.status != "draft":
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="engagement_not_editable")
+
+    await update_working_claim(db, row, payload.claim.model_dump(exclude_none=True))
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.claim.update",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+    )
+    await db.commit()
+    raw = await engagement_summary(db, row)
+    return _serialize_summary(raw)
+
+
+@router.post("/{engagement_id}/claim/freeze", response_model=ClaimSnapshotOut)
+async def freeze_claim(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> ClaimSnapshotOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        snapshot = await freeze_claim_snapshot(db, row, created_by_user_id=user.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.claim.freeze",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"version": snapshot.version, "content_hash": snapshot.content_hash},
+    )
+    await db.commit()
+    return ClaimSnapshotOut.model_validate(snapshot)
+
+
+@router.post("/{engagement_id}/documents", response_model=ClaimDocumentOut)
+async def upload_claim_document(
+    engagement_id: uuid.UUID,
+    payload: ClaimDocumentCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> ClaimDocumentOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    try:
+        assert_owned_upload_key(user.id, payload.s3_key, folders=("images", "safeguards", "audit"))
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    try:
+        doc = await create_claim_document(
+            db,
+            row,
+            doc_type=payload.doc_type,
+            title=payload.title,
+            s3_key=payload.s3_key,
+            uploaded_by_user_id=user.id,
+            metadata=payload.metadata,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.document.upload",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"doc_type": payload.doc_type},
+    )
+    await db.commit()
+    return ClaimDocumentOut(
+        id=doc.id,
+        doc_type=doc.doc_type,
+        title=doc.title,
+        s3_key=doc.s3_key,
+        metadata=doc.doc_metadata or {},
+        uploaded_by_user_id=doc.uploaded_by_user_id,
+        created_at=doc.created_at,
+    )
+
+
+@router.post("/{engagement_id}/boundaries", response_model=BoundaryVersionOut)
+async def add_boundary(
+    engagement_id: uuid.UUID,
+    payload: BoundaryVersionCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> BoundaryVersionOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        bv = await create_boundary(
+            db,
+            row,
+            name=payload.name,
+            boundary_geojson=payload.boundary.model_dump(),
+            block_type=payload.block_type,
+            area_ha_claimed=payload.area_ha_claimed,
+            source=payload.source,
+            fence_id=payload.link_fence_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.boundary.create",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"name": payload.name},
+    )
+    await db.commit()
+    from app.services.audit_intake.ops import _boundary_out
+
+    return BoundaryVersionOut.model_validate(_boundary_out(bv))
+
+
+@router.post("/{engagement_id}/boundaries/import-kml", response_model=KmlImportResult)
+async def import_kml_boundaries(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+    file: UploadFile = File(...),
+) -> KmlImportResult:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_intake.ops import _boundary_out
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    data = await file.read()
+    try:
+        created = await import_kml(db, row, filename=file.filename or "upload.kml", data=data)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.boundary.import_kml",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"imported": len(created)},
+    )
+    await db.commit()
+    return KmlImportResult(
+        imported=len(created),
+        boundaries=[BoundaryVersionOut.model_validate(_boundary_out(b)) for b in created],
+    )
+
+
+@router.post("/{engagement_id}/exclusions", response_model=PlantabilityExclusionOut)
+async def add_exclusion(
+    engagement_id: uuid.UUID,
+    payload: PlantabilityExclusionCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> PlantabilityExclusionOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_intake.ops import _exclusion_out
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        ex = await create_exclusion(
+            db,
+            row,
+            exclusion_type=payload.exclusion_type,
+            name=payload.name,
+            boundary_geojson=payload.boundary.model_dump(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.exclusion.create",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+    )
+    await db.commit()
+    return PlantabilityExclusionOut.model_validate(_exclusion_out(ex))
+
+
+@router.post("/{engagement_id}/gis-validation", response_model=GisValidationRunOut)
+async def run_gis_validation_endpoint(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> GisValidationRunOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    run = await run_gis_validation(db, row)
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.gis_validation.run",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"status": run.status},
+    )
+    await db.commit()
+    return GisValidationRunOut.model_validate(run)
+
+
+@router.post("/{engagement_id}/plausibility", response_model=list[PlausibilityAssessmentOut])
+async def run_plausibility_endpoint(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> list[PlausibilityAssessmentOut]:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    from app.models.audit_engagement import BoundaryVersion
+    from sqlalchemy import select
+
+    assessments = await run_plausibility(db, row, project)
+    boundaries = (
+        await db.execute(
+            select(BoundaryVersion).where(BoundaryVersion.engagement_id == row.id)
+        )
+    ).scalars().all()
+    boundary_names = {b.id: b.name for b in boundaries}
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.plausibility.run",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"count": len(assessments)},
+    )
+    await db.commit()
+    return [
+        PlausibilityAssessmentOut(
+            id=a.id,
+            boundary_version_id=a.boundary_version_id,
+            boundary_name=boundary_names.get(a.boundary_version_id),
+            verdict=a.verdict,
+            epistemic_label=a.epistemic_label,
+            summary=a.summary,
+            signals=a.signals or {},
+            assessed_at=a.assessed_at,
+        )
+        for a in assessments
+    ]
+
+
+@router.post("/{engagement_id}/intake-complete", response_model=AuditEngagementDetailOut)
+async def intake_complete(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AuditEngagementDetailOut:
+    from app.models.audit_engagement import AuditEngagement
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        raw = await complete_intake(db, row, project)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.intake.complete",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+    )
+    await db.commit()
+    return _serialize_detail(raw)

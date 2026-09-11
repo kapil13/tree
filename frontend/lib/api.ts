@@ -3373,6 +3373,139 @@ export const plotMonitoring = {
   },
 };
 
+export type AuditClaimSnapshot = {
+  id: string;
+  version: number;
+  claim_data: Record<string, unknown>;
+  content_hash: string;
+  epistemic_label: string;
+  frozen_at: string;
+};
+
+export type AuditEngagement = {
+  id: string;
+  project_id: string;
+  status: string;
+  intake_completed_at?: string | null;
+  working_claim: Record<string, unknown>;
+  latest_snapshot?: AuditClaimSnapshot | null;
+  boundary_count: number;
+  document_count: number;
+  exclusion_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AuditEngagementDetail = AuditEngagement & {
+  boundaries: Array<{
+    id: string;
+    name: string;
+    block_type?: string | null;
+    source: string;
+    boundary: { type: "Polygon"; coordinates: number[][][] };
+    area_ha_claimed?: number | null;
+    area_ha_measured?: number | null;
+    fence_id?: string | null;
+    metadata?: Record<string, unknown>;
+    created_at: string;
+  }>;
+  documents: Array<{
+    id: string;
+    doc_type: string;
+    title: string;
+    s3_key: string;
+    metadata?: Record<string, unknown>;
+    created_at: string;
+  }>;
+  exclusions: Array<Record<string, unknown>>;
+  plausibility: Array<{
+    id: string;
+    boundary_version_id: string;
+    boundary_name?: string | null;
+    verdict: string;
+    epistemic_label: string;
+    summary: string;
+    signals: Record<string, unknown>;
+    assessed_at: string;
+  }>;
+  latest_gis_validation?: {
+    id: string;
+    status: string;
+    checks: Record<string, unknown>;
+    issues: Array<Record<string, unknown>>;
+    run_at: string;
+  } | null;
+  intake_gate?: {
+    ready: boolean;
+    requirements: Array<{
+      id: string;
+      label: string;
+      met: boolean;
+      detail?: string | null;
+    }>;
+  } | null;
+};
+
+export const auditEngagements = {
+  async getByProject(projectId: string) {
+    return (
+      await api.get<AuditEngagementDetail>(`/v1/audit-engagements/projects/${projectId}`)
+    ).data;
+  },
+  async create(projectId: string) {
+    return (
+      await api.post<AuditEngagementDetail>(`/v1/audit-engagements/projects/${projectId}`)
+    ).data;
+  },
+  async updateClaim(engagementId: string, claim: Record<string, unknown>) {
+    return (
+      await api.put<AuditEngagement>(`/v1/audit-engagements/${engagementId}/claim`, { claim })
+    ).data;
+  },
+  async freezeClaim(engagementId: string) {
+    return (
+      await api.post<AuditClaimSnapshot>(`/v1/audit-engagements/${engagementId}/claim/freeze`)
+    ).data;
+  },
+  async addDocument(
+    engagementId: string,
+    payload: { doc_type: string; title: string; s3_key: string; metadata?: Record<string, unknown> },
+  ) {
+    return (await api.post(`/v1/audit-engagements/${engagementId}/documents`, payload)).data;
+  },
+  async importKml(engagementId: string, file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return (
+      await api.post<{ imported: number; boundaries: AuditEngagementDetail["boundaries"] }>(
+        `/v1/audit-engagements/${engagementId}/boundaries/import-kml`,
+        form,
+      )
+    ).data;
+  },
+  async runGisValidation(engagementId: string) {
+    return (
+      await api.post<NonNullable<AuditEngagementDetail["latest_gis_validation"]>>(
+        `/v1/audit-engagements/${engagementId}/gis-validation`,
+      )
+    ).data;
+  },
+  async runPlausibility(engagementId: string) {
+    return (
+      await api.post<AuditEngagementDetail["plausibility"]>(
+        `/v1/audit-engagements/${engagementId}/plausibility`,
+      )
+    ).data;
+  },
+  async completeIntake(engagementId: string) {
+    return (
+      await api.post<AuditEngagementDetail>(
+        `/v1/audit-engagements/${engagementId}/intake-complete`,
+      )
+    ).data;
+  },
+};
+
 export type FrameworkProfileCode =
   | "ipcc_ar6"
   | "verra_vm0047"

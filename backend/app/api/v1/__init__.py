@@ -7,6 +7,7 @@ from app.api.v1 import (
     alerts,
     analysis,
     audit,
+    audit_engagements,
     auth,
     bhoonidhi,
     bioacoustic,
@@ -53,6 +54,7 @@ api_router.include_router(india_admin.router)
 api_router.include_router(auth.router)
 api_router.include_router(onboarding.router)
 api_router.include_router(audit.router)
+api_router.include_router(audit_engagements.router)
 api_router.include_router(trees.router)
 api_router.include_router(analysis.router)
 api_router.include_router(ai_scans.router)
