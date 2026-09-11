@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Archive, CheckCircle2, Download, FileText } from "lucide-react";
-import { auditEngagements } from "@/lib/api";
+import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { cn } from "@/lib/cn";
 import { downloadBlob } from "@/lib/download-blob";
 
@@ -24,7 +25,7 @@ export function AuditExportPanel({
   const t = useTranslations("auditExport");
   const qc = useQueryClient();
 
-  const enabled =
+  const unlocked =
     engagementStatus === "field_verified" ||
     engagementStatus === "export_ready" ||
     engagementStatus === "under_review" ||
@@ -33,7 +34,7 @@ export function AuditExportPanel({
   const { data: readiness, isLoading } = useQuery({
     queryKey: ["audit-export-readiness", engagementId],
     queryFn: () => auditEngagements.getExportReadiness(engagementId),
-    enabled: engagementStatus !== "draft",
+    enabled: unlocked,
   });
 
   const download = useMutation({
@@ -45,10 +46,10 @@ export function AuditExportPanel({
     },
   });
 
-  if (!enabled && engagementStatus !== "sampling_planned") {
-    if (engagementStatus === "draft" || engagementStatus === "intake_complete") {
-      return null;
-    }
+  if (!unlocked) {
+    const message =
+      engagementStatus === "sampling_planned" ? t("fieldVisitsRequired") : t("notReady");
+    return <AuditLockedSection title={t("title")} message={message} />;
   }
 
   if (isLoading && !readiness) {
@@ -107,6 +108,9 @@ export function AuditExportPanel({
           <Download className="h-4 w-4" aria-hidden />
           {t("download")}
         </button>
+        {download.isError && (
+          <p className="text-sm text-rose-700">{errorMessage(download.error)}</p>
+        )}
         {readiness?.last_export_sha256 && (
           <p className="text-xs text-stone-500">
             {t("lastExport", { sha: readiness.last_export_sha256.slice(0, 12) })}

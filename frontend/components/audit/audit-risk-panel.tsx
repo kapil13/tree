@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, ListOrdered, ShieldAlert } from "lucide-react";
-import { auditEngagements } from "@/lib/api";
+import { auditEngagements, errorMessage } from "@/lib/api";
+import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { cn } from "@/lib/cn";
 
 const RISK_STYLES: Record<string, string> = {
@@ -77,16 +78,17 @@ export function AuditRiskPanel({
     },
   });
 
-  if (
-    engagementStatus !== "confidence_mapped" &&
-    engagementStatus !== "risk_assessed" &&
-    engagementStatus !== "sampling_planned" &&
-    engagementStatus !== "field_verified" &&
-    engagementStatus !== "export_ready" &&
-    engagementStatus !== "under_review" &&
-    engagementStatus !== "attested"
-  ) {
-    return <section className="card text-sm text-stone-500">{t("confidenceRequired")}</section>;
+  const unlocked =
+    engagementStatus === "confidence_mapped" ||
+    engagementStatus === "risk_assessed" ||
+    engagementStatus === "sampling_planned" ||
+    engagementStatus === "field_verified" ||
+    engagementStatus === "export_ready" ||
+    engagementStatus === "under_review" ||
+    engagementStatus === "attested";
+
+  if (!unlocked) {
+    return <AuditLockedSection title={t("title")} message={t("confidenceRequired")} />;
   }
 
   if (queueLoading) {
@@ -119,11 +121,14 @@ export function AuditRiskPanel({
         <button
           type="button"
           className="btn-primary text-sm"
-          disabled={scan.isPending}
+          disabled={scan.isPending || engagementStatus !== "confidence_mapped"}
           onClick={() => scan.mutate()}
         >
           {t("runScan")}
         </button>
+        {scan.isError && (
+          <p className="text-sm text-rose-700">{errorMessage(scan.error)}</p>
+        )}
         {Object.keys(levelCounts).length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
             {(["critical", "high", "medium", "low"] as const).map((level) =>
