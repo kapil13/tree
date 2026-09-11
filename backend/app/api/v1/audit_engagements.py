@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile, status
 
-from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.deps import DB, CurrentUser, PlatformAdmin, WriteAccess
 from app.schemas.audit_attestation import (
     AnomalyReviewCreate,
     AnomalyReviewOut,
@@ -34,7 +34,13 @@ from app.schemas.audit_engagement import (
     WorkingClaimUpdate,
 )
 from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut, ReconciliationOut
-from app.schemas.audit_portfolio import AuditFieldPlotQueueOut, AuditPortfolioSummaryOut
+from app.schemas.audit_integrity_bridge import AuditIntegrityBridgeOut
+from app.schemas.audit_portfolio import (
+    AuditCrossOrgSummaryOut,
+    AuditFieldPlotQueueOut,
+    AuditPortfolioSummaryOut,
+)
+from app.schemas.audit_reaudit import AuditCycleSummaryOut, ReauditStartCreate, ReauditStartOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_sampling import (
     FieldVerificationCompleteOut,
@@ -136,6 +142,17 @@ async def get_audit_portfolio_summary(user: CurrentUser, db: DB) -> AuditPortfol
 
     summary = await build_audit_portfolio_summary(db, user)
     return AuditPortfolioSummaryOut.model_validate(summary)
+
+
+@router.get("/cross-org-summary", response_model=AuditCrossOrgSummaryOut)
+async def get_cross_org_audit_summary(
+    user: PlatformAdmin,
+    db: DB,
+) -> AuditCrossOrgSummaryOut:
+    from app.services.audit_portfolio.cross_org_summary import build_cross_org_audit_summary
+
+    summary = await build_cross_org_audit_summary(db, user)
+    return AuditCrossOrgSummaryOut.model_validate(summary)
 
 
 @router.get("/field-plot-queue", response_model=AuditFieldPlotQueueOut)
@@ -1309,6 +1326,84 @@ async def get_audit_export_summary(
         signature_key_id=meta.get("export_signature_key_id"),
         status=row.status,
     )
+
+
+@router.get("/{engagement_id}/integrity-bridge", response_model=AuditIntegrityBridgeOut)
+async def get_engagement_integrity_bridge(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditIntegrityBridgeOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_integrity.bridge import build_audit_integrity_bridge
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    payload = await build_audit_integrity_bridge(db, row, project)
+    return AuditIntegrityBridgeOut.model_validate(payload)
+
+
+@router.get("/{engagement_id}/cycles", response_model=AuditCycleSummaryOut)
+async def get_engagement_audit_cycles(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditCycleSummaryOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_reaudit.cycle import cycle_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    return AuditCycleSummaryOut.model_validate(cycle_summary(row))
+
+
+@router.post("/{engagement_id}/reaudit", response_model=ReauditStartOut)
+async def start_engagement_reaudit(
+    engagement_id: uuid.UUID,
+    body: ReauditStartCreate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> ReauditStartOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_reaudit.cycle import start_reaudit_cycle
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        result = await start_reaudit_cycle(db, row, notes=body.notes)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.reaudit.start",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={
+            "current_cycle": result["current_cycle"],
+            "archived_cycles": result["archived_cycles"],
+            "plots_reset": result["plots_reset"],
+        },
+    )
+    return ReauditStartOut.model_validate(result)
 
 
 @router.get("/{engagement_id}/attestation", response_model=AttestationSummaryOut)

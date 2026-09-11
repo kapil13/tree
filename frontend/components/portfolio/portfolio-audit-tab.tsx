@@ -27,6 +27,7 @@ import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
 import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
+import { PortfolioCrossOrgAuditSection } from "./portfolio-cross-org-audit-section";
 import { PortfolioTabShell } from "./portfolio-tab-shell";
 
 const SEGMENT_LABEL: Record<string, string> = {
@@ -161,6 +162,8 @@ export function PortfolioAuditTab({
           })}
         </div>
       </section>
+
+      <PortfolioCrossOrgAuditSection />
 
       <PortfolioKpiGrid>
         <PortfolioKpiCard

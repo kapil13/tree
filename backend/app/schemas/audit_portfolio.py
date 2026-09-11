@@ -47,3 +47,30 @@ class AuditFieldPlotQueueOut(BaseModel):
     total_due: int
     items: list[AuditFieldPlotQueueItemOut] = Field(default_factory=list)
     scoped_project_id: str | None = None
+
+
+class AuditCrossOrgProjectOut(BaseModel):
+    id: str
+    code: str
+    name: str
+    engagement_id: str | None = None
+    engagement_status: str
+    cycle_number: int = 1
+
+
+class AuditCrossOrgRowOut(BaseModel):
+    organization_id: str | None = None
+    organization_name: str
+    project_count: int
+    engagement_count: int
+    attested_count: int
+    in_field_count: int
+    projects: list[AuditCrossOrgProjectOut] = Field(default_factory=list)
+
+
+class AuditCrossOrgSummaryOut(BaseModel):
+    organization_count: int
+    engagement_count: int
+    attested_count: int
+    in_field_count: int
+    organizations: list[AuditCrossOrgRowOut] = Field(default_factory=list)

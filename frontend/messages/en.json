@@ -695,6 +695,44 @@
     "copyLink": "Copy link",
     "copied": "Copied"
   },
+  "auditIntegrityBridge": {
+    "title": "Integrity bridge",
+    "subtitle": "Align per-tree integrity fusion gates with Estate Watch export readiness.",
+    "epistemicNote": "Fusion scores are ESTIMATION — use them to prioritise remediation before attestation.",
+    "loading": "Loading integrity bridge…",
+    "error": "Could not load integrity bridge.",
+    "statusAligned": "Aligned",
+    "statusGaps": "Gaps remain",
+    "auditReady": "Audit-ready trees",
+    "exportGate": "Export gate",
+    "ready": "Ready",
+    "blocked": "Blocked",
+    "blockingTrees": "Blocking trees",
+    "openIntegrityFusion": "Open integrity fusion",
+    "reviewTrees": "Review trees",
+    "table": {
+      "tree": "Tree",
+      "status": "Status",
+      "reasons": "Blockers"
+    }
+  },
+  "auditReaudit": {
+    "title": "Continuous re-audit",
+    "subtitle": "Start a new monitoring cycle after attestation while preserving prior cycle history.",
+    "epistemicNote": "Re-audit resets field plots and clears attestation — prior cycles remain verifiable via archived hashes.",
+    "loading": "Loading cycle history…",
+    "cycleBadge": "Cycle {count}",
+    "currentStatus": "Current status: {status}",
+    "historyTitle": "Prior attested cycles",
+    "historyEmpty": "No prior cycles — this is the first attestation period.",
+    "cycleLabel": "Cycle {number}",
+    "startHint": "Archive the current attestation, reset plot visits, and return to satellite analysis for the next monitoring period.",
+    "notesLabel": "Cycle notes (optional)",
+    "notesPlaceholder": "e.g. Annual re-verification after monsoon season",
+    "startButton": "Start re-audit cycle",
+    "starting": "Starting…",
+    "attestedRequired": "Complete attestation before starting a new re-audit cycle."
+  },
   "auditVerify": {
     "header": "Estate Watch audit verification",
     "kicker": "Verified audit record",
@@ -1133,6 +1171,19 @@
       },
       "openAudit": "Open audit",
       "openAttestation": "Attestation",
+      "crossOrg": {
+        "title": "Cross-organization visibility",
+        "desc": "Platform-wide Estate Watch engagements grouped by organization (admin only).",
+        "loading": "Loading cross-org audit summary…",
+        "error": "Could not load cross-org audit summary.",
+        "organizations": "Organizations",
+        "engagements": "Engagements",
+        "inField": "In field",
+        "attested": "Attested",
+        "orgMeta": "{projects} projects · {attested} attested · {inField} in field",
+        "cycle": "Cycle {number}",
+        "platformAudit": "Platform audit log"
+      },
       "table": {
         "project": "Project",
         "segment": "Segment",
