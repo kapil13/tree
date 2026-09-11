@@ -11,6 +11,7 @@ from app.models.audit_engagement import (
     PlantabilityExclusion,
     PlausibilityAssessment,
 )
+from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.carbon import CarbonCalculation
 from app.models.citizen_profile import CitizenProfile
@@ -95,6 +96,8 @@ __all__ = [
     "GisValidationRun",
     "PlantabilityExclusion",
     "PlausibilityAssessment",
+    "AuditSatelliteBaseline",
+    "AuditTemporalObservation",
     "CarbonCalculation",
     "CitizenProfile",
     "ComplianceChecklistOverride",

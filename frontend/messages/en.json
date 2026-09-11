@@ -516,6 +516,24 @@
     "alreadyComplete": "Intake already complete",
     "refresh": "Refresh"
   },
+  "auditSatellite": {
+    "title": "Satellite & temporal analysis",
+    "subtitle": "Establish T0 baseline at planting date, build T0–T4 vegetation timeline, and prepare for confidence mapping.",
+    "auditModeNote": "Audit mode: stub satellite providers are rejected — only live Sentinel-2 observations are stored.",
+    "intakeRequired": "Complete audit intake before starting satellite analysis.",
+    "loading": "Loading satellite timeline…",
+    "statusReady": "Analysis ready",
+    "promoteBoundaries": "Promote to work areas",
+    "establishT0": "Establish T0 baseline",
+    "runTemporal": "Build T0–T4 timeline",
+    "markReady": "Mark analysis ready",
+    "summary": "{blocks} block(s) · {t0} T0 baseline(s) found",
+    "noBlocks": "No blocks — import boundaries during intake first.",
+    "openSatellite": "Open satellite map",
+    "phase": "Phase",
+    "date": "Date",
+    "epistemicNote": "All values are OBSERVATION (measured) — not verified plantation claims."
+  },
   "projectCompliance": {
     "sectionsAria": "Compliance sections",
     "sectionOverview": "Readiness overview",
