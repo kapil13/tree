@@ -19,7 +19,10 @@ from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
 from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED, exportable_detections
-from app.services.bioacoustic.methodology import assert_recordings_exportable, recording_has_stub_pipeline
+from app.services.bioacoustic.methodology import (
+    assert_recordings_exportable,
+    recording_has_stub_pipeline,
+)
 
 DARWIN_CORE_VERSION = "2024-04-24"
 DWC_TERMS = [
