@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Activity, ClipboardCheck, ClipboardList, Satellite, ShieldCheck } from "lucide-react";
+import { Activity, ClipboardCheck, ClipboardList, ClipboardSignature, Satellite, ShieldCheck } from "lucide-react";
 import { portfolioComplianceHref, projectComplianceHref } from "@/lib/compliance-links";
+import { projectAuditIntakeHref } from "@/lib/audit-intake-links";
 import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
+import { isMonitoringOnlyProject } from "@/lib/project-monitoring";
+import type { PlantingProject } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
 type ProjectModuleLinksProps = {
   projectId: string;
+  project?: Pick<PlantingProject, "scheme_code">;
   satelliteHref: string;
   openViolations?: number;
   className?: string;
@@ -16,11 +20,13 @@ type ProjectModuleLinksProps = {
 
 export function ProjectModuleLinks({
   projectId,
+  project,
   satelliteHref,
   openViolations = 0,
   className,
 }: ProjectModuleLinksProps) {
   const t = useTranslations("projectWorkspace");
+  const monitoringMode = project ? isMonitoringOnlyProject(project) : false;
 
   const links = [
     {
@@ -54,6 +60,16 @@ export function ProjectModuleLinks({
       label: t("moduleMonitoring"),
       description: t("moduleMonitoringDesc"),
     },
+    ...(monitoringMode
+      ? [
+          {
+            href: projectAuditIntakeHref(projectId),
+            icon: ClipboardSignature,
+            label: t("moduleAuditIntake"),
+            description: t("moduleAuditIntakeDesc"),
+          },
+        ]
+      : []),
   ];
 
   return (
