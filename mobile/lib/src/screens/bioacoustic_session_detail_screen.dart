@@ -14,6 +14,19 @@ final bioacousticRecordingProvider =
   return api.getBioacousticRecording(id);
 });
 
+String _tierLabel(String? tier) {
+  switch (tier) {
+    case 'accepted':
+      return 'Accepted';
+    case 'probable':
+      return 'Probable';
+    case 'review_required':
+      return 'Review required';
+    default:
+      return 'Unknown';
+  }
+}
+
 class BioacousticSessionDetailScreen extends ConsumerWidget {
   const BioacousticSessionDetailScreen({super.key, required this.recordingId});
 
@@ -64,9 +77,9 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
           final duration = (rec['duration_seconds'] as num?)?.toStringAsFixed(0) ?? '—';
           final status = rec['status'] as String? ?? 'analyzed';
           final created = rec['created_at'] as String? ?? '';
-          final score = rec['bioacoustic_health_score'];
+          final score = rec['biodiversity_confidence_score'] ?? rec['bioacoustic_health_score'];
           final shannon = rec['shannon_diversity_index'];
-          final richness = rec['species_richness'] ?? rec['total_species_count'];
+          final richness = rec['accepted_species_count'] ?? rec['species_richness'] ?? rec['total_species_count'];
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -91,8 +104,8 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                       Text(
                         [
-                          if (score != null) 'Health $score/100',
-                          if (richness != null) 'Richness $richness',
+                          if (score != null) 'Confidence $score/100',
+                          if (richness != null) 'Accepted $richness',
                           if (shannon != null) 'Shannon $shannon',
                         ].join(' · '),
                         style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.brandForest),
@@ -165,7 +178,7 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
                                 style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
                               ),
                               Text(
-                                '${s['taxon_group']} · ${s['call_count']} calls',
+                                '${s['taxon_group']} · ${s['call_count']} calls · ${_tierLabel(s['detection_tier'] as String?)}',
                                 style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                               ),
                             ],

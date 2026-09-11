@@ -265,3 +265,119 @@ class EcosystemHealthOut(BaseModel):
     ndvi_disclaimer: str = (
         "NDVI co-occurrence screening does not prove ecological causation."
     )
+
+
+class DetectionReviewCreate(BaseModel):
+    scientific_name: str = Field(..., min_length=1, max_length=255)
+    decision: str = Field(..., min_length=1, max_length=32)
+    notes: str | None = Field(None, max_length=2000)
+    analysis_run_id: uuid.UUID | None = None
+
+
+class DetectionReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    recording_id: uuid.UUID
+    analysis_run_id: uuid.UUID | None = None
+    scientific_name: str
+    reviewer_user_id: uuid.UUID
+    decision: str
+    notes: str | None = None
+    reviewed_at: datetime
+    created_at: datetime
+
+
+class ReviewQueueItem(BaseModel):
+    recording_id: str
+    analysis_run_id: str | None = None
+    recorded_at: str | None = None
+    plantation_fence_id: str | None = None
+    scientific_name: str | None = None
+    common_name: str | None = None
+    taxon_group: str | None = None
+    confidence: float | None = None
+    detection_tier: str | None = None
+    iucn_status: str | None = None
+    needs_review: bool = True
+
+
+class AudioUrlOut(BaseModel):
+    recording_id: uuid.UUID
+    analysis_run_id: uuid.UUID | None = None
+    url: str
+    expires_in: int
+
+
+class MonitoringPeriodCreate(BaseModel):
+    fence_id: uuid.UUID
+    label: str = Field(..., min_length=1, max_length=128)
+    period_start: datetime
+    period_end: datetime
+    season_class: str = Field(default="unspecified", max_length=32)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MonitoringPeriodOut(BaseModel):
+    id: uuid.UUID
+    fence_id: uuid.UUID
+    label: str
+    period_start: datetime
+    period_end: datetime
+    season_class: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+    @classmethod
+    def from_model(cls, period) -> MonitoringPeriodOut:
+        return cls(
+            id=period.id,
+            fence_id=period.fence_id,
+            label=period.label,
+            period_start=period.period_start,
+            period_end=period.period_end,
+            season_class=period.season_class,
+            metadata=getattr(period, "metadata_", None) or {},
+            created_at=period.created_at,
+        )
+
+
+class PeriodComparisonOut(BaseModel):
+    period_a_id: str
+    period_b_id: str
+    fence_id: str
+    comparable: bool
+    compatibility: dict[str, Any]
+    period_a: dict[str, Any]
+    period_b: dict[str, Any]
+    species_gained: list[str] = Field(default_factory=list)
+    species_lost: list[str] = Field(default_factory=list)
+    species_retained: list[str] = Field(default_factory=list)
+    confidence_delta: float = 0.0
+
+
+class InterpretationChainOut(BaseModel):
+    recording_id: str
+    status: str
+    chain: list[dict[str, Any]]
+
+
+class HotspotOut(BaseModel):
+    scientific_name: str
+    recording_count: int
+    recording_ids: list[str]
+    longitude: float
+    latitude: float
+    definition: str
+
+
+class AuditBundleOut(BaseModel):
+    bundle_type: str
+    generated_at: str
+    methodology_version: str
+    fence_id: str
+    fence_name: str
+    recording_count: int
+    recordings: list[dict[str, Any]]
+    reviewer_log: list[dict[str, Any]]
+    bundle_hash: str

@@ -17,6 +17,19 @@ import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 import '../theme.dart';
 
+String _tierLabel(String? tier) {
+  switch (tier) {
+    case 'accepted':
+      return 'Accepted';
+    case 'probable':
+      return 'Probable';
+    case 'review_required':
+      return 'Review required';
+    default:
+      return 'Unknown';
+  }
+}
+
 class BioacousticScreen extends ConsumerStatefulWidget {
   const BioacousticScreen({super.key});
   @override
@@ -633,10 +646,10 @@ class _HistoryTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('${r['duration_seconds']}s · ${r['status']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          if (r['bioacoustic_health_score'] != null)
+                          if (r['biodiversity_confidence_score'] != null || r['bioacoustic_health_score'] != null)
                             Text(
-                              'Biodiversity ${r['bioacoustic_health_score']}/100 · '
-                              'Richness ${r['species_richness'] ?? r['total_species_count']} · '
+                              'Confidence ${r['biodiversity_confidence_score'] ?? r['bioacoustic_health_score']}/100 · '
+                              'Accepted ${r['accepted_species_count'] ?? r['species_richness'] ?? r['total_species_count']} · '
                               'Shannon ${r['shannon_diversity_index']}',
                             ),
                           if (r['analysis_summary'] != null)
@@ -652,7 +665,8 @@ class _HistoryTab extends StatelessWidget {
                               title: Text('${s['common_name']} (${s['scientific_name']})'),
                               subtitle: Text(
                                 '${s['taxon_group']} · ${s['call_count']} calls · '
-                                '${((s['confidence'] as num) * 100).toStringAsFixed(0)}%',
+                                '${((s['confidence'] as num) * 100).toStringAsFixed(0)}% · '
+                                '${_tierLabel(s['detection_tier'] as String?)}',
                               ),
                               trailing: Text(
                                 s['iucn_status'] as String? ?? '',

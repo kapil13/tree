@@ -10,21 +10,43 @@ from sqlalchemy import func, or_, select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
 from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
+from app.models.bioacoustic_monitoring_period import BioacousticMonitoringPeriod
 from app.models.bioacoustic_recording import BioacousticRecording
+from app.models.plantation_fence import PlantationFence
 from app.schemas.bioacoustic import (
+    AudioUrlOut,
+    AuditBundleOut,
     BioacousticAnalysisRunOut,
     BioacousticAnalyzeResponse,
     BioacousticRecordingCreate,
     BioacousticRecordingOut,
     BioacousticSummary,
+    DetectionReviewCreate,
+    DetectionReviewOut,
+    HotspotOut,
+    InterpretationChainOut,
+    MonitoringPeriodCreate,
+    MonitoringPeriodOut,
+    PeriodComparisonOut,
     RegionalFaunaOut,
+    ReviewQueueItem,
 )
 from app.schemas.cursor_page import CursorPage
+from app.services.bioacoustic.audit_bundle import build_audit_bundle
 from app.services.bioacoustic.confidence import METHODOLOGY_VERSION
 from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED
+from app.services.bioacoustic.hotspots import compute_hotspots
+from app.services.bioacoustic.interpretation_chain import build_interpretation_chain
+from app.services.bioacoustic.map_layer import build_map_layer
 from app.services.bioacoustic.methodology import SCIENTIFIC_LIMITATIONS
+from app.services.bioacoustic.monitoring_periods import (
+    compare_monitoring_periods,
+    create_monitoring_period,
+    list_monitoring_periods,
+)
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
+from app.services.bioacoustic.review import list_review_queue, submit_detection_review
 from app.services.data_scope import apply_owner_org_scope
 from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
 from app.services.platform.governance import assert_org_feature_enabled
@@ -343,3 +365,261 @@ async def bioacoustic_summary(
         methodology_version=METHODOLOGY_VERSION,
         scientific_limitations=list(SCIENTIFIC_LIMITATIONS),
     )
+
+
+@router.get("/review-queue", response_model=list[ReviewQueueItem])
+async def review_queue(
+    user: CurrentUser,
+    db: DB,
+    plantation_fence_id: uuid.UUID | None = None,
+) -> list[ReviewQueueItem]:
+    stmt = _scope(select(BioacousticRecording), user).where(BioacousticRecording.status == "analyzed")
+    if plantation_fence_id:
+        stmt = stmt.where(BioacousticRecording.plantation_fence_id == plantation_fence_id)
+    rows = (await db.execute(stmt.order_by(BioacousticRecording.recorded_at.desc()).limit(200))).scalars().all()
+    items = await list_review_queue(db, list(rows))
+    return [ReviewQueueItem(**item) for item in items]
+
+
+@router.post(
+    "/recordings/{recording_id}/reviews",
+    response_model=DetectionReviewOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_detection_review(
+    recording_id: uuid.UUID,
+    payload: DetectionReviewCreate,
+    user: WriteProfessional,
+    db: DB,
+) -> DetectionReviewOut:
+    await assert_org_feature_enabled(db, user, "bioacoustic")
+    rec = (
+        await db.execute(
+            _scope(select(BioacousticRecording).where(BioacousticRecording.id == recording_id), user)
+        )
+    ).scalar_one_or_none()
+    if rec is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    try:
+        review = await submit_detection_review(
+            db,
+            recording=rec,
+            reviewer_user_id=user.id,
+            scientific_name=payload.scientific_name,
+            decision=payload.decision,
+            notes=payload.notes,
+            analysis_run_id=payload.analysis_run_id or rec.latest_analysis_run_id,
+        )
+        await db.commit()
+        await db.refresh(review)
+        return DetectionReviewOut.model_validate(review)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/recordings/{recording_id}/audio-url", response_model=AudioUrlOut)
+async def recording_audio_url(
+    recording_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    analysis_run_id: uuid.UUID | None = None,
+    expires_in: int = Query(900, ge=60, le=3600),
+) -> AudioUrlOut:
+    rec = (
+        await db.execute(
+            _scope(select(BioacousticRecording).where(BioacousticRecording.id == recording_id), user)
+        )
+    ).scalar_one_or_none()
+    if rec is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    storage = get_storage()
+    url = storage.presigned_get(rec.s3_key, expires_in=expires_in)
+    return AudioUrlOut(
+        recording_id=rec.id,
+        analysis_run_id=analysis_run_id or rec.latest_analysis_run_id,
+        url=url,
+        expires_in=expires_in,
+    )
+
+
+@router.get("/recordings/{recording_id}/interpretation-chain", response_model=InterpretationChainOut)
+async def interpretation_chain(
+    recording_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> InterpretationChainOut:
+    rec = (
+        await db.execute(
+            _scope(select(BioacousticRecording).where(BioacousticRecording.id == recording_id), user)
+        )
+    ).scalar_one_or_none()
+    if rec is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    data = build_interpretation_chain(rec)
+    return InterpretationChainOut(**data)
+
+
+@router.get("/map-layer")
+async def biodiversity_map_layer(
+    user: CurrentUser,
+    db: DB,
+    plantation_fence_id: uuid.UUID | None = None,
+) -> dict:
+    stmt = _scope(select(BioacousticRecording), user)
+    if plantation_fence_id:
+        stmt = stmt.where(BioacousticRecording.plantation_fence_id == plantation_fence_id)
+    recordings = list((await db.execute(stmt.order_by(BioacousticRecording.recorded_at.desc()).limit(500))).scalars().all())
+
+    fence_ids = {r.plantation_fence_id for r in recordings if r.plantation_fence_id}
+    if plantation_fence_id:
+        fence_ids.add(plantation_fence_id)
+    fences: list[PlantationFence] = []
+    if fence_ids:
+        fences = list(
+            (
+                await db.execute(select(PlantationFence).where(PlantationFence.id.in_(fence_ids)))
+            ).scalars().all()
+        )
+    return build_map_layer(recordings, fences)
+
+
+@router.get("/hotspots", response_model=list[HotspotOut])
+async def biodiversity_hotspots(
+    user: CurrentUser,
+    db: DB,
+    plantation_fence_id: uuid.UUID,
+    min_recordings: int = Query(2, ge=2, le=10),
+) -> list[HotspotOut]:
+    rows = list(
+        (
+            await db.execute(
+                _scope(select(BioacousticRecording), user).where(
+                    BioacousticRecording.plantation_fence_id == plantation_fence_id
+                )
+            )
+        ).scalars().all()
+    )
+    hotspots = compute_hotspots(rows, min_recordings=min_recordings)
+    return [HotspotOut(**h) for h in hotspots]
+
+
+@router.post("/monitoring-periods", response_model=MonitoringPeriodOut, status_code=status.HTTP_201_CREATED)
+async def create_monitoring_period_route(
+    payload: MonitoringPeriodCreate,
+    user: WriteProfessional,
+    db: DB,
+) -> MonitoringPeriodOut:
+    await assert_org_feature_enabled(db, user, "bioacoustic")
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == payload.fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    try:
+        period = await create_monitoring_period(
+            db,
+            fence_id=payload.fence_id,
+            label=payload.label,
+            period_start=payload.period_start,
+            period_end=payload.period_end,
+            season_class=payload.season_class,
+            metadata=payload.metadata,
+        )
+        await db.commit()
+        await db.refresh(period)
+        return MonitoringPeriodOut.from_model(period)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/monitoring-periods", response_model=list[MonitoringPeriodOut])
+async def list_monitoring_periods_route(
+    user: CurrentUser,
+    db: DB,
+    fence_id: uuid.UUID,
+) -> list[MonitoringPeriodOut]:
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    periods = await list_monitoring_periods(db, fence_id)
+    return [MonitoringPeriodOut.from_model(p) for p in periods]
+
+
+@router.get(
+    "/monitoring-periods/{period_a_id}/compare/{period_b_id}",
+    response_model=PeriodComparisonOut,
+)
+async def compare_periods_route(
+    period_a_id: uuid.UUID,
+    period_b_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> PeriodComparisonOut:
+    period_a = (await db.execute(select(BioacousticMonitoringPeriod).where(BioacousticMonitoringPeriod.id == period_a_id))).scalar_one_or_none()
+    period_b = (await db.execute(select(BioacousticMonitoringPeriod).where(BioacousticMonitoringPeriod.id == period_b_id))).scalar_one_or_none()
+    if period_a is None or period_b is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == period_a.fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    try:
+        data = await compare_monitoring_periods(db, period_a, period_b)
+        return PeriodComparisonOut(**data)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/fences/{fence_id}/audit-bundle", response_model=AuditBundleOut)
+async def fence_audit_bundle(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditBundleOut:
+    fence = (
+        await db.execute(
+            apply_owner_org_scope(
+                select(PlantationFence).where(PlantationFence.id == fence_id),
+                user,
+                owner_col=PlantationFence.owner_user_id,
+                org_col=PlantationFence.organization_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    recordings = list(
+        (
+            await db.execute(
+                _scope(select(BioacousticRecording), user).where(
+                    BioacousticRecording.plantation_fence_id == fence_id
+                )
+            )
+        ).scalars().all()
+    )
+    bundle = await build_audit_bundle(db, fence, recordings)
+    return AuditBundleOut(**bundle)
