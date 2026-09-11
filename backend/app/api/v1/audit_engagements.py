@@ -24,6 +24,7 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
+from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_satellite import (
     AuditBaselineOut,
     PromoteBoundariesOut,
@@ -790,3 +791,78 @@ async def get_confidence_map(
 
     summary = await confidence_map_summary(db, row.id)
     return ConfidenceMapOut.model_validate(summary)
+
+
+@router.post("/{engagement_id}/risk-scan", response_model=RiskScanOut)
+async def run_engagement_risk_scan(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> RiskScanOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_risk.scan import run_risk_scan
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    try:
+        result = await run_risk_scan(db, row, project)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.risk.scan",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff=result,
+    )
+    await db.commit()
+    return RiskScanOut.model_validate(result)
+
+
+@router.get("/{engagement_id}/risk-anomalies", response_model=AnomaliesSummaryOut)
+async def get_risk_anomalies(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AnomaliesSummaryOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_risk.queue import anomalies_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await anomalies_summary(db, row.id)
+    return AnomaliesSummaryOut.model_validate(summary)
+
+
+@router.get("/{engagement_id}/auditor-queue", response_model=AuditorQueueOut)
+async def get_auditor_queue(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditorQueueOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_risk.queue import auditor_queue_summary
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    summary = await auditor_queue_summary(db, row.id)
+    return AuditorQueueOut.model_validate(summary)

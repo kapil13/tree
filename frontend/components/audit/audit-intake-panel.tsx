@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
+import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -364,7 +365,8 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
 
       {(engagement.status === "intake_complete" ||
         engagement.status === "analysis_ready" ||
-        engagement.status === "confidence_mapped") && (
+        engagement.status === "confidence_mapped" ||
+        engagement.status === "risk_assessed") && (
         <AuditSatellitePanel
           projectId={projectId}
           engagementId={engagement.id}
@@ -373,8 +375,17 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
       )}
 
       {(engagement.status === "analysis_ready" ||
-        engagement.status === "confidence_mapped") && (
+        engagement.status === "confidence_mapped" ||
+        engagement.status === "risk_assessed") && (
         <AuditConfidencePanel
+          engagementId={engagement.id}
+          engagementStatus={engagement.status}
+        />
+      )}
+
+      {(engagement.status === "confidence_mapped" ||
+        engagement.status === "risk_assessed") && (
+        <AuditRiskPanel
           engagementId={engagement.id}
           engagementStatus={engagement.status}
         />

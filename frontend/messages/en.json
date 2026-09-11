@@ -546,6 +546,20 @@
     "score": "Score {score}/100",
     "gridPreview": "Zone preview (3×3)"
   },
+  "auditRisk": {
+    "title": "Risk & anomaly engine",
+    "subtitle": "Detect NDVI drops, growth deviations, confidence gaps, and plausibility concerns — rank blocks for auditor review.",
+    "epistemicNote": "Risk scores are ESTIMATION — prioritisation signals, not verified fraud findings.",
+    "confidenceRequired": "Compute the confidence map before running a risk scan.",
+    "loading": "Loading risk assessment…",
+    "statusAssessed": "Risk assessed",
+    "runScan": "Run risk scan",
+    "queueTitle": "Auditor priority queue",
+    "noQueue": "No risk assessments yet — run a risk scan.",
+    "score": "Risk {score}/100",
+    "anomalyCount": "{count} anomaly signal(s)",
+    "anomalySummary": "{total} total anomalies ({critical} critical, {high} high)"
+  },
   "projectCompliance": {
     "sectionsAria": "Compliance sections",
     "sectionOverview": "Readiness overview",

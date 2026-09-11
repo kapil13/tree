@@ -50,7 +50,10 @@ export function AuditConfidencePanel({
   const { data, isLoading } = useQuery({
     queryKey: ["audit-confidence-map", engagementId],
     queryFn: () => auditEngagements.getConfidenceMap(engagementId),
-    enabled: engagementStatus === "analysis_ready" || engagementStatus === "confidence_mapped",
+    enabled:
+      engagementStatus === "analysis_ready" ||
+      engagementStatus === "confidence_mapped" ||
+      engagementStatus === "risk_assessed",
   });
 
   const compute = useMutation({
@@ -60,7 +63,11 @@ export function AuditConfidencePanel({
     },
   });
 
-  if (engagementStatus !== "analysis_ready" && engagementStatus !== "confidence_mapped") {
+  if (
+    engagementStatus !== "analysis_ready" &&
+    engagementStatus !== "confidence_mapped" &&
+    engagementStatus !== "risk_assessed"
+  ) {
     return (
       <section className="card text-sm text-stone-500">{t("analysisRequired")}</section>
     );

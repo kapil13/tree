@@ -3,6 +3,7 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.audit_chain_root import AuditChainRoot
 from app.models.audit_confidence import AuditConfidenceAssessment
+from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_engagement import (
     AuditEngagement,
     BoundaryVersion,
@@ -100,6 +101,8 @@ __all__ = [
     "AuditSatelliteBaseline",
     "AuditTemporalObservation",
     "AuditConfidenceAssessment",
+    "AuditAnomalyEvent",
+    "AuditRiskAssessment",
     "CarbonCalculation",
     "CitizenProfile",
     "ComplianceChecklistOverride",
