@@ -2,18 +2,26 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Lock, MapPin, Shield } from "lucide-react";
+import { auditEngagements, errorMessage, uploads, type AuditEngagementDetail } from "@/lib/api";
 import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditExportPanel } from "@/components/audit/audit-export-panel";
 import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
-import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
 const STEPS = ["claim", "boundaries", "documents", "validation", "complete"] as const;
+
+const AUDIT_DOC_TYPES = [
+  { value: "work_order", label: "Work order" },
+  { value: "planting_certificate", label: "Planting certificate" },
+  { value: "third_party_report", label: "Third-party report" },
+  { value: "tenure_reference", label: "Tenure reference" },
+  { value: "other", label: "Other" },
+] as const;
 
 type StepId = (typeof STEPS)[number];
 
@@ -35,6 +43,13 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
     density_per_ha: "",
     notes: "",
   });
+  const [docType, setDocType] = useState<(typeof AUDIT_DOC_TYPES)[number]["value"]>("work_order");
+  const [docTitle, setDocTitle] = useState("");
+  const [docBusy, setDocBusy] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const docFileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["audit-engagement", projectId],
@@ -55,6 +70,18 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["audit-engagement", projectId] });
   }, [qc, projectId]);
 
+  useEffect(() => {
+    if (!data?.working_claim) return;
+    const claim = data.working_claim;
+    setClaimForm({
+      trees_claimed: claim.trees_claimed != null ? String(claim.trees_claimed) : "",
+      area_ha_claimed: claim.area_ha_claimed != null ? String(claim.area_ha_claimed) : "",
+      planting_date: typeof claim.planting_date === "string" ? claim.planting_date.slice(0, 10) : "",
+      density_per_ha: claim.density_per_ha != null ? String(claim.density_per_ha) : "",
+      notes: typeof claim.notes === "string" ? claim.notes : "",
+    });
+  }, [data?.id, data?.working_claim]);
+
   const saveClaim = useMutation({
     mutationFn: () => {
       if (!data) throw new Error("no engagement");
@@ -66,33 +93,85 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         notes: claimForm.notes || undefined,
       });
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setActionError(null);
+      setActionMessage("Claim saved.");
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
 
   const freezeClaim = useMutation({
     mutationFn: () => auditEngagements.freezeClaim(data!.id),
-    onSuccess: invalidate,
+    onSuccess: (snapshot) => {
+      setActionError(null);
+      setActionMessage(`Frozen snapshot v${snapshot.version}.`);
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
 
   const importKml = useMutation({
     mutationFn: (file: File) => auditEngagements.importKml(data!.id, file),
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      setActionError(null);
+      setActionMessage(`Imported ${result.imported} boundary block(s).`);
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
 
   const runGis = useMutation({
     mutationFn: () => auditEngagements.runGisValidation(data!.id),
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      setActionError(null);
+      setActionMessage(`GIS validation: ${result.status}.`);
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
 
   const runPlausibility = useMutation({
     mutationFn: () => auditEngagements.runPlausibility(data!.id),
-    onSuccess: invalidate,
+    onSuccess: (results) => {
+      setActionError(null);
+      setActionMessage(`Plausibility assessed for ${results.length} block(s).`);
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
 
   const completeIntake = useMutation({
     mutationFn: () => auditEngagements.completeIntake(data!.id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setActionError(null);
+      setActionMessage("Intake marked complete.");
+      invalidate();
+    },
+    onError: (e) => setActionError(errorMessage(e)),
   });
+
+  async function handleDocumentUpload(file: File) {
+    if (!data) return;
+    setDocBusy(true);
+    setDocError(null);
+    try {
+      const s3Key = await uploads.uploadImage(file);
+      await auditEngagements.addDocument(data.id, {
+        doc_type: docType,
+        title: docTitle.trim() || file.name,
+        s3_key: s3Key,
+      });
+      setDocTitle("");
+      if (docFileRef.current) docFileRef.current.value = "";
+      setActionMessage("Document uploaded.");
+      invalidate();
+    } catch (e) {
+      setDocError(errorMessage(e));
+    } finally {
+      setDocBusy(false);
+    }
+  }
 
   if (isLoading) {
     return <p className="text-sm text-stone-500">{t("loading")}</p>;
@@ -130,6 +209,19 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         <p className="max-w-2xl text-sm text-stone-600 dark:text-stone-400">{t("subtitle")}</p>
         <p className="text-xs text-stone-500">{t("epistemicNote")}</p>
       </header>
+
+      {(actionMessage || actionError) && (
+        <div
+          className={cn(
+            "rounded-lg px-3 py-2 text-sm",
+            actionError
+              ? "border border-rose-200 bg-rose-50 text-rose-800"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-800",
+          )}
+        >
+          {actionError ?? actionMessage}
+        </div>
+      )}
 
       <nav className="flex flex-wrap gap-2" aria-label={t("stepsAria")}>
         {STEPS.map((id, idx) => (
@@ -225,6 +317,41 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
               {t("frozenVersion", { version: engagement.latest_snapshot.version })}
             </p>
           )}
+          <div className="space-y-2 border-t border-stone-100 pt-4 dark:border-stone-800">
+            <h3 className="text-sm font-semibold">{t("snapshotHistory")}</h3>
+            {(engagement.claim_snapshots ?? []).length > 0 ? (
+              <ul className="space-y-2">
+                {(engagement.claim_snapshots ?? []).map((snap) => (
+                  <li
+                    key={snap.id}
+                    className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700"
+                  >
+                    <p className="font-medium">
+                      {t("snapshotVersion", { version: snap.version })}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {t("snapshotFrozenAt", {
+                        date: new Date(snap.frozen_at).toLocaleString(),
+                      })}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {t("snapshotHash", { sha: snap.content_hash.slice(0, 12) })}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-600">
+                      {snap.claim_data?.trees_claimed != null
+                        ? `${snap.claim_data.trees_claimed} trees`
+                        : "—"}
+                      {snap.claim_data?.planting_date
+                        ? ` · planted ${String(snap.claim_data.planting_date).slice(0, 10)}`
+                        : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-stone-500">{t("noSnapshots")}</p>
+            )}
+          </div>
         </section>
       )}
 
@@ -271,37 +398,110 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
         <section className="card space-y-4">
           <h2 className="text-sm font-semibold">{t("documentsTitle")}</h2>
           <p className="text-sm text-stone-500">{t("documentsHint")}</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="label text-xs">{t("documentType")}</label>
+              <select
+                className="input text-sm"
+                value={docType}
+                onChange={(e) =>
+                  setDocType(e.target.value as (typeof AUDIT_DOC_TYPES)[number]["value"])
+                }
+                disabled={docBusy || isComplete}
+              >
+                {AUDIT_DOC_TYPES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label text-xs">{t("documentTitle")}</label>
+              <input
+                className="input min-w-[200px] text-sm"
+                value={docTitle}
+                onChange={(e) => setDocTitle(e.target.value)}
+                placeholder="e.g. CAMPA work order 2024"
+                disabled={docBusy || isComplete}
+              />
+            </div>
+            <div>
+              <label className="label text-xs">{t("uploadDocument")}</label>
+              <input
+                ref={docFileRef}
+                type="file"
+                className="input text-sm"
+                accept="image/*,application/pdf"
+                disabled={docBusy || isComplete}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleDocumentUpload(file);
+                }}
+              />
+            </div>
+          </div>
+          {docBusy ? (
+            <p className="text-xs text-stone-500">{t("uploadingDocument")}</p>
+          ) : null}
+          {docError ? <p className="text-xs text-rose-700">{docError}</p> : null}
           <p className="text-xs text-stone-400">
-            {t("documentCount", { count: engagement.document_count })}
+            {t("documentCount", { count: engagement.documents.length })}
           </p>
+          {engagement.documents.length === 0 ? (
+            <p className="text-sm text-stone-500">{t("noDocuments")}</p>
+          ) : (
+            <ul className="space-y-2">
+              {engagement.documents.map((doc) => (
+                <li
+                  key={doc.id}
+                  className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700"
+                >
+                  <div>
+                    <p className="font-medium">{doc.title}</p>
+                    <p className="text-xs text-stone-500">{doc.doc_type.replaceAll("_", " ")}</p>
+                  </div>
+                  <span className="text-xs text-stone-400">
+                    {new Date(doc.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
       {step === "validation" && (
         <section className="card space-y-4">
           <h2 className="text-sm font-semibold">{t("validationTitle")}</h2>
+          {engagement.boundaries.length === 0 ? (
+            <p className="text-sm text-amber-700">{t("validationBoundariesRequired")}</p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               className="btn-secondary"
-              disabled={runGis.isPending}
+              disabled={runGis.isPending || engagement.boundaries.length === 0}
               onClick={() => runGis.mutate()}
             >
-              {t("runGis")}
+              {runGis.isPending ? "…" : t("runGis")}
             </button>
             <button
               type="button"
               className="btn-secondary"
-              disabled={runPlausibility.isPending}
+              disabled={runPlausibility.isPending || engagement.boundaries.length === 0}
               onClick={() => runPlausibility.mutate()}
             >
-              {t("runPlausibility")}
+              {runPlausibility.isPending ? "…" : t("runPlausibility")}
             </button>
           </div>
           {engagement.latest_gis_validation && (
             <div className="rounded-lg border border-stone-200 p-3 text-sm dark:border-stone-700">
               <p>
                 GIS: <strong>{engagement.latest_gis_validation.status}</strong>
+                <span className="ml-2 text-xs text-stone-500">
+                  {new Date(engagement.latest_gis_validation.run_at).toLocaleString()}
+                </span>
               </p>
               {engagement.latest_gis_validation.issues.length > 0 && (
                 <ul className="mt-2 list-disc pl-5 text-stone-600">
@@ -312,7 +512,7 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
               )}
             </div>
           )}
-          {engagement.plausibility.length > 0 && (
+          {engagement.plausibility.length > 0 ? (
             <ul className="space-y-2">
               {engagement.plausibility.map((p) => (
                 <li
@@ -327,13 +527,40 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="text-sm text-stone-500">{t("noPlausibilityResults")}</p>
           )}
+          {gate ? (
+            <div className="border-t border-stone-100 pt-4 dark:border-stone-800">
+              <h3 className="mb-2 text-sm font-semibold">{t("gateTitle")}</h3>
+              <ul className="space-y-2">
+                {gate.requirements.map((req) => (
+                  <li key={req.id} className="flex items-start gap-2 text-sm">
+                    {req.met ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+                    )}
+                    <span>
+                      {req.label}
+                      {!req.met && req.detail && (
+                        <span className="block text-xs text-stone-500">{req.detail}</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       )}
 
-      {step === "complete" && gate && (
+      {step === "complete" && (
         <section className="card space-y-4">
           <h2 className="text-sm font-semibold">{t("gateTitle")}</h2>
+          {!gate ? (
+            <p className="text-sm text-stone-500">{t("loading")}</p>
+          ) : (
           <ul className="space-y-2">
             {gate.requirements.map((req) => (
               <li key={req.id} className="flex items-start gap-2 text-sm">
@@ -351,10 +578,11 @@ export function AuditIntakePanel({ projectId }: { projectId: string }) {
               </li>
             ))}
           </ul>
+          )}
           <button
             type="button"
             className="btn-primary"
-            disabled={!gate.ready || completeIntake.isPending || isComplete}
+            disabled={!gate?.ready || completeIntake.isPending || isComplete}
             onClick={() => completeIntake.mutate()}
           >
             {isComplete ? t("alreadyComplete") : t("completeIntake")}

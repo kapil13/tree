@@ -3440,6 +3440,7 @@ export type AuditEngagementDetail = AuditEngagement & {
     signals: Record<string, unknown>;
     assessed_at: string;
   }>;
+  claim_snapshots?: AuditClaimSnapshot[];
   latest_gis_validation?: {
     id: string;
     status: string;

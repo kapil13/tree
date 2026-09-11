@@ -14,6 +14,7 @@ from app.models.audit_engagement import (
     AuditEngagement,
     BoundaryVersion,
     ClaimDocument,
+    ClaimSnapshot,
     GisValidationRun,
     PlantabilityExclusion,
     PlausibilityAssessment,
@@ -174,6 +175,13 @@ async def engagement_detail(
             )
         )
     ).scalars().all()
+    claim_snapshots = (
+        await db.execute(
+            select(ClaimSnapshot)
+            .where(ClaimSnapshot.engagement_id == engagement.id)
+            .order_by(ClaimSnapshot.version.desc())
+        )
+    ).scalars().all()
     gis_run = (
         await db.execute(
             select(GisValidationRun)
@@ -212,6 +220,17 @@ async def engagement_detail(
             "assessed_at": p.assessed_at,
         }
         for p in plausibility
+    ]
+    summary["claim_snapshots"] = [
+        {
+            "id": snap.id,
+            "version": snap.version,
+            "claim_data": snap.claim_data or {},
+            "content_hash": snap.content_hash,
+            "epistemic_label": snap.epistemic_label,
+            "frozen_at": snap.frozen_at,
+        }
+        for snap in claim_snapshots
     ]
     summary["latest_gis_validation"] = (
         {
