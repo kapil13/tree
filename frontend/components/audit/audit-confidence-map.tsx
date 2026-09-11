@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { APIProvider, Map, Polygon } from "@vis.gl/react-google-maps";
+import { APIProvider, Map as GoogleMap, Polygon } from "@vis.gl/react-google-maps";
 import { type AuditBoundary, geoJsonRingToPaths } from "@/lib/audit-field-visit";
 import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
 import { cn } from "@/lib/cn";
@@ -90,7 +90,7 @@ export function AuditConfidenceMap({
       </div>
       <div className="overflow-hidden rounded-xl border border-stone-200" style={{ height }}>
         <APIProvider apiKey={apiKey}>
-          <Map
+          <GoogleMap
             defaultCenter={center}
             defaultZoom={12}
             mapTypeId="satellite"
@@ -112,7 +112,7 @@ export function AuditConfidenceMap({
                 />
               );
             })}
-          </Map>
+          </GoogleMap>
         </APIProvider>
       </div>
     </div>

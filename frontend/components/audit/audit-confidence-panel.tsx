@@ -68,8 +68,9 @@ export function AuditConfidencePanel({
   });
 
   const compute = useMutation({
-    mutationFn: (includeFieldSignals = false) =>
-      auditEngagements.computeConfidenceMap(engagementId, { includeFieldSignals }),
+    mutationFn: (includeFieldSignals: boolean = false) => {
+      return auditEngagements.computeConfidenceMap(engagementId, { includeFieldSignals });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["audit-confidence-map", engagementId] });
       qc.invalidateQueries({ queryKey: ["audit-engagement"] });
