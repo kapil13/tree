@@ -205,6 +205,11 @@ async def build_tnfd_context(
 
     avg_ndvi = round(sum(total_ndvi) / len(total_ndvi), 4) if total_ndvi else None
 
+    from app.services.bioacoustic.confidence import METHODOLOGY_VERSION
+    from app.services.bioacoustic.methodology import (
+        SCIENTIFIC_LIMITATIONS,
+        methodology_appendix_lines,
+    )
     from app.services.reports.gbf_exports import build_gbf_context, build_gbf_tnfd_section
 
     gbf_ctx = await build_gbf_context(db, organization=organization, project_id=project_id)
@@ -244,9 +249,13 @@ async def build_tnfd_context(
             },
         },
         "gbf_section": gbf_section,
+        "methodology_version": METHODOLOGY_VERSION,
+        "methodology_appendix": methodology_appendix_lines(),
+        "scientific_limitations": list(SCIENTIFIC_LIMITATIONS),
         "disclaimer": (
             "TNFD-aligned nature disclosure generated from BYOT MRV, bioacoustic, IUCN, and NDVI data. "
-            "Includes Kunming-Montreal GBF Targets 2 & 3 bridge metrics. "
+            "Bioacoustic exports use accepted-tier detections only. "
+            "NDVI co-occurrence screening does not prove ecological causation. "
             "Not a substitute for third-party TNFD assurance."
         ),
     }

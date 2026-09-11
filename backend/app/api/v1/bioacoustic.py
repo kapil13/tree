@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, or_, select
 
 from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
 from app.models.bioacoustic_recording import BioacousticRecording
 from app.schemas.bioacoustic import (
+    BioacousticAnalysisRunOut,
     BioacousticAnalyzeResponse,
     BioacousticRecordingCreate,
     BioacousticRecordingOut,
@@ -17,6 +20,9 @@ from app.schemas.bioacoustic import (
     RegionalFaunaOut,
 )
 from app.schemas.cursor_page import CursorPage
+from app.services.bioacoustic.confidence import METHODOLOGY_VERSION
+from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED
+from app.services.bioacoustic.methodology import SCIENTIFIC_LIMITATIONS
 from app.services.bioacoustic.ops import create_recording, enqueue_bioacoustic_analysis
 from app.services.bioacoustic.regional_fauna import build_regional_fauna
 from app.services.data_scope import apply_owner_org_scope
@@ -53,6 +59,12 @@ async def register_recording(
             longitude=payload.longitude,
             plantation_fence_id=payload.plantation_fence_id,
             recorded_at=payload.recorded_at,
+            recording_started_at=payload.recording_started_at,
+            recording_ended_at=payload.recording_ended_at,
+            gps_accuracy_m=payload.gps_accuracy_m,
+            gps_source=payload.gps_source,
+            gps_verified=payload.gps_verified,
+            gps_fallback=payload.gps_fallback,
             metadata=payload.metadata,
         )
     except ValueError as exc:
@@ -73,6 +85,12 @@ async def upload_recording(
     latitude: float = Form(0.0),
     longitude: float = Form(0.0),
     plantation_fence_id: uuid.UUID | None = Form(None),
+    gps_accuracy_m: float | None = Form(None),
+    gps_source: str | None = Form(None),
+    gps_verified: bool | None = Form(None),
+    gps_fallback: bool | None = Form(None),
+    recording_started_at: datetime | None = Form(None),
+    recording_ended_at: datetime | None = Form(None),
 ) -> BioacousticRecordingOut:
     """Direct multipart upload (mobile + web)."""
     await assert_org_feature_enabled(db, user, "bioacoustic")
@@ -111,6 +129,12 @@ async def upload_recording(
             latitude=latitude,
             longitude=longitude,
             plantation_fence_id=plantation_fence_id,
+            recording_started_at=recording_started_at,
+            recording_ended_at=recording_ended_at,
+            gps_accuracy_m=gps_accuracy_m,
+            gps_source=gps_source,
+            gps_verified=gps_verified,
+            gps_fallback=gps_fallback,
             metadata={"filename": file.filename or "recording.webm"},
         )
     except ValueError as exc:
@@ -191,6 +215,35 @@ async def analyze_recording(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=code) from exc
 
 
+@router.get(
+    "/recordings/{recording_id}/analysis-runs",
+    response_model=list[BioacousticAnalysisRunOut],
+)
+async def list_analysis_runs(
+    recording_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> list[BioacousticAnalysisRunOut]:
+    rec = (
+        await db.execute(
+            _scope(
+                select(BioacousticRecording).where(BioacousticRecording.id == recording_id),
+                user,
+            )
+        )
+    ).scalar_one_or_none()
+    if rec is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    runs = (
+        await db.execute(
+            select(BioacousticAnalysisRun)
+            .where(BioacousticAnalysisRun.recording_id == recording_id)
+            .order_by(BioacousticAnalysisRun.run_number.desc())
+        )
+    ).scalars().all()
+    return [BioacousticAnalysisRunOut.model_validate(r) for r in runs]
+
+
 @router.get("/regional-fauna", response_model=RegionalFaunaOut)
 async def regional_fauna(
     user: CurrentUser,
@@ -240,20 +293,27 @@ async def bioacoustic_summary(
     avg_shannon = 0.0
     avg_simpson = 0.0
     species_set: set[str] = set()
-    threatened = 0
+    threatened_set: set[str] = set()
     taxon_calls: dict[str, int] = {}
     if analyzed_rows:
-        health_scores = [float(r.bioacoustic_health_score or 0) for r in analyzed_rows]
+        confidence_scores = [
+            float(r.biodiversity_confidence_score or r.bioacoustic_health_score or 0)
+            for r in analyzed_rows
+        ]
         shannon_scores = [float(r.shannon_diversity_index or 0) for r in analyzed_rows]
         simpson_scores = [float(r.simpson_diversity_index or 0) for r in analyzed_rows]
-        avg_health = round(sum(health_scores) / len(health_scores), 2)
+        avg_health = round(sum(confidence_scores) / len(confidence_scores), 2)
         avg_shannon = round(sum(shannon_scores) / len(shannon_scores), 4)
         avg_simpson = round(sum(simpson_scores) / len(simpson_scores), 4)
         for r in analyzed_rows:
             for det in r.species_detections or []:
-                species_set.add(det.get("scientific_name", ""))
-                if det.get("iucn_status") in _THREATENED:
-                    threatened += 1
+                if det.get("detection_tier") != TIER_ACCEPTED:
+                    continue
+                name = det.get("scientific_name", "")
+                if name:
+                    species_set.add(name)
+                if det.get("iucn_status") in _THREATENED and name:
+                    threatened_set.add(name)
                 tg = det.get("taxon_group", "unknown")
                 taxon_calls[tg] = taxon_calls.get(tg, 0) + int(det.get("call_count") or 0)
 
@@ -271,11 +331,15 @@ async def bioacoustic_summary(
     return BioacousticSummary(
         total_recordings=total,
         analyzed_recordings=analyzed,
+        avg_confidence_score=avg_health,
         avg_health_score=avg_health,
         avg_shannon_index=avg_shannon,
         avg_simpson_index=avg_simpson,
+        total_accepted_species=len(species_set),
         total_species_detected=len(species_set),
-        threatened_species_count=threatened,
+        threatened_species_count=len(threatened_set),
         taxon_breakdown=taxon_calls,
         recent_recordings=[BioacousticRecordingOut.from_model(r) for r in recent],
+        methodology_version=METHODOLOGY_VERSION,
+        scientific_limitations=list(SCIENTIFIC_LIMITATIONS),
     )

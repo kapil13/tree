@@ -19,6 +19,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from app.services.bioacoustic.methodology import methodology_appendix_lines
+
 
 def render_carbon_report_pdf(
     org_name: str, summary: dict[str, Any], rows: list[dict[str, Any]]
@@ -151,14 +153,14 @@ def render_bioacoustic_report_pdf(
     bio = ecosystem.get("bioacoustic") or ecosystem
     summary_rows = [
         ["Recordings analyzed", bio.get("recording_count", 0)],
-        ["Bioacoustic health (avg)", f"{bio.get('avg_health_score', 0)}/100"],
+        ["Biodiversity Confidence (avg)", f"{bio.get('avg_confidence_score', bio.get('avg_health_score', 0))}/100"],
         ["Shannon H′ (avg)", str(bio.get("avg_shannon_index", 0))],
         ["Simpson D (avg)", str(bio.get("avg_simpson_index", 0))],
-        ["Species detected", bio.get("total_species_detected", 0)],
-        ["Threatened detections", bio.get("threatened_species_count", 0)],
+        ["Accepted species", bio.get("total_accepted_species", bio.get("total_species_detected", 0))],
+        ["Threatened accepted species", bio.get("threatened_species_count", 0)],
         ["NDVI mean", f"{ecosystem.get('ndvi_mean', '—')}"],
         ["NDVI trend", ecosystem.get("ndvi_trend") or "—"],
-        ["Ecosystem score", f"{ecosystem.get('ecosystem_health_score', '—')}/100"],
+        ["NDVI screening", "Co-occurrence only — not causal"],
     ]
     t = Table(summary_rows, colWidths=[75 * mm, 85 * mm])
     t.setStyle(
@@ -214,17 +216,22 @@ def render_bioacoustic_report_pdf(
     if recordings:
         story.append(Spacer(1, 5 * mm))
         story.append(Paragraph("<b>Recent recordings</b>", body))
-        rec_table = [["Date", "Duration", "Health", "Species"]]
+        rec_table = [["Date", "Duration", "Confidence", "Accepted species"]]
         for r in recordings[:10]:
             rec_table.append(
                 [
                     str(r.get("recorded_at", ""))[:16],
                     f"{r.get('duration_seconds', 0)}s",
-                    str(r.get("bioacoustic_health_score", "—")),
-                    str(r.get("total_species_count", "—")),
+                    str(r.get("biodiversity_confidence_score", r.get("bioacoustic_health_score", "—"))),
+                    str(r.get("accepted_species_count", r.get("total_species_count", "—"))),
                 ]
             )
         story.append(Table(rec_table, repeatRows=1))
+
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph("<b>Methodology &amp; limitations</b>", body))
+    for line in methodology_appendix_lines():
+        story.append(Paragraph(line.replace("&", "&amp;"), body))
 
     doc.build(story)
     return buf.getvalue()

@@ -12,6 +12,7 @@ from app.models.bioacoustic_recording import BioacousticRecording
 from app.models.plantation_fence import PlantationFence
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.satellite_health_analysis import SatelliteHealthAnalysis
+from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED
 
 _THREATENED = {"Critically Endangered", "Endangered", "Vulnerable"}
 
@@ -74,30 +75,36 @@ async def aggregate_fence_bioacoustic(
         return {
             "recording_count": 0,
             "avg_health_score": 0.0,
+            "avg_confidence_score": 0.0,
             "avg_shannon_index": 0.0,
             "avg_simpson_index": 0.0,
             "total_species_detected": 0,
+            "total_accepted_species": 0,
             "threatened_species_count": 0,
             "taxon_breakdown": {},
             "species_list": [],
         }
 
     species_set: set[str] = set()
-    threatened = 0
+    threatened_set: set[str] = set()
     taxon_calls: dict[str, int] = {}
     species_list: list[dict] = []
 
     for rec in rows:
         for det in rec.species_detections or []:
+            if det.get("detection_tier") != TIER_ACCEPTED:
+                continue
             name = det.get("scientific_name", "")
             if name:
                 species_set.add(name)
-            if det.get("iucn_status") in _THREATENED:
-                threatened += 1
+            if det.get("iucn_status") in _THREATENED and name:
+                threatened_set.add(name)
             tg = det.get("taxon_group", "unknown")
             taxon_calls[tg] = taxon_calls.get(tg, 0) + int(det.get("call_count") or 0)
 
-    health = [float(r.bioacoustic_health_score or 0) for r in rows]
+    health = [
+        float(r.biodiversity_confidence_score or r.bioacoustic_health_score or 0) for r in rows
+    ]
     shannon = [float(r.shannon_diversity_index or 0) for r in rows]
     simpson = [float(r.simpson_diversity_index or 0) for r in rows]
 
@@ -105,6 +112,8 @@ async def aggregate_fence_bioacoustic(
     species_counts: dict[str, dict] = {}
     for rec in rows:
         for det in rec.species_detections or []:
+            if det.get("detection_tier") != TIER_ACCEPTED:
+                continue
             key = det.get("scientific_name", "")
             if not key:
                 continue
@@ -126,7 +135,9 @@ async def aggregate_fence_bioacoustic(
         "avg_shannon_index": round(mean(shannon), 4) if shannon else 0.0,
         "avg_simpson_index": round(mean(simpson), 4) if simpson else 0.0,
         "total_species_detected": len(species_set),
-        "threatened_species_count": threatened,
+        "avg_confidence_score": round(mean(health), 2) if health else 0.0,
+        "total_accepted_species": len(species_set),
+        "threatened_species_count": len(threatened_set),
         "taxon_breakdown": taxon_calls,
         "species_list": species_list,
     }
@@ -191,13 +202,16 @@ async def correlate_fence_ecosystem(
             correlation_score = round(num / den, 3) if den else None
 
     taxon = bio.get("taxon_breakdown") or {}
-    interpretation = _interpret_ecosystem(
+    interpretation = (
+        _interpret_ecosystem(
         bio_health=bio.get("avg_health_score"),
         ndvi_mean=ndvi_mean,
         ndvi_trend=ndvi_trend,
         insect_calls=int(taxon.get("insect", 0)),
         frog_calls=int(taxon.get("frog", 0)),
         pest_flag=bool(sat.pest_control_needed) if sat else False,
+        )
+        + " NDVI co-occurrence screening does not prove ecological causation."
     )
 
     ecosystem_score = 0.0

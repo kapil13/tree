@@ -18,6 +18,11 @@ from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.tree import Tree
 from app.models.work_area_biodiversity_snapshot import WorkAreaBiodiversitySnapshot
+from app.services.bioacoustic.detection_tiers import TIER_ACCEPTED, exportable_detections
+from app.services.bioacoustic.methodology import (
+    assert_recordings_exportable,
+    recording_has_stub_pipeline,
+)
 
 DARWIN_CORE_VERSION = "2024-04-24"
 DWC_TERMS = [
@@ -92,13 +97,19 @@ async def build_darwin_occurrences(
                 )
             ).scalars().all()
         )
+        assert_recordings_exportable(recs)
         for rec in recs:
+            if recording_has_stub_pipeline(rec):
+                continue
             lat, lon = _coords_from_point(rec.location)
             event_date = rec.recorded_at.date().isoformat() if rec.recorded_at else ""
-            for idx, det in enumerate(rec.species_detections or []):
+            exportable = exportable_detections(rec.species_detections or [])
+            for idx, det in enumerate(exportable):
+                if det.get("detection_tier") != TIER_ACCEPTED:
+                    continue
                 sci = det.get("scientific_name") or det.get("species") or "Unknown"
                 iucn_meta = det.get("iucn") or {}
-                iucn = iucn_meta.get("category") or det.get("iucn_category") or ""
+                iucn = iucn_meta.get("category") or det.get("iucn_category") or det.get("iucn_status") or ""
                 occurrences.append(
                     {
                         "occurrenceID": f"byot-bio-{rec.id}-{idx}",
@@ -109,10 +120,10 @@ async def build_darwin_occurrences(
                         "decimalLongitude": lon,
                         "eventDate": event_date,
                         "occurrenceStatus": "present",
-                        "individualCount": det.get("call_count") or 1,
-                        "organismQuantityType": "individuals",
-                        "samplingProtocol": "Bioacoustic automated detection (BirdNET/Perch)",
-                        "identificationVerificationStatus": "machine_assisted",
+                        "individualCount": 1,
+                        "organismQuantityType": "vocalization_events",
+                        "samplingProtocol": "Bioacoustic automated detection (BirdNET/Perch); accepted tier only",
+                        "identificationVerificationStatus": "machine_assisted_unreviewed",
                         "iucnRedListCategory": iucn,
                         "iucnTaxonID": iucn_meta.get("taxon_id") or det.get("iucn_taxon_id") or "",
                         "gbifID": det.get("gbif_usage_key") or "",

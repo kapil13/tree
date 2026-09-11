@@ -26,6 +26,12 @@ class BioacousticRecordingCreate(BaseModel):
     longitude: float = Field(..., ge=-180, le=180)
     plantation_fence_id: uuid.UUID | None = None
     recorded_at: datetime | None = None
+    recording_started_at: datetime | None = None
+    recording_ended_at: datetime | None = None
+    gps_accuracy_m: float | None = Field(None, ge=0, le=5000)
+    gps_source: str | None = Field(None, max_length=32)
+    gps_verified: bool | None = None
+    gps_fallback: bool | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -37,6 +43,7 @@ class SpeciesDetectionOut(BaseModel):
     taxon_group: str
     confidence: float
     call_count: int
+    detection_tier: str | None = None
     iucn_status: str
     population_trend: str
     threat_status: str
@@ -45,8 +52,9 @@ class SpeciesDetectionOut(BaseModel):
     gbif_usage_key: int | None = None
     gbif_match_type: str | None = None
     regional_occurrence_match: bool | None = None
+    regionally_plausible: bool | None = None
     needs_review: bool | None = None
-    is_native: bool | None = None
+    included_in_richness: bool | None = None
     time_intervals: list[dict[str, float]] | None = None
     metadata_sources: dict[str, Any] | None = None
     pipeline_source: str | None = None
@@ -83,6 +91,28 @@ class BioacousticAnalyzeResponse(BaseModel):
     celery_task_id: str | None = None
 
 
+class BioacousticAnalysisRunOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    recording_id: uuid.UUID
+    run_number: int
+    supersedes_run_id: uuid.UUID | None = None
+    status: str
+    pipeline: str | None = None
+    model_version: str | None = None
+    config_hash: str | None = None
+    audio_sha256: str | None = None
+    methodology_version: str | None = None
+    accepted_species_count: int | None = None
+    acoustic_signals_count: int | None = None
+    biodiversity_confidence_score: float | None = None
+    shannon_diversity_index: float | None = None
+    simpson_diversity_index: float | None = None
+    analyzed_at: datetime | None = None
+    created_at: datetime
+
+
 class BioacousticRecordingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -90,26 +120,41 @@ class BioacousticRecordingOut(BaseModel):
     s3_key: str
     duration_seconds: float
     recorded_at: datetime
+    recording_started_at: datetime | None = None
+    recording_ended_at: datetime | None = None
     latitude: float | None = None
     longitude: float | None = None
+    gps_accuracy_m: float | None = None
+    gps_source: str | None = None
+    gps_verified: bool = False
+    gps_fallback: bool = False
     plantation_fence_id: uuid.UUID | None = None
     status: str
     spectrogram_s3_key: str | None = None
     preprocessing: dict[str, Any] = Field(default_factory=dict)
     species_detections: list[SpeciesDetectionOut] = Field(default_factory=list)
+    accepted_species_count: int | None = None
+    acoustic_signals_count: int | None = None
     total_species_count: int | None = None
     total_calls_detected: int | None = None
     shannon_diversity_index: float | None = None
     simpson_diversity_index: float | None = None
+    biodiversity_confidence_score: float | None = None
     bioacoustic_health_score: float | None = None
     ai_confidence_score: float | None = None
+    latest_analysis_run_id: uuid.UUID | None = None
+    methodology_version: str | None = None
     analysis_summary: str | None = None
     analysis_error: str | None = None
     analyzed_at: datetime | None = None
     created_at: datetime
+    scientific_limitations: list[str] = Field(default_factory=list)
 
     @classmethod
     def from_model(cls, rec) -> BioacousticRecordingOut:
+        from app.services.bioacoustic.confidence import METHODOLOGY_VERSION
+        from app.services.bioacoustic.methodology import SCIENTIFIC_LIMITATIONS
+
         lat = lon = None
         if rec.location is not None:
             from geoalchemy2.shape import to_shape
@@ -120,19 +165,38 @@ class BioacousticRecordingOut(BaseModel):
             SpeciesDetectionOut(**d) if isinstance(d, dict) else d
             for d in (rec.species_detections or [])
         ]
+        preprocessing = rec.preprocessing or {}
+        methodology_version = preprocessing.get("methodology_version") or METHODOLOGY_VERSION
+        confidence = (
+            float(rec.biodiversity_confidence_score)
+            if rec.biodiversity_confidence_score is not None
+            else (
+                float(rec.bioacoustic_health_score)
+                if rec.bioacoustic_health_score is not None
+                else None
+            )
+        )
         return cls(
             id=rec.id,
             s3_key=rec.s3_key,
             duration_seconds=float(rec.duration_seconds),
             recorded_at=rec.recorded_at,
+            recording_started_at=rec.recording_started_at,
+            recording_ended_at=rec.recording_ended_at,
             latitude=lat,
             longitude=lon,
+            gps_accuracy_m=float(rec.gps_accuracy_m) if rec.gps_accuracy_m is not None else None,
+            gps_source=rec.gps_source,
+            gps_verified=bool(rec.gps_verified),
+            gps_fallback=bool(rec.gps_fallback),
             plantation_fence_id=rec.plantation_fence_id,
             status=rec.status,
             spectrogram_s3_key=rec.spectrogram_s3_key,
-            preprocessing=rec.preprocessing or {},
+            preprocessing=preprocessing,
             species_detections=detections,
-            total_species_count=rec.total_species_count,
+            accepted_species_count=rec.accepted_species_count,
+            acoustic_signals_count=rec.acoustic_signals_count,
+            total_species_count=rec.accepted_species_count or rec.total_species_count,
             total_calls_detected=rec.total_calls_detected,
             shannon_diversity_index=float(rec.shannon_diversity_index)
             if rec.shannon_diversity_index is not None
@@ -140,38 +204,46 @@ class BioacousticRecordingOut(BaseModel):
             simpson_diversity_index=float(rec.simpson_diversity_index)
             if rec.simpson_diversity_index is not None
             else None,
-            bioacoustic_health_score=float(rec.bioacoustic_health_score)
-            if rec.bioacoustic_health_score is not None
-            else None,
+            biodiversity_confidence_score=confidence,
+            bioacoustic_health_score=confidence,
             ai_confidence_score=float(rec.ai_confidence_score)
             if rec.ai_confidence_score is not None
             else None,
+            latest_analysis_run_id=rec.latest_analysis_run_id,
+            methodology_version=methodology_version,
             analysis_summary=rec.analysis_summary,
             analysis_error=rec.analysis_error,
             analyzed_at=rec.analyzed_at,
             created_at=rec.created_at,
+            scientific_limitations=list(SCIENTIFIC_LIMITATIONS),
         )
 
 
 class BioacousticSummary(BaseModel):
     total_recordings: int
     analyzed_recordings: int
+    avg_confidence_score: float
     avg_health_score: float
     avg_shannon_index: float
     avg_simpson_index: float
+    total_accepted_species: int
     total_species_detected: int
     threatened_species_count: int
     taxon_breakdown: dict[str, int] = Field(default_factory=dict)
     recent_recordings: list[BioacousticRecordingOut] = Field(default_factory=list)
+    methodology_version: str
+    scientific_limitations: list[str] = Field(default_factory=list)
 
 
 class FenceBiodiversityOut(BaseModel):
     fence_id: uuid.UUID
     fence_name: str
     recording_count: int
+    avg_confidence_score: float
     avg_health_score: float
     avg_shannon_index: float
     avg_simpson_index: float
+    total_accepted_species: int
     total_species_detected: int
     threatened_species_count: int
     taxon_breakdown: dict[str, int] = Field(default_factory=dict)
@@ -190,3 +262,6 @@ class EcosystemHealthOut(BaseModel):
     correlation_score: float | None = None
     ecosystem_health_score: float = 0.0
     interpretation: str = ""
+    ndvi_disclaimer: str = (
+        "NDVI co-occurrence screening does not prove ecological causation."
+    )

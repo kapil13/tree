@@ -51,8 +51,28 @@ function analysisPipeline(rec: BioacousticRecording): string | undefined {
 }
 
 function speciesRichness(rec: BioacousticRecording) {
-  const aboveThreshold = rec.species_detections?.filter((s) => !s.needs_review && s.confidence >= 0.7);
-  return aboveThreshold?.length ?? rec.total_species_count ?? 0;
+  const accepted = rec.species_detections?.filter((s) => s.detection_tier === "accepted");
+  return accepted?.length ?? rec.accepted_species_count ?? rec.total_species_count ?? 0;
+}
+
+function confidenceScore(rec: BioacousticRecording) {
+  return rec.biodiversity_confidence_score ?? rec.bioacoustic_health_score ?? null;
+}
+
+function tierBadge(tier?: string) {
+  const map: Record<string, string> = {
+    accepted: "bg-green-100 text-green-800",
+    probable: "bg-amber-100 text-amber-900",
+    review_required: "bg-rose-100 text-rose-800",
+  };
+  return map[tier ?? ""] ?? "bg-stone-100 text-stone-700";
+}
+
+function tierLabel(tier?: string) {
+  if (tier === "accepted") return "Accepted";
+  if (tier === "probable") return "Probable";
+  if (tier === "review_required") return "Review required";
+  return "Unknown";
 }
 
 export default function BioacousticPage() {
@@ -165,14 +185,18 @@ export default function BioacousticPage() {
         try {
           let lat = 17.385;
           let lon = 78.4867;
+          let gpsFallback = true;
+          let gpsAccuracy: number | null = null;
           try {
             const pos = await new Promise<GeolocationPosition>((res, rej) =>
               navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }),
             );
             lat = pos.coords.latitude;
             lon = pos.coords.longitude;
+            gpsAccuracy = pos.coords.accuracy ?? null;
+            gpsFallback = false;
           } catch {
-            // fallback
+            // fallback coordinates flagged server-side
           }
 
           const duration = Math.max(elapsedRef.current, MIN_SECONDS);
@@ -181,6 +205,9 @@ export default function BioacousticPage() {
           form.append("duration_seconds", String(duration));
           form.append("latitude", String(lat));
           form.append("longitude", String(lon));
+          form.append("gps_fallback", String(gpsFallback));
+          form.append("gps_source", "browser_geolocation");
+          if (gpsAccuracy != null) form.append("gps_accuracy_m", String(gpsAccuracy));
           if (fenceId) form.append("plantation_fence_id", fenceId);
 
           const rec = await bioacoustic.uploadDirect(form);
@@ -263,6 +290,11 @@ export default function BioacousticPage() {
         icon={bioStatus.tone === "healthy" ? ShieldCheck : Bird}
       />
 
+      <p className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-100">
+        Acoustic detections indicate vocal activity, not confirmed individual animals. Shannon/Simpson use
+        accepted species presence only. Biodiversity Confidence measures evidence quality, not habitat health.
+      </p>
+
       {(summary || (recordings && recordings.length > 0)) ? (
         <MetricGrid
           columns={4}
@@ -273,15 +305,15 @@ export default function BioacousticPage() {
               hint: `${fmtNum(summary?.analyzed_recordings ?? 0)} analyzed`,
             },
             {
-              label: "Species detected",
+              label: "Accepted species",
               value: fmtNum(summary?.total_species_detected ?? 0),
-              hint: `${fmtNum(summary?.threatened_species_count ?? 0)} threatened`,
+              hint: `${fmtNum(summary?.threatened_species_count ?? 0)} threatened (accepted)`,
               tone: (summary?.threatened_species_count ?? 0) > 0 ? "warning" : "positive",
             },
             {
-              label: "Biodiversity health",
+              label: "Biodiversity Confidence",
               value: summary?.avg_health_score ? `${Math.round(summary.avg_health_score)}` : "—",
-              hint: "Avg score /100",
+              hint: "Evidence score /100 (not ecological health)",
             },
             {
               label: "Shannon H′",
@@ -389,10 +421,10 @@ export default function BioacousticPage() {
         <MetricGrid
           columns={4}
           metrics={[
-            { label: "Ecosystem score", value: `${ecosystem.ecosystem_health_score}`, hint: ecosystem.fence_name },
-            { label: "Biodiversity health", value: `${ecosystem.bioacoustic.avg_health_score}`, hint: "Bioacoustic avg /100" },
+            { label: "Biodiversity Confidence", value: `${ecosystem.bioacoustic.avg_confidence_score ?? ecosystem.bioacoustic.avg_health_score}`, hint: "Evidence avg /100" },
+            { label: "Accepted species", value: `${ecosystem.bioacoustic.total_accepted_species ?? ecosystem.bioacoustic.total_species_detected}`, hint: ecosystem.fence_name },
             { label: "NDVI", value: ecosystem.ndvi_mean?.toFixed(2) ?? "—", hint: ecosystem.ndvi_trend ?? "Canopy" },
-            { label: "Correlation", value: ecosystem.correlation_score?.toFixed(2) ?? "—", hint: "Bio × NDVI" },
+            { label: "NDVI screening", value: ecosystem.correlation_score?.toFixed(2) ?? "—", hint: "Co-occurrence (not causal)" },
           ]}
         />
       ) : null}
@@ -483,8 +515,9 @@ export default function BioacousticPage() {
                 {r.status === "analyzed" && (
                   <>
                     <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      <Metric label="Biodiversity score" value={`${r.bioacoustic_health_score ?? "—"}/100`} />
-                      <Metric label="Species richness" value={String(speciesRichness(r))} />
+                      <Metric label="Biodiversity Confidence" value={`${confidenceScore(r) ?? "—"}/100`} />
+                      <Metric label="Accepted species" value={String(speciesRichness(r))} />
+                      <Metric label="Acoustic signals" value={String(r.acoustic_signals_count ?? r.species_detections.length)} />
                       <Metric label="AI confidence" value={`${((r.ai_confidence_score ?? 0) * 100).toFixed(0)}%`} />
                     </div>
                     <details className="mt-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3 text-sm dark:border-stone-700 dark:bg-stone-900/40">
@@ -541,14 +574,16 @@ export default function BioacousticPage() {
                             <span className="ml-2 italic text-stone-500">{s.scientific_name}</span>
                             <span className="ml-2 text-xs uppercase text-stone-400">
                               {s.taxon_group}
-                              {s.is_native && " · native"}
+                              {s.regionally_plausible && " · regionally plausible"}
                               {s.regional_occurrence_match === true && " · GBIF site match"}
-                              {s.needs_review && " · needs review (<70%)"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
+                            <span className={`rounded px-2 py-0.5 text-xs ${tierBadge(s.detection_tier)}`}>
+                              {tierLabel(s.detection_tier)}
+                            </span>
                             <span className="text-xs text-stone-500">
-                              {s.call_count} detections · {(s.confidence * 100).toFixed(0)}%
+                              {s.call_count} vocalizations · {(s.confidence * 100).toFixed(0)}%
                             </span>
                             <span className={`rounded px-2 py-0.5 text-xs ${iucnBadge(s.iucn_status)}`}>
                               {s.iucn_status}
