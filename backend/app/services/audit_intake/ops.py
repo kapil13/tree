@@ -20,6 +20,7 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.planting_project import PlantingProject
+from app.schemas.audit_engagement import MAX_AUDIT_BOUNDARY_VERTICES
 from app.services.audit_intake.claim_snapshot import (
     freeze_claim_snapshot,
     get_working_claim,
@@ -256,6 +257,17 @@ async def engagement_detail(
     return summary
 
 
+def _boundary_vertex_count(boundary_geojson: dict[str, Any]) -> int:
+    ring = boundary_geojson.get("coordinates", [[]])[0]
+    return len(ring)
+
+
+def _validate_audit_boundary_geojson(boundary_geojson: dict[str, Any]) -> None:
+    count = _boundary_vertex_count(boundary_geojson)
+    if count > MAX_AUDIT_BOUNDARY_VERTICES:
+        raise ValueError("polygon_too_many_vertices")
+
+
 async def create_boundary(
     db: AsyncSession,
     engagement: AuditEngagement,
@@ -267,6 +279,7 @@ async def create_boundary(
     source: str = "drawn",
     fence_id: uuid.UUID | None = None,
 ) -> BoundaryVersion:
+    _validate_audit_boundary_geojson(boundary_geojson)
     wkt = geojson_polygon_to_wkt(boundary_geojson)
     area_ha_measured = await _measure_area_ha(db, wkt)
     bv = BoundaryVersion(

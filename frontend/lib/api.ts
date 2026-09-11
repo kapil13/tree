@@ -230,6 +230,21 @@ export function errorMessage(err: unknown): string {
       if (data.detail === "viewer_read_only") {
         return "Your viewer role is read-only. Ask your program manager to change your access.";
       }
+      if (data.detail === "no_polygons_found") {
+        return "No polygon boundaries found in that KML/KMZ file. Export polygons (not lines or points) and try again.";
+      }
+      if (data.detail === "kml_parse_failed") {
+        return "Could not read that KML/KMZ file. Re-export from Google Earth or QGIS and try again.";
+      }
+      if (data.detail === "unsupported_file_type") {
+        return "Upload a .kml or .kmz file only.";
+      }
+      if (data.detail === "polygon_too_many_vertices") {
+        return "Boundary polygon has too many points (max 10,000). Simplify the shape in QGIS/Google Earth and re-export.";
+      }
+      if (data.detail === "invalid polygon geometry" || data.detail === "expected Polygon geometry") {
+        return "Boundary geometry is invalid. Check for self-intersections or open rings in your KML.";
+      }
       if (data.detail.startsWith("org_feature_disabled:")) {
         const key = data.detail.slice("org_feature_disabled:".length);
         return orgFeatureDisabledMessage(key);

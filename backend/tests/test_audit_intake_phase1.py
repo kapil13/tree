@@ -6,6 +6,7 @@ from app.services.audit_intake.claim_snapshot import content_hash
 from app.services.audit_intake.gis_validation import validate_boundaries
 from app.services.audit_intake.intake_gate import evaluate_intake_gate
 from app.services.audit_intake.kml_import import parse_kml_bytes
+from app.services.audit_intake.ops import _validate_audit_boundary_geojson
 from app.services.audit_intake.plausibility import assess_block_plausibility
 
 SAMPLE_KML = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -102,6 +103,24 @@ def test_intake_gate_not_ready():
     )
     assert gate["ready"] is False
     assert any(r["id"] == "frozen_claim" and not r["met"] for r in gate["requirements"])
+
+
+def test_audit_boundary_vertex_limit():
+    import pytest
+
+    from app.schemas.audit_engagement import MAX_AUDIT_BOUNDARY_VERTICES
+
+    ring = [[i * 0.001, 28.0] for i in range(MAX_AUDIT_BOUNDARY_VERTICES + 2)]
+    ring.append(ring[0])
+    with pytest.raises(ValueError, match="polygon_too_many_vertices"):
+        _validate_audit_boundary_geojson({"type": "Polygon", "coordinates": [ring]})
+
+
+def test_parse_kml_rejects_invalid_xml():
+    import pytest
+
+    with pytest.raises(ValueError, match="kml_parse_failed"):
+        parse_kml_bytes(b"not xml")
 
 
 def test_intake_gate_ready():
