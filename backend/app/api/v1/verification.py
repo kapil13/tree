@@ -41,6 +41,22 @@ def _link_out(link: PublicVerificationLink) -> VerificationLinkOut:
     )
 
 
+@public_router.get("/verify/audit/{digest}")
+async def public_verify_audit(digest: str, db: DB) -> dict:
+    """Read-only Estate Watch audit verification by attestation or export hash."""
+    from app.services.public_verification.audit import resolve_audit_verification_by_digest
+
+    try:
+        payload = await resolve_audit_verification_by_digest(db, digest)
+        await db.commit()
+        return payload
+    except ValueError as exc:
+        code = str(exc)
+        if code in ("record_not_found", "resource_not_found", "invalid_digest"):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail=code) from exc
+        raise
+
+
 @public_router.get("/verify/{token}")
 async def public_verify(token: str, db: DB) -> dict:
     """Read-only verification snapshot — no authentication required."""
