@@ -2519,6 +2519,40 @@ export type SarRecord = {
   fusion?: SarFusion | null;
 };
 
+export type FireDetection = {
+  latitude: number;
+  longitude: number;
+  confidence: string;
+  frp: number | null;
+  acq_date: string;
+  satellite: string;
+  brightness?: number | null;
+};
+
+export type FenceFiresResponse = {
+  fence_id: string;
+  fence_name: string;
+  centroid_lat: number;
+  centroid_lon: number;
+  radius_km: number;
+  days: number;
+  firms_configured: boolean;
+  fire_count: number;
+  nearest_km: number | null;
+  risk_level: string;
+  detections: FireDetection[];
+};
+
+export const threats = {
+  async fires(fenceId: string, days = 1) {
+    return (
+      await api.get<FenceFiresResponse>("/v1/threats/fires", {
+        params: { fence_id: fenceId, days },
+      })
+    ).data;
+  },
+};
+
 export const plantationFences = {
   async list(params?: { page?: number; page_size?: number }) {
     return (await api.get("/v1/plantation-fences", { params })).data as {

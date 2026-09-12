@@ -44,6 +44,11 @@ import {
   type MapLatLng,
 } from "@/lib/map-defaults";
 import { useMapGeolocation } from "@/lib/use-map-geolocation";
+import {
+  HazardMapLegend,
+  HazardMapMarkers,
+  useHazardMapLayers,
+} from "@/components/satellite/hazard-map-layers";
 
 const HEALTH_COLOR: Record<string, string> = {
   healthy: "#16a34a",
@@ -185,6 +190,8 @@ export function PlantationFenceMap({
     selectedId ?? (fences.length === 1 ? fences[0]?.id ?? null : null);
 
   const activeFence = fences.find((f) => f.id === activeFenceId) ?? null;
+  const hazardLayers = useHazardMapLayers(activeFenceId);
+  const showHazardLayers = Boolean(activeFenceId) && mapType === "satellite";
 
   useEffect(() => {
     if (fences.length || geoInitialized) return;
@@ -433,7 +440,7 @@ export function PlantationFenceMap({
         )}
 
         <div
-          className="overflow-hidden rounded-xl border border-stone-200"
+          className="relative overflow-hidden rounded-xl border border-stone-200"
           style={{
             height: height === "100%" ? "100%" : height,
             minHeight: height === "100%" ? "420px" : undefined,
@@ -484,8 +491,22 @@ export function PlantationFenceMap({
                   icon={markerIcon(HEALTH_COLOR[tree.current_health] ?? HEALTH_COLOR.healthy)}
                 />
               ))}
+
+              {showHazardLayers && activeFenceId && (
+                <HazardMapMarkers fenceId={activeFenceId} toggles={hazardLayers.toggles} />
+              )}
             </Map>
           </APIProvider>
+          {showHazardLayers && (
+            <HazardMapLegend
+              toggles={hazardLayers.toggles}
+              onToggle={hazardLayers.toggleLayer}
+              fireCount={hazardLayers.fireCount}
+              floodActive={hazardLayers.floodActive}
+              locustActive={hazardLayers.locustActive}
+              firmsConfigured={hazardLayers.firmsConfigured}
+            />
+          )}
         </div>
       </div>
 

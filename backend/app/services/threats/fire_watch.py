@@ -70,10 +70,12 @@ async def assess_fire_proximity(
     *,
     radius_km: float | None = None,
     days: int = 1,
+    fires: list[FireDetection] | None = None,
 ) -> dict[str, Any]:
     """Assess active fire risk near a work-area centroid."""
     radius = radius_km or settings.hazard_fire_radius_km
-    fires = await fetch_fires_near_point(latitude, longitude, radius_km=radius, days=days)
+    if fires is None:
+        fires = await fetch_fires_near_point(latitude, longitude, radius_km=radius, days=days)
 
     if not fires:
         seasonal = None if has_firms_credentials() else _seasonal_fire_watch(latitude, longitude)

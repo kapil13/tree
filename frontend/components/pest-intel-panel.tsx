@@ -24,6 +24,8 @@ export type PestIntel = {
   early_warnings?: Array<{ kind: string; severity: string; title: string; message: string }>;
   fire_watch?: { risk_level?: string | null; fire_count?: number; nearest_km?: number | null } | null;
   flood_extent_watch?: { risk_level?: string | null; water_extent_score?: number | null } | null;
+  latitude?: number;
+  longitude?: number;
   recommended_actions: string[];
   satellite_health?: { summary?: string; risk_level?: string } | null;
   weather?: {
