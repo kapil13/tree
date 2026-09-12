@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../api/api_errors.dart';
 import '../l10n/alert_labels.dart';
 import '../providers.dart';
+import '../widgets/alert_preparedness_card.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/stack_route_scaffold.dart';
 
@@ -49,6 +50,7 @@ class AlertDetailScreen extends ConsumerWidget {
           final time = alert['created_at'] as String? ?? '';
           final kind = alert['kind'] as String?;
           final payload = alert['payload'] as Map<String, dynamic>?;
+          final interpretation = payload?['interpretation'] as Map<String, dynamic>?;
           final treeId = alert['tree_id'] as String? ?? payload?['tree_id'] as String?;
           final fenceId = payload?['fence_id'] as String?;
           final projectId = payload?['project_id'] as String?;
@@ -96,6 +98,10 @@ class AlertDetailScreen extends ConsumerWidget {
                 ),
                 child: Text(message, style: GoogleFonts.dmSans(fontSize: 14, height: 1.6)),
               ),
+              if (interpretation != null) ...[
+                const SizedBox(height: 16),
+                AlertPreparednessCard(interpretation: interpretation),
+              ],
               const SizedBox(height: 20),
               Text('Recommended action', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),

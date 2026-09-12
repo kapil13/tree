@@ -34,6 +34,12 @@ const _en = {
   'weather_hail_storm': 'Hail / storm watch',
   'weather_heavy_rain': 'Heavy rain watch',
   'locust_watch': 'Locust watch',
+  'fire_alert': 'Fire watch',
+  'flood_extent_alert': 'Flood extent watch',
+  'pest_intel_high': 'Pest risk',
+  'pest_intel_critical': 'Pest risk (critical)',
+  'ndvi_acute_drop': 'Acute NDVI drop',
+  'canopy_loss_suspected': 'Canopy loss suspected',
 };
 
 const _hi = {
@@ -61,6 +67,12 @@ const _hi = {
   'weather_hail_storm': 'ओलावृष्टि / तूफान चेतावनी',
   'weather_heavy_rain': 'भारी वर्षा चेतावनी',
   'locust_watch': 'टिड्डी निगरानी',
+  'fire_alert': 'आग निगरानी',
+  'flood_extent_alert': 'बाढ़ विस्तार निगरानी',
+  'pest_intel_high': 'कीट जोखिम',
+  'pest_intel_critical': 'कीट जोखिम (गंभीर)',
+  'ndvi_acute_drop': 'तीव्र NDVI गिरावट',
+  'canopy_loss_suspected': 'छतरी हानि की आशंका',
 };
 
 String healthDistributionLabel(String key, {String languageCode = 'en'}) {

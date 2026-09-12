@@ -7,6 +7,8 @@ void main() {
     expect(alertKindLabel('sar_flood_risk'), 'SAR waterlogging');
     expect(alertKindLabel('citizen_stewardship_due'), 'Citizen stewardship due');
     expect(alertKindLabel('locust_watch'), 'Locust watch');
+    expect(alertKindLabel('fire_alert'), 'Fire watch');
+    expect(alertKindLabel('flood_extent_alert'), 'Flood extent watch');
   });
 
   test('alertKindLabel supports Hindi', () {

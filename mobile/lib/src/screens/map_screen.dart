@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../l10n/alert_filters.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
@@ -211,11 +212,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return 'ok';
   }
 
-  LatLng? _alertPoint(Map<String, dynamic> alert, List<dynamic> trees) {
+  LatLng? _alertPoint(
+    Map<String, dynamic> alert,
+    List<dynamic> trees,
+    List<dynamic> fences,
+  ) {
     final payload = alert['payload'] as Map<String, dynamic>?;
     final lat = (payload?['latitude'] as num?)?.toDouble() ?? (payload?['lat'] as num?)?.toDouble();
     final lon = (payload?['longitude'] as num?)?.toDouble() ?? (payload?['lon'] as num?)?.toDouble();
     if (lat != null && lon != null) return LatLng(lat, lon);
+
+    final fenceId = payload?['fence_id'] as String?;
+    if (fenceId != null) {
+      for (final raw in fences) {
+        final fence = raw as Map<String, dynamic>;
+        if (fence['id'] == fenceId) {
+          final centroid = _fenceCentroid(fence);
+          if (centroid != null) return centroid;
+        }
+      }
+    }
+
     final treeId = alert['tree_id'] as String?;
     if (treeId == null) return null;
     for (final raw in trees) {
@@ -227,6 +244,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
     return null;
+  }
+
+  IconData _hazardAlertIcon(String? kind) {
+    if (kind == null) return Icons.priority_high;
+    if (kind.contains('fire')) return Icons.local_fire_department;
+    if (kind.contains('flood')) return Icons.water_drop;
+    if (kind.contains('locust')) return Icons.bug_report;
+    if (kind.startsWith('weather_')) return Icons.cloud;
+    return Icons.priority_high;
   }
 
   Color _alertColor(String? severity) {
@@ -559,12 +585,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             }
           }
 
+          final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
+
           if (showAlerts) {
             for (final raw in alerts) {
               final alert = raw as Map<String, dynamic>;
-              final point = _alertPoint(alert, items);
+              if (!isMapHazardAlert(alert)) continue;
+              final point = _alertPoint(alert, items, fences);
               if (point == null) continue;
               final selected = _selectedAlert?['id'] == alert['id'];
+              final kind = alert['kind'] as String?;
               markers.add(
                 Marker(
                   point: point,
@@ -587,15 +617,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             : null,
                       ),
                       alignment: Alignment.center,
-                      child: const Text('!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                      child: Icon(
+                        _hazardAlertIcon(kind),
+                        color: Colors.white,
+                        size: selected ? 18 : 16,
+                      ),
                     ),
                   ),
                 ),
               );
             }
           }
-
-          final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
           if (!_focusApplied) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _applyInitialFocus(items, fences);

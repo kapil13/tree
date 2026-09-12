@@ -8,6 +8,7 @@ import '../l10n/alert_labels.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
+import '../widgets/hazard_summary_card.dart';
 import '../widgets/offline_connectivity_banner.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
@@ -93,6 +94,16 @@ class MonitoringScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 const OfflineConnectivityBanner(),
+                HazardSummaryCard(
+                  hazardCounts: Map<String, int>.from(
+                    (summary['unread_hazard_alerts_by_kind'] as Map?)?.map(
+                          (k, v) => MapEntry('$k', (v as num).toInt()),
+                        ) ??
+                        const {},
+                  ),
+                  firmsLive: (summary['scan_engine'] as Map?)?['firms_live'] as bool?,
+                ),
+                const SizedBox(height: 8),
                 PrototypeSectionHeader(
                   title: 'Needs decision',
                   linkLabel: 'Field',
