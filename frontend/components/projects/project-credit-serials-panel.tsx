@@ -51,7 +51,7 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
   if (serials.length === 0) {
     return (
       <p className="text-sm text-stone-500">
-        Registry serials are minted when the ledger reaches <strong>issued</strong> status.
+        Registry serials are recorded when an admin marks the ledger <strong>issued</strong> with an external registry reference.
       </p>
     );
   }

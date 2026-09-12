@@ -359,7 +359,7 @@ def render_compliance_mrv_pdf(ctx: dict[str, Any]) -> bytes:
     body = styles["BodyText"]
 
     story: list = []
-    story.append(Paragraph("MRV Compliance Report", h1))
+    story.append(Paragraph("Field MRV &amp; Compliance Audit Report", h1))
     story.append(
         Paragraph(
             f"<b>{project['name']}</b> ({project['code']}) · "

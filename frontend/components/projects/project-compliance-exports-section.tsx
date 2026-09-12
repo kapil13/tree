@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, FileText } from "lucide-react";
+import { MrvScopeDisclaimer } from "@/components/compliance/mrv-scope-disclaimer";
 import type { FrameworkProfileCode } from "@/lib/api";
 import { cn } from "@/lib/cn";
 
@@ -75,9 +76,11 @@ export function ProjectComplianceExportsSection({
         </p>
       </div>
 
+      <MrvScopeDisclaimer />
+
       <ExportGroup
         title="Core MRV"
-        description="Project monitoring report and signed evidence bundle."
+        description="Field MRV & compliance audit report and signed evidence bundle."
       >
         <div className="flex flex-wrap gap-2">
           <ExportButton

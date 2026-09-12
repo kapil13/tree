@@ -189,9 +189,9 @@ def _profile_sections(
                 "title": "Carbon & buffer pool (VM0047 20%)",
                 "rows": [
                     *common_carbon,
-                    ["Gross credits (tCO₂e)", f"{carbon['gross_credits_tco2e']:.4f}"],
+                    ["Modeled gross standing stock (tCO₂e)", f"{carbon['gross_credits_tco2e']:.4f}"],
                     ["Buffer withheld (20%)", f"{carbon['buffer_withheld_tco2e']:.4f}"],
-                    ["Net issuable estimate (tCO₂e)", f"{carbon['net_credits_tco2e']:.4f}"],
+                    ["Net modeled estimate after buffer (tCO₂e)", f"{carbon['net_credits_tco2e']:.4f}"],
                 ],
             },
             {

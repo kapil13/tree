@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, RefreshCw } from "lucide-react";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { MrvScopeDisclaimer } from "@/components/compliance/mrv-scope-disclaimer";
+import { useAuth } from "@/lib/auth-store";
 import { ProjectCreditSerialsPanel } from "@/components/projects/project-credit-serials-panel";
 import { type CreditLedgerStatus, credits, errorMessage, isApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -38,6 +40,7 @@ const NEXT_STATUS: Partial<Record<CreditLedgerStatus, CreditLedgerStatus>> = {
 };
 
 export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [registryRef, setRegistryRef] = useState("");
   const [notes, setNotes] = useState("");
@@ -123,10 +126,12 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
     tree_count: num(row.tree_count),
   }));
 
-  const next = NEXT_STATUS[ledger.status];
+  const nextRaw = NEXT_STATUS[ledger.status];
+  const next = nextRaw === "issued" && user?.role !== "admin" ? undefined : nextRaw;
 
   return (
     <div className="space-y-4">
+      <MrvScopeDisclaimer />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -189,7 +194,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
-          label="Gross credits"
+          label="Modeled gross standing stock"
           value={
             <span className="inline-flex items-center gap-1.5">
               {`${grossCredits.toFixed(4)} tCO₂e`}
@@ -209,7 +214,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
           }
         />
         <Stat
-          label="Net (issuable est.)"
+          label="Net modeled (after buffer)"
           value={
             <span className="inline-flex items-center gap-1.5">
               {`${netCredits.toFixed(4)} tCO₂e`}
@@ -218,7 +223,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
           }
         />
         <Stat
-          label="Registry issued"
+          label="External registry record"
           value={issuedCredits != null ? `${issuedCredits.toFixed(4)} tCO₂e` : "—"}
         />
       </div>
@@ -286,7 +291,7 @@ export function ProjectCreditLedgerPanel({ projectId }: { projectId: string }) {
                 <th className="px-4 py-2 font-medium">Species</th>
                 <th className="px-4 py-2 font-medium">Age cohort</th>
                 <th className="px-4 py-2 font-medium">Trees</th>
-                <th className="px-4 py-2 font-medium">Credits (tCO₂e)</th>
+                <th className="px-4 py-2 font-medium">Modeled tCO₂e</th>
               </tr>
             </thead>
             <tbody>

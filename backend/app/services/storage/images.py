@@ -5,6 +5,8 @@ from __future__ import annotations
 import uuid
 from typing import Protocol
 
+from app.services.storage.content_validation import assert_valid_image_bytes
+
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
 IMAGE_EXT_TO_TYPE = {
     "jpg": "image/jpeg",
@@ -51,6 +53,10 @@ def persist_image_bytes(
         raise ImageUploadError("empty_file")
     if len(data) > MAX_IMAGE_BYTES:
         raise ImageUploadError("image_too_large")
+    try:
+        assert_valid_image_bytes(data)
+    except ValueError:
+        raise ImageUploadError("invalid_image_content") from None
     ext, mime = image_content_type(filename, content_type)
     key = f"images/{user_id}/{uuid.uuid4()}.{ext}"
     storage.put_bytes(key, data, content_type=mime)

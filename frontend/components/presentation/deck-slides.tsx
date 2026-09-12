@@ -621,7 +621,7 @@ function renderAllSlides() {
     >
       <FraudSummaryTable />
       <PptCallout title="Closing line" tone="green">
-        Duplicacy is blocked at capture. Fraud is surfaced by fusion. Credits are issued only after audit-ready proof — field, AI, satellite, and independent verification aligned.
+        Duplicacy is blocked at capture. Fraud is surfaced by fusion. Registry issuance is recorded only after external validation, admin confirmation, and audit-ready proof — field, AI, satellite, and independent verification aligned.
       </PptCallout>
     </PptSlide>,
   ];

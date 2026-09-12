@@ -93,7 +93,7 @@ async def _project_ghg_lines(
         {
             "line_id": f"{project.code}-REMOVAL-NET",
             "project_code": project.code,
-            "description": "Net issuable credits after buffer (registry-aligned)",
+            "description": "Net modeled removals after buffer (internal ledger estimate)",
             "scope": "Land Sector",
             "scope_tag": "Scope 1 equivalent — removals (net)",
             "ghg_protocol_category": "Land Sector Removals — net of buffer",
@@ -212,7 +212,7 @@ async def build_brsr_context(
             "name": "Greenhouse gas emissions / land sector removals",
             "description": (
                 "Scope-tagged GHG inventory line items for plantation carbon sequestration "
-                "and registry-aligned net credits."
+                "and net modeled removals after buffer (not registry issuance)."
             ),
             "ghg_inventory": ghg_inventory,
             "portfolio_total_removals_tco2e": round(total_removals_t, 4),

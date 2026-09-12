@@ -70,7 +70,7 @@ async def _project_inventory_lines(
         {
             "line_id": f"{project.code}-LSR-NET",
             "project_code": project.code,
-            "activity": "Net issuable removals after buffer pool",
+            "activity": "Net modeled removals after buffer pool",
             "scope": "Scope 1",
             "scope_tag": "Direct land sector removal (net)",
             "ghg_protocol_category": "Land Sector Removals — net of buffer",

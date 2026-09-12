@@ -22,6 +22,7 @@ import { PortfolioSection } from "./portfolio-section";
 import { PortfolioTabBanner } from "./portfolio-tab-banner";
 import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
 import { PortfolioTabShell } from "./portfolio-tab-shell";
+import { IntegrationStubBanner } from "@/components/integrations/integration-stub-banner";
 import { ScanHistoryGrid } from "@/components/satellite/scan-history-grid";
 import { ScanCyclePanel } from "@/components/satellite/scan-cycle-panel";
 import { TreeScanHistoryGrid } from "@/components/satellite/tree-scan-history-grid";
@@ -148,6 +149,7 @@ export function PortfolioMonitoringTab({
 
   return (
     <PortfolioTabShell tab="monitoring" projectId={projectId} projectName={projectName}>
+      <IntegrationStubBanner className="mb-4" />
       <PortfolioKpiGrid>
         <PortfolioKpiCard
           icon={Satellite}

@@ -70,6 +70,8 @@ from app.services.storage import get_storage
 
 router = APIRouter(prefix="/bioacoustic", tags=["bioacoustic"])
 
+MAX_AUDIO_BYTES = 50 * 1024 * 1024
+
 _THREATENED = {"Critically Endangered", "Endangered", "Vulnerable"}
 
 
@@ -135,6 +137,8 @@ async def upload_recording(
     data = await file.read()
     if len(data) < 1000:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="audio_too_short")
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="audio_too_large")
     if duration_seconds < 60:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="duration_below_minimum_60s")
     filename_lower = (file.filename or "").lower()
