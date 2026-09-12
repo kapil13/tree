@@ -84,6 +84,19 @@ def _scope(stmt, user):
     )
 
 
+async def _load_fence_for_user(
+    fence_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> PlantationFence:
+    from app.services.planting_projects.access import load_work_area
+
+    fence = await load_work_area(fence_id, user, db)
+    if fence is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    return fence
+
+
 @router.post("/recordings", response_model=BioacousticRecordingOut, status_code=status.HTTP_201_CREATED)
 async def register_recording(
     payload: BioacousticRecordingCreate, user: WriteProfessional, db: DB
@@ -510,6 +523,7 @@ async def biodiversity_hotspots(
     plantation_fence_id: uuid.UUID,
     min_recordings: int = Query(2, ge=2, le=10),
 ) -> list[HotspotOut]:
+    await _load_fence_for_user(plantation_fence_id, user, db)
     rows = list(
         (
             await db.execute(
@@ -530,18 +544,7 @@ async def create_monitoring_period_route(
     db: DB,
 ) -> MonitoringPeriodOut:
     await assert_org_feature_enabled(db, user, "bioacoustic")
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == payload.fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    await _load_fence_for_user(payload.fence_id, user, db)
     try:
         period = await create_monitoring_period(
             db,
@@ -565,18 +568,7 @@ async def list_monitoring_periods_route(
     db: DB,
     fence_id: uuid.UUID,
 ) -> list[MonitoringPeriodOut]:
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    await _load_fence_for_user(fence_id, user, db)
     periods = await list_monitoring_periods(db, fence_id)
     return [MonitoringPeriodOut.from_model(p) for p in periods]
 
@@ -595,18 +587,7 @@ async def compare_periods_route(
     period_b = (await db.execute(select(BioacousticMonitoringPeriod).where(BioacousticMonitoringPeriod.id == period_b_id))).scalar_one_or_none()
     if period_a is None or period_b is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == period_a.fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    await _load_fence_for_user(period_a.fence_id, user, db)
     try:
         data = await compare_monitoring_periods(db, period_a, period_b)
         return PeriodComparisonOut(**data)
@@ -620,18 +601,7 @@ async def fence_audit_bundle(
     user: CurrentUser,
     db: DB,
 ) -> AuditBundleOut:
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    fence = await _load_fence_for_user(fence_id, user, db)
     recordings = list(
         (
             await db.execute(
@@ -698,18 +668,7 @@ async def fence_baseline_delta(
     user: CurrentUser,
     db: DB,
 ) -> BaselineDeltaOut:
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    await _load_fence_for_user(fence_id, user, db)
     data = await compute_baseline_delta(db, fence_id)
     return BaselineDeltaOut(**data)
 
@@ -720,18 +679,7 @@ async def fence_biodiversity_trends(
     user: CurrentUser,
     db: DB,
 ) -> FenceTrendsOut:
-    fence = (
-        await db.execute(
-            apply_owner_org_scope(
-                select(PlantationFence).where(PlantationFence.id == fence_id),
-                user,
-                owner_col=PlantationFence.owner_user_id,
-                org_col=PlantationFence.organization_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if fence is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="fence_not_found")
+    await _load_fence_for_user(fence_id, user, db)
     data = await compute_fence_trends(db, fence_id)
     return FenceTrendsOut(**data)
 

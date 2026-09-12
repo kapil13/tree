@@ -100,6 +100,11 @@ async def create_measurement(
     db.add(row)
     await db.flush()
     await sync_tree_current_from_latest(db, tree)
+    if any(v is not None for v in (payload.dbh_cm, payload.height_m, payload.canopy_m)):
+        from app.services.workers.enqueue import try_enqueue
+        from app.workers.tasks import recalc_carbon as recalc_carbon_task
+
+        try_enqueue(recalc_carbon_task, str(tree.id), str(measurer_id))
     return row
 
 
