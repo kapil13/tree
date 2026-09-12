@@ -195,8 +195,10 @@ def ledger_to_dict(ledger: ProjectCreditLedger, events: list[CreditLedgerEvent] 
         "strata": ledger.strata or [],
         "last_computed_at": ledger.last_computed_at.isoformat(),
         "disclaimer": (
-            "Ledger estimates support audit preparation. Credits are not issued until "
-            "recorded with an external registry reference."
+            "Modeled standing-stock estimates for internal MRV and audit preparation only. "
+            "Not Verra-certified, not VCS-verified, and not registry-issued carbon credits "
+            "until your organisation records an external registry reference and an admin marks "
+            "the ledger as issued."
         ),
         "events": [
             {

@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.models.bioacoustic_recording import BioacousticRecording
-from app.models.plantation_fence import PlantationFence
 from app.models.user import User
 from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecordingOut
 from app.services.ai.bioacoustic import identify_species_from_audio
@@ -369,16 +368,11 @@ async def create_recording(
     assert_owned_upload_key(user.id, s3_key, folders=("bioacoustic",))
 
     if plantation_fence_id is not None:
-        fence_res = await db.execute(
-            select(PlantationFence).where(PlantationFence.id == plantation_fence_id)
-        )
-        fence = fence_res.scalar_one_or_none()
+        from app.services.planting_projects.access import load_work_area
+
+        fence = await load_work_area(plantation_fence_id, user, db)
         if fence is None:
             raise ValueError("fence_not_found")
-        if user.role != "admin" and fence.owner_user_id != user.id and not (
-            user.organization_id and fence.organization_id == user.organization_id
-        ):
-            raise ValueError("forbidden")
 
     verified, fallback = _resolve_gps_flags(
         latitude,

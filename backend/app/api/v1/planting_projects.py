@@ -838,6 +838,11 @@ async def update_project(
     project = await load_project(project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if not await can_manage_project(user, project, db):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail="forbidden",
+        )
 
     for field in ("name", "description", "status", "compliance_mode", "target_tree_count"):
         value = getattr(payload, field)

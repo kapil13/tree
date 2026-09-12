@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers, Scale } from "lucide-react";
+import { MrvScopeDisclaimer } from "@/components/compliance/mrv-scope-disclaimer";
 import { errorMessage, plantingProjects, type Vm0047Summary } from "@/lib/api";
 
 export function ProjectVm0047Panel({ projectId }: { projectId: string }) {
@@ -77,6 +78,7 @@ export function ProjectVm0047Panel({ projectId }: { projectId: string }) {
       <p className="text-xs text-stone-500">
         Baseline, additionality, leakage, and other carbon pools (deadwood, litter, SOC) for Verra VM0047 audit prep.
       </p>
+      <MrvScopeDisclaimer compact />
 
       {summary.isLoading && <p className="text-sm text-stone-500">Loading VM0047 summary…</p>}
       {summary.error && (
@@ -85,7 +87,7 @@ export function ProjectVm0047Panel({ projectId }: { projectId: string }) {
 
       {data && (
         <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Gross credits (t)" value={data.ledger.gross_credits_tco2e} />
+          <Metric label="Modeled gross standing stock (t)" value={data.ledger.gross_credits_tco2e} />
           <Metric label="After baseline (t)" value={data.quantification.incremental_after_baseline_tco2e} />
           <Metric label="After leakage (t)" value={data.quantification.creditable_after_leakage_tco2e} />
           <Metric label="Net ledger (t)" value={data.ledger.net_credits_tco2e} />

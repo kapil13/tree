@@ -72,6 +72,17 @@ def test_persist_rejects_oversized_file():
         )
 
 
+def test_persist_rejects_invalid_magic_bytes():
+    with pytest.raises(ImageUploadError, match="invalid_image_content"):
+        persist_image_bytes(
+            MagicMock(),
+            user_id=uuid.uuid4(),
+            filename="fake.jpg",
+            content_type="image/jpeg",
+            data=b"plain-text-not-jpeg",
+        )
+
+
 def test_persist_storage_failure_propagates():
     storage = MagicMock()
     storage.put_bytes.side_effect = RuntimeError("minio down")
@@ -81,7 +92,7 @@ def test_persist_storage_failure_propagates():
             user_id=uuid.uuid4(),
             filename="pit.jpg",
             content_type="image/jpeg",
-            data=b"jpeg",
+            data=b"\xff\xd8\xff fake-jpeg",
         )
 
 

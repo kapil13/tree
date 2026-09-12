@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from app.core.config import settings
+from app.core.production_guards import is_hardened_env
 from app.services.evidence.tsa import request_timestamp_token
 
 SIGNATURE_VERSION = "byot-evidence-signature-1.0.0"
@@ -49,6 +50,10 @@ def _private_key() -> Ed25519PrivateKey:
     if raw:
         seed = base64.b64decode(raw.strip())
         return Ed25519PrivateKey.from_private_bytes(seed[:32])
+    if is_hardened_env():
+        raise RuntimeError(
+            "EVIDENCE_SIGNING_KEY is required in production/staging"
+        )
     # Dev-only deterministic fallback — set EVIDENCE_SIGNING_KEY in production.
     seed = hashlib.sha256(f"byot-evidence:{settings.jwt_secret}".encode()).digest()
     return Ed25519PrivateKey.from_private_bytes(seed)

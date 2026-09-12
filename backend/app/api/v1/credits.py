@@ -178,6 +178,8 @@ async def transition_project_credit_ledger(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     if not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if payload.to_status == "issued" and user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="admin_only")
 
     from app.services.credits.ledger import get_or_create_ledger
 
