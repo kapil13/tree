@@ -97,6 +97,7 @@ export default function AlertsPage() {
   const searchParams = useSearchParams();
   const sarFilter = searchParams.get("sar");
   const kindFilter = searchParams.get("kind");
+  const hazardFilter = searchParams.get("hazard");
   const [unreadOnly, setUnreadOnly] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -106,6 +107,7 @@ export default function AlertsPage() {
 
   const alertItems = (data?.items ?? []).filter((a) => {
     if (kindFilter) return a.kind === kindFilter;
+    if (hazardFilter === "weather") return a.kind.startsWith("weather_");
     if (!sarFilter) return true;
     if (sarFilter === "all") return SAR_ALERT_KINDS.has(a.kind);
     return a.kind === sarFilter;
@@ -201,26 +203,72 @@ export default function AlertsPage() {
           {
             label: "Total in view",
             value: fmtNum(alertItems.length),
-            hint: sarFilter || kindFilter ? "Filtered inbox" : "All alert kinds",
+            hint: sarFilter || kindFilter || hazardFilter ? "Filtered inbox" : "All alert kinds",
           },
         ]}
       />
 
-      {kindFilter ? (
+      {kindFilter || hazardFilter ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-forest-800 px-3 py-1 text-sm text-white">
-            {humanizeKind(kindFilter, ta)}
+            {kindFilter
+              ? humanizeKind(kindFilter, ta)
+              : hazardFilter === "weather"
+                ? ta("filterWeather")
+                : hazardFilter}
           </span>
           <Link
             href="/alerts"
             className="rounded-full bg-stone-100 px-3 py-1 text-sm hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
           >
-            Clear filter
+            {ta("clearFilter")}
           </Link>
         </div>
       ) : null}
 
-      {sarKindsInList.length > 0 && !kindFilter && (
+      {!kindFilter && !sarFilter && (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/alerts"
+            className={`rounded-full px-3 py-1 text-sm ${
+              !kindFilter && !hazardFilter
+                ? "bg-forest-800 text-white"
+                : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
+            }`}
+          >
+            {ta("filterAll")}
+          </Link>
+          {[
+            { kind: "fire_alert", label: ta("filterFire") },
+            { kind: "flood_extent_alert", label: ta("filterFlood") },
+            { kind: "locust_watch", label: ta("filterLocust") },
+          ].map((chip) => (
+            <Link
+              key={chip.kind}
+              href={`/alerts?kind=${chip.kind}`}
+              className={`rounded-full px-3 py-1 text-sm ${
+                kindFilter === chip.kind
+                  ? "bg-forest-800 text-white"
+                  : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
+              }`}
+            >
+              {chip.label}
+            </Link>
+          ))}
+          <Link
+            href="/alerts?hazard=weather"
+            className={`rounded-full px-3 py-1 text-sm ${
+              hazardFilter === "weather"
+                ? "bg-forest-800 text-white"
+                : "bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 dark:text-stone-100"
+            }`}
+          >
+            {ta("filterWeather")}
+          </Link>
+        </div>
+      )}
+
+      {sarKindsInList.length > 0 && !kindFilter && !hazardFilter && (
         <div className="flex flex-wrap gap-2">
           <Link
             href="/alerts"

@@ -8,11 +8,19 @@ import {
   AlertTriangle,
   Bug,
   CloudRain,
+  Droplets,
+  Flame,
   Globe,
   Leaf,
   ShieldAlert,
 } from "lucide-react";
 import { intelligence as intelligenceApi } from "@/lib/api";
+import {
+  alertsHref,
+  earlyWarningInboxKind,
+  portfolioAlertKindHref,
+  satelliteFenceHref,
+} from "@/lib/alerts-links";
 import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioTabBanner } from "./portfolio-tab-banner";
@@ -47,6 +55,19 @@ function integrationStatusLabel(key: string, row: { status?: string; mode?: stri
 function matchesProject(projectId: string | null | undefined, itemProjectId?: string | null) {
   if (!projectId) return true;
   return itemProjectId === projectId;
+}
+
+function activeHazardCount(
+  sites: Array<{
+    fire_watch?: { risk_level?: string | null } | null;
+    flood_extent_watch?: { risk_level?: string | null } | null;
+  }>,
+  field: "fire_watch" | "flood_extent_watch",
+) {
+  return sites.filter((site) => {
+    const risk = site[field]?.risk_level;
+    return risk != null && risk !== "none";
+  }).length;
 }
 
 export function PortfolioThreatsTab({
@@ -99,6 +120,13 @@ export function PortfolioThreatsTab({
     matchesProject(projectId, site.project_id),
   );
 
+  const fireWatchCount = projectId
+    ? activeHazardCount(threatSites, "fire_watch")
+    : (data.threat_summary.fire_watch_count ?? 0);
+  const floodWatchCount = projectId
+    ? activeHazardCount(threatSites, "flood_extent_watch")
+    : (data.threat_summary.flood_extent_watch_count ?? 0);
+
   const fusionSummary =
     fusion?.summary &&
     t("fusion.summary", {
@@ -128,6 +156,20 @@ export function PortfolioThreatsTab({
           label={t("kpi.weatherAlerts")}
           value={String(data.weather_alert_count)}
           warn={data.weather_alert_count > 0}
+        />
+        <PortfolioKpiCard
+          icon={Flame}
+          label={t("kpi.fireWatch")}
+          value={String(fireWatchCount)}
+          warn={fireWatchCount > 0}
+          href={alertsHref({ kind: "fire_alert" })}
+        />
+        <PortfolioKpiCard
+          icon={Droplets}
+          label={t("kpi.floodExtent")}
+          value={String(floodWatchCount)}
+          warn={floodWatchCount > 0}
+          href={alertsHref({ kind: "flood_extent_alert" })}
         />
         <PortfolioKpiCard
           icon={Bug}
@@ -257,17 +299,43 @@ export function PortfolioThreatsTab({
       {earlyWarnings.length > 0 ? (
         <PortfolioSection title={t("earlyWarnings")}>
           <ul className="space-y-2 text-sm">
-            {earlyWarnings.map((w, i) => (
-              <li key={`${w.work_area_id}-${w.kind}-${i}`} className="flex gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-                <div>
-                  <p className="font-medium">
-                    {w.work_area_name}: {w.title}
-                  </p>
-                  <p className="text-stone-600 dark:text-stone-400">{w.message}</p>
-                </div>
-              </li>
-            ))}
+            {earlyWarnings.map((w, i) => {
+              const inboxKind = earlyWarningInboxKind(w.kind);
+              return (
+                <li
+                  key={`${w.work_area_id}-${w.kind}-${i}`}
+                  className="rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-2 dark:border-stone-700 dark:bg-stone-900/40"
+                >
+                  <div className="flex gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">
+                        {w.work_area_name}: {w.title}
+                      </p>
+                      <p className="text-stone-600 dark:text-stone-400">{w.message}</p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                        {w.work_area_id ? (
+                          <Link
+                            href={satelliteFenceHref(w.work_area_id)}
+                            className="text-forest-800 hover:underline dark:text-forest-300"
+                          >
+                            {t("openWorkArea")}
+                          </Link>
+                        ) : null}
+                        {inboxKind ? (
+                          <Link
+                            href={portfolioAlertKindHref(inboxKind)}
+                            className="text-forest-800 hover:underline dark:text-forest-300"
+                          >
+                            {t("viewAlerts")}
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </PortfolioSection>
       ) : null}

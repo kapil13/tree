@@ -14,6 +14,8 @@ from app.models.satellite_health_analysis import SatelliteHealthAnalysis
 from app.models.tree import Tree
 from app.services.bioacoustic.correlation import correlate_fence_ecosystem
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
+from app.services.threats.fire_watch import assess_fire_proximity
+from app.services.threats.flood_extent import assess_fence_flood_extent
 from app.services.threats.locust import locust_early_warning
 from app.services.weather.alerts import evaluate_weather_alerts
 from app.services.weather.open_meteo import fetch_forecast
@@ -149,6 +151,14 @@ async def build_pest_intel(
             }
         )
 
+    fire = await assess_fire_proximity(lat, lon)
+    if fire.get("early_warning"):
+        early_warnings.append(fire["early_warning"])
+
+    flood = await assess_fence_flood_extent(db, fence.id, rain_mm_48h=rain_48h)
+    if flood.get("early_warning"):
+        early_warnings.append(flood["early_warning"])
+
     return {
         "work_area_id": str(fence.id),
         "work_area_name": fence.name,
@@ -179,6 +189,18 @@ async def build_pest_intel(
         "rain_mm_next_48h": round(rain_48h, 1),
         "weather_alerts": weather_alerts,
         "early_warnings": early_warnings,
+        "fire_watch": {
+            "risk_level": fire.get("risk_level"),
+            "fire_count": fire.get("fire_count"),
+            "nearest_km": fire.get("nearest_km"),
+            "source": fire.get("source"),
+        },
+        "flood_extent_watch": {
+            "risk_level": flood.get("risk_level"),
+            "water_extent_score": flood.get("water_extent_score"),
+            "delta_score": flood.get("delta_score"),
+            "rain_mm_48h": flood.get("rain_mm_48h"),
+        },
         "latitude": round(lat, 5),
         "longitude": round(lon, 5),
         "bioacoustic": {

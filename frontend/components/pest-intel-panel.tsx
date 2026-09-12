@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Bug, CloudRain, Leaf, Loader2, Stethoscope } from "lucide-react";
+import Link from "next/link";
+import { Bug, CloudRain, Droplets, Flame, Leaf, Loader2, Stethoscope } from "lucide-react";
+import { earlyWarningInboxKind, portfolioAlertKindHref, satelliteFenceHref } from "@/lib/alerts-links";
 import { plantationFences, plantingProjects } from "@/lib/api";
 
 export type PestIntel = {
@@ -20,6 +22,8 @@ export type PestIntel = {
   rain_mm_next_48h?: number;
   weather_alerts?: Array<{ kind: string; severity: string; title: string; message: string }>;
   early_warnings?: Array<{ kind: string; severity: string; title: string; message: string }>;
+  fire_watch?: { risk_level?: string | null; fire_count?: number; nearest_km?: number | null } | null;
+  flood_extent_watch?: { risk_level?: string | null; water_extent_score?: number | null } | null;
   recommended_actions: string[];
   satellite_health?: { summary?: string; risk_level?: string } | null;
   weather?: {
@@ -121,17 +125,51 @@ export function PestIntelPanel(props: Props) {
         </div>
       )}
 
+      {(data.fire_watch?.risk_level && data.fire_watch.risk_level !== "none") ||
+      (data.flood_extent_watch?.risk_level && data.flood_extent_watch.risk_level !== "none") ? (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {data.fire_watch?.risk_level && data.fire_watch.risk_level !== "none" ? (
+            <span className="inline-flex items-center gap-1 rounded bg-rose-100 px-2 py-1 text-rose-900">
+              <Flame className="h-3 w-3" />
+              Fire watch ({data.fire_watch.risk_level})
+            </span>
+          ) : null}
+          {data.flood_extent_watch?.risk_level && data.flood_extent_watch.risk_level !== "none" ? (
+            <span className="inline-flex items-center gap-1 rounded bg-indigo-100 px-2 py-1 text-indigo-900">
+              <Droplets className="h-3 w-3" />
+              Flood extent ({data.flood_extent_watch.risk_level})
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       {(data.early_warnings?.length ?? 0) > 0 && (
         <div className="space-y-1.5">
           <div className="text-xs font-medium text-stone-700">Early warnings</div>
-          {(data.early_warnings ?? []).map((w, i) => (
-            <div
-              key={i}
-              className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-900"
-            >
-              <span className="font-medium">{w.title}</span> — {w.message}
-            </div>
-          ))}
+          {(data.early_warnings ?? []).map((w, i) => {
+            const inboxKind = earlyWarningInboxKind(w.kind);
+            const tone =
+              w.kind === "fire"
+                ? "border-rose-200 bg-rose-50 text-rose-900"
+                : w.kind === "flood_extent" || w.kind === "flood"
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-900"
+                  : "border-amber-200 bg-amber-50 text-amber-900";
+            return (
+              <div key={i} className={`rounded-md border px-2 py-1.5 text-xs ${tone}`}>
+                <span className="font-medium">{w.title}</span> — {w.message}
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <Link href={satelliteFenceHref(data.work_area_id)} className="underline">
+                    Open map
+                  </Link>
+                  {inboxKind ? (
+                    <Link href={portfolioAlertKindHref(inboxKind)} className="underline">
+                      View alerts
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

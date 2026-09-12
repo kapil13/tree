@@ -177,7 +177,17 @@ export function PortfolioMonitoringTab({
       </PortfolioKpiGrid>
 
       {scanEngine ? (
-        <PortfolioTabBanner variant="info" title={t("scanEngine")} description={scanEngineDetail} />
+        <PortfolioTabBanner variant="info" title={t("scanEngine")} description={scanEngineDetail}>
+          <span
+            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+              scanEngine.firms_live
+                ? "bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200"
+                : "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+            }`}
+          >
+            {scanEngine.firms_live ? t("firmsBadgeLive") : t("firmsBadgeFallback")}
+          </span>
+        </PortfolioTabBanner>
       ) : null}
 
       <ScanCyclePanel />
@@ -188,6 +198,35 @@ export function PortfolioMonitoringTab({
           variant="warn"
           description={t("staleSar", { count: data.stale_sar_work_areas ?? 0 })}
         />
+      ) : null}
+
+      {Object.keys(data.unread_hazard_alerts_by_kind ?? {}).length > 0 ? (
+        <PortfolioSection title={t("hazardAlerts")}>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            {scanEngine ? (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  scanEngine.firms_live
+                    ? "bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                }`}
+              >
+                {scanEngine.firms_live ? t("firmsBadgeLive") : t("firmsBadgeFallback")}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(data.unread_hazard_alerts_by_kind ?? {}).map(([kind, count]) => (
+              <Link
+                key={kind}
+                href={portfolioAlertKindHref(kind)}
+                className="rounded-full bg-rose-50 px-3 py-1 text-sm text-rose-900 hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-100"
+              >
+                {ALERT_KIND_LABEL[kind] ?? kind}: {count}
+              </Link>
+            ))}
+          </div>
+        </PortfolioSection>
       ) : null}
 
       {Object.keys(data.unread_sar_alerts_by_kind ?? {}).length > 0 ? (
