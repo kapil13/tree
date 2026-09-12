@@ -34,7 +34,15 @@ const INTEGRATION_LABEL: Record<string, string> = {
   sentinel_hub: "Sentinel Hub",
   bhoonidhi: "Bhoonidhi",
   iucn: "IUCN Red List",
+  firms_fire: "NASA FIRMS",
 };
+
+function integrationStatusLabel(key: string, row: { status?: string; mode?: string }) {
+  if (key === "firms_fire") {
+    return row.mode === "live" ? "Live fire detections" : "Seasonal fallback (set FIRMS_MAP_KEY)";
+  }
+  return row.status ?? "unknown";
+}
 
 function matchesProject(projectId: string | null | undefined, itemProjectId?: string | null) {
   if (!projectId) return true;
@@ -173,7 +181,9 @@ export function PortfolioThreatsTab({
                 }`}
               >
                 <p className="font-medium">{INTEGRATION_LABEL[key] ?? key}</p>
-                <p className="text-xs text-stone-500 dark:text-stone-400">{row.status ?? "unknown"}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  {integrationStatusLabel(key, row)}
+                </p>
               </div>
             );
           })}

@@ -45,6 +45,37 @@ def test_inbox_weather_kind_prefix():
     assert "spray" in " ".join(brief["prepare"]).lower() or "spray" in brief["meaning"].lower()
 
 
+def test_site_preparedness_picks_fire_before_weather():
+    site = {
+        "work_area_name": "Block A",
+        "composite_risk": "moderate",
+        "rain_mm_next_48h": 10,
+        "weather_alerts": [
+            {
+                "kind": "heavy_rain",
+                "severity": "critical",
+                "title": "Extreme rainfall",
+                "message": "80 mm rain",
+                "date": "2026-07-20",
+            }
+        ],
+        "early_warnings": [
+            {
+                "kind": "fire",
+                "severity": "warning",
+                "title": "Active fire detected nearby",
+                "message": "Nearest ~8 km away.",
+                "distance_km": 8,
+            }
+        ],
+        "recommended_actions": ["Patrol perimeter"],
+    }
+    brief = build_site_preparedness_brief(site)
+    assert brief["category"] == "fire"
+    assert "Block A" in brief["headline"]
+    assert "Patrol perimeter" in brief["prepare"]
+
+
 def test_site_preparedness_picks_weather_first():
     site = {
         "work_area_name": "Green belt",

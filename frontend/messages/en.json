@@ -1552,6 +1552,8 @@
     "loadingThreatWatch": "Loading location-specific weather & pest alerts…",
     "threatWatchUnavailable": "Threat watch unavailable. Add plantation work areas to enable location alerts.",
     "highPestRisk": "High pest risk",
+    "fireWatch": "Fire watch",
+    "floodExtentWatch": "Flood extent",
     "locustWatch": "Locust watch",
     "weatherAlerts": "Weather alerts",
     "noSitesThreat": "No plantation sites yet. Draw work areas on the satellite map to get location alerts.",

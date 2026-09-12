@@ -16,6 +16,8 @@ const URGENCY_LABEL: Record<string, string> = {
 
 const CATEGORY_LABEL: Record<string, string> = {
   weather: "Weather",
+  fire: "Fire",
+  flood: "Flood",
   methane: "Methane / emissions",
   pest: "Pest & disease",
   satellite: "Satellite / radar",

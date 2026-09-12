@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   Bug,
   CloudRain,
+  Droplets,
+  Flame,
   Loader2,
   MapPin,
   ShieldAlert,
@@ -14,6 +16,7 @@ import {
 import { useTranslations } from "next-intl";
 import { AlertPreparednessBlock, type PreparednessBrief } from "@/components/alerts/alert-preparedness-block";
 import { dashboard } from "@/lib/api";
+import { alertsHref } from "@/lib/alerts-links";
 import { cn } from "@/lib/cn";
 import { SEVERITY_STYLES, timeAgo } from "@/components/dashboard/format";
 
@@ -55,6 +58,8 @@ export type ThreatWatchData = {
     weather_alerts_count: number;
     pest_high_count: number;
     locust_watch_count: number;
+    fire_watch_count: number;
+    flood_extent_watch_count: number;
     highest_risk: string;
   };
   sites: ThreatWatchSite[];
@@ -68,6 +73,8 @@ const RISK_CLASS: Record<string, string> = {
 };
 
 function alertIcon(kind: string) {
+  if (kind === "fire") return Flame;
+  if (kind === "flood_extent" || kind === "flood") return Droplets;
   if (kind.includes("rain") || kind === "thunderstorm" || kind === "hail_storm") {
     return CloudRain;
   }
@@ -107,41 +114,77 @@ export function ThreatWatchPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           {
             label: te("sitesMonitored"),
             value: summary.sites_monitored,
             icon: MapPin,
             accent: "text-sky-600",
+            href: undefined,
           },
           {
             label: te("weatherAlerts"),
             value: summary.weather_alerts_count,
             icon: CloudRain,
             accent: "text-blue-600",
+            href: undefined,
+          },
+          {
+            label: te("fireWatch"),
+            value: summary.fire_watch_count ?? 0,
+            icon: Flame,
+            accent: "text-rose-600",
+            href: alertsHref({ kind: "fire_alert" }),
+          },
+          {
+            label: te("floodExtentWatch"),
+            value: summary.flood_extent_watch_count ?? 0,
+            icon: Droplets,
+            accent: "text-indigo-600",
+            href: alertsHref({ kind: "flood_extent_alert" }),
           },
           {
             label: te("highPestRisk"),
             value: summary.pest_high_count,
             icon: Bug,
             accent: "text-amber-600",
+            href: undefined,
           },
           {
             label: te("locustWatch"),
             value: summary.locust_watch_count,
             icon: ShieldAlert,
             accent: "text-orange-600",
+            href: alertsHref({ kind: "locust_watch" }),
           },
-        ].map((stat) => (
-          <div key={stat.label} className="dash-mini-stat">
-            <div className="flex items-center gap-2">
-              <stat.icon className={cn("h-4 w-4", stat.accent)} />
-              <p className="dash-mini-stat-label">{stat.label}</p>
+        ].map((stat) => {
+          const content = (
+            <>
+              <div className="flex items-center gap-2">
+                <stat.icon className={cn("h-4 w-4", stat.accent)} />
+                <p className="dash-mini-stat-label">{stat.label}</p>
+              </div>
+              <p className="dash-mini-stat-value">{stat.value}</p>
+            </>
+          );
+          if (stat.href) {
+            return (
+              <Link
+                key={stat.label}
+                href={stat.href}
+                className="dash-mini-stat transition hover:border-rose-200 hover:bg-rose-50/40"
+              >
+                {content}
+              </Link>
+            );
+          }
+          return (
+            <div key={stat.label} className="dash-mini-stat">
+              {content}
             </div>
-            <p className="dash-mini-stat-value">{stat.value}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {sites.length === 0 ? (
