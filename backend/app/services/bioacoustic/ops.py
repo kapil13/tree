@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.models.bioacoustic_recording import BioacousticRecording
-from app.models.plantation_fence import PlantationFence
 from app.models.user import User
 from app.schemas.bioacoustic import BioacousticAnalyzeResponse, BioacousticRecordingOut
 from app.services.ai.bioacoustic import identify_species_from_audio
