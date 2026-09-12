@@ -20,7 +20,10 @@ from app.services.alerts.service import (
     ensure_urgent_email_channel,
     threat_watch_prefs,
 )
+from app.services.threats.hazard_alert_links import enrich_hazard_alert_payload, hazard_push_data
 from app.services.threats.watch import build_site_threat_watch
+
+HAZARD_ALERT_KINDS = frozenset({"fire_alert", "flood_extent_alert", "locust_watch"})
 
 log = get_logger("threat_alerts")
 
@@ -76,6 +79,13 @@ async def _create_threat_alert(
             channels.append(ch)
 
     if (
+        kind in HAZARD_ALERT_KINDS
+        and prefs.get("push_on_hazard", False)
+        and "push" not in channels
+    ):
+        channels.append("push")
+
+    if (
         severity == "critical"
         and prefs.get("sms_on_critical", False)
         and user.phone
@@ -84,6 +94,9 @@ async def _create_threat_alert(
         channels.append("sms")
 
     channels = ensure_urgent_email_channel(channels, user, severity=severity)
+
+    if kind in HAZARD_ALERT_KINDS:
+        payload = enrich_hazard_alert_payload(payload, kind=kind)
 
     brief = interpret_alert(kind=kind, severity=severity, title=title, message=message, payload=payload)
     enriched_payload = attach_interpretation(payload, brief)
@@ -100,7 +113,14 @@ async def _create_threat_alert(
     )
     db.add(alert)
     await db.flush()
-    alert.delivered = await dispatch_alert_channels(user, channels, title=title, message=message)
+    push_data = hazard_push_data(enriched_payload, alert_id=str(alert.id)) if kind in HAZARD_ALERT_KINDS else None
+    alert.delivered = await dispatch_alert_channels(
+        user,
+        channels,
+        title=title,
+        message=message,
+        push_data=push_data,
+    )
     return alert
 
 

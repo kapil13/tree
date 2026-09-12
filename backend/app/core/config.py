@@ -208,6 +208,11 @@ class Settings(BaseSettings):
     firms_api_url: str = "https://firms.modaps.eosdis.nasa.gov"
     hazard_fire_radius_km: float = Field(default=25.0, ge=5.0, le=100.0)
     hazard_flood_sar_baseline_days: int = Field(default=30, ge=7, le=90)
+    # Locust feed — optional JSON URL or FAO DLIS BigQuery (best-effort)
+    locust_feed_url: str | None = None
+    fao_locust_api_url: str = "https://api.data.apps.fao.org"
+    fao_locust_feed_enabled: bool = True
+    locust_feed_radius_km: float = Field(default=400.0, ge=50.0, le=1000.0)
 
     # ISRO Bhoonidhi (NRSC) STAC catalog — requires IP whitelist + API account
     bhoonidhi_user_id: str | None = None

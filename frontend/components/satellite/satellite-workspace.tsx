@@ -11,6 +11,7 @@ import { bhoonidhi, plantationFences, plantingProjects } from "@/lib/api";
 import { formatAreaHa } from "@/lib/geo";
 import { parseSatelliteSearchParams, satelliteHref } from "@/lib/satellite-links";
 import { cn } from "@/lib/cn";
+import { FirmsStatusBanner } from "@/components/hazard/firms-status-banner";
 
 type Props = {
   initialFenceId?: string | null;
@@ -81,6 +82,7 @@ export function SatelliteWorkspace({ initialFenceId, projectId }: Props) {
 
   return (
     <div className="space-y-4">
+      <FirmsStatusBanner />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200/90 bg-white px-4 py-3 shadow-sm dark:border-stone-800 dark:bg-stone-950">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">

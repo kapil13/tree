@@ -58,6 +58,7 @@ class ThreatWatchNotificationPrefs(BaseModel):
     enabled: bool = True
     channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
     sms_on_critical: bool = False
+    push_on_hazard: bool = False
 
 
 class ComplianceNotificationPrefs(BaseModel):

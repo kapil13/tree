@@ -21,6 +21,7 @@ DEFAULT_THREAT_WATCH_PREFS: dict[str, Any] = {
     "enabled": True,
     "channels": ["in_app", "email"],
     "sms_on_critical": False,
+    "push_on_hazard": False,
 }
 
 DEFAULT_SURVIVAL_SURVEY_PREFS: dict[str, Any] = {

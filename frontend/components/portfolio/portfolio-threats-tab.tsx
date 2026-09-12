@@ -43,11 +43,15 @@ const INTEGRATION_LABEL: Record<string, string> = {
   bhoonidhi: "Bhoonidhi",
   iucn: "IUCN Red List",
   firms_fire: "NASA FIRMS",
+  locust_feed: "FAO locust feed",
 };
 
 function integrationStatusLabel(key: string, row: { status?: string; mode?: string }) {
   if (key === "firms_fire") {
     return row.mode === "live" ? "Live fire detections" : "Seasonal fallback (set FIRMS_MAP_KEY)";
+  }
+  if (key === "locust_feed") {
+    return row.mode === "live" ? "Live locust observations" : "Seasonal corridor model";
   }
   return row.status ?? "unknown";
 }

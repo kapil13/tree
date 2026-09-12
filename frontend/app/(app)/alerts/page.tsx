@@ -540,7 +540,19 @@ export default function AlertsPage() {
                       })
                     }
                   />
-                  Location-specific weather, pest, and locust watch alerts
+                  Location-specific weather, pest, fire, flood, and locust watch alerts
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={tw.push_on_hazard ?? false}
+                    onChange={(e) =>
+                      savePrefs.mutate({
+                        threat_watch: { ...tw, push_on_hazard: e.target.checked },
+                      })
+                    }
+                  />
+                  Push hazard alerts (fire, flood, locust) to mobile devices
                 </label>
                 <label className="flex items-center gap-2">
                   <input

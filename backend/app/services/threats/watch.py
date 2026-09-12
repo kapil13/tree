@@ -18,7 +18,6 @@ from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.fire_watch import assess_fire_proximity
 from app.services.threats.flood_extent import assess_fence_flood_extent
-from app.services.threats.locust import locust_early_warning
 from app.services.weather.alerts import evaluate_weather_alerts, weather_alert_summary
 
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
@@ -33,72 +32,14 @@ def _fence_scope(stmt, user: User):
     )
 
 
-def _early_warnings_from_intel(
+def _supplemental_early_warnings(
     *,
-    pest_needed: bool,
-    disease_needed: bool,
     ndvi_trend: str | None,
     rain_mm_48h: float,
     composite_risk: str,
-    latitude: float,
-    longitude: float,
+    disease_needed: bool,
 ) -> list[dict[str, Any]]:
     warnings: list[dict[str, Any]] = []
-
-    locust = locust_early_warning(latitude, longitude)
-    if locust:
-        warnings.append(locust)
-
-    if pest_needed and rain_mm_48h >= 25:
-        warnings.append(
-            {
-                "kind": "pest_outbreak",
-                "severity": "warning" if composite_risk in ("high", "critical") else "info",
-                "title": "Pest outbreak risk after rain",
-                "message": (
-                    "Satellite signals pest pressure and heavy rain is forecast. "
-                    "Scout for defoliators, borers, and scale insects within 72 hours."
-                ),
-                "source": "composite",
-            }
-        )
-    elif pest_needed:
-        warnings.append(
-            {
-                "kind": "pest_outbreak",
-                "severity": "warning" if composite_risk == "critical" else "info",
-                "title": "Pest pressure detected",
-                "message": (
-                    "NDVI analysis flags possible pest damage. "
-                    "Conduct ground scouting along plantation rows."
-                ),
-                "source": "satellite",
-            }
-        )
-
-    if disease_needed and rain_mm_48h >= 20:
-        warnings.append(
-            {
-                "kind": "fungal_disease",
-                "severity": "warning",
-                "title": "Fungal disease risk elevated",
-                "message": (
-                    "Disease signal plus wet weather increases fungal risk. "
-                    "Improve airflow, avoid overhead irrigation, and inspect leaf spots."
-                ),
-                "source": "composite",
-            }
-        )
-    elif disease_needed:
-        warnings.append(
-            {
-                "kind": "fungal_disease",
-                "severity": "info",
-                "title": "Disease stress signal",
-                "message": "Satellite health suggests possible disease — verify on ground.",
-                "source": "satellite",
-            }
-        )
 
     if ndvi_trend == "declining" and composite_risk in ("high", "critical"):
         warnings.append(
@@ -159,14 +100,18 @@ async def build_site_threat_watch(
                 f"{d0.precipitation_mm:.0f} mm rain."
             )
 
-    early_warnings = _early_warnings_from_intel(
-        pest_needed=bool(intel.get("pest_control_needed")),
-        disease_needed=bool(intel.get("disease_control_needed")),
-        ndvi_trend=intel.get("ndvi_trend"),
-        rain_mm_48h=float(intel.get("rain_mm_next_48h") or 0),
-        composite_risk=str(intel.get("composite_risk") or "low"),
-        latitude=lat,
-        longitude=lon,
+    early_warnings = [
+        w
+        for w in intel.get("early_warnings", [])
+        if w.get("kind") not in ("fire", "flood_extent")
+    ]
+    early_warnings.extend(
+        _supplemental_early_warnings(
+            ndvi_trend=intel.get("ndvi_trend"),
+            rain_mm_48h=float(intel.get("rain_mm_next_48h") or 0),
+            composite_risk=str(intel.get("composite_risk") or "low"),
+            disease_needed=bool(intel.get("disease_control_needed")),
+        )
     )
 
     fire = await assess_fire_proximity(lat, lon)
