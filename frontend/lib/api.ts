@@ -2704,6 +2704,7 @@ export type NotificationPreferences = {
     enabled: boolean;
     channels: string[];
     sms_on_critical: boolean;
+    push_on_hazard?: boolean;
   };
   compliance?: {
     enabled: boolean;

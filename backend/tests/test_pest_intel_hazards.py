@@ -78,7 +78,10 @@ async def test_build_pest_intel_includes_fire_and_flood_warnings():
                 }
             ),
         ),
-        patch("app.services.planting_projects.pest_intel.locust_early_warning", return_value=None),
+        patch(
+            "app.services.planting_projects.pest_intel.locust_early_warning_with_feed",
+            new=AsyncMock(return_value=None),
+        ),
     ):
         result = await build_pest_intel(db, fence=fence, project=None)
 

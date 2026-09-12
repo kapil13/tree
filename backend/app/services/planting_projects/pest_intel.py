@@ -16,7 +16,7 @@ from app.services.bioacoustic.correlation import correlate_fence_ecosystem
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
 from app.services.threats.fire_watch import assess_fire_proximity
 from app.services.threats.flood_extent import assess_fence_flood_extent
-from app.services.threats.locust import locust_early_warning
+from app.services.threats.locust_feed import locust_early_warning_with_feed
 from app.services.weather.alerts import evaluate_weather_alerts
 from app.services.weather.open_meteo import fetch_forecast
 
@@ -127,7 +127,7 @@ async def build_pest_intel(
     early_warnings: list[dict[str, Any]] = []
     if weather:
         weather_alerts = evaluate_weather_alerts(weather, days=weather_days)
-    locust = locust_early_warning(lat, lon)
+    locust = await locust_early_warning_with_feed(lat, lon)
     if locust:
         early_warnings.append(locust)
     if pest_needed and rain_48h >= 25:

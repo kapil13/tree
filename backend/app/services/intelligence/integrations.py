@@ -12,6 +12,7 @@ from app.services.ai.service import ai_service_status
 from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
 from app.services.threats.firms_client import has_firms_credentials
+from app.services.threats.locust_feed import has_locust_feed, locust_feed_source
 
 
 async def _ping_open_meteo(timeout: float = 3.0) -> dict[str, Any]:
@@ -154,6 +155,23 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
             ),
             "reachable": has_firms_credentials(),
             "error": None if has_firms_credentials() else "missing_credentials",
+            "setup_hint": "Set FIRMS_MAP_KEY in backend environment (free at firms.modaps.eosdis.nasa.gov)",
+        },
+        "locust_feed": {
+            "status": (
+                "configured"
+                if has_locust_feed() or locust_feed_source() == "fao_feed"
+                else "seasonal_fallback"
+            ),
+            "mode": "live" if has_locust_feed() or locust_feed_source() == "fao_feed" else "estimate",
+            "label": (
+                "FAO / configured locust observation feed"
+                if has_locust_feed() or locust_feed_source() == "fao_feed"
+                else "Locust watch uses seasonal corridor model until LOCUST_FEED_URL is set"
+            ),
+            "reachable": has_locust_feed(),
+            "error": None if has_locust_feed() else "missing_credentials",
+            "source": locust_feed_source(),
         },
     }
 

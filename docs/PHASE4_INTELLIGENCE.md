@@ -10,6 +10,7 @@ Phase 4 fuses external environmental data into a **segment-agnostic intelligence
 | **4.1** | Weather intelligence — Open-Meteo alerts rolled into portfolio summary |
 | **4.2** | Pest intel v2 — hotspot rollup from per work-area composite risk |
 | **4.5** | Threat watch v2 — unified feed in `/intelligence` and assistant grounding |
+| **4.5b** | Hazard watch — FIRMS fire, flood extent, locust feed (see `docs/HAZARD_WATCH.md`) |
 | **4.6** | Grounded AI assistant — `intelligence_context_for_assistant` wired into `run_assistant` |
 | **4.4** | GBIF/IUCN biodiversity baseline snapshots per work area (weekly Celery job) |
 | **4.3** | Sentinel + Bhoonidhi fusion — dual-source NDVI + STAC scenes per work area |

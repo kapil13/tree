@@ -18,6 +18,7 @@ import { AlertPreparednessBlock, type PreparednessBrief } from "@/components/ale
 import { dashboard } from "@/lib/api";
 import { alertsHref } from "@/lib/alerts-links";
 import { cn } from "@/lib/cn";
+import { FirmsStatusBanner } from "@/components/hazard/firms-status-banner";
 import { SEVERITY_STYLES, timeAgo } from "@/components/dashboard/format";
 
 export type ThreatWatchSite = {
@@ -114,6 +115,7 @@ export function ThreatWatchPanel() {
 
   return (
     <div className="space-y-4">
+      <FirmsStatusBanner />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           {
