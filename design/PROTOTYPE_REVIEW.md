@@ -84,7 +84,7 @@
 ### Monitor
 - [ ] Action-required cards with CTAs
 - [ ] Site health NDVI bars
-- [ ] Hazard card (fire watch)
+- [x] Hazard card (fire watch)
 
 ### Alerts
 - [ ] Filter chips
