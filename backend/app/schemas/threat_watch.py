@@ -30,6 +30,20 @@ class PreparednessBriefOut(BaseModel):
     category: str = "general"
 
 
+class FireWatchOut(BaseModel):
+    risk_level: str | None = None
+    fire_count: int = 0
+    nearest_km: float | None = None
+    source: str | None = None
+
+
+class FloodExtentWatchOut(BaseModel):
+    risk_level: str | None = None
+    water_extent_score: float | None = None
+    delta_score: float | None = None
+    rain_mm_48h: float | None = None
+
+
 class SiteThreatWatchOut(BaseModel):
     work_area_id: str
     work_area_name: str
@@ -46,6 +60,8 @@ class SiteThreatWatchOut(BaseModel):
     tree_count: int = 0
     weather_alerts: list[WeatherAlertOut] = Field(default_factory=list)
     early_warnings: list[EarlyWarningOut] = Field(default_factory=list)
+    fire_watch: FireWatchOut | None = None
+    flood_extent_watch: FloodExtentWatchOut | None = None
     forecast_summary: str = ""
     recommended_actions: list[str] = Field(default_factory=list)
     preparedness_brief: PreparednessBriefOut | None = None
@@ -56,6 +72,8 @@ class ThreatWatchSummaryOut(BaseModel):
     weather_alerts_count: int = 0
     pest_high_count: int = 0
     locust_watch_count: int = 0
+    fire_watch_count: int = 0
+    flood_extent_watch_count: int = 0
     highest_risk: str = "low"
 
 

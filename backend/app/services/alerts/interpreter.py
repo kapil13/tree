@@ -325,6 +325,14 @@ def interpret_alert(
     }
 
 
+def _hazard_alert_kind(early_kind: str) -> str | None:
+    if early_kind == "fire":
+        return "fire_alert"
+    if early_kind in ("flood_extent", "flood"):
+        return "flood_extent_alert"
+    return None
+
+
 def build_site_preparedness_brief(site: dict[str, Any]) -> PreparednessBrief:
     """Aggregate the strongest site signals into one human-readable brief."""
     name = site.get("work_area_name") or "Site"
@@ -338,6 +346,26 @@ def build_site_preparedness_brief(site: dict[str, Any]) -> PreparednessBrief:
     rain = float(site.get("rain_mm_next_48h") or 0)
 
     prepare: list[str] = list(site.get("recommended_actions") or [])[:4]
+
+    hazard_warnings = [
+        w for w in early if _hazard_alert_kind(str(w.get("kind") or "")) is not None
+    ]
+    if hazard_warnings:
+        top_hazard = max(hazard_warnings, key=lambda w: _severity_rank(w.get("severity", "info")))
+        alert_kind = _hazard_alert_kind(str(top_hazard.get("kind") or ""))
+        assert alert_kind is not None
+        brief = interpret_alert(
+            kind=alert_kind,
+            severity=top_hazard.get("severity", "warning"),
+            title=top_hazard.get("title", "Hazard watch"),
+            message=top_hazard.get("message", ""),
+            payload={
+                "work_area_name": name,
+                "distance_km": top_hazard.get("distance_km"),
+            },
+        )
+        brief["prepare"] = list(dict.fromkeys(brief.get("prepare", []) + prepare))[:5]
+        return brief
 
     if weather:
         top = max(weather, key=lambda a: _severity_rank(a.get("severity", "info")))
