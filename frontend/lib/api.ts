@@ -2716,6 +2716,8 @@ export type IntelligenceSummary = {
     weather_alerts_count: number;
     pest_high_count: number;
     locust_watch_count: number;
+    fire_watch_count?: number;
+    flood_extent_watch_count?: number;
     highest_risk: string;
   };
   threat_sites: Array<{
@@ -2730,6 +2732,18 @@ export type IntelligenceSummary = {
     ndvi_trend: string | null;
     tree_count: number;
     forecast_summary: string;
+    fire_watch?: {
+      risk_level?: string | null;
+      fire_count?: number;
+      nearest_km?: number | null;
+      source?: string | null;
+    } | null;
+    flood_extent_watch?: {
+      risk_level?: string | null;
+      water_extent_score?: number | null;
+      delta_score?: number | null;
+      rain_mm_48h?: number | null;
+    } | null;
     weather_alerts: Array<{ kind: string; severity: string; title: string; message: string }>;
     early_warnings: Array<{
       kind: string;
