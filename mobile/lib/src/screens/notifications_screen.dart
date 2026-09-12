@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../l10n/alert_filters.dart';
 import '../l10n/alert_labels.dart';
 import '../providers.dart';
 import '../widgets/prototype/prototype_ui.dart';
@@ -17,6 +18,19 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String _filter = 'all';
+  String? _appliedRouteFilter;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final routeFilter = GoRouterState.of(context).uri.queryParameters['filter'];
+    if (routeFilter != null &&
+        routeFilter.isNotEmpty &&
+        routeFilter != _appliedRouteFilter) {
+      _appliedRouteFilter = routeFilter;
+      _filter = routeFilter;
+    }
+  }
 
   Future<void> _openPreferences(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
@@ -139,14 +153,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   List<dynamic> _filtered(List<dynamic> items) {
-    if (_filter == 'all') return items;
-    if (_filter == 'critical') {
-      return items.where((a) => (a as Map)['severity'] == 'critical').toList();
-    }
-    return items.where((a) {
-      final kind = (a as Map)['kind'] as String? ?? '';
-      return kind.contains(_filter);
-    }).toList();
+    return items
+        .where((a) => matchesAlertFilter(a as Map<String, dynamic>, _filter))
+        .toList();
   }
 
   @override
@@ -197,11 +206,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    PrototypeFilterChip(label: 'All', selected: _filter == 'all', onTap: () => setState(() => _filter = 'all')),
-                    PrototypeFilterChip(label: 'Critical', selected: _filter == 'critical', onTap: () => setState(() => _filter = 'critical')),
-                    PrototypeFilterChip(label: 'NDVI', selected: _filter == 'ndvi', onTap: () => setState(() => _filter = 'ndvi')),
-                    PrototypeFilterChip(label: 'Fire', selected: _filter == 'fire', onTap: () => setState(() => _filter = 'fire')),
-                    PrototypeFilterChip(label: 'Survey', selected: _filter == 'survey', onTap: () => setState(() => _filter = 'survey')),
+                    for (final filter in alertFilterChipOrder)
+                      PrototypeFilterChip(
+                        label: alertFilterLabel(filter, languageCode: lang),
+                        selected: _filter == filter,
+                        onTap: () => setState(() => _filter = filter),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
