@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AuditWorkspace } from "@/components/audit/audit-workspace";
 import { ProjectWorkspaceShell } from "@/components/projects/project-workspace-shell";
+import { useSyncProjectContextFromRoute } from "@/lib/sync-project-context";
 import { useProjectWorkspace } from "@/lib/use-project-workspace";
 import { isMonitoringOnlyProject } from "@/lib/project-monitoring";
 import { projectOverviewHref } from "@/lib/project-focused-ui";
@@ -12,6 +13,7 @@ import { satelliteHref } from "@/lib/satellite-links";
 export default function ProjectAuditPage() {
   const params = useParams();
   const projectId = params.id as string;
+  useSyncProjectContextFromRoute(projectId);
   const { project, workAreas, registerHref, setupStatus, isLoading } = useProjectWorkspace(projectId);
 
   if (isLoading || !project) {

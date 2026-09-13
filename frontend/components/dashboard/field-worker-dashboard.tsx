@@ -28,6 +28,7 @@ import {
 } from "@/components/field-ops/field-ops-task-queue";
 import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { plantingProjects, trees } from "@/lib/api";
+import { scopeFieldOpsSummary } from "@/lib/field-ops-scope";
 import { fieldOpsHref } from "@/lib/field-ops-links";
 import { useAuth } from "@/lib/auth-store";
 import { useProjectContext } from "@/lib/project-context";
@@ -86,16 +87,8 @@ export function FieldWorkerDashboard() {
   );
   const recentTrees = treesQ.data?.items ?? [];
   const brief = briefQ.data;
-  const fieldOpsRaw = fieldOpsQ.data;
-  const fieldOps = fieldOpsRaw
-    ? {
-        ...fieldOpsRaw,
-        projects: projectId
-          ? fieldOpsRaw.projects.filter((p) => p.id === projectId)
-          : fieldOpsRaw.projects,
-        open_violations: brief?.open_violations ?? fieldOpsRaw.open_violations,
-        survival_due: brief?.survival_due ?? fieldOpsRaw.survival_due,
-      }
+  const fieldOps = fieldOpsQ.data
+    ? scopeFieldOpsSummary(fieldOpsQ.data, projectId, brief)
     : undefined;
   const projectsLoading = projectsQ.isLoading;
   const treesLoading = treesQ.isLoading;

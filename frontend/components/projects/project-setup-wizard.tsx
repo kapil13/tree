@@ -23,6 +23,7 @@ import {
   validateSchemeRefs,
   type SchemeRefField,
 } from "@/components/projects/scheme-refs-fields";
+import { useSyncProjectContextFromRoute } from "@/lib/sync-project-context";
 import {
   centralSchemes,
   errorMessage,
@@ -85,6 +86,7 @@ function defaultResumeStep(
 }
 
 export function ProjectSetupWizard({ projectId }: { projectId: string }) {
+  useSyncProjectContextFromRoute(projectId);
   const router = useRouter();
   const searchParams = useSearchParams();
   const qc = useQueryClient();

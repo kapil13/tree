@@ -22,6 +22,7 @@ import {
   satelliteFenceHref,
 } from "@/lib/alerts-links";
 import { portfolioMonitoringHref } from "@/lib/portfolio-health-links";
+import { matchesPortfolioProject, scopeThreatPortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioTabBanner } from "./portfolio-tab-banner";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
@@ -54,24 +55,6 @@ function integrationStatusLabel(key: string, row: { status?: string; mode?: stri
     return row.mode === "live" ? "Live locust observations" : "Seasonal corridor model";
   }
   return row.status ?? "unknown";
-}
-
-function matchesProject(projectId: string | null | undefined, itemProjectId?: string | null) {
-  if (!projectId) return true;
-  return itemProjectId === projectId;
-}
-
-function activeHazardCount(
-  sites: Array<{
-    fire_watch?: { risk_level?: string | null } | null;
-    flood_extent_watch?: { risk_level?: string | null } | null;
-  }>,
-  field: "fire_watch" | "flood_extent_watch",
-) {
-  return sites.filter((site) => {
-    const risk = site[field]?.risk_level;
-    return risk != null && risk !== "none";
-  }).length;
 }
 
 export function PortfolioThreatsTab({
@@ -111,25 +94,20 @@ export function PortfolioThreatsTab({
   const integrationStatus = data.integrations?.status ?? "unknown";
   const fusion = data.satellite_fusion;
 
+  const scopedKpis = scopeThreatPortfolioKpis(data, projectId);
+
   const weatherAlerts = data.weather_alerts.filter((item) =>
-    matchesProject(projectId, item.project_id),
+    matchesPortfolioProject(projectId, item.project_id),
   );
   const pestHotspots = data.pest_hotspots.filter((site) =>
-    matchesProject(projectId, site.project_id),
+    matchesPortfolioProject(projectId, site.project_id),
   );
   const earlyWarnings = data.early_warnings.filter((w) =>
-    matchesProject(projectId, w.project_id),
+    matchesPortfolioProject(projectId, w.project_id),
   );
   const threatSites = data.threat_sites.filter((site) =>
-    matchesProject(projectId, site.project_id),
+    matchesPortfolioProject(projectId, site.project_id),
   );
-
-  const fireWatchCount = projectId
-    ? activeHazardCount(threatSites, "fire_watch")
-    : (data.threat_summary.fire_watch_count ?? 0);
-  const floodWatchCount = projectId
-    ? activeHazardCount(threatSites, "flood_extent_watch")
-    : (data.threat_summary.flood_extent_watch_count ?? 0);
 
   const fusionSummary =
     fusion?.summary &&
@@ -152,34 +130,34 @@ export function PortfolioThreatsTab({
         <PortfolioKpiCard
           icon={ShieldAlert}
           label={t("kpi.highestRisk")}
-          value={data.highest_risk}
-          warn={data.highest_risk !== "low"}
+          value={scopedKpis.highestRisk}
+          warn={scopedKpis.highestRisk !== "low"}
         />
         <PortfolioKpiCard
           icon={CloudRain}
           label={t("kpi.weatherAlerts")}
-          value={String(data.weather_alert_count)}
-          warn={data.weather_alert_count > 0}
+          value={String(scopedKpis.weatherAlertCount)}
+          warn={scopedKpis.weatherAlertCount > 0}
         />
         <PortfolioKpiCard
           icon={Flame}
           label={t("kpi.fireWatch")}
-          value={String(fireWatchCount)}
-          warn={fireWatchCount > 0}
+          value={String(scopedKpis.fireWatchCount)}
+          warn={scopedKpis.fireWatchCount > 0}
           href={alertsHref({ kind: "fire_alert" })}
         />
         <PortfolioKpiCard
           icon={Droplets}
           label={t("kpi.floodExtent")}
-          value={String(floodWatchCount)}
-          warn={floodWatchCount > 0}
+          value={String(scopedKpis.floodWatchCount)}
+          warn={scopedKpis.floodWatchCount > 0}
           href={alertsHref({ kind: "flood_extent_alert" })}
         />
         <PortfolioKpiCard
           icon={Bug}
           label={t("kpi.pestSites")}
-          value={String(data.pest_high_count)}
-          warn={data.pest_high_count > 0}
+          value={String(scopedKpis.pestHighCount)}
+          warn={scopedKpis.pestHighCount > 0}
         />
         <PortfolioKpiCard
           icon={Leaf}
