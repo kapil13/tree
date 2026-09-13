@@ -400,6 +400,7 @@ export type Tree = {
   last_geotag_at?: string | null;
   survival_status?: string | null;
   chainage_km?: string | null;
+  primary_image_id?: string | null;
   primary_image_url?: string | null;
 };
 

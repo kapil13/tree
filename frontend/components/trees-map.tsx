@@ -408,6 +408,8 @@ function TreeActionSheet({ tree, onClose }: { tree: Tree; onClose: () => void })
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <TreeThumbnail
+            treeId={tree.id}
+            imageId={tree.primary_image_id}
             imageUrl={tree.primary_image_url}
             alt={tree.species_text || tree.public_code}
           />

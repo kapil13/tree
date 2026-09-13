@@ -310,6 +310,8 @@ export function FieldWorkerDashboard() {
                   <li key={t.id}>
                     <Link href={`/trees/${t.id}`} className="dash-list-row dash-list-row--link">
                       <TreeThumbnail
+                        treeId={t.id}
+                        imageId={t.primary_image_id}
                         imageUrl={t.primary_image_url}
                         alt={t.species_text || t.public_code}
                         size="sm"

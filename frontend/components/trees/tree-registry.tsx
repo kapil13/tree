@@ -437,15 +437,21 @@ export function TreeRegistry() {
             <>
               {/* Mobile cards */}
               <section className="space-y-3 md:hidden">
-                {items.map((t) => {
+                {items.map((t, index) => {
                   const geotagDue = isGeotagDue(t);
+                  const serialNo = (page - 1) * PAGE_SIZE + index + 1;
                   return (
                     <article
                       key={t.id}
                       className="rounded-xl border border-stone-200 bg-white p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
+                        <span className="mt-1 w-6 shrink-0 text-right text-xs font-medium text-stone-400">
+                          {serialNo}
+                        </span>
                         <TreeThumbnail
+                          treeId={t.id}
+                          imageId={t.primary_image_id}
                           imageUrl={t.primary_image_url}
                           alt={t.species_text || t.public_code}
                         />
@@ -539,6 +545,7 @@ export function TreeRegistry() {
                 <table className="intel-data-table">
                   <thead>
                     <tr>
+                      <th className="w-12">S. No.</th>
                       <th className="w-16">Photo</th>
                       <th>Code</th>
                       <th>Project</th>
@@ -555,12 +562,16 @@ export function TreeRegistry() {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((t) => {
+                    {items.map((t, index) => {
                       const geotagDue = isGeotagDue(t);
+                      const serialNo = (page - 1) * PAGE_SIZE + index + 1;
                       return (
                         <tr key={t.id}>
+                          <td className="text-center text-xs text-stone-500">{serialNo}</td>
                           <td>
                             <TreeThumbnail
+                              treeId={t.id}
+                              imageId={t.primary_image_id}
                               imageUrl={t.primary_image_url}
                               alt={t.species_text || t.public_code}
                               size="sm"
@@ -635,31 +646,51 @@ export function TreeRegistry() {
                 </table>
               </div>
 
-              {totalPages > 1 ? (
-                <div className="flex items-center justify-between text-sm text-stone-600">
-                  <span>
-                    Page {page} of {totalPages} · {totalTrees} trees total
+              <div className="flex flex-col gap-3 border-t border-stone-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-stone-600">
+                  Showing {(page - 1) * PAGE_SIZE + 1}–
+                  {Math.min(page * PAGE_SIZE, totalTrees)} of {totalTrees} trees
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={page <= 1}
+                    onClick={() => setPage(1)}
+                    aria-label="First page"
+                  >
+                    First
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 text-sm text-stone-600">
+                    Page {page} of {totalPages}
                   </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs"
-                      disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                      Next
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(totalPages)}
+                    aria-label="Last page"
+                  >
+                    Last
+                  </button>
                 </div>
-              ) : null}
+              </div>
             </>
           )}
         </div>
