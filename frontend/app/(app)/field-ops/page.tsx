@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -21,7 +21,10 @@ import { fmtNum } from "@/components/dashboard/format";
 import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
 import { plantingProjects } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
+import { scopeFieldOpsSummary } from "@/lib/field-ops-scope";
+import { useProjectContext } from "@/lib/project-context";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
+import { scopedKey } from "@/lib/query-keys";
 import {
   buildFieldOpsTasks,
   FieldOpsTaskQueue,
@@ -32,7 +35,6 @@ import { cn } from "@/lib/cn";
 
 export default function FieldOpsPage() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const tf = useTranslations("fieldOps");
   const ts = useTranslations("segments");
   const to = useTranslations("opsStatus");
@@ -50,10 +52,29 @@ export default function FieldOpsPage() {
     ] as const;
     return (codes as readonly string[]).includes(seg) ? ts(seg as (typeof codes)[number]) : seg;
   }
-  const { data, isLoading } = useQuery({
-    queryKey: ["field-ops-summary"],
-    queryFn: () => plantingProjects.fieldOpsSummary(),
+  const { user } = useAuth();
+  const { projectId, selectedProject } = useProjectContext();
+
+  const [summaryQ, briefQ] = useQueries({
+    queries: [
+      {
+        queryKey: scopedKey(user, "field-ops-summary", projectId ?? "all"),
+        queryFn: () => plantingProjects.fieldOpsSummary(),
+      },
+      {
+        queryKey: scopedKey(user, "field-brief", projectId ?? "all"),
+        queryFn: () => plantingProjects.fieldBrief(projectId ?? undefined),
+        enabled: Boolean(projectId),
+      },
+    ],
   });
+
+  const isLoading = summaryQ.isLoading || (projectId ? briefQ.isLoading : false);
+
+  const data = useMemo(() => {
+    if (!summaryQ.data) return undefined;
+    return scopeFieldOpsSummary(summaryQ.data, projectId, briefQ.data);
+  }, [summaryQ.data, projectId, briefQ.data]);
 
   useEffect(() => {
     const section = searchParams.get("section");
@@ -109,6 +130,14 @@ export default function FieldOpsPage() {
         }
       />
 
+      {projectId && selectedProject ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
+          Showing field operations for{" "}
+          <span className="font-medium">{selectedProject.name}</span>. Clear the project
+          picker in the top bar to view the full portfolio.
+        </p>
+      ) : null}
+
       <OperationalStatusBar
         tone={fieldStatus.tone}
         label={fieldStatus.label}
@@ -130,18 +159,26 @@ export default function FieldOpsPage() {
       <MetricGrid
         columns={4}
         metrics={[
-          { label: "Projects", value: fmtNum(data.project_count), hint: "Active packages" },
-          { label: "Trees registered", value: fmtNum(data.tree_count), hint: "Across portfolio" },
+          {
+            label: "Projects",
+            value: fmtNum(data.project_count),
+            hint: projectId ? "Scoped to selected project" : "Active packages",
+          },
+          {
+            label: "Trees registered",
+            value: fmtNum(data.tree_count),
+            hint: projectId ? "In selected project" : "Across portfolio",
+          },
           {
             label: "Open violations",
             value: fmtNum(data.open_violations),
-            hint: "Compliance blockers",
+            hint: projectId ? "In selected project" : "Compliance blockers",
             tone: data.open_violations > 0 ? "critical" : "positive",
           },
           {
             label: "Survival due",
             value: fmtNum(data.survival_due),
-            hint: "Geotag / survival checks",
+            hint: projectId ? "In selected project" : "Geotag / survival checks",
             tone: data.survival_due > 0 ? "warning" : "default",
           },
         ]}

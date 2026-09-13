@@ -5,6 +5,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Bell, Satellite, TreePine } from "lucide-react";
 import { auditEngagements, dashboard, plantingProjects } from "@/lib/api";
+import { scopeOverviewPortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { portfolioAuditHref } from "@/lib/portfolio-health-links";
 import { alertsHref } from "@/lib/alerts-links";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
@@ -36,16 +37,27 @@ export function PortfolioOverviewTab({
 }) {
   const t = useTranslations("portfolioTabs.overview");
 
-  const [dashQ, monitoringQ, fieldOpsQ, auditQ] = useQueries({
+  const [dashQ, monitoringQ, fieldOpsQ, auditQ, briefQ] = useQueries({
     queries: [
       { queryKey: ["dashboard-portfolio"], queryFn: dashboard.get, staleTime: 60_000 },
       { queryKey: ["monitoring-summary"], queryFn: () => plantingProjects.monitoringSummary() },
       { queryKey: ["field-ops-summary"], queryFn: () => plantingProjects.fieldOpsSummary() },
       { queryKey: ["audit-portfolio-summary"], queryFn: () => auditEngagements.portfolioSummary() },
+      {
+        queryKey: ["portfolio-field-brief", projectId ?? "all"],
+        queryFn: () => plantingProjects.fieldBrief(projectId ?? undefined),
+        enabled: Boolean(projectId),
+      },
     ],
   });
 
-  if (dashQ.isLoading || monitoringQ.isLoading || fieldOpsQ.isLoading || auditQ.isLoading) {
+  if (
+    dashQ.isLoading ||
+    monitoringQ.isLoading ||
+    fieldOpsQ.isLoading ||
+    auditQ.isLoading ||
+    (projectId ? briefQ.isLoading : false)
+  ) {
     return <PortfolioTabLoading />;
   }
 
@@ -66,13 +78,14 @@ export function PortfolioOverviewTab({
   const monitoring = monitoringQ.data;
   const fieldOps = fieldOpsQ.data;
   const auditPortfolio = auditQ.data;
-  const unreadAlerts = Object.values(monitoring?.unread_alerts_by_kind ?? {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
-  const openViolations = monitoring?.open_violations ?? fieldOps?.open_violations ?? 0;
-  const sitesNeedingScan =
-    (monitoring?.stale_satellite_work_areas ?? 0) + (monitoring?.sar_at_risk_work_areas ?? 0);
+  const scopedKpis = scopeOverviewPortfolioKpis({
+    projectId,
+    kpiTotalTrees: kpi?.total_trees,
+    monitoring,
+    fieldOps,
+    brief: briefQ.data,
+    auditPortfolio,
+  });
 
   const attentionProjects =
     fieldOps?.projects
@@ -88,36 +101,36 @@ export function PortfolioOverviewTab({
         <PortfolioKpiCard
           icon={TreePine}
           label={t("kpi.trees")}
-          value={String(kpi?.total_trees ?? fieldOps?.tree_count ?? 0)}
+          value={String(scopedKpis.treeCount)}
           href="/trees"
         />
         <PortfolioKpiCard
           icon={AlertTriangle}
           label={t("kpi.violations")}
-          value={String(openViolations)}
-          warn={openViolations > 0}
+          value={String(scopedKpis.openViolations)}
+          warn={scopedKpis.openViolations > 0}
           onClick={() => onSelectTab("compliance")}
         />
         <PortfolioKpiCard
           icon={Satellite}
           label={t("kpi.sitesNeedingScan")}
-          value={String(sitesNeedingScan)}
-          warn={sitesNeedingScan > 0}
+          value={String(scopedKpis.sitesNeedingScan)}
+          warn={scopedKpis.sitesNeedingScan > 0}
           onClick={() => onSelectTab("monitoring")}
         />
         <PortfolioKpiCard
           icon={Bell}
           label={t("kpi.unreadAlerts")}
-          value={String(unreadAlerts)}
-          warn={unreadAlerts > 0}
+          value={String(scopedKpis.unreadAlerts)}
+          warn={scopedKpis.unreadAlerts > 0}
           href={alertsHref()}
         />
         {(auditPortfolio?.estate_project_count ?? 0) > 0 ? (
           <PortfolioKpiCard
             icon={AlertTriangle}
             label={t("kpi.auditPlotsDue")}
-            value={String(auditPortfolio?.audit_plots_due ?? 0)}
-            warn={(auditPortfolio?.audit_plots_due ?? 0) > 0}
+            value={String(scopedKpis.auditPlotsDue)}
+            warn={scopedKpis.auditPlotsDue > 0}
             href={portfolioAuditHref(projectId)}
           />
         ) : null}

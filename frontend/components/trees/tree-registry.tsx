@@ -204,7 +204,7 @@ export function TreeRegistry() {
     ? `/trees/new?project=${projectId}${workAreaId ? `&work_area=${workAreaId}` : ""}`
     : "/trees/new";
 
-  const registryStats = useMemo(() => {
+  const pageStats = useMemo(() => {
     const healthy = items.filter((t) => t.current_health === "healthy").length;
     const geotagDueCount = items.filter((t) => isGeotagDue(t)).length;
     const satelliteVerified = items.filter((t) => t.satellite_verified).length;
@@ -212,7 +212,10 @@ export function TreeRegistry() {
     return { healthy, geotagDueCount, satelliteVerified, pctHealthy };
   }, [items]);
 
+  const statsArePageScoped = items.length < totalTrees;
+
   const registryStatus = useMemo(() => {
+    const scopeLabel = statsArePageScoped ? " on this page" : "";
     if (isOrgEmpty) {
       return {
         tone: "neutral" as const,
@@ -220,26 +223,35 @@ export function TreeRegistry() {
         summary: "Tag your first tree with GPS and a photo to start survival tracking and satellite health.",
       };
     }
-    if (registryStats.geotagDueCount > 0) {
+    if (pageStats.geotagDueCount > 0) {
       return {
         tone: "attention" as const,
         label: "Geotag refresh needed",
-        summary: `${registryStats.geotagDueCount} tree${registryStats.geotagDueCount === 1 ? "" : "s"} in view need a geotag or survival update.`,
+        summary: `${pageStats.geotagDueCount} tree${pageStats.geotagDueCount === 1 ? "" : "s"}${scopeLabel} need a geotag or survival update · ${totalTrees} matching filter.`,
       };
     }
-    if (registryStats.pctHealthy < 60 && items.length > 0) {
+    if (pageStats.pctHealthy < 60 && items.length > 0) {
       return {
         tone: "watch" as const,
         label: "Canopy stress in view",
-        summary: `${registryStats.pctHealthy}% healthy in current filter — review stressed trees.`,
+        summary: `${pageStats.pctHealthy}% healthy${scopeLabel} · ${totalTrees} trees match current filters.`,
       };
     }
     return {
       tone: "healthy" as const,
       label: "Registry operational",
-      summary: `${items.length} tree${items.length === 1 ? "" : "s"} on this page · ${registryStats.pctHealthy}% healthy.`,
+      summary: statsArePageScoped
+        ? `Showing ${items.length} of ${totalTrees} trees on this page · ${pageStats.pctHealthy}% healthy here.`
+        : `${totalTrees} tree${totalTrees === 1 ? "" : "s"} match current filters · ${pageStats.pctHealthy}% healthy.`,
     };
-  }, [items.length, isOrgEmpty, registryStats.geotagDueCount, registryStats.pctHealthy]);
+  }, [
+    items.length,
+    isOrgEmpty,
+    pageStats.geotagDueCount,
+    pageStats.pctHealthy,
+    statsArePageScoped,
+    totalTrees,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -270,26 +282,34 @@ export function TreeRegistry() {
             columns={4}
             metrics={[
               {
-                label: "On page",
-                value: String(items.length),
-                hint: `${totalTrees} total in org`,
+                label: "Matching filter",
+                value: String(totalTrees),
+                hint: statsArePageScoped
+                  ? `${items.length} shown on this page`
+                  : "All results on this page",
               },
               {
-                label: "Healthy",
-                value: `${registryStats.pctHealthy}%`,
-                hint: `${registryStats.healthy} trees`,
-                tone: registryStats.pctHealthy >= 70 ? "positive" : "warning",
+                label: statsArePageScoped ? "Healthy (page)" : "Healthy",
+                value: `${pageStats.pctHealthy}%`,
+                hint: statsArePageScoped
+                  ? `${pageStats.healthy} of ${items.length} on this page`
+                  : `${pageStats.healthy} trees`,
+                tone: pageStats.pctHealthy >= 70 ? "positive" : "warning",
               },
               {
-                label: "Geotag due",
-                value: String(registryStats.geotagDueCount),
-                hint: "Needs field refresh",
-                tone: registryStats.geotagDueCount > 0 ? "warning" : "positive",
+                label: statsArePageScoped ? "Geotag due (page)" : "Geotag due",
+                value: String(pageStats.geotagDueCount),
+                hint: statsArePageScoped
+                  ? "Counts only trees on this page"
+                  : "Needs field refresh",
+                tone: pageStats.geotagDueCount > 0 ? "warning" : "positive",
               },
               {
-                label: "Satellite verified",
-                value: String(registryStats.satelliteVerified),
-                hint: "In current filter",
+                label: statsArePageScoped ? "Satellite verified (page)" : "Satellite verified",
+                value: String(pageStats.satelliteVerified),
+                hint: statsArePageScoped
+                  ? "Counts only trees on this page"
+                  : "In current filter",
               },
             ]}
           />

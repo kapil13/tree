@@ -10,6 +10,7 @@ import {
   resolveLegacyProjectTabHref,
   type ProjectSecondaryTab,
 } from "@/lib/project-focused-ui";
+import { useSyncProjectContextFromRoute } from "@/lib/sync-project-context";
 import { useProjectWorkspace } from "@/lib/use-project-workspace";
 
 export function ProjectWorkspacePage({
@@ -21,6 +22,7 @@ export function ProjectWorkspacePage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = params.id as string;
+  useSyncProjectContextFromRoute(projectId);
   const legacyTab = searchParams.get("tab");
   const autoDraw = searchParams.get("draw") === "1";
 

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 import { ComplianceHubLinks } from "@/components/compliance/compliance-hub-links";
 import { compliance } from "@/lib/api";
+import { scopeCompliancePortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { reportTabHref } from "@/lib/report-tabs";
 import { cn } from "@/lib/cn";
@@ -55,21 +56,20 @@ export function PortfolioComplianceTab({
   }
 
   const projects = projectId ? data.projects.filter((p) => p.id === projectId) : data.projects;
+  const scopedKpis = scopeCompliancePortfolioKpis(data, projectId);
 
   const attentionProjects = projects.filter(
     (p) => p.blocking_violations > 0 || p.open_violations > 0 || p.readiness_pct < 80,
   );
 
   const gapsSuffix =
-    data.projects_with_safeguard_gaps > 0
-      ? t("projectReadiness.gapsSuffix", { count: data.projects_with_safeguard_gaps })
+    scopedKpis.projectsWithSafeguardGaps > 0
+      ? t("projectReadiness.gapsSuffix", { count: scopedKpis.projectsWithSafeguardGaps })
       : "";
 
   const readinessMeta = t("projectReadiness.meta", {
     projects: projectId ? projects.length : data.project_count,
-    below: projectId
-      ? projects.filter((p) => p.readiness_pct < 80).length
-      : data.projects_below_80_readiness,
+    below: scopedKpis.projectsBelow80,
     gaps: gapsSuffix,
   });
 
@@ -81,26 +81,26 @@ export function PortfolioComplianceTab({
         <PortfolioKpiCard
           icon={ShieldCheck}
           label={t("kpi.avgReadiness")}
-          value={`${Math.round(data.avg_readiness_pct)}%`}
-          warn={data.avg_readiness_pct < 80}
+          value={`${Math.round(scopedKpis.avgReadinessPct)}%`}
+          warn={scopedKpis.avgReadinessPct < 80}
         />
         <PortfolioKpiCard
           icon={AlertTriangle}
           label={t("kpi.openViolations")}
-          value={String(data.open_violations)}
-          warn={data.open_violations > 0}
+          value={String(scopedKpis.openViolations)}
+          warn={scopedKpis.openViolations > 0}
         />
         <PortfolioKpiCard
           icon={ShieldAlert}
           label={t("kpi.blockingViolations")}
-          value={String(data.blocking_violations)}
-          warn={data.blocking_violations > 0}
+          value={String(scopedKpis.blockingViolations)}
+          warn={scopedKpis.blockingViolations > 0}
         />
         <PortfolioKpiCard
           icon={FileText}
           label={t("kpi.safeguardGaps")}
-          value={String(data.safeguard_gap_count)}
-          warn={data.safeguard_gap_count > 0}
+          value={String(scopedKpis.safeguardGapCount)}
+          warn={scopedKpis.safeguardGapCount > 0}
         />
       </PortfolioKpiGrid>
 
