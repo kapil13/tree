@@ -56,6 +56,20 @@ def validate_runtime_settings() -> None:
             "Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY."
         )
 
+    if not settings.auth_otp_sms_enabled or not (settings.msg91_auth_key or "").strip():
+        raise RuntimeError(
+            "Phone OTP via MSG91 is required in production/staging. "
+            "Set AUTH_OTP_SMS_ENABLED=true and MSG91_AUTH_KEY."
+        )
+    if not (settings.msg91_otp_template_id or "").strip():
+        raise RuntimeError(
+            "MSG91_OTP_TEMPLATE_ID is required in production/staging for login phone OTP."
+        )
+    if not (settings.msg91_signup_otp_template_id or "").strip():
+        raise RuntimeError(
+            "MSG91_SIGNUP_OTP_TEMPLATE_ID is required in production/staging for signup phone OTP."
+        )
+
     razorpay_configured = bool(
         (settings.razorpay_key_id or "").strip()
         and (settings.razorpay_key_secret or "").strip()

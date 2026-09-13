@@ -20,9 +20,17 @@ echo "==> Required production env vars"
 for var in \
   POSTGRES_PASSWORD JWT_SECRET SESSION_COOKIE_SECRET MINIO_ROOT_PASSWORD \
   APP_DOMAIN API_DOMAIN CORS_ORIGINS REDIS_PASSWORD \
-  EVIDENCE_SIGNING_KEY TURNSTILE_SITE_KEY TURNSTILE_SECRET_KEY; do
+  EVIDENCE_SIGNING_KEY TURNSTILE_SITE_KEY TURNSTILE_SECRET_KEY \
+  MSG91_AUTH_KEY MSG91_OTP_TEMPLATE_ID MSG91_SIGNUP_OTP_TEMPLATE_ID; do
   require_var "$var"
 done
+
+if [[ "${AUTH_OTP_SMS_ENABLED:-false}" != "true" ]]; then
+  echo "  INVALID: AUTH_OTP_SMS_ENABLED must be true in production"
+  _fail=1
+else
+  echo "  OK: AUTH_OTP_SMS_ENABLED"
+fi
 
 if [[ "${AUTH_ALLOW_DEV_OTP:-false}" == "true" ]]; then
   echo "  INVALID: AUTH_ALLOW_DEV_OTP=true (backend refuses to start in production)"
