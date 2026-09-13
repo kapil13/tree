@@ -1390,6 +1390,9 @@
     "openInMaps": "Open in Google Maps",
     "searchPlaceholder": "Search species, ID, or location",
     "allProjects": "All projects",
+    "program": "Program",
+    "plantingProject": "Planting project",
+    "noPlantingProject": "Not linked to a planting project",
     "emptyTitle": "No trees registered yet",
     "emptyDesc": "Register your first tree to start tracking health, carbon, and map pins.",
     "loadError": "Could not load trees"

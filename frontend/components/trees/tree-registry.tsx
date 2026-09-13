@@ -7,7 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } from "lucide-react";
 import { EmptyState, FilterBar, FilterField, MetricGrid, OperationalStatusBar, PageHeader } from "@/components/ui";
-import { plantingProjects, trees } from "@/lib/api";
+import { plantingPrograms, plantingProjects, trees } from "@/lib/api";
+import {
+  buildProgramNameMap,
+  formatProgramCode,
+  programTooltip,
+} from "@/lib/tree-program-display";
 import { useAuth } from "@/lib/auth-store";
 import { useProjectContext } from "@/lib/project-context";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
@@ -136,7 +141,16 @@ export function TreeRegistry() {
     queryFn: () => plantingProjects.list(),
   });
 
+  const { data: programsData } = useQuery({
+    queryKey: ["planting-programs-catalog"],
+    queryFn: () => plantingPrograms.list(),
+  });
+
   const projects = projectsData?.items ?? [];
+  const programNameByCode = useMemo(
+    () => buildProgramNameMap(programsData?.items ?? []),
+    [programsData?.items],
+  );
 
   const projectNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -193,6 +207,14 @@ export function TreeRegistry() {
   function projectLabel(tree: (typeof items)[number]) {
     if (!tree.project_id) return "—";
     return projectNameById.get(tree.project_id) ?? "Unknown project";
+  }
+
+  function programLabel(tree: (typeof items)[number]) {
+    return formatProgramCode(tree.program_code);
+  }
+
+  function programTitle(tree: (typeof items)[number]) {
+    return programTooltip(tree.program_code, programNameByCode);
   }
 
   function surveyIntervalFor(tree: (typeof items)[number]) {
@@ -502,6 +524,14 @@ export function TreeRegistry() {
                           <p className="mt-0.5 font-mono text-xs text-stone-500">
                             {t.public_code}
                           </p>
+                          {programLabel(t) !== "—" ? (
+                            <span
+                              className="mt-1 inline-flex rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-700"
+                              title={programTitle(t)}
+                            >
+                              {programLabel(t)}
+                            </span>
+                          ) : null}
                           {t.project_id ? (
                             <Link
                               href={`/projects/${t.project_id}`}
@@ -585,7 +615,8 @@ export function TreeRegistry() {
                       <th className="w-12">S. No.</th>
                       <th className="w-16">Photo</th>
                       <th>Code</th>
-                      <th>Project</th>
+                      <th>{tt("program")}</th>
+                      <th>{tt("plantingProject")}</th>
                       {showWorkAreaColumn ? <th>Work area</th> : null}
                       <th>Species</th>
                       <th>Health</th>
@@ -615,6 +646,12 @@ export function TreeRegistry() {
                             />
                           </td>
                           <td className="font-mono text-xs">{t.public_code}</td>
+                          <td
+                            className="font-semibold text-xs uppercase tracking-wide text-stone-700"
+                            title={programTitle(t)}
+                          >
+                            {programLabel(t)}
+                          </td>
                           <td className="max-w-[12rem]">
                             {t.project_id ? (
                               <Link
@@ -625,7 +662,9 @@ export function TreeRegistry() {
                                 {projectLabel(t)}
                               </Link>
                             ) : (
-                              "—"
+                              <span className="text-stone-400" title={tt("noPlantingProject")}>
+                                —
+                              </span>
                             )}
                           </td>
                           {showWorkAreaColumn ? (
