@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ExternalLink, MapPin, Plus, Satellite, Search, ShieldCheck, TreePine } from "lucide-react";
@@ -12,6 +13,7 @@ import { useProjectContext } from "@/lib/project-context";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
 import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
+import { parseTreesRegistryCategory } from "@/lib/trees-registry-links";
 
 const PAGE_SIZE = 25;
 
@@ -89,6 +91,7 @@ export function TreeRegistry() {
   const tt = useTranslations("treesPage");
   const tc = useTranslations("chrome");
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const { projectId: contextProjectId, setProjectId: setContextProjectId } = useProjectContext();
   const canAdd = canWriteInApp(user);
   const showChainage = userHasProfessionalAccess(user);
@@ -113,6 +116,20 @@ export function TreeRegistry() {
     setWorkAreaId("");
     setPage(1);
   }, [contextProjectId]);
+
+  useEffect(() => {
+    const urlProject = searchParams.get("project");
+    const urlCategory = parseTreesRegistryCategory(searchParams.get("category"));
+    const urlWorkArea = searchParams.get("work_area");
+
+    if (urlProject) {
+      setProjectId(urlProject);
+      setContextProjectId(urlProject);
+    }
+    if (urlCategory) setCategory(urlCategory);
+    if (urlWorkArea) setWorkAreaId(urlWorkArea);
+    if (urlProject || urlCategory || urlWorkArea) setPage(1);
+  }, [searchParams, setContextProjectId]);
 
   const { data: projectsData } = useQuery({
     queryKey: ["planting-projects"],

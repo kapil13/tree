@@ -32,6 +32,10 @@ describe("nav phase C link helpers", () => {
   it("builds field ops and alerts hrefs", () => {
     expect(fieldOpsHref()).toBe("/field-ops");
     expect(fieldOpsHref({ section: "attention" })).toBe("/field-ops?section=attention");
+    expect(fieldOpsHref({ projectId: "p1" })).toBe("/field-ops?project=p1");
+    expect(fieldOpsHref({ section: "audit", projectId: "p1" })).toBe(
+      "/field-ops?section=audit&project=p1",
+    );
     expect(alertsHref()).toBe("/alerts");
     expect(alertsHref({ sar: "sar_integrity_at_risk" })).toBe(
       "/alerts?sar=sar_integrity_at_risk",

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AlertTriangle, ClipboardList, MapPin, TreePine } from "lucide-react";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
+import { survivalDueTreesHref } from "@/lib/trees-registry-links";
 import { cn } from "@/lib/cn";
 
 export type FieldOpsTask = {
@@ -54,7 +55,7 @@ export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
         id: `survival-${project.id}`,
         title: project.name,
         detail: `${project.survival_due} survival / geotag check${project.survival_due === 1 ? "" : "s"} due`,
-        href: `/projects/${project.id}`,
+        href: survivalDueTreesHref(project.id),
         tone: "warning",
         kind: "survival",
       });

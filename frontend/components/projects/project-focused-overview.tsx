@@ -10,6 +10,7 @@ import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area"
 import { ProjectWorkAreaMap } from "@/components/projects/project-work-area-map";
 import { centralSchemes, plantingProjects, type PlantingProject, type WorkArea } from "@/lib/api";
 import { projectSecondaryHref, projectSetupHref } from "@/lib/project-focused-ui";
+import { survivalDueTreesHref } from "@/lib/trees-registry-links";
 import { satelliteHref } from "@/lib/satellite-links";
 import type { ProjectSetupStatus } from "@/lib/project-setup-readiness";
 import { schemeByCode } from "@/lib/schemes";
@@ -20,6 +21,7 @@ type SurvivalDue = {
   trees_due: number;
   trees_total: number;
   survey_interval_days: number;
+  due_tree_ids?: string[];
 };
 
 function ProgrammeStandardAside({
@@ -111,6 +113,10 @@ export function ProjectFocusedOverview({
   const treeCount = project.summary?.tree_count ?? 0;
   const workAreaCount = project.summary?.work_area_count ?? 0;
   const treesDue = survivalDue?.trees_due ?? 0;
+  const survivalHref = survivalDueTreesHref(
+    projectId,
+    survivalDue?.due_tree_ids?.[0],
+  );
 
   const { data: schemes = [] } = useQuery({
     queryKey: ["central-schemes"],
@@ -252,8 +258,8 @@ export function ProjectFocusedOverview({
       return {
         title: "Complete survival surveys",
         description: `${treesDue} tree${treesDue === 1 ? "" : "s"} due for re-geotag (every ${surveyDays} days).`,
-        href: undefined,
-        label: "See tree list below",
+        href: survivalHref,
+        label: "Open due trees",
         icon: MapPin,
       };
     }
@@ -288,6 +294,7 @@ export function ProjectFocusedOverview({
     satelliteWatchEnabled,
     satelliteDashboardHref,
     setupStatus?.setupComplete,
+    survivalHref,
   ]);
 
   return (
@@ -400,8 +407,11 @@ export function ProjectFocusedOverview({
       {survivalDue && survivalDue.trees_due > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>{survivalDue.trees_due}</strong> of {survivalDue.trees_total} trees are due
-          for re-geotagging (every {survivalDue.survey_interval_days} days). See the tree list
-          below or open individual tree records to update GPS and survival status.
+          for re-geotagging (every {survivalDue.survey_interval_days} days).{" "}
+          <Link href={survivalHref} className="font-medium text-forest-800 hover:underline">
+            Open due trees
+          </Link>{" "}
+          to update GPS and survival status.
         </div>
       )}
 
@@ -529,10 +539,16 @@ export function ProjectFocusedOverview({
               <p className="text-2xl font-semibold">{openViolations}</p>
               {openViolations > 0 && <p className="mt-1 text-xs text-forest-700">View & fix →</p>}
             </Link>
-            <div className="card">
+            <Link
+              href={survivalHref}
+              className="card block transition hover:border-amber-200"
+            >
               <p className="kpi-label">Geotag due</p>
               <p className="text-2xl font-semibold">{survivalDue?.trees_due ?? 0}</p>
-            </div>
+              {(survivalDue?.trees_due ?? 0) > 0 && (
+                <p className="mt-1 text-xs text-forest-700">Open due trees →</p>
+              )}
+            </Link>
           </>
         )}
         {schemeKpis && schemeKpis.scheme_code && (

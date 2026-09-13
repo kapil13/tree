@@ -9,6 +9,7 @@ import { scopeOverviewPortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { portfolioAuditHref } from "@/lib/portfolio-health-links";
 import { alertsHref } from "@/lib/alerts-links";
 import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
+import { survivalDueTreesHref } from "@/lib/trees-registry-links";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
@@ -172,7 +173,18 @@ export function PortfolioOverviewTab({
                       "0"
                     )}
                   </td>
-                  <td className="px-4 py-2">{p.survival_due}</td>
+                  <td className="px-4 py-2">
+                    {p.survival_due > 0 ? (
+                      <Link
+                        href={survivalDueTreesHref(p.id)}
+                        className="text-amber-700 hover:underline dark:text-amber-300"
+                      >
+                        {p.survival_due}
+                      </Link>
+                    ) : (
+                      "0"
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right">
                     {p.open_violations > 0 ? (
                       <Link

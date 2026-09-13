@@ -14,17 +14,18 @@ export function planPortfolioScopeSync(
   contextProjectId: string | null,
   tab: PortfolioHealthTab,
 ): PortfolioScopeSyncPlan {
+  if (urlProjectId === contextProjectId) return {};
+
   if (urlProjectId && !contextProjectId) {
     return { replaceHref: portfolioHealthHref(tab) };
   }
-  if (urlProjectId && urlProjectId !== contextProjectId) {
-    return { setContextProjectId: urlProjectId };
-  }
-  if (!urlProjectId && contextProjectId) {
+
+  if (contextProjectId) {
     return {
       replaceHref: portfolioHealthHref(tab, { projectId: contextProjectId }),
     };
   }
+
   return {};
 }
 

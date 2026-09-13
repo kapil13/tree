@@ -9,8 +9,14 @@ export function parseFieldOpsSection(value: string | null): FieldOpsSection | nu
     : null;
 }
 
-export function fieldOpsHref(opts?: { section?: FieldOpsSection }): string {
-  if (opts?.section === "attention") return "/field-ops?section=attention";
-  if (opts?.section === "audit") return "/field-ops?section=audit";
-  return "/field-ops";
+export function fieldOpsHref(opts?: {
+  section?: FieldOpsSection;
+  projectId?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  if (opts?.section === "attention") params.set("section", "attention");
+  if (opts?.section === "audit") params.set("section", "audit");
+  if (opts?.projectId) params.set("project", opts.projectId);
+  const query = params.toString();
+  return query ? `/field-ops?${query}` : "/field-ops";
 }

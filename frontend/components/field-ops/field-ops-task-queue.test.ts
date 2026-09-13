@@ -28,5 +28,8 @@ describe("buildFieldOpsTasks", () => {
     expect(tasks.length).toBeGreaterThanOrEqual(2);
     expect(tasks[0]?.href).toBe("/trees/t1");
     expect(tasks.some((task) => task.kind === "survival")).toBe(true);
+    expect(tasks.find((task) => task.kind === "survival")?.href).toBe(
+      "/trees?project=p1&category=geotag_due",
+    );
   });
 });

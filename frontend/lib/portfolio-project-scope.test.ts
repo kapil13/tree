@@ -5,9 +5,9 @@ import {
 } from "./portfolio-project-scope";
 
 describe("planPortfolioScopeSync", () => {
-  it("syncs context from URL when they differ", () => {
+  it("updates URL when chip selects a different project", () => {
     expect(planPortfolioScopeSync("proj-url", "proj-ctx", "overview")).toEqual({
-      setContextProjectId: "proj-url",
+      replaceHref: "/portfolio-health?project=proj-ctx",
     });
   });
 

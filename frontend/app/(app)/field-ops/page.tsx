@@ -22,8 +22,9 @@ import { EmptyState, MetricGrid, OperationalStatusBar, PageHeader } from "@/comp
 import { plantingProjects } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import { scopeFieldOpsSummary } from "@/lib/field-ops-scope";
-import { useProjectContext } from "@/lib/project-context";
-import { projectOverviewHref, projectSecondaryHref } from "@/lib/project-focused-ui";
+import { useFieldOpsProjectScope } from "@/lib/use-field-ops-project-scope";
+import { survivalDueTreesHref } from "@/lib/trees-registry-links";
+import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { scopedKey } from "@/lib/query-keys";
 import {
   buildFieldOpsTasks,
@@ -53,7 +54,7 @@ export default function FieldOpsPage() {
     return (codes as readonly string[]).includes(seg) ? ts(seg as (typeof codes)[number]) : seg;
   }
   const { user } = useAuth();
-  const { projectId, selectedProject } = useProjectContext();
+  const { projectId, projectName } = useFieldOpsProjectScope();
 
   const [summaryQ, briefQ] = useQueries({
     queries: [
@@ -130,11 +131,10 @@ export default function FieldOpsPage() {
         }
       />
 
-      {projectId && selectedProject ? (
+      {projectId && projectName ? (
         <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
-          Showing field operations for{" "}
-          <span className="font-medium">{selectedProject.name}</span>. Clear the project
-          picker in the top bar to view the full portfolio.
+          Showing field operations for <span className="font-medium">{projectName}</span>. Clear
+          the project picker in the top bar to view the full portfolio.
         </p>
       ) : null}
 
@@ -283,7 +283,18 @@ export default function FieldOpsPage() {
                           "0"
                         )}
                       </td>
-                      <td>{p.survival_due}</td>
+                      <td>
+                        {p.survival_due > 0 ? (
+                          <Link
+                            href={survivalDueTreesHref(p.id)}
+                            className="text-sky-800 hover:underline dark:text-sky-200"
+                          >
+                            {p.survival_due}
+                          </Link>
+                        ) : (
+                          "0"
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -388,7 +399,7 @@ function ProjectActionCard({
         )}
         {p.survival_due > 0 && (
           <Link
-            href={projectOverviewHref(p.id)}
+            href={survivalDueTreesHref(p.id)}
             className="inline-flex items-center gap-1 rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-medium text-sky-950"
           >
             <MapPin className="h-3.5 w-3.5" />
