@@ -96,3 +96,22 @@ async def recalculate_tree_carbon(
     tree.current_carbon_kg = calc.carbon_kg
     await db.commit()
     return CarbonEstimateResponse(**calc.__dict__)
+
+
+CARBON_RECALC_TREE_FIELDS = frozenset({"species_id", "species_text", "planted_at"})
+
+
+async def schedule_tree_carbon_recalc(
+    db: AsyncSession,
+    *,
+    tree_id: uuid.UUID,
+    user: User,
+) -> None:
+    """Queue carbon recalculation after tree edits; sync fallback when Celery is unavailable."""
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import recalc_carbon as recalc_carbon_task
+
+    task_id = try_enqueue(recalc_carbon_task, str(tree_id), str(user.id))
+    if task_id:
+        return
+    await recalculate_tree_carbon(db, tree_id=tree_id, user=user)

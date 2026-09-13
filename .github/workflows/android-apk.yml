@@ -88,5 +88,5 @@ jobs:
             echo "2. Install \`aranyix-android-*.apk\` (or \`app-release.apk\`) on your Android phone"
             echo "3. API URL baked in: \`${BYOT_API}\`"
             echo "4. Production API: https://api.aranyix.tech/health"
-            echo "5. Demo login: demo@byot.earth / byotdemo1234!"
+            echo "5. Sign in with your org credentials (demo seed is for local dev only — see backend/app/scripts/seed_demo.py)"
           } >> "$GITHUB_STEP_SUMMARY"

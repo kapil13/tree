@@ -909,6 +909,12 @@ async def update_tree(
     if payload.metadata is not None:
         changes["metadata"] = True
         tree.metadata_ = payload.metadata
+    from app.services.carbon.recalc_ops import (
+        CARBON_RECALC_TREE_FIELDS,
+        schedule_tree_carbon_recalc,
+    )
+
+    carbon_recalc = bool(changes.keys() & CARBON_RECALC_TREE_FIELDS)
     await record_audit(
         db,
         actor=user,
@@ -920,6 +926,9 @@ async def update_tree(
     )
     await db.commit()
     await db.refresh(tree)
+    if carbon_recalc:
+        await schedule_tree_carbon_recalc(db, tree_id=tree.id, user=user)
+        await db.refresh(tree)
     return _to_out(tree)
 
 
