@@ -123,9 +123,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         email: _email.text.trim(),
       );
       setState(() {
-        if (kDebugMode) {
-          _devHint = res['dev_hint'] as String?;
-        }
+        _devHint = kDebugMode ? res['dev_hint'] as String? : null;
         _step2 = true;
       });
     } catch (e) {

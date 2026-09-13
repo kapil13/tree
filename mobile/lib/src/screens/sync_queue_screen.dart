@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../offline/audit_visit_queue.dart';
 import '../offline/bioacoustic_queue.dart';
+import '../offline/survival_survey_queue.dart';
 import '../offline/tree_registration_queue.dart';
 import '../providers.dart';
 import '../widgets/prototype/prototype_ui.dart';
@@ -22,6 +23,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
   List<QueuedTreeRegistration> _treeItems = [];
   List<QueuedBioacousticRecording> _bioItems = [];
   List<QueuedAuditVisit> _auditItems = [];
+  List<QueuedSurvivalSurvey> _survivalItems = [];
   bool _syncing = false;
   String? _status;
 
@@ -32,11 +34,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
       await ref.read(treeRegistrationQueueProvider).init();
       await ref.read(bioacousticQueueProvider).init();
       await ref.read(auditVisitQueueProvider).init();
+      await ref.read(survivalSurveyQueueProvider).init();
       _reload();
     });
     ref.read(treeRegistrationQueueProvider).addListener(_reload);
     ref.read(bioacousticQueueProvider).addListener(_reload);
     ref.read(auditVisitQueueProvider).addListener(_reload);
+    ref.read(survivalSurveyQueueProvider).addListener(_reload);
   }
 
   @override
@@ -44,6 +48,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     ref.read(treeRegistrationQueueProvider).removeListener(_reload);
     ref.read(bioacousticQueueProvider).removeListener(_reload);
     ref.read(auditVisitQueueProvider).removeListener(_reload);
+    ref.read(survivalSurveyQueueProvider).removeListener(_reload);
     super.dispose();
   }
 
@@ -51,11 +56,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     final trees = await ref.read(treeRegistrationQueueProvider).listAll();
     final bio = await ref.read(bioacousticQueueProvider).listAll();
     final audit = await ref.read(auditVisitQueueProvider).listAll();
+    final survival = await ref.read(survivalSurveyQueueProvider).listAll();
     if (mounted) {
       setState(() {
         _treeItems = trees;
         _bioItems = bio;
         _auditItems = audit;
+        _survivalItems = survival;
       });
     }
   }
@@ -81,9 +88,11 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
       final treeSync = ref.read(treeRegistrationSyncProvider);
       final bioSync = ref.read(bioacousticSyncProvider);
       final auditSync = ref.read(auditVisitSyncProvider);
+      final survivalSync = ref.read(survivalSurveySyncProvider);
       final treeCount = await treeSync.syncAll(() => ref.read(apiClientProvider.future));
       final bioCount = await bioSync.syncAll(() => ref.read(apiClientProvider.future));
       final auditCount = await auditSync.syncAll(() => ref.read(apiClientProvider.future));
+      final survivalCount = await survivalSync.syncAll(() => ref.read(apiClientProvider.future));
       ref.invalidate(treesProvider);
       ref.invalidate(bioacousticRecordingsProvider);
       ref.invalidate(auditFieldPlotQueueProvider);
@@ -91,7 +100,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
       ref.invalidate(dashboardProvider);
       await _reload();
       if (mounted) {
-        setState(() => _status = 'Synced ${treeCount + bioCount + auditCount} item(s)');
+        setState(() => _status = 'Synced ${treeCount + bioCount + auditCount + survivalCount} item(s)');
       }
     } catch (e) {
       if (mounted) setState(() => _status = l10n.retry);
@@ -283,7 +292,9 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     final treePending = _treeItems.where((i) => i.status != TreeQueueStatus.syncing).length;
     final bioPending = _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length;
     final auditPending = _auditItems.where((i) => i.status != AuditVisitQueueStatus.syncing).length;
-    final pending = treePending + bioPending + auditPending;
+    final survivalPending =
+        _survivalItems.where((i) => i.status != SurvivalSurveyQueueStatus.syncing).length;
+    final pending = treePending + bioPending + auditPending + survivalPending;
     final auditFailed = _auditItems.where((i) => i.status == AuditVisitQueueStatus.failed).length;
 
     return Scaffold(
@@ -311,7 +322,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$treePending trees · $auditPending audit visits · $bioPending recordings',
+                    '$treePending trees · $survivalPending survival · $auditPending audit · $bioPending bio',
                     style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                   ),
                   const SizedBox(height: 2),
@@ -350,6 +361,24 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     ),
                   ],
                   onTap: () => _previewTreeItem(item),
+                ),
+            ],
+            if (_survivalItems.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              PrototypeSectionHeader(title: l10n.survivalSurvey),
+              for (final item in _survivalItems)
+                PrototypeRegistryRow(
+                  code: item.payload['tree_id'] as String? ?? 'Tree',
+                  species: item.payload['survival_status'] as String? ?? 'survey',
+                  meta: '${item.photoPaths.length} photo(s) · ${_survivalQueueLabel(item.status)}',
+                  health: null,
+                  badges: [
+                    PrototypeStatusBadge(
+                      label: _survivalQueueLabel(item.status),
+                      variant: item.status == SurvivalSurveyQueueStatus.failed ? 'danger' : 'warn',
+                    ),
+                  ],
+                  onTap: () => _previewSurvivalItem(item),
                 ),
             ],
             if (_auditItems.isNotEmpty) ...[
@@ -400,7 +429,10 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   onTap: () => _previewBioItem(item),
                 ),
             ],
-            if (_treeItems.isEmpty && _bioItems.isEmpty && _auditItems.isEmpty)
+            if (_treeItems.isEmpty &&
+                _bioItems.isEmpty &&
+                _auditItems.isEmpty &&
+                _survivalItems.isEmpty)
               PrototypeEmptyState(
                 icon: '✓',
                 title: 'All synced',
@@ -467,6 +499,74 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         );
       },
     );
+  }
+
+  void _previewSurvivalItem(QueuedSurvivalSurvey item) {
+    final payload = item.payload;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: PrototypeColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Survival survey',
+                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text('Tree: ${payload['tree_id']}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Status: ${payload['survival_status']}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text('Queue: ${_survivalQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              if (item.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  item.errorMessage!,
+                  style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.statusDanger),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (item.status == SurvivalSurveyQueueStatus.failed)
+                OutlinedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(survivalSurveyQueueProvider).markPending(item.id);
+                    await _syncAll();
+                  },
+                  child: const Text('Retry upload'),
+                ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _confirmDelete(
+                    title: 'Delete survival survey?',
+                    onDelete: () => ref.read(survivalSurveyQueueProvider).remove(item.id),
+                  );
+                },
+                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _survivalQueueLabel(SurvivalSurveyQueueStatus status) {
+    switch (status) {
+      case SurvivalSurveyQueueStatus.pending:
+        return 'pending';
+      case SurvivalSurveyQueueStatus.syncing:
+        return 'syncing';
+      case SurvivalSurveyQueueStatus.failed:
+        return 'failed';
+    }
   }
 
   String _auditQueueLabel(AuditVisitQueueStatus status) {

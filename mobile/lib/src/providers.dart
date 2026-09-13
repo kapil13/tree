@@ -5,6 +5,8 @@ import 'offline/bioacoustic_queue.dart';
 import 'offline/bioacoustic_sync.dart';
 import 'offline/audit_visit_queue.dart';
 import 'offline/audit_visit_sync.dart';
+import 'offline/survival_survey_queue.dart';
+import 'offline/survival_survey_sync.dart';
 import 'offline/tree_registration_queue.dart';
 import 'offline/tree_registration_sync.dart';
 
@@ -45,6 +47,18 @@ final auditVisitQueueProvider = ChangeNotifierProvider<AuditVisitQueue>((ref) {
 final auditVisitSyncProvider = ChangeNotifierProvider<AuditVisitSyncService>((ref) {
   final queue = ref.watch(auditVisitQueueProvider);
   final sync = AuditVisitSyncService(queue);
+  ref.onDispose(sync.dispose);
+  return sync;
+});
+
+final survivalSurveyQueueProvider = ChangeNotifierProvider<SurvivalSurveyQueue>((ref) {
+  final queue = SurvivalSurveyQueue();
+  return queue;
+});
+
+final survivalSurveySyncProvider = ChangeNotifierProvider<SurvivalSurveySyncService>((ref) {
+  final queue = ref.watch(survivalSurveyQueueProvider);
+  final sync = SurvivalSurveySyncService(queue);
   ref.onDispose(sync.dispose);
   return sync;
 });

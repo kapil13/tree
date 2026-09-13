@@ -20,6 +20,7 @@ const _routeRules = [
   _RouteRule('/credits', ['professional', 'field_supervisor']),
   _RouteRule('/evidence', ['professional', 'field_supervisor']),
   _RouteRule('/biodiversity', 'professional'),
+  _RouteRule('/audit', ['professional', 'field_supervisor', 'field_worker'], excludeViewers: true),
   _RouteRule('/carbon', 'all'),
 ];
 
@@ -70,6 +71,9 @@ String routeAccessDeniedMessage(String path) {
   }
   if (path.startsWith('/biodiversity')) {
     return 'Biodiversity intelligence requires a professional program.';
+  }
+  if (path.startsWith('/audit')) {
+    return 'Audit workspace is limited to field teams and program members.';
   }
   if (path.startsWith('/map/draw')) {
     return 'Drawing work areas requires write access.';

@@ -91,6 +91,28 @@ void main() {
     expect(inviteLandingRoute('viewer'), '/trees');
   });
 
+  test('audit workspace routes are role-gated', () {
+    final supervisor = {
+      'role': 'government',
+      'org_role': 'supervisor',
+      'has_professional_program': true,
+    };
+    final worker = {
+      'role': 'field_worker',
+      'org_role': 'worker',
+      'has_professional_program': false,
+    };
+    final viewer = {
+      'role': 'government',
+      'org_role': 'viewer',
+      'has_professional_program': true,
+    };
+    expect(canAccessPath(supervisor, '/audit'), isTrue);
+    expect(canAccessPath(worker, '/audit-plots'), isTrue);
+    expect(canAccessPath(viewer, '/audit'), isFalse);
+    expect(canAccessPath(viewer, '/audit/attestation'), isFalse);
+  });
+
   test('evidence and biodiversity routes are role-gated', () {
     final supervisor = {
       'role': 'government',

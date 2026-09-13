@@ -32,6 +32,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
   String? _error;
   String? _locMessage;
   String? _surveyPhotoKey;
+  String? _localPhotoPath;
   String _survivalStatus = 'live';
   String _measurementMethod = 'tape';
 
@@ -82,9 +83,24 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
     try {
       final image = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
       if (image == null) return;
-      final api = await ref.read(apiClientProvider.future);
-      final key = await api.uploadImageFile(image.path, filename: image.name);
-      if (mounted) setState(() => _surveyPhotoKey = key);
+      try {
+        final api = await ref.read(apiClientProvider.future);
+        final key = await api.uploadImageFile(image.path, filename: image.name);
+        if (mounted) {
+          setState(() {
+            _surveyPhotoKey = key;
+            _localPhotoPath = null;
+          });
+        }
+      } catch (e) {
+        if (!isOfflineOrNetworkError(e)) rethrow;
+        if (mounted) {
+          setState(() {
+            _localPhotoPath = image.path;
+            _surveyPhotoKey = null;
+          });
+        }
+      }
     } catch (e) {
       if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
@@ -124,7 +140,38 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
         context.pop();
       }
     } catch (e) {
-      if (mounted) setState(() => _error = apiErrorMessage(e));
+      if (isUnauthorizedError(e)) {
+        if (mounted) setState(() => _error = apiErrorMessage(e));
+        return;
+      }
+      if (!isOfflineOrNetworkError(e)) {
+        if (mounted) setState(() => _error = apiErrorMessage(e));
+        return;
+      }
+      final payload = {
+        'tree_id': widget.treeId,
+        'latitude': loc.latitude,
+        'longitude': loc.longitude,
+        'accuracy_m': loc.accuracyMeters,
+        if (_remarks.text.trim().isNotEmpty) 'remarks': _remarks.text.trim(),
+        'survival_status': _survivalStatus,
+        if (_surveyPhotoKey != null) 'photo_key': _surveyPhotoKey,
+        if (_dbh.text.trim().isNotEmpty) 'dbh_cm': double.tryParse(_dbh.text.trim()),
+        if (_height.text.trim().isNotEmpty) 'height_m': double.tryParse(_height.text.trim()),
+        'method': _measurementMethod,
+      };
+      final queue = ref.read(survivalSurveyQueueProvider);
+      await queue.enqueue(
+        id: 'survival-${widget.treeId}-${DateTime.now().millisecondsSinceEpoch}',
+        payload: payload,
+        localPhotoPaths: _localPhotoPath == null ? const [] : [_localPhotoPath!],
+      );
+      ref.read(survivalSurveySyncProvider).syncAll(() => ref.read(apiClientProvider.future));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${context.l10n.offlineQueuedSync} ${apiErrorMessage(e)}')),
+      );
+      context.pop();
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -231,7 +278,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
             onPressed: _photoBusy || _submitting ? null : _captureSurveyPhoto,
             icon: const Icon(Icons.add_a_photo_outlined),
             label: Text(
-              _surveyPhotoKey != null
+              _surveyPhotoKey != null || _localPhotoPath != null
                   ? 'Survey photo attached'
                   : (_photoBusy ? 'Capturing photo…' : 'Add survey photo (camera)'),
             ),
