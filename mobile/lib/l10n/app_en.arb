@@ -54,6 +54,31 @@
       }
     }
   },
+  "citizenStewardshipAdopted": "{count} trees adopted",
+  "@citizenStewardshipAdopted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "citizenStewardshipPoints": "{count} stewardship points",
+  "@citizenStewardshipPoints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "citizenAdoptTitle": "Adopt a tree",
+  "citizenAdoptSubtitle": "Support a neighbour's BYOT tree with periodic check-ins.",
+  "citizenAdoptCodeLabel": "Tree public code",
+  "citizenAdoptByCode": "Adopt by code",
+  "citizenAdoptAction": "Adopt",
+  "citizenAdoptBrowseTitle": "Trees near you",
+  "citizenAdoptEmpty": "No adoptable trees right now. Try a public code from a QR link.",
+  "citizenAdoptSuccess": "Tree adopted — thank you for stewarding!",
+  "citizenAdoptNotAvailable": "Tree adoption is available for BYOT citizen accounts.",
   "bioAnalysisRunning": "Analysis running…",
   "languageEnglish": "English",
   "languageHindi": "Hindi",

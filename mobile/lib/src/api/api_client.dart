@@ -115,7 +115,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 45),
       headers: {
         'Content-Type': 'application/json',
-        'X-Aranyix-Client': 'mobile/1.4.1',
+        'X-Aranyix-Client': 'mobile/1.5.0',
       },
     ));
     CertificatePinning.configureDio(dio);
@@ -1254,6 +1254,44 @@ class ApiClient {
   Future<Map<String, dynamic>> citizenStewardship() async {
     final r = await _dio.get('/citizen/stewardship');
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<({List<dynamic> items, int total})> listCitizenAdoptableTrees({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final r = await _dio.get(
+      '/citizen/adoptable',
+      queryParameters: {'page': page, 'page_size': pageSize},
+    );
+    final data = Map<String, dynamic>.from(r.data);
+    return (
+      items: List<dynamic>.from(data['items'] ?? []),
+      total: (data['total'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Future<Map<String, dynamic>> citizenAdoptTree(String treeId, {String? nickname}) async {
+    final r = await _dio.post(
+      '/citizen/trees/$treeId/adopt',
+      data: {if (nickname != null && nickname.isNotEmpty) 'nickname': nickname},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenAdoptByCode(String publicCode, {String? nickname}) async {
+    final r = await _dio.post(
+      '/citizen/adopt-by-code',
+      data: {
+        'public_code': publicCode,
+        if (nickname != null && nickname.isNotEmpty) 'nickname': nickname,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> citizenRelinquishTree(String treeId) async {
+    await _dio.delete('/citizen/trees/$treeId/adopt');
   }
 
   Future<SignupStartResult> citizenSignupStart({

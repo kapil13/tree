@@ -84,6 +84,17 @@ void main() {
       ['/home', '/map', '/field'],
     );
     expect(canAccessPath(citizen, '/field'), isTrue);
+    expect(isCitizenByotUser(citizen), isTrue);
+  });
+
+  test('phone-only BYOT user is treated as citizen', () {
+    final user = {
+      'role': 'user',
+      'has_professional_program': false,
+      'organization_id': null,
+    };
+    expect(isCitizenByotUser(user), isTrue);
+    expect(isCitizenByotUser({'role': 'field_worker', 'has_professional_program': false}), isFalse);
   });
 
   test('invite landing routes by org role', () {

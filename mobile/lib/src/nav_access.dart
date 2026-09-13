@@ -119,6 +119,16 @@ bool canSeeCarbon(UserMap? user) => user != null;
 
 bool canSeeAssistant(UserMap? user) => user != null;
 
+/// BYOT citizen without a professional planting program (phone-only or citizen role).
+bool isCitizenByotUser(UserMap? user) {
+  if (user == null || userHasProfessionalAccess(user) || isOrgViewer(user)) {
+    return false;
+  }
+  final role = user['role'] as String?;
+  if (role == 'citizen') return true;
+  return role == 'user' && user['organization_id'] == null;
+}
+
 /// Whether the Field bottom-tab is visible (capture & verify hub).
 bool canSeeFieldTab(UserMap? user) {
   if (user == null || isOrgViewer(user)) return false;

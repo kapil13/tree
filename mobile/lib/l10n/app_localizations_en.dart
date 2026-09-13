@@ -96,6 +96,46 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String citizenStewardshipAdopted(int count) {
+    return '$count trees adopted';
+  }
+
+  @override
+  String citizenStewardshipPoints(int count) {
+    return '$count stewardship points';
+  }
+
+  @override
+  String get citizenAdoptTitle => 'Adopt a tree';
+
+  @override
+  String get citizenAdoptSubtitle =>
+      'Support a neighbour\'s BYOT tree with periodic check-ins.';
+
+  @override
+  String get citizenAdoptCodeLabel => 'Tree public code';
+
+  @override
+  String get citizenAdoptByCode => 'Adopt by code';
+
+  @override
+  String get citizenAdoptAction => 'Adopt';
+
+  @override
+  String get citizenAdoptBrowseTitle => 'Trees near you';
+
+  @override
+  String get citizenAdoptEmpty =>
+      'No adoptable trees right now. Try a public code from a QR link.';
+
+  @override
+  String get citizenAdoptSuccess => 'Tree adopted — thank you for stewarding!';
+
+  @override
+  String get citizenAdoptNotAvailable =>
+      'Tree adoption is available for BYOT citizen accounts.';
+
+  @override
   String get bioAnalysisRunning => 'Analysis running…';
 
   @override

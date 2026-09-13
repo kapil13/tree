@@ -1,6 +1,6 @@
 # BYOT Mobile (Flutter) — Android APK
 
-Field app for tree registration on Android (and iOS).
+Field app for tree registration on **Android**. iOS is deferred until the Android release is frozen — see `ios/README.md`.
 
 ## Build APK (Mac)
 

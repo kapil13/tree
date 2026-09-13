@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../app_bootstrap.dart';
+import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
@@ -403,9 +404,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     ];
   }
 
-  bool _isCitizenUser(Map<String, dynamic> user) {
-    return user['role'] == 'citizen' && !userHasProfessionalAccess(user);
-  }
+  bool _isCitizenUser(Map<String, dynamic> user) => isCitizenByotUser(user);
 }
 
 class _CitizenStewardshipCard extends ConsumerStatefulWidget {
@@ -442,6 +441,7 @@ class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard
         _loading = false;
       });
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _error = apiErrorMessage(e);
@@ -466,8 +466,10 @@ class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard
       );
     }
     final data = _stewardship ?? const <String, dynamic>{};
-    final treeCount = (data['tree_count'] as num?)?.toInt() ?? (data['trees_registered'] as num?)?.toInt() ?? 0;
-    final dueCount = (data['stewardship_due_count'] as num?)?.toInt() ?? (data['due_count'] as num?)?.toInt() ?? 0;
+    final ownedCount = (data['trees_owned'] as num?)?.toInt() ?? 0;
+    final adoptedCount = (data['trees_adopted'] as num?)?.toInt() ?? 0;
+    final dueCount = (data['due_count'] as num?)?.toInt() ?? 0;
+    final points = (data['points'] as num?)?.toInt();
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Card(
@@ -478,7 +480,15 @@ class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard
             children: [
               Text(l10n.citizenStewardshipTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text(l10n.citizenStewardshipTrees(treeCount)),
+              Text(l10n.citizenStewardshipTrees(ownedCount)),
+              if (adoptedCount > 0) ...[
+                const SizedBox(height: 4),
+                Text(l10n.citizenStewardshipAdopted(adoptedCount)),
+              ],
+              if (points != null) ...[
+                const SizedBox(height: 4),
+                Text(l10n.citizenStewardshipPoints(points)),
+              ],
               if (dueCount > 0) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -486,6 +496,12 @@ class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard
                   style: const TextStyle(color: AranyixColors.warningOnContainer),
                 ),
               ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/citizen/adopt'),
+                icon: const Icon(Icons.favorite_border, size: 18),
+                label: Text(l10n.citizenAdoptTitle),
+              ),
             ],
           ),
         ),

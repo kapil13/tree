@@ -87,6 +87,18 @@ class _FieldCaptureBody extends ConsumerWidget {
         children: [
           const PendingSyncBanner(),
           PrototypeContextStrip(project: projectLabel, meta: l10n.registerTreePrimarySub),
+          if (isCitizenByotUser(user)) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.favorite_border),
+                title: Text(l10n.citizenAdoptTitle),
+                subtitle: Text(l10n.citizenAdoptSubtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/citizen/adopt'),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           PrototypeSectionHeader(
             title: 'Tree registry',
             linkLabel: l10n.viewAll,

@@ -44,6 +44,7 @@ import 'screens/biodiversity_screen.dart';
 import 'screens/audit_attestation_screen.dart';
 import 'screens/audit_plot_visit_screen.dart';
 import 'screens/audit_workspace_screen.dart';
+import 'screens/citizen_adopt_screen.dart';
 import 'widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -207,6 +208,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => TreeDetailScreen(id: s.pathParameters['id']!),
       ),
       GoRoute(path: '/carbon', builder: (_, __) => const CarbonScreen()),
+      GoRoute(path: '/citizen/adopt', builder: (_, __) => const CitizenAdoptScreen()),
       GoRoute(
         path: '/bioacoustic/:id',
         builder: (_, s) => BioacousticSessionDetailScreen(recordingId: s.pathParameters['id']!),

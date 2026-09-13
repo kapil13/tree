@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 
 import '../api/api_client.dart';
+import 'certificate_pinning.dart';
 
 /// Device-level connectivity plus optional API reachability checks.
 class NetworkStatus {
@@ -22,6 +23,7 @@ class NetworkStatus {
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 5),
       ));
+      CertificatePinning.configureDio(dio);
       final response = await dio.get<Map<String, dynamic>>('/health');
       return response.statusCode == 200;
     } catch (_) {

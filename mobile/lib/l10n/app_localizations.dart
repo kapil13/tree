@@ -254,6 +254,72 @@ abstract class AppLocalizations {
   /// **'{count} stewardship check-ins due'**
   String citizenStewardshipDue(int count);
 
+  /// No description provided for @citizenStewardshipAdopted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees adopted'**
+  String citizenStewardshipAdopted(int count);
+
+  /// No description provided for @citizenStewardshipPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stewardship points'**
+  String citizenStewardshipPoints(int count);
+
+  /// No description provided for @citizenAdoptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adopt a tree'**
+  String get citizenAdoptTitle;
+
+  /// No description provided for @citizenAdoptSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support a neighbour\'s BYOT tree with periodic check-ins.'**
+  String get citizenAdoptSubtitle;
+
+  /// No description provided for @citizenAdoptCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree public code'**
+  String get citizenAdoptCodeLabel;
+
+  /// No description provided for @citizenAdoptByCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Adopt by code'**
+  String get citizenAdoptByCode;
+
+  /// No description provided for @citizenAdoptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Adopt'**
+  String get citizenAdoptAction;
+
+  /// No description provided for @citizenAdoptBrowseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trees near you'**
+  String get citizenAdoptBrowseTitle;
+
+  /// No description provided for @citizenAdoptEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No adoptable trees right now. Try a public code from a QR link.'**
+  String get citizenAdoptEmpty;
+
+  /// No description provided for @citizenAdoptSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree adopted — thank you for stewarding!'**
+  String get citizenAdoptSuccess;
+
+  /// No description provided for @citizenAdoptNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree adoption is available for BYOT citizen accounts.'**
+  String get citizenAdoptNotAvailable;
+
   /// No description provided for @bioAnalysisRunning.
   ///
   /// In en, this message translates to:

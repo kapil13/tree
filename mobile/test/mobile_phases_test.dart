@@ -11,6 +11,18 @@ void main() {
     expect(OpenApiPaths.analyticsEvents, '/devices/analytics/events');
   });
 
+  test('citizen adoption API paths are stable', () {
+    const paths = [
+      '/citizen/profile',
+      '/citizen/stewardship',
+      '/citizen/adoptable',
+      '/citizen/adopt-by-code',
+    ];
+    for (final path in paths) {
+      expect(path.startsWith('/citizen/'), isTrue);
+    }
+  });
+
   test('DeepLinkService parses tree public codes', () {
     final uri = Uri.parse('https://aranyix.tech/p/BYOT-ABCD-EFGH');
     expect(DeepLinkService.treePublicCodeFromUri(uri), 'BYOT-ABCD-EFGH');

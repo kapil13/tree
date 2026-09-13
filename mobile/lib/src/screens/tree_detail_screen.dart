@@ -39,6 +39,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
   bool analyzing = false;
   bool satelliteBusy = false;
   bool photoBusy = false;
+  bool adoptBusy = false;
 
   @override
   void initState() {
@@ -138,6 +139,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       final sat = await api.runSatelliteHealth(widget.id);
       if (mounted) setState(() => satellite = sat);
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),
@@ -145,6 +147,27 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       }
     } finally {
       if (mounted) setState(() => satelliteBusy = false);
+    }
+  }
+
+  Future<void> _adoptTree() async {
+    setState(() => adoptBusy = true);
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.citizenAdoptTree(widget.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.citizenAdoptSuccess)),
+      );
+    } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => adoptBusy = false);
     }
   }
 
@@ -193,6 +216,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
         );
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),
@@ -315,6 +339,16 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
             (label: 'Monitor', onTap: () => context.go('/monitoring'), primary: false),
           ],
         ),
+        if (isCitizenByotUser(sessionController.user) && t['project_id'] == null) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: adoptBusy ? null : _adoptTree,
+            icon: adoptBusy
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.favorite_border),
+            label: Text(l10n.citizenAdoptAction),
+          ),
+        ],
         const SizedBox(height: 12),
         _locationChip(t),
         if (blockers.isNotEmpty) ...[

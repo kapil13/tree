@@ -32,6 +32,12 @@ String humanizeAuthError(String code) {
     'project_access_denied': 'You do not have access to this project.',
     'viewer_read_only': 'Your account is read-only. Contact your admin for write access.',
     'storage_upload_failed': 'Photo upload failed on the server. Try again shortly.',
+    'tree_not_found': 'Tree not found. Check the public code and try again.',
+    'tree_not_adoptable': 'This tree cannot be adopted (project-linked or private).',
+    'cannot_adopt_own_tree': 'You already own this tree.',
+    'already_adopted': 'You have already adopted this tree.',
+    'not_adopted': 'You have not adopted this tree.',
+    'adopter_limit_reached': 'This tree already has the maximum number of adopters.',
   };
   return map[code] ?? code.replaceAll('_', ' ');
 }
