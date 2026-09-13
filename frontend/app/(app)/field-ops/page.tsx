@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth-store";
 import { scopeFieldOpsSummary } from "@/lib/field-ops-scope";
 import { useFieldOpsProjectScope } from "@/lib/use-field-ops-project-scope";
 import { survivalDueTreesHref } from "@/lib/trees-registry-links";
+import { violationActionHref } from "@/lib/compliance-violation-links";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { scopedKey } from "@/lib/query-keys";
 import {
@@ -320,10 +321,10 @@ export default function FieldOpsPage() {
                 </div>
                 <p className="text-stone-600">{v.message}</p>
                 <Link
-                  href={projectSecondaryHref(v.project_id, "compliance")}
+                  href={violationActionHref(v.project_id, v.tree_id)}
                   className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-forest-700 hover:underline"
                 >
-                  Fix in compliance <ArrowRight className="h-3 w-3" />
+                  {v.tree_id ? "Open tree" : "Fix in compliance"} <ArrowRight className="h-3 w-3" />
                 </Link>
               </li>
             ))}

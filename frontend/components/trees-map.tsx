@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
@@ -151,6 +152,7 @@ export function TreesMap({
   const t = useTranslations("trees");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const { projectId: contextProjectId, setProjectId: setContextProjectId } = useProjectContext();
   const canAdd = canWriteInApp(user);
   const [selected, setSelected] = useState<Tree | null>(null);
@@ -162,6 +164,13 @@ export function TreesMap({
   useEffect(() => {
     setProjectId(contextProjectId ?? "");
   }, [contextProjectId]);
+
+  useEffect(() => {
+    const urlProject = searchParams.get("project");
+    if (!urlProject) return;
+    setProjectId(urlProject);
+    setContextProjectId(urlProject);
+  }, [searchParams, setContextProjectId]);
 
   const onBounds = useCallback((next: BBox, nextZoom: number) => {
     setBbox(next);
