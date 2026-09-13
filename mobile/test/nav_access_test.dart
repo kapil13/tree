@@ -91,6 +91,21 @@ void main() {
     expect(inviteLandingRoute('viewer'), '/trees');
   });
 
+  test('map draw route requires write access', () {
+    final worker = {
+      'role': 'field_worker',
+      'org_role': 'worker',
+      'has_professional_program': false,
+    };
+    final viewer = {
+      'role': 'government',
+      'org_role': 'viewer',
+      'has_professional_program': true,
+    };
+    expect(canAccessPath(worker, '/map/draw'), isTrue);
+    expect(canAccessPath(viewer, '/map/draw'), isFalse);
+  });
+
   test('audit workspace routes are role-gated', () {
     final supervisor = {
       'role': 'government',

@@ -166,7 +166,16 @@ final _routerProvider = Provider<GoRouter>((ref) {
                       : null),
               focusLat: double.tryParse(state.uri.queryParameters['lat'] ?? ''),
               focusLon: double.tryParse(state.uri.queryParameters['lon'] ?? ''),
+              initialDraw: state.uri.queryParameters['draw'],
             ),
+          ),
+          GoRoute(
+            path: '/map/draw',
+            redirect: (_, state) {
+              final mode = state.uri.queryParameters['mode'];
+              if (mode == 'corridor') return '/map?draw=corridor';
+              return '/map?draw=polygon';
+            },
           ),
           GoRoute(path: '/field', builder: (_, __) => const FieldScreen()),
           GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),

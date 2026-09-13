@@ -65,7 +65,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
 
     return stackRouteScaffold(
       location: '/credits',
-      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navCredits),
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navCredits, menuWithBack: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

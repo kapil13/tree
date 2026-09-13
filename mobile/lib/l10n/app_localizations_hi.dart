@@ -121,6 +121,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get offlineMode => 'आप ऑफ़लाइन हैं — कनेक्ट होने पर बदलाव सिंक होंगे।';
 
   @override
+  String get offlineServerUnreachable =>
+      'सर्वर उपलब्ध नहीं — API वापस आने पर बदलाव सिंक होंगे।';
+
+  @override
   String get coachMarkHomeTitle => 'आपका वन डैशबोर्ड';
 
   @override
@@ -1332,6 +1336,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportTypeBiodiversity => 'जैव विविधता';
+
+  @override
+  String get reportTypeEsg => 'ESG प्रकटीकरण';
 
   @override
   String get typeLabel => 'प्रकार';

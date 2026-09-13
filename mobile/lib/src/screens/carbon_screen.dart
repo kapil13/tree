@@ -82,7 +82,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
 
     return stackRouteScaffold(
       location: '/carbon',
-      appBar: ShellTopBar(title: l10n.navCarbon),
+      appBar: ShellTopBar(title: l10n.navCarbon, menuWithBack: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

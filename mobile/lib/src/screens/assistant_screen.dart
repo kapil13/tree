@@ -54,7 +54,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
     return stackRouteScaffold(
       location: '/assistant',
-      appBar: ShellTopBar(title: l10n.navAssistant),
+      appBar: ShellTopBar(title: l10n.navAssistant, menuWithBack: true),
       body: Column(
         children: [
           if (treeId != null || selectedProjectId != null)

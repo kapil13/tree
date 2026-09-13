@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../api/api_errors.dart';
+import '../services/network_status.dart';
 import 'bioacoustic_queue.dart';
 
 /// Uploads queued bioacoustic recordings when network is available.
@@ -35,10 +36,7 @@ class BioacousticSyncService extends ChangeNotifier {
     _connectivitySub = null;
   }
 
-  Future<bool> isOnline() async {
-    final results = await _connectivity.checkConnectivity();
-    return _hasNetwork(results);
-  }
+  Future<bool> isOnline() => NetworkStatus.isOnlineForSync();
 
   bool _hasNetwork(List<ConnectivityResult> results) {
     return results.any((r) =>
@@ -64,13 +62,12 @@ class BioacousticSyncService extends ChangeNotifier {
         if (!await isOnline()) break;
         try {
           await _queue.markSyncing(item.id);
-          final rec = await api.uploadBioacousticRecording(
+          await api.uploadBioacousticRecording(
             filePath: item.filePath,
             durationSeconds: item.durationSeconds,
             latitude: item.latitude,
             longitude: item.longitude,
           );
-          await api.analyzeBioacousticRecording(rec['id'] as String);
           await _queue.remove(item.id);
           _syncedThisRun++;
         } catch (e) {

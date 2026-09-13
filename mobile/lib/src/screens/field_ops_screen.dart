@@ -21,7 +21,7 @@ class FieldOpsScreen extends ConsumerWidget {
 
     return stackRouteScaffold(
       location: '/field-ops',
-      appBar: ShellTopBar(title: AppLocalizations.of(context)!.fieldOps),
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.fieldOps, menuWithBack: true),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

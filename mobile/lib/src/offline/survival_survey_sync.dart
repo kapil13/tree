@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../api/api_errors.dart';
+import '../services/network_status.dart';
 import 'survival_survey_queue.dart';
 
 class SurvivalSurveySyncService extends ChangeNotifier {
@@ -34,10 +35,7 @@ class SurvivalSurveySyncService extends ChangeNotifier {
     _connectivitySub = null;
   }
 
-  Future<bool> isOnline() async {
-    final results = await _connectivity.checkConnectivity();
-    return _hasNetwork(results);
-  }
+  Future<bool> isOnline() => NetworkStatus.isOnlineForSync();
 
   bool _hasNetwork(List<ConnectivityResult> results) {
     return results.any((r) =>

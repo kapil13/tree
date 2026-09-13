@@ -27,12 +27,15 @@ class MapScreen extends ConsumerStatefulWidget {
     this.focusFenceId,
     this.focusLat,
     this.focusLon,
+    this.initialDraw,
   });
 
   final String? focusTreeId;
   final String? focusFenceId;
   final double? focusLat;
   final double? focusLon;
+  /// When set to `polygon` or `corridor`, opens directly in draw mode.
+  final String? initialDraw;
 
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
@@ -54,9 +57,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
+    switch (widget.initialDraw) {
+      case 'corridor':
+        _mode = _DrawMode.corridor;
+      case 'polygon':
+        _mode = _DrawMode.polygon;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncViewportBbox();
       _loadUserLocation();
+    });
+  }
+
+  void _cancelDrawMode() {
+    setState(() {
+      _mode = _DrawMode.none;
+      _drawPoints.clear();
     });
   }
 
@@ -489,7 +505,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
+    return PopScope(
+      canPop: _mode == _DrawMode.none,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _mode != _DrawMode.none) {
+          _cancelDrawMode();
+        }
+      },
+      child: Scaffold(
       appBar: ShellTopBar(
         title: _mode == _DrawMode.none
             ? l10n.map
@@ -857,6 +880,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           );
         },
       ),
+    ),
     );
   }
 }

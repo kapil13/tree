@@ -122,6 +122,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You are offline — changes will sync when connected.';
 
   @override
+  String get offlineServerUnreachable =>
+      'Server unreachable — changes will sync when the API is back.';
+
+  @override
   String get coachMarkHomeTitle => 'Your forest dashboard';
 
   @override
@@ -1336,6 +1340,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportTypeBiodiversity => 'Biodiversity';
+
+  @override
+  String get reportTypeEsg => 'ESG disclosure';
 
   @override
   String get typeLabel => 'Type';

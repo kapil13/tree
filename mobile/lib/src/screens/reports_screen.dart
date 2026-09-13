@@ -18,6 +18,7 @@ String _reportKindLabel(AppLocalizations l10n, String key) => switch (key) {
       'tree' => l10n.reportTypeTree,
       'plantation' => l10n.reportTypePlantation,
       'carbon' => l10n.reportTypeCarbon,
+      'esg' => l10n.reportTypeEsg,
       'biodiversity' => l10n.reportTypeBiodiversity,
       _ => key.toUpperCase(),
     };
@@ -184,7 +185,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     return stackRouteScaffold(
       location: '/reports',
-      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navReports),
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navReports, menuWithBack: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

@@ -296,6 +296,12 @@ abstract class AppLocalizations {
   /// **'You are offline — changes will sync when connected.'**
   String get offlineMode;
 
+  /// No description provided for @offlineServerUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server unreachable — changes will sync when the API is back.'**
+  String get offlineServerUnreachable;
+
   /// No description provided for @coachMarkHomeTitle.
   ///
   /// In en, this message translates to:
@@ -2533,6 +2539,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Biodiversity'**
   String get reportTypeBiodiversity;
+
+  /// No description provided for @reportTypeEsg.
+  ///
+  /// In en, this message translates to:
+  /// **'ESG disclosure'**
+  String get reportTypeEsg;
 
   /// No description provided for @typeLabel.
   ///

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 enum AuditVisitQueueStatus { pending, syncing, failed }
@@ -74,8 +76,11 @@ class AuditVisitQueue extends ChangeNotifier {
   Database? _db;
 
   Future<void> init() async {
-    _db ??= await openDatabase(
-      'audit_visit_queue.db',
+    if (_db != null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final path = p.join(dir.path, 'audit_visit_queue.db');
+    _db = await openDatabase(
+      path,
       version: 1,
       onCreate: (db, _) async {
         await db.execute('''

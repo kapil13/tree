@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 enum SurvivalSurveyQueueStatus { pending, syncing, failed }
@@ -74,8 +76,11 @@ class SurvivalSurveyQueue extends ChangeNotifier {
   Database? _db;
 
   Future<void> init() async {
-    _db ??= await openDatabase(
-      'survival_survey_queue.db',
+    if (_db != null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final path = p.join(dir.path, 'survival_survey_queue.db');
+    _db = await openDatabase(
+      path,
       version: 1,
       onCreate: (db, _) async {
         await db.execute('''
