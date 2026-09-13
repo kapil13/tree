@@ -56,14 +56,45 @@ jobs:
           flutter --version
           yes | flutter doctor --android-licenses || true
 
+      - name: Configure release signing
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > mobile/android/release.keystore
+          printf '%s\n' \
+            "storeFile=release.keystore" \
+            "storePassword=${ANDROID_STORE_PASSWORD}" \
+            "keyAlias=${ANDROID_KEY_ALIAS}" \
+            "keyPassword=${ANDROID_KEY_PASSWORD}" \
+            > mobile/android/keystore.properties
+          echo "Release signing configured from ANDROID_KEYSTORE_BASE64 secret."
+
+      - name: Configure Firebase (google-services.json)
+        if: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > mobile/android/app/google-services.json
+          echo "google-services.json written from secret."
+
       - name: Build release APK
         working-directory: mobile
         env:
           BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
+          BYOT_FCM_ENABLED: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' && 'true' || 'false' }}
         run: |
           flutter pub get
+          flutter test
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
-          flutter build apk --release --dart-define="BYOT_API=${BYOT_API}"
+          DART_DEFINES=(--dart-define="BYOT_API=${BYOT_API}")
+          if [ "${BYOT_FCM_ENABLED}" = "true" ]; then
+            DART_DEFINES+=(--dart-define=BYOT_FCM_ENABLED=true)
+          fi
+          flutter build apk --release "${DART_DEFINES[@]}"
           cp build/app/outputs/flutter-apk/app-release.apk \
             "build/app/outputs/flutter-apk/aranyix-android-${VERSION}.apk"
 
@@ -89,4 +120,6 @@ jobs:
             echo "3. API URL baked in: \`${BYOT_API}\`"
             echo "4. Production API: https://api.aranyix.tech/health"
             echo "5. Sign in with your org credentials (demo seed is for local dev only — see backend/app/scripts/seed_demo.py)"
+            echo "6. Release signing: requires \`ANDROID_KEYSTORE_BASE64\` + password secrets in repo settings"
+            echo "7. FCM push: requires \`GOOGLE_SERVICES_JSON_BASE64\` secret + \`BYOT_FCM_ENABLED=true\` at build time"
           } >> "$GITHUB_STEP_SUMMARY"

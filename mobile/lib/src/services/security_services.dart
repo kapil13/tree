@@ -7,9 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import 'app_settings.dart';
+import 'firebase_push_service.dart';
 
 /// Registers the device for push and refreshes token on login.
-/// Uses install-scoped token until FCM is wired (see docs/MOBILE_ANDROID_PHASES.md).
 class PushRegistrationService {
   PushRegistrationService._();
 
@@ -18,6 +18,7 @@ class PushRegistrationService {
 
   final LocalAuthentication _localAuth = LocalAuthentication();
 
+  /// Debug-only install token when FCM is not configured.
   Future<String> _installToken() async {
     final prefs = await SharedPreferences.getInstance();
     var token = prefs.getString(_tokenKey);
@@ -28,11 +29,29 @@ class PushRegistrationService {
     return token;
   }
 
+  /// Resolves push token: FCM in production; debug install token as fallback.
+  Future<String?> resolvePushToken() async {
+    final fcmToken = await FirebasePushService.getToken();
+    if (fcmToken != null && fcmToken.isNotEmpty) {
+      return fcmToken;
+    }
+    if (kReleaseMode) {
+      return null;
+    }
+    return await _installToken();
+  }
+
   Future<void> registerIfEnabled(Future<ApiClient> Function() apiFactory) async {
     if (!AppSettings.instance.pushEnabled) return;
     try {
+      final token = await resolvePushToken();
+      if (token == null || token.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('PushRegistrationService: no push token — registration skipped');
+        }
+        return;
+      }
       final api = await apiFactory();
-      final token = await _installToken();
       await api.registerDevice(
         pushToken: token,
         platform: Platform.isIOS ? 'ios' : 'android',
@@ -45,7 +64,8 @@ class PushRegistrationService {
   Future<void> unregister(Future<ApiClient> Function() apiFactory) async {
     try {
       final api = await apiFactory();
-      final token = await _installToken();
+      final token = await resolvePushToken();
+      if (token == null || token.isEmpty) return;
       await api.unregisterDevice(pushToken: token);
     } catch (_) {}
   }

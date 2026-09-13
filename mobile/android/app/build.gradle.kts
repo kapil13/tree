@@ -1,7 +1,36 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
+
+fun keystoreProperty(name: String): String? {
+    val fromFile = keystoreProperties.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() }
+    if (fromFile != null) return fromFile
+    return System.getenv("ANDROID_${name.replaceFirstChar { it.uppercase() }}")?.trim()
+        ?.takeIf { it.isNotEmpty() }
+}
+
+val releaseStoreFile = keystoreProperty("storeFile")
+val releaseStorePassword = keystoreProperty("storePassword")
+val releaseKeyAlias = keystoreProperty("keyAlias")
+val releaseKeyPassword = keystoreProperty("keyPassword")
+val hasReleaseSigning =
+    releaseStoreFile != null &&
+        releaseStorePassword != null &&
+        releaseKeyAlias != null &&
+        releaseKeyPassword != null
+
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -15,21 +44,36 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "earth.byot.byot_mobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                println(
+                    "WARNING: Release signing not configured — using debug keys. " +
+                        "Copy android/keystore.properties.example to keystore.properties " +
+                        "or set ANDROID_STORE_FILE and related env vars.",
+                )
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

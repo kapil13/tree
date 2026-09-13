@@ -47,12 +47,9 @@ Or install via USB:
 adb install -r byot-release.apk
 ```
 
-## Demo login
+## Sign in
 
-After `make seed-native`:
-
-- Email: `demo@byot.earth`
-- Password: `byotdemo1234!`
+Use your organization credentials. For local development, run `make seed-native` and see `backend/app/scripts/seed_demo.py` for seeded accounts (not shipped in release builds).
 
 ## API URL note
 

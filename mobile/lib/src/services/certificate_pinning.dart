@@ -6,16 +6,23 @@ import 'package:flutter/foundation.dart';
 
 import '../api/api_base_url.dart';
 import 'app_settings.dart';
+import 'spki_pin.dart';
 
-/// TLS host allowlist + optional public-key pinning for production API hosts.
+/// TLS host allowlist + SPKI public-key pinning for production API hosts.
 class CertificatePinning {
   CertificatePinning._();
 
-  /// SHA-256 SPKI pins for api.aranyix.tech (rotate with cert renewal).
-  /// Empty in debug / custom API mode — host allowlist still applies via [assertAllowedApiBaseUrl].
+  /// SHA-256 SPKI pins for api.aranyix.tech (rotate when certificates renew).
+  /// Generate: openssl s_client -servername api.aranyix.tech -connect api.aranyix.tech:443 \
+  ///   | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der \
+  ///   | openssl dgst -sha256 -binary | openssl enc -base64
   static const productionPins = <String>{
-    // Let's Encrypt / typical chain — update when cert rotates.
-    // Pin format: base64(SHA256(SPKI))
+    // Leaf — api.aranyix.tech (Mar 2026)
+    '+w3nshcsLZg8wF9HanIqtlRHbMCpKRCITuzlQ3QUwoE=',
+    // Let's Encrypt intermediate / backup chain pins
+    's/tdAOmUzd8syaTuqfgGvFcn6DzA5Cmb+Vby1ST+U3Y=',
+    'sCkq5UWXjg+7mKu9lMhhYF5bGLsy7VI/UNW3tccdR7w=',
+    'diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=',
   };
 
   static void configureDio(Dio dio) {
@@ -32,12 +39,10 @@ class CertificatePinning {
         if (!kProductionApiHosts.contains(host)) {
           return false;
         }
-        if (!AppSettings.instance.certificatePinning || productionPins.isEmpty) {
+        if (!kReleaseMode || !AppSettings.instance.certificatePinning) {
           return true;
         }
-        // When pins are configured, reject unless SPKI matches.
-        // Until pins are populated, production relies on system CA + host allowlist.
-        return true;
+        return certificateMatchesAnyPin(cert, productionPins);
       };
       return client;
     };
