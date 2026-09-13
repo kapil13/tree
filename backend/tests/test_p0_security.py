@@ -64,6 +64,10 @@ def _set_prod_base(monkeypatch) -> None:
     monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
     monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
     monkeypatch.setenv("EVIDENCE_SIGNING_KEY", _EVIDENCE_SIGNING_KEY)
+    monkeypatch.setenv("AUTH_OTP_SMS_ENABLED", "true")
+    monkeypatch.setenv("MSG91_AUTH_KEY", "msg91-test-key")
+    monkeypatch.setenv("MSG91_OTP_TEMPLATE_ID", "login-tpl")
+    monkeypatch.setenv("MSG91_SIGNUP_OTP_TEMPLATE_ID", "signup-tpl")
 
 
 def test_production_boot_rejects_weak_jwt(monkeypatch):

@@ -34,9 +34,23 @@ def _prod_env(monkeypatch, **extra: str) -> Settings:
     monkeypatch.setenv("TURNSTILE_SITE_KEY", "site")
     monkeypatch.setenv("TURNSTILE_SECRET_KEY", "secret")
     monkeypatch.setenv("EVIDENCE_SIGNING_KEY", _EVIDENCE_SIGNING_KEY)
+    monkeypatch.setenv("AUTH_OTP_SMS_ENABLED", "true")
+    monkeypatch.setenv("MSG91_AUTH_KEY", "msg91-test-key")
+    monkeypatch.setenv("MSG91_OTP_TEMPLATE_ID", "login-tpl")
+    monkeypatch.setenv("MSG91_SIGNUP_OTP_TEMPLATE_ID", "signup-tpl")
     for key, value in extra.items():
         monkeypatch.setenv(key, value)
     return Settings(_env_file=None)
+
+
+def test_production_boot_requires_msg91_sms(monkeypatch):
+    s = _prod_env(monkeypatch)
+    monkeypatch.delenv("MSG91_AUTH_KEY", raising=False)
+    monkeypatch.setenv("AUTH_OTP_SMS_ENABLED", "false")
+    s = Settings(_env_file=None)
+    monkeypatch.setattr("app.core.production_guards.settings", s)
+    with pytest.raises(RuntimeError, match="MSG91"):
+        validate_runtime_settings()
 
 
 def test_production_boot_requires_captcha(monkeypatch):

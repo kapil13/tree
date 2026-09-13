@@ -100,6 +100,8 @@ openssl rand -hex 24   # MINIO_ROOT_PASSWORD
 | `SESSION_COOKIE_SECRET` | strong random hex |
 | `EVIDENCE_SIGNING_KEY` | base64-encoded 32-byte Ed25519 seed (required in production) |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (required in production) |
+| `AUTH_OTP_SMS_ENABLED` / `MSG91_AUTH_KEY` | Phone OTP via MSG91 (required in production) |
+| `MSG91_OTP_TEMPLATE_ID` / `MSG91_SIGNUP_OTP_TEMPLATE_ID` | DLT templates for login and signup OTP |
 | `MINIO_ROOT_PASSWORD` | strong random |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | from Google Cloud Console |
 | `SENTINEL_HUB_CLIENT_ID` / `SECRET` | from Copernicus |

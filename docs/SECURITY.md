@@ -45,6 +45,7 @@ This document describes **what the codebase actually implements today** on the H
 * `APP_DEBUG=true` in production
 * `AUTH_ALLOW_DEV_OTP=true`
 * Turnstile keys missing
+* MSG91 SMS OTP not configured (`AUTH_OTP_SMS_ENABLED`, `MSG91_AUTH_KEY`, login + signup template IDs)
 * Razorpay configured without `RAZORPAY_WEBHOOK_SECRET`
 * `EVIDENCE_SIGNING_KEY` missing or invalid
 
