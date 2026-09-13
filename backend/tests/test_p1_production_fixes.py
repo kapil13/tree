@@ -117,10 +117,12 @@ async def test_bioacoustic_load_fence_not_found():
 
     from app.api.v1.bioacoustic import _load_fence_for_user
 
-    with patch(
-        "app.services.planting_projects.access.load_work_area",
-        new=AsyncMock(return_value=None),
+    with (
+        patch(
+            "app.services.planting_projects.access.load_work_area",
+            new=AsyncMock(return_value=None),
+        ),
+        pytest.raises(HTTPException) as exc,
     ):
-        with pytest.raises(HTTPException) as exc:
-            await _load_fence_for_user(uuid.uuid4(), MagicMock(), AsyncMock())
+        await _load_fence_for_user(uuid.uuid4(), MagicMock(), AsyncMock())
     assert exc.value.status_code == 404
