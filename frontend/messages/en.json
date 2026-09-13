@@ -1086,7 +1086,19 @@
     "purpose": "Set up & plant · Map",
     "title": "Map",
     "description": "Tap a tree for actions (AI, survival survey, passport). Clusters appear when zoomed out — green = healthy, amber = moderate, red = unhealthy.",
-    "loading": "Loading map…"
+    "loading": "Loading map…",
+    "bootstrapLimit": "Showing the first {shown} of {total} trees on the map. Zoom in or use filters to refine.",
+    "treeOutsideProjectFilter": "This tree is outside the active project filter ({project}). Clear the filter to see the full portfolio.",
+    "activeProjectFallback": "selected project",
+    "emptyNoTreesTitle": "No trees in this organization yet",
+    "emptyNoTreesDesc": "Register a tree with GPS to place your first pin on the map.",
+    "emptyFilterTitle": "No trees match these filters",
+    "emptyFilterDesc": "Clear health filters or pan to another area.",
+    "emptyProjectTitle": "No trees in {project}",
+    "emptyProjectDesc": "This project filter is active. Clear it to view trees from other projects, or register a tree in this project.",
+    "clearFilters": "Clear filters",
+    "registerFirstTree": "Register first tree",
+    "browseTrees": "Browse trees"
   },
   "stewardship": {
     "title": "Stewardship hub",

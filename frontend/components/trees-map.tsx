@@ -41,8 +41,11 @@ import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
 import {
   MAP_BOOTSTRAP_PAGE_SIZE,
   MAP_FIT_PADDING,
+  MAP_MIN_ZOOM,
   SINGLE_TREE_MAP_ZOOM,
   boundsFromTrees,
+  clampMapZoom,
+  isBootstrapTruncated,
   mergeTreesById,
   treesWithValidCoords,
 } from "@/lib/map-bounds";
@@ -172,6 +175,10 @@ function MapCameraFit({
     const bounds = boundsFromTrees(validTrees);
     if (!bounds) return;
     map.fitBounds(bounds, MAP_FIT_PADDING);
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      const nextZoom = clampMapZoom(map.getZoom(), MAP_MIN_ZOOM);
+      if (nextZoom != null) map.setZoom(nextZoom);
+    });
   }, [enabled, map, trees, fitKey]);
 
   return null;
@@ -236,6 +243,7 @@ export function TreesMap({
   showFilters = false,
 }: TreesMapProps) {
   const t = useTranslations("trees");
+  const tm = useTranslations("map");
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -322,6 +330,8 @@ export function TreesMap({
   });
 
   const bootstrapItems = bootstrapData?.items ?? [];
+  const bootstrapTotal = bootstrapData?.total ?? bootstrapItems.length;
+  const bootstrapTruncated = isBootstrapTruncated(bootstrapTotal);
   const viewportItems = viewportData?.items ?? [];
   const items = useMemo(() => {
     const merged = mergeTreesById(bootstrapItems, viewportItems);
@@ -331,6 +341,12 @@ export function TreesMap({
   const total = viewportData?.total ?? bootstrapData?.total ?? items.length;
   const clusters = useMemo(() => clusterTrees(items, zoom), [items, zoom]);
   const hasFilters = !!projectId || health !== "all";
+  const activeProjectName = projects.find((project) => project.id === projectId)?.name;
+  const treeOutsideProjectFilter =
+    !!treeIdFromUrl &&
+    !!focusedTree &&
+    !!projectId &&
+    focusedTree.project_id !== projectId;
   const error = bootstrapError ?? viewportError;
   const isLoading = bootstrapLoading && !bootstrapData;
   const isFetching = viewportFetching;
@@ -404,6 +420,23 @@ export function TreesMap({
             ))}
           </div>
         </div>
+      ) : null}
+
+      {bootstrapTruncated && !treeIdFromUrl ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {tm("bootstrapLimit", {
+            shown: MAP_BOOTSTRAP_PAGE_SIZE,
+            total: bootstrapTotal,
+          })}
+        </p>
+      ) : null}
+
+      {treeOutsideProjectFilter ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+          {tm("treeOutsideProjectFilter", {
+            project: activeProjectName ?? tm("activeProjectFallback"),
+          })}
+        </p>
       ) : null}
 
       <div
@@ -491,16 +524,26 @@ export function TreesMap({
           >
             <EmptyState
               icon={TreePine}
-              title={hasFilters ? "No trees match these filters" : "No trees in this view"}
+              title={
+                hasFilters
+                  ? projectId
+                    ? tm("emptyProjectTitle", {
+                        project: activeProjectName ?? tm("activeProjectFallback"),
+                      })
+                    : tm("emptyFilterTitle")
+                  : tm("emptyNoTreesTitle")
+              }
               description={
                 hasFilters
-                  ? "Clear project or health filters, or pan to another area."
-                  : "Tag a tree with GPS to pin it here, or pan if your trees are outside this area."
+                  ? projectId
+                    ? tm("emptyProjectDesc")
+                    : tm("emptyFilterDesc")
+                  : tm("emptyNoTreesDesc")
               }
               action={
                 hasFilters
                   ? {
-                      label: "Clear filters",
+                      label: tm("clearFilters"),
                       onClick: () => {
                         setProjectId("");
                         setContextProjectId(null);
@@ -508,8 +551,8 @@ export function TreesMap({
                       },
                     }
                   : canAdd
-                    ? { label: "Tag first tree", href: "/trees/new" }
-                    : { label: "Browse trees", href: "/trees" }
+                    ? { label: tm("registerFirstTree"), href: "/trees/new" }
+                    : { label: tm("browseTrees"), href: "/trees" }
               }
               className="max-w-md bg-white py-8 shadow-sm"
             />

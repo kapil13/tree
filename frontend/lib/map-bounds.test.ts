@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  MAP_MIN_ZOOM,
   boundsFromTrees,
   centroidFromTrees,
+  clampMapZoom,
   hasValidCoords,
+  isBootstrapTruncated,
   mergeTreesById,
   treesWithValidCoords,
 } from "./map-bounds";
@@ -35,6 +38,30 @@ describe("boundsFromTrees", () => {
       east: 77.21,
       west: 75.74,
     });
+  });
+
+  it("computes bounds for a single tree", () => {
+    expect(boundsFromTrees([{ latitude: 26.88, longitude: 75.74 }])).toEqual({
+      north: 26.88,
+      south: 26.88,
+      east: 75.74,
+      west: 75.74,
+    });
+  });
+});
+
+describe("clampMapZoom", () => {
+  it("caps zoomed-out portfolios at the minimum zoom", () => {
+    expect(clampMapZoom(3)).toBe(MAP_MIN_ZOOM);
+    expect(clampMapZoom(8)).toBe(8);
+    expect(clampMapZoom(null)).toBeNull();
+  });
+});
+
+describe("isBootstrapTruncated", () => {
+  it("detects when the bootstrap page size is exceeded", () => {
+    expect(isBootstrapTruncated(150)).toBe(false);
+    expect(isBootstrapTruncated(151)).toBe(true);
   });
 });
 

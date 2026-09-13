@@ -11,6 +11,7 @@ export type LatLngBoundsLiteral = {
 
 export const MAP_FIT_PADDING = 48;
 export const SINGLE_TREE_MAP_ZOOM = 15;
+export const MAP_MIN_ZOOM = 5;
 export const MAP_BOOTSTRAP_PAGE_SIZE = 150;
 
 export function hasValidCoords(point: MapPoint): boolean {
@@ -47,6 +48,18 @@ export function centroidFromTrees(trees: MapPoint[]): { lat: number; lng: number
   const lat = valid.reduce((sum, tree) => sum + tree.latitude, 0) / valid.length;
   const lng = valid.reduce((sum, tree) => sum + tree.longitude, 0) / valid.length;
   return { lat, lng };
+}
+
+export function clampMapZoom(
+  zoom: number | null | undefined,
+  minZoom: number = MAP_MIN_ZOOM,
+): number | null {
+  if (zoom == null || !Number.isFinite(zoom)) return null;
+  return Math.max(zoom, minZoom);
+}
+
+export function isBootstrapTruncated(total: number, pageSize: number = MAP_BOOTSTRAP_PAGE_SIZE): boolean {
+  return total > pageSize;
 }
 
 export function mergeTreesById<T extends { id: string }>(...groups: T[][]): T[] {

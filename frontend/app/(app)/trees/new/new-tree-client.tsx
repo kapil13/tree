@@ -45,6 +45,7 @@ import {
   type QueuedTreePhoto,
 } from "@/lib/offline/tree-registration-queue";
 import { isBrowserOnline, isNetworkFailure } from "@/lib/offline/tree-registration-sync";
+import { notifyTreeRegistered } from "@/lib/tree-registration-success";
 
 const SCHEME_PROGRAM_CODES = new Set(["government_nhai", "ngo_community", "corporate_esg"]);
 
@@ -421,6 +422,13 @@ export function NewTreePageClient() {
       }
 
       if (action === "exit" || !isProjectMode || !projectIdParam) {
+        notifyTreeRegistered({
+          id: tree.id,
+          public_code: tree.public_code,
+          project_id: tree.project_id ?? projectIdParam,
+          latitude: tree.latitude,
+          longitude: tree.longitude,
+        });
         router.push(`/trees/${tree.id}`);
         return;
       }
@@ -439,6 +447,13 @@ export function NewTreePageClient() {
       );
       const suggested = ctx.suggested_next;
       if (!suggested) {
+        notifyTreeRegistered({
+          id: tree.id,
+          public_code: tree.public_code,
+          project_id: tree.project_id ?? projectIdParam,
+          latitude: tree.latitude,
+          longitude: tree.longitude,
+        });
         router.push(`/trees/${tree.id}`);
         return;
       }
