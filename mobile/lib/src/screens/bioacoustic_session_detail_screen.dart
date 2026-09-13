@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,10 +30,39 @@ String _tierLabel(String? tier) {
   }
 }
 
-class BioacousticSessionDetailScreen extends ConsumerWidget {
+bool _analysisPending(String status) {
+  return status != 'analyzed' && status != 'failed';
+}
+
+class BioacousticSessionDetailScreen extends ConsumerStatefulWidget {
   const BioacousticSessionDetailScreen({super.key, required this.recordingId});
 
   final String recordingId;
+
+  @override
+  ConsumerState<BioacousticSessionDetailScreen> createState() =>
+      _BioacousticSessionDetailScreenState();
+}
+
+class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSessionDetailScreen> {
+  Timer? _pollTimer;
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _syncPolling(String status) {
+    if (!_analysisPending(status)) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      return;
+    }
+    _pollTimer ??= Timer.periodic(const Duration(seconds: 3), (_) {
+      ref.invalidate(bioacousticRecordingProvider(widget.recordingId));
+    });
+  }
 
   Color _iucnColor(String? status) {
     switch (status) {
@@ -47,11 +79,12 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recordingAsync = ref.watch(bioacousticRecordingProvider(recordingId));
+  Widget build(BuildContext context) {
+    final recordingAsync = ref.watch(bioacousticRecordingProvider(widget.recordingId));
+    final l10n = AppLocalizations.of(context);
 
     return stackRouteScaffold(
-      location: '/bioacoustic/$recordingId',
+      location: '/bioacoustic/${widget.recordingId}',
       appBar: const PrototypeBackBar(title: 'Session detail'),
       body: recordingAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
@@ -64,7 +97,7 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
                 Text(apiErrorMessage(e), textAlign: TextAlign.center),
                 const SizedBox(height: 12),
                 FilledButton(
-                  onPressed: () => ref.invalidate(bioacousticRecordingProvider(recordingId)),
+                  onPressed: () => ref.invalidate(bioacousticRecordingProvider(widget.recordingId)),
                   child: const Text('Retry'),
                 ),
               ],
@@ -72,10 +105,14 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
           ),
         ),
         data: (rec) {
+          final status = rec['status'] as String? ?? 'analyzed';
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _syncPolling(status);
+          });
+
           final detections = List<Map<String, dynamic>>.from(rec['species_detections'] ?? []);
           final site = rec['plantation_fence_name'] as String? ?? rec['site_name'] as String? ?? 'Field site';
           final duration = (rec['duration_seconds'] as num?)?.toStringAsFixed(0) ?? '—';
-          final status = rec['status'] as String? ?? 'analyzed';
           final created = rec['created_at'] as String? ?? '';
           final score = rec['biodiversity_confidence_score'] ?? rec['bioacoustic_health_score'];
           final shannon = rec['shannon_diversity_index'];
@@ -84,6 +121,15 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (_analysisPending(status)) ...[
+                LinearProgressIndicator(color: PrototypeColors.brandCanopy),
+                const SizedBox(height: 8),
+                Text(
+                  l10n?.bioAnalysisRunning ?? 'Analysis running…',
+                  style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+              ],
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -153,7 +199,9 @@ class BioacousticSessionDetailScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               if (detections.isEmpty)
                 Text(
-                  'No species detections yet.',
+                  _analysisPending(status)
+                      ? 'Species detections will appear when analysis completes.'
+                      : 'No species detections yet.',
                   style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
                 )
               else

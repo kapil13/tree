@@ -62,6 +62,43 @@ class AppLocalizationsHi extends AppLocalizations {
   String get language => 'भाषा';
 
   @override
+  String get appearance => 'दिखावट';
+
+  @override
+  String get themeSystem => 'सिस्टम के अनुसार';
+
+  @override
+  String get themeLight => 'लाइट';
+
+  @override
+  String get themeDark => 'डार्क';
+
+  @override
+  String addTreeChainageNext(String label) {
+    return 'अगला चेनेज: $label';
+  }
+
+  @override
+  String get addTreeProjectMeasurementsHint =>
+      'परियोजना MRV के लिए वैकल्पिक पुनः माप — खेत में न मापा हो तो खाली छोड़ें।';
+
+  @override
+  String get citizenStewardshipTitle => 'नागरिक देखभाल';
+
+  @override
+  String citizenStewardshipTrees(int count) {
+    return '$count पेड़ पंजीकृत';
+  }
+
+  @override
+  String citizenStewardshipDue(int count) {
+    return '$count देखभाल जांच बकाया';
+  }
+
+  @override
+  String get bioAnalysisRunning => 'विश्लेषण चल रहा है…';
+
+  @override
   String get languageEnglish => 'अंग्रेज़ी';
 
   @override

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../app_bootstrap.dart';
+import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
 import '../services/security_services.dart';
@@ -160,6 +161,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   groupValue: settings.locale ?? const Locale('en'),
                   onChanged: (value) => settings.setLocale(value),
                 ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(l10n.appearance, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeSystem),
+                  value: ThemeMode.system,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) {
+                    if (value != null) settings.setThemeMode(value);
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeLight),
+                  value: ThemeMode.light,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) {
+                    if (value != null) settings.setThemeMode(value);
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text(l10n.themeDark),
+                  value: ThemeMode.dark,
+                  groupValue: settings.themeMode,
+                  onChanged: (value) {
+                    if (value != null) settings.setThemeMode(value);
+                  },
+                ),
+                if (_isCitizenUser(user)) ...[
+                  const Divider(),
+                  _CitizenStewardshipCard(userId: user['id'] as String?),
+                ],
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -368,5 +401,95 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       const Divider(),
     ];
+  }
+
+  bool _isCitizenUser(Map<String, dynamic> user) {
+    return user['role'] == 'citizen' && !userHasProfessionalAccess(user);
+  }
+}
+
+class _CitizenStewardshipCard extends ConsumerStatefulWidget {
+  const _CitizenStewardshipCard({this.userId});
+
+  final String? userId;
+
+  @override
+  ConsumerState<_CitizenStewardshipCard> createState() => _CitizenStewardshipCardState();
+}
+
+class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard> {
+  Map<String, dynamic>? _stewardship;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_load);
+  }
+
+  Future<void> _load() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final profile = await api.citizenProfile();
+      final stewardship = await api.citizenStewardship();
+      if (!mounted) return;
+      setState(() {
+        _stewardship = {
+          ...profile,
+          ...stewardship,
+        };
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = apiErrorMessage(e);
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(_error!, style: Theme.of(context).textTheme.bodySmall),
+      );
+    }
+    final data = _stewardship ?? const <String, dynamic>{};
+    final treeCount = (data['tree_count'] as num?)?.toInt() ?? (data['trees_registered'] as num?)?.toInt() ?? 0;
+    final dueCount = (data['stewardship_due_count'] as num?)?.toInt() ?? (data['due_count'] as num?)?.toInt() ?? 0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.citizenStewardshipTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(l10n.citizenStewardshipTrees(treeCount)),
+              if (dueCount > 0) ...[
+                const SizedBox(height: 4),
+                Text(
+                  l10n.citizenStewardshipDue(dueCount),
+                  style: const TextStyle(color: AranyixColors.warningOnContainer),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

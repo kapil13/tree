@@ -180,7 +180,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
         return;
       }
 
-      setState(() => _status = gpsNote ?? l10n?.bioUploading ?? 'Uploading and analyzing…');
+      setState(() => _status = gpsNote ?? l10n?.bioUploading ?? 'Uploading recording…');
       try {
         final api = await ref.read(apiClientProvider.future);
         final rec = await api.uploadBioacousticRecording(
@@ -190,12 +190,13 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
           longitude: gps.lon,
           plantationFenceId: _selectedFenceId,
         );
-        await api.analyzeBioacousticRecording(rec['id'] as String);
+        await api.requestBioacousticAnalysis(rec['id'] as String);
         ref.invalidate(bioacousticRecordingsProvider);
         ref.invalidate(dashboardProvider);
         if (mounted) {
-          setState(() => _status = l10n?.bioAnalysisComplete ?? 'Analysis complete. See results below.');
+          setState(() => _status = l10n?.bioAnalysisRunning ?? 'Analysis running…');
           _tabs.animateTo(1);
+          context.push('/bioacoustic/${rec['id']}');
         }
       } catch (e) {
         if (isUnauthorizedError(e)) rethrow;

@@ -1028,6 +1028,22 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
             decoration: InputDecoration(labelText: l10n.addTreeSpecies),
             onChanged: (_) => _runComplianceCheck(),
           ),
+        if (_isProjectMode && _chainageEnabled && _chainageLabel != null && _chainageLabel!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Text(
+              l10n.addTreeChainageNext(_chainageLabel!),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
         if (_isProjectMode && _chainageEnabled) ...[
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -1114,41 +1130,42 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
               onChanged: (_) => _runComplianceCheck(),
             ),
         ],
-        if (!_isProjectMode) ...[
-          const SizedBox(height: 16),
-          Text(l10n.addTreeMeasurementsTitle, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(l10n.addTreeMeasurementsHint, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _measurementMethod,
-            decoration: InputDecoration(labelText: l10n.addTreeMeasurementMethod),
-            items: _measurementMethods
-                .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
-                .toList(),
-            onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _dbh,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: l10n.addTreeDbh, hintText: '12.5'),
-                ),
+        const SizedBox(height: 16),
+        Text(l10n.addTreeMeasurementsTitle, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          _isProjectMode ? l10n.addTreeProjectMeasurementsHint : l10n.addTreeMeasurementsHint,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _measurementMethod,
+          decoration: InputDecoration(labelText: l10n.addTreeMeasurementMethod),
+          items: _measurementMethods
+              .map((m) => DropdownMenuItem(value: m.$1, child: Text(m.$2)))
+              .toList(),
+          onChanged: _busy ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _dbh,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.addTreeDbh, hintText: '12.5'),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _height,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: l10n.addTreeHeight, hintText: '3.2'),
-                ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _height,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: l10n.addTreeHeight, hintText: '3.2'),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         if (!_projectSetupBlocks)
           FilledButton(

@@ -105,4 +105,10 @@ class SurvivalSurveySyncService extends ChangeNotifier {
     }
     return _syncedThisRun;
   }
+
+  @override
+  void dispose() {
+    stopListening();
+    super.dispose();
+  }
 }

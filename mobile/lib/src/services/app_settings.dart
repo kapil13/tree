@@ -11,10 +11,12 @@ class AppSettings extends ChangeNotifier {
   static const _certPinningKey = 'byot_cert_pinning';
   static const _analyticsKey = 'byot_analytics_enabled';
   static const _pushKey = 'byot_push_enabled';
+  static const _themeModeKey = 'byot_theme_mode';
 
   static final AppSettings instance = AppSettings._();
 
   Locale? _locale;
+  ThemeMode _themeMode = ThemeMode.system;
   bool _biometricUnlock = false;
   bool _screenshotGuard = false;
   bool _certificatePinning = true;
@@ -23,6 +25,7 @@ class AppSettings extends ChangeNotifier {
   bool _loaded = false;
 
   Locale? get locale => _locale;
+  ThemeMode get themeMode => _themeMode;
   bool get biometricUnlock => _biometricUnlock;
   bool get screenshotGuard => _screenshotGuard;
   bool get certificatePinning => _certificatePinning;
@@ -39,8 +42,31 @@ class AppSettings extends ChangeNotifier {
     _certificatePinning = prefs.getBool(_certPinningKey) ?? true;
     _analyticsEnabled = prefs.getBool(_analyticsKey) ?? true;
     _pushEnabled = prefs.getBool(_pushKey) ?? true;
+    _themeMode = _themeModeFromStorage(prefs.getString(_themeModeKey));
     _loaded = true;
     notifyListeners();
+  }
+
+  static ThemeMode _themeModeFromStorage(String? raw) {
+    switch (raw) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  static String _themeModeToStorage(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.system:
+        return 'system';
+    }
   }
 
   Future<void> setLocale(Locale? locale) async {
@@ -86,6 +112,13 @@ class AppSettings extends ChangeNotifier {
     _pushEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_pushKey, value);
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, _themeModeToStorage(mode));
     notifyListeners();
   }
 }

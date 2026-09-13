@@ -286,5 +286,72 @@ TextTheme _buildTextTheme() {
   );
 }
 
-/// Product uses a refined light theme for field readability.
-ThemeData get byotDarkTheme => byotLightTheme;
+/// Dark theme for low-light field use and system appearance matching.
+ThemeData get byotDarkTheme {
+  const darkSurface = Color(0xFF101A15);
+  const darkElevated = Color(0xFF16241D);
+  const darkOnSurface = Color(0xFFE5EDE8);
+  const darkMuted = Color(0xFF9FB5A8);
+  const darkBorder = Color(0xFF2A3D32);
+
+  final textTheme = _buildTextTheme().apply(
+    bodyColor: darkOnSurface,
+    displayColor: darkOnSurface,
+  );
+  final scheme = ColorScheme.fromSeed(
+    seedColor: AranyixColors.forestMuted,
+    brightness: Brightness.dark,
+    surface: darkSurface,
+  ).copyWith(
+    primary: AranyixColors.forestMuted,
+    onPrimary: AranyixColors.forestDark,
+    primaryContainer: const Color(0xFF1E3D2C),
+    onPrimaryContainer: darkOnSurface,
+    surface: darkSurface,
+    onSurface: darkOnSurface,
+    onSurfaceVariant: darkMuted,
+    outline: darkBorder,
+    error: const Color(0xFFF87171),
+    errorContainer: const Color(0xFF3F1D1D),
+    onErrorContainer: const Color(0xFFFECACA),
+  );
+
+  return byotLightTheme.copyWith(
+    brightness: Brightness.dark,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: const Color(0xFF0B1410),
+    textTheme: textTheme,
+    primaryTextTheme: textTheme,
+    dividerColor: darkBorder,
+    appBarTheme: byotLightTheme.appBarTheme.copyWith(
+      backgroundColor: darkSurface,
+      foregroundColor: darkOnSurface,
+      systemOverlayStyle: SystemUiOverlayStyle.light,
+      titleTextStyle: textTheme.titleLarge?.copyWith(color: darkOnSurface),
+    ),
+    cardTheme: byotLightTheme.cardTheme.copyWith(
+      color: darkElevated,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AranyixRadii.card),
+        side: const BorderSide(color: darkBorder),
+      ),
+    ),
+    inputDecorationTheme: byotLightTheme.inputDecorationTheme.copyWith(
+      fillColor: darkElevated,
+      labelStyle: const TextStyle(color: darkMuted, fontWeight: FontWeight.w500),
+      hintStyle: const TextStyle(color: darkMuted, fontSize: 15),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AranyixRadii.input),
+        borderSide: const BorderSide(color: darkBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AranyixRadii.input),
+        borderSide: const BorderSide(color: AranyixColors.forestMuted, width: 1.6),
+      ),
+    ),
+    navigationBarTheme: byotLightTheme.navigationBarTheme.copyWith(
+      backgroundColor: darkElevated,
+      indicatorColor: const Color(0xFF1E3D2C),
+    ),
+  );
+}

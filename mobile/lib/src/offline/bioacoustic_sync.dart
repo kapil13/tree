@@ -62,12 +62,13 @@ class BioacousticSyncService extends ChangeNotifier {
         if (!await isOnline()) break;
         try {
           await _queue.markSyncing(item.id);
-          await api.uploadBioacousticRecording(
+          final rec = await api.uploadBioacousticRecording(
             filePath: item.filePath,
             durationSeconds: item.durationSeconds,
             latitude: item.latitude,
             longitude: item.longitude,
           );
+          await api.requestBioacousticAnalysis(rec['id'] as String);
           await _queue.remove(item.id);
           _syncedThisRun++;
         } catch (e) {

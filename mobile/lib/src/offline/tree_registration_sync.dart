@@ -109,4 +109,10 @@ class TreeRegistrationSyncService extends ChangeNotifier {
     }
     return _syncedThisRun;
   }
+
+  @override
+  void dispose() {
+    stopListening();
+    super.dispose();
+  }
 }

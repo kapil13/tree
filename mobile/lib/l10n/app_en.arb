@@ -24,6 +24,37 @@
     }
   },
   "language": "Language",
+  "appearance": "Appearance",
+  "themeSystem": "Match system",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "addTreeChainageNext": "Next chainage: {label}",
+  "@addTreeChainageNext": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "addTreeProjectMeasurementsHint": "Optional remeasurements for project MRV — leave blank if not measured in the field.",
+  "citizenStewardshipTitle": "Citizen stewardship",
+  "citizenStewardshipTrees": "{count} trees registered",
+  "@citizenStewardshipTrees": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "citizenStewardshipDue": "{count} stewardship check-ins due",
+  "@citizenStewardshipDue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bioAnalysisRunning": "Analysis running…",
   "languageEnglish": "English",
   "languageHindi": "Hindi",
   "security": "Security",

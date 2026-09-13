@@ -1145,12 +1145,17 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id, {bool force = false}) async {
+  /// Queues analysis without blocking on the long-running poll loop.
+  Future<Map<String, dynamic>> requestBioacousticAnalysis(String id, {bool force = false}) async {
     final r = await _dio.post(
       '/bioacoustic/recordings/$id/analyze',
       queryParameters: force ? {'force': true} : null,
     );
-    final data = Map<String, dynamic>.from(r.data);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id, {bool force = false}) async {
+    final data = await requestBioacousticAnalysis(id, force: force);
     final status = data['status'] as String? ?? '';
     if (status == 'analyzed') {
       return getBioacousticRecording(id);

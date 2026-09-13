@@ -18,7 +18,7 @@ class AssistantScreen extends ConsumerStatefulWidget {
 }
 
 class _AssistantScreenState extends ConsumerState<AssistantScreen> {
-  final _input = TextEditingController(text: 'How much CO2 will 50 Neem trees sequester in 10 years?');
+  final _input = TextEditingController();
   final List<({String role, String text})> _msgs = [];
   bool busy = false;
 
@@ -41,6 +41,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
   }
 
   @override

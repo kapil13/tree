@@ -200,6 +200,66 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Match system'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @addTreeChainageNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next chainage: {label}'**
+  String addTreeChainageNext(String label);
+
+  /// No description provided for @addTreeProjectMeasurementsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional remeasurements for project MRV — leave blank if not measured in the field.'**
+  String get addTreeProjectMeasurementsHint;
+
+  /// No description provided for @citizenStewardshipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Citizen stewardship'**
+  String get citizenStewardshipTitle;
+
+  /// No description provided for @citizenStewardshipTrees.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees registered'**
+  String citizenStewardshipTrees(int count);
+
+  /// No description provided for @citizenStewardshipDue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stewardship check-ins due'**
+  String citizenStewardshipDue(int count);
+
+  /// No description provided for @bioAnalysisRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis running…'**
+  String get bioAnalysisRunning;
+
   /// No description provided for @languageEnglish.
   ///
   /// In en, this message translates to:

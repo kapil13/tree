@@ -259,7 +259,7 @@ class ByotApp extends ConsumerWidget {
             debugShowCheckedModeBanner: false,
             theme: byotLightTheme,
             darkTheme: byotDarkTheme,
-            themeMode: ThemeMode.light,
+            themeMode: AppSettings.instance.themeMode,
             locale: AppSettings.instance.locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

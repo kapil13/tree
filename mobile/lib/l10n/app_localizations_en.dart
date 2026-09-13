@@ -62,6 +62,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get themeSystem => 'Match system';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String addTreeChainageNext(String label) {
+    return 'Next chainage: $label';
+  }
+
+  @override
+  String get addTreeProjectMeasurementsHint =>
+      'Optional remeasurements for project MRV — leave blank if not measured in the field.';
+
+  @override
+  String get citizenStewardshipTitle => 'Citizen stewardship';
+
+  @override
+  String citizenStewardshipTrees(int count) {
+    return '$count trees registered';
+  }
+
+  @override
+  String citizenStewardshipDue(int count) {
+    return '$count stewardship check-ins due';
+  }
+
+  @override
+  String get bioAnalysisRunning => 'Analysis running…';
+
+  @override
   String get languageEnglish => 'English';
 
   @override
