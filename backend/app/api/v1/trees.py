@@ -107,12 +107,12 @@ def _as_float(value) -> float | None:
 
 
 def _image_out(img: TreeImage) -> TreeImageOut:
-    cdn_url = img.cdn_url
-    if not cdn_url:
-        try:
-            cdn_url = get_storage().presigned_get(img.s3_key, expires_in=3600)
-        except Exception:
-            cdn_url = None
+    # Always mint a fresh presigned URL — stored cdn_url values may be stale or unreachable.
+    cdn_url: str | None = None
+    try:
+        cdn_url = get_storage().presigned_get(img.s3_key, expires_in=3600)
+    except Exception:
+        cdn_url = img.cdn_url
     return TreeImageOut(
         id=img.id,
         tree_id=img.tree_id,
@@ -607,13 +607,20 @@ async def list_trees(
     for t in rows:
         pt = to_shape(t.location)
         meta = t.metadata_ or {}
-        primary_image_url: str | None = None
+        primary_image: TreeImage | None = None
         for img in t.images or []:
-            image_out = _image_out(img)
-            if image_out.cdn_url:
-                primary_image_url = image_out.cdn_url
             if img.is_primary:
+                primary_image = img
                 break
+        if primary_image is None and t.images:
+            primary_image = t.images[0]
+
+        primary_image_url: str | None = None
+        primary_image_id: uuid.UUID | None = None
+        if primary_image is not None:
+            primary_image_id = primary_image.id
+            image_out = _image_out(primary_image)
+            primary_image_url = image_out.cdn_url
 
         items.append(
             TreeListItem(
@@ -635,6 +642,7 @@ async def list_trees(
                 last_geotag_at=t.last_geotag_at,
                 survival_status=meta.get("survival_status") if isinstance(meta.get("survival_status"), str) else None,
                 chainage_km=meta.get("chainage_km") if meta.get("chainage_km") is not None else None,
+                primary_image_id=primary_image_id,
                 primary_image_url=primary_image_url,
             )
         )
