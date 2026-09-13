@@ -1585,28 +1585,33 @@ class PrototypeCaptureProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = step.clamp(0, totalSteps) / totalSteps;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFE8F5EC),
-              color: PrototypeColors.brandForest,
+    final progressLabel = label ?? 'Step $step of $totalSteps';
+    return Semantics(
+      label: progressLabel,
+      value: '${(progress * 100).round()}%',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFE8F5EC),
+                color: PrototypeColors.brandForest,
+              ),
             ),
-          ),
-          if (label != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              label!,
-              style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: PrototypeColors.textPrimary),
-            ),
+            if (label != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                label!,
+                style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600, color: PrototypeColors.textPrimary),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

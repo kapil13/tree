@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../offline/offline_tree_cache.dart';
 import '../nav_access.dart';
 import '../providers.dart';
@@ -90,6 +91,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
         });
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       final cached = await OfflineTreeCache.loadDetail(widget.id);
       if (mounted) {
         if (cached != null) {
@@ -118,6 +120,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       ref.invalidate(treesProvider);
       ref.invalidate(dashboardProvider);
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),

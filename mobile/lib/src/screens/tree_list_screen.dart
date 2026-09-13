@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../project_context.dart';
 import '../providers.dart';
@@ -94,6 +95,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
         });
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       final cached = await OfflineTreeCache.loadList(projectId: _projectFilter);
       if (mounted) {
         if (cached != null && cached.items.isNotEmpty) {

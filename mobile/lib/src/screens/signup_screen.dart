@@ -57,6 +57,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
 
+  bool get _isCitizenFast => _category == 'byot';
+
+  int get _totalSignupSteps => _isCitizenFast ? 2 : 3;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +81,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   double get _progress {
+    if (_isCitizenFast) {
+      return switch (_step) {
+        _SignupStep.account => 0.5,
+        _SignupStep.verifyPhone => 1.0,
+        _SignupStep.verifyEmail => 1.0,
+      };
+    }
     return switch (_step) {
       _SignupStep.account => 0.34,
       _SignupStep.verifyPhone => 0.67,
@@ -86,9 +97,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   String get _stepLabel {
     return switch (_step) {
-      _SignupStep.account => 'Step 1 of 3',
-      _SignupStep.verifyPhone => 'Step 2 of 3',
-      _SignupStep.verifyEmail => 'Step 3 of 3',
+      _SignupStep.account => 'Step 1 of $_totalSignupSteps',
+      _SignupStep.verifyPhone => 'Step 2 of $_totalSignupSteps',
+      _SignupStep.verifyEmail => 'Step $_totalSignupSteps of $_totalSignupSteps',
     };
   }
 
@@ -97,7 +108,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       setState(() => _error = 'Please enter your full name.');
       return;
     }
-    if (!_email.text.contains('@')) {
+    if (!_isCitizenFast && !_email.text.contains('@')) {
       setState(() => _error = 'Please enter a valid email address.');
       return;
     }
@@ -105,8 +116,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       setState(() => _error = humanizeAuthError('invalid_phone'));
       return;
     }
-    if (_password.text.length < 12) {
-      setState(() => _error = 'Password must be at least 12 characters.');
+    final minPassword = _isCitizenFast ? 8 : 12;
+    if (_password.text.length < minPassword) {
+      setState(() => _error = 'Password must be at least $minPassword characters.');
       return;
     }
     if (!_acceptedTerms) {
@@ -126,14 +138,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     try {
       final api = await ref.read(apiClientProvider.future);
       await api.clearLocalSession();
-      final res = await api.signupStart(
-        fullName: _name.text.trim(),
-        email: _email.text.trim(),
-        phone: phoneForApi(_phone.text),
-        password: _password.text,
-        signupCategory: _category,
-        captchaToken: _captchaToken,
-      );
+      final res = _isCitizenFast
+          ? await api.citizenSignupStart(
+              fullName: _name.text.trim(),
+              phone: phoneForApi(_phone.text),
+              password: _password.text,
+              captchaToken: _captchaToken,
+            )
+          : await api.signupStart(
+              fullName: _name.text.trim(),
+              email: _email.text.trim(),
+              phone: phoneForApi(_phone.text),
+              password: _password.text,
+              signupCategory: _category,
+              captchaToken: _captchaToken,
+            );
       setState(() {
         _signupToken = res.signupToken;
         if (kDebugMode) {
@@ -168,6 +187,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
     try {
       final api = await ref.read(apiClientProvider.future);
+      if (_isCitizenFast) {
+        final tokens = await api.citizenSignupComplete(
+          signupToken: _signupToken,
+          code: _phoneOtp,
+        );
+        await api.setTokens(
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        );
+        final landing = await completeAuthSession(ref, afterSignup: true);
+        if (!mounted) return;
+        context.go(landing);
+        return;
+      }
       await api.signupVerifyPhone(signupToken: _signupToken, code: _phoneOtp);
     } catch (e) {
       setState(() => _error = apiErrorMessage(e));
@@ -318,7 +351,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             else if (_step == _SignupStep.verifyPhone)
               FilledButton(
                 onPressed: _busy ? null : _verifyPhone,
-                child: Text(_busy ? 'Verifying…' : 'Verify phone'),
+                child: Text(
+                  _busy
+                      ? 'Verifying…'
+                      : _isCitizenFast
+                          ? 'Finish'
+                          : 'Verify phone',
+                ),
               )
             else
               FilledButton(
@@ -375,17 +414,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             prefixIcon: Icon(Icons.person_outline, size: 20),
           ),
         ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            labelText: l10n.emailLabel,
-            prefixIcon: const Icon(Icons.mail_outline, size: 20),
+        if (!_isCitizenFast) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.emailLabel,
+              prefixIcon: const Icon(Icons.mail_outline, size: 20),
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 10),
         TextField(
           controller: _phone,
@@ -414,7 +455,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(
             labelText: l10n.passwordLabel,
-            helperText: 'Min. 12 characters',
+            helperText: _isCitizenFast ? 'Min. 8 characters' : 'Min. 12 characters',
             helperMaxLines: 1,
             prefixIcon: const Icon(Icons.lock_outline, size: 20),
             suffixIcon: IconButton(

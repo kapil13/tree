@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
+import '../widgets/responsive_content.dart';
 import '../location_helper.dart';
 import '../l10n/setup_labels.dart';
 import '../project_setup_readiness.dart';
@@ -555,14 +557,22 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return Row(
       children: [
         if (_wizardStep > 0)
-          OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack))
+          Semantics(
+            button: true,
+            label: l10n.addTreeBack,
+            child: OutlinedButton(onPressed: _busy ? null : _prevWizardStep, child: Text(l10n.addTreeBack)),
+          )
         else
           const SizedBox(width: 1),
         const Spacer(),
         if (!onLastStep && !setupBlocked)
-          FilledButton(
-            onPressed: _busy ? null : _nextWizardStep,
-            child: Text(l10n.addTreeNext),
+          Semantics(
+            button: true,
+            label: l10n.addTreeNext,
+            child: FilledButton(
+              onPressed: _busy ? null : _nextWizardStep,
+              child: Text(l10n.addTreeNext),
+            ),
           ),
       ],
     );
@@ -705,13 +715,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       }
       context.go('/trees/${t['id']}');
     } catch (e) {
-      if (isUnauthorizedError(e)) {
-        if (mounted) {
-          setState(() {
-            _busy = false;
-            _err = apiErrorMessage(e);
-          });
-        }
+      if (maybeRedirectUnauthorized(ref, context, e)) {
+        if (mounted) setState(() => _busy = false);
         return;
       }
       if (!isOfflineOrNetworkError(e)) {
@@ -785,7 +790,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     return stackRouteScaffold(
       location: '/trees/new',
       appBar: ShellTopBar(title: title, menuWithBack: true),
-      body: Column(
+      body: ResponsiveContent(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _wizardProgress(l10n),
@@ -828,6 +834,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           ),
           _wizardStickyFooter(l10n, onLastStep: onLastStep),
         ],
+      ),
       ),
     );
   }

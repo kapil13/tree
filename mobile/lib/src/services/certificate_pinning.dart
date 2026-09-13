@@ -39,7 +39,10 @@ class CertificatePinning {
         if (!kProductionApiHosts.contains(host)) {
           return false;
         }
-        if (!kReleaseMode || !AppSettings.instance.certificatePinning) {
+        if (kReleaseMode) {
+          return certificateMatchesAnyPin(cert, productionPins);
+        }
+        if (!AppSettings.instance.certificatePinning) {
           return true;
         }
         return certificateMatchesAnyPin(cert, productionPins);

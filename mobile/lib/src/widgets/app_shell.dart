@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../nav_groups.dart';
@@ -60,6 +61,16 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider);
+    ref.listen(userProvider, (prev, next) {
+      if (next.hasError) {
+        maybeRedirectUnauthorized(ref, context, next.error!);
+      }
+    });
+    ref.listen(dashboardProvider, (prev, next) {
+      if (next.hasError) {
+        maybeRedirectUnauthorized(ref, context, next.error!);
+      }
+    });
     final user = sessionController.user ?? userAsync.valueOrNull;
     if (sessionController.authenticated && user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => ensureSessionUser(ref));

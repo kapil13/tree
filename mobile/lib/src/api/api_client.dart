@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/signup_api.dart';
 import 'api_base_url.dart';
 import 'api_errors.dart';
+import 'upload_mime.dart';
 import '../services/certificate_pinning.dart';
 import '../session.dart';
 
@@ -1005,8 +1006,13 @@ class ApiClient {
 
   Future<String> uploadImageFile(String filePath, {String? filename}) async {
     final name = filename ?? filePath.split('/').last;
+    final contentType = mimeTypeForUploadPath(filePath);
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: name),
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: name,
+        contentType: contentType != null ? DioMediaType.parse(contentType) : null,
+      ),
     });
     final r = await _dio.post(
       '/uploads/image',
@@ -1129,8 +1135,13 @@ class ApiClient {
   }) async {
     final basename = filePath.split('/').last;
     final filename = basename.contains('.') ? basename : 'recording.wav';
+    final contentType = mimeTypeForUploadPath(filePath) ?? 'audio/wav';
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: filename),
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: filename,
+        contentType: DioMediaType.parse(contentType),
+      ),
       'duration_seconds': durationSeconds,
       'latitude': latitude,
       'longitude': longitude,
@@ -1245,29 +1256,37 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> citizenSignupStart({
+  Future<SignupStartResult> citizenSignupStart({
     required String fullName,
     required String phone,
     required String password,
     String? captchaToken,
   }) async {
-    final r = await _dio.post('/citizen/signup/start', data: {
-      'full_name': fullName,
-      'phone': phone,
-      'password': password,
-      if (captchaToken != null) 'captcha_token': captchaToken,
-    });
-    return Map<String, dynamic>.from(r.data);
+    final r = await _dio.post(
+      '/citizen/signup/start',
+      data: {
+        'full_name': fullName,
+        'phone': phone,
+        'password': password,
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseSignupStartResponse(r.data);
   }
 
-  Future<Map<String, dynamic>> citizenSignupComplete({
+  Future<AuthTokenResult> citizenSignupComplete({
     required String signupToken,
     required String code,
   }) async {
-    final r = await _dio.post('/citizen/signup/complete', data: {
-      'signup_token': signupToken,
-      'code': code,
-    });
-    return Map<String, dynamic>.from(r.data);
+    final r = await _dio.post(
+      '/citizen/signup/complete',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseTokenResponse(r.data);
   }
 }
