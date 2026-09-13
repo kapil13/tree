@@ -30,6 +30,7 @@ import { PhotoUploadZone } from "@/components/registration/photo-upload-zone";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrustChip, trustToneFromProvider } from "@/components/ui/trust-chip";
 import { trees, aiScans, errorMessage, intelligence, plantingProjects, uploads } from "@/lib/api";
+import { mapHrefForTree } from "@/lib/map-links";
 import { citizen } from "@/lib/citizen-api";
 import { useAuth } from "@/lib/auth-store";
 import { resolveIntegrityRemediation } from "@/lib/integrity-remediation";
@@ -570,9 +571,14 @@ export function TreeDetailView() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {primaryCta}
+            {tree.latitude != null && tree.longitude != null ? (
+              <Link href={mapHrefForTree(tree)} className="btn-secondary">
+                <MapPin className="h-4 w-4" /> View on map
+              </Link>
+            ) : null}
             {mapsUrl ? (
               <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary">
-                <ExternalLink className="h-4 w-4" /> Maps
+                <ExternalLink className="h-4 w-4" /> Google Maps
               </a>
             ) : null}
           </div>

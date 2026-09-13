@@ -12,6 +12,7 @@ export function useMapProjectScope() {
     useProjectContext();
 
   const projectIdFromUrl = searchParams.get("project");
+  const treeIdFromUrl = searchParams.get("tree");
   const projectId = projectIdFromUrl ?? contextProjectId;
 
   const projectName = useMemo(
@@ -22,13 +23,23 @@ export function useMapProjectScope() {
   const seededProjectFromUrl = useRef(false);
 
   useEffect(() => {
+    if (treeIdFromUrl) {
+      if (projectIdFromUrl && !contextProjectId && !seededProjectFromUrl.current) {
+        seededProjectFromUrl.current = true;
+        setProjectId(projectIdFromUrl);
+      }
+      return;
+    }
+
     if (projectIdFromUrl && !contextProjectId && !seededProjectFromUrl.current) {
       seededProjectFromUrl.current = true;
       setProjectId(projectIdFromUrl);
       return;
     }
 
-    const plan = planMapScopeSync(projectIdFromUrl, contextProjectId);
+    const plan = planMapScopeSync(projectIdFromUrl, contextProjectId, {
+      treeId: treeIdFromUrl,
+    });
     if (plan.setContextProjectId) {
       setProjectId(plan.setContextProjectId);
       return;
@@ -36,7 +47,7 @@ export function useMapProjectScope() {
     if (plan.replaceHref) {
       router.replace(plan.replaceHref, { scroll: false });
     }
-  }, [projectIdFromUrl, contextProjectId, setProjectId, router]);
+  }, [treeIdFromUrl, projectIdFromUrl, contextProjectId, setProjectId, router]);
 
   return { projectId, projectName };
 }

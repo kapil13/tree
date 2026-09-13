@@ -18,6 +18,7 @@ import { useProjectContext } from "@/lib/project-context";
 import { canWriteInApp, userHasProfessionalAccess } from "@/lib/nav-access";
 import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
 import { cn } from "@/lib/cn";
+import { mapHrefForTree } from "@/lib/map-links";
 import { parseTreesRegistryCategory } from "@/lib/trees-registry-links";
 
 const PAGE_SIZE = 25;
@@ -596,12 +597,20 @@ export function TreeRegistry() {
                           </dd>
                         </div>
                       </dl>
-                      <Link
-                        href={`/trees/${t.id}`}
-                        className="btn-secondary mt-3 w-full justify-center text-xs"
-                      >
-                        View tree
-                      </Link>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Link
+                          href={mapHrefForTree(t)}
+                          className="btn-secondary justify-center text-xs"
+                        >
+                          {tt("viewOnMap")}
+                        </Link>
+                        <Link
+                          href={`/trees/${t.id}`}
+                          className="btn-secondary justify-center text-xs"
+                        >
+                          View tree
+                        </Link>
+                      </div>
                     </article>
                   );
                 })}
@@ -708,12 +717,20 @@ export function TreeRegistry() {
                             <LocationLink latitude={t.latitude} longitude={t.longitude} />
                           </td>
                           <td className="text-right">
-                            <Link
-                              href={`/trees/${t.id}`}
-                              className="text-forest-700 hover:underline"
-                            >
-                              View
-                            </Link>
+                            <div className="flex flex-col items-end gap-1 text-xs">
+                              <Link
+                                href={mapHrefForTree(t)}
+                                className="text-forest-700 hover:underline"
+                              >
+                                {tt("viewOnMap")}
+                              </Link>
+                              <Link
+                                href={`/trees/${t.id}`}
+                                className="text-stone-600 hover:underline"
+                              >
+                                View
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       );

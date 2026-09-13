@@ -1393,6 +1393,7 @@
     "program": "Program",
     "plantingProject": "Planting project",
     "noPlantingProject": "Not linked to a planting project",
+    "viewOnMap": "View on map",
     "emptyTitle": "No trees registered yet",
     "emptyDesc": "Register your first tree to start tracking health, carbon, and map pins.",
     "loadError": "Could not load trees"

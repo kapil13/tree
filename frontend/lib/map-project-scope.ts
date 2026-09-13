@@ -9,15 +9,18 @@ export type MapScopeSyncPlan = {
 export function planMapScopeSync(
   urlProjectId: string | null,
   contextProjectId: string | null,
+  options?: { treeId?: string | null },
 ): MapScopeSyncPlan {
   if (urlProjectId === contextProjectId) return {};
 
+  const treeId = options?.treeId ?? undefined;
+
   if (urlProjectId && !contextProjectId) {
-    return { replaceHref: mapHref() };
+    return { replaceHref: mapHref({ treeId }) };
   }
 
   if (contextProjectId) {
-    return { replaceHref: mapHref({ projectId: contextProjectId }) };
+    return { replaceHref: mapHref({ projectId: contextProjectId, treeId }) };
   }
 
   return {};

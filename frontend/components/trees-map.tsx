@@ -12,7 +12,8 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps";
 import { FileText, MapPin, Sparkles, TreePine, X } from "lucide-react";
-import { plantingProjects, trees, errorMessage, type Tree } from "@/lib/api";
+import { plantingProjects, trees, errorMessage, type Tree, type TreeDetail } from "@/lib/api";
+import { TREE_FOCUS_MAP_ZOOM } from "@/lib/map-links";
 import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
 import { EmptyState } from "@/components/ui/empty-state";
 import { showToast } from "@/components/toast";
@@ -122,18 +123,40 @@ type TreesMapProps = {
   showFilters?: boolean;
 };
 
+function treeDetailToMapTree(detail: TreeDetail): Tree | null {
+  if (detail.latitude == null || detail.longitude == null) return null;
+  const primaryImage = detail.images.find((image) => image.is_primary) ?? detail.images[0];
+  return {
+    id: detail.id,
+    public_code: detail.public_code,
+    species_text: detail.species_text,
+    current_health: detail.current_health,
+    current_carbon_kg: detail.current_carbon_kg,
+    satellite_verified: detail.satellite_verified,
+    latitude: detail.latitude,
+    longitude: detail.longitude,
+    created_at: detail.registered_at,
+    program_code: detail.program_code,
+    project_id: detail.project_id,
+    primary_image_id: primaryImage?.id ?? null,
+    primary_image_url: primaryImage?.cdn_url ?? null,
+  };
+}
+
 function MapCameraFit({
   trees,
   fitKey,
+  enabled = true,
 }: {
   trees: Tree[];
   fitKey: string;
+  enabled?: boolean;
 }) {
   const map = useMap();
   const lastFitKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !enabled) return;
 
     const validTrees = treesWithValidCoords(trees);
     if (!validTrees.length) return;
@@ -149,7 +172,32 @@ function MapCameraFit({
     const bounds = boundsFromTrees(validTrees);
     if (!bounds) return;
     map.fitBounds(bounds, MAP_FIT_PADDING);
-  }, [map, trees, fitKey]);
+  }, [enabled, map, trees, fitKey]);
+
+  return null;
+}
+
+function MapTreeFocus({
+  tree,
+  focusKey,
+  onSelect,
+}: {
+  tree: Tree | null;
+  focusKey: string | null;
+  onSelect: (tree: Tree) => void;
+}) {
+  const map = useMap();
+  const lastFocusKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !tree || !focusKey) return;
+    if (lastFocusKey.current === focusKey) return;
+    lastFocusKey.current = focusKey;
+
+    map.setCenter({ lat: tree.latitude, lng: tree.longitude });
+    map.setZoom(TREE_FOCUS_MAP_ZOOM);
+    onSelect(tree);
+  }, [map, tree, focusKey, onSelect]);
 
   return null;
 }
@@ -203,12 +251,25 @@ export function TreesMap({
     setProjectId(contextProjectId ?? "");
   }, [contextProjectId]);
 
+  const treeIdFromUrl = searchParams.get("tree");
+
   useEffect(() => {
     const urlProject = searchParams.get("project");
     if (!urlProject) return;
     setProjectId(urlProject);
     setContextProjectId(urlProject);
   }, [searchParams, setContextProjectId]);
+
+  const { data: focusedTreeDetail } = useQuery({
+    queryKey: ["trees-map-focus", treeIdFromUrl],
+    queryFn: () => trees.get(treeIdFromUrl!),
+    enabled: !!treeIdFromUrl,
+  });
+
+  const focusedTree = useMemo(
+    () => (focusedTreeDetail ? treeDetailToMapTree(focusedTreeDetail) : null),
+    [focusedTreeDetail],
+  );
 
   const onBounds = useCallback((next: BBox, nextZoom: number) => {
     setBbox(next);
@@ -262,10 +323,11 @@ export function TreesMap({
 
   const bootstrapItems = bootstrapData?.items ?? [];
   const viewportItems = viewportData?.items ?? [];
-  const items = useMemo(
-    () => mergeTreesById(bootstrapItems, viewportItems),
-    [bootstrapItems, viewportItems],
-  );
+  const items = useMemo(() => {
+    const merged = mergeTreesById(bootstrapItems, viewportItems);
+    if (focusedTree) return mergeTreesById(merged, [focusedTree]);
+    return merged;
+  }, [bootstrapItems, viewportItems, focusedTree]);
   const total = viewportData?.total ?? bootstrapData?.total ?? items.length;
   const clusters = useMemo(() => clusterTrees(items, zoom), [items, zoom]);
   const hasFilters = !!projectId || health !== "all";
@@ -273,7 +335,7 @@ export function TreesMap({
   const isLoading = bootstrapLoading && !bootstrapData;
   const isFetching = viewportFetching;
   const showEmptyCta =
-    !isLoading && !error && items.length === 0 && !isFetching;
+    !isLoading && !error && items.length === 0 && !isFetching && !focusedTree;
   const cameraFitKey = scopeKey;
 
   if (!apiKey) {
@@ -381,7 +443,16 @@ export function TreesMap({
             streetViewControl={false}
             style={{ width: "100%", height: "100%" }}
           >
-            <MapCameraFit trees={bootstrapItems} fitKey={cameraFitKey} />
+            <MapCameraFit
+              trees={bootstrapItems}
+              fitKey={cameraFitKey}
+              enabled={!treeIdFromUrl}
+            />
+            <MapTreeFocus
+              tree={focusedTree}
+              focusKey={treeIdFromUrl}
+              onSelect={setSelected}
+            />
             <MapViewportSync onBounds={onBounds} />
 
             {clusters.map((cluster) =>

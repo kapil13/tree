@@ -19,4 +19,13 @@ describe("planMapScopeSync", () => {
       replaceHref: "/map?project=proj-ctx",
     });
   });
+
+  it("preserves tree deep link when syncing project scope", () => {
+    expect(planMapScopeSync(null, "proj-1", { treeId: "tree-1" })).toEqual({
+      replaceHref: "/map?project=proj-1&tree=tree-1",
+    });
+    expect(planMapScopeSync("proj-1", null, { treeId: "tree-1" })).toEqual({
+      replaceHref: "/map?tree=tree-1",
+    });
+  });
 });
