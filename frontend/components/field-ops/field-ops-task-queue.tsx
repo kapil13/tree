@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AlertTriangle, ClipboardList, MapPin, TreePine } from "lucide-react";
+import { violationActionHref } from "@/lib/compliance-violation-links";
 import { projectSecondaryHref } from "@/lib/project-focused-ui";
 import { survivalDueTreesHref } from "@/lib/trees-registry-links";
 import { cn } from "@/lib/cn";
@@ -41,9 +42,7 @@ export function buildFieldOpsTasks(summary: FieldOpsSummary): FieldOpsTask[] {
       id: `violation-${violation.id}`,
       title: violation.project_name,
       detail: violation.message,
-      href: violation.tree_id
-        ? `/trees/${violation.tree_id}`
-        : projectSecondaryHref(violation.project_id, "compliance"),
+      href: violationActionHref(violation.project_id, violation.tree_id),
       tone: violation.severity === "critical" || violation.severity === "high" ? "critical" : "warning",
       kind: "violation",
     });

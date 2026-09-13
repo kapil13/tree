@@ -19,6 +19,7 @@ import {
   auditEngagementStatusTone,
 } from "@/lib/audit-portfolio-status";
 import { fieldOpsHref } from "@/lib/field-ops-links";
+import { scopeAuditPortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { projectAuditHref } from "@/lib/project-focused-ui";
 import { scopedKey } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-store";
@@ -86,6 +87,9 @@ export function PortfolioAuditTab({
     ? data.projects.filter((p) => p.id === projectId)
     : data.projects;
   const queueItems = queueQ.data?.items ?? [];
+  const scopedKpis = scopeAuditPortfolioKpis(data, projectId);
+  const statusEntries = Object.entries(scopedKpis.byStatus ?? {}).sort((a, b) => b[1] - a[1]);
+  const auditFieldOpsHref = fieldOpsHref({ section: "audit", projectId });
 
   if (data.estate_project_count === 0 || projects.length === 0) {
     return (
@@ -97,7 +101,6 @@ export function PortfolioAuditTab({
     );
   }
 
-  const statusEntries = Object.entries(data.by_status ?? {}).sort((a, b) => b[1] - a[1]);
   const attentionProjects = projects.filter(
     (p) =>
       p.audit_plots_due > 0 ||
@@ -109,13 +112,13 @@ export function PortfolioAuditTab({
 
   const crossLinks = [
     {
-      href: fieldOpsHref({ section: "audit" }),
+      href: auditFieldOpsHref,
       icon: ClipboardList,
       label: t("crossLinks.fieldOps"),
       description: t("crossLinks.fieldOpsDesc"),
     },
     {
-      href: fieldOpsHref({ section: "audit" }),
+      href: auditFieldOpsHref,
       icon: Smartphone,
       label: t("crossLinks.mobile"),
       description: t("crossLinks.mobileDesc"),
@@ -169,32 +172,32 @@ export function PortfolioAuditTab({
         <PortfolioKpiCard
           icon={ClipboardCheck}
           label={t("kpi.engagements")}
-          value={String(data.engagement_count)}
+          value={String(scopedKpis.engagementCount)}
         />
         <PortfolioKpiCard
           icon={MapPin}
           label={t("kpi.plotsDue")}
-          value={String(data.audit_plots_due)}
-          warn={data.audit_plots_due > 0}
-          href={fieldOpsHref({ section: "audit" })}
+          value={String(scopedKpis.auditPlotsDue)}
+          warn={scopedKpis.auditPlotsDue > 0}
+          href={auditFieldOpsHref}
         />
         <PortfolioKpiCard
           icon={MapPin}
           label={t("kpi.inField")}
-          value={String(data.engagements_in_field)}
-          warn={data.engagements_in_field > 0}
-          href={fieldOpsHref({ section: "audit" })}
+          value={String(scopedKpis.engagementsInField)}
+          warn={scopedKpis.engagementsInField > 0}
+          href={auditFieldOpsHref}
         />
         <PortfolioKpiCard
           icon={ShieldCheck}
           label={t("kpi.exportReady")}
-          value={String(data.engagements_export_ready)}
-          warn={data.engagements_export_ready > 0}
+          value={String(scopedKpis.engagementsExportReady)}
+          warn={scopedKpis.engagementsExportReady > 0}
         />
         <PortfolioKpiCard
           icon={Gavel}
           label={t("kpi.attested")}
-          value={String(data.engagements_attested)}
+          value={String(scopedKpis.engagementsAttested)}
         />
       </PortfolioKpiGrid>
 
@@ -220,7 +223,7 @@ export function PortfolioAuditTab({
       <PortfolioSection
         title={t("engagements.title")}
         description={t("engagements.desc")}
-        action={{ label: t("engagements.openFieldOps"), href: fieldOpsHref({ section: "audit" }) }}
+        action={{ label: t("engagements.openFieldOps"), href: auditFieldOpsHref }}
       >
         {attentionProjects.length === 0 ? (
           <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">{t("engagements.empty")}</p>
@@ -268,7 +271,7 @@ export function PortfolioAuditTab({
                   <td className="px-4 py-2 text-right">
                     {project.audit_plots_due > 0 ? (
                       <Link
-                        href={fieldOpsHref({ section: "audit" })}
+                        href={auditFieldOpsHref}
                         className="text-xs text-forest-700 hover:underline dark:text-forest-300"
                       >
                         {tc("relatedAudit")}
@@ -299,7 +302,7 @@ export function PortfolioAuditTab({
       <PortfolioSection
         title={t("fieldQueue.title")}
         description={t("fieldQueue.desc")}
-        action={{ label: t("fieldQueue.openQueue"), href: fieldOpsHref({ section: "audit" }) }}
+        action={{ label: t("fieldQueue.openQueue"), href: auditFieldOpsHref }}
       >
         {queueItems.length === 0 ? (
           <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">{t("fieldQueue.empty")}</p>
@@ -328,7 +331,7 @@ export function PortfolioAuditTab({
                   <td className="px-4 py-2 capitalize">{plot.risk_level}</td>
                   <td className="px-4 py-2 text-right">
                     <Link
-                      href={fieldOpsHref({ section: "audit" })}
+                      href={auditFieldOpsHref}
                       className="text-xs text-forest-700 hover:underline dark:text-forest-300"
                     >
                       {t("fieldQueue.recordVisit")}

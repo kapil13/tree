@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CompliancePortfolioSummary, IntelligenceSummary } from "@/lib/api";
 import {
   maxCompositeRisk,
+  scopeAuditPortfolioKpis,
   scopeCompliancePortfolioKpis,
   scopeOverviewPortfolioKpis,
   scopeThreatPortfolioKpis,
@@ -202,6 +203,53 @@ describe("scopeThreatPortfolioKpis", () => {
       fireWatchCount: 1,
       floodWatchCount: 0,
       pestHighCount: 1,
+    });
+  });
+});
+
+describe("scopeAuditPortfolioKpis", () => {
+  const auditSummary = {
+    engagement_count: 3,
+    audit_plots_due: 7,
+    engagements_in_field: 2,
+    engagements_export_ready: 1,
+    engagements_attested: 1,
+    by_status: { field_verified: 2, export_ready: 1 },
+    projects: [
+      {
+        id: "p1",
+        engagement_id: "e1",
+        engagement_status: "field_verified",
+        audit_plots_due: 4,
+      },
+      {
+        id: "p2",
+        engagement_id: "e2",
+        engagement_status: "export_ready",
+        audit_plots_due: 3,
+      },
+    ],
+  };
+
+  it("returns org-wide totals when unscoped", () => {
+    expect(scopeAuditPortfolioKpis(auditSummary, null)).toEqual({
+      engagementCount: 3,
+      auditPlotsDue: 7,
+      engagementsInField: 2,
+      engagementsExportReady: 1,
+      engagementsAttested: 1,
+      byStatus: { field_verified: 2, export_ready: 1 },
+    });
+  });
+
+  it("scopes totals to one project", () => {
+    expect(scopeAuditPortfolioKpis(auditSummary, "p1")).toEqual({
+      engagementCount: 1,
+      auditPlotsDue: 4,
+      engagementsInField: 1,
+      engagementsExportReady: 0,
+      engagementsAttested: 0,
+      byStatus: { field_verified: 1 },
     });
   });
 });

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { Bird, Mic } from "lucide-react";
-import { bioacoustic, plantationFences } from "@/lib/api";
+import { bioacoustic, plantingProjects, plantationFences } from "@/lib/api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
@@ -12,6 +12,12 @@ import { PortfolioSection } from "./portfolio-section";
 import { PortfolioTabBanner } from "./portfolio-tab-banner";
 import { PortfolioTabError, PortfolioTabLoading } from "./portfolio-tab-state";
 import { PortfolioTabShell } from "./portfolio-tab-shell";
+
+type BioSite = {
+  id: string;
+  name: string;
+  area_ha: number | null;
+};
 
 export function PortfolioBiodiversityTab({
   projectId,
@@ -22,33 +28,68 @@ export function PortfolioBiodiversityTab({
 }) {
   const t = useTranslations("portfolioTabs.biodiversity");
 
-  const { data: bio, isLoading: bioLoading, error: bioError, refetch: refetchBio } = useQuery({
-    queryKey: ["bio-summary"],
-    queryFn: () => bioacoustic.summary(),
+  const [bioQ, fencesQ, workAreasQ] = useQueries({
+    queries: [
+      {
+        queryKey: ["bio-summary", projectId ?? "all"],
+        queryFn: async () => {
+          if (projectId) {
+            const workAreas = await plantingProjects.workAreas(projectId);
+            const primaryFenceId = workAreas[0]?.id;
+            if (!primaryFenceId) {
+              return {
+                total_recordings: 0,
+                analyzed_recordings: 0,
+                avg_health_score: null as number | null,
+                total_species_detected: 0,
+              };
+            }
+            return bioacoustic.summary(primaryFenceId);
+          }
+          return bioacoustic.summary();
+        },
+      },
+      {
+        queryKey: ["plantation-fences-bio", projectId ?? "all"],
+        queryFn: () => plantationFences.list({ page_size: 10 }),
+        enabled: !projectId,
+      },
+      {
+        queryKey: ["project-work-areas-bio", projectId ?? "none"],
+        queryFn: () => plantingProjects.workAreas(projectId!),
+        enabled: Boolean(projectId),
+      },
+    ],
   });
 
-  const { data: fences, isLoading: fencesLoading, error: fencesError, refetch: refetchFences } =
-    useQuery({
-      queryKey: ["plantation-fences-bio"],
-      queryFn: () => plantationFences.list({ page_size: 10 }),
-    });
-
-  if (bioLoading || fencesLoading) {
+  if (bioQ.isLoading || (projectId ? workAreasQ.isLoading : fencesQ.isLoading)) {
     return <PortfolioTabLoading />;
   }
 
-  if (bioError || fencesError || !bio) {
+  if (bioQ.error || (projectId ? workAreasQ.error : fencesQ.error) || !bioQ.data) {
     return (
       <PortfolioTabError
         onRetry={() => {
-          void refetchBio();
-          void refetchFences();
+          void bioQ.refetch();
+          if (projectId) void workAreasQ.refetch();
+          else void fencesQ.refetch();
         }}
       />
     );
   }
 
-  const fenceItems = fences?.items ?? [];
+  const bio = bioQ.data;
+  const fenceItems: BioSite[] = projectId
+    ? (workAreasQ.data ?? []).map((area) => ({
+        id: area.id,
+        name: area.name,
+        area_ha: area.area_ha,
+      }))
+    : (fencesQ.data?.items ?? []).map((fence) => ({
+        id: fence.id,
+        name: fence.name,
+        area_ha: fence.area_ha,
+      }));
   const analyzed = bio.analyzed_recordings ?? 0;
 
   return (
@@ -89,16 +130,16 @@ export function PortfolioBiodiversityTab({
           action={{ label: t("recordAtSite"), href: "/bioacoustic" }}
         >
           <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-            {fenceItems.map((fence) => (
+            {fenceItems.map((site) => (
               <li
-                key={fence.id}
+                key={site.id}
                 className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
               >
                 <div>
-                  <p className="font-medium text-stone-900 dark:text-stone-50">{fence.name}</p>
+                  <p className="font-medium text-stone-900 dark:text-stone-50">{site.name}</p>
                   <p className="text-xs text-stone-500 dark:text-stone-400">
-                    {fence.area_ha != null
-                      ? t("siteHa", { ha: fence.area_ha.toFixed(1) })
+                    {site.area_ha != null
+                      ? t("siteHa", { ha: site.area_ha.toFixed(1) })
                       : t("siteLabel")}
                   </p>
                 </div>

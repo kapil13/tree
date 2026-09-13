@@ -187,4 +187,53 @@ export function scopeOverviewPortfolioKpis({
   };
 }
 
+type AuditPortfolioProjectRow = {
+  id: string;
+  engagement_id: string | null;
+  engagement_status: string;
+  audit_plots_due: number;
+};
+
+type AuditPortfolioSummaryLike = {
+  engagement_count: number;
+  audit_plots_due: number;
+  engagements_in_field: number;
+  engagements_export_ready: number;
+  engagements_attested: number;
+  by_status: Record<string, number>;
+  projects: AuditPortfolioProjectRow[];
+};
+
+const IN_FIELD_STATUSES = new Set(["sampling_planned", "field_verified"]);
+const EXPORT_READY_STATUSES = new Set(["export_ready", "under_review"]);
+
+export function scopeAuditPortfolioKpis(
+  data: AuditPortfolioSummaryLike,
+  projectId?: string | null,
+) {
+  if (!projectId) {
+    return {
+      engagementCount: data.engagement_count,
+      auditPlotsDue: data.audit_plots_due,
+      engagementsInField: data.engagements_in_field,
+      engagementsExportReady: data.engagements_export_ready,
+      engagementsAttested: data.engagements_attested,
+      byStatus: data.by_status,
+    };
+  }
+
+  const projects = data.projects.filter((p) => p.id === projectId);
+  const project = projects[0];
+  const status = project?.engagement_status ?? "no_engagement";
+
+  return {
+    engagementCount: project?.engagement_id ? 1 : 0,
+    auditPlotsDue: project?.audit_plots_due ?? 0,
+    engagementsInField: IN_FIELD_STATUSES.has(status) ? 1 : 0,
+    engagementsExportReady: EXPORT_READY_STATUSES.has(status) ? 1 : 0,
+    engagementsAttested: status === "attested" ? 1 : 0,
+    byStatus: status ? { [status]: 1 } : {},
+  };
+}
+
 export type { CompliancePortfolioProjectRow };
