@@ -158,6 +158,20 @@ class AppLocalizationsHi extends AppLocalizations {
       'अभी कोई पेड़ अपनाया नहीं। अपनाने योग्य पेड़ देखें।';
 
   @override
+  String get citizenRelinquishTitle => 'इस पेड़ की देखभाल बंद करें?';
+
+  @override
+  String get citizenRelinquishConfirm =>
+      'इस अपनाए पेड़ के लिए आपको अब चेक-इन रिमाइंडर नहीं मिलेंगे। पेड़ का स्वामित्व मालिक के पास रहेगा।';
+
+  @override
+  String get citizenRelinquishAction => 'छोड़ें';
+
+  @override
+  String get citizenRelinquishSuccess =>
+      'आप अब इस पेड़ की देखभाल नहीं कर रहे हैं।';
+
+  @override
   String get bioAnalysisRunning => 'विश्लेषण चल रहा है…';
 
   @override
@@ -173,8 +187,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get biometricUnlock => 'बायोमेट्रिक से अनलॉक';
 
   @override
+  String get biometricGateTitle => 'Aranyix अनलॉक करें';
+
+  @override
   String get biometricUnlockHint =>
       'ऐप दोबारा खोलने पर फिंगरप्रिंट या फेस अनलॉक आवश्यक।';
+
+  @override
+  String get tryAgain => 'पुनः प्रयास करें';
+
+  @override
+  String get signInWithPassword => 'पासवर्ड से साइन इन करें';
+
+  @override
+  String get sessionExpired =>
+      'आपका सत्र समाप्त हो गया। जारी रखने के लिए फिर साइन इन करें।';
 
   @override
   String get biometricEnableFailed =>

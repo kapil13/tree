@@ -344,25 +344,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ],
             const SizedBox(height: 18),
             if (_step == _SignupStep.account)
-              FilledButton(
-                onPressed: _busy ? null : _startSignup,
-                child: Text(_busy ? 'Creating…' : 'Continue'),
+              Semantics(
+                button: true,
+                label: 'Continue',
+                child: FilledButton(
+                  onPressed: _busy ? null : _startSignup,
+                  child: Text(_busy ? 'Creating…' : 'Continue'),
+                ),
               )
             else if (_step == _SignupStep.verifyPhone)
-              FilledButton(
-                onPressed: _busy ? null : _verifyPhone,
-                child: Text(
-                  _busy
-                      ? 'Verifying…'
-                      : _isCitizenFast
-                          ? 'Finish'
-                          : 'Verify phone',
+              Semantics(
+                button: true,
+                label: _isCitizenFast ? 'Finish signup' : 'Verify phone',
+                child: FilledButton(
+                  onPressed: _busy ? null : _verifyPhone,
+                  child: Text(
+                    _busy
+                        ? 'Verifying…'
+                        : _isCitizenFast
+                            ? 'Finish'
+                            : 'Verify phone',
+                  ),
                 ),
               )
             else
-              FilledButton(
-                onPressed: _busy ? null : _completeSignup,
-                child: Text(_busy ? 'Finishing…' : 'Finish'),
+              Semantics(
+                button: true,
+                label: 'Finish signup',
+                child: FilledButton(
+                  onPressed: _busy ? null : _completeSignup,
+                  child: Text(_busy ? 'Finishing…' : 'Finish'),
+                ),
               ),
             const SizedBox(height: 8),
             TextButton(
@@ -405,64 +417,80 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ],
         ),
         const SizedBox(height: 18),
-        TextField(
-          controller: _name,
-          textCapitalization: TextCapitalization.words,
-          textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'Full name',
-            prefixIcon: Icon(Icons.person_outline, size: 20),
+        Semantics(
+          label: 'Full name',
+          textField: true,
+          child: TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Full name',
+              prefixIcon: Icon(Icons.person_outline, size: 20),
+            ),
           ),
         ),
         if (!_isCitizenFast) ...[
           const SizedBox(height: 10),
-          TextField(
-            controller: _email,
-            keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.emailLabel,
-              prefixIcon: const Icon(Icons.mail_outline, size: 20),
+          Semantics(
+            label: l10n.emailLabel,
+            textField: true,
+            child: TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l10n.emailLabel,
+                prefixIcon: const Icon(Icons.mail_outline, size: 20),
+              ),
             ),
           ),
         ],
         const SizedBox(height: 10),
-        TextField(
-          controller: _phone,
-          keyboardType: TextInputType.phone,
-          textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'Mobile',
-            prefixText: '+91  ',
-            hintText: '98765 43210',
-            prefixIcon: Icon(Icons.phone_iphone, size: 20),
+        Semantics(
+          label: 'Mobile phone number',
+          textField: true,
+          child: TextField(
+            controller: _phone,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Mobile',
+              prefixText: '+91  ',
+              hintText: '98765 43210',
+              prefixIcon: Icon(Icons.phone_iphone, size: 20),
+            ),
+            onChanged: (v) {
+              final d = sanitizePhoneDigits(v);
+              if (d != v) {
+                _phone.value = TextEditingValue(
+                  text: d,
+                  selection: TextSelection.collapsed(offset: d.length),
+                );
+              }
+            },
           ),
-          onChanged: (v) {
-            final d = sanitizePhoneDigits(v);
-            if (d != v) {
-              _phone.value = TextEditingValue(
-                text: d,
-                selection: TextSelection.collapsed(offset: d.length),
-              );
-            }
-          },
         ),
         const SizedBox(height: 10),
-        TextField(
-          controller: _password,
-          obscureText: _obscurePassword,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            labelText: l10n.passwordLabel,
-            helperText: _isCitizenFast ? 'Min. 8 characters' : 'Min. 12 characters',
-            helperMaxLines: 1,
-            prefixIcon: const Icon(Icons.lock_outline, size: 20),
-            suffixIcon: IconButton(
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                size: 20,
+        Semantics(
+          label: l10n.passwordLabel,
+          textField: true,
+          child: TextField(
+            controller: _password,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: l10n.passwordLabel,
+              helperText: _isCitizenFast ? 'Min. 8 characters' : 'Min. 12 characters',
+              helperMaxLines: 1,
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  size: 20,
+                ),
               ),
             ),
           ),

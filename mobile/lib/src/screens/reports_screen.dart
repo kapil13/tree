@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../plantation_reports.dart';
 import '../providers.dart';
@@ -65,6 +66,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         });
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         setState(() {
           _error = apiErrorMessage(e);

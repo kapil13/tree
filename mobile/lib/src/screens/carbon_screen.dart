@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/prototype/prototype_ui.dart';
@@ -56,6 +57,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
       );
       if (mounted) setState(() => _result = result);
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);

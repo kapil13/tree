@@ -362,6 +362,30 @@ abstract class AppLocalizations {
   /// **'No adopted trees yet. Browse adoptable trees to get started.'**
   String get citizenStewardshipEmptyAdopted;
 
+  /// No description provided for @citizenRelinquishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop stewarding this tree?'**
+  String get citizenRelinquishTitle;
+
+  /// No description provided for @citizenRelinquishConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer receive check-in reminders for this adopted tree. The tree owner keeps full ownership.'**
+  String get citizenRelinquishConfirm;
+
+  /// No description provided for @citizenRelinquishAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Relinquish'**
+  String get citizenRelinquishAction;
+
+  /// No description provided for @citizenRelinquishSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You are no longer stewarding this tree.'**
+  String get citizenRelinquishSuccess;
+
   /// No description provided for @bioAnalysisRunning.
   ///
   /// In en, this message translates to:
@@ -392,11 +416,35 @@ abstract class AppLocalizations {
   /// **'Unlock with biometrics'**
   String get biometricUnlock;
 
+  /// No description provided for @biometricGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Aranyix'**
+  String get biometricGateTitle;
+
   /// No description provided for @biometricUnlockHint.
   ///
   /// In en, this message translates to:
   /// **'Require fingerprint or face unlock when reopening the app.'**
   String get biometricUnlockHint;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @signInWithPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with password'**
+  String get signInWithPassword;
+
+  /// No description provided for @sessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired. Sign in again to continue.'**
+  String get sessionExpired;
 
   /// No description provided for @biometricEnableFailed.
   ///

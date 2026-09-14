@@ -9,6 +9,8 @@ import '../offline/audit_visit_queue.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/survival_survey_queue.dart';
 import '../offline/tree_registration_queue.dart';
+import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../providers.dart';
 import '../widgets/prototype/prototype_ui.dart';
 
@@ -103,7 +105,8 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         setState(() => _status = 'Synced ${treeCount + bioCount + auditCount + survivalCount} item(s)');
       }
     } catch (e) {
-      if (mounted) setState(() => _status = l10n.retry);
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
+      if (mounted) setState(() => _status = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _syncing = false);
     }

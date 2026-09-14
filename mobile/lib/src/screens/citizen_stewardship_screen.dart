@@ -126,6 +126,7 @@ class _CitizenStewardshipScreenState extends ConsumerState<CitizenStewardshipScr
                               l10n,
                               _adopted,
                               emptyLabel: l10n.citizenStewardshipEmptyAdopted,
+                              allowRelinquish: true,
                             ),
                           ],
                         ),
@@ -136,7 +137,43 @@ class _CitizenStewardshipScreenState extends ConsumerState<CitizenStewardshipScr
     );
   }
 
-  Widget _treeList(AppLocalizations l10n, List<dynamic> items, {required String emptyLabel}) {
+  Future<void> _relinquish(String treeId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.citizenRelinquishTitle),
+        content: Text(l10n.citizenRelinquishConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.citizenRelinquishAction)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.citizenRelinquishTree(treeId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.citizenRelinquishSuccess)),
+      );
+      await _load();
+    } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
+  }
+
+  Widget _treeList(
+    AppLocalizations l10n,
+    List<dynamic> items, {
+    required String emptyLabel,
+    bool allowRelinquish = false,
+  }) {
     if (items.isEmpty) {
       return Center(child: Text(emptyLabel, textAlign: TextAlign.center));
     }
@@ -163,7 +200,21 @@ class _CitizenStewardshipScreenState extends ConsumerState<CitizenStewardshipScr
                       onPressed: id.isEmpty ? null : () => context.push('/trees/$id/survival'),
                       child: Text(l10n.citizenStewardshipCheckIn),
                     )
-                  : const Icon(Icons.chevron_right),
+                  : allowRelinquish
+                      ? PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'relinquish' && id.isNotEmpty) {
+                              _relinquish(id);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'relinquish',
+                              child: Text(l10n.citizenRelinquishAction),
+                            ),
+                          ],
+                        )
+                      : const Icon(Icons.chevron_right),
               onTap: id.isEmpty ? null : () => context.push('/trees/$id'),
             ),
           );

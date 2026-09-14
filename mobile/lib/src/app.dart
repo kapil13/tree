@@ -46,6 +46,8 @@ import 'screens/audit_plot_visit_screen.dart';
 import 'screens/audit_workspace_screen.dart';
 import 'screens/citizen_adopt_screen.dart';
 import 'screens/citizen_stewardship_screen.dart';
+import 'api/auth_redirect.dart';
+import 'api/api_errors.dart';
 import 'widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -301,11 +303,14 @@ class _TreeDetailDeepLinkScreenState extends ConsumerState<TreeDetailDeepLinkScr
       final tree = await api.getTreeByPublicCode(widget.code);
       if (!mounted) return;
       context.go('/trees/${tree['id']}');
-    } catch (_) {
+    } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
-      final msg = AppLocalizations.of(context)?.deepLinkTreeNotFound ?? 'Tree not found.';
+      final msg = isUnauthorizedError(e)
+          ? (AppLocalizations.of(context)?.sessionExpired ?? 'Session expired.')
+          : (AppLocalizations.of(context)?.deepLinkTreeNotFound ?? 'Tree not found.');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      context.go('/home');
+      if (!isUnauthorizedError(e)) context.go('/home');
     }
   }
 

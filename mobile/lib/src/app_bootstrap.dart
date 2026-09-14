@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -136,6 +137,7 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     if (!_biometricGateOpen && AppSettings.instance.biometricUnlock) {
+      final l10n = AppLocalizations.of(context);
       return Material(
         child: SafeArea(
           child: Center(
@@ -146,23 +148,24 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> with WidgetsBinding
                 children: [
                   const Icon(Icons.fingerprint, size: 48),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Unlock Aranyix',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  Text(
+                    l10n?.biometricGateTitle ?? 'Unlock Aranyix',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Use biometrics to continue your session.',
+                  Text(
+                    l10n?.biometricUnlockHint ??
+                        'Require fingerprint or face unlock when reopening the app.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: _biometricPromptVisible ? _promptBiometric : null,
-                    child: const Text('Try again'),
+                    child: Text(l10n?.tryAgain ?? 'Try again'),
                   ),
                   TextButton(
                     onPressed: () => widget.router.go('/login'),
-                    child: const Text('Sign in with password'),
+                    child: Text(l10n?.signInWithPassword ?? 'Sign in with password'),
                   ),
                 ],
               ),

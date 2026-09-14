@@ -25,3 +25,16 @@ bool maybeRedirectUnauthorized(WidgetRef ref, BuildContext context, Object err) 
   });
   return true;
 }
+
+/// Listens to Riverpod async providers and redirects on session expiry.
+void listenUnauthorizedProvider(
+  WidgetRef ref,
+  BuildContext context,
+  ProviderListenable<AsyncValue<dynamic>> provider,
+) {
+  ref.listen(provider, (_, next) {
+    if (next.hasError) {
+      maybeRedirectUnauthorized(ref, context, next.error!);
+    }
+  });
+}

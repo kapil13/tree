@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../project_context.dart';
 import '../providers.dart';
 import '../widgets/shell_scaffold.dart';
@@ -37,6 +38,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
         _input.clear();
       });
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       setState(() => _msgs.add((role: 'assistant', text: apiErrorMessage(e))));
     } finally {
       if (mounted) setState(() => busy = false);

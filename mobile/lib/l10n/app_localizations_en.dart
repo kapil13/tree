@@ -159,6 +159,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'No adopted trees yet. Browse adoptable trees to get started.';
 
   @override
+  String get citizenRelinquishTitle => 'Stop stewarding this tree?';
+
+  @override
+  String get citizenRelinquishConfirm =>
+      'You will no longer receive check-in reminders for this adopted tree. The tree owner keeps full ownership.';
+
+  @override
+  String get citizenRelinquishAction => 'Relinquish';
+
+  @override
+  String get citizenRelinquishSuccess =>
+      'You are no longer stewarding this tree.';
+
+  @override
   String get bioAnalysisRunning => 'Analysis running…';
 
   @override
@@ -174,8 +188,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biometricUnlock => 'Unlock with biometrics';
 
   @override
+  String get biometricGateTitle => 'Unlock Aranyix';
+
+  @override
   String get biometricUnlockHint =>
       'Require fingerprint or face unlock when reopening the app.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get signInWithPassword => 'Sign in with password';
+
+  @override
+  String get sessionExpired =>
+      'Your session expired. Sign in again to continue.';
 
   @override
   String get biometricEnableFailed =>

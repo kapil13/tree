@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
@@ -42,6 +43,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
         });
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         setState(() {
           _error = apiErrorMessage(e);

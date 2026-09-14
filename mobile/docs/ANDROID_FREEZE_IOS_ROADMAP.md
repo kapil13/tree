@@ -16,10 +16,12 @@ Aranyix ships **Android first**. iOS starts only after Android is feature-comple
 
 Before starting iOS:
 
-1. Merge `cursor/mobile-full-app-apk-f2ba` (full surfaces + release APK workflow).
+1. Release signing + CI artifacts (APK + Play Store AAB) — see `.github/workflows/android-apk.yml`.
 2. Wire live FCM (`google-services.json` + `BYOT_FCM_ENABLED=true`) — device API is ready at `POST /api/v1/devices/register`.
-3. QA on physical devices: offline tree queue, deep links, biometrics, Hindi UI.
-4. Tag release `android-v1.0.0-freeze` and stop feature work on Android except hotfixes.
+3. QA on physical devices: offline tree queue, deep links, biometrics, Hindi UI, citizen stewardship relinquish.
+4. Tag release `android-v1.7.0-freeze` and stop feature work on Android except hotfixes.
+
+**Launch phases (P0–P7, `main`):** production signing, FCM, cert pinning, offline survival, session expiry coverage, citizen adoption/stewardship, Play Store AAB in CI, signup accessibility.
 
 ## iOS (after freeze)
 

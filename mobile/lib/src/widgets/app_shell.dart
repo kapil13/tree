@@ -61,16 +61,18 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider);
-    ref.listen(userProvider, (prev, next) {
-      if (next.hasError) {
-        maybeRedirectUnauthorized(ref, context, next.error!);
-      }
-    });
-    ref.listen(dashboardProvider, (prev, next) {
-      if (next.hasError) {
-        maybeRedirectUnauthorized(ref, context, next.error!);
-      }
-    });
+    for (final provider in [
+      userProvider,
+      dashboardProvider,
+      treesProvider,
+      alertsProvider,
+      monitoringSummaryProvider,
+      fieldOpsSummaryProvider,
+      bioacousticRecordingsProvider,
+      plantingProjectsProvider,
+    ]) {
+      listenUnauthorizedProvider(ref, context, provider);
+    }
     final user = sessionController.user ?? userAsync.valueOrNull;
     if (sessionController.authenticated && user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => ensureSessionUser(ref));

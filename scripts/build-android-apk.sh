@@ -13,8 +13,10 @@
 # FCM push (optional):
 #   cp mobile/android/app/google-services.json.example mobile/android/app/google-services.json
 #   BYOT_FCM_ENABLED=true ./scripts/build-android-apk.sh
+#   BUILD_AAB=1 ./scripts/build-android-apk.sh   # also build Play Store AAB
 #
 # Output: mobile/build/app/outputs/flutter-apk/app-release.apk
+#         mobile/build/app/outputs/bundle/release/app-release.aab (when BUILD_AAB=1)
 #
 # Prerequisites: Flutter 3.22+, Android SDK (Android Studio or cmdline-tools)
 
@@ -25,6 +27,7 @@ MOBILE="$ROOT/mobile"
 BYOT_API="${BYOT_API:-https://api.aranyix.tech}"
 BYOT_ALLOW_CUSTOM_API="${BYOT_ALLOW_CUSTOM_API:-false}"
 BYOT_FCM_ENABLED="${BYOT_FCM_ENABLED:-false}"
+BUILD_AAB="${BUILD_AAB:-false}"
 
 if ! command -v flutter >/dev/null 2>&1; then
   echo "ERROR: Flutter not found. Install from https://docs.flutter.dev/get-started/install"
@@ -36,6 +39,7 @@ echo "==> Flutter $(flutter --version | head -1)"
 echo "==> API base URL baked into APK: $BYOT_API"
 echo "==> BYOT_ALLOW_CUSTOM_API=$BYOT_ALLOW_CUSTOM_API"
 echo "==> BYOT_FCM_ENABLED=$BYOT_FCM_ENABLED"
+echo "==> BUILD_AAB=$BUILD_AAB"
 
 cd "$MOBILE"
 
@@ -96,4 +100,21 @@ if [[ -f "$APK" ]]; then
 else
   echo "ERROR: APK not found at $APK"
   exit 1
+fi
+
+if [[ "$BUILD_AAB" == "true" || "$BUILD_AAB" == "1" ]]; then
+  echo "==> Building release AAB (Play Store)..."
+  flutter build appbundle --release "${DART_DEFINES[@]}"
+  AAB="$MOBILE/build/app/outputs/bundle/release/app-release.aab"
+  NAMED_AAB="$MOBILE/build/app/outputs/bundle/release/aranyix-android-${VERSION}.aab"
+  if [[ -f "$AAB" ]]; then
+    cp "$AAB" "$ROOT/aranyix-android-${VERSION}.aab"
+    cp "$AAB" "$NAMED_AAB"
+    echo "  AAB: $AAB"
+    echo "  Copy: $ROOT/aranyix-android-${VERSION}.aab"
+    ls -lh "$AAB"
+  else
+    echo "ERROR: AAB not found at $AAB"
+    exit 1
+  fi
 fi
