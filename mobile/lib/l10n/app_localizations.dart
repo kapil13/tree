@@ -3391,6 +3391,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Capture plot visits from Field or Estate Watch audit'**
   String get auditSyncEmptyHint;
+
+  /// No description provided for @dashboardAlertsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get dashboardAlertsSection;
+
+  /// No description provided for @dashboardNoUrgentAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No urgent items'**
+  String get dashboardNoUrgentAlerts;
+
+  /// No description provided for @dashboardAlertsClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Field alerts are clear for now'**
+  String get dashboardAlertsClear;
+
+  /// No description provided for @pendingSyncBannerSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing offline data…'**
+  String get pendingSyncBannerSyncing;
+
+  /// No description provided for @pendingSyncBannerWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item waiting to sync when online} other{{count} items waiting to sync when online}}'**
+  String pendingSyncBannerWaiting(int count);
+
+  /// No description provided for @syncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncNow;
+
+  /// No description provided for @syncQueueAllSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'All synced'**
+  String get syncQueueAllSynced;
+
+  /// No description provided for @syncQueuePendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item pending} other{{count} items pending}}'**
+  String syncQueuePendingCount(int count);
+
+  /// No description provided for @syncQueueBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{trees} trees · {survival} survival · {audit} audit · {bio} bio'**
+  String syncQueueBreakdown(int trees, int survival, int audit, int bio);
+
+  /// No description provided for @fieldAlertsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Field alerts'**
+  String get fieldAlertsTitle;
+
+  /// No description provided for @addTreeWizardSiteSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Site & species'**
+  String get addTreeWizardSiteSpecies;
+
+  /// No description provided for @addTreeWizardGpsPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS & placement'**
+  String get addTreeWizardGpsPlacement;
+
+  /// No description provided for @addTreeWizardPhotosSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos & submit'**
+  String get addTreeWizardPhotosSubmit;
+
+  /// No description provided for @viewSyncQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'View sync queue'**
+  String get viewSyncQueue;
+
+  /// No description provided for @monitoringBioLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Bioacoustic summary unavailable'**
+  String get monitoringBioLoadError;
 }
 
 class _AppLocalizationsDelegate

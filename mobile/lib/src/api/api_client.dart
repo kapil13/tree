@@ -491,8 +491,13 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> dashboard() async =>
-      Map<String, dynamic>.from((await _dio.get('/dashboard')).data);
+  Future<Map<String, dynamic>> dashboard({String? projectId}) async {
+    final r = await _dio.get(
+      '/dashboard',
+      queryParameters: projectId != null ? {'project_id': projectId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
 
   Future<List<dynamic>> listTrees({
     int page = 1,

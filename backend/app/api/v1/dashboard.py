@@ -2,24 +2,42 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+import uuid
+
+from fastapi import APIRouter, Query
 from sqlalchemy import case, func, select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.bioacoustic_recording import BioacousticRecording
+from app.models.plantation_fence import PlantationFence
 from app.models.tree import Tree
 from app.schemas.dashboard import KPI, BioacousticDashboardKpi, DashboardResponse, SeriesPoint
 from app.schemas.threat_watch import ThreatWatchResponse
 from app.services.dashboard.carbon_series import build_carbon_growth_series
 from app.services.dashboard.kpi_uncertainty import portfolio_co2e_uncertainty
 from app.services.data_scope import apply_owner_org_scope, apply_tree_scope
+from app.services.planting_projects.access import load_project
 from app.services.threats.watch import build_portfolio_threat_watch
 
 router = APIRouter(tags=["dashboard"])
 
 
+async def _scoped_tree_stmt(stmt, user, db, project_id: uuid.UUID | None):
+    stmt = await apply_tree_scope(stmt, user, db)
+    if project_id is not None:
+        stmt = stmt.where(Tree.project_id == project_id)
+    return stmt
+
+
 @router.get("/dashboard", response_model=DashboardResponse)
-async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
+async def dashboard(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = Query(None),
+) -> DashboardResponse:
+    if project_id is not None:
+        await load_project(project_id, user, db)
+
     base = select(
         func.count(Tree.id).label("total_trees"),
         func.coalesce(func.sum(Tree.current_carbon_kg), 0).label("total_carbon_kg"),
@@ -34,7 +52,7 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
             0,
         ).label("sat_verified"),
     )
-    row = (await db.execute(await apply_tree_scope(base, user, db))).one()
+    row = (await db.execute(await _scoped_tree_stmt(base, user, db, project_id))).one()
 
     total_trees = int(row.total_trees)
     total_carbon = float(row.total_carbon_kg or 0)
@@ -67,7 +85,7 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         Tree.current_health, func.count(Tree.id)
     ).group_by(Tree.current_health)
     health_rows = (
-        await db.execute(await apply_tree_scope(health_stmt, user, db))
+        await db.execute(await _scoped_tree_stmt(health_stmt, user, db, project_id))
     ).all()
 
     species_stmt = (
@@ -77,10 +95,10 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         .limit(8)
     )
     species_rows = (
-        await db.execute(await apply_tree_scope(species_stmt, user, db))
+        await db.execute(await _scoped_tree_stmt(species_stmt, user, db, project_id))
     ).all()
 
-    carbon_growth = await build_carbon_growth_series(db, user)
+    carbon_growth = await build_carbon_growth_series(db, user, project_id=project_id)
 
     all_bio_stmt = apply_owner_org_scope(
         select(BioacousticRecording),
@@ -88,6 +106,21 @@ async def dashboard(user: CurrentUser, db: DB) -> DashboardResponse:
         owner_col=BioacousticRecording.owner_user_id,
         org_col=BioacousticRecording.organization_id,
     )
+    if project_id is not None:
+        fence_ids = [
+            row[0]
+            for row in (
+                await db.execute(
+                    select(PlantationFence.id).where(PlantationFence.project_id == project_id)
+                )
+            ).all()
+        ]
+        if fence_ids:
+            all_bio_stmt = all_bio_stmt.where(
+                BioacousticRecording.plantation_fence_id.in_(fence_ids)
+            )
+        else:
+            all_bio_stmt = all_bio_stmt.where(BioacousticRecording.id.is_(None))
     all_bio = (await db.execute(all_bio_stmt)).scalars().all()
     bio_analyzed = [r for r in all_bio if r.status == "analyzed"]
     bio_kpi = BioacousticDashboardKpi(

@@ -549,5 +549,20 @@
   "auditSyncAuditVisits": "ऑडिट प्लॉट विज़िट",
   "auditSyncRetryFailed": "विफल विज़िट पुनः प्रयास",
   "auditSyncOpenWorkspace": "एस्टेट वॉच खोलें",
-  "auditSyncEmptyHint": "फ़ील्ड या एस्टेट वॉच ऑडिट से प्लॉट विज़िट कैप्चर करें"
+  "auditSyncEmptyHint": "फ़ील्ड या एस्टेट वॉच ऑडिट से प्लॉट विज़िट कैप्चर करें",
+  "dashboardAlertsSection": "अलर्ट",
+  "dashboardNoUrgentAlerts": "कोई तत्काल आइटम नहीं",
+  "dashboardAlertsClear": "फ़ील्ड अलर्ट अभी साफ़ हैं",
+  "pendingSyncBannerSyncing": "ऑफ़लाइन डेटा सिंक हो रहा है…",
+  "pendingSyncBannerWaiting": "{count, plural, =1{1 आइटम ऑनलाइन होने पर सिंक की प्रतीक्षा में} other{{count} आइटम ऑनलाइन होने पर सिंक की प्रतीक्षा में}}",
+  "syncNow": "अभी सिंक करें",
+  "syncQueueAllSynced": "सब सिंक हो गया",
+  "syncQueuePendingCount": "{count, plural, =1{1 आइटम लंबित} other{{count} आइटम लंबित}}",
+  "syncQueueBreakdown": "{trees} पेड़ · {survival} सर्वाइवल · {audit} ऑडिट · {bio} बायो",
+  "fieldAlertsTitle": "फ़ील्ड अलर्ट",
+  "addTreeWizardSiteSpecies": "साइट और प्रजाति",
+  "addTreeWizardGpsPlacement": "GPS और स्थान",
+  "addTreeWizardPhotosSubmit": "फ़ोटो और सबमिट",
+  "viewSyncQueue": "सिंक कतार देखें",
+  "monitoringBioLoadError": "बायोअकॉस्टिक सारांश उपलब्ध नहीं"
 }

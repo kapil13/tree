@@ -779,5 +779,38 @@
   "auditSyncAuditVisits": "Audit plot visits",
   "auditSyncRetryFailed": "Retry failed visits",
   "auditSyncOpenWorkspace": "Open Estate Watch",
-  "auditSyncEmptyHint": "Capture plot visits from Field or Estate Watch audit"
+  "auditSyncEmptyHint": "Capture plot visits from Field or Estate Watch audit",
+  "dashboardAlertsSection": "Alerts",
+  "dashboardNoUrgentAlerts": "No urgent items",
+  "dashboardAlertsClear": "Field alerts are clear for now",
+  "pendingSyncBannerSyncing": "Syncing offline data…",
+  "pendingSyncBannerWaiting": "{count, plural, =1{1 item waiting to sync when online} other{{count} items waiting to sync when online}}",
+  "@pendingSyncBannerWaiting": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "syncNow": "Sync now",
+  "syncQueueAllSynced": "All synced",
+  "syncQueuePendingCount": "{count, plural, =1{1 item pending} other{{count} items pending}}",
+  "@syncQueuePendingCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "syncQueueBreakdown": "{trees} trees · {survival} survival · {audit} audit · {bio} bio",
+  "@syncQueueBreakdown": {
+    "placeholders": {
+      "trees": {"type": "int"},
+      "survival": {"type": "int"},
+      "audit": {"type": "int"},
+      "bio": {"type": "int"}
+    }
+  },
+  "fieldAlertsTitle": "Field alerts",
+  "addTreeWizardSiteSpecies": "Site & species",
+  "addTreeWizardGpsPlacement": "GPS & placement",
+  "addTreeWizardPhotosSubmit": "Photos & submit",
+  "viewSyncQueue": "View sync queue",
+  "monitoringBioLoadError": "Bioacoustic summary unavailable"
 }

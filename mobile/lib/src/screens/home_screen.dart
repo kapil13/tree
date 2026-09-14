@@ -176,16 +176,16 @@ class HomeScreen extends ConsumerWidget {
                   ],
                 ),
                 PrototypeSectionHeader(
-                  title: 'Queue',
-                  linkLabel: 'Field →',
+                  title: l10n.dashboardAlertsSection,
+                  linkLabel: l10n.navField,
                   onLink: () => context.go('/field'),
                 ),
                 if (queueAlerts.isEmpty)
                   PrototypePriorityCard(
                     icon: '✓',
-                    title: 'No urgent items',
-                    subtitle: 'Field queue is clear for now',
-                    action: 'Field',
+                    title: l10n.dashboardNoUrgentAlerts,
+                    subtitle: l10n.dashboardAlertsClear,
+                    action: l10n.navField,
                     onTap: () => context.go('/field'),
                   )
                 else

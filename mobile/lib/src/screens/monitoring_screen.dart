@@ -17,6 +17,21 @@ import '../widgets/shell_scaffold.dart';
 class MonitoringScreen extends ConsumerWidget {
   const MonitoringScreen({super.key});
 
+  List<dynamic> _orderedWorkAreas(List<dynamic> workAreas, String? highlightFenceId) {
+    if (highlightFenceId == null || highlightFenceId.isEmpty) return workAreas;
+    final highlighted = <dynamic>[];
+    final rest = <dynamic>[];
+    for (final raw in workAreas) {
+      final id = (raw as Map)['id']?.toString();
+      if (id == highlightFenceId) {
+        highlighted.add(raw);
+      } else {
+        rest.add(raw);
+      }
+    }
+    return [...highlighted, ...rest];
+  }
+
   void _openWorkArea(BuildContext context, Map raw) {
     final projectId = raw['project_id'] as String?;
     if (projectId != null && projectId.isNotEmpty) {
@@ -139,8 +154,8 @@ class MonitoringScreen extends ConsumerWidget {
                     ),
                     style: const TextStyle(color: PrototypeColors.textSecondary),
                   )
-                else
-                  for (final raw in workAreas.take(12))
+                else ...[
+                  for (final raw in _orderedWorkAreas(workAreas, highlightFenceId).take(12))
                     PrototypeNdviRow(
                       site: (raw as Map)['name'] as String? ?? l10n.monitoringWorkAreaFallback,
                       ndvi: (raw['latest_ndvi'] as num?)?.toDouble(),
@@ -151,12 +166,42 @@ class MonitoringScreen extends ConsumerWidget {
                           l10n.monitoringDaysSinceNdvi('${raw['days_since_scan']}'),
                       ].where((s) => s.toString().isNotEmpty).join(' · '),
                       actionLabel: raw['sar_recommended_action'] as String? ?? 'OK',
+                      highlighted: highlightFenceId != null &&
+                          highlightFenceId.isNotEmpty &&
+                          raw['id']?.toString() == highlightFenceId,
                       onTap: () => _openWorkArea(context, raw),
                     ),
+                ],
                 const SizedBox(height: 8),
                 bioSummaryAsync.when(
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: PrototypeColors.bgSurface,
+                      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.monitoringBioLoadError,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: PrototypeColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () => ref.invalidate(bioacousticSummaryProvider),
+                              child: Text(l10n.retry),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   data: (bio) {
                     final species = (bio['species_richness'] as num?)?.toInt() ??
                         (bio['total_species_detected'] as num?)?.toInt() ?? 0;

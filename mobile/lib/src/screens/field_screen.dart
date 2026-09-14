@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../api/api_errors.dart';
 import '../field_ops_actions.dart';
 import '../nav_access.dart';
 import '../project_context.dart';
@@ -12,6 +11,7 @@ import '../session.dart';
 import '../widgets/offline_tree_queue_section.dart';
 import '../widgets/project_picker_sheet.dart';
 import '../widgets/prototype/prototype_ui.dart';
+import '../widgets/session_aware_error.dart';
 import '../widgets/shell_scaffold.dart';
 
 /// Field tab — matches design/prototypes v4.2 renderField().
@@ -123,8 +123,8 @@ class _FieldCaptureBody extends ConsumerWidget {
               onTap: () => context.push('/trees/new'),
             ),
           PrototypeSectionHeader(
-            title: "Today's queue",
-            linkLabel: 'Sync',
+            title: l10n.fieldAlertsTitle,
+            linkLabel: l10n.navSyncQueue,
             onLink: () => context.push('/sync-queue'),
           ),
           for (final raw in alerts.take(4))
@@ -142,7 +142,11 @@ class _FieldCaptureBody extends ConsumerWidget {
           ),
           treesAsync.when(
             loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text(apiErrorMessage(e)),
+            error: (e, _) => SessionAwareErrorView(
+              error: e,
+              onRetry: () => ref.invalidate(treesProvider),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
             data: (items) {
               if (items.isEmpty) {
                 return Text(l10n.noTreesYet, style: const TextStyle(color: PrototypeColors.textSecondary));
@@ -181,7 +185,10 @@ class _FieldOpsBody extends ConsumerWidget {
 
     return summaryAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+      error: (e, _) => SessionAwareErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(fieldOpsSummaryProvider),
+      ),
       data: (summary) {
         final violations = List<dynamic>.from(summary['recent_violations'] ?? []);
         final projects = List<dynamic>.from(summary['projects'] ?? []);
@@ -240,8 +247,8 @@ class _FieldOpsBody extends ConsumerWidget {
                 ],
               ),
               PrototypeSectionHeader(
-                title: "Today's queue",
-                linkLabel: 'Sync',
+                title: l10n.fieldAlertsTitle,
+                linkLabel: l10n.navSyncQueue,
                 onLink: () => context.push('/sync-queue'),
               ),
               for (final raw in violations.take(3))

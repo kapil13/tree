@@ -128,19 +128,30 @@ class PendingSyncBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final treeQueue = ref.watch(treeRegistrationQueueProvider);
     final bioQueue = ref.watch(bioacousticQueueProvider);
+    final auditQueue = ref.watch(auditVisitQueueProvider);
+    final survivalQueue = ref.watch(survivalSurveyQueueProvider);
     final treeSync = ref.watch(treeRegistrationSyncProvider);
     final bioSync = ref.watch(bioacousticSyncProvider);
+    final auditSync = ref.watch(auditVisitSyncProvider);
+    final survivalSync = ref.watch(survivalSurveySyncProvider);
+    final syncing = treeSync.syncing ||
+        bioSync.syncing ||
+        auditSync.syncing ||
+        survivalSync.syncing;
 
     return FutureBuilder<int>(
       future: Future.wait([
         treeQueue.pendingCount(),
         bioQueue.pendingCount(),
-      ]).then((counts) => counts[0] + counts[1]),
+        auditQueue.pendingCount(),
+        survivalQueue.pendingCount(),
+      ]).then((counts) => counts.fold<int>(0, (sum, n) => sum + n)),
       builder: (context, snapshot) {
         final pending = snapshot.data ?? 0;
-        if (pending == 0 && !treeSync.syncing && !bioSync.syncing) {
+        if (pending == 0 && !syncing) {
           return const SizedBox.shrink();
         }
         return InkWell(
@@ -157,16 +168,16 @@ class PendingSyncBanner extends ConsumerWidget {
           child: Row(
             children: [
               Icon(
-                treeSync.syncing || bioSync.syncing ? Icons.sync : Icons.cloud_upload_outlined,
+                syncing ? Icons.sync : Icons.cloud_upload_outlined,
                 size: 18,
                 color: AranyixColors.warningOnContainer,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  treeSync.syncing || bioSync.syncing
-                      ? 'Syncing offline data…'
-                      : '$pending item(s) waiting to sync when online',
+                  syncing
+                      ? l10n.pendingSyncBannerSyncing
+                      : l10n.pendingSyncBannerWaiting(pending),
                   style: const TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer),
                 ),
               ),
