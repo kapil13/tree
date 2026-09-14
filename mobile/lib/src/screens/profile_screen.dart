@@ -10,6 +10,7 @@ import '../api/api_errors.dart';
 import '../app_bootstrap.dart';
 import '../api/auth_redirect.dart';
 import '../constants/play_store.dart';
+import '../widgets/session_aware_error.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
@@ -112,21 +113,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final settings = AppSettings.instance;
           return userAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(apiErrorMessage(e), textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () => ref.invalidate(userProvider),
-                      child: Text(l10n.retry),
-                    ),
-                  ],
-                ),
-              ),
+            error: (e, _) => SessionAwareErrorView(
+              error: e,
+              onRetry: () => ref.invalidate(userProvider),
             ),
             data: (user) => ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

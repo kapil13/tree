@@ -57,13 +57,16 @@ jobs:
           yes | flutter doctor --android-licenses || true
 
       - name: Configure release signing
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          if [ -z "${ANDROID_KEYSTORE_BASE64}" ]; then
+            echo "No ANDROID_KEYSTORE_BASE64 secret — APK will use default release signing config."
+            exit 0
+          fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > mobile/android/release.keystore
           printf '%s\n' \
             "storeFile=release.keystore" \
@@ -74,10 +77,13 @@ jobs:
           echo "Release signing configured from ANDROID_KEYSTORE_BASE64 secret."
 
       - name: Configure Firebase (google-services.json)
-        if: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
+          if [ -z "${GOOGLE_SERVICES_JSON_BASE64}" ]; then
+            echo "No GOOGLE_SERVICES_JSON_BASE64 secret — FCM disabled for this build."
+            exit 0
+          fi
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > mobile/android/app/google-services.json
           echo "google-services.json written from secret."
 
@@ -85,13 +91,13 @@ jobs:
         working-directory: mobile
         env:
           BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
-          BYOT_FCM_ENABLED: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' && 'true' || 'false' }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
           flutter pub get
           flutter test
           VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
           DART_DEFINES=(--dart-define="BYOT_API=${BYOT_API}")
-          if [ "${BYOT_FCM_ENABLED}" = "true" ]; then
+          if [ -n "${GOOGLE_SERVICES_JSON_BASE64}" ]; then
             DART_DEFINES+=(--dart-define=BYOT_FCM_ENABLED=true)
           fi
           flutter build apk --release "${DART_DEFINES[@]}"

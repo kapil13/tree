@@ -1,14 +1,7 @@
-# iOS — deferred
+# iOS — not in scope
 
-The iOS target is intentionally **not scaffolded** until the Android app is complete and frozen.
+There is **no iOS app** for Aranyix right now. Shipping is **Android-only**.
 
-See [ANDROID_FREEZE_IOS_ROADMAP.md](ANDROID_FREEZE_IOS_ROADMAP.md) for the release gate and migration steps.
+The `ios/` folder may contain Flutter-generated stubs from tooling; ignore it for product work. Do not plan App Store releases unless product explicitly re-opens iOS.
 
-When ready:
-
-```bash
-cd mobile
-flutter create --platforms=ios .
-```
-
-Then configure signing, `Runner/Info.plist` URL schemes, and APNs for the shared `POST /api/v1/devices/register` endpoint.
+Android release process: [ANDROID_FREEZE_IOS_ROADMAP.md](../docs/ANDROID_FREEZE_IOS_ROADMAP.md) (Android section only).

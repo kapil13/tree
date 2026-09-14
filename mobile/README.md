@@ -1,6 +1,30 @@
 # BYOT Mobile (Flutter) — Android APK
 
-Field app for tree registration on **Android**. iOS is deferred until the Android release is frozen — see `ios/README.md`.
+Field app for tree registration on **Android only** (no iOS app — see `ios/README.md`).
+
+## Download the latest APK
+
+**Current version:** `1.8.0+12` (see `pubspec.yaml`).
+
+### Option A — GitHub Actions (recommended)
+
+1. Open [Actions → Android APK](https://github.com/kapil13/tree/actions/workflows/android-apk.yml).
+2. Open the latest **green** run on `main` (or click **Run workflow** to build now).
+3. Scroll to **Artifacts** at the bottom of the run page.
+4. Download **`aranyix-android-apk`** (zip).
+5. Unzip and install **`aranyix-android-1.8.0.apk`** (or `app-release.apk`) on your phone.
+
+Production API is baked in: `https://api.aranyix.tech`
+
+For Google Play uploads, download **`aranyix-android-aab`** from the same run.
+
+### Option B — Build on your machine
+
+```bash
+BYOT_API=https://api.aranyix.tech ./scripts/build-android-apk.sh
+```
+
+Output: `aranyix-android-1.8.0.apk` and `byot-release.apk` in the repo root.
 
 ## Build APK (Mac)
 
