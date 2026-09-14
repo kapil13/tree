@@ -205,6 +205,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your session expired. Sign in again to continue.';
 
   @override
+  String get sessionExpiredBanner =>
+      'Your session expired. Sign in again to continue where you left off.';
+
+  @override
+  String get checkForUpdates => 'Check for updates on Google Play';
+
+  @override
   String get biometricEnableFailed =>
       'Biometric unlock was not enabled — confirmation failed.';
 
@@ -893,6 +900,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appVersion => 'App version';
+
+  @override
+  String get openPlayStore => 'Open Google Play';
 
   @override
   String get workAreas => 'Work areas';

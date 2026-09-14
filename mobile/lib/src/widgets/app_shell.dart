@@ -69,7 +69,10 @@ class AppShell extends ConsumerWidget {
       monitoringSummaryProvider,
       fieldOpsSummaryProvider,
       bioacousticRecordingsProvider,
+      bioacousticSummaryProvider,
+      plantationFencesProvider,
       plantingProjectsProvider,
+      auditPortfolioSummaryProvider,
     ]) {
       listenUnauthorizedProvider(ref, context, provider);
     }

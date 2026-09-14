@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../api/api_errors.dart';
+import '../widgets/session_aware_error.dart';
 import '../providers.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/stack_route_scaffold.dart';
@@ -48,6 +49,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
         );
       }
     } catch (e) {
+      if (redirectIfUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),
@@ -77,6 +79,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
         );
       }
     } catch (e) {
+      if (redirectIfUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),

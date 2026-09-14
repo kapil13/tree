@@ -307,14 +307,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   borderRadius: BorderRadius.circular(AranyixRadii.chip),
                   border: Border.all(color: const Color(0xFFFCD34D)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AranyixColors.warningOnContainer, size: 20),
-                    SizedBox(width: 10),
+                    const Icon(Icons.info_outline, color: AranyixColors.warningOnContainer, size: 20),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Your session expired. Sign in again to continue where you left off.',
-                        style: TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer, height: 1.35),
+                        l10n.sessionExpiredBanner,
+                        style: const TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer, height: 1.35),
                       ),
                     ),
                   ],

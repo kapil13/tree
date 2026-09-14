@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../api/api_errors.dart';
+import '../widgets/session_aware_error.dart';
 import '../field_ops_actions.dart';
 import '../nav_access.dart';
 import '../providers.dart';
@@ -24,21 +24,9 @@ class FieldOpsScreen extends ConsumerWidget {
       appBar: ShellTopBar(title: AppLocalizations.of(context)!.fieldOps, menuWithBack: true),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(apiErrorMessage(e), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(fieldOpsSummaryProvider),
-                  child: Text(l10n.retry),
-                ),
-              ],
-            ),
-          ),
+        error: (e, _) => SessionAwareErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(fieldOpsSummaryProvider),
         ),
         data: (summary) {
           final l10n = AppLocalizations.of(context)!;

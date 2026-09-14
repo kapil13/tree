@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../audit_workspace.dart';
 import '../providers.dart';
 import '../widgets/prototype/prototype_ui.dart';
@@ -69,6 +70,7 @@ class _AuditAttestationScreenState extends ConsumerState<AuditAttestationScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.auditReviewSaved)));
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _submitting = false;
@@ -102,6 +104,7 @@ class _AuditAttestationScreenState extends ConsumerState<AuditAttestationScreen>
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.auditSignSaved)));
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _submitting = false;
@@ -128,6 +131,7 @@ class _AuditAttestationScreenState extends ConsumerState<AuditAttestationScreen>
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.auditCosignSaved)));
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _submitting = false;
@@ -155,6 +159,7 @@ class _AuditAttestationScreenState extends ConsumerState<AuditAttestationScreen>
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.auditVerifyLinkCopied)));
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _submitting = false;

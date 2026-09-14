@@ -446,6 +446,18 @@ abstract class AppLocalizations {
   /// **'Your session expired. Sign in again to continue.'**
   String get sessionExpired;
 
+  /// No description provided for @sessionExpiredBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired. Sign in again to continue where you left off.'**
+  String get sessionExpiredBanner;
+
+  /// No description provided for @checkForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates on Google Play'**
+  String get checkForUpdates;
+
   /// No description provided for @biometricEnableFailed.
   ///
   /// In en, this message translates to:
@@ -1663,6 +1675,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App version'**
   String get appVersion;
+
+  /// No description provided for @openPlayStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Google Play'**
+  String get openPlayStore;
 
   /// No description provided for @workAreas.
   ///

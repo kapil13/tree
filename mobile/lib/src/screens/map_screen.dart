@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../l10n/alert_filters.dart';
 import '../nav_access.dart';
 import '../providers.dart';
@@ -483,6 +484,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         );
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),

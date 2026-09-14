@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
+import '../widgets/session_aware_error.dart';
 import '../providers.dart';
 import '../theme.dart';
 import '../widgets/shell_scaffold.dart';
@@ -119,6 +121,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       );
       context.pop();
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() => _error = apiErrorMessage(e));
     } finally {
@@ -135,7 +138,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       appBar: ShellTopBar(title: AppLocalizations.of(context)!.profile, menuWithBack: true),
       body: userAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+        error: (e, _) => SessionAwareErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(userProvider),
+        ),
         data: (user) {
           if (!_loaded) {
             _loadUser(user);

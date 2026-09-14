@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../api/api_errors.dart';
 import '../app_bootstrap.dart';
 import '../api/auth_redirect.dart';
+import '../constants/play_store.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../services/app_settings.dart';
@@ -268,8 +271,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 if (_appVersion.isNotEmpty)
                   ListTile(
                     dense: true,
+                    leading: const Icon(Icons.system_update_outlined),
                     title: Text(l10n.appVersion),
-                    subtitle: Text(_appVersion),
+                    subtitle: Text('${_appVersion}\n${l10n.checkForUpdates}'),
+                    isThreeLine: true,
+                    onTap: () async {
+                      final uri = Uri.parse(kPlayStoreListingUrl);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    trailing: const Icon(Icons.open_in_new, size: 18),
                   ),
                 const Divider(),
                 ListTile(

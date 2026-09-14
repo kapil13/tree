@@ -204,6 +204,13 @@ class AppLocalizationsHi extends AppLocalizations {
       'आपका सत्र समाप्त हो गया। जारी रखने के लिए फिर साइन इन करें।';
 
   @override
+  String get sessionExpiredBanner =>
+      'आपका सत्र समाप्त हो गया। जहाँ छोड़ा था वहीं से जारी रखने के लिए फिर साइन इन करें।';
+
+  @override
+  String get checkForUpdates => 'Google Play पर अपडेट देखें';
+
+  @override
   String get biometricEnableFailed =>
       'बायोमेट्रिक अनलॉक सक्षम नहीं — पुष्टि विफल।';
 
@@ -887,6 +894,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get appVersion => 'ऐप संस्करण';
+
+  @override
+  String get openPlayStore => 'Google Play खोलें';
 
   @override
   String get workAreas => 'कार्य क्षेत्र';

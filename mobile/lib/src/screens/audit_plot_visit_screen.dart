@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
@@ -188,6 +189,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
         ),
       );
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (!mounted) return;
       setState(() {
         _saving = false;

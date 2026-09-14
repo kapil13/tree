@@ -19,9 +19,21 @@ Before starting iOS:
 1. Release signing + CI artifacts (APK + Play Store AAB) — see `.github/workflows/android-apk.yml`.
 2. Wire live FCM (`google-services.json` + `BYOT_FCM_ENABLED=true`) — device API is ready at `POST /api/v1/devices/register`.
 3. QA on physical devices: offline tree queue, deep links, biometrics, Hindi UI, citizen stewardship relinquish.
-4. Tag release `android-v1.7.0-freeze` and stop feature work on Android except hotfixes.
+4. Tag release `android-v1.8.0-freeze` and stop feature work on Android except hotfixes.
 
-**Launch phases (P0–P7, `main`):** production signing, FCM, cert pinning, offline survival, session expiry coverage, citizen adoption/stewardship, Play Store AAB in CI, signup accessibility.
+**Launch phases (P0–P8, `main`):**
+
+| Phase | Focus |
+|-------|--------|
+| P0 | Release signing, FCM, cert pinning |
+| P1 | Survival offline queue, audit RBAC |
+| P2 | Navigation back, map draw, reachability |
+| P3 | Dark theme, bio polling, citizen card |
+| P4 | Session expiry, R8, citizen fast signup |
+| P5 | Citizen adoption APIs and screen |
+| P6 | Stewardship hub, wizard back, session on field screens |
+| P7 | Launch finalization — relinquish, AAB in CI, signup a11y |
+| P8 | Android freeze — full session coverage, splash/login expiry UX, Play Store link |
 
 ## iOS (after freeze)
 

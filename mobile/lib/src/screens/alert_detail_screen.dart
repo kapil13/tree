@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
+import '../widgets/session_aware_error.dart';
 import '../l10n/alert_labels.dart';
 import '../providers.dart';
 import '../widgets/alert_preparedness_card.dart';
@@ -27,21 +29,9 @@ class AlertDetailScreen extends ConsumerWidget {
       appBar: PrototypeBackBar(title: 'Alert'),
       body: alertAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(apiErrorMessage(e), textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(alertProvider(alertId)),
-                  child: Text(l10n.retry),
-                ),
-              ],
-            ),
-          ),
+        error: (e, _) => SessionAwareErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(alertProvider(alertId)),
         ),
         data: (alert) {
           final severity = alert['severity'] as String? ?? 'moderate';
@@ -138,6 +128,7 @@ class AlertDetailScreen extends ConsumerWidget {
                       context.pop();
                     }
                   } catch (e) {
+                    if (maybeRedirectUnauthorized(ref, context, e)) return;
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(apiErrorMessage(e))),

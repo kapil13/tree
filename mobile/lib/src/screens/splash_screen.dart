@@ -54,10 +54,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       context.go(landing);
     } catch (e) {
       if (isUnauthorizedError(e)) {
-        await api.logout();
+        await api.clearLocalSession(sessionExpired: true);
         ref.invalidate(apiClientProvider);
         if (!mounted) return;
-        context.go('/welcome');
+        context.go('/login?session=expired');
         return;
       }
       if (isOfflineOrNetworkError(e)) {
