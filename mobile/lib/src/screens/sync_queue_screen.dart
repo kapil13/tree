@@ -436,10 +436,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                 _bioItems.isEmpty &&
                 _auditItems.isEmpty &&
                 _survivalItems.isEmpty)
-              PrototypeEmptyState(
-                icon: '✓',
-                title: 'All synced',
-                subtitle: l10n.auditSyncEmptyHint,
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: PrototypeEmptyState(
+                  icon: '✓',
+                  title: 'All synced',
+                  subtitle: l10n.auditSyncEmptyHint,
+                ),
               ),
           ],
         ),

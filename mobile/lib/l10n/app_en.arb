@@ -712,6 +712,15 @@
   "auditOpenAttestation": "Review & sign",
   "auditQuickLinks": "Quick links",
   "auditPlotVisits": "Plot visits",
+  "auditPlotNavigate": "Navigate",
+  "auditPlotStartVisit": "Start visit",
+  "auditPlotsWaiting": "{count, plural, =1{1 plot waiting for verifier visit} other{{count} plots waiting for verifier visits}}",
+  "@auditPlotsWaiting": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "auditPlotsAllVisitedShort": "All assigned audit plots are visited for the current scope.",
   "auditPlotsAllVisited": "All assigned plots visited for current scope",
   "auditAttestationTitle": "Attestation",
   "auditAttestationMobileSubtitle": "Review anomalies and sign off export bundles",

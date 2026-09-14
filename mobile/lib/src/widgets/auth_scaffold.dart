@@ -62,32 +62,30 @@ class AuthScaffold extends StatelessWidget {
             ),
           ),
           SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (leading != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, top: 4),
-                    child: Align(alignment: Alignment.centerLeft, child: leading!),
-                  ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(24, compact ? 8 : 12, 24, footer != null ? 12 : 28),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final content = SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(24, compact ? 4 : 12, 24, footer != null ? 12 : 28),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: compact ? 0 : constraints.maxHeight - (footer != null ? 120 : 48)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: compact ? MainAxisAlignment.start : MainAxisAlignment.center,
                       children: [
-                        AranyixBrandMark(
-                          size: compact ? 48 : 58,
-                          radius: compact ? 14 : 18,
-                          showGlow: !compact,
-                        ),
-                        SizedBox(height: compact ? 14 : 20),
+                        if (!compact) ...[
+                          AranyixBrandMark(size: 58, radius: 18, showGlow: true),
+                          const SizedBox(height: 20),
+                        ] else ...[
+                          const SizedBox(height: 4),
+                          const AranyixBrandMark(size: 44, radius: 12, showGlow: false),
+                          const SizedBox(height: 12),
+                        ],
                         Text(
                           title,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 color: AranyixColors.forestDark,
-                                fontSize: compact ? 26 : null,
+                                fontSize: compact ? 24 : null,
                               ),
                         ),
                         const SizedBox(height: 6),
@@ -95,8 +93,8 @@ class AuthScaffold extends StatelessWidget {
                           subtitle,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: AranyixColors.onSurfaceMuted,
-                                height: 1.4,
-                                fontSize: compact ? 14.5 : null,
+                                height: 1.35,
+                                fontSize: compact ? 14 : null,
                               ),
                         ),
                         if (stepLabel != null) ...[
@@ -124,18 +122,33 @@ class AuthScaffold extends StatelessWidget {
                             ],
                           ),
                         ],
-                        SizedBox(height: compact ? 18 : 24),
+                        SizedBox(height: compact ? 16 : 24),
                         child,
                       ],
                     ),
                   ),
-                ),
-                if (footer != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                    child: footer!,
-                  ),
-              ],
+                );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (leading != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, top: 4),
+                        child: Align(alignment: Alignment.centerLeft, child: leading!),
+                      ),
+                    if (compact)
+                      Flexible(child: content)
+                    else
+                      Expanded(child: content),
+                    if (footer != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                        child: footer!,
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],

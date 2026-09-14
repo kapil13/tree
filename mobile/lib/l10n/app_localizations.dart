@@ -3110,6 +3110,30 @@ abstract class AppLocalizations {
   /// **'Plot visits'**
   String get auditPlotVisits;
 
+  /// No description provided for @auditPlotNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get auditPlotNavigate;
+
+  /// No description provided for @auditPlotStartVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Start visit'**
+  String get auditPlotStartVisit;
+
+  /// No description provided for @auditPlotsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 plot waiting for verifier visit} other{{count} plots waiting for verifier visits}}'**
+  String auditPlotsWaiting(int count);
+
+  /// No description provided for @auditPlotsAllVisitedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'All assigned audit plots are visited for the current scope.'**
+  String get auditPlotsAllVisitedShort;
+
   /// No description provided for @auditPlotsAllVisited.
   ///
   /// In en, this message translates to:

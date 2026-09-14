@@ -12,6 +12,8 @@ import '../api/auth_redirect.dart';
 import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
+import '../widgets/prototype/prototype_ui.dart';
+import '../widgets/session_aware_error.dart';
 import '../widgets/stack_route_scaffold.dart';
 
 class AuditPlotVisitScreen extends ConsumerStatefulWidget {
@@ -205,14 +207,13 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
 
     return stackRouteScaffold(
       location: '/audit-plots',
-      appBar: AppBar(
-        title: const Text('Estate Watch audit plots'),
-        backgroundColor: AranyixColors.surface,
-        foregroundColor: AranyixColors.forestDark,
-      ),
+      appBar: PrototypeBackBar(title: l10n.auditPlotVisits),
       body: queueAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+        loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
+        error: (e, _) => SessionAwareErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(auditFieldPlotQueueProvider),
+        ),
         data: (queue) {
           final items = List<Map<String, dynamic>>.from(
             (queue['items'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)) ?? [],
@@ -225,50 +226,32 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  '${queue['total_due'] ?? items.length} plot(s) waiting for verifier visits',
+                  l10n.auditPlotsWaiting((queue['total_due'] as num?)?.toInt() ?? items.length),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AranyixColors.onSurfaceMuted,
                       ),
                 ),
                 const SizedBox(height: 12),
                 if (items.isEmpty)
-                  const Text(
-                    'All assigned audit plots are visited for the current scope.',
-                    style: TextStyle(color: AranyixColors.onSurfaceMuted),
+                  Text(
+                    l10n.auditPlotsAllVisitedShort,
+                    style: const TextStyle(color: AranyixColors.onSurfaceMuted),
                   )
                 else
-                  for (final plot in items)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        title: Text(plot['plot_code'] as String? ?? 'Plot'),
-                        subtitle: Text(
-                          '${plot['project_name'] ?? ''} · ${plot['risk_level'] ?? ''} risk',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              tooltip: 'Navigate to plot',
-                              icon: const Icon(Icons.navigation_outlined),
-                              onPressed: () => _openMaps(plot),
-                            ),
-                            FilledButton(
-                              onPressed: () {
-                                setState(() {
-                                  _activePlot = plot;
-                                  _gps = null;
-                                  _photoKeys.clear();
-                                  _localPhotoPaths.clear();
-                                });
-                                _captureGps();
-                              },
-                              child: Text(l10n.resolve),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  for (final plot in items) _AuditPlotCard(
+                    plot: plot,
+                    l10n: l10n,
+                    onNavigate: () => _openMaps(plot),
+                    onStartVisit: () {
+                      setState(() {
+                        _activePlot = plot;
+                        _gps = null;
+                        _photoKeys.clear();
+                        _localPhotoPaths.clear();
+                      });
+                      _captureGps();
+                    },
+                  ),
                 if (_activePlot != null) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -376,6 +359,72 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _AuditPlotCard extends StatelessWidget {
+  const _AuditPlotCard({
+    required this.plot,
+    required this.l10n,
+    required this.onNavigate,
+    required this.onStartVisit,
+  });
+
+  final Map<String, dynamic> plot;
+  final AppLocalizations l10n;
+  final VoidCallback onNavigate;
+  final VoidCallback onStartVisit;
+
+  @override
+  Widget build(BuildContext context) {
+    final code = plot['plot_code'] as String? ?? 'Plot';
+    final project = plot['project_name'] as String? ?? '';
+    final risk = plot['risk_level'] as String? ?? '';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              code,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AranyixColors.forestDark,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              [
+                if (project.isNotEmpty) project,
+                if (risk.isNotEmpty) '$risk risk',
+              ].join(' · '),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AranyixColors.onSurfaceMuted,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onNavigate,
+                  icon: const Icon(Icons.navigation_outlined, size: 18),
+                  label: Text(l10n.auditPlotNavigate),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: onStartVisit,
+                    child: Text(l10n.auditPlotStartVisit),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

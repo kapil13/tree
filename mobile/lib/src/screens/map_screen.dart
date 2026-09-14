@@ -516,6 +516,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       },
       child: Scaffold(
       appBar: ShellTopBar(
+        menuWithBack: true,
         title: _mode == _DrawMode.none
             ? l10n.map
             : _mode == _DrawMode.polygon

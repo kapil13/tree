@@ -1658,6 +1658,27 @@ class AppLocalizationsHi extends AppLocalizations {
   String get auditPlotVisits => 'प्लॉट विज़िट';
 
   @override
+  String get auditPlotNavigate => 'नेविगेट';
+
+  @override
+  String get auditPlotStartVisit => 'विज़िट शुरू करें';
+
+  @override
+  String auditPlotsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count प्लॉट सत्यापन के लिए बाकी',
+      one: '1 प्लॉट सत्यापन के लिए बाकी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auditPlotsAllVisitedShort =>
+      'वर्तमान स्कोप के सभी निर्धारित प्लॉट देखे गए।';
+
+  @override
   String get auditPlotsAllVisited => 'वर्तमान स्कोप के सभी प्लॉट देखे गए';
 
   @override

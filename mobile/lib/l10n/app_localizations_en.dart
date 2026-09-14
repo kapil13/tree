@@ -1663,6 +1663,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get auditPlotVisits => 'Plot visits';
 
   @override
+  String get auditPlotNavigate => 'Navigate';
+
+  @override
+  String get auditPlotStartVisit => 'Start visit';
+
+  @override
+  String auditPlotsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plots waiting for verifier visits',
+      one: '1 plot waiting for verifier visit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auditPlotsAllVisitedShort =>
+      'All assigned audit plots are visited for the current scope.';
+
+  @override
   String get auditPlotsAllVisited =>
       'All assigned plots visited for current scope';
 
