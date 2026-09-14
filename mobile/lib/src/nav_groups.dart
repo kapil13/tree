@@ -195,10 +195,9 @@ bool mobileNavItemActive(String location, MobileNavItem item) {
 }
 
 /// Routes where the register-tree FAB should appear.
+///
+/// Home and Field use [PrototypeFieldCaptureBar] instead of the shell FAB — see
+/// [AppShell] which excludes those routes from the floating action button.
 bool showFieldFabOnRoute(String location) {
-  return location == '/home' ||
-      location == '/field' ||
-      location == '/trees' ||
-      location == '/map' ||
-      location == '/monitoring';
+  return location == '/trees' || location == '/map' || location == '/monitoring';
 }

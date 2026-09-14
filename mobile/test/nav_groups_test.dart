@@ -32,10 +32,12 @@ void main() {
     expect(routes, contains('/carbon'));
   });
 
-  test('field fab routes include home and field tab', () {
-    expect(showFieldFabOnRoute('/home'), isTrue);
-    expect(showFieldFabOnRoute('/field'), isTrue);
+  test('field fab routes exclude home and field capture-bar tabs', () {
+    expect(showFieldFabOnRoute('/home'), isFalse);
+    expect(showFieldFabOnRoute('/field'), isFalse);
     expect(showFieldFabOnRoute('/trees'), isTrue);
+    expect(showFieldFabOnRoute('/map'), isTrue);
+    expect(showFieldFabOnRoute('/monitoring'), isTrue);
     expect(showFieldFabOnRoute('/bioacoustic'), isFalse);
   });
 }
