@@ -1120,6 +1120,7 @@ class PrototypeNdviRow extends StatelessWidget {
     required this.meta,
     required this.actionLabel,
     this.onTap,
+    this.highlighted = false,
   });
 
   final String site;
@@ -1127,6 +1128,7 @@ class PrototypeNdviRow extends StatelessWidget {
   final String meta;
   final String actionLabel;
   final VoidCallback? onTap;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -1146,7 +1148,11 @@ class PrototypeNdviRow extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(PrototypeRadii.lg),
-            border: Border.all(color: PrototypeColors.border),
+            border: Border.all(
+              color: highlighted ? PrototypeColors.brandCanopy : PrototypeColors.border,
+              width: highlighted ? 2 : 1,
+            ),
+            color: highlighted ? PrototypeColors.brandCanopy.withValues(alpha: 0.06) : null,
           ),
           child: Row(
             children: [

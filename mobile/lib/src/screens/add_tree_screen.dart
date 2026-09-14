@@ -539,9 +539,9 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
   }
 
   String _visualStepLabel(AppLocalizations l10n) {
-    if (_wizardStep <= 1) return 'Site & species';
-    if (_wizardStep == 2) return 'GPS & placement';
-    return 'Photos & submit';
+    if (_wizardStep <= 1) return l10n.addTreeWizardSiteSpecies;
+    if (_wizardStep == 2) return l10n.addTreeWizardGpsPlacement;
+    return l10n.addTreeWizardPhotosSubmit;
   }
 
   Widget _wizardProgress(AppLocalizations l10n) {
@@ -750,9 +750,17 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
       ref.read(treeRegistrationSyncProvider).syncAll(() => ref.read(apiClientProvider.future));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${l10n.offlineQueuedSync} ${apiErrorMessage(e)}')),
+        SnackBar(
+          content: Text(l10n.offlineQueuedSync),
+          action: SnackBarAction(
+            label: l10n.viewSyncQueue,
+            onPressed: () => context.go('/sync-queue'),
+          ),
+        ),
       );
-      context.go('/projects');
+      if (!registerNext) {
+        context.go('/sync-queue');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

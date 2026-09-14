@@ -320,12 +320,12 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    pending == 0 ? 'All synced' : '$pending item(s) pending',
+                    pending == 0 ? l10n.syncQueueAllSynced : l10n.syncQueuePendingCount(pending),
                     style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$treePending trees · $survivalPending survival · $auditPending audit · $bioPending bio',
+                    l10n.syncQueueBreakdown(treePending, survivalPending, auditPending, bioPending),
                     style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                   ),
                   const SizedBox(height: 2),
@@ -343,7 +343,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
                     child: _syncing
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text(l10n.bioSyncNow),
+                        : Text(l10n.syncNow),
                   ),
                 ],
               ),
@@ -565,46 +565,50 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
   }
 
   String _survivalQueueLabel(SurvivalSurveyQueueStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case SurvivalSurveyQueueStatus.pending:
-        return 'pending';
+        return l10n.bioQueuePending;
       case SurvivalSurveyQueueStatus.syncing:
-        return 'syncing';
+        return l10n.bioQueueSyncing;
       case SurvivalSurveyQueueStatus.failed:
-        return 'failed';
+        return l10n.bioQueueFailed;
     }
   }
 
   String _auditQueueLabel(AuditVisitQueueStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case AuditVisitQueueStatus.pending:
-        return 'pending';
+        return l10n.bioQueuePending;
       case AuditVisitQueueStatus.syncing:
-        return 'syncing';
+        return l10n.bioQueueSyncing;
       case AuditVisitQueueStatus.failed:
-        return 'failed';
+        return l10n.bioQueueFailed;
     }
   }
 
   String _queueLabel(TreeQueueStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case TreeQueueStatus.pending:
-        return 'pending';
+        return l10n.bioQueuePending;
       case TreeQueueStatus.syncing:
-        return 'syncing';
+        return l10n.bioQueueSyncing;
       case TreeQueueStatus.failed:
-        return 'failed';
+        return l10n.bioQueueFailed;
     }
   }
 
   String _bioQueueLabel(BioacousticQueueStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case BioacousticQueueStatus.pending:
-        return 'pending';
+        return l10n.bioQueuePending;
       case BioacousticQueueStatus.syncing:
-        return 'syncing';
+        return l10n.bioQueueSyncing;
       case BioacousticQueueStatus.failed:
-        return 'failed';
+        return l10n.bioQueueFailed;
     }
   }
 }

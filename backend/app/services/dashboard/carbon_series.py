@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from calendar import month_abbr
 from datetime import UTC, datetime
 
@@ -21,7 +22,13 @@ def _month_end(year: int, month: int) -> datetime:
     return datetime(year, month + 1, 1, tzinfo=UTC)
 
 
-async def build_carbon_growth_series(db: AsyncSession, user: User, *, months: int = 6) -> list[SeriesPoint]:
+async def build_carbon_growth_series(
+    db: AsyncSession,
+    user: User,
+    *,
+    months: int = 6,
+    project_id: uuid.UUID | None = None,
+) -> list[SeriesPoint]:
     """
     Cumulative stored carbon (kg) at the end of each of the last N months.
 
@@ -40,6 +47,8 @@ async def build_carbon_growth_series(db: AsyncSession, user: User, *, months: in
     month_keys.reverse()
 
     tree_ids_stmt = await apply_tree_scope(select(Tree.id), user, db)
+    if project_id is not None:
+        tree_ids_stmt = tree_ids_stmt.where(Tree.project_id == project_id)
     tree_ids = [row[0] for row in (await db.execute(tree_ids_stmt)).all()]
     if not tree_ids:
         return [SeriesPoint(label=f"{month_abbr[m]} {yr}", value=0.0) for yr, m in month_keys]

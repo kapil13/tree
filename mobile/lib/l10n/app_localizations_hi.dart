@@ -1825,4 +1825,67 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get auditSyncEmptyHint =>
       'फ़ील्ड या एस्टेट वॉच ऑडिट से प्लॉट विज़िट कैप्चर करें';
+
+  @override
+  String get dashboardAlertsSection => 'Alerts';
+
+  @override
+  String get dashboardNoUrgentAlerts => 'No urgent items';
+
+  @override
+  String get dashboardAlertsClear => 'Field alerts are clear for now';
+
+  @override
+  String get pendingSyncBannerSyncing => 'Syncing offline data…';
+
+  @override
+  String pendingSyncBannerWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items waiting to sync when online',
+      one: '1 item waiting to sync when online',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syncNow => 'Sync now';
+
+  @override
+  String get syncQueueAllSynced => 'All synced';
+
+  @override
+  String syncQueuePendingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items pending',
+      one: '1 item pending',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncQueueBreakdown(int trees, int survival, int audit, int bio) {
+    return '$trees trees · $survival survival · $audit audit · $bio bio';
+  }
+
+  @override
+  String get fieldAlertsTitle => 'Field alerts';
+
+  @override
+  String get addTreeWizardSiteSpecies => 'Site & species';
+
+  @override
+  String get addTreeWizardGpsPlacement => 'GPS & placement';
+
+  @override
+  String get addTreeWizardPhotosSubmit => 'Photos & submit';
+
+  @override
+  String get viewSyncQueue => 'View sync queue';
+
+  @override
+  String get monitoringBioLoadError => 'Bioacoustic summary unavailable';
 }

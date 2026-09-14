@@ -117,7 +117,8 @@ final projectSchemeProvider =
 
 final dashboardProvider = FutureProvider.autoDispose((ref) async {
   final api = await ref.watch(apiClientProvider.future);
-  return api.dashboard();
+  final projectId = ref.watch(selectedProjectIdProvider);
+  return api.dashboard(projectId: projectId);
 });
 
 final treesProvider = FutureProvider.autoDispose((ref) async {
