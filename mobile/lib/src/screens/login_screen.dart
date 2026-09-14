@@ -365,26 +365,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: l10n.emailLabel,
-                  prefixIcon: const Icon(Icons.mail_outline, size: 20),
+              Semantics(
+                label: l10n.emailLabel,
+                textField: true,
+                child: TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: l10n.emailLabel,
+                    prefixIcon: const Icon(Icons.mail_outline, size: 20),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _pwd,
-                obscureText: _obscurePassword,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (!_busy && _loaded) _submitEmail();
-                },
-                decoration: InputDecoration(
-                  labelText: l10n.passwordLabel,
+              Semantics(
+                label: l10n.passwordLabel,
+                textField: true,
+                child: TextField(
+                  controller: _pwd,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) {
+                    if (!_busy && _loaded) _submitEmail();
+                  },
+                  decoration: InputDecoration(
+                    labelText: l10n.passwordLabel,
                   prefixIcon: const Icon(Icons.lock_outline, size: 20),
                   suffixIcon: IconButton(
                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -395,6 +402,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       size: 20,
                     ),
                   ),
+                ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -461,9 +469,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 AuthErrorBanner(message: _err!),
               ],
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: _busy || !_loaded ? null : _submitEmail,
-                child: Text(_busy ? l10n.signingIn : l10n.signIn),
+              Semantics(
+                button: true,
+                label: l10n.signIn,
+                child: FilledButton(
+                  onPressed: _busy || !_loaded ? null : _submitEmail,
+                  child: Text(_busy ? l10n.signingIn : l10n.signIn),
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(

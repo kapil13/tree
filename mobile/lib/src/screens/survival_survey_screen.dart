@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../location_helper.dart';
 import '../providers.dart';
 import '../theme.dart';
@@ -140,8 +141,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
         context.pop();
       }
     } catch (e) {
-      if (isUnauthorizedError(e)) {
-        if (mounted) setState(() => _error = apiErrorMessage(e));
+      if (maybeRedirectUnauthorized(ref, context, e)) {
+        if (mounted) setState(() => _submitting = false);
         return;
       }
       if (!isOfflineOrNetworkError(e)) {

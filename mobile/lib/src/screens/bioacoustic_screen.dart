@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../location_helper.dart';
 import '../offline/bioacoustic_queue.dart';
 import '../offline/bioacoustic_sync.dart';
@@ -199,7 +200,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
           context.push('/bioacoustic/${rec['id']}');
         }
       } catch (e) {
-        if (isUnauthorizedError(e)) rethrow;
+        if (maybeRedirectUnauthorized(ref, context, e)) return;
         await ref.read(bioacousticQueueProvider).enqueue(
               tempFilePath: path,
               durationSeconds: _elapsed.toDouble(),
@@ -216,6 +217,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
         }
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -244,6 +246,7 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
         }
       }
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (mounted) setState(() => _error = apiErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);

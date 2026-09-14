@@ -320,6 +320,48 @@ abstract class AppLocalizations {
   /// **'Tree adoption is available for BYOT citizen accounts.'**
   String get citizenAdoptNotAvailable;
 
+  /// No description provided for @citizenStewardshipHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My stewardship'**
+  String get citizenStewardshipHubTitle;
+
+  /// No description provided for @citizenStewardshipOwnedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'My trees'**
+  String get citizenStewardshipOwnedTab;
+
+  /// No description provided for @citizenStewardshipAdoptedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Adopted'**
+  String get citizenStewardshipAdoptedTab;
+
+  /// No description provided for @citizenStewardshipCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get citizenStewardshipCheckIn;
+
+  /// No description provided for @citizenStewardshipDueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in due'**
+  String get citizenStewardshipDueBadge;
+
+  /// No description provided for @citizenStewardshipEmptyOwned.
+  ///
+  /// In en, this message translates to:
+  /// **'No registered trees yet. Register your first tree from the Field tab.'**
+  String get citizenStewardshipEmptyOwned;
+
+  /// No description provided for @citizenStewardshipEmptyAdopted.
+  ///
+  /// In en, this message translates to:
+  /// **'No adopted trees yet. Browse adoptable trees to get started.'**
+  String get citizenStewardshipEmptyAdopted;
+
   /// No description provided for @bioAnalysisRunning.
   ///
   /// In en, this message translates to:

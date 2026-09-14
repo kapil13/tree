@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../l10n/alert_filters.dart';
 import '../l10n/alert_labels.dart';
 import '../providers.dart';
@@ -144,6 +145,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         },
       );
     } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorMessage(e))),
@@ -177,7 +179,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       ),
       body: alertsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
-        error: (e, _) => Center(
+        error: (e, _) {
+          if (maybeRedirectUnauthorized(ref, context, e)) {
+            return const SizedBox.shrink();
+          }
+          return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -193,7 +199,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ],
             ),
           ),
-        ),
+        );
+        },
         data: (items) {
           final filtered = _filtered(items);
           return RefreshIndicator(

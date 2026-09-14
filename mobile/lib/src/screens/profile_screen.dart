@@ -497,10 +497,21 @@ class _CitizenStewardshipCardState extends ConsumerState<_CitizenStewardshipCard
                 ),
               ],
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => context.push('/citizen/adopt'),
-                icon: const Icon(Icons.favorite_border, size: 18),
-                label: Text(l10n.citizenAdoptTitle),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/citizen/stewardship'),
+                    icon: const Icon(Icons.eco_outlined, size: 18),
+                    label: Text(l10n.citizenStewardshipHubTitle),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/citizen/adopt'),
+                    icon: const Icon(Icons.favorite_border, size: 18),
+                    label: Text(l10n.citizenAdoptTitle),
+                  ),
+                ],
               ),
             ],
           ),

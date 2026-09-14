@@ -136,6 +136,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tree adoption is available for BYOT citizen accounts.';
 
   @override
+  String get citizenStewardshipHubTitle => 'My stewardship';
+
+  @override
+  String get citizenStewardshipOwnedTab => 'My trees';
+
+  @override
+  String get citizenStewardshipAdoptedTab => 'Adopted';
+
+  @override
+  String get citizenStewardshipCheckIn => 'Check in';
+
+  @override
+  String get citizenStewardshipDueBadge => 'Check-in due';
+
+  @override
+  String get citizenStewardshipEmptyOwned =>
+      'No registered trees yet. Register your first tree from the Field tab.';
+
+  @override
+  String get citizenStewardshipEmptyAdopted =>
+      'No adopted trees yet. Browse adoptable trees to get started.';
+
+  @override
   String get bioAnalysisRunning => 'Analysis running…';
 
   @override

@@ -97,43 +97,65 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String citizenStewardshipAdopted(int count) {
-    return '$count trees adopted';
+    return '$count पेड़ अपनाए';
   }
 
   @override
   String citizenStewardshipPoints(int count) {
-    return '$count stewardship points';
+    return '$count देखभाल अंक';
   }
 
   @override
-  String get citizenAdoptTitle => 'Adopt a tree';
+  String get citizenAdoptTitle => 'पेड़ अपनाएं';
 
   @override
-  String get citizenAdoptSubtitle =>
-      'Support a neighbour\'s BYOT tree with periodic check-ins.';
+  String get citizenAdoptSubtitle => 'किसी पड़ोसी के BYOT पेड़ की देखभाल करें।';
 
   @override
-  String get citizenAdoptCodeLabel => 'Tree public code';
+  String get citizenAdoptCodeLabel => 'पेड़ का सार्वजनिक कोड';
 
   @override
-  String get citizenAdoptByCode => 'Adopt by code';
+  String get citizenAdoptByCode => 'कोड से अपनाएं';
 
   @override
-  String get citizenAdoptAction => 'Adopt';
+  String get citizenAdoptAction => 'अपनाएं';
 
   @override
-  String get citizenAdoptBrowseTitle => 'Trees near you';
+  String get citizenAdoptBrowseTitle => 'आपके पास के पेड़';
 
   @override
   String get citizenAdoptEmpty =>
-      'No adoptable trees right now. Try a public code from a QR link.';
+      'अभी कोई पेड़ उपलब्ध नहीं। QR लिंक से कोड आज़माएं।';
 
   @override
-  String get citizenAdoptSuccess => 'Tree adopted — thank you for stewarding!';
+  String get citizenAdoptSuccess => 'पेड़ अपनाया — देखभाल के लिए धन्यवाद!';
 
   @override
   String get citizenAdoptNotAvailable =>
-      'Tree adoption is available for BYOT citizen accounts.';
+      'पेड़ अपनाना BYOT नागरिक खातों के लिए है।';
+
+  @override
+  String get citizenStewardshipHubTitle => 'मेरी देखभाल';
+
+  @override
+  String get citizenStewardshipOwnedTab => 'मेरे पेड़';
+
+  @override
+  String get citizenStewardshipAdoptedTab => 'अपनाए';
+
+  @override
+  String get citizenStewardshipCheckIn => 'चेक-इन';
+
+  @override
+  String get citizenStewardshipDueBadge => 'जांच बकाया';
+
+  @override
+  String get citizenStewardshipEmptyOwned =>
+      'अभी कोई पेड़ पंजीकृत नहीं। फील्ड टैब से पहला पेड़ जोड़ें।';
+
+  @override
+  String get citizenStewardshipEmptyAdopted =>
+      'अभी कोई पेड़ अपनाया नहीं। अपनाने योग्य पेड़ देखें।';
 
   @override
   String get bioAnalysisRunning => 'विश्लेषण चल रहा है…';

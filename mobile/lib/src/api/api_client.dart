@@ -115,7 +115,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 45),
       headers: {
         'Content-Type': 'application/json',
-        'X-Aranyix-Client': 'mobile/1.5.0',
+        'X-Aranyix-Client': 'mobile/1.6.0',
       },
     ));
     CertificatePinning.configureDio(dio);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
 import '../l10n/alert_labels.dart';
 import '../nav_access.dart';
 import '../providers.dart';
@@ -51,7 +52,11 @@ class MonitoringScreen extends ConsumerWidget {
       ),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
-        error: (e, _) => Center(
+        error: (e, _) {
+          if (maybeRedirectUnauthorized(ref, context, e)) {
+            return const SizedBox.shrink();
+          }
+          return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -67,7 +72,8 @@ class MonitoringScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ),
+        );
+        },
         data: (summary) {
           final workAreas = List<dynamic>.from(summary['work_area_monitoring'] ?? []);
           final highlightFenceId = GoRouterState.of(context).uri.queryParameters['fence'];

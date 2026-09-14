@@ -787,7 +787,13 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     final photoCount = _photoKeys.length + _localPhotoPaths.length;
     final onLastStep = _wizardStep == _wizardStepCount - 1;
 
-    return stackRouteScaffold(
+    return PopScope(
+      canPop: _wizardStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _wizardStep == 0) return;
+        _prevWizardStep();
+      },
+      child: stackRouteScaffold(
       location: '/trees/new',
       appBar: ShellTopBar(title: title, menuWithBack: true),
       body: ResponsiveContent(
@@ -834,6 +840,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           ),
           _wizardStickyFooter(l10n, onLastStep: onLastStep),
         ],
+      ),
       ),
       ),
     );
