@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../field_ops_actions.dart';
+import '../geo_utils.dart';
 import '../nav_access.dart';
 import '../project_context.dart';
 import '../providers.dart';
@@ -69,6 +70,7 @@ class _FieldCaptureBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final treesAsync = ref.watch(treesProvider);
+    final locationAsync = ref.watch(fieldLocationProvider);
     final alertsAsync = ref.watch(alertsProvider);
     final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
     final nextAlert = alerts.cast<Map<String, dynamic>?>().firstWhere(
@@ -141,7 +143,7 @@ class _FieldCaptureBody extends ConsumerWidget {
             onLink: () => context.go('/trees'),
           ),
           treesAsync.when(
-            loading: () => const LinearProgressIndicator(),
+            loading: () => const PrototypeLoadingSkeleton(lines: 3),
             error: (e, _) => SessionAwareErrorView(
               error: e,
               onRetry: () => ref.invalidate(treesProvider),
@@ -151,12 +153,28 @@ class _FieldCaptureBody extends ConsumerWidget {
               if (items.isEmpty) {
                 return Text(l10n.noTreesYet, style: const TextStyle(color: PrototypeColors.textSecondary));
               }
+              final location = locationAsync.valueOrNull;
+              final nearby = location == null
+                  ? items.cast<Map>()
+                  : sortTreesByDistance(
+                      items,
+                      latitude: location.lat,
+                      longitude: location.lon,
+                    );
               return Column(
                 children: [
-                  for (final raw in items.take(5))
+                  if (location != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        l10n.fieldNearbyTreesSorted,
+                        style: const TextStyle(fontSize: 12, color: PrototypeColors.textSecondary),
+                      ),
+                    ),
+                  for (final raw in nearby.take(5))
                     PrototypePriorityCard(
                       icon: '🌳',
-                      title: (raw as Map)['species_text'] as String? ?? l10n.treeFallback,
+                      title: raw['species_text'] as String? ?? l10n.treeFallback,
                       subtitle: raw['public_code'] as String? ?? '',
                       onTap: () => context.push('/trees/${raw['id']}'),
                     ),
@@ -184,7 +202,10 @@ class _FieldOpsBody extends ConsumerWidget {
     final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
 
     return summaryAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: PrototypeLoadingSkeleton(lines: 5),
+      ),
       error: (e, _) => SessionAwareErrorView(
         error: e,
         onRetry: () => ref.invalidate(fieldOpsSummaryProvider),

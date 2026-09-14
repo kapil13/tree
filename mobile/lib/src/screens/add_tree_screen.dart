@@ -532,23 +532,22 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  int get _visualStep {
-    if (_wizardStep <= 1) return 1;
-    if (_wizardStep == 2) return 2;
-    return 3;
-  }
-
-  String _visualStepLabel(AppLocalizations l10n) {
-    if (_wizardStep <= 1) return l10n.addTreeWizardSiteSpecies;
-    if (_wizardStep == 2) return l10n.addTreeWizardGpsPlacement;
-    return l10n.addTreeWizardPhotosSubmit;
+  String _wizardStepLabel(AppLocalizations l10n) {
+    return switch (_wizardStep) {
+      0 => l10n.addTreeWizardContext,
+      1 => l10n.addTreeWizardSiteSpecies,
+      2 => l10n.addTreeWizardGpsPlacement,
+      3 => l10n.addTreeWizardPhotos,
+      _ => l10n.addTreeWizardReview,
+    };
   }
 
   Widget _wizardProgress(AppLocalizations l10n) {
+    final step = _wizardStep + 1;
     return PrototypeCaptureProgress(
-      step: _visualStep,
-      totalSteps: 3,
-      label: '${l10n.addTreeStepOf(_visualStep, 3)} · ${_visualStepLabel(l10n)}',
+      step: step,
+      totalSteps: _wizardStepCount,
+      label: '${l10n.addTreeStepOf(step, _wizardStepCount)} · ${_wizardStepLabel(l10n)}',
     );
   }
 

@@ -1894,4 +1894,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitoringBioLoadError => 'Bioacoustic summary unavailable';
+
+  @override
+  String get addTreeWizardContext => 'Project & work area';
+
+  @override
+  String get addTreeWizardPhotos => 'Photos';
+
+  @override
+  String get addTreeWizardReview => 'Review & submit';
+
+  @override
+  String get fieldNearbyTreesSorted =>
+      'Sorted by distance from your current location';
+
+  @override
+  String dashboardTreesRegistered(int count) {
+    return '$count trees registered';
+  }
 }

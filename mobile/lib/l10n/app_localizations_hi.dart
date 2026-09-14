@@ -1827,65 +1827,83 @@ class AppLocalizationsHi extends AppLocalizations {
       'फ़ील्ड या एस्टेट वॉच ऑडिट से प्लॉट विज़िट कैप्चर करें';
 
   @override
-  String get dashboardAlertsSection => 'Alerts';
+  String get dashboardAlertsSection => 'अलर्ट';
 
   @override
-  String get dashboardNoUrgentAlerts => 'No urgent items';
+  String get dashboardNoUrgentAlerts => 'कोई तत्काल आइटम नहीं';
 
   @override
-  String get dashboardAlertsClear => 'Field alerts are clear for now';
+  String get dashboardAlertsClear => 'फ़ील्ड अलर्ट अभी साफ़ हैं';
 
   @override
-  String get pendingSyncBannerSyncing => 'Syncing offline data…';
+  String get pendingSyncBannerSyncing => 'ऑफ़लाइन डेटा सिंक हो रहा है…';
 
   @override
   String pendingSyncBannerWaiting(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items waiting to sync when online',
-      one: '1 item waiting to sync when online',
+      other: '$count आइटम ऑनलाइन होने पर सिंक की प्रतीक्षा में',
+      one: '1 आइटम ऑनलाइन होने पर सिंक की प्रतीक्षा में',
     );
     return '$_temp0';
   }
 
   @override
-  String get syncNow => 'Sync now';
+  String get syncNow => 'अभी सिंक करें';
 
   @override
-  String get syncQueueAllSynced => 'All synced';
+  String get syncQueueAllSynced => 'सब सिंक हो गया';
 
   @override
   String syncQueuePendingCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count items pending',
-      one: '1 item pending',
+      other: '$count आइटम लंबित',
+      one: '1 आइटम लंबित',
     );
     return '$_temp0';
   }
 
   @override
   String syncQueueBreakdown(int trees, int survival, int audit, int bio) {
-    return '$trees trees · $survival survival · $audit audit · $bio bio';
+    return '$trees पेड़ · $survival सर्वाइवल · $audit ऑडिट · $bio बायो';
   }
 
   @override
-  String get fieldAlertsTitle => 'Field alerts';
+  String get fieldAlertsTitle => 'फ़ील्ड अलर्ट';
 
   @override
-  String get addTreeWizardSiteSpecies => 'Site & species';
+  String get addTreeWizardSiteSpecies => 'साइट और प्रजाति';
 
   @override
-  String get addTreeWizardGpsPlacement => 'GPS & placement';
+  String get addTreeWizardGpsPlacement => 'GPS और स्थान';
 
   @override
-  String get addTreeWizardPhotosSubmit => 'Photos & submit';
+  String get addTreeWizardPhotosSubmit => 'फ़ोटो और सबमिट';
 
   @override
-  String get viewSyncQueue => 'View sync queue';
+  String get viewSyncQueue => 'सिंक कतार देखें';
 
   @override
-  String get monitoringBioLoadError => 'Bioacoustic summary unavailable';
+  String get monitoringBioLoadError => 'बायोअकॉस्टिक सारांश उपलब्ध नहीं';
+
+  @override
+  String get addTreeWizardContext => 'प्रोजेक्ट और कार्य क्षेत्र';
+
+  @override
+  String get addTreeWizardPhotos => 'फ़ोटो';
+
+  @override
+  String get addTreeWizardReview => 'समीक्षा और सबमिट';
+
+  @override
+  String get fieldNearbyTreesSorted =>
+      'आपके वर्तमान स्थान से दूरी के अनुसार क्रमबद्ध';
+
+  @override
+  String dashboardTreesRegistered(int count) {
+    return '$count पेड़ पंजीकृत';
+  }
 }

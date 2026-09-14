@@ -289,9 +289,25 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     );
   }
 
+  Widget _syncingBadge(bool syncing) {
+    if (!syncing) return const SizedBox.shrink();
+    return const Padding(
+      padding: EdgeInsets.only(left: 6),
+      child: SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(strokeWidth: 2, color: PrototypeColors.brandCanopy),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    ref.watch(treeRegistrationSyncProvider);
+    ref.watch(bioacousticSyncProvider);
+    ref.watch(auditVisitSyncProvider);
+    ref.watch(survivalSurveySyncProvider);
     final treePending = _treeItems.where((i) => i.status != TreeQueueStatus.syncing).length;
     final bioPending = _bioItems.where((i) => i.status != BioacousticQueueStatus.syncing).length;
     final auditPending = _auditItems.where((i) => i.status != AuditVisitQueueStatus.syncing).length;
@@ -358,10 +374,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   meta: '${item.photoPaths.length} photo(s) · ${_queueLabel(item.status)}',
                   health: null,
                   badges: [
-                    PrototypeStatusBadge(
-                      label: _queueLabel(item.status),
-                      variant: item.status == TreeQueueStatus.failed ? 'danger' : 'warn',
-                    ),
+                    if (item.status == TreeQueueStatus.syncing)
+                      _syncingBadge(true)
+                    else
+                      PrototypeStatusBadge(
+                        label: _queueLabel(item.status),
+                        variant: item.status == TreeQueueStatus.failed ? 'danger' : 'warn',
+                      ),
                   ],
                   onTap: () => _previewTreeItem(item),
                 ),
@@ -376,10 +395,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   meta: '${item.photoPaths.length} photo(s) · ${_survivalQueueLabel(item.status)}',
                   health: null,
                   badges: [
-                    PrototypeStatusBadge(
-                      label: _survivalQueueLabel(item.status),
-                      variant: item.status == SurvivalSurveyQueueStatus.failed ? 'danger' : 'warn',
-                    ),
+                    if (item.status == SurvivalSurveyQueueStatus.syncing)
+                      _syncingBadge(true)
+                    else
+                      PrototypeStatusBadge(
+                        label: _survivalQueueLabel(item.status),
+                        variant: item.status == SurvivalSurveyQueueStatus.failed ? 'danger' : 'warn',
+                      ),
                   ],
                   onTap: () => _previewSurvivalItem(item),
                 ),
@@ -406,10 +428,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   meta: '${item.photoPaths.length} photo(s) · ${_auditQueueLabel(item.status)}',
                   health: null,
                   badges: [
-                    PrototypeStatusBadge(
-                      label: _auditQueueLabel(item.status),
-                      variant: item.status == AuditVisitQueueStatus.failed ? 'danger' : 'warn',
-                    ),
+                    if (item.status == AuditVisitQueueStatus.syncing)
+                      _syncingBadge(true)
+                    else
+                      PrototypeStatusBadge(
+                        label: _auditQueueLabel(item.status),
+                        variant: item.status == AuditVisitQueueStatus.failed ? 'danger' : 'warn',
+                      ),
                   ],
                   onTap: () => _previewAuditItem(item),
                 ),
@@ -424,10 +449,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                   meta: item.createdAt.toLocal().toString().substring(0, 16),
                   health: null,
                   badges: [
-                    PrototypeStatusBadge(
-                      label: _bioQueueLabel(item.status),
-                      variant: item.status == BioacousticQueueStatus.failed ? 'danger' : 'warn',
-                    ),
+                    if (item.status == BioacousticQueueStatus.syncing)
+                      _syncingBadge(true)
+                    else
+                      PrototypeStatusBadge(
+                        label: _bioQueueLabel(item.status),
+                        variant: item.status == BioacousticQueueStatus.failed ? 'danger' : 'warn',
+                      ),
                   ],
                   onTap: () => _previewBioItem(item),
                 ),
@@ -440,7 +468,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                 padding: const EdgeInsets.only(top: 8),
                 child: PrototypeEmptyState(
                   icon: '✓',
-                  title: 'All synced',
+                  title: l10n.syncQueueAllSynced,
                   subtitle: l10n.auditSyncEmptyHint,
                 ),
               ),
