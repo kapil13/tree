@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'api/api_client.dart';
 import 'project_context.dart';
 import 'offline/bioacoustic_queue.dart';
@@ -205,6 +206,23 @@ final regionalFaunaProvider = FutureProvider.autoDispose.family<Map<String, dyna
   final lon = double.parse(parts[1]);
   final api = await ref.watch(apiClientProvider.future);
   return api.regionalFauna(latitude: lat, longitude: lon);
+});
+
+/// Best-effort device location for sorting nearby field trees.
+final fieldLocationProvider = FutureProvider.autoDispose<({double lat, double lon})?>((ref) async {
+  try {
+    final last = await Geolocator.getLastKnownPosition();
+    if (last != null) {
+      return (lat: last.latitude, lon: last.longitude);
+    }
+    final current = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.low,
+      timeLimit: const Duration(seconds: 5),
+    );
+    return (lat: current.latitude, lon: current.longitude);
+  } catch (_) {
+    return null;
+  }
 });
 
 /// Weather at first registered tree, or null when no trees exist.

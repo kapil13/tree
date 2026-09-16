@@ -3481,6 +3481,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bioacoustic summary unavailable'**
   String get monitoringBioLoadError;
+
+  /// No description provided for @addTreeWizardContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Project & work area'**
+  String get addTreeWizardContext;
+
+  /// No description provided for @addTreeWizardPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get addTreeWizardPhotos;
+
+  /// No description provided for @addTreeWizardReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & submit'**
+  String get addTreeWizardReview;
+
+  /// No description provided for @fieldNearbyTreesSorted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorted by distance from your current location'**
+  String get fieldNearbyTreesSorted;
+
+  /// No description provided for @dashboardTreesRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees registered'**
+  String dashboardTreesRegistered(int count);
 }
 
 class _AppLocalizationsDelegate

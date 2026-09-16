@@ -120,6 +120,100 @@ List<String> buildAiBriefLines({
   return lines.take(3).toList();
 }
 
+class HomeQueueItem {
+  const HomeQueueItem({
+    required this.kind,
+    required this.title,
+    required this.subtitle,
+    required this.severity,
+    this.violation,
+    this.projectId,
+  });
+
+  final String kind;
+  final String title;
+  final String subtitle;
+  final String severity;
+  final Map<String, dynamic>? violation;
+  final String? projectId;
+}
+
+List<HomeQueueItem> buildHomeQueueItems({
+  required List<dynamic> alerts,
+  Map<String, dynamic>? fieldSummary,
+  bool includeFieldOps = false,
+  int limit = 3,
+}) {
+  final items = <HomeQueueItem>[];
+
+  if (includeFieldOps && fieldSummary != null) {
+    for (final raw in List<dynamic>.from(fieldSummary['recent_violations'] ?? []).take(2)) {
+      final violation = Map<String, dynamic>.from(raw as Map);
+      items.add(
+        HomeQueueItem(
+          kind: 'violation',
+          title: violation['message'] as String? ??
+              violation['violation_type'] as String? ??
+              'Violation',
+          subtitle: violation['project_name'] as String? ?? '',
+          severity: 'high',
+          violation: violation,
+        ),
+      );
+    }
+    for (final raw in List<dynamic>.from(fieldSummary['projects'] ?? [])) {
+      final project = raw as Map;
+      final due = (project['survival_due'] as num?)?.toInt() ?? 0;
+      if (due <= 0) continue;
+      items.add(
+        HomeQueueItem(
+          kind: 'survival',
+          title: '${project['name'] ?? 'Project'} — survival due',
+          subtitle: '$due trees due',
+          severity: 'moderate',
+          projectId: project['id']?.toString(),
+        ),
+      );
+    }
+  }
+
+  for (final raw in alerts) {
+    final alert = raw as Map;
+    if (alert['is_read'] == true) continue;
+    items.add(
+      HomeQueueItem(
+        kind: 'alert',
+        title: alert['title'] as String? ?? 'Alert',
+        subtitle: alert['message'] as String? ?? alert['severity'] as String? ?? '',
+        severity: alert['severity'] as String? ?? 'medium',
+      ),
+    );
+  }
+
+  return items.take(limit).toList();
+}
+
+String homeContextMeta({
+  required int trees,
+  required String treesRegisteredLabel,
+  required String emptyTreesLabel,
+  Map<String, dynamic>? weather,
+}) {
+  final treePart = trees > 0 ? treesRegisteredLabel : emptyTreesLabel;
+  if (weather == null) return treePart;
+  final days = weather['days'] as List<dynamic>? ?? [];
+  if (days.isEmpty) return treePart;
+  final today = Map<String, dynamic>.from(days.first as Map);
+  final maxTemp = (today['temp_max_c'] as num?)?.round();
+  final description = today['description'] as String?;
+  if (maxTemp == null && (description == null || description.isEmpty)) return treePart;
+  final weatherPart = [
+    if (maxTemp != null) '${maxTemp}°C',
+    if (description != null && description.isNotEmpty) description,
+  ].join(' · ');
+  return '$treePart · $weatherPart';
+}
+
 PriorityAlertView? pickPriorityAlert(List<dynamic> alerts) {
   for (final raw in alerts) {
     final a = raw as Map<String, dynamic>;

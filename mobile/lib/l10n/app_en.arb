@@ -812,5 +812,15 @@
   "addTreeWizardGpsPlacement": "GPS & placement",
   "addTreeWizardPhotosSubmit": "Photos & submit",
   "viewSyncQueue": "View sync queue",
-  "monitoringBioLoadError": "Bioacoustic summary unavailable"
+  "monitoringBioLoadError": "Bioacoustic summary unavailable",
+  "addTreeWizardContext": "Project & work area",
+  "addTreeWizardPhotos": "Photos",
+  "addTreeWizardReview": "Review & submit",
+  "fieldNearbyTreesSorted": "Sorted by distance from your current location",
+  "dashboardTreesRegistered": "{count} trees registered",
+  "@dashboardTreesRegistered": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

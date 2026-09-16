@@ -564,5 +564,10 @@
   "addTreeWizardGpsPlacement": "GPS और स्थान",
   "addTreeWizardPhotosSubmit": "फ़ोटो और सबमिट",
   "viewSyncQueue": "सिंक कतार देखें",
-  "monitoringBioLoadError": "बायोअकॉस्टिक सारांश उपलब्ध नहीं"
+  "monitoringBioLoadError": "बायोअकॉस्टिक सारांश उपलब्ध नहीं",
+  "addTreeWizardContext": "प्रोजेक्ट और कार्य क्षेत्र",
+  "addTreeWizardPhotos": "फ़ोटो",
+  "addTreeWizardReview": "समीक्षा और सबमिट",
+  "fieldNearbyTreesSorted": "आपके वर्तमान स्थान से दूरी के अनुसार क्रमबद्ध",
+  "dashboardTreesRegistered": "{count} पेड़ पंजीकृत"
 }

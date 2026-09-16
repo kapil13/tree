@@ -33,14 +33,14 @@ class MonitoringScreen extends ConsumerWidget {
   }
 
   void _openWorkArea(BuildContext context, Map raw) {
+    final workAreaId = raw['id'] as String? ?? raw['work_area_id'] as String?;
+    if (workAreaId != null && workAreaId.isNotEmpty) {
+      context.push('/map?fence=$workAreaId');
+      return;
+    }
     final projectId = raw['project_id'] as String?;
     if (projectId != null && projectId.isNotEmpty) {
       context.push('/projects/$projectId');
-      return;
-    }
-    final workAreaId = raw['id'] as String? ?? raw['work_area_id'] as String?;
-    if (workAreaId != null && workAreaId.isNotEmpty) {
-      context.push('/map?focus=$workAreaId');
     }
   }
 
@@ -66,7 +66,10 @@ class MonitoringScreen extends ConsumerWidget {
         onAlerts: () => context.go('/notifications'),
       ),
       body: summaryAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: PrototypeLoadingSkeleton(lines: 5),
+        ),
         error: (e, _) {
           if (maybeRedirectUnauthorized(ref, context, e)) {
             return const SizedBox.shrink();

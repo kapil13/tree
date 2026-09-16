@@ -1580,7 +1580,64 @@ class PrototypeMapPinSheet extends StatelessWidget {
   }
 }
 
-/// Single continuous progress bar for 3-step capture flows.
+/// Placeholder blocks for list loading states (home, field, monitoring).
+class PrototypeLoadingSkeleton extends StatefulWidget {
+  const PrototypeLoadingSkeleton({super.key, this.lines = 4});
+
+  final int lines;
+
+  @override
+  State<PrototypeLoadingSkeleton> createState() => _PrototypeLoadingSkeletonState();
+}
+
+class _PrototypeLoadingSkeletonState extends State<PrototypeLoadingSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final opacity = 0.45 + (_controller.value * 0.35);
+        return Column(
+          children: [
+            for (var i = 0; i < widget.lines; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Opacity(
+                  opacity: opacity,
+                  child: Container(
+                    height: i == 0 ? 72 : 56,
+                    width: i == widget.lines - 1 ? MediaQuery.sizeOf(context).width * 0.65 : double.infinity,
+                    decoration: BoxDecoration(
+                      color: PrototypeColors.border,
+                      borderRadius: BorderRadius.circular(PrototypeRadii.lg),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Single continuous progress bar for multi-step capture flows.
 class PrototypeCaptureProgress extends StatelessWidget {
   const PrototypeCaptureProgress({super.key, required this.step, required this.totalSteps, this.label});
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_errors.dart';
 import '../api/auth_redirect.dart';
 import '../dashboard/dashboard_brief.dart';
+import '../field_ops_actions.dart';
 import '../nav_access.dart';
 import '../project_context.dart';
 import '../providers.dart';
@@ -24,6 +25,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dashAsync = ref.watch(dashboardProvider);
     final alertsAsync = ref.watch(alertsProvider);
+    final fieldOpsAsync = ref.watch(fieldOpsSummaryProvider);
     final weatherAsync = ref.watch(weatherProvider);
     final fencesAsync = ref.watch(plantationFencesProvider);
     final projectsAsync = ref.watch(plantingProjectsProvider);
@@ -63,11 +65,15 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(dashboardProvider);
           ref.invalidate(alertsProvider);
           ref.invalidate(weatherProvider);
+          ref.invalidate(fieldOpsSummaryProvider);
           ref.invalidate(plantationFencesProvider);
           ref.invalidate(treesProvider);
         },
         child: dashAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(16),
+            child: PrototypeLoadingSkeleton(lines: 6),
+          ),
           error: (e, _) {
             if (maybeRedirectUnauthorized(ref, context, e)) {
               return const Center(child: CircularProgressIndicator());
@@ -118,7 +124,12 @@ class HomeScreen extends ConsumerWidget {
                     : PrototypeStatusLevel.critical;
             final statusLabel = health.score >= 75 ? 'Portfolio healthy' : health.score >= 50 ? 'Needs attention' : 'Critical signals';
             final projectName = projectLabel;
-            final queueAlerts = alerts.where((a) => (a as Map)['is_read'] != true).take(3).toList();
+            final fieldSummary = fieldOpsAsync.maybeWhen(data: (d) => d, orElse: () => null);
+            final queueItems = buildHomeQueueItems(
+              alerts: alerts,
+              fieldSummary: fieldSummary,
+              includeFieldOps: canSeeFieldOps(user),
+            );
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -127,7 +138,12 @@ class HomeScreen extends ConsumerWidget {
                 const PendingSyncBanner(),
                 PrototypeContextStrip(
                   project: projectName,
-                  meta: trees > 0 ? '$trees trees registered' : l10n.registerTreePrimarySub,
+                  meta: homeContextMeta(
+                    trees: trees,
+                    treesRegisteredLabel: l10n.dashboardTreesRegistered(trees),
+                    emptyTreesLabel: l10n.registerTreePrimarySub,
+                    weather: weather,
+                  ),
                 ),
                 PrototypeStatusBanner(
                   title: statusLabel,
@@ -180,7 +196,7 @@ class HomeScreen extends ConsumerWidget {
                   linkLabel: l10n.navField,
                   onLink: () => context.go('/field'),
                 ),
-                if (queueAlerts.isEmpty)
+                if (queueItems.isEmpty)
                   PrototypePriorityCard(
                     icon: '✓',
                     title: l10n.dashboardNoUrgentAlerts,
@@ -189,14 +205,31 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => context.go('/field'),
                   )
                 else
-                  for (final raw in queueAlerts)
+                  for (final item in queueItems)
                     PrototypePriorityCard(
-                      icon: '!',
-                      title: (raw as Map)['title'] as String? ?? 'Alert',
-                      subtitle: (raw)['message'] as String? ?? (raw)['severity'] as String? ?? '',
-                      severity: (raw)['severity'] as String? ?? 'medium',
-                      action: 'Open',
-                      onTap: () => context.go('/notifications'),
+                      icon: item.kind == 'violation' ? '!' : item.kind == 'survival' ? '🌳' : '!',
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      severity: item.severity,
+                      action: item.kind == 'survival' ? l10n.viewAll : 'Open',
+                      onTap: () {
+                        switch (item.kind) {
+                          case 'violation':
+                            if (item.violation != null) {
+                              resolveComplianceViolation(context, ref, item.violation!);
+                            } else {
+                              context.go('/field');
+                            }
+                          case 'survival':
+                            if (item.projectId != null) {
+                              context.push('/projects/${item.projectId}');
+                            } else {
+                              context.go('/field');
+                            }
+                          default:
+                            context.go('/notifications');
+                        }
+                      },
                     ),
                 PrototypeSectionHeader(
                   title: 'Spatial',
