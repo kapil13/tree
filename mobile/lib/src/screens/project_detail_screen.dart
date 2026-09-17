@@ -9,6 +9,7 @@ import '../field_ops_actions.dart';
 import '../integrity_remediation.dart';
 import '../project_setup_readiness.dart';
 import '../providers.dart';
+import '../widgets/project_scheme_context_card.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
 import 'projects_list_screen.dart' show segmentLabels;
@@ -60,9 +61,13 @@ class ProjectDetailScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(project['name'] as String, style: Theme.of(context).textTheme.headlineSmall),
-              Text('${project['code']} · ${segmentLabels[segment] ?? segment}'),
+              Text(
+                '${project['code']} · ${segment == 'nutri_garden' ? l10n.segmentNutriGarden : segmentLabels[segment] ?? segment}',
+              ),
               const SizedBox(height: 8),
               Text(project['description'] as String? ?? ''),
+              const SizedBox(height: 16),
+              ProjectSchemeContextCard(scheme: scheme, project: project),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,

@@ -60,6 +60,7 @@ const MINISTRY_TONE: Record<string, string> = {
   "Rural Development": "bg-amber-50 text-amber-900 ring-amber-100",
   "Ministry of Cooperation": "bg-orange-50 text-orange-900 ring-orange-100",
   "MoM / IBM": "bg-amber-50 text-amber-900 ring-amber-100",
+  "Rajasthan Forest & Rural Development": "bg-lime-50 text-lime-900 ring-lime-100",
 };
 
 function complianceLabel(mode: ComplianceMode): string {

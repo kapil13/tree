@@ -33,7 +33,13 @@ export function ProjectTreeSchemeContext({
   const ruleLines = plantingRulesSummary(rules);
   const speciesChips = uniqueSpeciesChips(rules.allowed_species as string[] | undefined);
   const refs = (project.metadata?.scheme_refs as Record<string, string> | undefined) ?? {};
-  const siteLabel = refs.village_name ?? refs.ulb_name ?? refs.urban_forest_name;
+  const siteLabel =
+    refs.gram_panchayat ??
+    refs.anganwadi_name ??
+    refs.shg_name ??
+    refs.village_name ??
+    refs.ulb_name ??
+    refs.urban_forest_name;
 
   return (
     <div className="card mx-auto max-w-3xl space-y-4 border-forest-200/80 bg-gradient-to-br from-forest-50/50 via-white to-white">

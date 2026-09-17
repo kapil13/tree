@@ -18,6 +18,7 @@ const segmentLabels = {
   'township_landscape': 'Township / Society',
   'nagar_van_urban': 'Nagar Van / Urban forest',
   'sahakar_van_coop': 'Sahakar Van / Cooperative forest',
+  'nutri_garden': 'Nutri-garden / Poshan Vatika',
   'ngo_watershed': 'NGO / Watershed',
   'general': 'General',
 };
@@ -77,6 +78,7 @@ class ProjectsListScreen extends ConsumerWidget {
   }
 
   Widget _projectCard(BuildContext context, Map<String, dynamic> p) {
+    final l10n = AppLocalizations.of(context)!;
     final summary = p['summary'] as Map<String, dynamic>?;
     final segment = p['segment'] as String? ?? 'general';
     final openV = summary?['open_violations'] ?? 0;
@@ -84,7 +86,7 @@ class ProjectsListScreen extends ConsumerWidget {
       child: ListTile(
         title: Text(p['name'] as String? ?? p['code'] as String),
         subtitle: Text(
-          '${segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
+          '${segment == 'nutri_garden' ? l10n.segmentNutriGarden : segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
           '${summary?['tree_count'] ?? 0} trees'
           '${openV > 0 ? ' · $openV violations' : ''}',
         ),

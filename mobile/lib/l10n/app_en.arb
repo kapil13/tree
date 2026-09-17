@@ -822,5 +822,10 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "segmentNutriGarden": "Nutri-garden / Poshan Vatika",
+  "schemePoshanVatika": "Amrit Poshan Vatika",
+  "schemeApvSiteId": "APV site ID",
+  "schemeGramPanchayat": "Gram panchayat",
+  "schemeSiteAreaHa": "Site area (ha)"
 }
