@@ -423,6 +423,110 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
         signals["flag_land_boundary"] = "no"
         signals["flag_removals_quantified"] = "no"
 
+    signals["apv_site_documented"] = "yes" if refs.get("apv_site_id") else "no"
+    signals["nutri_site_type"] = "yes" if refs.get("site_type") else "no"
+    signals["gram_panchayat_documented"] = "yes" if refs.get("gram_panchayat") else "no"
+    if refs.get("mgnrega_job_card_ref"):
+        signals["mgnrega_convergence_ref"] = "yes"
+    elif refs.get("site_type") in ("anganwadi", "shg", "panchayat", "school"):
+        signals["mgnrega_convergence_ref"] = "partial"
+    else:
+        signals["mgnrega_convergence_ref"] = "no"
+
+    from app.services.planting_projects.compliance import _species_allowed
+    from app.services.planting_projects.rule_engine import get_effective_rules
+
+    from app.services.schemes.registry import get_scheme as _get_scheme
+
+    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    min_trees_target = (effective_rules or {}).get("min_trees_project")
+    scheme = _get_scheme(project.scheme_code) if project.scheme_code else None
+    if scheme:
+        min_trees_target = (scheme.get("kpi_targets") or {}).get("min_trees") or min_trees_target
+    if min_trees_target:
+        signals["min_trees_met"] = "yes" if tree_count >= int(min_trees_target) else "no"
+    else:
+        signals["min_trees_met"] = "na"
+
+    allowed_species = (effective_rules or {}).get("allowed_species")
+    if allowed_species and tree_count > 0:
+        from app.models.species import Species
+
+        species_ids = {t.species_id for t in trees if t.species_id}
+        species_names: dict[uuid.UUID, str] = {}
+        if species_ids:
+            sp_res = await db.execute(select(Species).where(Species.id.in_(species_ids)))
+            for sp in sp_res.scalars().all():
+                species_names[sp.id] = sp.common_name or sp.scientific_name or ""
+        allowed_count = 0
+        for tree in trees:
+            name = tree.species_text or (
+                species_names.get(tree.species_id) if tree.species_id else ""
+            ) or ""
+            if _species_allowed(name, allowed_species):
+                allowed_count += 1
+        ratio = allowed_count / tree_count
+        if ratio >= 0.8:
+            signals["fruit_species_majority"] = "yes"
+        elif ratio >= 0.5:
+            signals["fruit_species_majority"] = "partial"
+        else:
+            signals["fruit_species_majority"] = "no"
+    elif allowed_species:
+        signals["fruit_species_majority"] = "no"
+    else:
+        signals["fruit_species_majority"] = "na"
+
+    from app.models.plantation_fence import PlantationFence
+
+    block_types = (effective_rules or {}).get("block_types")
+    if block_types and work_areas > 0:
+        fences = list(
+            (
+                await db.execute(
+                    select(PlantationFence).where(PlantationFence.project_id == project.id)
+                )
+            ).scalars().all()
+        )
+        typed = [f for f in fences if f.segment_code]
+        if not typed:
+            signals["nutri_block_types_valid"] = "no"
+        elif all(f.segment_code in block_types for f in typed):
+            signals["nutri_block_types_valid"] = "yes"
+        else:
+            signals["nutri_block_types_valid"] = "partial"
+    elif block_types:
+        signals["nutri_block_types_valid"] = "no"
+    else:
+        signals["nutri_block_types_valid"] = "na"
+
+    declared_area = refs.get("site_area_ha")
+    if declared_area is not None and work_areas > 0:
+        try:
+            declared_ha = float(declared_area)
+        except (TypeError, ValueError):
+            signals["site_area_match"] = "no"
+        else:
+            fences = list(
+                (
+                    await db.execute(
+                        select(PlantationFence).where(PlantationFence.project_id == project.id)
+                    )
+                ).scalars().all()
+            )
+            mapped_ha = sum(float(f.area_ha or 0) for f in fences)
+            tolerance = max(declared_ha * 0.2, 0.02)
+            if abs(mapped_ha - declared_ha) <= tolerance:
+                signals["site_area_match"] = "yes"
+            elif mapped_ha > 0:
+                signals["site_area_match"] = "partial"
+            else:
+                signals["site_area_match"] = "no"
+    elif declared_area is not None:
+        signals["site_area_match"] = "no"
+    else:
+        signals["site_area_match"] = "na"
+
     return signals
 
 

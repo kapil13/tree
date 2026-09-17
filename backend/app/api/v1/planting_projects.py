@@ -109,6 +109,7 @@ from app.services.planting_projects.work_area_geometry import (
     resolve_work_area_geometry,
     resolve_work_area_geometry_update,
 )
+from app.services.planting_projects.work_area_validation import validate_work_area
 from app.services.platform.governance import assert_org_feature_enabled
 from app.services.schemes.compliance import seed_project_scheme_checklists
 from app.services.schemes.kpis import compute_scheme_kpis
@@ -613,6 +614,12 @@ async def create_project(
     if scheme and scheme.get("legacy_plantation_category"):
         metadata.setdefault("plantation_category", scheme["legacy_plantation_category"])
 
+    target_tree_count = payload.target_tree_count
+    if target_tree_count is None and scheme:
+        min_trees = (scheme.get("kpi_targets") or {}).get("min_trees")
+        if min_trees is not None:
+            target_tree_count = int(min_trees)
+
     project = PlantingProject(
         code=payload.code,
         name=payload.name,
@@ -622,7 +629,7 @@ async def create_project(
         program_code=payload.program_code,
         scheme_code=payload.scheme_code,
         standard_template_code=template_code,
-        target_tree_count=payload.target_tree_count,
+        target_tree_count=target_tree_count,
         organization_id=user.organization_id,
         owner_user_id=user.id,
         metadata_=metadata,
@@ -1000,6 +1007,13 @@ async def create_work_area(
         )
     fence.area_ha = area_ha
 
+    await validate_work_area(
+        db,
+        project,
+        area_ha=area_ha,
+        segment_code=payload.segment_code,
+    )
+
     if project.status == "planning":
         project.status = "active"
 
@@ -1074,6 +1088,20 @@ async def update_work_area(
                 detail=f"work_area_too_large:{area_ha:.1f}ha",
             )
         fence.area_ha = area_ha
+
+        await validate_work_area(
+            db,
+            project,
+            area_ha=area_ha,
+            segment_code=fence.segment_code,
+        )
+    elif payload.segment_code is not None:
+        await validate_work_area(
+            db,
+            project,
+            area_ha=float(fence.area_ha or 0),
+            segment_code=fence.segment_code,
+        )
 
     await db.commit()
     await db.refresh(fence)
