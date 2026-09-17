@@ -12,6 +12,7 @@ import '../location_helper.dart';
 import '../l10n/setup_labels.dart';
 import '../project_setup_readiness.dart';
 import '../providers.dart';
+import '../widgets/project_scheme_context_card.dart';
 import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
@@ -324,7 +325,8 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
     }
     if ((_segment == 'township_landscape' ||
             _segment == 'nagar_van_urban' ||
-            _segment == 'sahakar_van_coop') &&
+            _segment == 'sahakar_van_coop' ||
+            _segment == 'nutri_garden') &&
         _selectedWorkAreaId != null) {
       final wa = _workAreas.cast<Map<String, dynamic>?>().firstWhere(
             (w) => w?['id'] == _selectedWorkAreaId,
@@ -868,6 +870,10 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                     .firstWhere((n) => n.isNotEmpty, orElse: () => l10n.addTreeProjectHint)
                 : l10n.addTreeProjectHint,
           ),
+          if (_scheme != null) ...[
+            const SizedBox(height: 8),
+            ProjectSchemeContextCard(scheme: _scheme, project: _project!),
+          ],
           const SizedBox(height: 4),
         ],
         if (_showSchemeProjectWarning && _schemeProgramWithoutProject) ...[

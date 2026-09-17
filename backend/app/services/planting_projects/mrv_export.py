@@ -23,6 +23,7 @@ def _segment_report(
     work_areas: list[dict],
     trees: list[dict],
     native_pct: float | None,
+    scheme_refs: dict[str, Any] | None = None,
 ) -> dict:
     if segment == "nhai_highway":
         chainage_trees = [t for t in trees if t.get("chainage_km") is not None]
@@ -75,6 +76,45 @@ def _segment_report(
             "native_species_pct": native_pct,
             "plantation_methods": ["miyawaki", "conventional", "mixed"],
             "reference_site_acres": 64,
+        }
+    if segment == "nutri_garden":
+        refs = scheme_refs or {}
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        declared_ha: float | None = None
+        raw_declared = refs.get("site_area_ha")
+        if raw_declared is not None:
+            try:
+                declared_ha = float(raw_declared)
+            except (TypeError, ValueError):
+                declared_ha = None
+        block_types: dict[str, int] = {}
+        for area in work_areas:
+            code = area.get("segment_code")
+            if code:
+                block_types[str(code)] = block_types.get(str(code), 0) + 1
+        area_match_pct = None
+        if declared_ha and total_ha:
+            area_match_pct = round(100 * total_ha / declared_ha, 1)
+        target_fruit = refs.get("target_fruit_trees")
+        return {
+            "type": "nutri_garden_site",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "fruit_tree_count": len(trees),
+            "site_type": refs.get("site_type"),
+            "apv_site_id": refs.get("apv_site_id"),
+            "gram_panchayat": refs.get("gram_panchayat"),
+            "anganwadi_name": refs.get("anganwadi_name"),
+            "shg_name": refs.get("shg_name"),
+            "declared_site_area_ha": declared_ha,
+            "mapped_total_area_ha": round(total_ha, 4) if total_ha else None,
+            "area_match_pct": area_match_pct,
+            "target_fruit_trees": int(target_fruit) if target_fruit is not None else None,
+            "min_trees_target": 50,
+            "block_types": block_types,
+            "native_species_pct": native_pct,
+            "mgnrega_job_card_ref": refs.get("mgnrega_job_card_ref"),
         }
     return {"type": "general", "tree_count": len(trees)}
 
@@ -231,7 +271,13 @@ async def build_project_mrv_context(
             "rainwater_harvest_required": rules.get("rainwater_harvest_required"),
             "site_area_acres_reference": rules.get("site_area_acres_reference"),
         },
-        "segment_report": _segment_report(project.segment, work_area_rows, tree_rows, native_pct),
+        "segment_report": _segment_report(
+            project.segment,
+            work_area_rows,
+            tree_rows,
+            native_pct,
+            scheme_refs,
+        ),
         "summary": {
             "work_area_count": len(work_areas),
             "tree_count": total_trees,

@@ -47,6 +47,9 @@ Work-area create/update validates polygon area against template bounds and decla
 `scheme_refs.site_area_ha`. Segment code (block type) is required when block types are
 defined on the template.
 
+MRV exports use `nutri_garden_site` segment reports with fruit-tree counts, site type,
+declared vs mapped area, and block-type breakdown.
+
 ### Scheme metadata fields
 
 | Key | Required | Meaning |

@@ -3511,6 +3511,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} trees registered'**
   String dashboardTreesRegistered(int count);
+
+  /// No description provided for @segmentNutriGarden.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutri-garden / Poshan Vatika'**
+  String get segmentNutriGarden;
+
+  /// No description provided for @schemePoshanVatika.
+  ///
+  /// In en, this message translates to:
+  /// **'Amrit Poshan Vatika'**
+  String get schemePoshanVatika;
+
+  /// No description provided for @schemeApvSiteId.
+  ///
+  /// In en, this message translates to:
+  /// **'APV site ID'**
+  String get schemeApvSiteId;
+
+  /// No description provided for @schemeGramPanchayat.
+  ///
+  /// In en, this message translates to:
+  /// **'Gram panchayat'**
+  String get schemeGramPanchayat;
+
+  /// No description provided for @schemeSiteAreaHa.
+  ///
+  /// In en, this message translates to:
+  /// **'Site area (ha)'**
+  String get schemeSiteAreaHa;
 }
 
 class _AppLocalizationsDelegate

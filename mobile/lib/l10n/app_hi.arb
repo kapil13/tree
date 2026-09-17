@@ -569,5 +569,10 @@
   "addTreeWizardPhotos": "फ़ोटो",
   "addTreeWizardReview": "समीक्षा और सबमिट",
   "fieldNearbyTreesSorted": "आपके वर्तमान स्थान से दूरी के अनुसार क्रमबद्ध",
-  "dashboardTreesRegistered": "{count} पेड़ पंजीकृत"
+  "dashboardTreesRegistered": "{count} पेड़ पंजीकृत",
+  "segmentNutriGarden": "न्यूट्री-गार्डन / पोषण वाटिका",
+  "schemePoshanVatika": "अमृत पोषण वाटिका",
+  "schemeApvSiteId": "APV साइट आईडी",
+  "schemeGramPanchayat": "ग्राम पंचायत",
+  "schemeSiteAreaHa": "साइट क्षेत्र (हे.)"
 }

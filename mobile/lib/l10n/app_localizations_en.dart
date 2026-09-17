@@ -1912,4 +1912,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String dashboardTreesRegistered(int count) {
     return '$count trees registered';
   }
+
+  @override
+  String get segmentNutriGarden => 'Nutri-garden / Poshan Vatika';
+
+  @override
+  String get schemePoshanVatika => 'Amrit Poshan Vatika';
+
+  @override
+  String get schemeApvSiteId => 'APV site ID';
+
+  @override
+  String get schemeGramPanchayat => 'Gram panchayat';
+
+  @override
+  String get schemeSiteAreaHa => 'Site area (ha)';
 }

@@ -410,12 +410,14 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Governance",
                 question="Is the MGNREGA work estimate ID linked to this plantation?",
                 guidance="Convergence projects must cite the approved work estimate.",
+                auto_key="mgnrega_convergence_ref",
             ),
             ChecklistItemDef(
                 id="gram_panchayat",
                 category="Governance",
                 question="Is gram panchayat jurisdiction documented?",
                 guidance="Record panchayat name for wage employment audit trails.",
+                auto_key="gram_panchayat_documented",
             ),
             ChecklistItemDef(
                 id="person_days",
