@@ -198,7 +198,7 @@ def _nutri_garden_rules() -> dict[str, Any]:
         "work_area_geometry": "polygon",
         "site_area_ha": {"min": 0.1, "max": 0.5},
         "min_trees_project": 50,
-        "block_types": ["anganwadi_plot", "shg_garden", "panchayat_land"],
+        "block_types": ["anganwadi_plot", "shg_garden", "panchayat_land", "school_plot"],
         "fruit_medicinal_focus": True,
         "native_species_examples": [
             "Amla",

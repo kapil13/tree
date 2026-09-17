@@ -63,6 +63,7 @@ def test_scheme_specific_checklists_exist():
     assert get_checklist("mgnrega_convergence") is not None
     assert get_checklist("nagar_van_urban") is not None
     assert get_checklist("sahakar_van_coop") is not None
+    assert get_checklist("nutri_garden") is not None
     assert get_checklist("green_credit_india") is not None
 
 

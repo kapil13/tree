@@ -18,6 +18,7 @@ FrameworkProfileCode = Literal[
     "nagar_van",
     "green_credit_india",
     "sahakar_van",
+    "amrit_poshan_vatika",
 ]
 
 MethodologyCode = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF", "NONE"]
@@ -150,6 +151,19 @@ FRAMEWORK_PROFILES: dict[FrameworkProfileCode, FrameworkProfile] = {
         ),
         disclaimer=DISCLAIMER,
         reference="NCCF–Amul Sahakar Van — Ministry of Cooperation",
+    ),
+    "amrit_poshan_vatika": FrameworkProfile(
+        code="amrit_poshan_vatika",
+        title="Amrit Poshan Vatika — Rajasthan Nutri-Garden",
+        short_label="Poshan Vatika",
+        methodology="NONE",
+        description=(
+            "Nutri-garden evidence for Rajasthan Amrit Poshan Vatika sites on Anganwadi, "
+            "SHG, panchayat, and school land with fruit species, MGNREGS convergence, "
+            "and geo-tagged survival monitoring."
+        ),
+        disclaimer=DISCLAIMER,
+        reference="Rajasthan Amrit Poshan Vatika — state nutri-garden programme",
     ),
 }
 
