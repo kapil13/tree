@@ -25,6 +25,40 @@ Aranyix separates **access programs** (who can use the platform) from **central 
 | `green_credit_india` | MoEFCC | corporate | corporate_esg, government_nhai |
 | `sahakar_van` | Ministry of Cooperation | cooperative | ngo_community, government_nhai |
 | `estate_monitoring` | MoEFCC / State Forest | central | government_nhai, ngo_community, corporate_esg |
+| `raj_amrit_poshan_vatika` | Rajasthan Forest & Rural Development | state (Rajasthan `08`) | government_nhai, ngo_community |
+
+## Amrit Poshan Vatika (`raj_amrit_poshan_vatika`)
+
+Rajasthan state nutri-garden programme on Anganwadi, SHG, panchayat, and school sites with
+fruit and medicinal plants converged with MGNREGS wage employment.
+
+| Setting | Value |
+| --- | --- |
+| Segment | `nutri_garden` |
+| Template | `amrit_poshan_vatika_v1` |
+| Compliance | Guided |
+| KPIs | 65% survival, 85% geo-tagged, min 50 trees |
+| Checklists | `nutri_garden`, `mgnrega_convergence` |
+| Framework profiles | `amrit_poshan_vatika`, `esg_general` |
+| Site area | 0.1–0.5 ha per plot |
+| Block types | `anganwadi_plot`, `shg_garden`, `panchayat_land`, `school_plot` |
+
+Work-area create/update validates polygon area against template bounds and declared
+`scheme_refs.site_area_ha`. Segment code (block type) is required when block types are
+defined on the template.
+
+### Scheme metadata fields
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `apv_site_id` | Yes | Rajasthan Forest / district nodal site reference |
+| `site_type` | Yes | `anganwadi`, `shg`, `panchayat`, or `school` |
+| `anganwadi_name` | No | Anganwadi centre name |
+| `shg_name` | No | SHG name |
+| `gram_panchayat` | Yes | Gram panchayat jurisdiction |
+| `mgnrega_job_card_ref` | No | MGNREGA convergence reference |
+| `site_area_ha` | Yes | Declared site area (0.1–0.5 ha) |
+| `target_fruit_trees` | No | Target fruit / nut tree count |
 
 ## Estate monitoring scheme (`estate_monitoring`)
 
@@ -76,6 +110,9 @@ steps, and deep links to `/satellite?project=` without switching to the estate-o
 | `nccf_project_ref` | sahakar_van | NCCF project reference |
 | `amul_union_name` | sahakar_van | Amul dairy union / GCMMF |
 | `green_credit_land_bank_id` | green_credit_india | MoEFCC GCP land bank registration |
+| `apv_site_id` | raj_amrit_poshan_vatika | Amrit Poshan Vatika site ID |
+| `site_type` | raj_amrit_poshan_vatika | Anganwadi / SHG / panchayat / school |
+| `mgnrega_job_card_ref` | raj_amrit_poshan_vatika | MGNREGA job card / work estimate |
 
 ## Nagar Van planting template (`nagar_van_urban_forest_v1`)
 

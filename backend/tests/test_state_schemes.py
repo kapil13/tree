@@ -14,6 +14,8 @@ def test_raj_amrit_poshan_vatika_scheme_defaults():
     assert scheme["default_segment"] == "nutri_garden"
     assert scheme["default_template_code"] == "amrit_poshan_vatika_v1"
     assert scheme["state_codes"] == ["08"]
+    assert scheme["checklist_codes"] == ["nutri_garden", "mgnrega_convergence"]
+    assert "amrit_poshan_vatika" in scheme["framework_profiles"]
 
 
 def test_amrit_poshan_vatika_template_rules():
@@ -23,6 +25,7 @@ def test_amrit_poshan_vatika_template_rules():
     assert tpl["rules"]["site_area_ha"]["max"] == 0.5
     assert tpl["rules"]["min_trees_project"] == 50
     assert "Guava" in tpl["rules"]["allowed_species"]
+    assert "school_plot" in tpl["rules"]["block_types"]
 
 
 def test_amrit_poshan_metadata_fields():
