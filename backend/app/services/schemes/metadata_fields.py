@@ -512,11 +512,27 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             ],
         },
         {
+            "key": "awc_code",
+            "label": "AWC / ICDS centre code",
+            "type": "text",
+            "required": False,
+            "placeholder": "RJ-08-1234-567",
+            "help_text": "Integrated Child Development Services (ICDS) Anganwadi centre code.",
+        },
+        {
             "key": "anganwadi_name",
             "label": "Anganwadi / centre name",
             "type": "text",
             "required": False,
             "placeholder": "AWC Kishangarh Bas",
+        },
+        {
+            "key": "block_nutrition_officer",
+            "label": "Block nutrition officer",
+            "type": "text",
+            "required": False,
+            "placeholder": "Smt. Meena Devi",
+            "help_text": "WCD / ICDS block supervisor or poshan sakhi nodal officer.",
         },
         {
             "key": "shg_name",
@@ -554,6 +570,14 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             "required": False,
             "min": 20,
             "help_text": "Minimum 50 trees recommended per site.",
+        },
+        {
+            "key": "beneficiary_households",
+            "label": "Beneficiary households",
+            "type": "number",
+            "required": False,
+            "min": 0,
+            "help_text": "Households receiving nutrition support from this nutri-garden site.",
         },
     ],
     "estate_monitoring": [
@@ -645,17 +669,50 @@ def metadata_sections_for_scheme(scheme_code: str) -> list[dict[str, Any]]:
     fields = SCHEME_METADATA_FIELDS.get(scheme_code, [])
     if not fields:
         return []
-    title = "Estate details" if scheme_code == "estate_monitoring" else "Scheme references"
-    description = (
-        "Basic estate identity and monitoring objective — no tree census required."
-        if scheme_code == "estate_monitoring"
-        else "Government scheme identifiers required for audit and fund convergence."
-    )
+    if scheme_code == "estate_monitoring":
+        return [
+            {
+                "id": "scheme_refs",
+                "title": "Estate details",
+                "description": "Basic estate identity and monitoring objective — no tree census required.",
+                "fields": fields,
+            }
+        ]
+    if scheme_code == "raj_amrit_poshan_vatika":
+        ref_keys = {
+            "apv_site_id",
+            "site_type",
+            "awc_code",
+            "anganwadi_name",
+            "shg_name",
+            "gram_panchayat",
+            "block_nutrition_officer",
+            "mgnrega_job_card_ref",
+            "site_area_ha",
+            "target_fruit_trees",
+        }
+        outcome_keys = {"beneficiary_households"}
+        ref_fields = [f for f in fields if f["key"] in ref_keys]
+        outcome_fields = [f for f in fields if f["key"] in outcome_keys]
+        return [
+            {
+                "id": "scheme_refs",
+                "title": "Scheme references",
+                "description": "Government scheme identifiers required for audit and fund convergence.",
+                "fields": ref_fields,
+            },
+            {
+                "id": "nutri_outcomes",
+                "title": "Nutrition outcomes",
+                "description": "Beneficiary reach tracked at site level; seasonal harvest via field API.",
+                "fields": outcome_fields,
+            },
+        ]
     return [
         {
             "id": "scheme_refs",
-            "title": title,
-            "description": description,
+            "title": "Scheme references",
+            "description": "Government scheme identifiers required for audit and fund convergence.",
             "fields": fields,
         }
     ]

@@ -349,6 +349,17 @@ class CampaApoImportRequest(BaseModel):
     csv_text: str = Field(..., min_length=10)
 
 
+class ApvSiteImportResultOut(BaseModel):
+    imported: int
+    unmatched: list[str] = Field(default_factory=list)
+    parse_errors: list[str] = Field(default_factory=list)
+    applied: list[dict] = Field(default_factory=list)
+
+
+class ApvSiteImportRequest(BaseModel):
+    csv_text: str = Field(..., min_length=10)
+
+
 class PublicGovernanceStatusOut(BaseModel):
     maintenance_mode: bool
     maintenance_message: str | None = None
