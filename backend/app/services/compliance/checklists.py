@@ -26,6 +26,7 @@ ChecklistCode = Literal[
     "eudr_supplier_mrv",
     "estate_monitoring",
     "mining_reclamation",
+    "nutri_garden",
 ]
 
 ChecklistAnswer = Literal["yes", "no", "partial", "na"]
@@ -512,6 +513,97 @@ CHECKLISTS: dict[ChecklistCode, ComplianceChecklist] = {
                 category="Governance",
                 question="Can auditors receive a packaged evidence bundle?",
                 guidance="Use Compliance → Evidence bundle for verifier review.",
+            ),
+        ),
+    ),
+    "nutri_garden": ComplianceChecklist(
+        code="nutri_garden",
+        title="Amrit Poshan Vatika — Nutri-Garden Readiness",
+        short_label="Poshan Vatika",
+        framework_reference="Rajasthan Amrit Poshan Vatika — state nutri-garden programme",
+        description=(
+            "Nutri-garden compliance for Anganwadi, SHG, panchayat, and school sites "
+            "with fruit and medicinal species converged with MGNREGS employment."
+        ),
+        disclaimer=DISCLAIMER,
+        items=(
+            ChecklistItemDef(
+                id="apv_site_id",
+                category="Governance",
+                question="Is the Rajasthan Forest Department / district nodal site ID recorded?",
+                guidance="Record the official Amrit Poshan Vatika site reference (APV-RJ-…).",
+                auto_key="apv_site_documented",
+            ),
+            ChecklistItemDef(
+                id="site_type_recorded",
+                category="Governance",
+                question="Is the site type (Anganwadi, SHG, panchayat, or school) documented?",
+                guidance="Site type drives block classification and beneficiary reporting.",
+                auto_key="nutri_site_type",
+            ),
+            ChecklistItemDef(
+                id="gram_panchayat",
+                category="Governance",
+                question="Is gram panchayat jurisdiction documented?",
+                guidance="Panchayat name is required for district rollups and MGNREGA audit trails.",
+                auto_key="gram_panchayat_documented",
+            ),
+            ChecklistItemDef(
+                id="site_area_match",
+                category="Eligibility",
+                question="Does the mapped site area match the declared 0.1–0.5 ha nutri-garden plot?",
+                guidance="Work-area polygon area should align with scheme metadata site_area_ha.",
+                auto_key="site_area_match",
+            ),
+            ChecklistItemDef(
+                id="block_type_valid",
+                category="Eligibility",
+                question="Is the work area classified as anganwadi, SHG, panchayat, or school plot?",
+                guidance="Use segment code matching the approved block types for nutri-garden sites.",
+                auto_key="nutri_block_types_valid",
+            ),
+            ChecklistItemDef(
+                id="mgnrega_convergence",
+                category="Convergence",
+                question="Is MGNREGA job card / work estimate reference linked when wages converge?",
+                guidance="Convergence projects should cite the approved MGNREGA work estimate.",
+                auto_key="mgnrega_convergence_ref",
+                required=False,
+            ),
+            ChecklistItemDef(
+                id="fruit_tree_mix",
+                category="Planting standard",
+                question="Are fruit and medicinal species from the approved list used?",
+                guidance="Guava, Amla, Jamun, Ber, Mango, and other approved nutri-garden species.",
+                auto_key="fruit_species_majority",
+            ),
+            ChecklistItemDef(
+                id="min_trees_target",
+                category="Monitoring",
+                question="Are at least 50 fruit / nut trees registered for this site?",
+                guidance="Amrit Poshan Vatika sites target a minimum of 50 trees per plot.",
+                auto_key="min_trees_met",
+            ),
+            ChecklistItemDef(
+                id="geo_tagged_records",
+                category="Monitoring",
+                question="Are at least 85% of living trees geo-tagged with GPS coordinates?",
+                guidance="Geo-tagged records support district nodal audits and survival tracking.",
+                auto_key="geo_tagged_majority",
+            ),
+            ChecklistItemDef(
+                id="no_blocking_violations",
+                category="Compliance",
+                question="Are blocking compliance violations resolved?",
+                guidance="Species, spacing, and boundary violations must be cleared before submission.",
+                auto_key="no_block_violations",
+            ),
+            ChecklistItemDef(
+                id="survival_monitoring",
+                category="Monitoring",
+                question="Is a recurring survival / maintenance survey cadence configured?",
+                guidance="Nutri-garden sites require seasonal survival checks and sapling care.",
+                auto_key="survival_survey_configured",
             ),
         ),
     ),

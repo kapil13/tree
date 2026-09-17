@@ -24,6 +24,7 @@ SEGMENT_RECOMMENDED_CHECKLIST: dict[str, str] = {
     "township_landscape": "esg_general",
     "nagar_van_urban": "nagar_van_urban",
     "sahakar_van_coop": "sahakar_van_coop",
+    "nutri_garden": "nutri_garden",
     "general": "esg_general",
     "estate_monitoring": "estate_monitoring",
 }
@@ -39,6 +40,7 @@ SEGMENT_CHECKLIST_LABEL: dict[str, str] = {
     "mgnrega_convergence": "MGNREGA",
     "nagar_van_urban": "Nagar Van",
     "sahakar_van_coop": "Sahakar Van",
+    "nutri_garden": "Poshan Vatika",
     "green_credit_india": "Green Credit",
     "icvcm_ccp": "ICVCM CCPs",
     "fra_tenure": "FRA / Tenure",
