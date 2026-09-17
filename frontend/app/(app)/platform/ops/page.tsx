@@ -38,6 +38,7 @@ type StepUpAction =
 export default function PlatformOpsPage() {
   const [tab, setTab] = useState<OpsTab>("health");
   const [apoCsv, setApoCsv] = useState("");
+  const [apvCsv, setApvCsv] = useState("");
   const [triggerJobName, setTriggerJobName] = useState(TRIGGERABLE_JOBS[0]?.value ?? "");
   const [backfillLimit, setBackfillLimit] = useState(50);
   const [backfillAsync, setBackfillAsync] = useState(false);
@@ -84,6 +85,16 @@ export default function PlatformOpsPage() {
       refetchSchemes();
       setApoCsv("");
       notifyPlatformAction("APO import complete.");
+    },
+    onError: (err) => notifyPlatformError(err),
+  });
+
+  const apvImport = useMutation({
+    mutationFn: () => platformAdmin.importApvSites(apvCsv),
+    onSuccess: () => {
+      refetchSchemes();
+      setApvCsv("");
+      notifyPlatformAction("APV site import complete.");
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -605,6 +616,37 @@ export default function PlatformOpsPage() {
                         {apoImport.data.imported === 1 ? "" : "s"}
                         {apoImport.data.unmatched.length > 0 &&
                           ` · ${apoImport.data.unmatched.length} unmatched codes`}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
+                    <h3 className="text-sm font-medium">Amrit Poshan Vatika site CSV import</h3>
+                    <p className="mt-1 text-xs text-stone-500">
+                      Paste CSV with columns: apv_site_id, project_code, project_name, site_type,
+                      gram_panchayat, site_area_ha (optional: awc_code, block_nutrition_officer,
+                      beneficiary_households)
+                    </p>
+                    <textarea
+                      className="input mt-2 min-h-[100px] font-mono text-xs"
+                      value={apvCsv}
+                      onChange={(e) => setApvCsv(e.target.value)}
+                      placeholder="apv_site_id,project_code,project_name,site_type,gram_panchayat,site_area_ha"
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary mt-2 text-xs"
+                      disabled={apvImport.isPending || apvCsv.trim().length < 10}
+                      onClick={() => apvImport.mutate()}
+                    >
+                      {apvImport.isPending ? "Importing…" : "Import APV site rows"}
+                    </button>
+                    {apvImport.data ? (
+                      <p className="mt-2 text-xs text-stone-600">
+                        Imported {apvImport.data.imported} project
+                        {apvImport.data.imported === 1 ? "" : "s"}
+                        {apvImport.data.unmatched.length > 0 &&
+                          ` · ${apvImport.data.unmatched.length} unmatched codes`}
                       </p>
                     ) : null}
                   </div>

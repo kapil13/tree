@@ -26,6 +26,7 @@ from app.schemas.planting_project import (
     ComplianceCheckRequest,
     ComplianceIssueOut,
     GeoJsonLineString,
+    NutriOutcomesUpdate,
     PlantingProjectCreate,
     PlantingProjectOut,
     PlantingProjectUpdate,
@@ -916,6 +917,49 @@ async def update_scheme_metadata(
         db,
         actor=user,
         action="project.scheme_metadata.update",
+        resource_type="planting_project",
+        resource_id=project.id,
+        request=request,
+        diff={"scheme_code": project.scheme_code},
+    )
+    await db.commit()
+    await db.refresh(project)
+    summary = ProjectSummaryOut.model_validate(await project_summary(db, project))
+    standard = await get_active_standard(db, project)
+    return await _project_out_async(db, project, summary=summary, standard=standard)
+
+
+@router.patch("/{project_id}/nutri-outcomes", response_model=PlantingProjectOut)
+async def update_nutri_outcomes(
+    project_id: uuid.UUID,
+    payload: NutriOutcomesUpdate,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> PlantingProjectOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    if project.scheme_code != "raj_amrit_poshan_vatika":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="scheme_not_apv")
+
+    from app.services.schemes.nutri_outcomes import merge_nutri_outcomes
+
+    project.metadata_ = merge_nutri_outcomes(
+        project.metadata_ or {},
+        beneficiary_households=payload.beneficiary_households,
+        harvest_log=payload.harvest_log.model_dump() if payload.harvest_log else None,
+    )
+    if payload.beneficiary_households is not None:
+        refs = dict((project.metadata_ or {}).get("scheme_refs") or {})
+        refs["beneficiary_households"] = payload.beneficiary_households
+        project.metadata_["scheme_refs"] = refs
+    flag_modified(project, "metadata_")
+
+    await record_audit(
+        db,
+        actor=user,
+        action="project.nutri_outcomes.update",
         resource_type="planting_project",
         resource_id=project.id,
         request=request,

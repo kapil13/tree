@@ -70,6 +70,18 @@ BIO_MONITORING_PROTOCOLS: dict[str, dict[str, Any]] = {
         "duration_max_seconds": 180,
         "guidance": "Bi-monthly monsoon-window recordings on degraded patches.",
     },
+    "raj_amrit_poshan_vatika": {
+        "label": "Nutri-garden community soundscape",
+        "cadence_days": 60,
+        "min_recordings_per_cycle": 1,
+        "season_class": "unspecified",
+        "duration_min_seconds": 60,
+        "duration_max_seconds": 120,
+        "guidance": (
+            "Bi-monthly ambient recordings at Anganwadi, SHG, or panchayat nutri-garden "
+            "sites to track pollinator and bird activity around fruit plots."
+        ),
+    },
 }
 
 

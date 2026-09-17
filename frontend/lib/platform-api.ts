@@ -271,6 +271,13 @@ export type CampaApoImportResult = {
   applied: Array<{ project_id: string; project_code: string; pca_number?: string }>;
 };
 
+export type ApvSiteImportResult = {
+  imported: number;
+  unmatched: string[];
+  parse_errors: string[];
+  applied: Array<{ project_id: string; project_code: string; apv_site_id?: string }>;
+};
+
 export type PlatformAuditLog = {
   id: string;
   actor_user_id: string | null;
@@ -513,6 +520,13 @@ export const platformAdmin = {
   async importCampaApo(csvText: string) {
     return (
       await api.post<CampaApoImportResult>("/v1/platform/schemes/apo-import", {
+        csv_text: csvText,
+      })
+    ).data;
+  },
+  async importApvSites(csvText: string) {
+    return (
+      await api.post<ApvSiteImportResult>("/v1/platform/schemes/apv-import", {
         csv_text: csvText,
       })
     ).data;
