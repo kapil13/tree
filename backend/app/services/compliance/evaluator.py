@@ -435,12 +435,14 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
 
     from app.services.planting_projects.compliance import _species_allowed
     from app.services.planting_projects.rule_engine import get_effective_rules
-
     from app.services.schemes.registry import get_scheme as _get_scheme
 
-    effective_rules = await get_effective_rules(db, standard, project_id=project.id)
-    min_trees_target = (effective_rules or {}).get("min_trees_project")
-    scheme = _get_scheme(project.scheme_code) if project.scheme_code else None
+    effective_rules: dict[str, Any] = {}
+    if standard is not None and getattr(standard, "template_code", None):
+        effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    min_trees_target = effective_rules.get("min_trees_project")
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = _get_scheme(scheme_code) if scheme_code else None
     if scheme:
         min_trees_target = (scheme.get("kpi_targets") or {}).get("min_trees") or min_trees_target
     if min_trees_target:
@@ -448,7 +450,7 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["min_trees_met"] = "na"
 
-    allowed_species = (effective_rules or {}).get("allowed_species")
+    allowed_species = effective_rules.get("allowed_species")
     if allowed_species and tree_count > 0:
         from app.models.species import Species
 
@@ -477,9 +479,7 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["fruit_species_majority"] = "na"
 
-    from app.models.plantation_fence import PlantationFence
-
-    block_types = (effective_rules or {}).get("block_types")
+    block_types = effective_rules.get("block_types")
     if block_types and work_areas > 0:
         fences = list(
             (
