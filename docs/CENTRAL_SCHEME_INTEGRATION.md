@@ -95,6 +95,9 @@ steps, and deep links to `/satellite?project=` without switching to the estate-o
 - `GET /api/v1/planting-projects?scheme_code=campa_ca` — filter projects
 - `GET /api/v1/platform/schemes/summary` — platform admin rollup by scheme
 - `POST /api/v1/platform/schemes/apo-import` — CAMPA APO CSV import (platform admin)
+- `POST /api/v1/platform/schemes/apv-import` — Amrit Poshan Vatika site CSV import (platform admin)
+- `PATCH /api/v1/planting-projects/{id}/nutri-outcomes` — beneficiary households and harvest logs
+- `GET /api/v1/plantation-reports/apv-district` — APV district rollup with nutrition outcomes
 
 ## Phases 3–7 (implemented)
 
@@ -116,6 +119,9 @@ steps, and deep links to `/satellite?project=` without switching to the estate-o
 | `apv_site_id` | raj_amrit_poshan_vatika | Amrit Poshan Vatika site ID |
 | `site_type` | raj_amrit_poshan_vatika | Anganwadi / SHG / panchayat / school |
 | `mgnrega_job_card_ref` | raj_amrit_poshan_vatika | MGNREGA job card / work estimate |
+| `awc_code` | raj_amrit_poshan_vatika | ICDS Anganwadi centre code |
+| `block_nutrition_officer` | raj_amrit_poshan_vatika | WCD block nutrition officer |
+| `beneficiary_households` | raj_amrit_poshan_vatika | Households receiving nutrition support |
 
 ## Nagar Van planting template (`nagar_van_urban_forest_v1`)
 

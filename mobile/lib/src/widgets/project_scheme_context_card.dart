@@ -17,7 +17,11 @@ class ProjectSchemeContextCard extends StatelessWidget {
 
     final refs = (project['metadata'] as Map?)?['scheme_refs'] as Map? ?? {};
     final schemeCode = project['scheme_code'] as String?;
-    final rows = _metadataRows(schemeCode, refs);
+    final rows = _metadataRows(
+      schemeCode,
+      refs,
+      project['metadata'] as Map?,
+    );
 
     return Card(
       child: Padding(
@@ -74,12 +78,15 @@ class _MetadataRow {
   final String value;
 }
 
-List<_MetadataRow> _metadataRows(String? schemeCode, Map refs) {
+List<_MetadataRow> _metadataRows(String? schemeCode, Map refs, Map? metadata) {
   if (schemeCode == 'raj_amrit_poshan_vatika') {
-    return [
+    final rows = <_MetadataRow>[
       if (refs['apv_site_id'] != null) _MetadataRow('Site ID', '${refs['apv_site_id']}'),
       if (refs['site_type'] != null) _MetadataRow('Site type', _siteTypeLabel('${refs['site_type']}')),
+      if (refs['awc_code'] != null) _MetadataRow('AWC / ICDS code', '${refs['awc_code']}'),
       if (refs['anganwadi_name'] != null) _MetadataRow('Anganwadi', '${refs['anganwadi_name']}'),
+      if (refs['block_nutrition_officer'] != null)
+        _MetadataRow('Nutrition officer', '${refs['block_nutrition_officer']}'),
       if (refs['shg_name'] != null) _MetadataRow('SHG', '${refs['shg_name']}'),
       if (refs['gram_panchayat'] != null) _MetadataRow('Gram panchayat', '${refs['gram_panchayat']}'),
       if (refs['site_area_ha'] != null) _MetadataRow('Site area', '${refs['site_area_ha']} ha'),
@@ -87,7 +94,15 @@ List<_MetadataRow> _metadataRows(String? schemeCode, Map refs) {
         _MetadataRow('Target fruit trees', '${refs['target_fruit_trees']}'),
       if (refs['mgnrega_job_card_ref'] != null)
         _MetadataRow('MGNREGA ref', '${refs['mgnrega_job_card_ref']}'),
+      if (refs['beneficiary_households'] != null)
+        _MetadataRow('Beneficiary HH', '${refs['beneficiary_households']}'),
     ];
+    final outcomes = metadata?['nutri_garden_outcomes'] as Map?;
+    final logs = outcomes?['harvest_logs'];
+    if (logs is List && logs.isNotEmpty) {
+      rows.add(_MetadataRow('Harvest logs', '${logs.length} season(s) recorded'));
+    }
+    return rows;
   }
 
   final generic = <_MetadataRow>[];

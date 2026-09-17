@@ -176,6 +176,18 @@ class SchemeMetadataUpdate(BaseModel):
     convergence: list[dict[str, Any]] | None = None
 
 
+class NutriHarvestLogIn(BaseModel):
+    season: str = Field(..., min_length=1, max_length=32)
+    fruit_kg: float = Field(..., ge=0)
+    harvest_month: str | None = Field(default=None, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class NutriOutcomesUpdate(BaseModel):
+    beneficiary_households: int | None = Field(default=None, ge=0)
+    harvest_log: NutriHarvestLogIn | None = None
+
+
 class SchemeKpiOut(BaseModel):
     scheme_code: str | None
     scheme_label: str | None = None

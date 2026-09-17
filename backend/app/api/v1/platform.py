@@ -39,6 +39,8 @@ from app.schemas.planting_program import (
 )
 from app.schemas.platform import (
     ASSIGNABLE_ROLES,
+    ApvSiteImportRequest,
+    ApvSiteImportResultOut,
     BulkActionResultOut,
     BulkOrgActionRequest,
     BulkProgramAccessReviewRequest,
@@ -172,6 +174,10 @@ from app.services.platform.support import (
     admin_force_password_reset,
     admin_resend_verification,
     admin_revoke_sessions,
+)
+from app.services.schemes.imports.apv_site_csv import (
+    apply_apv_rows_to_projects,
+    parse_apv_site_csv,
 )
 from app.services.schemes.imports.campa_apo_csv import (
     apply_apo_rows_to_projects,
@@ -1359,6 +1365,51 @@ async def platform_campa_apo_import(
     await db.commit()
 
     return CampaApoImportResultOut(
+        imported=len(applied),
+        unmatched=unmatched,
+        parse_errors=parse_errors,
+        applied=applied,
+    )
+
+
+@router.post("/schemes/apv-import", response_model=ApvSiteImportResultOut)
+async def platform_apv_site_import(
+    payload: ApvSiteImportRequest,
+    request: Request,
+    admin: OpsModuleAdmin,
+    db: DB,
+) -> ApvSiteImportResultOut:
+    """Import Rajasthan Amrit Poshan Vatika site rows and link refs to planting projects by code."""
+    from sqlalchemy import select
+
+    from app.models.planting_project import PlantingProject
+
+    rows, parse_errors = parse_apv_site_csv(payload.csv_text)
+    if parse_errors and not rows:
+        return ApvSiteImportResultOut(imported=0, parse_errors=parse_errors)
+
+    project_codes = [row["project_code"] for row in rows]
+    projects = list(
+        (
+            await db.execute(
+                select(PlantingProject).where(PlantingProject.code.in_(project_codes))
+            )
+        ).scalars().all()
+    )
+    applied, unmatched = apply_apv_rows_to_projects(projects, rows)
+
+    await record_audit(
+        db,
+        actor=admin,
+        action="platform.scheme.apv_import",
+        resource_type="planting_project",
+        resource_id=None,
+        request=request,
+        diff={"imported": len(applied), "unmatched": unmatched},
+    )
+    await db.commit()
+
+    return ApvSiteImportResultOut(
         imported=len(applied),
         unmatched=unmatched,
         parse_errors=parse_errors,

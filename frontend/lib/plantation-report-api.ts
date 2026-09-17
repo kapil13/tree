@@ -182,6 +182,20 @@ export const plantationReportApi = {
       params: cleanParams(params),
     })).data;
   },
+  async apvDistrict(params: DistrictRollupFilters = {}) {
+    return (await api.get<DistrictRollupResponse & {
+      scheme_code?: string;
+      scheme_label?: string;
+      outcome_totals?: {
+        beneficiary_households: number;
+        harvest_log_count: number;
+        total_harvest_kg: number;
+        sites_with_harvest: number;
+      };
+    }>("/v1/plantation-reports/apv-district", {
+      params: cleanParams(params),
+    })).data;
+  },
   async districtBlockAdmin(params: Record<string, unknown> & { format?: PlantationReportFormat }) {
     const { format = "json", ...filters } = params;
     return fetchReport("/v1/plantation-reports/district-block-admin", filters, format);
