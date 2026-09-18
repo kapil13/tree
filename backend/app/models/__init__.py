@@ -8,6 +8,8 @@ from app.models.audit_attestation import (
 )
 from app.models.audit_chain_root import AuditChainRoot
 from app.models.audit_confidence import AuditConfidenceAssessment
+from app.models.audit_cycle import AuditCycle
+from app.models.audit_run import AuditRun
 from app.models.audit_engagement import (
     AuditEngagement,
     BoundaryVersion,
@@ -107,6 +109,8 @@ __all__ = [
     "PaymentEvent",
     "AuditLog",
     "AuditChainRoot",
+    "AuditCycle",
+    "AuditRun",
     "AuditEngagement",
     "BoundaryVersion",
     "ClaimDocument",
