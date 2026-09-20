@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.api.v1 import audit_engagements as audit_api
 
 
@@ -68,9 +70,6 @@ def test_input_manifest_hash_stable():
     ctx = {"a": 1, "b": "test"}
     assert input_manifest_hash(ctx) == input_manifest_hash(ctx)
     assert len(input_manifest_hash(ctx)) == 64
-
-
-import pytest
 
 
 @pytest.mark.asyncio
