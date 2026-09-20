@@ -9,12 +9,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 from geoalchemy2 import WKTElement
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_engagement import AuditEngagement, BoundaryVersion
 from app.models.audit_risk import AuditRiskAssessment
 from app.models.audit_sampling import AuditFieldPlot, AuditSamplingPlan
+from app.services.audit_sampling.queries import get_active_sampling_plan, get_latest_plan_version
 from app.services.audit_sampling.stratify import (
     SamplingMode,
     estimate_total_plots,
@@ -156,7 +157,9 @@ async def generate_sampling_plan(
     ha_per_plot: float = 50.0,
     min_plots_per_block: int = 1,
     layout_seed: int | None = None,
+    created_by: uuid.UUID | None = None,
 ) -> AuditSamplingPlan:
+    from app.services.audit_cycles.run_wrapper import execute_audit_run
     from app.services.audit_governance.engagement import (
         require_mutable_cycle,
         set_engagement_status,
@@ -166,7 +169,48 @@ async def generate_sampling_plan(
     if engagement.status not in {"risk_assessed", "sampling_planned", "field_verified"}:
         raise ValueError("risk_not_assessed")
 
-    queue_blocks = await _queue_blocks_for_engagement(db, engagement)
+    async def _generate() -> AuditSamplingPlan:
+        return await _generate_sampling_plan_for_cycle(
+            db,
+            engagement,
+            cycle,
+            plots_per_critical=plots_per_critical,
+            plots_per_high=plots_per_high,
+            plots_per_medium=plots_per_medium,
+            plots_per_low=plots_per_low,
+            sampling_mode=sampling_mode,
+            ha_per_plot=ha_per_plot,
+            min_plots_per_block=min_plots_per_block,
+            layout_seed=layout_seed,
+        )
+
+    plan, _run = await execute_audit_run(
+        db,
+        cycle,
+        run_type="sampling_plan",
+        created_by=created_by,
+        work=_generate,
+        parameters={"sampling_mode": sampling_mode},
+    )
+    await set_engagement_status(db, engagement, "sampling_planned")
+    return plan
+
+
+async def _generate_sampling_plan_for_cycle(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    cycle,
+    *,
+    plots_per_critical: int,
+    plots_per_high: int,
+    plots_per_medium: int,
+    plots_per_low: int,
+    sampling_mode: SamplingMode,
+    ha_per_plot: float,
+    min_plots_per_block: int,
+    layout_seed: int | None,
+) -> AuditSamplingPlan:
+    queue_blocks = await _queue_blocks_for_engagement(db, engagement, cycle_id=cycle.id)
     boundaries = (
         (
             await db.execute(
@@ -195,18 +239,19 @@ async def generate_sampling_plan(
     rng = random.Random(seed)
     planned_at = datetime.now(UTC)
 
-    existing = (
-        await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.cycle_id == cycle.id)
-        )
-    ).scalar_one_or_none()
+    active = await get_active_sampling_plan(db, cycle.id)
+    next_version = (await get_latest_plan_version(db, cycle.id)) + 1
+    if active is not None:
+        active.status = "superseded"
+        active.superseded_at = planned_at
 
-    if existing:
-        plan = existing
-        await db.execute(delete(AuditFieldPlot).where(AuditFieldPlot.plan_id == plan.id))
-    else:
-        plan = AuditSamplingPlan(engagement_id=engagement.id, cycle_id=cycle.id)
-        db.add(plan)
+    plan = AuditSamplingPlan(
+        engagement_id=engagement.id,
+        cycle_id=cycle.id,
+        plan_version=next_version,
+        parent_plan_id=active.id if active is not None else None,
+    )
+    db.add(plan)
 
     plan.stratification = sampling_mode
     plan.plots_per_critical = plots_per_critical
@@ -256,7 +301,7 @@ async def generate_sampling_plan(
 
     meta = dict(engagement.metadata_ or {})
     meta["sampling_planned_at"] = planned_at.isoformat()
+    meta["sampling_plan_version"] = next_version
     engagement.metadata_ = meta
-    await set_engagement_status(db, engagement, "sampling_planned")
     await db.refresh(plan)
     return plan

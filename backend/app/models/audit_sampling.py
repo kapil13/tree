@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -48,8 +49,15 @@ class AuditSamplingPlan(UUIDPKMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     epistemic_label: Mapped[str] = mapped_column(String(16), nullable=False, default="ESTIMATION")
     planned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    plan_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    parent_plan_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("audit_sampling_plans.id", ondelete="SET NULL"),
+    )
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     engagement = relationship("AuditEngagement", backref="sampling_plan")
+    parent_plan = relationship("AuditSamplingPlan", remote_side="AuditSamplingPlan.id")
     plots = relationship(
         "AuditFieldPlot",
         back_populates="plan",
@@ -57,9 +65,14 @@ class AuditSamplingPlan(UUIDPKMixin, TimestampMixin, Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("cycle_id", name="audit_sampling_plans_cycle_uq"),
+        UniqueConstraint(
+            "cycle_id",
+            "plan_version",
+            name="audit_sampling_plans_cycle_version_uq",
+        ),
         Index("audit_sampling_plans_engagement_idx", "engagement_id"),
         Index("audit_sampling_plans_cycle_idx", "cycle_id"),
+        Index("audit_sampling_plans_cycle_active_idx", "cycle_id", "status"),
     )
 
 
@@ -143,10 +156,22 @@ class AuditFieldVisit(UUIDPKMixin, TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
     epistemic_label: Mapped[str] = mapped_column(String(16), nullable=False, default="OBSERVATION")
     signals: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="accepted")
+    idempotency_key: Mapped[str | None] = mapped_column(String(128))
+    gps_integrity_passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    photo_integrity_passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     plot = relationship("AuditFieldPlot", back_populates="visits")
 
     __table_args__ = (
         Index("audit_field_visits_plot_idx", "plot_id", "visited_at"),
         Index("audit_field_visits_cycle_idx", "cycle_id"),
+        Index(
+            "audit_field_visits_idempotency_idx",
+            "plot_id",
+            "idempotency_key",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NOT NULL"),
+        ),
     )

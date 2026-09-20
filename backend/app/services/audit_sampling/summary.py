@@ -35,16 +35,20 @@ async def sampling_plan_summary(
     cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     from app.services.audit_cycles.scope import resolve_read_cycle_id
+    from app.services.audit_sampling.queries import get_active_sampling_plan
 
     scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
-    plan_filter = (
-        [AuditSamplingPlan.cycle_id == scoped_cycle_id]
-        if scoped_cycle_id
-        else [AuditSamplingPlan.engagement_id == engagement_id]
-    )
-    plan = (
-        await db.execute(select(AuditSamplingPlan).where(*plan_filter))
-    ).scalar_one_or_none()
+    plan = None
+    if scoped_cycle_id:
+        plan = await get_active_sampling_plan(db, scoped_cycle_id)
+    if plan is None and scoped_cycle_id is None:
+        plan = (
+            await db.execute(
+                select(AuditSamplingPlan)
+                .where(AuditSamplingPlan.engagement_id == engagement_id)
+                .order_by(AuditSamplingPlan.plan_version.desc())
+            )
+        ).scalar_one_or_none()
 
     boundaries = (
         (
@@ -150,6 +154,8 @@ async def sampling_plan_summary(
         "has_plan": True,
         "plan": {
             "id": str(plan.id),
+            "plan_version": plan.plan_version,
+            "parent_plan_id": str(plan.parent_plan_id) if plan.parent_plan_id else None,
             "stratification": plan.stratification,
             "plots_per_critical": plan.plots_per_critical,
             "plots_per_high": plan.plots_per_high,
