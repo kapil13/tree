@@ -19,6 +19,7 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.audit_evidence_graph import AuditEvidenceEdge, AuditEvidenceNode
+from app.models.audit_explain import AuditExplainRun
 from app.models.audit_export_artifact import AuditExportArtifact, AuditExportVerification
 from app.models.audit_export_entity import AuditExport, AuditExportFile
 from app.models.audit_finality import AuditPolicyEvaluation, AuditVerificationSnapshot
@@ -135,6 +136,7 @@ __all__ = [
     "AuditExportFile",
     "AuditExportArtifact",
     "AuditExportVerification",
+    "AuditExplainRun",
     "AuditEngagementMethodologyOverride",
     "AuditMethodologyChangeLog",
     "AuditEvidenceNode",

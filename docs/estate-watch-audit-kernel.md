@@ -51,3 +51,10 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - **P23** — Attestation verification snapshots bind `export_id` to frozen export records.
 - **P24** — Public verify resolves digests via `audit_exports.package_sha256` / `unsigned_bundle_hash`.
 - `GET /export/summary` reads the latest `audit_exports` row instead of engagement metadata only.
+
+## Wave E explain-only AI (migration `0086`)
+
+- **P14** — Grounded explain-only narratives for auditors (`audit_explain_runs`); never mutates grades, anomalies, or attestation.
+- Rules fallback always available; optional OpenAI/Gemini enrichment when API keys are set (`mode`: `rules` | `llm`).
+- **API** — `POST /anomalies/{id}/explain`, `POST /reconciliation/explain`, `POST /evidence-graph/explain`, `POST /cross-estate-patterns/{id}/explain`, `GET /explain-runs`.
+- Explain context includes methodology thresholds (P18) and deterministic signals only — LLM cannot override audit outcomes.
