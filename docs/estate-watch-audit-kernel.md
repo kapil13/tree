@@ -32,3 +32,11 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - **P6** — Persisted reconciliation (`audit_reconciliation_runs`, `audit_reconciliation_blocks`) with `audit_run` provenance; auto-computed on field verification complete.
 - **P10** — Evidence graph (`audit_evidence_nodes`, `audit_evidence_edges`) linking claims → estimations → observations → attestations.
 - **API** — `POST /reconciliation/compute`, `GET /evidence-graph`; visit `idempotency_key` on field visit create.
+
+## Wave C portfolio ops (migration `0084`)
+
+- **P5** — Persisted per-cycle portfolio rollups (`audit_portfolio_cycle_rollups`) with grade/risk/anomaly/plot/reconciliation aggregates; `POST /portfolio-rollups/compute`, `GET /portfolio-rollups`.
+- **P7–P9** — Benchmark baselines (`audit_benchmark_baselines`) and cross-estate anomaly patterns (`audit_cross_estate_patterns`); `POST /benchmarks/compute`, `GET /benchmarks`, `POST /cross-estate-patterns/detect`, `GET /cross-estate-patterns`.
+- **P13** — Auditor workspace multi-estate queue with saved filter presets (`audit_auditor_workspace_views`); `GET /auditor-workspace`, `POST/GET /auditor-workspace/views`.
+- **P15–P16** — Report templates (`audit_report_templates`), digest schedules/runs (`audit_digest_schedules`, `audit_digest_runs`); `GET /report-templates`, `POST/GET /digest-schedules`, `POST /digest-schedules/{id}/run`, `GET /digest-runs`.
+- Portfolio summary and field plot queue now scope plots to **active sampling plans** only (Wave B).
