@@ -67,6 +67,12 @@ async def build_audit_engagement_bundle(
     *,
     sign: bool = True,
 ) -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     if engagement.status not in {"field_verified", "export_ready"}:
         raise ValueError("field_verification_incomplete")
 
@@ -162,7 +168,6 @@ async def build_audit_engagement_bundle(
 
     bundle_sha256 = zip_content_hash(zip_bytes_unsigned)
 
-    engagement.status = "export_ready"
     meta = dict(engagement.metadata_ or {})
     meta["exported_at"] = datetime.now(UTC).isoformat()
     meta["export_bundle_sha256"] = bundle_sha256
@@ -171,6 +176,7 @@ async def build_audit_engagement_bundle(
     if signature is not None:
         meta["export_signature_key_id"] = signature.key_id
     engagement.metadata_ = meta
+    await set_engagement_status(db, engagement, "export_ready")
 
     summary = {
         "engagement_id": str(engagement.id),

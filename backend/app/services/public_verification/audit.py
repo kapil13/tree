@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -15,6 +16,7 @@ from app.models.audit_attestation import AuditAttestationSignature, AuditReviewe
 from app.models.audit_engagement import AuditEngagement
 from app.models.planting_project import PlantingProject
 from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
+from app.services.audit_governance.snapshots import get_verification_snapshot_by_digest
 
 DISCLAIMER = (
     "Public Estate Watch audit verification snapshot. "
@@ -36,26 +38,24 @@ async def build_audit_engagement_verification_payload(
     db: AsyncSession,
     engagement: AuditEngagement,
     project: PlantingProject,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
-    attestation = (
-        await db.execute(
-            select(AuditReviewerAttestation).where(
-                AuditReviewerAttestation.engagement_id == engagement.id
-            )
-        )
-    ).scalar_one_or_none()
-
-    signatures = (
-        (
-            await db.execute(
-                select(AuditAttestationSignature)
-                .where(AuditAttestationSignature.engagement_id == engagement.id)
-                .order_by(AuditAttestationSignature.signed_at.asc())
-            )
-        )
-        .scalars()
-        .all()
+    attestation_query = select(AuditReviewerAttestation).where(
+        AuditReviewerAttestation.engagement_id == engagement.id
     )
+    if cycle_id is not None:
+        attestation_query = attestation_query.where(AuditReviewerAttestation.cycle_id == cycle_id)
+    attestation = (await db.execute(attestation_query)).scalar_one_or_none()
+
+    signatures_query = (
+        select(AuditAttestationSignature)
+        .where(AuditAttestationSignature.engagement_id == engagement.id)
+        .order_by(AuditAttestationSignature.signed_at.asc())
+    )
+    if cycle_id is not None:
+        signatures_query = signatures_query.where(AuditAttestationSignature.cycle_id == cycle_id)
+    signatures = (await db.execute(signatures_query)).scalars().all()
 
     reconciliation = await build_confidence_field_reconciliation(db, engagement.id)
     meta = engagement.metadata_ or {}
@@ -76,6 +76,7 @@ async def build_audit_engagement_verification_payload(
             "exported_at": meta.get("exported_at"),
             "attested_at": meta.get("attested_at"),
         },
+        "cycle": {"id": str(cycle_id)} if cycle_id else None,
         "attestation": (
             {
                 "verdict": attestation.verdict,
@@ -84,6 +85,7 @@ async def build_audit_engagement_verification_payload(
                 "attestation_hash": attestation.attestation_hash,
                 "export_bundle_sha256": attestation.export_bundle_sha256,
                 "signed_at": attestation.signed_at.isoformat() if attestation.signed_at else None,
+                "cycle_id": str(attestation.cycle_id),
             }
             if attestation and attestation.status == "signed"
             else None
@@ -95,6 +97,7 @@ async def build_audit_engagement_verification_payload(
                 "summary": s.summary,
                 "signature_hash": s.signature_hash,
                 "signed_at": s.signed_at.isoformat(),
+                "cycle_id": str(s.cycle_id),
             }
             for s in signatures
         ],
@@ -122,6 +125,14 @@ async def resolve_audit_verification_by_digest(
     if len(digest) != 64 or not all(c in "0123456789abcdef" for c in digest.lower()):
         raise ValueError("invalid_digest")
 
+    frozen = await get_verification_snapshot_by_digest(db, digest)
+    if frozen is not None:
+        payload = dict(frozen.snapshot_json)
+        payload["immutable_snapshot"] = True
+        payload["snapshot_hash"] = frozen.snapshot_hash
+        payload["captured_at"] = frozen.captured_at.isoformat()
+        return payload
+
     attestation = (
         await db.execute(
             select(AuditReviewerAttestation).where(AuditReviewerAttestation.attestation_hash == digest)
@@ -129,8 +140,10 @@ async def resolve_audit_verification_by_digest(
     ).scalar_one_or_none()
 
     engagement: AuditEngagement | None = None
+    cycle_id: uuid.UUID | None = None
     if attestation is not None:
         engagement = await db.get(AuditEngagement, attestation.engagement_id)
+        cycle_id = attestation.cycle_id
     else:
         res = await db.execute(
             select(AuditEngagement).where(
@@ -149,6 +162,7 @@ async def resolve_audit_verification_by_digest(
         ).scalar_one_or_none()
         if sig is not None:
             engagement = await db.get(AuditEngagement, sig.engagement_id)
+            cycle_id = sig.cycle_id
 
     if engagement is None:
         raise ValueError("record_not_found")
@@ -157,4 +171,6 @@ async def resolve_audit_verification_by_digest(
     if project is None:
         raise ValueError("resource_not_found")
 
-    return await build_audit_engagement_verification_payload(db, engagement, project)
+    return await build_audit_engagement_verification_payload(
+        db, engagement, project, cycle_id=cycle_id
+    )

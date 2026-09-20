@@ -34,6 +34,9 @@ async def update_working_claim(
     engagement: AuditEngagement,
     claim: dict[str, Any],
 ) -> dict[str, Any]:
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    await require_mutable_cycle(db, engagement)
     meta = dict(engagement.metadata_ or {})
     meta["working_claim"] = claim
     engagement.metadata_ = meta
@@ -47,6 +50,9 @@ async def freeze_claim_snapshot(
     *,
     created_by_user_id: uuid.UUID | None,
 ) -> ClaimSnapshot:
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    await require_mutable_cycle(db, engagement)
     claim_data = await get_working_claim(engagement)
     if not claim_data:
         raise ValueError("empty_claim")

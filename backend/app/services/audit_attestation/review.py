@@ -39,8 +39,14 @@ async def review_anomaly(
     disposition: str,
     rationale: str,
 ) -> AuditAnomalyReview:
-    if engagement.status not in {"export_ready", "under_review", "attested"}:
+    if engagement.status == "attested":
+        raise ValueError("audit_cycle_closed")
+    if engagement.status not in {"export_ready", "under_review"}:
         raise ValueError("export_not_ready")
+
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    await require_mutable_cycle(db, engagement)
 
     if disposition not in VALID_DISPOSITIONS:
         raise ValueError("invalid_disposition")

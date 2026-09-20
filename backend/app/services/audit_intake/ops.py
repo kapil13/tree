@@ -485,6 +485,9 @@ async def complete_intake(
     if not gate["ready"]:
         raise ValueError("intake_gate_not_ready")
 
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    await require_mutable_cycle(db, engagement)
     completed_at = datetime.now(UTC)
     engagement.status = "intake_complete"
     engagement.intake_completed_at = completed_at

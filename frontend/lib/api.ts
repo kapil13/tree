@@ -4153,7 +4153,7 @@ export const auditEngagements = {
   },
   async signAttestation(
     engagementId: string,
-    payload: { verdict: string; summary: string; notes?: string; allow_pending_reviews?: boolean },
+    payload: { verdict: string; summary: string; notes?: string },
   ) {
     return (
       await api.post<Record<string, unknown>>(
