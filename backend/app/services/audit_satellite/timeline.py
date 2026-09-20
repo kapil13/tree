@@ -76,7 +76,6 @@ async def build_temporal_timeline(
     *,
     months: int = 60,
 ) -> list[AuditTemporalObservation]:
-    from app.services.audit_cycles.scope import resolve_read_cycle_id
     from app.services.audit_governance.engagement import require_mutable_cycle
 
     cycle = await require_mutable_cycle(db, engagement)
