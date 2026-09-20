@@ -22,6 +22,15 @@ from app.models.audit_evidence_graph import AuditEvidenceEdge, AuditEvidenceNode
 from app.models.audit_export_entity import AuditExport, AuditExportFile
 from app.models.audit_finality import AuditPolicyEvaluation, AuditVerificationSnapshot
 from app.models.audit_methodology import AuditMethodology, AuditRuleVersion, AuditThresholdSet
+from app.models.audit_portfolio_ops import (
+    AuditAuditorWorkspaceView,
+    AuditBenchmarkBaseline,
+    AuditCrossEstatePattern,
+    AuditDigestRun,
+    AuditDigestSchedule,
+    AuditPortfolioCycleRollup,
+    AuditReportTemplate,
+)
 from app.models.audit_reconciliation import AuditReconciliationBlock, AuditReconciliationRun
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_run import AuditRun
@@ -123,6 +132,13 @@ __all__ = [
     "AuditEvidenceEdge",
     "AuditReconciliationRun",
     "AuditReconciliationBlock",
+    "AuditPortfolioCycleRollup",
+    "AuditBenchmarkBaseline",
+    "AuditCrossEstatePattern",
+    "AuditReportTemplate",
+    "AuditDigestSchedule",
+    "AuditDigestRun",
+    "AuditAuditorWorkspaceView",
     "AuditMethodology",
     "AuditRuleVersion",
     "AuditThresholdSet",
