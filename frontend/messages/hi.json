@@ -760,6 +760,23 @@
     "citations": "उद्धरण",
     "disclaimer": "यह व्याख्या ग्रेड, विसंगति या प्रमाणन परिणाम नहीं बदलती।"
   },
+  "auditExplainHistory": {
+    "title": "व्याख्या इतिहास",
+    "subtitle": "इस engagement की हाल की grounded व्याख्याएँ — नवीनतम पहले।",
+    "patternTitle": "पैटर्न व्याख्या इतिहास",
+    "loading": "व्याख्या इतिहास लोड हो रहा है…",
+    "empty": "अभी कोई व्याख्या नहीं — विसंगति, समन्वय या साक्ष्य ग्राफ पर Explain उपयोग करें।",
+    "count": "{count} रन",
+    "filterAll": "सभी",
+    "unknownTime": "अज्ञात समय",
+    "targetType": {
+      "anomaly": "विसंगति",
+      "reconciliation_summary": "समन्वय सारांश",
+      "reconciliation_block": "समन्वय ब्लॉक",
+      "evidence_graph": "साक्ष्य ग्राफ",
+      "cross_estate_pattern": "क्रॉस-एस्टेट पैटर्न"
+    }
+  },
   "auditEvidenceGraph": {
     "title": "साक्ष्य ग्राफ",
     "subtitle": "दावे → अनुमान → अवलोकन → प्रमाणन का ट्रेस।",

@@ -11,16 +11,28 @@ import {
   type AuditExplainRun,
 } from "@/lib/api";
 import { AuditExplainResult } from "@/components/audit/audit-explain-result";
+import { AuditPatternExplainHistory } from "@/components/audit/audit-pattern-explain-history";
 import { PortfolioSection } from "@/components/portfolio/portfolio-section";
 import { cn } from "@/lib/cn";
 
-function PatternRow({ pattern }: { pattern: AuditCrossEstatePattern }) {
+const PATTERN_HISTORY_LIMIT = 10;
+
+function PatternRow({
+  pattern,
+  onExplained,
+}: {
+  pattern: AuditCrossEstatePattern;
+  onExplained: (run: AuditExplainRun) => void;
+}) {
   const t = useTranslations("auditPortfolioOps");
   const [explainRun, setExplainRun] = useState<AuditExplainRun | null>(null);
 
   const explain = useMutation({
     mutationFn: () => auditEngagements.explainCrossEstatePattern(pattern.id),
-    onSuccess: (run) => setExplainRun(run),
+    onSuccess: (run) => {
+      setExplainRun(run);
+      onExplained(run);
+    },
   });
 
   return (
@@ -57,6 +69,13 @@ function PatternRow({ pattern }: { pattern: AuditCrossEstatePattern }) {
 export function AuditPortfolioOpsSection({ projectId }: { projectId?: string | null }) {
   const t = useTranslations("auditPortfolioOps");
   const qc = useQueryClient();
+  const [patternExplainHistory, setPatternExplainHistory] = useState<AuditExplainRun[]>([]);
+
+  function rememberPatternExplain(run: AuditExplainRun) {
+    setPatternExplainHistory((current) =>
+      [run, ...current.filter((item) => item.id !== run.id)].slice(0, PATTERN_HISTORY_LIMIT),
+    );
+  }
 
   const rollupsQ = useQuery({
     queryKey: ["audit-portfolio-rollups"],
@@ -233,10 +252,15 @@ export function AuditPortfolioOpsSection({ projectId }: { projectId?: string | n
         ) : (
           <ul className="space-y-3">
             {patternsQ.data?.patterns.map((pattern) => (
-              <PatternRow key={pattern.id} pattern={pattern} />
+              <PatternRow
+                key={pattern.id}
+                pattern={pattern}
+                onExplained={rememberPatternExplain}
+              />
             ))}
           </ul>
         )}
+        <AuditPatternExplainHistory runs={patternExplainHistory} />
       </PortfolioSection>
 
       <PortfolioSection title={t("workspace.title")} description={t("workspace.desc")}>

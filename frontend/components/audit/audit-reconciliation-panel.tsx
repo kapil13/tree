@@ -70,12 +70,18 @@ export function AuditReconciliationPanel({
 
   const explainAll = useMutation({
     mutationFn: () => auditEngagements.explainReconciliation(engagementId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
+    },
   });
 
   const explainBlock = useMutation({
     mutationFn: (boundaryVersionId: string) =>
       auditEngagements.explainReconciliation(engagementId, boundaryVersionId),
-    onSuccess: () => setExplainBoundaryId(null),
+    onSuccess: () => {
+      setExplainBoundaryId(null);
+      void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
+    },
   });
 
   if (!unlocked) {

@@ -799,6 +799,23 @@
     "citations": "Citations",
     "disclaimer": "This explanation does not change grades, anomalies, or attestation outcomes."
   },
+  "auditExplainHistory": {
+    "title": "Explain history",
+    "subtitle": "Recent grounded narratives for this engagement — newest first.",
+    "patternTitle": "Pattern explain history",
+    "loading": "Loading explain history…",
+    "empty": "No explanations yet — use Explain on anomalies, reconciliation, or the evidence graph.",
+    "count": "{count} run(s)",
+    "filterAll": "All",
+    "unknownTime": "Unknown time",
+    "targetType": {
+      "anomaly": "Anomaly",
+      "reconciliation_summary": "Reconciliation summary",
+      "reconciliation_block": "Reconciliation block",
+      "evidence_graph": "Evidence graph",
+      "cross_estate_pattern": "Cross-estate pattern"
+    }
+  },
   "auditEvidenceGraph": {
     "title": "Evidence graph",
     "subtitle": "Trace claims → estimations → observations → attestations for the current audit cycle.",

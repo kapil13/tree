@@ -104,6 +104,7 @@ export function AuditRiskPanel({
     onSuccess: (run) => {
       setExplainRun(run);
       setExplainingId(null);
+      void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
     },
     onError: () => setExplainingId(null),
   });
