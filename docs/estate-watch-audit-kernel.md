@@ -58,3 +58,13 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - Rules fallback always available; optional OpenAI/Gemini enrichment when API keys are set (`mode`: `rules` | `llm`).
 - **API** — `POST /anomalies/{id}/explain`, `POST /reconciliation/explain`, `POST /evidence-graph/explain`, `POST /cross-estate-patterns/{id}/explain`, `GET /explain-runs`.
 - Explain context includes methodology thresholds (P18) and deterministic signals only — LLM cannot override audit outcomes.
+
+## Wave F UI parity (frontend)
+
+- **P0 reconciliation** — `audit-reconciliation-panel.tsx`: compute persisted run, per-block and summary explain.
+- **P0 export history** — `audit-export-panel.tsx`: list exports, frozen download, signature verify.
+- **P1 evidence graph** — `audit-evidence-graph-panel.tsx` under reconciliation phase.
+- **P1 explain** — `audit-explain-result.tsx` + explain buttons on risk anomalies and portfolio patterns.
+- **P2 portfolio ops** — `audit-portfolio-ops-section.tsx` on `/portfolio-health?tab=audit`: rollups, benchmarks, patterns, workspace, digests.
+- **P3 methodology** — `audit-methodology-panel.tsx` on project audit workspace.
+- API client: `auditEngagements` methods in `frontend/lib/api.ts` for Waves C–E endpoints.

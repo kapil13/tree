@@ -22,6 +22,7 @@ import { AuditIntakePanel } from "@/components/audit/audit-intake-panel";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { AuditMetricsStrip } from "@/components/audit/audit-metrics-strip";
 import { AuditIntegrityBridgePanel } from "@/components/audit/audit-integrity-bridge-panel";
+import { AuditMethodologyPanel } from "@/components/audit/audit-methodology-panel";
 import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
 import { AuditReauditPanel } from "@/components/audit/audit-reaudit-panel";
 import { AuditReconciliationPanel } from "@/components/audit/audit-reconciliation-panel";
@@ -175,6 +176,8 @@ export function AuditWorkspace({
       <AuditCrossLinks projectId={projectId} satelliteHref={satelliteHref} />
 
       <AuditIntegrityBridgePanel engagementId={engagement.id} projectId={projectId} />
+
+      <AuditMethodologyPanel engagementId={engagement.id} />
 
       <AuditReauditPanel engagementId={engagement.id} engagementStatus={engagement.status} />
 

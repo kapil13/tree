@@ -723,7 +723,13 @@
     "satellite": "उपग्रह",
     "field": "फील्ड",
     "visits": "विज़िट",
-    "status": "स्थिति"
+    "status": "स्थिति",
+    "compute": "समन्वय गणना और सहेजें",
+    "computing": "गणना हो रही है…",
+    "explainAll": "समन्वय समझाएँ",
+    "explainBlock": "समझाएँ",
+    "explaining": "समझाया जा रहा है…",
+    "lastComputed": "अंतिम रन: {time}"
   },
   "auditExport": {
     "title": "साक्ष्य कक्ष और ऑडिट निर्यात",
@@ -735,7 +741,95 @@
     "lastExport": "अंतिम निर्यात SHA-256: {sha}…",
     "notReady": "निर्यात से पहले फील्ड सत्यापन पूर्ण करें।",
     "reconciliationOk": "सभी {count} ब्लॉक उपग्रह और फील्ड के बीच मेल खाते हैं।",
-    "reconciliationWarning": "समन्वय: {mismatch} असंगति और {noField} ब्लॉक बिना फील्ड डेटा।"
+    "reconciliationWarning": "समन्वय: {mismatch} असंगति और {noField} ब्लॉक बिना फील्ड डेटा।",
+    "fieldVisitsRequired": "निर्यात से पहले फील्ड विज़िट दर्ज करें और सत्यापन पूर्ण करें।",
+    "historyTitle": "निर्यात इतिहास",
+    "historyLoading": "निर्यात इतिहास लोड हो रहा है…",
+    "historyEmpty": "अभी कोई सहेजा निर्यात नहीं।",
+    "historyItem": "निर्यात {version} · {files} फ़ाइलें",
+    "historyPending": "समय लंबित",
+    "downloadFrozen": "फ्रोज़न कॉपी डाउनलोड",
+    "verify": "हस्ताक्षर सत्यापित करें",
+    "verifyValid": "निर्यात हस्ताक्षर सत्यापित।",
+    "verifyInvalid": "निर्यात सत्यापन विफल।"
+  },
+  "auditExplain": {
+    "badge": "केवल-व्याख्या कथा",
+    "mode": "मोड: {mode}",
+    "llmFallback": "LLM उपलब्ध नहीं ({error}) — नियम फ़ॉलबैक।",
+    "citations": "उद्धरण",
+    "disclaimer": "यह व्याख्या ग्रेड, विसंगति या प्रमाणन परिणाम नहीं बदलती।"
+  },
+  "auditEvidenceGraph": {
+    "title": "साक्ष्य ग्राफ",
+    "subtitle": "दावे → अनुमान → अवलोकन → प्रमाणन का ट्रेस।",
+    "epistemicNote": "ग्राफ लिंक निर्धारक provenance हैं।",
+    "locked": "साक्ष्य ग्राफ के लिए फील्ड सत्यापन पूर्ण करें।",
+    "loading": "साक्ष्य ग्राफ लोड हो रहा है…",
+    "counts": "{nodes} नोड · {edges} एज",
+    "explain": "ग्राफ समझाएँ",
+    "explaining": "समझाया जा रहा है…",
+    "empty": "अभी कोई साक्ष्य नोड नहीं।",
+    "nodes": "नोड",
+    "edges": "एज"
+  },
+  "auditMethodology": {
+    "title": "विधि बाइंडिंग",
+    "subtitle": "इस engagement के लिए Estate Watch विधि संस्करण चुनें।",
+    "loading": "विधि लोड हो रही है…",
+    "versionLabel": "विधि संस्करण",
+    "reasonLabel": "बदलाव का कारण",
+    "reasonPlaceholder": "उदा. ग्राहक को estate-watch-1.0.0 आवश्यक",
+    "save": "बाइंडिंग सहेजें",
+    "saving": "सहेजा जा रहा है…",
+    "current": "सक्रिय: {version}",
+    "changeLog": "बदलाव लॉग",
+    "defaultReason": "ऑडिट workspace से अपडेट"
+  },
+  "auditPortfolioOps": {
+    "loading": "पोर्टफोलियो ऑप्स लोड हो रहे हैं…",
+    "computing": "गणना हो रही है…",
+    "explain": "समझाएँ",
+    "patternEngagements": "{count} engagement प्रभावित",
+    "rollups": {
+      "title": "पोर्टफोलियो रोलअप",
+      "desc": "प्रति-चक्र ग्रेड, जोखिम और समन्वय सारांश।",
+      "compute": "रोलअप गणना",
+      "empty": "अभी कोई रोलअप नहीं।",
+      "cycle": "चक्र {number}",
+      "plotsDue": "प्लॉट बाकी",
+      "anomalies": "खुली विसंगतियाँ",
+      "mismatch": "समन्वय असंगति",
+      "visited": "विज़िट किए प्लॉट"
+    },
+    "benchmarks": {
+      "title": "संगठन बेंचमार्क",
+      "desc": "संगठन में attested engagements पर आधारित मेट्रिक।",
+      "compute": "बेंचमार्क गणना",
+      "empty": "अभी कोई बेंचमार्क नहीं।",
+      "metric": "मेट्रिक",
+      "value": "मान",
+      "samples": "नमूने"
+    },
+    "patterns": {
+      "title": "क्रॉस-एस्टेट पैटर्न",
+      "desc": "कई engagements में दोहराई जाने वाली विसंगतियाँ।",
+      "detect": "पैटर्न खोजें",
+      "empty": "अभी कोई पैटर्न नहीं।"
+    },
+    "workspace": {
+      "title": "ऑडिटर workspace",
+      "desc": "सक्रिय सैंपलिंग प्लान पर फ़िल्टर किया फील्ड कतार।",
+      "due": "{count} प्लॉट बाकी",
+      "topPlot": "अगला: {code} · {project}"
+    },
+    "digests": {
+      "title": "ऑडिट डाइजेस्ट",
+      "desc": "पर्यवेक्षकों के लिए अनुसूचित डाइजेस्ट।",
+      "empty": "कोई डाइजेस्ट शेड्यूल नहीं।",
+      "run": "अभी चलाएँ",
+      "lastRun": "अंतिम रन {time}"
+    }
   },
   "auditSampling": {
     "title": "फील्ड सैंपलिंग और सत्यापन",
@@ -816,7 +910,9 @@
     "noQueue": "अभी कोई जोखिम मूल्यांकन नहीं — जोखिम स्कैन चलाएँ।",
     "score": "जोखिम {score}/100",
     "anomalyCount": "{count} विसंगति संकेत",
-    "anomalySummary": "कुल {total} विसंगतियाँ ({critical} गंभीर, {high} उच्च)"
+    "anomalySummary": "कुल {total} विसंगतियाँ ({critical} गंभीर, {high} उच्च)",
+    "explain": "समझाएँ",
+    "allAnomalies": "सभी विसंगति घटनाएँ"
   },
   "projectCompliance": {
     "sectionsAria": "अनुपालन अनुभाग",

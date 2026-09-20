@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ListOrdered, ShieldAlert } from "lucide-react";
-import { auditEngagements, errorMessage } from "@/lib/api";
+import { AlertTriangle, ListOrdered, ShieldAlert, Sparkles } from "lucide-react";
+import { auditEngagements, errorMessage, type AuditExplainRun } from "@/lib/api";
+import { AuditExplainResult } from "@/components/audit/audit-explain-result";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
@@ -22,6 +24,13 @@ const SEVERITY_STYLES: Record<string, string> = {
   low: "text-stone-600",
 };
 
+type QueueAnomaly = {
+  id?: string;
+  title: string;
+  severity: string;
+  summary: string;
+};
+
 type QueueBlock = {
   id: string;
   boundary_name?: string | null;
@@ -31,7 +40,16 @@ type QueueBlock = {
   anomaly_count: number;
   recommended_action: string;
   epistemic_label?: string;
-  anomalies?: Array<{ title: string; severity: string; summary: string }>;
+  anomalies?: QueueAnomaly[];
+};
+
+type AnomalyItem = {
+  id: string;
+  boundary_name?: string | null;
+  title: string;
+  severity: string;
+  summary: string;
+  status: string;
 };
 
 export function AuditRiskPanel({
@@ -43,6 +61,8 @@ export function AuditRiskPanel({
 }) {
   const t = useTranslations("auditRisk");
   const qc = useQueryClient();
+  const [explainRun, setExplainRun] = useState<AuditExplainRun | null>(null);
+  const [explainingId, setExplainingId] = useState<string | null>(null);
 
   const { data: queue, isLoading: queueLoading } = useQuery({
     queryKey: ["audit-auditor-queue", engagementId],
@@ -79,6 +99,15 @@ export function AuditRiskPanel({
     },
   });
 
+  const explain = useMutation({
+    mutationFn: (anomalyId: string) => auditEngagements.explainAnomaly(engagementId, anomalyId),
+    onSuccess: (run) => {
+      setExplainRun(run);
+      setExplainingId(null);
+    },
+    onError: () => setExplainingId(null),
+  });
+
   const unlocked =
     engagementStatus === "confidence_mapped" ||
     engagementStatus === "risk_assessed" ||
@@ -99,6 +128,7 @@ export function AuditRiskPanel({
   const blocks = (queue?.queue ?? []) as QueueBlock[];
   const levelCounts = queue?.level_counts ?? {};
   const severityCounts = anomalies?.severity_counts ?? {};
+  const anomalyItems = (anomalies?.anomalies ?? []) as AnomalyItem[];
 
   return (
     <AuditPanelShell
@@ -180,14 +210,29 @@ export function AuditRiskPanel({
               {block.anomalies && block.anomalies.length > 0 && (
                 <ul className="mt-3 space-y-1 border-t border-stone-100 pt-3 dark:border-stone-800">
                   {block.anomalies.map((a, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs">
-                      <AlertTriangle
-                        className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", SEVERITY_STYLES[a.severity])}
-                        aria-hidden
-                      />
-                      <span>
-                        <strong>{a.title}</strong> — {a.summary}
+                    <li key={a.id ?? i} className="flex items-start justify-between gap-2 text-xs">
+                      <span className="flex items-start gap-2">
+                        <AlertTriangle
+                          className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", SEVERITY_STYLES[a.severity])}
+                          aria-hidden
+                        />
+                        <span>
+                          <strong>{a.title}</strong> — {a.summary}
+                        </span>
                       </span>
+                      {a.id ? (
+                        <button
+                          type="button"
+                          className="shrink-0 text-forest-700 hover:underline dark:text-forest-300"
+                          disabled={explain.isPending && explainingId === a.id}
+                          onClick={() => {
+                            setExplainingId(a.id!);
+                            explain.mutate(a.id!);
+                          }}
+                        >
+                          {t("explain")}
+                        </button>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -196,6 +241,47 @@ export function AuditRiskPanel({
           ))
         )}
       </div>
+
+      {anomalyItems.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+            {t("allAnomalies")}
+          </h3>
+          <ul className="space-y-2">
+            {anomalyItems.map((anomaly) => (
+              <li
+                key={anomaly.id}
+                className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-stone-200 p-3 text-sm dark:border-stone-700"
+              >
+                <div>
+                  <p className="font-medium text-stone-900 dark:text-stone-100">{anomaly.title}</p>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {anomaly.boundary_name} · {anomaly.severity} · {anomaly.status}
+                  </p>
+                  <p className="mt-1 text-stone-600">{anomaly.summary}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary inline-flex items-center gap-1 text-xs"
+                  disabled={explain.isPending && explainingId === anomaly.id}
+                  onClick={() => {
+                    setExplainingId(anomaly.id);
+                    explain.mutate(anomaly.id);
+                  }}
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  {t("explain")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {explainRun ? <AuditExplainResult run={explainRun} /> : null}
+      {explain.isError ? (
+        <p className="text-sm text-rose-700">{errorMessage(explain.error)}</p>
+      ) : null}
 
       {Object.keys(severityCounts).length > 0 && (
         <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-stone-900">
