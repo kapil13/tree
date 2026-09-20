@@ -87,17 +87,48 @@ async def compute_confidence_map(
     engagement: AuditEngagement,
     *,
     include_field_signals: bool = False,
+    created_by: uuid.UUID | None = None,
 ) -> list[AuditConfidenceAssessment]:
+    from app.services.audit_cycles.run_wrapper import execute_audit_run
     from app.services.audit_governance.engagement import (
         require_mutable_cycle,
         set_engagement_status,
     )
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     allowed = _FIELD_REFRESH_STATUSES if include_field_signals else _INITIAL_STATUSES
     if engagement.status not in allowed:
         raise ValueError("analysis_not_ready" if not include_field_signals else "field_refresh_not_allowed")
 
+    async def _compute() -> list[AuditConfidenceAssessment]:
+        return await _compute_confidence_map_for_cycle(
+            db,
+            engagement,
+            cycle,
+            include_field_signals=include_field_signals,
+        )
+
+    results, _run = await execute_audit_run(
+        db,
+        cycle,
+        run_type="confidence_map",
+        created_by=created_by,
+        work=_compute,
+        parameters={"include_field_signals": include_field_signals},
+    )
+
+    if not include_field_signals:
+        await set_engagement_status(db, engagement, "confidence_mapped")
+    return results
+
+
+async def _compute_confidence_map_for_cycle(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    cycle,
+    *,
+    include_field_signals: bool,
+) -> list[AuditConfidenceAssessment]:
     boundaries = (
         await db.execute(
             select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement.id)
@@ -118,7 +149,7 @@ async def compute_confidence_map(
     baselines = (
         await db.execute(
             select(AuditSatelliteBaseline).where(
-                AuditSatelliteBaseline.engagement_id == engagement.id
+                AuditSatelliteBaseline.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -127,7 +158,7 @@ async def compute_confidence_map(
     temporal_rows = (
         await db.execute(
             select(AuditTemporalObservation).where(
-                AuditTemporalObservation.engagement_id == engagement.id
+                AuditTemporalObservation.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -169,7 +200,7 @@ async def compute_confidence_map(
         existing = (
             await db.execute(
                 select(AuditConfidenceAssessment).where(
-                    AuditConfidenceAssessment.engagement_id == engagement.id,
+                    AuditConfidenceAssessment.cycle_id == cycle.id,
                     AuditConfidenceAssessment.boundary_version_id == bv.id,
                 )
             )
@@ -180,6 +211,7 @@ async def compute_confidence_map(
         else:
             row = AuditConfidenceAssessment(
                 engagement_id=engagement.id,
+                cycle_id=cycle.id,
                 boundary_version_id=bv.id,
                 fence_id=bv.fence_id,
             )
@@ -200,23 +232,27 @@ async def compute_confidence_map(
         meta["confidence_refreshed_with_field_at"] = datetime.now(UTC).isoformat()
     else:
         meta["confidence_mapped_at"] = datetime.now(UTC).isoformat()
-        engagement.metadata_ = meta
-        await set_engagement_status(db, engagement, "confidence_mapped")
-        return results
     engagement.metadata_ = meta
     await db.flush()
     return results
 
 
 async def confidence_map_summary(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    assessment_filter = (
+        [AuditConfidenceAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditConfidenceAssessment.engagement_id == engagement_id]
+    )
     assessments = (
-        await db.execute(
-            select(AuditConfidenceAssessment).where(
-                AuditConfidenceAssessment.engagement_id == engagement_id
-            )
-        )
+        await db.execute(select(AuditConfidenceAssessment).where(*assessment_filter))
     ).scalars().all()
     boundaries = (
         await db.execute(

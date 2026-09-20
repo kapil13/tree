@@ -28,11 +28,22 @@ async def _plot_center_dict(db: AsyncSession, plot: AuditFieldPlot) -> dict[str,
     return {"lon": float(row.lon), "lat": float(row.lat)}
 
 
-async def sampling_plan_summary(db: AsyncSession, engagement_id: uuid.UUID) -> dict[str, Any]:
+async def sampling_plan_summary(
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    plan_filter = (
+        [AuditSamplingPlan.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditSamplingPlan.engagement_id == engagement_id]
+    )
     plan = (
-        await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement_id)
-        )
+        await db.execute(select(AuditSamplingPlan).where(*plan_filter))
     ).scalar_one_or_none()
 
     boundaries = (

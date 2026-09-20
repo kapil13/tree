@@ -26,6 +26,9 @@ class AuditAnomalyEvent(UUIDPKMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     boundary_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("boundary_versions.id", ondelete="CASCADE"), nullable=False
     )
@@ -43,12 +46,13 @@ class AuditAnomalyEvent(UUIDPKMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "engagement_id",
+            "cycle_id",
             "boundary_version_id",
             "anomaly_type",
             name="audit_anomaly_events_type_uq",
         ),
         Index("audit_anomaly_events_engagement_idx", "engagement_id"),
+        Index("audit_anomaly_events_cycle_idx", "cycle_id"),
         Index("audit_anomaly_events_severity_idx", "severity"),
     )
 
@@ -60,6 +64,9 @@ class AuditRiskAssessment(UUIDPKMixin, TimestampMixin, Base):
 
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
     )
     boundary_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("boundary_versions.id", ondelete="CASCADE"), nullable=False
@@ -81,10 +88,11 @@ class AuditRiskAssessment(UUIDPKMixin, TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "engagement_id",
+            "cycle_id",
             "boundary_version_id",
             name="audit_risk_assessments_boundary_uq",
         ),
         Index("audit_risk_assessments_engagement_idx", "engagement_id"),
-        Index("audit_risk_assessments_rank_idx", "engagement_id", "priority_rank"),
+        Index("audit_risk_assessments_cycle_idx", "cycle_id"),
+        Index("audit_risk_assessments_rank_idx", "cycle_id", "priority_rank"),
     )

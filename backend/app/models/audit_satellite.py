@@ -24,6 +24,9 @@ class AuditSatelliteBaseline(UUIDPKMixin, TimestampMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     boundary_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("boundary_versions.id", ondelete="CASCADE"), nullable=False
     )
@@ -49,11 +52,12 @@ class AuditSatelliteBaseline(UUIDPKMixin, TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "engagement_id",
+            "cycle_id",
             "boundary_version_id",
             name="audit_satellite_baselines_boundary_uq",
         ),
         Index("audit_satellite_baselines_engagement_idx", "engagement_id"),
+        Index("audit_satellite_baselines_cycle_idx", "cycle_id"),
     )
 
 
@@ -64,6 +68,9 @@ class AuditTemporalObservation(UUIDPKMixin, Base):
 
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
     )
     boundary_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("boundary_versions.id", ondelete="CASCADE"), nullable=False
@@ -87,10 +94,11 @@ class AuditTemporalObservation(UUIDPKMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "engagement_id",
+            "cycle_id",
             "boundary_version_id",
             "phase",
             name="audit_temporal_observations_phase_uq",
         ),
         Index("audit_temporal_observations_engagement_idx", "engagement_id"),
+        Index("audit_temporal_observations_cycle_idx", "cycle_id"),
     )

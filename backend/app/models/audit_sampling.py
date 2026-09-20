@@ -33,6 +33,9 @@ class AuditSamplingPlan(UUIDPKMixin, TimestampMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     stratification: Mapped[str] = mapped_column(String(32), nullable=False, default="risk_weighted")
     plots_per_critical: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     plots_per_high: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
@@ -54,8 +57,9 @@ class AuditSamplingPlan(UUIDPKMixin, TimestampMixin, Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("engagement_id", name="audit_sampling_plans_engagement_uq"),
+        UniqueConstraint("cycle_id", name="audit_sampling_plans_cycle_uq"),
         Index("audit_sampling_plans_engagement_idx", "engagement_id"),
+        Index("audit_sampling_plans_cycle_idx", "cycle_id"),
     )
 
 
@@ -66,6 +70,9 @@ class AuditFieldPlot(UUIDPKMixin, TimestampMixin, Base):
 
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
     )
     plan_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -99,6 +106,7 @@ class AuditFieldPlot(UUIDPKMixin, TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("plan_id", "plot_code", name="audit_field_plots_code_uq"),
         Index("audit_field_plots_engagement_idx", "engagement_id"),
+        Index("audit_field_plots_cycle_idx", "cycle_id"),
         Index("audit_field_plots_engagement_status_idx", "engagement_id", "status"),
         Index("audit_field_plots_plan_idx", "plan_id"),
         Index("audit_field_plots_center_gix", "center", postgresql_using="gist"),
@@ -112,6 +120,9 @@ class AuditFieldVisit(UUIDPKMixin, TimestampMixin, Base):
 
     plot_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_field_plots.id", ondelete="CASCADE"), nullable=False
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
     )
     visited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     visitor_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -135,4 +146,7 @@ class AuditFieldVisit(UUIDPKMixin, TimestampMixin, Base):
 
     plot = relationship("AuditFieldPlot", back_populates="visits")
 
-    __table_args__ = (Index("audit_field_visits_plot_idx", "plot_id", "visited_at"),)
+    __table_args__ = (
+        Index("audit_field_visits_plot_idx", "plot_id", "visited_at"),
+        Index("audit_field_visits_cycle_idx", "cycle_id"),
+    )

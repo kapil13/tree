@@ -31,15 +31,22 @@ def _grades_aligned(confidence_grade: str, field_grade: str | None) -> bool:
 
 
 async def build_confidence_field_reconciliation(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    assessment_filter = (
+        [AuditConfidenceAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditConfidenceAssessment.engagement_id == engagement_id]
+    )
     assessments = (
         (
-            await db.execute(
-                select(AuditConfidenceAssessment).where(
-                    AuditConfidenceAssessment.engagement_id == engagement_id
-                )
-            )
+            await db.execute(select(AuditConfidenceAssessment).where(*assessment_filter))
         )
         .scalars()
         .all()

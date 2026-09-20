@@ -46,7 +46,7 @@ async def review_anomaly(
 
     from app.services.audit_governance.engagement import require_mutable_cycle
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
 
     if disposition not in VALID_DISPOSITIONS:
         raise ValueError("invalid_disposition")
@@ -68,6 +68,7 @@ async def review_anomaly(
 
     review = AuditAnomalyReview(
         engagement_id=engagement.id,
+        cycle_id=cycle.id,
         anomaly_id=anomaly.id,
         reviewer_id=reviewer_id,
         disposition=disposition,

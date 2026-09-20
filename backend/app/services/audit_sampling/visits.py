@@ -22,6 +22,7 @@ async def _resolve_block_anomalies(
     db: AsyncSession,
     *,
     engagement_id: uuid.UUID,
+    cycle_id: uuid.UUID,
     boundary_version_id: uuid.UUID,
     outcome: str,
 ) -> int:
@@ -32,7 +33,7 @@ async def _resolve_block_anomalies(
         (
             await db.execute(
                 select(AuditAnomalyEvent).where(
-                    AuditAnomalyEvent.engagement_id == engagement_id,
+                    AuditAnomalyEvent.cycle_id == cycle_id,
                     AuditAnomalyEvent.boundary_version_id == boundary_version_id,
                     AuditAnomalyEvent.status == "open",
                 )
@@ -71,7 +72,7 @@ async def record_field_visit(
 ) -> AuditFieldVisit:
     from app.services.audit_governance.engagement import require_mutable_cycle
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
 
@@ -109,6 +110,7 @@ async def record_field_visit(
 
     visit = AuditFieldVisit(
         plot_id=plot.id,
+        cycle_id=cycle.id,
         visited_at=datetime.now(UTC),
         visitor_id=visitor_id,
         tree_presence=tree_presence,
@@ -132,6 +134,7 @@ async def record_field_visit(
     await _resolve_block_anomalies(
         db,
         engagement_id=engagement.id,
+        cycle_id=cycle.id,
         boundary_version_id=plot.boundary_version_id,
         outcome=verification_outcome,
     )
@@ -148,13 +151,13 @@ async def complete_field_verification(
         set_engagement_status,
     )
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
 
     plan = (
         await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement.id)
+            select(AuditSamplingPlan).where(AuditSamplingPlan.cycle_id == cycle.id)
         )
     ).scalar_one_or_none()
     if plan is None:

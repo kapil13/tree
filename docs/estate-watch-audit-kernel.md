@@ -15,3 +15,12 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - Attestation signatures and reviewer attestations are scoped by `cycle_id` (one attestation record per cycle).
 - `require_mutable_cycle()` guards all Estate Watch mutation services; attested cycles cannot be modified.
 - Default `required_signatures = 1` (Aranyix operator); multi-sign remains configurable via engagement metadata.
+
+## Wave A scope (migration `0082`)
+
+- `cycle_id` on satellite, confidence, risk, sampling, and field-visit evidence tables — re-audit periods no longer share mutable rows.
+- `audit_runs` wired into confidence map, risk scan, and export bundle generation (append-only provenance).
+- Methodology registry (`audit_methodologies`, `audit_rule_versions`, `audit_threshold_sets`) with default `estate-watch-1.0.0`.
+- Persisted export entities (`audit_exports`, `audit_export_files`) with distinct `content_manifest_hash`, `unsigned_bundle_hash`, and `package_sha256`.
+- `POST /audit-engagements/{id}/exports` creates a cycle-scoped export record; `GET /export` still downloads the zip bundle.
+- Cycle-scoped export context, readiness, and reconciliation reads default to the open cycle (or latest when attested).

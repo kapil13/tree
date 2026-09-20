@@ -18,7 +18,9 @@ from app.models.audit_engagement import (
     PlantabilityExclusion,
     PlausibilityAssessment,
 )
+from app.models.audit_export_entity import AuditExport, AuditExportFile
 from app.models.audit_finality import AuditPolicyEvaluation, AuditVerificationSnapshot
+from app.models.audit_methodology import AuditMethodology, AuditRuleVersion, AuditThresholdSet
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_run import AuditRun
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
@@ -113,6 +115,11 @@ __all__ = [
     "AuditCycle",
     "AuditPolicyEvaluation",
     "AuditVerificationSnapshot",
+    "AuditExport",
+    "AuditExportFile",
+    "AuditMethodology",
+    "AuditRuleVersion",
+    "AuditThresholdSet",
     "AuditRun",
     "AuditEngagement",
     "BoundaryVersion",

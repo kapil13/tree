@@ -100,6 +100,9 @@ async def establish_t0_baselines(
     engagement: AuditEngagement,
     project: PlantingProject,
 ) -> list[AuditSatelliteBaseline]:
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"intake_complete", "analysis_ready"}:
         raise ValueError("intake_not_complete")
 
@@ -121,7 +124,7 @@ async def establish_t0_baselines(
         existing = (
             await db.execute(
                 select(AuditSatelliteBaseline).where(
-                    AuditSatelliteBaseline.engagement_id == engagement.id,
+                    AuditSatelliteBaseline.cycle_id == cycle.id,
                     AuditSatelliteBaseline.boundary_version_id == bv.id,
                 )
             )
@@ -143,6 +146,7 @@ async def establish_t0_baselines(
         else:
             row = AuditSatelliteBaseline(
                 engagement_id=engagement.id,
+                cycle_id=cycle.id,
                 boundary_version_id=bv.id,
                 fence_id=bv.fence_id,
                 planting_date=planting_date,

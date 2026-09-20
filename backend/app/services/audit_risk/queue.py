@@ -13,8 +13,25 @@ from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 
 
 async def auditor_queue_summary(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    risk_filter = (
+        [AuditRiskAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditRiskAssessment.engagement_id == engagement_id]
+    )
+    anomaly_filter = (
+        [AuditAnomalyEvent.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditAnomalyEvent.engagement_id == engagement_id]
+    )
+
     boundaries = (
         await db.execute(
             select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement_id)
@@ -25,15 +42,13 @@ async def auditor_queue_summary(
     risk_rows = (
         await db.execute(
             select(AuditRiskAssessment)
-            .where(AuditRiskAssessment.engagement_id == engagement_id)
+            .where(*risk_filter)
             .order_by(AuditRiskAssessment.priority_rank.asc())
         )
     ).scalars().all()
 
     anomalies = (
-        await db.execute(
-            select(AuditAnomalyEvent).where(AuditAnomalyEvent.engagement_id == engagement_id)
-        )
+        await db.execute(select(AuditAnomalyEvent).where(*anomaly_filter))
     ).scalars().all()
 
     level_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -88,8 +103,20 @@ async def auditor_queue_summary(
 
 
 async def anomalies_summary(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    anomaly_filter = (
+        [AuditAnomalyEvent.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditAnomalyEvent.engagement_id == engagement_id]
+    )
+
     boundaries = (
         await db.execute(
             select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement_id)
@@ -100,7 +127,7 @@ async def anomalies_summary(
     anomalies = (
         await db.execute(
             select(AuditAnomalyEvent)
-            .where(AuditAnomalyEvent.engagement_id == engagement_id)
+            .where(*anomaly_filter)
             .order_by(AuditAnomalyEvent.detected_at.desc())
         )
     ).scalars().all()

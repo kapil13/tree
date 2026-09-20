@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from sqlalchemy import select
@@ -14,7 +15,31 @@ from app.models.audit_sampling import AuditSamplingPlan
 from app.services.audit_export.reconciliation import build_confidence_field_reconciliation
 
 
-async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dict[str, Any]:
+async def export_readiness(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    *,
+    cycle_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement.id, cycle_id=cycle_id)
+    confidence_filter = (
+        [AuditConfidenceAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditConfidenceAssessment.engagement_id == engagement.id]
+    )
+    risk_filter = (
+        [AuditRiskAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditRiskAssessment.engagement_id == engagement.id]
+    )
+    plan_filter = (
+        [AuditSamplingPlan.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditSamplingPlan.engagement_id == engagement.id]
+    )
+
     boundaries = (
         (
             await db.execute(
@@ -26,33 +51,17 @@ async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dic
     )
 
     confidence_count = (
-        (
-            await db.execute(
-                select(AuditConfidenceAssessment).where(
-                    AuditConfidenceAssessment.engagement_id == engagement.id
-                )
-            )
-        )
+        (await db.execute(select(AuditConfidenceAssessment).where(*confidence_filter)))
         .scalars()
         .all()
     )
 
     risk_count = (
-        (
-            await db.execute(
-                select(AuditRiskAssessment).where(
-                    AuditRiskAssessment.engagement_id == engagement.id
-                )
-            )
-        )
-        .scalars()
-        .all()
+        (await db.execute(select(AuditRiskAssessment).where(*risk_filter))).scalars().all()
     )
 
     plan = (
-        await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement.id)
-        )
+        await db.execute(select(AuditSamplingPlan).where(*plan_filter))
     ).scalar_one_or_none()
 
     meta = engagement.metadata_ or {}
@@ -109,7 +118,9 @@ async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dic
     reconciliation_mismatch = 0
     reconciliation_no_field = 0
     if engagement.status in {"field_verified", "export_ready", "under_review", "attested"}:
-        reconciliation = await build_confidence_field_reconciliation(db, engagement.id)
+        reconciliation = await build_confidence_field_reconciliation(
+            db, engagement.id, cycle_id=scoped_cycle_id
+        )
         reconciliation_aligned = reconciliation.get("aligned_count", 0)
         reconciliation_mismatch = reconciliation.get("mismatch_count", 0)
         reconciliation_no_field = reconciliation.get("no_field_data_count", 0)
@@ -132,6 +143,7 @@ async def export_readiness(db: AsyncSession, engagement: AuditEngagement) -> dic
 
     return {
         "engagement_id": str(engagement.id),
+        "cycle_id": str(scoped_cycle_id) if scoped_cycle_id else None,
         "status": engagement.status,
         "block_count": len(boundaries),
         "ready": ready,

@@ -76,13 +76,16 @@ async def build_temporal_timeline(
     *,
     months: int = 60,
 ) -> list[AuditTemporalObservation]:
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"intake_complete", "analysis_ready"}:
         raise ValueError("intake_not_complete")
 
     baselines = (
         await db.execute(
             select(AuditSatelliteBaseline).where(
-                AuditSatelliteBaseline.engagement_id == engagement.id
+                AuditSatelliteBaseline.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -129,7 +132,7 @@ async def build_temporal_timeline(
             existing = (
                 await db.execute(
                     select(AuditTemporalObservation).where(
-                        AuditTemporalObservation.engagement_id == engagement.id,
+                        AuditTemporalObservation.cycle_id == cycle.id,
                         AuditTemporalObservation.boundary_version_id == bv.id,
                         AuditTemporalObservation.phase == phase,
                     )
@@ -142,6 +145,7 @@ async def build_temporal_timeline(
             else:
                 row = AuditTemporalObservation(
                     engagement_id=engagement.id,
+                    cycle_id=cycle.id,
                     boundary_version_id=bv.id,
                     fence_id=bv.fence_id,
                     phase=phase,
@@ -166,19 +170,32 @@ async def build_temporal_timeline(
 
 
 async def satellite_timeline_summary(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    baseline_filter = (
+        [AuditSatelliteBaseline.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditSatelliteBaseline.engagement_id == engagement_id]
+    )
+    observation_filter = (
+        [AuditTemporalObservation.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditTemporalObservation.engagement_id == engagement_id]
+    )
+
     baselines = (
-        await db.execute(
-            select(AuditSatelliteBaseline).where(
-                AuditSatelliteBaseline.engagement_id == engagement_id
-            )
-        )
+        await db.execute(select(AuditSatelliteBaseline).where(*baseline_filter))
     ).scalars().all()
     observations = (
         await db.execute(
             select(AuditTemporalObservation)
-            .where(AuditTemporalObservation.engagement_id == engagement_id)
+            .where(*observation_filter)
             .order_by(AuditTemporalObservation.scene_acquired_at.asc())
         )
     ).scalars().all()
@@ -249,11 +266,11 @@ async def mark_analysis_ready(
         set_engagement_status,
     )
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     baselines = (
         await db.execute(
             select(AuditSatelliteBaseline).where(
-                AuditSatelliteBaseline.engagement_id == engagement.id
+                AuditSatelliteBaseline.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -273,7 +290,7 @@ async def mark_analysis_ready(
     obs_count = (
         await db.execute(
             select(AuditTemporalObservation).where(
-                AuditTemporalObservation.engagement_id == engagement.id
+                AuditTemporalObservation.cycle_id == cycle.id
             )
         )
     ).scalars().all()

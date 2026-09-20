@@ -24,6 +24,9 @@ class AuditConfidenceAssessment(UUIDPKMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     boundary_version_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("boundary_versions.id", ondelete="CASCADE"), nullable=False
     )
@@ -44,10 +47,11 @@ class AuditConfidenceAssessment(UUIDPKMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "engagement_id",
+            "cycle_id",
             "boundary_version_id",
             name="audit_confidence_assessments_boundary_uq",
         ),
         Index("audit_confidence_assessments_engagement_idx", "engagement_id"),
+        Index("audit_confidence_assessments_cycle_idx", "cycle_id"),
         Index("audit_confidence_assessments_grade_idx", "confidence_grade"),
     )

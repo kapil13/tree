@@ -7,6 +7,7 @@ import zipfile
 from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -87,6 +88,22 @@ async def test_build_bundle_contains_manifest():
         "satellite": {"block_count": 1, "t0_baselines_found": 1},
     }
 
+    cycle = SimpleNamespace(
+        id=uuid4(),
+        cycle_number=1,
+        status="field_verification",
+        methodology_version="estate-watch-1.0.0",
+    )
+    export_record = SimpleNamespace(
+        id=uuid4(),
+        content_manifest_hash="manifest-hash",
+        unsigned_bundle_hash="unsigned-hash",
+        package_sha256="package-hash",
+    )
+
+    async def _run_through(_db, _cycle, *, work, **_kwargs):
+        return await work(), SimpleNamespace(id=uuid4())
+
     sig = MagicMock()
     sig.key_id = "abc123"
     sig.zip_sha256 = "deadbeef"
@@ -94,6 +111,22 @@ async def test_build_bundle_contains_manifest():
     sig.to_dict = MagicMock(return_value={"key_id": "abc123", "zip_sha256": "deadbeef"})
 
     with (
+        patch(
+            "app.services.audit_governance.engagement.require_mutable_cycle",
+            new=AsyncMock(return_value=cycle),
+        ),
+        patch(
+            "app.services.audit_cycles.run_wrapper.execute_audit_run",
+            new=AsyncMock(side_effect=_run_through),
+        ),
+        patch(
+            "app.services.audit_cycles.queries.get_cycle",
+            new=AsyncMock(return_value=cycle),
+        ),
+        patch(
+            "app.services.audit_export.persist.persist_audit_export",
+            new=AsyncMock(return_value=export_record),
+        ),
         patch(
             "app.services.audit_export.bundle.build_audit_engagement_context",
             new=AsyncMock(return_value=ctx),
