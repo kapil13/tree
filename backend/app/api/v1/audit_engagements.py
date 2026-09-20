@@ -56,9 +56,11 @@ from app.schemas.audit_portfolio import (
 from app.schemas.audit_reaudit import AuditCycleSummaryOut, ReauditStartCreate, ReauditStartOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
 from app.schemas.audit_sampling import (
+    EvidenceGraphOut,
     FieldVerificationCompleteOut,
     FieldVisitCreate,
     FieldVisitOut,
+    ReconciliationRunOut,
     SamplingPlanGenerateOut,
     SamplingPlanParams,
     SamplingPlanPreviewOut,
@@ -1057,6 +1059,7 @@ async def generate_engagement_sampling_plan(
             ha_per_plot=body.ha_per_plot,
             min_plots_per_block=body.min_plots_per_block,
             layout_seed=body.layout_seed,
+            created_by=user.id,
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
@@ -1075,7 +1078,84 @@ async def generate_engagement_sampling_plan(
         total_plots=plan.total_plots,
         status=plan.status,
         stratification=plan.stratification,
+        plan_version=plan.plan_version,
     )
+
+
+@router.post(
+    "/{engagement_id}/reconciliation/compute",
+    response_model=ReconciliationRunOut,
+)
+async def compute_engagement_reconciliation(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> ReconciliationRunOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_governance.engagement import require_mutable_cycle
+    from app.services.audit_reconciliation.persist import persist_reconciliation_run
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    cycle = await require_mutable_cycle(db, row)
+    try:
+        run = await persist_reconciliation_run(db, row, cycle, created_by=user.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.reconciliation.compute",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff={"run_id": str(run.id), "mismatch_count": run.mismatch_count},
+    )
+    await db.commit()
+    return ReconciliationRunOut(
+        id=str(run.id),
+        cycle_id=str(run.cycle_id),
+        engagement_id=str(run.engagement_id),
+        aligned_count=run.aligned_count,
+        mismatch_count=run.mismatch_count,
+        no_field_data_count=run.no_field_data_count,
+        block_count=run.block_count,
+        computed_at=run.computed_at,
+    )
+
+
+@router.get("/{engagement_id}/evidence-graph", response_model=EvidenceGraphOut)
+async def get_engagement_evidence_graph(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> EvidenceGraphOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+    from app.services.audit_evidence.graph import evidence_graph_summary, sync_cycle_evidence_graph
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+
+    cycle_id = await resolve_read_cycle_id(db, row.id)
+    if cycle_id is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found")
+
+    await sync_cycle_evidence_graph(db, row, cycle_id)
+    await db.flush()
+    summary = await evidence_graph_summary(db, cycle_id)
+    return EvidenceGraphOut.model_validate(summary)
 
 
 @router.get("/{engagement_id}/sampling-plan", response_model=SamplingPlanSummaryOut)
@@ -1142,6 +1222,7 @@ async def record_engagement_field_visit(
             verification_outcome=body.verification_outcome,
             notes=body.notes,
             signals=body.signals,
+            idempotency_key=body.idempotency_key,
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
@@ -1164,6 +1245,10 @@ async def record_engagement_field_visit(
     return FieldVisitOut(
         id=str(visit.id),
         plot_id=str(visit.plot_id),
+        status=visit.status,
+        idempotency_key=visit.idempotency_key,
+        gps_integrity_passed=visit.gps_integrity_passed,
+        photo_integrity_passed=visit.photo_integrity_passed,
         verification_outcome=visit.verification_outcome,
         tree_presence=visit.tree_presence,
         trees_observed=visit.trees_observed,

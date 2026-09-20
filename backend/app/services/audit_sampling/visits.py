@@ -11,11 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit_engagement import AuditEngagement
 from app.models.audit_risk import AuditAnomalyEvent
-from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
+from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit
 from app.schemas.audit_sampling import TREE_PRESENCE_VALUES
+from app.services.audit_sampling.integrity import check_gps_integrity, check_photo_integrity
 from app.services.audit_sampling.location import check_visit_location
+from app.services.audit_sampling.queries import get_active_sampling_plan
 
 VerificationOutcome = str  # claim_supported | claim_unsupported | inconclusive
+
+ACCEPTED_VISIT_STATUSES = frozenset({"accepted"})
 
 
 async def _resolve_block_anomalies(
@@ -69,7 +73,9 @@ async def record_field_visit(
     verification_outcome: str = "inconclusive",
     notes: str | None = None,
     signals: dict[str, Any] | None = None,
+    idempotency_key: str | None = None,
 ) -> AuditFieldVisit:
+    from app.services.audit_evidence.graph import sync_cycle_evidence_graph
     from app.services.audit_governance.engagement import require_mutable_cycle
 
     cycle = await require_mutable_cycle(db, engagement)
@@ -90,11 +96,31 @@ async def record_field_visit(
     if plot is None:
         raise ValueError("plot_not_found")
 
+    active_plan = await get_active_sampling_plan(db, cycle.id)
+    if active_plan is None or plot.plan_id != active_plan.id:
+        raise ValueError("plot_not_in_active_plan")
+
+    if idempotency_key:
+        existing = (
+            await db.execute(
+                select(AuditFieldVisit).where(
+                    AuditFieldVisit.plot_id == plot.id,
+                    AuditFieldVisit.idempotency_key == idempotency_key,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return existing
+
     if verification_outcome not in {"claim_supported", "claim_unsupported", "inconclusive"}:
         raise ValueError("invalid_outcome")
 
     if not photo_keys:
         raise ValueError("photo_required")
+
+    photo_ok, photo_meta = check_photo_integrity(photo_keys)
+    if not photo_ok:
+        raise ValueError("photo_integrity_failed")
 
     location = await check_visit_location(
         db,
@@ -103,15 +129,25 @@ async def record_field_visit(
         visitor_lat=visitor_lat,
     )
     location_warnings = list(location.get("location_warnings") or [])
+    gps_ok, gps_meta = check_gps_integrity(
+        inside_boundary=location.get("inside_boundary"),
+        location_warnings=location_warnings,
+    )
+    if not gps_ok:
+        raise ValueError("gps_integrity_failed")
 
     merged_signals = dict(signals or {})
+    merged_signals["photo_integrity"] = photo_meta
+    merged_signals["gps_integrity"] = gps_meta
     if location_warnings:
         merged_signals["location_warnings"] = location_warnings
 
+    submitted_at = datetime.now(UTC)
     visit = AuditFieldVisit(
         plot_id=plot.id,
         cycle_id=cycle.id,
-        visited_at=datetime.now(UTC),
+        visited_at=submitted_at,
+        submitted_at=submitted_at,
         visitor_id=visitor_id,
         tree_presence=tree_presence,
         visitor_lat=visitor_lat,
@@ -126,6 +162,10 @@ async def record_field_visit(
         notes=notes,
         epistemic_label="OBSERVATION",
         signals=merged_signals,
+        status="accepted",
+        idempotency_key=idempotency_key,
+        gps_integrity_passed=gps_ok,
+        photo_integrity_passed=photo_ok,
     )
     db.add(visit)
     plot.status = "visited"
@@ -138,6 +178,7 @@ async def record_field_visit(
         boundary_version_id=plot.boundary_version_id,
         outcome=verification_outcome,
     )
+    await sync_cycle_evidence_graph(db, engagement, cycle.id)
     await db.flush()
     return visit
 
@@ -150,16 +191,13 @@ async def complete_field_verification(
         require_mutable_cycle,
         set_engagement_status,
     )
+    from app.services.audit_reconciliation.persist import persist_reconciliation_run
 
     cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
 
-    plan = (
-        await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.cycle_id == cycle.id)
-        )
-    ).scalar_one_or_none()
+    plan = await get_active_sampling_plan(db, cycle.id)
     if plan is None:
         raise ValueError("no_sampling_plan")
 
@@ -189,7 +227,10 @@ async def complete_field_verification(
     except ValueError:
         pass
 
+    await persist_reconciliation_run(db, engagement, cycle)
+
     return {
         "plots_visited": len(plots),
         "status": engagement.status,
+        "plan_version": plan.plan_version,
     }

@@ -61,7 +61,9 @@ async def build_confidence_field_reconciliation(
         .all()
     )
     name_map = {b.id: b.name for b in boundaries}
-    field_by_boundary = await field_signals_by_boundary(db, engagement_id)
+    field_by_boundary = await field_signals_by_boundary(
+        db, engagement_id, cycle_id=scoped_cycle_id
+    )
 
     blocks: list[dict[str, Any]] = []
     aligned_count = 0
