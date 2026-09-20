@@ -7,8 +7,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0077_audit_kernel_cycles_runs"
-down_revision = "0076_audit_phase9_sprint5"
+revision = "0080_audit_kernel_cycles_runs"
+down_revision = "0079_bioacoustic_p2"
 branch_labels = None
 depends_on = None
 
