@@ -87,12 +87,22 @@ async def preview_sampling_plan(
 async def _queue_blocks_for_engagement(
     db: AsyncSession,
     engagement: AuditEngagement,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> list[dict[str, Any]]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement.id, cycle_id=cycle_id)
+    risk_filter = (
+        [AuditRiskAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditRiskAssessment.engagement_id == engagement.id]
+    )
     risk_rows = (
         (
             await db.execute(
                 select(AuditRiskAssessment)
-                .where(AuditRiskAssessment.engagement_id == engagement.id)
+                .where(*risk_filter)
                 .order_by(AuditRiskAssessment.priority_rank.asc())
             )
         )
@@ -152,7 +162,7 @@ async def generate_sampling_plan(
         set_engagement_status,
     )
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"risk_assessed", "sampling_planned", "field_verified"}:
         raise ValueError("risk_not_assessed")
 
@@ -187,7 +197,7 @@ async def generate_sampling_plan(
 
     existing = (
         await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement.id)
+            select(AuditSamplingPlan).where(AuditSamplingPlan.cycle_id == cycle.id)
         )
     ).scalar_one_or_none()
 
@@ -195,7 +205,7 @@ async def generate_sampling_plan(
         plan = existing
         await db.execute(delete(AuditFieldPlot).where(AuditFieldPlot.plan_id == plan.id))
     else:
-        plan = AuditSamplingPlan(engagement_id=engagement.id)
+        plan = AuditSamplingPlan(engagement_id=engagement.id, cycle_id=cycle.id)
         db.add(plan)
 
     plan.stratification = sampling_mode
@@ -226,6 +236,7 @@ async def generate_sampling_plan(
             lon, lat = coords
             plot = AuditFieldPlot(
                 engagement_id=engagement.id,
+                cycle_id=cycle.id,
                 plan_id=plan.id,
                 boundary_version_id=bv.id,
                 risk_assessment_id=uuid.UUID(block["risk_assessment_id"]),

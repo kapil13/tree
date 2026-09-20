@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_cycle import AuditCycle
 from app.models.audit_engagement import AuditEngagement
 from app.services.audit_cycles.queries import get_cycle
+from app.services.audit_governance.methodology import ESTATE_WATCH_METHODOLOGY_VERSION
 from app.services.audit_governance.mutability import assert_cycle_can_edit, assert_cycle_is_attested
 
 _FINAL = frozenset({"attested", "superseded", "cancelled"})
@@ -53,7 +54,7 @@ async def create_cycle(
         started_by_user_id=started_by_user_id,
         trigger_reason=trigger_reason,
         trigger_source=trigger_source,
-        methodology_version=methodology_version,
+        methodology_version=methodology_version or ESTATE_WATCH_METHODOLOGY_VERSION,
     )
     db.add(cycle)
     try:
@@ -113,7 +114,11 @@ async def start_reaudit_cycle(
         parent_cycle_id=parent.id,
         trigger_reason=trigger_reason,
         trigger_source=trigger_source,
-        methodology_version=methodology_version or parent.methodology_version,
+        methodology_version=(
+            methodology_version
+            or parent.methodology_version
+            or ESTATE_WATCH_METHODOLOGY_VERSION
+        ),
     )
     db.add(cycle)
     await db.flush()

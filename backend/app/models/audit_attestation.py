@@ -91,6 +91,9 @@ class AuditAnomalyReview(UUIDPKMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     anomaly_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("audit_anomaly_events.id", ondelete="CASCADE"),
@@ -111,5 +114,6 @@ class AuditAnomalyReview(UUIDPKMixin, Base):
 
     __table_args__ = (
         Index("audit_anomaly_reviews_engagement_idx", "engagement_id"),
+        Index("audit_anomaly_reviews_cycle_idx", "cycle_id"),
         Index("audit_anomaly_reviews_anomaly_idx", "anomaly_id", "reviewed_at"),
     )

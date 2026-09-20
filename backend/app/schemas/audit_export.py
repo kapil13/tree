@@ -14,6 +14,7 @@ class ExportSectionOut(BaseModel):
 
 class ExportReadinessOut(BaseModel):
     engagement_id: str
+    cycle_id: str | None = None
     status: str
     block_count: int
     ready: bool
@@ -51,10 +52,29 @@ class ReconciliationOut(BaseModel):
 
 class ExportSummaryOut(BaseModel):
     engagement_id: str
+    cycle_id: str | None = None
+    export_id: str | None = None
     project_id: str
     project_code: str
     file_count: int
     bundle_sha256: str
+    content_manifest_hash: str | None = None
+    unsigned_bundle_hash: str | None = None
+    package_sha256: str | None = None
+    zip_size_bytes: int
+    signed: bool
+    signature_key_id: str | None = None
+    status: str
+
+
+class AuditExportCreateOut(BaseModel):
+    export_id: str
+    cycle_id: str
+    engagement_id: str
+    content_manifest_hash: str
+    unsigned_bundle_hash: str
+    package_sha256: str
+    file_count: int
     zip_size_bytes: int
     signed: bool
     signature_key_id: str | None = None

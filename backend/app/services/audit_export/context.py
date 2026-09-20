@@ -42,7 +42,15 @@ async def build_audit_engagement_context(
     db: AsyncSession,
     engagement: AuditEngagement,
     project: PlantingProject,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.queries import get_cycle
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement.id, cycle_id=cycle_id)
+    cycle = await get_cycle(db, scoped_cycle_id) if scoped_cycle_id else None
+
     intake = await engagement_detail(db, engagement, project)
     return {
         "export_version": EXPORT_VERSION,
@@ -54,6 +62,16 @@ async def build_audit_engagement_context(
             "name": project.name,
             "scheme_code": project.scheme_code,
         },
+        "cycle": (
+            {
+                "id": str(cycle.id),
+                "cycle_number": cycle.cycle_number,
+                "status": cycle.status,
+                "methodology_version": cycle.methodology_version,
+            }
+            if cycle is not None
+            else None
+        ),
         "engagement": {
             "id": str(engagement.id),
             "status": engagement.status,
@@ -65,12 +83,16 @@ async def build_audit_engagement_context(
             "metadata": engagement.metadata_ or {},
         },
         "intake": _json_safe(intake),
-        "satellite": await satellite_timeline_summary(db, engagement.id),
-        "confidence": await confidence_map_summary(db, engagement.id),
-        "reconciliation": await build_confidence_field_reconciliation(db, engagement.id),
+        "satellite": await satellite_timeline_summary(
+            db, engagement.id, cycle_id=scoped_cycle_id
+        ),
+        "confidence": await confidence_map_summary(db, engagement.id, cycle_id=scoped_cycle_id),
+        "reconciliation": await build_confidence_field_reconciliation(
+            db, engagement.id, cycle_id=scoped_cycle_id
+        ),
         "risk": {
-            "queue": await auditor_queue_summary(db, engagement.id),
-            "anomalies": await anomalies_summary(db, engagement.id),
+            "queue": await auditor_queue_summary(db, engagement.id, cycle_id=scoped_cycle_id),
+            "anomalies": await anomalies_summary(db, engagement.id, cycle_id=scoped_cycle_id),
         },
-        "sampling": await sampling_plan_summary(db, engagement.id),
+        "sampling": await sampling_plan_summary(db, engagement.id, cycle_id=scoped_cycle_id),
     }

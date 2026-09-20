@@ -41,7 +41,12 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
-from app.schemas.audit_export import ExportReadinessOut, ExportSummaryOut, ReconciliationOut
+from app.schemas.audit_export import (
+    AuditExportCreateOut,
+    ExportReadinessOut,
+    ExportSummaryOut,
+    ReconciliationOut,
+)
 from app.schemas.audit_integrity_bridge import AuditIntegrityBridgeOut
 from app.schemas.audit_portfolio import (
     AuditCrossOrgSummaryOut,
@@ -1236,6 +1241,63 @@ async def get_export_readiness(
     return ExportReadinessOut.model_validate(summary)
 
 
+@router.post("/{engagement_id}/exports", response_model=AuditExportCreateOut)
+async def create_audit_export(
+    engagement_id: uuid.UUID,
+    request: Request,
+    user: WriteAccess,
+    db: DB,
+) -> AuditExportCreateOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.bundle import build_audit_engagement_bundle
+    from app.services.audit_governance.access import require_audit_engagement_write
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_write(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    try:
+        _zip_bytes, summary, signature = await build_audit_engagement_bundle(
+            db,
+            row,
+            project,
+            created_by_user_id=user.id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await record_audit(
+        db,
+        actor=user,
+        action="audit_engagement.export.create",
+        resource_type="audit_engagement",
+        resource_id=row.id,
+        request=request,
+        diff=summary,
+    )
+    await db.commit()
+    return AuditExportCreateOut(
+        export_id=summary["export_id"],
+        cycle_id=summary["cycle_id"],
+        engagement_id=summary["engagement_id"],
+        content_manifest_hash=summary["content_manifest_hash"],
+        unsigned_bundle_hash=summary["unsigned_bundle_hash"],
+        package_sha256=summary["package_sha256"],
+        file_count=summary["file_count"],
+        zip_size_bytes=summary["zip_size_bytes"],
+        signed=summary["signed"],
+        signature_key_id=summary.get("signature_key_id"),
+        status=summary["status"],
+    )
+
+
 @router.get("/{engagement_id}/export")
 async def download_audit_export(
     engagement_id: uuid.UUID,
@@ -1254,7 +1316,12 @@ async def download_audit_export(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
     try:
-        zip_bytes, summary, signature = await build_audit_engagement_bundle(db, row, project)
+        zip_bytes, summary, signature = await build_audit_engagement_bundle(
+            db,
+            row,
+            project,
+            created_by_user_id=user.id,
+        )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
@@ -1337,10 +1404,15 @@ async def get_audit_export_summary(
 
     return ExportSummaryOut(
         engagement_id=str(row.id),
+        cycle_id=meta.get("export_cycle_id"),
+        export_id=meta.get("export_id"),
         project_id=str(project.id),
         project_code=project.code,
         file_count=int(meta.get("export_file_count") or 0),
         bundle_sha256=sha,
+        content_manifest_hash=meta.get("content_manifest_hash"),
+        unsigned_bundle_hash=sha,
+        package_sha256=sha,
         zip_size_bytes=int(meta.get("export_zip_size_bytes") or 0),
         signed=True,
         signature_key_id=meta.get("export_signature_key_id"),

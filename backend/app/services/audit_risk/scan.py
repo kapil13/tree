@@ -31,6 +31,7 @@ async def _upsert_anomaly(
     db: AsyncSession,
     *,
     engagement_id: uuid.UUID,
+    cycle_id: uuid.UUID,
     boundary_version_id: uuid.UUID,
     detected_at: datetime,
     anomaly: dict[str, Any],
@@ -38,7 +39,7 @@ async def _upsert_anomaly(
     existing = (
         await db.execute(
             select(AuditAnomalyEvent).where(
-                AuditAnomalyEvent.engagement_id == engagement_id,
+                AuditAnomalyEvent.cycle_id == cycle_id,
                 AuditAnomalyEvent.boundary_version_id == boundary_version_id,
                 AuditAnomalyEvent.anomaly_type == anomaly["anomaly_type"],
             )
@@ -50,6 +51,7 @@ async def _upsert_anomaly(
     else:
         row = AuditAnomalyEvent(
             engagement_id=engagement_id,
+            cycle_id=cycle_id,
             boundary_version_id=boundary_version_id,
             anomaly_type=anomaly["anomaly_type"],
         )
@@ -118,16 +120,39 @@ async def run_risk_scan(
     db: AsyncSession,
     engagement: AuditEngagement,
     project: PlantingProject,
+    *,
+    created_by: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    from app.services.audit_cycles.run_wrapper import execute_audit_run
     from app.services.audit_governance.engagement import (
         require_mutable_cycle,
         set_engagement_status,
     )
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"confidence_mapped", "risk_assessed"}:
         raise ValueError("confidence_not_mapped")
 
+    async def _scan() -> dict[str, Any]:
+        return await _run_risk_scan_for_cycle(db, engagement, project, cycle)
+
+    summary, _run = await execute_audit_run(
+        db,
+        cycle,
+        run_type="risk_scan",
+        created_by=created_by,
+        work=_scan,
+    )
+    await set_engagement_status(db, engagement, "risk_assessed")
+    return summary
+
+
+async def _run_risk_scan_for_cycle(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    project: PlantingProject,
+    cycle,
+) -> dict[str, Any]:
     boundaries = (
         await db.execute(
             select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement.id)
@@ -139,7 +164,7 @@ async def run_risk_scan(
     confidence_rows = (
         await db.execute(
             select(AuditConfidenceAssessment).where(
-                AuditConfidenceAssessment.engagement_id == engagement.id
+                AuditConfidenceAssessment.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -160,7 +185,7 @@ async def run_risk_scan(
     temporal_rows = (
         await db.execute(
             select(AuditTemporalObservation).where(
-                AuditTemporalObservation.engagement_id == engagement.id
+                AuditTemporalObservation.cycle_id == cycle.id
             )
         )
     ).scalars().all()
@@ -200,6 +225,7 @@ async def run_risk_scan(
             row = await _upsert_anomaly(
                 db,
                 engagement_id=engagement.id,
+                cycle_id=cycle.id,
                 boundary_version_id=bv.id,
                 detected_at=detected_at,
                 anomaly=ad,
@@ -215,7 +241,7 @@ async def run_risk_scan(
         existing_risk = (
             await db.execute(
                 select(AuditRiskAssessment).where(
-                    AuditRiskAssessment.engagement_id == engagement.id,
+                    AuditRiskAssessment.cycle_id == cycle.id,
                     AuditRiskAssessment.boundary_version_id == bv.id,
                 )
             )
@@ -226,6 +252,7 @@ async def run_risk_scan(
         else:
             risk_row = AuditRiskAssessment(
                 engagement_id=engagement.id,
+                cycle_id=cycle.id,
                 boundary_version_id=bv.id,
             )
             db.add(risk_row)
@@ -251,7 +278,6 @@ async def run_risk_scan(
     meta = dict(engagement.metadata_ or {})
     meta["risk_assessed_at"] = detected_at.isoformat()
     engagement.metadata_ = meta
-    await set_engagement_status(db, engagement, "risk_assessed")
 
     severity_counts: dict[str, int] = {}
     for a in all_anomalies:

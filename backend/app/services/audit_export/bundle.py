@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import uuid
 import zipfile
 from datetime import UTC, datetime
 from typing import Any
@@ -66,19 +67,59 @@ async def build_audit_engagement_bundle(
     project: PlantingProject,
     *,
     sign: bool = True,
+    created_by_user_id: uuid.UUID | None = None,
 ) -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
-    from app.services.audit_governance.engagement import (
-        require_mutable_cycle,
-        set_engagement_status,
-    )
+    from app.services.audit_cycles.run_wrapper import execute_audit_run
+    from app.services.audit_governance.engagement import require_mutable_cycle
 
-    await require_mutable_cycle(db, engagement)
+    cycle = await require_mutable_cycle(db, engagement)
     if engagement.status not in {"field_verified", "export_ready"}:
         raise ValueError("field_verification_incomplete")
 
-    ctx = await build_audit_engagement_context(db, engagement, project)
+    async def _build() -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
+        return await _build_bundle_bytes(
+            db,
+            engagement,
+            project,
+            cycle_id=cycle.id,
+            sign=sign,
+            created_by_user_id=created_by_user_id,
+        )
+
+    result, _run = await execute_audit_run(
+        db,
+        cycle,
+        run_type="export_bundle",
+        created_by=created_by_user_id,
+        work=_build,
+    )
+    return result
+
+
+async def _build_bundle_bytes(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    project: PlantingProject,
+    *,
+    cycle_id: uuid.UUID,
+    sign: bool,
+    created_by_user_id: uuid.UUID | None,
+) -> tuple[bytes, dict[str, Any], EvidenceSignature | None]:
+    from app.services.audit_cycles.queries import get_cycle
+    from app.services.audit_export.persist import content_manifest_hash, persist_audit_export
+    from app.services.audit_governance.engagement import set_engagement_status
+
+    cycle = await get_cycle(db, cycle_id)
+    if cycle is None:
+        raise ValueError("audit_cycle_not_found")
+
+    ctx = await build_audit_engagement_context(
+        db, engagement, project, cycle_id=cycle_id
+    )
     field_pack = await build_field_verification_pack(db, engagement.id)
-    reconciliation = await build_confidence_field_reconciliation(db, engagement.id)
+    reconciliation = await build_confidence_field_reconciliation(
+        db, engagement.id, cycle_id=cycle_id
+    )
     manifest_files: list[dict[str, Any]] = []
     buf = io.BytesIO()
 
@@ -139,11 +180,14 @@ async def build_audit_engagement_bundle(
         bundle_manifest = {
             "bundle_version": EXPORT_VERSION,
             "engagement_id": str(engagement.id),
+            "cycle_id": str(cycle_id),
+            "methodology_version": cycle.methodology_version,
             "project_id": str(project.id),
             "project_code": project.code,
             "generated_at": datetime.now(UTC).isoformat(),
             "file_count": len(manifest_files),
             "files": manifest_files,
+            "content_manifest_hash": content_manifest_hash(manifest_files),
         }
         _add_file(
             zf,
@@ -168,11 +212,27 @@ async def build_audit_engagement_bundle(
 
     bundle_sha256 = zip_content_hash(zip_bytes_unsigned)
 
+    export_record = await persist_audit_export(
+        db,
+        engagement=engagement,
+        cycle=cycle,
+        manifest_files=manifest_files,
+        unsigned_bundle_hash=bundle_sha256,
+        package_sha256=zip_content_hash(zip_bytes),
+        zip_size_bytes=len(zip_bytes),
+        created_by_user_id=created_by_user_id,
+        signature=signature,
+        bundle_manifest=bundle_manifest,
+    )
+
     meta = dict(engagement.metadata_ or {})
     meta["exported_at"] = datetime.now(UTC).isoformat()
     meta["export_bundle_sha256"] = bundle_sha256
     meta["export_zip_size_bytes"] = len(zip_bytes)
     meta["export_file_count"] = len(manifest_files)
+    meta["export_id"] = str(export_record.id)
+    meta["export_cycle_id"] = str(cycle_id)
+    meta["content_manifest_hash"] = export_record.content_manifest_hash
     if signature is not None:
         meta["export_signature_key_id"] = signature.key_id
     engagement.metadata_ = meta
@@ -180,10 +240,15 @@ async def build_audit_engagement_bundle(
 
     summary = {
         "engagement_id": str(engagement.id),
+        "cycle_id": str(cycle_id),
+        "export_id": str(export_record.id),
         "project_id": str(project.id),
         "project_code": project.code,
         "file_count": len(manifest_files),
         "bundle_sha256": bundle_sha256,
+        "content_manifest_hash": export_record.content_manifest_hash,
+        "unsigned_bundle_hash": export_record.unsigned_bundle_hash,
+        "package_sha256": export_record.package_sha256,
         "zip_size_bytes": len(zip_bytes),
         "signed": signature is not None,
         "signature_key_id": signature.key_id if signature else None,
