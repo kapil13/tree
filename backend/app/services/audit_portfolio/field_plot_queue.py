@@ -36,8 +36,11 @@ async def build_audit_field_plot_queue(
     *,
     project_id: uuid.UUID | None = None,
     limit: int = 50,
+    active_plan_only: bool = False,
 ) -> dict[str, Any]:
     """List planned audit sample plots across accessible estate watch projects."""
+    from app.models.audit_sampling import AuditSamplingPlan
+
     stmt = (
         select(AuditFieldPlot, AuditEngagement, PlantingProject)
         .join(AuditEngagement, AuditFieldPlot.engagement_id == AuditEngagement.id)
@@ -49,6 +52,11 @@ async def build_audit_field_plot_queue(
         .order_by(AuditFieldPlot.priority_rank.asc(), AuditFieldPlot.plot_code.asc())
         .limit(limit)
     )
+    if active_plan_only:
+        stmt = stmt.join(
+            AuditSamplingPlan,
+            AuditFieldPlot.plan_id == AuditSamplingPlan.id,
+        ).where(AuditSamplingPlan.status == "active")
     stmt = project_list_filter(user, stmt)
     if project_id is not None:
         stmt = stmt.where(PlantingProject.id == project_id)

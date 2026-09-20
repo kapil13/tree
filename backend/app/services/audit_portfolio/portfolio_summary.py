@@ -80,12 +80,16 @@ async def build_audit_portfolio_summary(db: AsyncSession, user) -> dict[str, Any
         )
 
     if engagement_ids:
+        from app.models.audit_sampling import AuditSamplingPlan
+
         plot_counts = (
             await db.execute(
                 select(AuditFieldPlot.engagement_id, func.count())
+                .join(AuditSamplingPlan, AuditFieldPlot.plan_id == AuditSamplingPlan.id)
                 .where(
                     AuditFieldPlot.engagement_id.in_(engagement_ids),
                     AuditFieldPlot.status != "visited",
+                    AuditSamplingPlan.status == "active",
                 )
                 .group_by(AuditFieldPlot.engagement_id)
             )
@@ -131,15 +135,19 @@ async def count_audit_plots_due_for_projects(
     if not project_ids:
         return {}
 
+    from app.models.audit_sampling import AuditSamplingPlan
+
     rows = (
         await db.execute(
             select(PlantingProject.id, func.count())
             .join(AuditEngagement, AuditEngagement.project_id == PlantingProject.id)
             .join(AuditFieldPlot, AuditFieldPlot.engagement_id == AuditEngagement.id)
+            .join(AuditSamplingPlan, AuditFieldPlot.plan_id == AuditSamplingPlan.id)
             .where(
                 PlantingProject.id.in_(project_ids),
                 PlantingProject.scheme_code == "estate_monitoring",
                 AuditFieldPlot.status != "visited",
+                AuditSamplingPlan.status == "active",
             )
             .group_by(PlantingProject.id)
         )

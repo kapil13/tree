@@ -49,9 +49,19 @@ from app.schemas.audit_export import (
 )
 from app.schemas.audit_integrity_bridge import AuditIntegrityBridgeOut
 from app.schemas.audit_portfolio import (
+    AuditAuditorWorkspaceOut,
+    AuditBenchmarksOut,
+    AuditCrossEstatePatternsOut,
     AuditCrossOrgSummaryOut,
+    AuditDigestRunOut,
+    AuditDigestScheduleCreate,
+    AuditDigestScheduleOut,
     AuditFieldPlotQueueOut,
+    AuditPortfolioRollupsOut,
     AuditPortfolioSummaryOut,
+    AuditReportTemplateOut,
+    AuditWorkspaceViewCreate,
+    AuditWorkspaceViewOut,
 )
 from app.schemas.audit_reaudit import AuditCycleSummaryOut, ReauditStartCreate, ReauditStartOut
 from app.schemas.audit_risk import AnomaliesSummaryOut, AuditorQueueOut, RiskScanOut
@@ -192,9 +202,212 @@ async def get_audit_field_plot_queue(
     from app.services.audit_portfolio.field_plot_queue import build_audit_field_plot_queue
 
     summary = await build_audit_field_plot_queue(
-        db, user, project_id=project_id, limit=min(limit, 100)
+        db, user, project_id=project_id, limit=min(limit, 100), active_plan_only=True
     )
     return AuditFieldPlotQueueOut.model_validate(summary)
+
+
+def _require_org_id(user) -> uuid.UUID:
+    if user.organization_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="organization_required")
+    return user.organization_id
+
+
+@router.post("/portfolio-rollups/compute", response_model=AuditPortfolioRollupsOut)
+async def compute_portfolio_rollups(user: CurrentUser, db: DB) -> AuditPortfolioRollupsOut:
+    from app.services.audit_portfolio.rollups import (
+        compute_org_portfolio_rollups,
+        org_rollup_aggregate,
+    )
+
+    org_id = _require_org_id(user)
+    await compute_org_portfolio_rollups(db, organization_id=org_id)
+    await db.commit()
+    aggregate = await org_rollup_aggregate(db, organization_id=org_id)
+    return AuditPortfolioRollupsOut.model_validate(aggregate)
+
+
+@router.get("/portfolio-rollups", response_model=AuditPortfolioRollupsOut)
+async def get_portfolio_rollups(user: CurrentUser, db: DB) -> AuditPortfolioRollupsOut:
+    from app.services.audit_portfolio.rollups import org_rollup_aggregate
+
+    org_id = _require_org_id(user)
+    aggregate = await org_rollup_aggregate(db, organization_id=org_id)
+    return AuditPortfolioRollupsOut.model_validate(aggregate)
+
+
+@router.post("/benchmarks/compute", response_model=AuditBenchmarksOut)
+async def compute_benchmarks(user: CurrentUser, db: DB) -> AuditBenchmarksOut:
+    from app.services.audit_portfolio.benchmarks import (
+        benchmark_to_dict,
+        compute_benchmark_baselines,
+    )
+
+    org_id = _require_org_id(user)
+    rows = await compute_benchmark_baselines(db, organization_id=org_id, scope="org")
+    await db.commit()
+    return AuditBenchmarksOut(baselines=[benchmark_to_dict(r) for r in rows])
+
+
+@router.get("/benchmarks", response_model=AuditBenchmarksOut)
+async def get_benchmarks(user: CurrentUser, db: DB) -> AuditBenchmarksOut:
+    from app.services.audit_portfolio.benchmarks import benchmark_to_dict, list_benchmark_baselines
+
+    org_id = _require_org_id(user)
+    rows = await list_benchmark_baselines(db, organization_id=org_id, scope="org")
+    return AuditBenchmarksOut(baselines=[benchmark_to_dict(r) for r in rows])
+
+
+@router.post("/cross-estate-patterns/detect", response_model=AuditCrossEstatePatternsOut)
+async def detect_cross_estate_patterns_route(
+    user: CurrentUser, db: DB
+) -> AuditCrossEstatePatternsOut:
+    from app.services.audit_portfolio.anomaly_patterns import (
+        detect_cross_estate_patterns,
+        pattern_to_dict,
+    )
+
+    org_id = _require_org_id(user)
+    rows = await detect_cross_estate_patterns(db, organization_id=org_id)
+    await db.commit()
+    return AuditCrossEstatePatternsOut(patterns=[pattern_to_dict(r) for r in rows])
+
+
+@router.get("/cross-estate-patterns", response_model=AuditCrossEstatePatternsOut)
+async def get_cross_estate_patterns(user: CurrentUser, db: DB) -> AuditCrossEstatePatternsOut:
+    from app.services.audit_portfolio.anomaly_patterns import (
+        list_cross_estate_patterns,
+        pattern_to_dict,
+    )
+
+    org_id = _require_org_id(user)
+    rows = await list_cross_estate_patterns(db, organization_id=org_id)
+    return AuditCrossEstatePatternsOut(patterns=[pattern_to_dict(r) for r in rows])
+
+
+@router.get("/report-templates", response_model=list[AuditReportTemplateOut])
+async def get_report_templates(user: CurrentUser, db: DB) -> list[AuditReportTemplateOut]:
+    from app.services.audit_portfolio.digest import list_report_templates, template_to_dict
+
+    rows = await list_report_templates(db)
+    return [AuditReportTemplateOut.model_validate(template_to_dict(r)) for r in rows]
+
+
+@router.post("/digest-schedules", response_model=AuditDigestScheduleOut)
+async def create_digest_schedule(
+    body: AuditDigestScheduleCreate,
+    user: CurrentUser,
+    db: DB,
+) -> AuditDigestScheduleOut:
+    from app.services.audit_portfolio.digest import schedule_to_dict, upsert_digest_schedule
+
+    org_id = _require_org_id(user)
+    try:
+        row = await upsert_digest_schedule(
+            db,
+            organization_id=org_id,
+            template_code=body.template_code,
+            cadence=body.cadence,
+            enabled=body.enabled,
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found") from None
+    await db.commit()
+    return AuditDigestScheduleOut.model_validate(schedule_to_dict(row))
+
+
+@router.get("/digest-schedules", response_model=list[AuditDigestScheduleOut])
+async def list_digest_schedules_route(user: CurrentUser, db: DB) -> list[AuditDigestScheduleOut]:
+    from app.services.audit_portfolio.digest import list_digest_schedules, schedule_to_dict
+
+    org_id = _require_org_id(user)
+    rows = await list_digest_schedules(db, organization_id=org_id)
+    return [AuditDigestScheduleOut.model_validate(schedule_to_dict(r)) for r in rows]
+
+
+@router.post("/digest-schedules/{schedule_id}/run", response_model=AuditDigestRunOut)
+async def run_digest_schedule(
+    schedule_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditDigestRunOut:
+    from app.models.audit_portfolio_ops import AuditDigestSchedule
+    from app.services.audit_portfolio.digest import digest_run_to_dict, generate_digest_run
+
+    org_id = _require_org_id(user)
+    schedule = await db.get(AuditDigestSchedule, schedule_id)
+    if schedule is None or schedule.organization_id != org_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="schedule_not_found")
+    try:
+        run = await generate_digest_run(
+            db,
+            user,
+            organization_id=org_id,
+            template_code=schedule.template_code,
+            schedule_id=schedule.id,
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="template_not_found") from None
+    await db.commit()
+    return AuditDigestRunOut.model_validate(digest_run_to_dict(run))
+
+
+@router.get("/digest-runs", response_model=list[AuditDigestRunOut])
+async def list_digest_runs_route(user: CurrentUser, db: DB) -> list[AuditDigestRunOut]:
+    from app.services.audit_portfolio.digest import digest_run_to_dict, list_digest_runs
+
+    org_id = _require_org_id(user)
+    rows = await list_digest_runs(db, organization_id=org_id)
+    return [AuditDigestRunOut.model_validate(digest_run_to_dict(r)) for r in rows]
+
+
+@router.get("/auditor-workspace", response_model=AuditAuditorWorkspaceOut)
+async def get_auditor_workspace(
+    user: CurrentUser,
+    db: DB,
+    project_id: uuid.UUID | None = None,
+    risk_level: str | None = None,
+    engagement_status: str | None = None,
+    limit: int = 100,
+) -> AuditAuditorWorkspaceOut:
+    from app.services.audit_portfolio.workspace import build_auditor_workspace
+
+    summary = await build_auditor_workspace(
+        db,
+        user,
+        project_id=project_id,
+        risk_level=risk_level,
+        engagement_status=engagement_status,
+        limit=min(limit, 200),
+    )
+    return AuditAuditorWorkspaceOut.model_validate(summary)
+
+
+@router.post("/auditor-workspace/views", response_model=AuditWorkspaceViewOut)
+async def save_auditor_workspace_view(
+    body: AuditWorkspaceViewCreate,
+    user: CurrentUser,
+    db: DB,
+) -> AuditWorkspaceViewOut:
+    from app.services.audit_portfolio.workspace import save_workspace_view, workspace_view_to_dict
+
+    row = await save_workspace_view(
+        db,
+        user_id=user.id,
+        name=body.name,
+        filters=body.filters,
+        is_default=body.is_default,
+    )
+    await db.commit()
+    return AuditWorkspaceViewOut.model_validate(workspace_view_to_dict(row))
+
+
+@router.get("/auditor-workspace/views", response_model=list[AuditWorkspaceViewOut])
+async def list_auditor_workspace_views(user: CurrentUser, db: DB) -> list[AuditWorkspaceViewOut]:
+    from app.services.audit_portfolio.workspace import list_workspace_views, workspace_view_to_dict
+
+    rows = await list_workspace_views(db, user_id=user.id)
+    return [AuditWorkspaceViewOut.model_validate(workspace_view_to_dict(r)) for r in rows]
 
 
 @router.get("/projects/{project_id}", response_model=AuditEngagementDetailOut)
