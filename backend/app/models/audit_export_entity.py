@@ -34,6 +34,8 @@ class AuditExport(UUIDPKMixin, TimestampMixin, Base):
     file_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     zip_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     signature_key_id: Mapped[str | None] = mapped_column(String(64))
+    signature_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     manifest_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(

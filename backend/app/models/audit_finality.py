@@ -55,6 +55,9 @@ class AuditVerificationSnapshot(UUIDPKMixin, TimestampMixin, Base):
     )
     attestation_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     export_hash: Mapped[str | None] = mapped_column(String(64))
+    export_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_exports.id", ondelete="SET NULL")
+    )
     content_manifest_hash: Mapped[str | None] = mapped_column(String(64))
     snapshot_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
     snapshot_hash: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -66,4 +69,5 @@ class AuditVerificationSnapshot(UUIDPKMixin, TimestampMixin, Base):
         UniqueConstraint("cycle_id", name="audit_verification_snapshots_cycle_uq"),
         Index("audit_verification_snapshots_attestation_hash_idx", "attestation_hash"),
         Index("audit_verification_snapshots_snapshot_hash_idx", "snapshot_hash"),
+        Index("audit_verification_snapshots_export_idx", "export_id"),
     )
