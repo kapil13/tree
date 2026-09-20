@@ -88,6 +88,12 @@ async def compute_confidence_map(
     *,
     include_field_signals: bool = False,
 ) -> list[AuditConfidenceAssessment]:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     allowed = _FIELD_REFRESH_STATUSES if include_field_signals else _INITIAL_STATUSES
     if engagement.status not in allowed:
         raise ValueError("analysis_not_ready" if not include_field_signals else "field_refresh_not_allowed")
@@ -193,8 +199,10 @@ async def compute_confidence_map(
     if include_field_signals:
         meta["confidence_refreshed_with_field_at"] = datetime.now(UTC).isoformat()
     else:
-        engagement.status = "confidence_mapped"
         meta["confidence_mapped_at"] = datetime.now(UTC).isoformat()
+        engagement.metadata_ = meta
+        await set_engagement_status(db, engagement, "confidence_mapped")
+        return results
     engagement.metadata_ = meta
     await db.flush()
     return results

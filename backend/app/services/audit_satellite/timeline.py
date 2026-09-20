@@ -244,6 +244,12 @@ async def mark_analysis_ready(
     db: AsyncSession,
     engagement: AuditEngagement,
 ) -> AuditEngagement:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     baselines = (
         await db.execute(
             select(AuditSatelliteBaseline).where(
@@ -274,11 +280,10 @@ async def mark_analysis_ready(
     if len(obs_count) < len(boundaries):
         raise ValueError("timeline_incomplete")
 
-    engagement.status = "analysis_ready"
     meta = dict(engagement.metadata_ or {})
     meta["analysis_ready_at"] = datetime.now(UTC).isoformat()
     engagement.metadata_ = meta
-    await db.flush()
+    await set_engagement_status(db, engagement, "analysis_ready")
     # flush() expires ORM attributes; refresh before re-serializing detail payload.
     await db.refresh(engagement)
     return engagement

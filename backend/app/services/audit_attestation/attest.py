@@ -19,11 +19,18 @@ from app.models.audit_attestation import (
 from app.models.audit_engagement import AuditEngagement
 from app.services.audit_attestation.review import anomaly_review_queue
 from app.services.audit_cycles.queries import get_current_cycle
+from app.services.audit_cycles.service import transition_cycle
+from app.services.audit_governance.engagement import advance_cycle_status, require_mutable_cycle
 from app.services.audit_governance.mutability import assert_cycle_can_attest
+from app.services.audit_governance.policy import (
+    assert_policy_allows_attestation,
+    evaluate_attestation_policy,
+)
+from app.services.audit_governance.snapshots import create_verification_snapshot
 from app.services.webhooks.audit_events import emit_audit_webhook
 
 VALID_VERDICTS = {"approved", "rejected", "conditional"}
-DEFAULT_REQUIRED_SIGNATURES = 2
+DEFAULT_REQUIRED_SIGNATURES = 1
 
 
 def required_signatures(engagement: AuditEngagement) -> int:
@@ -38,6 +45,7 @@ def required_signatures(engagement: AuditEngagement) -> int:
 def _signature_hash(
     *,
     engagement_id: uuid.UUID,
+    cycle_id: uuid.UUID,
     export_sha: str | None,
     verdict: str,
     reviewer_id: uuid.UUID,
@@ -47,6 +55,7 @@ def _signature_hash(
 ) -> str:
     payload = {
         "engagement_id": str(engagement_id),
+        "cycle_id": str(cycle_id),
         "export_bundle_sha256": export_sha,
         "verdict": verdict,
         "reviewer_id": str(reviewer_id),
@@ -61,6 +70,7 @@ def _signature_hash(
 def _combined_attestation_hash(
     *,
     engagement_id: uuid.UUID,
+    cycle_id: uuid.UUID,
     export_sha: str | None,
     verdict: str,
     summary: str,
@@ -69,6 +79,7 @@ def _combined_attestation_hash(
 ) -> str:
     payload = {
         "engagement_id": str(engagement_id),
+        "cycle_id": str(cycle_id),
         "export_bundle_sha256": export_sha,
         "verdict": verdict,
         "summary": summary,
@@ -79,12 +90,14 @@ def _combined_attestation_hash(
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-async def _load_signatures(db: AsyncSession, engagement_id: uuid.UUID) -> list[AuditAttestationSignature]:
+async def _load_signatures(
+    db: AsyncSession, cycle_id: uuid.UUID
+) -> list[AuditAttestationSignature]:
     return list(
         (
             await db.execute(
                 select(AuditAttestationSignature)
-                .where(AuditAttestationSignature.engagement_id == engagement_id)
+                .where(AuditAttestationSignature.cycle_id == cycle_id)
                 .order_by(AuditAttestationSignature.signed_at.asc())
             )
         )
@@ -96,11 +109,17 @@ async def _load_signatures(db: AsyncSession, engagement_id: uuid.UUID) -> list[A
 async def _finalize_attestation(
     db: AsyncSession,
     engagement: AuditEngagement,
+    cycle_id: uuid.UUID,
     signatures: list[AuditAttestationSignature],
 ) -> AuditReviewerAttestation:
     lead = next((s for s in signatures if s.role == "lead"), signatures[0])
     export_sha = (engagement.metadata_ or {}).get("export_bundle_sha256")
     signed_at = datetime.now(UTC)
+
+    cycle = await get_current_cycle(db, engagement.id)
+    if cycle is None or cycle.id != cycle_id:
+        raise ValueError("audit_cycle_not_found")
+    assert_cycle_can_attest(cycle)
 
     reviews = (
         (
@@ -114,6 +133,7 @@ async def _finalize_attestation(
 
     combined_hash = _combined_attestation_hash(
         engagement_id=engagement.id,
+        cycle_id=cycle_id,
         export_sha=export_sha,
         verdict=lead.verdict,
         summary=lead.summary,
@@ -123,16 +143,14 @@ async def _finalize_attestation(
 
     existing = (
         await db.execute(
-            select(AuditReviewerAttestation).where(
-                AuditReviewerAttestation.engagement_id == engagement.id
-            )
+            select(AuditReviewerAttestation).where(AuditReviewerAttestation.cycle_id == cycle_id)
         )
     ).scalar_one_or_none()
 
     if existing:
         row = existing
     else:
-        row = AuditReviewerAttestation(engagement_id=engagement.id)
+        row = AuditReviewerAttestation(engagement_id=engagement.id, cycle_id=cycle_id)
         db.add(row)
 
     row.reviewer_id = lead.reviewer_id
@@ -144,25 +162,43 @@ async def _finalize_attestation(
     row.signed_at = signed_at
     row.attestation_hash = combined_hash
 
-    engagement.status = "attested"
-    # Legacy engagements may not yet have a persisted cycle. Once a cycle exists,
-    # attestation is governed by its server-side finality state.
-    cycle = await get_current_cycle(db, engagement.id)
-    if cycle is not None:
-        assert_cycle_can_attest(cycle)
-        cycle.status = "attested"
-        cycle.closed_at = signed_at
-        cycle.closed_by_user_id = lead.reviewer_id
+    attested_cycle = await advance_cycle_status(
+        db,
+        engagement,
+        target_status="attested",
+        closed_by_user_id=lead.reviewer_id,
+    )
+
     meta = dict(engagement.metadata_ or {})
     meta["attested_at"] = signed_at.isoformat()
     meta["attestation_hash"] = combined_hash
     meta["attestation_verdict"] = lead.verdict
     meta["signature_count"] = len(signatures)
+    meta["attested_cycle_id"] = str(cycle_id)
     from app.services.public_verification.audit import public_audit_verify_url
 
     meta["public_verify_url"] = public_audit_verify_url(combined_hash)
     engagement.metadata_ = meta
     await db.flush()
+
+    from app.models.planting_project import PlantingProject
+    from app.services.public_verification.audit import build_audit_engagement_verification_payload
+
+    project = await db.get(PlantingProject, engagement.project_id)
+    if project is not None:
+        snapshot_body = await build_audit_engagement_verification_payload(
+            db, engagement, project, cycle_id=cycle_id
+        )
+        await create_verification_snapshot(
+            db,
+            engagement=engagement,
+            cycle=attested_cycle,
+            project=project,
+            attestation_hash=combined_hash,
+            export_hash=export_sha,
+            content_manifest_hash=meta.get("content_manifest_hash"),
+            snapshot_body=snapshot_body,
+        )
 
     await emit_audit_webhook(
         db,
@@ -170,6 +206,7 @@ async def _finalize_attestation(
         event_type="audit.attested",
         payload={
             "engagement_id": str(engagement.id),
+            "cycle_id": str(cycle_id),
             "project_id": str(engagement.project_id),
             "status": engagement.status,
             "verdict": lead.verdict,
@@ -190,7 +227,6 @@ async def sign_attestation(
     verdict: str,
     summary: str,
     notes: str | None = None,
-    allow_pending_reviews: bool = False,
     role: str = "lead",
 ) -> AuditReviewerAttestation | AuditAttestationSignature:
     if engagement.status not in {"export_ready", "under_review"}:
@@ -202,16 +238,18 @@ async def sign_attestation(
     if role not in {"lead", "cosigner"}:
         raise ValueError("invalid_role")
 
+    cycle = await require_mutable_cycle(db, engagement)
+    evaluation = await evaluate_attestation_policy(
+        db, engagement, cycle, evaluated_by_user_id=reviewer_id
+    )
+    assert_policy_allows_attestation(evaluation)
+
     meta = engagement.metadata_ or {}
     export_sha = meta.get("export_bundle_sha256")
     if not export_sha:
         raise ValueError("export_not_generated")
 
-    queue = await anomaly_review_queue(db, engagement.id)
-    if queue["pending_review_count"] > 0 and not allow_pending_reviews:
-        raise ValueError("pending_anomaly_reviews")
-
-    signatures = await _load_signatures(db, engagement.id)
+    signatures = await _load_signatures(db, cycle.id)
     if any(s.reviewer_id == reviewer_id for s in signatures):
         raise ValueError("already_signed")
 
@@ -228,7 +266,7 @@ async def sign_attestation(
     existing_signed = (
         await db.execute(
             select(AuditReviewerAttestation).where(
-                AuditReviewerAttestation.engagement_id == engagement.id,
+                AuditReviewerAttestation.cycle_id == cycle.id,
                 AuditReviewerAttestation.status == "signed",
             )
         )
@@ -239,6 +277,7 @@ async def sign_attestation(
     signed_at = datetime.now(UTC)
     signature = AuditAttestationSignature(
         engagement_id=engagement.id,
+        cycle_id=cycle.id,
         reviewer_id=reviewer_id,
         role=role,
         verdict=verdict,
@@ -247,6 +286,7 @@ async def sign_attestation(
         signed_at=signed_at,
         signature_hash=_signature_hash(
             engagement_id=engagement.id,
+            cycle_id=cycle.id,
             export_sha=export_sha,
             verdict=verdict,
             reviewer_id=reviewer_id,
@@ -259,12 +299,24 @@ async def sign_attestation(
     signatures.append(signature)
     await db.flush()
 
+    if role == "lead" and cycle.status == "export_ready":
+        await transition_cycle(
+            db,
+            cycle.id,
+            target_status="under_review",
+            closed_by_user_id=reviewer_id,
+        )
+        engagement.status = "under_review"
+        meta = dict(meta)
+        meta["under_review_at"] = signed_at.isoformat()
+        engagement.metadata_ = meta
+        await db.flush()
+
     needed = required_signatures(engagement)
     if len(signatures) >= needed:
-        return await _finalize_attestation(db, engagement, signatures)
+        return await _finalize_attestation(db, engagement, cycle.id, signatures)
 
     if role == "lead":
-        engagement.status = "under_review"
         meta = dict(meta)
         meta["under_review_at"] = signed_at.isoformat()
         meta["pending_cosignatures"] = needed - len(signatures)
@@ -281,7 +333,10 @@ async def cosign_attestation(
     reviewer_id: uuid.UUID,
     notes: str | None = None,
 ) -> AuditReviewerAttestation | AuditAttestationSignature:
-    signatures = await _load_signatures(db, engagement.id)
+    signatures = await _load_signatures(
+        db,
+        (await require_mutable_cycle(db, engagement)).id,
+    )
     lead = next((s for s in signatures if s.role == "lead"), None)
     if lead is None:
         raise ValueError("lead_signature_required")
@@ -308,6 +363,7 @@ def _signature_dict(signature: AuditAttestationSignature) -> dict[str, Any]:
         "epistemic_label": signature.epistemic_label,
         "signed_at": signature.signed_at.isoformat(),
         "reviewer_id": str(signature.reviewer_id) if signature.reviewer_id else None,
+        "cycle_id": str(signature.cycle_id),
     }
 
 
@@ -317,20 +373,31 @@ async def attestation_summary(
     *,
     current_user_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
-    row = (
-        await db.execute(
-            select(AuditReviewerAttestation).where(
-                AuditReviewerAttestation.engagement_id == engagement.id
-            )
-        )
-    ).scalar_one_or_none()
+    cycle = await get_current_cycle(db, engagement.id)
+    cycle_id = cycle.id if cycle is not None else None
 
-    signatures = await _load_signatures(db, engagement.id)
+    row = None
+    if cycle_id is not None:
+        row = (
+            await db.execute(
+                select(AuditReviewerAttestation).where(
+                    AuditReviewerAttestation.cycle_id == cycle_id
+                )
+            )
+        ).scalar_one_or_none()
+
+    signatures = await _load_signatures(db, cycle_id) if cycle_id else []
     queue = await anomaly_review_queue(db, engagement.id)
     meta = engagement.metadata_ or {}
     needed = required_signatures(engagement)
     lead_signed = any(s.role == "lead" for s in signatures)
     user_signed = any(s.reviewer_id == current_user_id for s in signatures) if current_user_id else False
+
+    policy = None
+    if cycle is not None:
+        policy = await evaluate_attestation_policy(
+            db, engagement, cycle, evaluated_by_user_id=current_user_id, persist=False
+        )
 
     attestation: dict[str, Any] | None = None
     if row and row.status == "signed":
@@ -345,17 +412,18 @@ async def attestation_summary(
             "epistemic_label": row.epistemic_label,
             "signed_at": row.signed_at.isoformat() if row.signed_at else None,
             "reviewer_id": str(row.reviewer_id) if row.reviewer_id else None,
+            "cycle_id": str(row.cycle_id),
         }
 
     public_verify_url = meta.get("public_verify_url")
     if not public_verify_url and attestation and attestation.get("attestation_hash"):
-        from app.core.config import settings
+        from app.services.public_verification.audit import public_audit_verify_url
 
-        base = settings.app_frontend_url.rstrip("/")
-        public_verify_url = f"{base}/verify/audit/{attestation['attestation_hash']}"
+        public_verify_url = public_audit_verify_url(attestation["attestation_hash"])
 
     return {
         "engagement_id": str(engagement.id),
+        "cycle_id": str(cycle_id) if cycle_id else None,
         "status": engagement.status,
         "export_bundle_sha256": meta.get("export_bundle_sha256"),
         "attestation": attestation,
@@ -363,10 +431,11 @@ async def attestation_summary(
         "required_signatures": needed,
         "pending_cosignatures": max(0, needed - len(signatures)),
         "review_queue": queue,
+        "policy_evaluation": policy,
         "can_sign": (
             engagement.status in {"export_ready", "under_review"}
             and not lead_signed
-            and queue["pending_review_count"] == 0
+            and (policy is None or policy["result"] == "pass")
             and (row is None or row.status != "signed")
         ),
         "can_cosign": (

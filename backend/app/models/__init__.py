@@ -18,6 +18,7 @@ from app.models.audit_engagement import (
     PlantabilityExclusion,
     PlausibilityAssessment,
 )
+from app.models.audit_finality import AuditPolicyEvaluation, AuditVerificationSnapshot
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
 from app.models.audit_run import AuditRun
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
@@ -110,6 +111,8 @@ __all__ = [
     "AuditLog",
     "AuditChainRoot",
     "AuditCycle",
+    "AuditPolicyEvaluation",
+    "AuditVerificationSnapshot",
     "AuditRun",
     "AuditEngagement",
     "BoundaryVersion",

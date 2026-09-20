@@ -147,6 +147,12 @@ async def generate_sampling_plan(
     min_plots_per_block: int = 1,
     layout_seed: int | None = None,
 ) -> AuditSamplingPlan:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     if engagement.status not in {"risk_assessed", "sampling_planned", "field_verified"}:
         raise ValueError("risk_not_assessed")
 
@@ -237,10 +243,9 @@ async def generate_sampling_plan(
     if plan.total_plots == 0:
         raise ValueError("plot_placement_failed")
 
-    engagement.status = "sampling_planned"
     meta = dict(engagement.metadata_ or {})
     meta["sampling_planned_at"] = planned_at.isoformat()
     engagement.metadata_ = meta
-    await db.flush()
+    await set_engagement_status(db, engagement, "sampling_planned")
     await db.refresh(plan)
     return plan

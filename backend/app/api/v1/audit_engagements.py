@@ -1384,7 +1384,7 @@ async def get_engagement_audit_cycles(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
-    return AuditCycleSummaryOut.model_validate(cycle_summary(row))
+    return AuditCycleSummaryOut.model_validate(await cycle_summary(db, row))
 
 
 @router.get("/{engagement_id}/cycles/current", response_model=KernelAuditCycleOut)
@@ -1624,7 +1624,6 @@ async def sign_engagement_attestation(
             verdict=body.verdict,
             summary=body.summary,
             notes=body.notes,
-            allow_pending_reviews=body.allow_pending_reviews,
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

@@ -35,7 +35,6 @@ class AttestationSignCreate(BaseModel):
     verdict: Literal["approved", "rejected", "conditional"]
     summary: str = Field(min_length=1, max_length=2000)
     notes: str | None = None
-    allow_pending_reviews: bool = False
 
 
 class AttestationCosignCreate(BaseModel):
@@ -73,7 +72,7 @@ class AttestationSummaryOut(BaseModel):
     export_bundle_sha256: str | None = None
     attestation: AttestationOut | None = None
     signatures: list[AttestationSignatureOut] = Field(default_factory=list)
-    required_signatures: int = 2
+    required_signatures: int = 1
     pending_cosignatures: int = 0
     review_queue: AnomalyReviewQueueOut
     can_sign: bool

@@ -647,7 +647,6 @@ class ApiClient {
     required String verdict,
     required String summary,
     String? notes,
-    bool allowPendingReviews = false,
   }) async {
     final r = await _dio.post(
       '/audit-engagements/$engagementId/attestation/sign',
@@ -655,7 +654,6 @@ class ApiClient {
         'verdict': verdict,
         'summary': summary,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
-        'allow_pending_reviews': allowPendingReviews,
       },
     );
     return Map<String, dynamic>.from(r.data);

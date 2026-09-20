@@ -22,9 +22,9 @@ def test_webhook_event_types_include_audit():
     assert "audit.reconciliation_mismatch" in WEBHOOK_EVENT_TYPES
 
 
-def test_required_signatures_defaults_to_two():
+def test_required_signatures_defaults_to_one():
     engagement = SimpleNamespace(metadata_={})
-    assert required_signatures(engagement) == 2
+    assert required_signatures(engagement) == 1
 
 
 def test_required_signatures_respects_metadata():
@@ -36,8 +36,10 @@ def test_signature_hash_is_stable():
     engagement_id = uuid4()
     reviewer_id = uuid4()
     signed_at = datetime(2026, 1, 1, tzinfo=UTC)
+    cycle_id = uuid4()
     h1 = _signature_hash(
         engagement_id=engagement_id,
+        cycle_id=cycle_id,
         export_sha="abc",
         verdict="approved",
         reviewer_id=reviewer_id,
@@ -47,6 +49,7 @@ def test_signature_hash_is_stable():
     )
     h2 = _signature_hash(
         engagement_id=engagement_id,
+        cycle_id=cycle_id,
         export_sha="abc",
         verdict="approved",
         reviewer_id=reviewer_id,
@@ -63,6 +66,7 @@ def test_combined_attestation_hash_includes_all_signatures():
     signed_at = datetime(2026, 1, 1, tzinfo=UTC)
     combined = _combined_attestation_hash(
         engagement_id=engagement_id,
+        cycle_id=uuid4(),
         export_sha="export",
         verdict="conditional",
         summary="Summary",

@@ -24,6 +24,9 @@ class AuditAttestationSignature(UUIDPKMixin, Base):
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
     )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
+    )
     reviewer_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
@@ -37,9 +40,12 @@ class AuditAttestationSignature(UUIDPKMixin, Base):
 
     engagement = relationship("AuditEngagement", backref="attestation_signatures")
 
+    cycle = relationship("AuditCycle", backref="attestation_signatures")
+
     __table_args__ = (
-        UniqueConstraint("engagement_id", "reviewer_id", name="audit_attestation_signatures_eng_reviewer_uq"),
+        UniqueConstraint("cycle_id", "reviewer_id", name="audit_attestation_signatures_cycle_reviewer_uq"),
         Index("audit_attestation_signatures_engagement_idx", "engagement_id"),
+        Index("audit_attestation_signatures_cycle_idx", "cycle_id"),
         Index("audit_attestation_signatures_hash_idx", "signature_hash"),
     )
 
@@ -51,6 +57,9 @@ class AuditReviewerAttestation(UUIDPKMixin, TimestampMixin, Base):
 
     engagement_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("audit_engagements.id", ondelete="CASCADE"), nullable=False
+    )
+    cycle_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("audit_cycles.id", ondelete="RESTRICT"), nullable=False
     )
     reviewer_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
@@ -65,10 +74,12 @@ class AuditReviewerAttestation(UUIDPKMixin, TimestampMixin, Base):
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     engagement = relationship("AuditEngagement", backref="reviewer_attestation")
+    cycle = relationship("AuditCycle", backref="reviewer_attestation")
 
     __table_args__ = (
-        UniqueConstraint("engagement_id", name="audit_reviewer_attestations_engagement_uq"),
+        UniqueConstraint("cycle_id", name="audit_reviewer_attestations_cycle_uq"),
         Index("audit_reviewer_attestations_engagement_idx", "engagement_id"),
+        Index("audit_reviewer_attestations_cycle_idx", "cycle_id"),
     )
 
 

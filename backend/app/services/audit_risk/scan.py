@@ -119,6 +119,12 @@ async def run_risk_scan(
     engagement: AuditEngagement,
     project: PlantingProject,
 ) -> dict[str, Any]:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     if engagement.status not in {"confidence_mapped", "risk_assessed"}:
         raise ValueError("confidence_not_mapped")
 
@@ -242,11 +248,10 @@ async def run_risk_scan(
         db, project=project, engagement=engagement, anomalies=all_anomalies
     )
 
-    engagement.status = "risk_assessed"
     meta = dict(engagement.metadata_ or {})
     meta["risk_assessed_at"] = detected_at.isoformat()
     engagement.metadata_ = meta
-    await db.flush()
+    await set_engagement_status(db, engagement, "risk_assessed")
 
     severity_counts: dict[str, int] = {}
     for a in all_anomalies:

@@ -69,6 +69,9 @@ async def record_field_visit(
     notes: str | None = None,
     signals: dict[str, Any] | None = None,
 ) -> AuditFieldVisit:
+    from app.services.audit_governance.engagement import require_mutable_cycle
+
+    await require_mutable_cycle(db, engagement)
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
 
@@ -140,6 +143,12 @@ async def complete_field_verification(
     db: AsyncSession,
     engagement: AuditEngagement,
 ) -> dict[str, Any]:
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    await require_mutable_cycle(db, engagement)
     if engagement.status not in {"sampling_planned", "field_verified"}:
         raise ValueError("sampling_not_planned")
 
@@ -161,11 +170,10 @@ async def complete_field_verification(
         raise ValueError("plots_unvisited")
 
     plan.status = "completed"
-    engagement.status = "field_verified"
     meta = dict(engagement.metadata_ or {})
     meta["field_verified_at"] = datetime.now(UTC).isoformat()
     engagement.metadata_ = meta
-    await db.flush()
+    await set_engagement_status(db, engagement, "field_verified")
 
     try:
         from app.services.audit_confidence.compute import compute_confidence_map

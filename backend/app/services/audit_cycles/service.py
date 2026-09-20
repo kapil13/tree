@@ -15,7 +15,7 @@ from app.services.audit_cycles.queries import get_cycle
 from app.services.audit_governance.mutability import assert_cycle_can_edit, assert_cycle_is_attested
 
 _FINAL = frozenset({"attested", "superseded", "cancelled"})
-_TRANSITIONS = {
+CYCLE_TRANSITIONS = {
     "draft": {"analysis_ready", "cancelled"},
     "analysis_ready": {"risk_assessed", "cancelled"},
     "risk_assessed": {"sampling_planned", "cancelled"},
@@ -72,7 +72,7 @@ async def transition_cycle(
 ) -> AuditCycle:
     cycle = await get_cycle(db, cycle_id)
     assert_cycle_can_edit(cycle)
-    allowed = _TRANSITIONS.get(cycle.status, set())
+    allowed = CYCLE_TRANSITIONS.get(cycle.status, set())
     if target_status not in allowed:
         raise ValueError("invalid_audit_cycle_transition")
     cycle.status = target_status
