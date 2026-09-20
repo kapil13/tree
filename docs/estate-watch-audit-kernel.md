@@ -24,3 +24,11 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - Persisted export entities (`audit_exports`, `audit_export_files`) with distinct `content_manifest_hash`, `unsigned_bundle_hash`, and `package_sha256`.
 - `POST /audit-engagements/{id}/exports` creates a cycle-scoped export record; `GET /export` still downloads the zip bundle.
 - Cycle-scoped export context, readiness, and reconciliation reads default to the open cycle (or latest when attested).
+
+## Wave B ground truth (migration `0083`)
+
+- **P2** — Versioned sampling plans (`plan_version`, `parent_plan_id`, `superseded_at`); regenerate supersedes the active plan instead of deleting plots/visits.
+- **P3** — Field visit lifecycle (`status`, `idempotency_key`, GPS/photo integrity flags); hard-fail on outside-boundary GPS or duplicate photos.
+- **P6** — Persisted reconciliation (`audit_reconciliation_runs`, `audit_reconciliation_blocks`) with `audit_run` provenance; auto-computed on field verification complete.
+- **P10** — Evidence graph (`audit_evidence_nodes`, `audit_evidence_edges`) linking claims → estimations → observations → attestations.
+- **API** — `POST /reconciliation/compute`, `GET /evidence-graph`; visit `idempotency_key` on field visit create.

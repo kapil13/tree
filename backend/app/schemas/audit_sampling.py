@@ -36,10 +36,12 @@ class SamplingPlanGenerateOut(BaseModel):
     total_plots: int
     status: str
     stratification: str
+    plan_version: int = 1
 
 
 class FieldVisitCreate(BaseModel):
     tree_presence: TreePresence
+    idempotency_key: str | None = Field(default=None, max_length=128)
     photo_keys: list[str] = Field(min_length=1, max_length=5)
     visitor_lat: float = Field(ge=-90, le=90)
     visitor_lon: float = Field(ge=-180, le=180)
@@ -64,6 +66,10 @@ class FieldVisitCreate(BaseModel):
 class FieldVisitOut(BaseModel):
     id: str
     plot_id: str
+    status: str = "accepted"
+    idempotency_key: str | None = None
+    gps_integrity_passed: bool = True
+    photo_integrity_passed: bool = True
     verification_outcome: str
     tree_presence: str | None = None
     trees_observed: int | None = None
@@ -91,3 +97,23 @@ class SamplingPlanSummaryOut(BaseModel):
 class FieldVerificationCompleteOut(BaseModel):
     plots_visited: int
     status: str
+    plan_version: int | None = None
+
+
+class EvidenceGraphOut(BaseModel):
+    cycle_id: str
+    node_count: int
+    edge_count: int
+    nodes: list[dict[str, Any]] = Field(default_factory=list)
+    edges: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ReconciliationRunOut(BaseModel):
+    id: str
+    cycle_id: str
+    engagement_id: str
+    aligned_count: int
+    mismatch_count: int
+    no_field_data_count: int
+    block_count: int
+    computed_at: datetime

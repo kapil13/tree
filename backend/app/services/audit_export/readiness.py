@@ -34,11 +34,7 @@ async def export_readiness(
         if scoped_cycle_id
         else [AuditRiskAssessment.engagement_id == engagement.id]
     )
-    plan_filter = (
-        [AuditSamplingPlan.cycle_id == scoped_cycle_id]
-        if scoped_cycle_id
-        else [AuditSamplingPlan.engagement_id == engagement.id]
-    )
+    from app.services.audit_sampling.queries import get_active_sampling_plan
 
     boundaries = (
         (
@@ -60,9 +56,17 @@ async def export_readiness(
         (await db.execute(select(AuditRiskAssessment).where(*risk_filter))).scalars().all()
     )
 
-    plan = (
-        await db.execute(select(AuditSamplingPlan).where(*plan_filter))
-    ).scalar_one_or_none()
+    plan = None
+    if scoped_cycle_id:
+        plan = await get_active_sampling_plan(db, scoped_cycle_id)
+    if plan is None:
+        plan = (
+            await db.execute(
+                select(AuditSamplingPlan)
+                .where(AuditSamplingPlan.engagement_id == engagement.id)
+                .order_by(AuditSamplingPlan.plan_version.desc())
+            )
+        ).scalar_one_or_none()
 
     meta = engagement.metadata_ or {}
     sections = [

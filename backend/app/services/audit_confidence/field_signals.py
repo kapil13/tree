@@ -42,14 +42,27 @@ def derive_field_grade(
 
 
 async def field_signals_by_boundary(
-    db: AsyncSession, engagement_id: uuid.UUID
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
 ) -> dict[uuid.UUID, dict[str, Any]]:
-    """Latest visit per plot, rolled up by boundary_version_id."""
-    plan = (
-        await db.execute(
-            select(AuditSamplingPlan).where(AuditSamplingPlan.engagement_id == engagement_id)
-        )
-    ).scalar_one_or_none()
+    """Latest accepted visit per plot on the active plan, rolled up by boundary."""
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+    from app.services.audit_sampling.queries import get_active_sampling_plan
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    plan = None
+    if scoped_cycle_id:
+        plan = await get_active_sampling_plan(db, scoped_cycle_id)
+    if plan is None:
+        plan = (
+            await db.execute(
+                select(AuditSamplingPlan)
+                .where(AuditSamplingPlan.engagement_id == engagement_id)
+                .order_by(AuditSamplingPlan.plan_version.desc())
+            )
+        ).scalar_one_or_none()
     if plan is None:
         return {}
 
@@ -70,7 +83,10 @@ async def field_signals_by_boundary(
         (
             await db.execute(
                 select(AuditFieldVisit)
-                .where(AuditFieldVisit.plot_id.in_(plot_ids))
+                .where(
+                    AuditFieldVisit.plot_id.in_(plot_ids),
+                    AuditFieldVisit.status == "accepted",
+                )
                 .order_by(AuditFieldVisit.visited_at.desc())
             )
         )
