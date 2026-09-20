@@ -4313,6 +4313,391 @@ export const auditEngagements = {
       }>(`/v1/audit-engagements/${engagementId}/reaudit`, payload ?? {})
     ).data;
   },
+  async computeReconciliation(engagementId: string) {
+    return (
+      await api.post<AuditReconciliationRun>(
+        `/v1/audit-engagements/${engagementId}/reconciliation/compute`,
+      )
+    ).data;
+  },
+  async getEvidenceGraph(engagementId: string) {
+    return (
+      await api.get<AuditEvidenceGraph>(`/v1/audit-engagements/${engagementId}/evidence-graph`)
+    ).data;
+  },
+  async explainAnomaly(engagementId: string, anomalyId: string) {
+    return (
+      await api.post<AuditExplainRun>(
+        `/v1/audit-engagements/${engagementId}/anomalies/${anomalyId}/explain`,
+      )
+    ).data;
+  },
+  async explainReconciliation(engagementId: string, boundaryVersionId?: string) {
+    return (
+      await api.post<AuditExplainRun>(
+        `/v1/audit-engagements/${engagementId}/reconciliation/explain`,
+        boundaryVersionId ? { boundary_version_id: boundaryVersionId } : {},
+      )
+    ).data;
+  },
+  async explainEvidenceGraph(engagementId: string) {
+    return (
+      await api.post<AuditExplainRun>(
+        `/v1/audit-engagements/${engagementId}/evidence-graph/explain`,
+      )
+    ).data;
+  },
+  async explainCrossEstatePattern(patternId: string) {
+    return (
+      await api.post<AuditExplainRun>(
+        `/v1/audit-engagements/cross-estate-patterns/${patternId}/explain`,
+      )
+    ).data;
+  },
+  async listExplainRuns(engagementId: string, limit = 20) {
+    return (
+      await api.get<AuditExplainRun[]>(`/v1/audit-engagements/${engagementId}/explain-runs`, {
+        params: { limit },
+      })
+    ).data;
+  },
+  async listExports(engagementId: string, limit = 20) {
+    return (
+      await api.get<AuditExportListItem[]>(`/v1/audit-engagements/${engagementId}/exports`, {
+        params: { limit },
+      })
+    ).data;
+  },
+  async getExportDetail(engagementId: string, exportId: string) {
+    return (
+      await api.get<AuditExportDetail>(
+        `/v1/audit-engagements/${engagementId}/exports/${exportId}`,
+      )
+    ).data;
+  },
+  async downloadFrozenExport(engagementId: string, exportId: string) {
+    const response = await api.get(
+      `/v1/audit-engagements/${engagementId}/exports/${exportId}/download`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  },
+  async verifyExport(engagementId: string, exportId: string) {
+    return (
+      await api.post<AuditExportVerification>(
+        `/v1/audit-engagements/${engagementId}/exports/${exportId}/verify`,
+      )
+    ).data;
+  },
+  async computePortfolioRollups() {
+    return (await api.post<AuditPortfolioRollups>("/v1/audit-engagements/portfolio-rollups/compute"))
+      .data;
+  },
+  async getPortfolioRollups() {
+    return (await api.get<AuditPortfolioRollups>("/v1/audit-engagements/portfolio-rollups")).data;
+  },
+  async computeBenchmarks() {
+    return (await api.post<AuditBenchmarksOut>("/v1/audit-engagements/benchmarks/compute")).data;
+  },
+  async getBenchmarks() {
+    return (await api.get<AuditBenchmarksOut>("/v1/audit-engagements/benchmarks")).data;
+  },
+  async detectCrossEstatePatterns() {
+    return (
+      await api.post<AuditCrossEstatePatternsOut>(
+        "/v1/audit-engagements/cross-estate-patterns/detect",
+      )
+    ).data;
+  },
+  async getCrossEstatePatterns() {
+    return (
+      await api.get<AuditCrossEstatePatternsOut>("/v1/audit-engagements/cross-estate-patterns")
+    ).data;
+  },
+  async listMethodologies() {
+    return (await api.get<AuditMethodologySummary[]>("/v1/audit-engagements/methodologies")).data;
+  },
+  async getMethodologyBundle(version: string) {
+    return (
+      await api.get<AuditMethodologyBundle>(`/v1/audit-engagements/methodologies/${version}`)
+    ).data;
+  },
+  async getEngagementMethodology(engagementId: string) {
+    return (
+      await api.get<AuditMethodologyBinding>(
+        `/v1/audit-engagements/${engagementId}/methodology`,
+      )
+    ).data;
+  },
+  async updateEngagementMethodology(
+    engagementId: string,
+    payload: { methodology_version: string; threshold_overrides?: Record<string, unknown>; reason?: string },
+  ) {
+    return (
+      await api.put<AuditMethodologyBinding>(
+        `/v1/audit-engagements/${engagementId}/methodology`,
+        payload,
+      )
+    ).data;
+  },
+  async getMethodologyChangeLog(engagementId: string) {
+    return (
+      await api.get<AuditMethodologyChangeLogEntry[]>(
+        `/v1/audit-engagements/${engagementId}/methodology/change-log`,
+      )
+    ).data;
+  },
+  async getAuditorWorkspace(params?: {
+    project_id?: string;
+    risk_level?: string;
+    engagement_status?: string;
+    limit?: number;
+  }) {
+    return (
+      await api.get<AuditAuditorWorkspace>("/v1/audit-engagements/auditor-workspace", {
+        params,
+      })
+    ).data;
+  },
+  async listAuditorWorkspaceViews() {
+    return (
+      await api.get<AuditWorkspaceView[]>("/v1/audit-engagements/auditor-workspace/views")
+    ).data;
+  },
+  async saveAuditorWorkspaceView(payload: {
+    name: string;
+    filters?: Record<string, unknown>;
+    is_default?: boolean;
+  }) {
+    return (
+      await api.post<AuditWorkspaceView>("/v1/audit-engagements/auditor-workspace/views", payload)
+    ).data;
+  },
+  async listReportTemplates() {
+    return (await api.get<AuditReportTemplate[]>("/v1/audit-engagements/report-templates")).data;
+  },
+  async listDigestSchedules() {
+    return (await api.get<AuditDigestSchedule[]>("/v1/audit-engagements/digest-schedules")).data;
+  },
+  async createDigestSchedule(payload: { template_code: string; cadence?: string; enabled?: boolean }) {
+    return (
+      await api.post<AuditDigestSchedule>("/v1/audit-engagements/digest-schedules", payload)
+    ).data;
+  },
+  async runDigestSchedule(scheduleId: string) {
+    return (
+      await api.post<AuditDigestRun>(`/v1/audit-engagements/digest-schedules/${scheduleId}/run`)
+    ).data;
+  },
+  async listDigestRuns() {
+    return (await api.get<AuditDigestRun[]>("/v1/audit-engagements/digest-runs")).data;
+  },
+};
+
+export type AuditReconciliationRun = {
+  id: string;
+  cycle_id: string;
+  engagement_id: string;
+  aligned_count: number;
+  mismatch_count: number;
+  no_field_data_count: number;
+  block_count: number;
+  computed_at: string;
+};
+
+export type AuditEvidenceGraph = {
+  cycle_id: string;
+  node_count: number;
+  edge_count: number;
+  nodes: Array<Record<string, unknown>>;
+  edges: Array<Record<string, unknown>>;
+};
+
+export type AuditExplainRun = {
+  id: string;
+  target_type: string;
+  target_id: string;
+  cycle_id?: string | null;
+  engagement_id?: string | null;
+  organization_id?: string | null;
+  mode: string;
+  provider?: string | null;
+  answer: string;
+  citations: Array<Record<string, unknown>>;
+  llm_error?: string | null;
+  input_manifest_hash: string;
+  created_at?: string | null;
+};
+
+export type AuditExportListItem = {
+  export_id: string;
+  cycle_id: string;
+  engagement_id: string;
+  status: string;
+  export_version: string;
+  methodology_version?: string | null;
+  content_manifest_hash: string;
+  unsigned_bundle_hash: string;
+  package_sha256: string;
+  file_count: number;
+  zip_size_bytes: number;
+  signature_key_id?: string | null;
+  signed: boolean;
+  frozen_at?: string | null;
+  generated_at?: string | null;
+};
+
+export type AuditExportDetail = AuditExportListItem & {
+  files: Array<Record<string, unknown>>;
+};
+
+export type AuditExportVerification = {
+  export_id: string;
+  valid: boolean;
+  verified_at: string;
+  details: Record<string, unknown>;
+};
+
+export type AuditPortfolioRollups = {
+  organization_id: string;
+  engagement_count: number;
+  plots_due: number;
+  open_anomaly_count: number;
+  critical_anomaly_count: number;
+  reconciliation_mismatch: number;
+  rollups: Array<{
+    id: string;
+    cycle_id: string;
+    engagement_id: string;
+    project_id: string;
+    organization_id?: string | null;
+    engagement_status: string;
+    cycle_status: string;
+    cycle_number: number;
+    grade_counts: Record<string, number>;
+    risk_level_counts: Record<string, number>;
+    open_anomaly_count: number;
+    critical_anomaly_count: number;
+    plots_total: number;
+    plots_visited: number;
+    plots_due: number;
+    reconciliation_aligned: number;
+    reconciliation_mismatch: number;
+    reconciliation_no_field: number;
+    computed_at?: string | null;
+  }>;
+};
+
+export type AuditBenchmarksOut = {
+  baselines: Array<{
+    id: string;
+    scope: string;
+    organization_id?: string | null;
+    metric_code: string;
+    metric_value: number;
+    sample_count: number;
+    signals: Record<string, unknown>;
+    computed_at?: string | null;
+  }>;
+};
+
+export type AuditCrossEstatePattern = {
+  id: string;
+  organization_id?: string | null;
+  pattern_type: string;
+  anomaly_type?: string | null;
+  engagement_count: number;
+  affected_engagement_ids: string[];
+  severity_peak?: string | null;
+  summary: string;
+  signals: Record<string, unknown>;
+  detected_at?: string | null;
+};
+
+export type AuditCrossEstatePatternsOut = {
+  patterns: AuditCrossEstatePattern[];
+};
+
+export type AuditMethodologySummary = {
+  version: string;
+  name: string;
+  description: string;
+  status: string;
+  effective_from?: string | null;
+};
+
+export type AuditMethodologyBundle = AuditMethodologySummary & {
+  rules: Array<Record<string, unknown>>;
+  threshold_sets: Array<Record<string, unknown>>;
+};
+
+export type AuditMethodologyBinding = {
+  engagement_id: string;
+  methodology_version: string;
+  threshold_overrides: Record<string, unknown>;
+};
+
+export type AuditMethodologyChangeLogEntry = {
+  id: string;
+  engagement_id: string;
+  from_version?: string | null;
+  to_version: string;
+  reason: string;
+  changed_at: string;
+};
+
+export type AuditAuditorWorkspace = {
+  total_due: number;
+  items: Array<{
+    plot_id: string;
+    plot_code: string;
+    engagement_id: string;
+    project_id: string;
+    project_code: string;
+    project_name: string;
+    risk_level: string;
+    priority_rank: number;
+    status: string;
+    engagement_status: string;
+    center: Record<string, unknown>;
+  }>;
+  filters: Record<string, unknown>;
+  engagement_statuses: Record<string, string>;
+};
+
+export type AuditWorkspaceView = {
+  id: string;
+  name: string;
+  filters: Record<string, unknown>;
+  is_default: boolean;
+};
+
+export type AuditReportTemplate = {
+  code: string;
+  name: string;
+  version: string;
+  sections: unknown[];
+  status: string;
+};
+
+export type AuditDigestSchedule = {
+  id: string;
+  organization_id: string;
+  template_code: string;
+  cadence: string;
+  enabled: boolean;
+  next_run_at?: string | null;
+  last_run_at?: string | null;
+};
+
+export type AuditDigestRun = {
+  id: string;
+  schedule_id?: string | null;
+  organization_id: string;
+  template_code: string;
+  status: string;
+  payload: Record<string, unknown>;
+  generated_at?: string | null;
 };
 
 export type FrameworkProfileCode =

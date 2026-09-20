@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Archive, CheckCircle2, Download, FileText } from "lucide-react";
-import { auditEngagements, errorMessage } from "@/lib/api";
+import { Archive, CheckCircle2, Download, FileText, ShieldCheck } from "lucide-react";
+import { auditEngagements, errorMessage, type AuditExportListItem } from "@/lib/api";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
 import { cn } from "@/lib/cn";
@@ -15,6 +15,12 @@ type ExportSection = {
   met: boolean;
   detail?: string | null;
 };
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function AuditExportPanel({
   engagementId,
@@ -38,13 +44,32 @@ export function AuditExportPanel({
     enabled: unlocked,
   });
 
+  const exportsQ = useQuery({
+    queryKey: ["audit-exports", engagementId],
+    queryFn: () => auditEngagements.listExports(engagementId),
+    enabled: unlocked,
+  });
+
   const download = useMutation({
     mutationFn: () => auditEngagements.downloadExportBundle(engagementId),
     onSuccess: (blob) => {
       downloadBlob(blob, `estate-watch-audit-${engagementId.slice(0, 8)}.zip`);
-      qc.invalidateQueries({ queryKey: ["audit-export-readiness", engagementId] });
-      qc.invalidateQueries({ queryKey: ["audit-engagement"] });
+      void qc.invalidateQueries({ queryKey: ["audit-export-readiness", engagementId] });
+      void qc.invalidateQueries({ queryKey: ["audit-engagement"] });
+      void qc.invalidateQueries({ queryKey: ["audit-exports", engagementId] });
     },
+  });
+
+  const downloadFrozen = useMutation({
+    mutationFn: (exportId: string) => auditEngagements.downloadFrozenExport(engagementId, exportId),
+    onSuccess: (blob, exportId) => {
+      downloadBlob(blob, `estate-watch-audit-${exportId.slice(0, 8)}.zip`);
+    },
+  });
+
+  const verifyExport = useMutation({
+    mutationFn: (exportId: string) => auditEngagements.verifyExport(engagementId, exportId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["audit-exports", engagementId] }),
   });
 
   if (!unlocked) {
@@ -58,6 +83,7 @@ export function AuditExportPanel({
   }
 
   const sections = (readiness?.sections ?? []) as ExportSection[];
+  const exports = exportsQ.data ?? [];
 
   return (
     <AuditPanelShell
@@ -134,6 +160,84 @@ export function AuditExportPanel({
       {!readiness?.exportable && readiness && (
         <p className="text-sm text-amber-700">{t("notReady")}</p>
       )}
+
+      <section className="mt-6 space-y-3">
+        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+          {t("historyTitle")}
+        </h3>
+        {exportsQ.isLoading ? (
+          <p className="text-sm text-stone-500">{t("historyLoading")}</p>
+        ) : exports.length === 0 ? (
+          <p className="text-sm text-stone-500">{t("historyEmpty")}</p>
+        ) : (
+          <ul className="space-y-2">
+            {exports.map((item: AuditExportListItem) => {
+              const verification = verifyExport.data?.export_id === item.export_id
+                ? verifyExport.data
+                : null;
+              return (
+                <li
+                  key={item.export_id}
+                  className="rounded-xl border border-stone-200 p-3 text-sm dark:border-stone-700"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-stone-900 dark:text-stone-100">
+                        {t("historyItem", {
+                          version: item.export_version,
+                          files: item.file_count,
+                        })}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-500">
+                        {item.generated_at
+                          ? new Date(item.generated_at).toLocaleString()
+                          : t("historyPending")}
+                        {item.methodology_version ? ` · ${item.methodology_version}` : ""}
+                      </p>
+                      <p className="mt-1 font-mono text-[11px] text-stone-400">
+                        {item.package_sha256.slice(0, 16)}… · {formatBytes(item.zip_size_bytes)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="btn-secondary inline-flex items-center gap-1 text-xs"
+                        disabled={downloadFrozen.isPending}
+                        onClick={() => downloadFrozen.mutate(item.export_id)}
+                      >
+                        <Download className="h-3.5 w-3.5" aria-hidden />
+                        {t("downloadFrozen")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary inline-flex items-center gap-1 text-xs"
+                        disabled={verifyExport.isPending}
+                        onClick={() => verifyExport.mutate(item.export_id)}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+                        {t("verify")}
+                      </button>
+                    </div>
+                  </div>
+                  {verification ? (
+                    <p
+                      className={cn(
+                        "mt-2 text-xs font-medium",
+                        verification.valid ? "text-emerald-700" : "text-rose-700",
+                      )}
+                    >
+                      {verification.valid ? t("verifyValid") : t("verifyInvalid")}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {verifyExport.isError ? (
+          <p className="text-sm text-rose-700">{errorMessage(verifyExport.error)}</p>
+        ) : null}
+      </section>
     </AuditPanelShell>
   );
 }
