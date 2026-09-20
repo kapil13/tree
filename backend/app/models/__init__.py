@@ -8,6 +8,7 @@ from app.models.audit_attestation import (
 )
 from app.models.audit_chain_root import AuditChainRoot
 from app.models.audit_confidence import AuditConfidenceAssessment
+from app.models.audit_cycle import AuditCycle
 from app.models.audit_engagement import (
     AuditEngagement,
     BoundaryVersion,
@@ -18,6 +19,7 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.audit_risk import AuditAnomalyEvent, AuditRiskAssessment
+from app.models.audit_run import AuditRun
 from app.models.audit_sampling import AuditFieldPlot, AuditFieldVisit, AuditSamplingPlan
 from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
 from app.models.bioacoustic_analysis_run import BioacousticAnalysisRun
@@ -107,6 +109,8 @@ __all__ = [
     "PaymentEvent",
     "AuditLog",
     "AuditChainRoot",
+    "AuditCycle",
+    "AuditRun",
     "AuditEngagement",
     "BoundaryVersion",
     "ClaimDocument",

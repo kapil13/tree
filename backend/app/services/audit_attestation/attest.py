@@ -18,6 +18,8 @@ from app.models.audit_attestation import (
 )
 from app.models.audit_engagement import AuditEngagement
 from app.services.audit_attestation.review import anomaly_review_queue
+from app.services.audit_cycles.queries import get_current_cycle
+from app.services.audit_governance.mutability import assert_cycle_can_attest
 from app.services.webhooks.audit_events import emit_audit_webhook
 
 VALID_VERDICTS = {"approved", "rejected", "conditional"}
@@ -143,6 +145,14 @@ async def _finalize_attestation(
     row.attestation_hash = combined_hash
 
     engagement.status = "attested"
+    # Legacy engagements may not yet have a persisted cycle. Once a cycle exists,
+    # attestation is governed by its server-side finality state.
+    cycle = await get_current_cycle(db, engagement.id)
+    if cycle is not None:
+        assert_cycle_can_attest(cycle)
+        cycle.status = "attested"
+        cycle.closed_at = signed_at
+        cycle.closed_by_user_id = lead.reviewer_id
     meta = dict(engagement.metadata_ or {})
     meta["attested_at"] = signed_at.isoformat()
     meta["attestation_hash"] = combined_hash

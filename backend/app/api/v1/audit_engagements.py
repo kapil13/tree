@@ -17,6 +17,14 @@ from app.schemas.audit_attestation import (
     AttestationSummaryOut,
 )
 from app.schemas.audit_confidence import ConfidenceComputeOut, ConfidenceMapOut
+from app.schemas.audit_cycle import (
+    AuditCycleCreate,
+    AuditCycleTransition,
+    ReauditCycleCreate,
+)
+from app.schemas.audit_cycle import (
+    AuditCycleOut as KernelAuditCycleOut,
+)
 from app.schemas.audit_engagement import (
     AuditEngagementDetailOut,
     AuditEngagementOut,
@@ -134,6 +142,18 @@ def _serialize_detail(raw: dict) -> AuditEngagementDetailOut:
         latest_gis_validation=GisValidationRunOut.model_validate(gis) if gis else None,
         intake_gate=IntakeGateOut.model_validate(gate) if gate else None,
     )
+
+
+async def _load_managed_engagement(db, engagement_id: uuid.UUID, user):
+    from app.models.audit_engagement import AuditEngagement
+
+    engagement = await db.get(AuditEngagement, engagement_id)
+    if engagement is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(engagement.project_id, user, db)
+    if project is None or not await can_manage_project(user, project, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+    return engagement
 
 
 @router.get("/portfolio-summary", response_model=AuditPortfolioSummaryOut)
@@ -1365,6 +1385,78 @@ async def get_engagement_audit_cycles(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
     return AuditCycleSummaryOut.model_validate(cycle_summary(row))
+
+
+@router.get("/{engagement_id}/cycles/current", response_model=KernelAuditCycleOut)
+async def get_current_engagement_audit_cycle(engagement_id: uuid.UUID, user: CurrentUser, db: DB):
+    from app.services.audit_cycles.queries import get_current_cycle
+
+    engagement = await _load_managed_engagement(db, engagement_id, user)
+    cycle = await get_current_cycle(db, engagement.id)
+    if cycle is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found")
+    return KernelAuditCycleOut.model_validate(cycle)
+
+
+@router.get("/{engagement_id}/cycles/{cycle_id}", response_model=KernelAuditCycleOut)
+async def get_engagement_audit_cycle(engagement_id: uuid.UUID, cycle_id: uuid.UUID, user: CurrentUser, db: DB):
+    from app.services.audit_cycles.queries import get_cycle
+
+    await _load_managed_engagement(db, engagement_id, user)
+    cycle = await get_cycle(db, cycle_id)
+    if cycle is None or cycle.engagement_id != engagement_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found")
+    return KernelAuditCycleOut.model_validate(cycle)
+
+
+@router.post("/{engagement_id}/cycles", response_model=KernelAuditCycleOut, status_code=status.HTTP_201_CREATED)
+async def create_engagement_audit_cycle(engagement_id: uuid.UUID, body: AuditCycleCreate, request: Request, user: WriteAccess, db: DB):
+    from app.services.audit_cycles.service import create_cycle
+
+    engagement = await _load_managed_engagement(db, engagement_id, user)
+    try:
+        cycle = await create_cycle(db, engagement, started_by_user_id=user.id, **body.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    await record_audit(db, actor=user, action="audit_cycle.create", resource_type="audit_cycle", resource_id=cycle.id, request=request)
+    await db.commit()
+    return KernelAuditCycleOut.model_validate(cycle)
+
+
+@router.post("/{engagement_id}/cycles/{cycle_id}/transition", response_model=KernelAuditCycleOut)
+async def transition_engagement_audit_cycle(engagement_id: uuid.UUID, cycle_id: uuid.UUID, body: AuditCycleTransition, request: Request, user: WriteAccess, db: DB):
+    from app.services.audit_cycles.queries import get_cycle
+    from app.services.audit_cycles.service import transition_cycle
+
+    await _load_managed_engagement(db, engagement_id, user)
+    existing = await get_cycle(db, cycle_id)
+    if existing is None or existing.engagement_id != engagement_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found")
+    try:
+        cycle = await transition_cycle(db, cycle_id, target_status=body.status, closed_by_user_id=user.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    await record_audit(db, actor=user, action="audit_cycle.transition", resource_type="audit_cycle", resource_id=cycle.id, request=request, diff={"status": cycle.status})
+    await db.commit()
+    return KernelAuditCycleOut.model_validate(cycle)
+
+
+@router.post("/{engagement_id}/cycles/{cycle_id}/reaudit", response_model=KernelAuditCycleOut, status_code=status.HTTP_201_CREATED)
+async def start_cycle_reaudit(engagement_id: uuid.UUID, cycle_id: uuid.UUID, body: ReauditCycleCreate, request: Request, user: WriteAccess, db: DB):
+    from app.services.audit_cycles.queries import get_cycle
+    from app.services.audit_cycles.service import start_reaudit_cycle
+
+    engagement = await _load_managed_engagement(db, engagement_id, user)
+    existing = await get_cycle(db, cycle_id)
+    if existing is None or existing.engagement_id != engagement_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found")
+    try:
+        cycle = await start_reaudit_cycle(db, engagement, started_by_user_id=user.id, **body.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    await record_audit(db, actor=user, action="audit_cycle.reaudit.start", resource_type="audit_cycle", resource_id=cycle.id, request=request, diff={"parent_cycle_id": str(existing.id)})
+    await db.commit()
+    return KernelAuditCycleOut.model_validate(cycle)
 
 
 @router.post("/{engagement_id}/reaudit", response_model=ReauditStartOut)
