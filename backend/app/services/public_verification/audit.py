@@ -145,12 +145,26 @@ async def resolve_audit_verification_by_digest(
         engagement = await db.get(AuditEngagement, attestation.engagement_id)
         cycle_id = attestation.cycle_id
     else:
-        res = await db.execute(
-            select(AuditEngagement).where(
-                AuditEngagement.metadata_["export_bundle_sha256"].astext == digest
+        from app.models.audit_export_entity import AuditExport
+        from app.services.audit_export.queries import get_export_by_package_sha256
+
+        export_row = await get_export_by_package_sha256(db, digest)
+        if export_row is None:
+            export_row = (
+                await db.execute(
+                    select(AuditExport).where(AuditExport.unsigned_bundle_hash == digest).limit(1)
+                )
+            ).scalar_one_or_none()
+        if export_row is not None:
+            engagement = await db.get(AuditEngagement, export_row.engagement_id)
+            cycle_id = export_row.cycle_id
+        else:
+            res = await db.execute(
+                select(AuditEngagement).where(
+                    AuditEngagement.metadata_["export_bundle_sha256"].astext == digest
+                )
             )
-        )
-        engagement = res.scalar_one_or_none()
+            engagement = res.scalar_one_or_none()
 
     if engagement is None:
         sig = (

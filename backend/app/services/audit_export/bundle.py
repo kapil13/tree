@@ -225,6 +225,10 @@ async def _build_bundle_bytes(
         bundle_manifest=bundle_manifest,
     )
 
+    from app.services.audit_export.artifacts import store_export_artifact
+
+    await store_export_artifact(db, export=export_record, zip_bytes=zip_bytes)
+
     meta = dict(engagement.metadata_ or {})
     meta["exported_at"] = datetime.now(UTC).isoformat()
     meta["export_bundle_sha256"] = bundle_sha256

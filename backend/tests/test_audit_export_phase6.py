@@ -128,6 +128,10 @@ async def test_build_bundle_contains_manifest():
             new=AsyncMock(return_value=export_record),
         ),
         patch(
+            "app.services.audit_export.artifacts.store_export_artifact",
+            new=AsyncMock(),
+        ),
+        patch(
             "app.services.audit_export.bundle.build_audit_engagement_context",
             new=AsyncMock(return_value=ctx),
         ),

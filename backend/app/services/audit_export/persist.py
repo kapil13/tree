@@ -62,6 +62,7 @@ async def persist_audit_export(
         file_count=len(manifest_files),
         zip_size_bytes=zip_size_bytes,
         signature_key_id=signature.key_id if signature else None,
+        signature_json=signature.to_dict() if signature else None,
         manifest_json=bundle_manifest,
         generated_at=datetime.now(UTC),
         created_by_user_id=created_by_user_id,

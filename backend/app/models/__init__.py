@@ -19,9 +19,14 @@ from app.models.audit_engagement import (
     PlausibilityAssessment,
 )
 from app.models.audit_evidence_graph import AuditEvidenceEdge, AuditEvidenceNode
+from app.models.audit_export_artifact import AuditExportArtifact, AuditExportVerification
 from app.models.audit_export_entity import AuditExport, AuditExportFile
 from app.models.audit_finality import AuditPolicyEvaluation, AuditVerificationSnapshot
 from app.models.audit_methodology import AuditMethodology, AuditRuleVersion, AuditThresholdSet
+from app.models.audit_methodology_governance import (
+    AuditEngagementMethodologyOverride,
+    AuditMethodologyChangeLog,
+)
 from app.models.audit_portfolio_ops import (
     AuditAuditorWorkspaceView,
     AuditBenchmarkBaseline,
@@ -128,6 +133,10 @@ __all__ = [
     "AuditVerificationSnapshot",
     "AuditExport",
     "AuditExportFile",
+    "AuditExportArtifact",
+    "AuditExportVerification",
+    "AuditEngagementMethodologyOverride",
+    "AuditMethodologyChangeLog",
     "AuditEvidenceNode",
     "AuditEvidenceEdge",
     "AuditReconciliationRun",

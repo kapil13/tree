@@ -43,6 +43,14 @@ from app.schemas.audit_engagement import (
 )
 from app.schemas.audit_export import (
     AuditExportCreateOut,
+    AuditExportDetailOut,
+    AuditExportListItemOut,
+    AuditExportVerificationOut,
+    AuditMethodologyBindingOut,
+    AuditMethodologyBindingUpdate,
+    AuditMethodologyBundleOut,
+    AuditMethodologyChangeLogOut,
+    AuditMethodologyOut,
     ExportReadinessOut,
     ExportSummaryOut,
     ReconciliationOut,
@@ -1687,6 +1695,8 @@ async def get_audit_export_summary(
     db: DB,
 ) -> ExportSummaryOut:
     from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.queries import export_to_dict, latest_export_for_engagement
+    from app.services.audit_governance.access import require_audit_engagement_read
 
     row = await db.get(AuditEngagement, engagement_id)
     if row is None:
@@ -1694,28 +1704,321 @@ async def get_audit_export_summary(
     project = await load_project(row.project_id, user, db)
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
-    meta = row.metadata_ or {}
-    sha = meta.get("export_bundle_sha256")
-    if not sha:
+    export_row = await latest_export_for_engagement(db, engagement_id=row.id)
+    if export_row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_generated")
 
+    payload = export_to_dict(export_row)
     return ExportSummaryOut(
         engagement_id=str(row.id),
-        cycle_id=meta.get("export_cycle_id"),
-        export_id=meta.get("export_id"),
+        cycle_id=payload["cycle_id"],
+        export_id=payload["export_id"],
         project_id=str(project.id),
         project_code=project.code,
-        file_count=int(meta.get("export_file_count") or 0),
-        bundle_sha256=sha,
-        content_manifest_hash=meta.get("content_manifest_hash"),
-        unsigned_bundle_hash=sha,
-        package_sha256=sha,
-        zip_size_bytes=int(meta.get("export_zip_size_bytes") or 0),
-        signed=True,
-        signature_key_id=meta.get("export_signature_key_id"),
+        file_count=payload["file_count"],
+        bundle_sha256=payload["unsigned_bundle_hash"],
+        content_manifest_hash=payload["content_manifest_hash"],
+        unsigned_bundle_hash=payload["unsigned_bundle_hash"],
+        package_sha256=payload["package_sha256"],
+        zip_size_bytes=payload["zip_size_bytes"],
+        signed=payload["signed"],
+        signature_key_id=payload["signature_key_id"],
         status=row.status,
     )
+
+
+@router.get("/{engagement_id}/exports", response_model=list[AuditExportListItemOut])
+async def list_audit_exports(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    limit: int = 20,
+) -> list[AuditExportListItemOut]:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.queries import export_to_dict, list_exports_for_engagement
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    exports = await list_exports_for_engagement(db, engagement_id=row.id, limit=min(limit, 50))
+    return [AuditExportListItemOut.model_validate(export_to_dict(e)) for e in exports]
+
+
+@router.get("/{engagement_id}/exports/{export_id}", response_model=AuditExportDetailOut)
+async def get_audit_export_detail(
+    engagement_id: uuid.UUID,
+    export_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExportDetailOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.queries import export_to_dict, get_export_for_engagement
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    export_row = await get_export_for_engagement(db, engagement_id=row.id, export_id=export_id)
+    if export_row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_found")
+    return AuditExportDetailOut.model_validate(export_to_dict(export_row, include_files=True))
+
+
+@router.get("/{engagement_id}/exports/{export_id}/download")
+async def download_frozen_audit_export(
+    engagement_id: uuid.UUID,
+    export_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> Response:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.artifacts import get_export_artifact_bytes
+    from app.services.audit_export.queries import get_export_for_engagement
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    export_row = await get_export_for_engagement(db, engagement_id=row.id, export_id=export_id)
+    if export_row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_found")
+
+    zip_bytes = await get_export_artifact_bytes(db, export_id=export_row.id)
+    if zip_bytes is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_artifact_not_found")
+
+    safe_code = project.code.replace("/", "-")
+    headers = {
+        "Content-Disposition": f'attachment; filename="{safe_code}-estate-watch-audit-{export_id}.zip"',
+        "X-BYOT-Export-Id": str(export_row.id),
+        "X-BYOT-Package-SHA256": export_row.package_sha256,
+    }
+    if export_row.signature_json:
+        headers["X-BYOT-Evidence-SHA256"] = export_row.signature_json.get("zip_sha256", "")
+        headers["X-BYOT-Evidence-Signature"] = export_row.signature_json.get("signature_b64", "")
+        headers["X-BYOT-Evidence-Key-Id"] = export_row.signature_key_id or ""
+    return Response(content=zip_bytes, media_type="application/zip", headers=headers)
+
+
+@router.post(
+    "/{engagement_id}/exports/{export_id}/verify",
+    response_model=AuditExportVerificationOut,
+)
+async def verify_audit_export(
+    engagement_id: uuid.UUID,
+    export_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExportVerificationOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_export.queries import get_export_for_engagement
+    from app.services.audit_export.verify_export import verify_frozen_export
+    from app.services.audit_governance.access import require_audit_engagement_verify
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_verify(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    export_row = await get_export_for_engagement(db, engagement_id=row.id, export_id=export_id)
+    if export_row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_found")
+
+    verification = await verify_frozen_export(db, export=export_row, verified_by_user_id=user.id)
+    await db.commit()
+    return AuditExportVerificationOut(
+        export_id=str(export_row.id),
+        valid=verification.valid,
+        verified_at=verification.verified_at.isoformat(),
+        details=verification.details,
+    )
+
+
+@router.get("/methodologies", response_model=list[AuditMethodologyOut])
+async def list_audit_methodologies(user: CurrentUser, db: DB) -> list[AuditMethodologyOut]:
+    from app.services.audit_governance.methodology_resolver import list_methodologies
+
+    rows = await list_methodologies(db)
+    return [
+        AuditMethodologyOut(
+            version=r.version,
+            name=r.name,
+            description=r.description,
+            status=r.status,
+            effective_from=r.effective_from.isoformat() if r.effective_from else None,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/methodologies/{version}", response_model=AuditMethodologyBundleOut)
+async def get_audit_methodology_bundle(
+    version: str,
+    user: CurrentUser,
+    db: DB,
+) -> AuditMethodologyBundleOut:
+    from app.services.audit_governance.methodology_resolver import get_methodology_bundle
+
+    bundle = await get_methodology_bundle(db, version)
+    if bundle is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="methodology_not_found")
+    return AuditMethodologyBundleOut.model_validate(bundle)
+
+
+@router.get("/{engagement_id}/methodology", response_model=AuditMethodologyBindingOut)
+async def get_engagement_methodology_binding(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditMethodologyBindingOut:
+    from sqlalchemy import select
+
+    from app.models.audit_engagement import AuditEngagement
+    from app.models.audit_methodology_governance import AuditEngagementMethodologyOverride
+    from app.services.audit_governance.access import require_audit_engagement_read
+    from app.services.audit_governance.methodology_resolver import (
+        resolve_engagement_methodology_version,
+    )
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    version = await resolve_engagement_methodology_version(db, row)
+    override = (
+        await db.execute(
+            select(AuditEngagementMethodologyOverride).where(
+                AuditEngagementMethodologyOverride.engagement_id == row.id
+            )
+        )
+    ).scalar_one_or_none()
+    return AuditMethodologyBindingOut(
+        engagement_id=str(row.id),
+        methodology_version=version,
+        threshold_overrides=override.threshold_overrides if override else {},
+    )
+
+
+@router.put("/{engagement_id}/methodology", response_model=AuditMethodologyBindingOut)
+async def update_engagement_methodology_binding(
+    engagement_id: uuid.UUID,
+    body: AuditMethodologyBindingUpdate,
+    user: WriteAccess,
+    db: DB,
+) -> AuditMethodologyBindingOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_governance.access import require_audit_engagement_write
+    from app.services.audit_governance.methodology_resolver import bind_engagement_methodology
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_write(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    try:
+        binding = await bind_engagement_methodology(
+            db,
+            engagement=row,
+            methodology_version=body.methodology_version,
+            threshold_overrides=body.threshold_overrides,
+            changed_by_user_id=user.id,
+            reason=body.reason,
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="methodology_not_found") from None
+    await db.commit()
+    return AuditMethodologyBindingOut(
+        engagement_id=str(row.id),
+        methodology_version=binding.methodology_version,
+        threshold_overrides=binding.threshold_overrides,
+    )
+
+
+@router.get(
+    "/{engagement_id}/methodology/change-log",
+    response_model=list[AuditMethodologyChangeLogOut],
+)
+async def get_engagement_methodology_change_log(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> list[AuditMethodologyChangeLogOut]:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_governance.access import require_audit_engagement_read
+    from app.services.audit_governance.methodology_resolver import list_methodology_change_log
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    logs = await list_methodology_change_log(db, engagement_id=row.id)
+    return [
+        AuditMethodologyChangeLogOut(
+            id=str(log.id),
+            engagement_id=str(log.engagement_id),
+            from_version=log.from_version,
+            to_version=log.to_version,
+            reason=log.reason,
+            changed_at=log.changed_at.isoformat(),
+        )
+        for log in logs
+    ]
 
 
 @router.get("/{engagement_id}/integrity-bridge", response_model=AuditIntegrityBridgeOut)

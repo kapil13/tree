@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -24,12 +25,19 @@ def snapshot_hash(payload: dict[str, Any]) -> str:
 async def get_verification_snapshot_by_digest(
     db: AsyncSession, digest: str
 ) -> AuditVerificationSnapshot | None:
+    from app.models.audit_export_entity import AuditExport
+
     return (
         await db.execute(
-            select(AuditVerificationSnapshot).where(
+            select(AuditVerificationSnapshot)
+            .outerjoin(AuditExport, AuditVerificationSnapshot.export_id == AuditExport.id)
+            .where(
                 (AuditVerificationSnapshot.attestation_hash == digest)
                 | (AuditVerificationSnapshot.snapshot_hash == digest)
                 | (AuditVerificationSnapshot.export_hash == digest)
+                | (AuditExport.package_sha256 == digest)
+                | (AuditExport.unsigned_bundle_hash == digest)
+                | (AuditExport.content_manifest_hash == digest)
             )
         )
     ).scalar_one_or_none()
@@ -45,6 +53,7 @@ async def create_verification_snapshot(
     export_hash: str | None,
     content_manifest_hash: str | None,
     snapshot_body: dict[str, Any],
+    export_id: uuid.UUID | None = None,
 ) -> AuditVerificationSnapshot:
     core = {
         k: v
@@ -57,6 +66,7 @@ async def create_verification_snapshot(
         engagement_id=engagement.id,
         attestation_hash=attestation_hash,
         export_hash=export_hash,
+        export_id=export_id,
         content_manifest_hash=content_manifest_hash,
         snapshot_json=snapshot_body,
         snapshot_hash=body_hash,
