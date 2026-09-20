@@ -115,6 +115,7 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
         "gbif": gbif,
         "ai_analysis": _ai_pipeline_status(),
         "ai_assistant": _assistant_chat_status(),
+        "audit_explain": _assistant_chat_status(),
         "tree_satellite_ndvi": _tree_satellite_status(),
         "sentinel_hub": {
             "status": "configured" if sentinel_configured else "not_configured",

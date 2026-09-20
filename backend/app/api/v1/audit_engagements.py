@@ -41,6 +41,7 @@ from app.schemas.audit_engagement import (
     PlausibilityAssessmentOut,
     WorkingClaimUpdate,
 )
+from app.schemas.audit_explain import AuditExplainOut, AuditReconciliationExplainIn
 from app.schemas.audit_export import (
     AuditExportCreateOut,
     AuditExportDetailOut,
@@ -1350,6 +1351,171 @@ async def compute_engagement_reconciliation(
         block_count=run.block_count,
         computed_at=run.computed_at,
     )
+
+
+@router.post("/{engagement_id}/anomalies/{anomaly_id}/explain", response_model=AuditExplainOut)
+async def explain_audit_anomaly(
+    engagement_id: uuid.UUID,
+    anomaly_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExplainOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_explain.service import (
+        explain_anomaly_for_engagement,
+        explain_run_to_dict,
+    )
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    try:
+        run = await explain_anomaly_for_engagement(
+            db, engagement=row, anomaly_id=anomaly_id, created_by_user_id=user.id
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="anomaly_not_found") from None
+    await db.commit()
+    return AuditExplainOut.model_validate(explain_run_to_dict(run))
+
+
+@router.post("/{engagement_id}/reconciliation/explain", response_model=AuditExplainOut)
+async def explain_audit_reconciliation(
+    engagement_id: uuid.UUID,
+    body: AuditReconciliationExplainIn,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExplainOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_explain.service import (
+        explain_reconciliation_for_engagement,
+        explain_run_to_dict,
+    )
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    boundary_id = uuid.UUID(body.boundary_version_id) if body.boundary_version_id else None
+    try:
+        run = await explain_reconciliation_for_engagement(
+            db,
+            engagement=row,
+            boundary_version_id=boundary_id,
+            created_by_user_id=user.id,
+        )
+    except ValueError as exc:
+        detail = str(exc)
+        if detail == "reconciliation_block_not_found":
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail=detail) from exc
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="reconciliation_not_found") from exc
+    await db.commit()
+    return AuditExplainOut.model_validate(explain_run_to_dict(run))
+
+
+@router.post("/{engagement_id}/evidence-graph/explain", response_model=AuditExplainOut)
+async def explain_audit_evidence_graph(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExplainOut:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_explain.service import (
+        explain_evidence_graph_for_engagement,
+        explain_run_to_dict,
+    )
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    try:
+        run = await explain_evidence_graph_for_engagement(
+            db, engagement=row, created_by_user_id=user.id
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="audit_cycle_not_found") from None
+    await db.commit()
+    return AuditExplainOut.model_validate(explain_run_to_dict(run))
+
+
+@router.post("/cross-estate-patterns/{pattern_id}/explain", response_model=AuditExplainOut)
+async def explain_cross_estate_pattern(
+    pattern_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> AuditExplainOut:
+    from app.services.audit_explain.service import (
+        explain_cross_estate_pattern_for_org,
+        explain_run_to_dict,
+    )
+
+    org_id = _require_org_id(user)
+    try:
+        run = await explain_cross_estate_pattern_for_org(
+            db,
+            organization_id=org_id,
+            pattern_id=pattern_id,
+            created_by_user_id=user.id,
+        )
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="pattern_not_found") from None
+    await db.commit()
+    return AuditExplainOut.model_validate(explain_run_to_dict(run))
+
+
+@router.get("/{engagement_id}/explain-runs", response_model=list[AuditExplainOut])
+async def list_engagement_explain_runs(
+    engagement_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+    limit: int = 20,
+) -> list[AuditExplainOut]:
+    from app.models.audit_engagement import AuditEngagement
+    from app.services.audit_explain.service import (
+        explain_run_to_dict,
+        list_explain_runs_for_engagement,
+    )
+    from app.services.audit_governance.access import require_audit_engagement_read
+
+    row = await db.get(AuditEngagement, engagement_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="engagement_not_found")
+    project = await load_project(row.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    try:
+        await require_audit_engagement_read(user, project, db)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+    runs = await list_explain_runs_for_engagement(db, engagement_id=row.id, limit=min(limit, 50))
+    return [AuditExplainOut.model_validate(explain_run_to_dict(r)) for r in runs]
 
 
 @router.get("/{engagement_id}/evidence-graph", response_model=EvidenceGraphOut)
