@@ -79,3 +79,71 @@ class AuditExportCreateOut(BaseModel):
     signed: bool
     signature_key_id: str | None = None
     status: str
+
+
+class AuditExportListItemOut(BaseModel):
+    export_id: str
+    cycle_id: str
+    engagement_id: str
+    status: str
+    export_version: str
+    methodology_version: str | None = None
+    content_manifest_hash: str
+    unsigned_bundle_hash: str
+    package_sha256: str
+    file_count: int
+    zip_size_bytes: int
+    signature_key_id: str | None = None
+    signed: bool
+    frozen_at: str | None = None
+    generated_at: str | None = None
+
+
+class AuditExportDetailOut(AuditExportListItemOut):
+    files: list[dict] = Field(default_factory=list)
+
+
+class AuditExportVerificationOut(BaseModel):
+    export_id: str
+    valid: bool
+    verified_at: str
+    details: dict = Field(default_factory=dict)
+
+
+class AuditMethodologyOut(BaseModel):
+    version: str
+    name: str
+    description: str
+    status: str
+    effective_from: str | None = None
+
+
+class AuditMethodologyBundleOut(BaseModel):
+    version: str
+    name: str
+    description: str
+    status: str
+    effective_from: str | None = None
+    rules: list[dict] = Field(default_factory=list)
+    threshold_sets: list[dict] = Field(default_factory=list)
+
+
+class AuditMethodologyBindingOut(BaseModel):
+    engagement_id: str
+    methodology_version: str
+    threshold_overrides: dict = Field(default_factory=dict)
+
+
+class AuditMethodologyBindingUpdate(BaseModel):
+    methodology_version: str
+    threshold_overrides: dict = Field(default_factory=dict)
+    reason: str = ""
+
+
+class AuditMethodologyChangeLogOut(BaseModel):
+    id: str
+    engagement_id: str
+    from_version: str | None = None
+    to_version: str
+    reason: str
+    changed_at: str

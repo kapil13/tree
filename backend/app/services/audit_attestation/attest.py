@@ -189,6 +189,9 @@ async def _finalize_attestation(
         snapshot_body = await build_audit_engagement_verification_payload(
             db, engagement, project, cycle_id=cycle_id
         )
+        from app.services.audit_export.queries import latest_export_for_engagement
+
+        latest_export = await latest_export_for_engagement(db, engagement_id=engagement.id)
         await create_verification_snapshot(
             db,
             engagement=engagement,
@@ -198,6 +201,7 @@ async def _finalize_attestation(
             export_hash=export_sha,
             content_manifest_hash=meta.get("content_manifest_hash"),
             snapshot_body=snapshot_body,
+            export_id=latest_export.id if latest_export else None,
         )
 
     await emit_audit_webhook(

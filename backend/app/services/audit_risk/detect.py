@@ -30,6 +30,7 @@ def detect_block_anomalies(
     plausibility_verdict: str | None,
     gis_block_issues: list[dict[str, Any]],
     trees_claimed: int | None,
+    ndvi_acute_drop_threshold: float | None = None,
 ) -> list[dict[str, Any]]:
     """Return list of anomaly dicts for one block."""
     anomalies: list[dict[str, Any]] = []
@@ -45,7 +46,8 @@ def detect_block_anomalies(
     t0 = phase_ndvi.get("t0")
     change_vs_t0 = (current - t0) if current is not None and t0 is not None else None
 
-    if change_vs_t0 is not None and change_vs_t0 <= NDVI_ACUTE_DROP:
+    drop_threshold = ndvi_acute_drop_threshold if ndvi_acute_drop_threshold is not None else NDVI_ACUTE_DROP
+    if change_vs_t0 is not None and change_vs_t0 <= drop_threshold:
         severity = "critical" if change_vs_t0 <= -0.18 else "high"
         anomalies.append(
             {

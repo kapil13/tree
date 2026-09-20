@@ -203,6 +203,11 @@ async def _run_risk_scan_for_cycle(
     trees_claimed = working_claim.get("trees_claimed")
     trees_int = int(trees_claimed) if trees_claimed is not None else None
 
+    from app.services.audit_governance.methodology_resolver import resolve_thresholds
+
+    thresholds = await resolve_thresholds(db, engagement=engagement)
+    ndvi_drop = float(thresholds.get("ndvi_acute_drop", -0.12))
+
     detected_at = datetime.now(UTC)
     all_anomalies: list[AuditAnomalyEvent] = []
     risk_rows: list[AuditRiskAssessment] = []
@@ -217,6 +222,7 @@ async def _run_risk_scan_for_cycle(
             confidence_score=conf.confidence_score if conf else None,
             plausibility_verdict=plaus.verdict if plaus else None,
             gis_block_issues=_gis_issues_for_block(gis_run, bv.id),
+            ndvi_acute_drop_threshold=ndvi_drop,
             trees_claimed=trees_int,
         )
 

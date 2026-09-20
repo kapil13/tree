@@ -40,3 +40,14 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - **P13** — Auditor workspace multi-estate queue with saved filter presets (`audit_auditor_workspace_views`); `GET /auditor-workspace`, `POST/GET /auditor-workspace/views`.
 - **P15–P16** — Report templates (`audit_report_templates`), digest schedules/runs (`audit_digest_schedules`, `audit_digest_runs`); `GET /report-templates`, `POST/GET /digest-schedules`, `POST /digest-schedules/{id}/run`, `GET /digest-runs`.
 - Portfolio summary and field plot queue now scope plots to **active sampling plans** only (Wave B).
+
+## Wave D export & methodology depth (migration `0085`)
+
+- **P11** — Frozen export artifacts (`audit_export_artifacts`), persisted `signature_json` / `frozen_at` on `audit_exports`; `GET /exports`, `GET /exports/{id}`, `GET /exports/{id}/download`.
+- **P12** — Export signature verification records (`audit_export_verifications`); `POST /exports/{id}/verify`.
+- **P17–P21** — Seeded rule versions and threshold sets; runtime resolver; engagement methodology bindings (`audit_engagement_methodology_overrides`) and change log (`audit_methodology_change_log`); `GET /methodologies`, `GET /methodologies/{version}`, `GET/PUT /{id}/methodology`, `GET /{id}/methodology/change-log`.
+- **P18** — Risk scan reads `ndvi_acute_drop` thresholds from the methodology registry (with engagement overrides).
+- **P22** — Expanded audit RBAC (`can_read/write/verify_audit_engagement`) for org viewer/verifier roles.
+- **P23** — Attestation verification snapshots bind `export_id` to frozen export records.
+- **P24** — Public verify resolves digests via `audit_exports.package_sha256` / `unsigned_bundle_hash`.
+- `GET /export/summary` reads the latest `audit_exports` row instead of engagement metadata only.
