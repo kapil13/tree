@@ -19,9 +19,11 @@ from app.schemas.audit_attestation import (
 from app.schemas.audit_confidence import ConfidenceComputeOut, ConfidenceMapOut
 from app.schemas.audit_cycle import (
     AuditCycleCreate,
-    AuditCycleOut as KernelAuditCycleOut,
     AuditCycleTransition,
     ReauditCycleCreate,
+)
+from app.schemas.audit_cycle import (
+    AuditCycleOut as KernelAuditCycleOut,
 )
 from app.schemas.audit_engagement import (
     AuditEngagementDetailOut,

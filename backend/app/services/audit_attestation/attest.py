@@ -17,9 +17,9 @@ from app.models.audit_attestation import (
     AuditReviewerAttestation,
 )
 from app.models.audit_engagement import AuditEngagement
+from app.services.audit_attestation.review import anomaly_review_queue
 from app.services.audit_cycles.queries import get_current_cycle
 from app.services.audit_governance.mutability import assert_cycle_can_attest
-from app.services.audit_attestation.review import anomaly_review_queue
 from app.services.webhooks.audit_events import emit_audit_webhook
 
 VALID_VERDICTS = {"approved", "rejected", "conditional"}

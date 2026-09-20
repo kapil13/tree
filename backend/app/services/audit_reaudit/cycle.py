@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.audit_engagement import AuditEngagement
 from app.services.audit_cycles.service import start_reaudit_cycle as start_kernel_reaudit_cycle
 
+
 def cycle_summary(engagement: AuditEngagement) -> dict[str, Any]:
     meta = engagement.metadata_ or {}
     return {
