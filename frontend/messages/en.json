@@ -493,7 +493,9 @@
     "retry": "Retry",
     "phaseNavAria": "Audit phases",
     "phaseLocked": "{phase} unlocks after you complete earlier pipeline steps.",
+    "phaseHiddenForRole": "This phase is outside your {mode} workspace. Switch to a visible step to continue.",
     "goToIntake": "Go to current step",
+    "goToCurrentStep": "Go to current step",
     "phase": {
       "intake": "Intake",
       "satellite": "Satellite",
@@ -535,7 +537,23 @@
     "linkMobileDesc": "Offline visit queue on Field ops",
     "advanced": {
       "title": "Advanced tools",
-      "desc": "Integrity bridge, methodology, explain history, re-audit, and cross-module links"
+      "desc": "Integrity bridge, methodology, explain history, re-audit, and cross-module links",
+      "reviewDesc": "Methodology, explain history, integrity bridge, and evidence cross-links for reviewer sign-off"
+    },
+    "modes": {
+      "field": {
+        "title": "Field verifier view",
+        "desc": "Focused on plot visits and reconciliation checks. Open the field queue to record evidence on site.",
+        "pageDesc": "Record field plot visits and reconciliation checks for this estate engagement.",
+        "openQueue": "Open field queue"
+      },
+      "review": {
+        "title": "Reviewer view",
+        "desc": "Read-only review workspace highlighting risk, reconciliation, export, and attestation phases."
+      },
+      "full": {
+        "title": "Full audit workspace"
+      }
     },
     "nextStep": {
       "title": "Recommended next step",
@@ -1282,6 +1300,7 @@
     },
     "audit": {
       "intro": "Estate Watch command center — engagement status, field plot queue, and attestation readiness across estate monitoring programmes.",
+      "fieldIntro": "Your field queue and plot visit shortcuts — record verifier evidence from web or mobile sync.",
       "empty": "No estate monitoring projects in your portfolio yet. Estate Watch audit appears here when programmes use the estate_monitoring scheme.",
       "kpi": {
         "engagements": "Active engagements",
@@ -1296,6 +1315,8 @@
       },
       "engagements": {
         "title": "Priority engagements",
+        "reviewTitle": "Review queue",
+        "reviewDesc": "Engagements ready for export review or attestation, sorted by urgency",
         "desc": "Projects needing field visits, export review, or attestation",
         "empty": "No engagements need immediate action.",
         "openFieldOps": "Open field queue",
