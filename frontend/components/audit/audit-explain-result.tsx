@@ -8,9 +8,11 @@ import { cn } from "@/lib/cn";
 export function AuditExplainResult({
   run,
   className,
+  contextLabel,
 }: {
   run: AuditExplainRun;
   className?: string;
+  contextLabel?: string;
 }) {
   const t = useTranslations("auditExplain");
   const answer = run.answer?.trim();
@@ -18,6 +20,7 @@ export function AuditExplainResult({
   if (!answer) {
     return (
       <div className={cn("rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900", className)}>
+        {contextLabel ? <p className="mb-2 font-medium">{contextLabel}</p> : null}
         {t("emptyAnswer")}
       </div>
     );
@@ -30,6 +33,9 @@ export function AuditExplainResult({
         className,
       )}
     >
+      {contextLabel ? (
+        <p className="mb-2 text-sm font-semibold text-stone-800 dark:text-stone-100">{contextLabel}</p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
         <Sparkles className="h-3.5 w-3.5 text-sky-600" aria-hidden />
         <span className="font-medium uppercase tracking-wide text-sky-800 dark:text-sky-300">

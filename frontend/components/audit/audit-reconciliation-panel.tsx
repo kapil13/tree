@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { GitCompare, Sparkles } from "lucide-react";
@@ -36,6 +36,10 @@ type ReconciliationBlock = {
   aligned?: boolean | null;
 };
 
+type ExplainTarget =
+  | { scope: "summary" }
+  | { scope: "block"; boundaryVersionId: string; boundaryName: string };
+
 export function AuditReconciliationPanel({
   engagementId,
   engagementStatus,
@@ -46,6 +50,8 @@ export function AuditReconciliationPanel({
   const t = useTranslations("auditReconciliation");
   const qc = useQueryClient();
   const [latestExplain, setLatestExplain] = useState<AuditExplainRun | null>(null);
+  const [explainTarget, setExplainTarget] = useState<ExplainTarget | null>(null);
+  const explainResultRef = useRef<HTMLDivElement | null>(null);
 
   const unlocked =
     engagementStatus === "sampling_planned" ||
@@ -72,18 +78,34 @@ export function AuditReconciliationPanel({
     mutationFn: () => auditEngagements.explainReconciliation(engagementId),
     onSuccess: (run) => {
       setLatestExplain(run);
+      setExplainTarget({ scope: "summary" });
       void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
     },
   });
 
   const explainBlock = useMutation({
-    mutationFn: (boundaryVersionId: string) =>
-      auditEngagements.explainReconciliation(engagementId, boundaryVersionId),
-    onSuccess: (run) => {
+    mutationFn: (input: { boundaryVersionId: string; boundaryName: string }) =>
+      auditEngagements.explainReconciliation(engagementId, input.boundaryVersionId),
+    onSuccess: (run, input) => {
       setLatestExplain(run);
+      setExplainTarget({
+        scope: "block",
+        boundaryVersionId: input.boundaryVersionId,
+        boundaryName: input.boundaryName,
+      });
       void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
     },
   });
+
+  const explaining =
+    explainAll.isPending ||
+    explainBlock.isPending;
+
+  useEffect(() => {
+    if (latestExplain && explainResultRef.current) {
+      explainResultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [latestExplain, explainTarget]);
 
   if (!unlocked) {
     return <AuditLockedSection title={t("title")} message={t("fieldRequired")} />;
@@ -95,6 +117,12 @@ export function AuditReconciliationPanel({
 
   const blocks = (data?.blocks ?? []) as ReconciliationBlock[];
   const lastComputedAt = compute.data?.computed_at;
+  const explainContextLabel =
+    explainTarget?.scope === "block"
+      ? t("explainForBlock", { block: explainTarget.boundaryName })
+      : explainTarget?.scope === "summary"
+        ? t("explainForSummary")
+        : undefined;
 
   return (
     <div className="space-y-6">
@@ -111,7 +139,7 @@ export function AuditReconciliationPanel({
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-2 text-sm"
-            disabled={explainAll.isPending || blocks.length === 0}
+            disabled={explaining || blocks.length === 0}
             onClick={() => explainAll.mutate()}
           >
             <Sparkles className="h-4 w-4" aria-hidden />
@@ -126,14 +154,6 @@ export function AuditReconciliationPanel({
             <p className="text-sm text-rose-700">{errorMessage(compute.error)}</p>
           ) : null}
         </div>
-
-        {latestExplain ? <AuditExplainResult run={latestExplain} className="mt-4" /> : null}
-        {explainAll.isError ? (
-          <p className="text-sm text-rose-700">{errorMessage(explainAll.error)}</p>
-        ) : null}
-        {explainBlock.isError ? (
-          <p className="text-sm text-rose-700">{errorMessage(explainBlock.error)}</p>
-        ) : null}
 
         {data && (
           <div className="flex flex-wrap gap-2 text-xs">
@@ -165,68 +185,91 @@ export function AuditReconciliationPanel({
                 </tr>
               </thead>
               <tbody>
-                {blocks.map((block) => (
-                  <tr
-                    key={block.boundary_version_id}
-                    className="border-t border-stone-100 dark:border-stone-800"
-                  >
-                    <td className="px-3 py-2 font-medium">{block.boundary_name}</td>
-                    <td className="px-3 py-2">
-                      {block.confidence_grade ? (
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-xs ring-1",
-                            GRADE_STYLES[block.confidence_grade] ?? GRADE_STYLES.grey,
-                          )}
-                        >
-                          {block.confidence_grade}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {block.field_grade ? (
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-0.5 text-xs ring-1",
-                            GRADE_STYLES[block.field_grade] ?? GRADE_STYLES.grey,
-                          )}
-                        >
-                          {block.field_grade}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-stone-600">{block.visit_count}</td>
-                    <td
-                      className={cn(
-                        "px-3 py-2 text-xs font-medium capitalize",
-                        STATUS_STYLES[block.reconciliation] ?? "text-stone-600",
-                      )}
+                {blocks.map((block) => {
+                  const isExplainingThisBlock =
+                    explainBlock.isPending &&
+                    explainBlock.variables?.boundaryVersionId === block.boundary_version_id;
+
+                  return (
+                    <tr
+                      key={block.boundary_version_id}
+                      className="border-t border-stone-100 dark:border-stone-800"
                     >
-                      {block.reconciliation.replaceAll("_", " ")}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        type="button"
-                        className="text-xs text-forest-700 hover:underline dark:text-forest-300"
-                        disabled={
-                          explainBlock.isPending &&
-                          explainBlock.variables === block.boundary_version_id
-                        }
-                        onClick={() => explainBlock.mutate(block.boundary_version_id)}
+                      <td className="px-3 py-2 font-medium">{block.boundary_name}</td>
+                      <td className="px-3 py-2">
+                        {block.confidence_grade ? (
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-xs ring-1",
+                              GRADE_STYLES[block.confidence_grade] ?? GRADE_STYLES.grey,
+                            )}
+                          >
+                            {block.confidence_grade}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {block.field_grade ? (
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-xs ring-1",
+                              GRADE_STYLES[block.field_grade] ?? GRADE_STYLES.grey,
+                            )}
+                          >
+                            {block.field_grade}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-stone-600">{block.visit_count}</td>
+                      <td
+                        className={cn(
+                          "px-3 py-2 text-xs font-medium capitalize",
+                          STATUS_STYLES[block.reconciliation] ?? "text-stone-600",
+                        )}
                       >
-                        {t("explainBlock")}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {block.reconciliation.replaceAll("_", " ")}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          className="text-xs text-forest-700 hover:underline disabled:opacity-60 dark:text-forest-300"
+                          disabled={explaining}
+                          onClick={() =>
+                            explainBlock.mutate({
+                              boundaryVersionId: block.boundary_version_id,
+                              boundaryName: block.boundary_name ?? block.boundary_version_id,
+                            })
+                          }
+                        >
+                          {isExplainingThisBlock ? t("explaining") : t("explainBlock")}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <div ref={explainResultRef} className="space-y-2">
+          {explaining ? (
+            <p className="text-sm text-stone-500" role="status">{t("explaining")}</p>
+          ) : null}
+          {latestExplain ? (
+            <AuditExplainResult run={latestExplain} contextLabel={explainContextLabel} />
+          ) : null}
+          {explainAll.isError ? (
+            <p className="text-sm text-rose-700">{errorMessage(explainAll.error)}</p>
+          ) : null}
+          {explainBlock.isError ? (
+            <p className="text-sm text-rose-700">{errorMessage(explainBlock.error)}</p>
+          ) : null}
+        </div>
 
       </AuditPanelShell>
 
