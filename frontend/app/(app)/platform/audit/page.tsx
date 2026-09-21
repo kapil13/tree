@@ -16,6 +16,8 @@ function formatDiff(diff: Record<string, unknown> | null): string {
 }
 
 export default function PlatformAuditPage() {
+  const t = useTranslations("platformAdmin.audit");
+  const tc = useTranslations("platformAdmin.common");
   const ta = useTranslations("platformAdmin.actions");
   const router = useRouter();
 
@@ -157,7 +159,7 @@ export default function PlatformAuditPage() {
       a.download = "platform-audit.csv";
       a.click();
       URL.revokeObjectURL(url);
-      notifyPlatformAction("Activity log exported.");
+      notifyPlatformAction(t("exported"));
     },
   });
 
@@ -167,10 +169,7 @@ export default function PlatformAuditPage() {
     <PlatformShell>
       <div className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            Platform-wide audit trail with actor names, structured diffs, and CSV export. Filters
-            sync to the URL for sharing and deep links.
-          </p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">{t("description")}</p>
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-2 text-xs"
@@ -178,13 +177,13 @@ export default function PlatformAuditPage() {
             onClick={() => exportCsv.mutate()}
           >
             <Download className="h-4 w-4" />
-            Export CSV
+            {t("exportCsv")}
           </button>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Action filter</span>
+            <span className="mb-1 block text-stone-600">{t("actionFilter")}</span>
             <select
               className="input w-full"
               value={actionPrefix}
@@ -193,19 +192,19 @@ export default function PlatformAuditPage() {
                 setPage(1);
               }}
             >
-              <option value="">All actions</option>
-              <option value="platform.">Platform actions</option>
-              <option value="cms.">CMS actions</option>
-              <option value="platform.user.">User changes</option>
-              <option value="platform.program_access.">Program access</option>
-              <option value="platform.user.impersonate">Impersonation</option>
+              <option value="">{t("allActions")}</option>
+              <option value="platform.">{t("platformActions")}</option>
+              <option value="cms.">{t("cmsActions")}</option>
+              <option value="platform.user.">{t("userChanges")}</option>
+              <option value="platform.program_access.">{t("programAccess")}</option>
+              <option value="platform.user.impersonate">{t("impersonation")}</option>
             </select>
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Search</span>
+            <span className="mb-1 block text-stone-600">{t("search")}</span>
             <input
               className="input w-full"
-              placeholder="Action, actor email, resource…"
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -214,10 +213,10 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Actor user ID</span>
+            <span className="mb-1 block text-stone-600">{t("actorUserId")}</span>
             <input
               className="input w-full font-mono text-xs"
-              placeholder="UUID"
+              placeholder={tc("uuidPlaceholder")}
               value={actorUserId}
               onChange={(e) => {
                 setActorUserId(e.target.value);
@@ -226,10 +225,10 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Organization ID</span>
+            <span className="mb-1 block text-stone-600">{t("organizationId")}</span>
             <input
               className="input w-full font-mono text-xs"
-              placeholder="UUID"
+              placeholder={tc("uuidPlaceholder")}
               value={organizationId}
               onChange={(e) => {
                 setOrganizationId(e.target.value);
@@ -238,10 +237,10 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Resource type</span>
+            <span className="mb-1 block text-stone-600">{t("resourceType")}</span>
             <input
               className="input w-full"
-              placeholder="e.g. user"
+              placeholder={t("resourceTypePlaceholder")}
               value={resourceType}
               onChange={(e) => {
                 setResourceType(e.target.value);
@@ -250,10 +249,10 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Resource ID</span>
+            <span className="mb-1 block text-stone-600">{t("resourceId")}</span>
             <input
               className="input w-full font-mono text-xs"
-              placeholder="UUID"
+              placeholder={tc("uuidPlaceholder")}
               value={resourceId}
               onChange={(e) => {
                 setResourceId(e.target.value);
@@ -262,7 +261,7 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">From</span>
+            <span className="mb-1 block text-stone-600">{t("from")}</span>
             <input
               type="date"
               className="input w-full"
@@ -274,7 +273,7 @@ export default function PlatformAuditPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">To</span>
+            <span className="mb-1 block text-stone-600">{t("to")}</span>
             <input
               type="date"
               className="input w-full"
@@ -288,11 +287,11 @@ export default function PlatformAuditPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-stone-500">Loading activity log…</p>
+          <p className="text-sm text-stone-500">{t("loading")}</p>
         ) : (
           <div className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900">
             {data?.items.length === 0 ? (
-              <p className="p-6 text-sm text-stone-500">No audit events match this filter.</p>
+              <p className="p-6 text-sm text-stone-500">{t("noEvents")}</p>
             ) : (
               data?.items.map((entry) => {
                 const expanded = expandedId === entry.id;
@@ -300,7 +299,7 @@ export default function PlatformAuditPage() {
                   entry.actor_email ||
                   entry.actor_full_name ||
                   entry.actor_user_id ||
-                  "System";
+                  tc("system");
                 return (
                   <div key={entry.id} className="px-4 py-3 text-sm">
                     <button
@@ -309,9 +308,7 @@ export default function PlatformAuditPage() {
                       onClick={() => setExpandedId(expanded ? null : entry.id)}
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium">
-                          {actionLabel(entry.action)}
-                        </div>
+                        <div className="font-medium">{actionLabel(entry.action)}</div>
                         <div className="mt-0.5 text-stone-600">
                           {entry.resource_type}
                           {entry.resource_id ? ` · ${entry.resource_id.slice(0, 8)}…` : ""}
@@ -349,7 +346,7 @@ export default function PlatformAuditPage() {
         {data && data.total > 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-stone-600">
             <span>
-              {data.total} events · page {data.page} of {totalPages}
+              {t("pagination", { total: data.total, page: data.page, totalPages })}
             </span>
             <div className="flex gap-2">
               <button
@@ -358,7 +355,7 @@ export default function PlatformAuditPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                Previous
+                {tc("previous")}
               </button>
               <button
                 type="button"
@@ -366,7 +363,7 @@ export default function PlatformAuditPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {tc("next")}
               </button>
             </div>
           </div>

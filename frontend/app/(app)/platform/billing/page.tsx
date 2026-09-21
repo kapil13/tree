@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Download, IndianRupee, Wallet, X } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -19,6 +20,8 @@ function formatInr(paise: number) {
 }
 
 export default function PlatformBillingPage() {
+  const t = useTranslations("platformAdmin.billing");
+  const tc = useTranslations("platformAdmin.common");
   const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -53,7 +56,7 @@ export default function PlatformBillingPage() {
     mutationFn: () => platformAdmin.exportPaymentOrders({ status: statusFilter || undefined }),
     onSuccess: (blob) => {
       downloadBlob(blob, "platform-payment-orders.csv");
-      notifyPlatformAction("Orders exported.");
+      notifyPlatformAction(t("notifyExported"));
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -69,7 +72,7 @@ export default function PlatformBillingPage() {
       setGrantOpen(false);
       setGrantReason("");
       notifyPlatformAction(
-        `Granted ${result.credits_delta} credits. New balance: ${result.new_balance}.`,
+        t("notifyGranted", { delta: result.credits_delta, balance: result.new_balance }),
         { audit: { actionPrefix: "platform.billing.grant_credits" } },
       );
       qc.invalidateQueries({ queryKey: ["platform-billing-summary"] });
@@ -86,9 +89,7 @@ export default function PlatformBillingPage() {
     <PlatformShell>
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            Payment orders, wallet balances, manual credit grants, and order drill-down.
-          </p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">{t("description")}</p>
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-2 text-xs"
@@ -96,58 +97,60 @@ export default function PlatformBillingPage() {
             onClick={() => exportCsv.mutate()}
           >
             <Download className="h-4 w-4" />
-            Export CSV
+            {tc("exportCsv")}
           </button>
         </div>
 
         {summaryLoading || !summary ? (
-          <p className="text-sm text-stone-500">Loading billing summary…</p>
+          <p className="text-sm text-stone-500">{t("loadingSummary")}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={IndianRupee}
-              label="Revenue (paid)"
+              label={t("revenuePaid")}
               value={formatInr(summary.revenue_paise)}
-              hint={`${summary.credits_sold} credits sold`}
+              hint={t("creditsSold", { count: summary.credits_sold })}
             />
             <StatCard
               icon={CreditCard}
-              label="Orders"
+              label={t("orders")}
               value={String(summary.orders.total)}
-              hint={`${summary.orders.paid} paid · ${summary.orders.pending} pending · ${summary.orders.failed} failed`}
+              hint={t("ordersHint", {
+                paid: summary.orders.paid,
+                pending: summary.orders.pending,
+                failed: summary.orders.failed,
+              })}
             />
             <StatCard
               icon={Wallet}
-              label="Wallet balances"
+              label={t("walletBalances")}
               value={String(summary.wallets.total_purchased_balance)}
-              hint={`${summary.wallets.users_with_balance} users with balance`}
+              hint={t("usersWithBalance", { count: summary.wallets.users_with_balance })}
             />
             <StatCard
               icon={CreditCard}
-              label="Payments gateway"
-              value={summary.payments_enabled ? "Enabled" : "Disabled"}
-              hint={summary.payments_enabled ? "Razorpay configured" : "Keys not set"}
+              label={t("paymentsGateway")}
+              value={summary.payments_enabled ? tc("enabled") : tc("disabled")}
+              hint={summary.payments_enabled ? t("razorpayConfigured") : t("keysNotSet")}
             />
           </div>
         )}
 
         <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-          <h2 className="text-lg font-semibold">Manual credit grant</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Adjust a user&apos;s purchased AI scan balance (positive to grant, negative to debit).
-          </p>
+          <h2 className="text-lg font-semibold">{t("manualGrantTitle")}</h2>
+          <p className="mt-1 text-sm text-stone-500">{t("manualGrantDesc")}</p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
             <label className="flex-1 text-sm">
-              <span className="mb-1 block text-stone-600">User ID</span>
+              <span className="mb-1 block text-stone-600">{t("userId")}</span>
               <input
                 className="input w-full font-mono text-xs"
-                placeholder="UUID"
+                placeholder={tc("uuidPlaceholder")}
                 value={grantUserId}
                 onChange={(e) => setGrantUserId(e.target.value)}
               />
             </label>
             <label className="text-sm">
-              <span className="mb-1 block text-stone-600">Credits</span>
+              <span className="mb-1 block text-stone-600">{t("credits")}</span>
               <input
                 className="input w-24"
                 type="number"
@@ -156,10 +159,10 @@ export default function PlatformBillingPage() {
               />
             </label>
             <label className="flex-[2] text-sm">
-              <span className="mb-1 block text-stone-600">Reason</span>
+              <span className="mb-1 block text-stone-600">{t("reason")}</span>
               <input
                 className="input w-full"
-                placeholder="Support ticket or promo"
+                placeholder={t("reasonPlaceholder")}
                 value={grantReason}
                 onChange={(e) => setGrantReason(e.target.value)}
               />
@@ -170,14 +173,14 @@ export default function PlatformBillingPage() {
               disabled={!grantUserId || !grantReason.trim() || grant.isPending}
               onClick={() => setGrantOpen(true)}
             >
-              Grant credits
+              {t("grantCredits")}
             </button>
           </div>
         </section>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">Recent orders</h2>
+            <h2 className="text-lg font-semibold">{t("recentOrders")}</h2>
             <select
               className="input text-sm"
               value={statusFilter}
@@ -186,26 +189,26 @@ export default function PlatformBillingPage() {
                 setPage(1);
               }}
             >
-              <option value="">All statuses</option>
-              <option value="paid">Paid</option>
-              <option value="created">Pending</option>
-              <option value="failed">Failed</option>
+              <option value="">{tc("allStatuses")}</option>
+              <option value="paid">{t("statusPaid")}</option>
+              <option value="created">{t("statusPending")}</option>
+              <option value="failed">{t("statusFailed")}</option>
             </select>
           </div>
 
           {ordersLoading ? (
-            <p className="text-sm text-stone-500">Loading orders…</p>
+            <p className="text-sm text-stone-500">{t("loadingOrders")}</p>
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
               <table className="min-w-full text-sm">
                 <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-950">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Customer</th>
-                    <th className="px-4 py-3 font-medium">SKU</th>
-                    <th className="px-4 py-3 font-medium">Amount</th>
-                    <th className="px-4 py-3 font-medium">Credits</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Created</th>
+                    <th className="px-4 py-3 font-medium">{t("tableCustomer")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableSku")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableAmount")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableCredits")}</th>
+                    <th className="px-4 py-3 font-medium">{tc("status")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableCreated")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,8 +228,7 @@ export default function PlatformBillingPage() {
           {orders && orders.total > 0 ? (
             <div className="flex items-center justify-between text-sm text-stone-600">
               <span>
-                {orders.total} order{orders.total !== 1 ? "s" : ""} · page {orders.page} of{" "}
-                {totalPages}
+                {t("pagination", { total: orders.total, page: orders.page, totalPages })}
               </span>
               <div className="flex gap-2">
                 <button
@@ -235,7 +237,7 @@ export default function PlatformBillingPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
-                  Previous
+                  {tc("previous")}
                 </button>
                 <button
                   type="button"
@@ -243,7 +245,7 @@ export default function PlatformBillingPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Next
+                  {tc("next")}
                 </button>
               </div>
             </div>
@@ -262,7 +264,7 @@ export default function PlatformBillingPage() {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold">Order detail</h2>
+                <h2 className="text-lg font-semibold">{t("orderDetail")}</h2>
                 <p className="text-xs text-stone-500">{orderDetail.id}</p>
               </div>
               <button type="button" className="btn-ghost p-1" onClick={() => setSelectedOrderId(null)}>
@@ -270,20 +272,32 @@ export default function PlatformBillingPage() {
               </button>
             </div>
             <dl className="space-y-2 text-sm">
-              <DetailRow label="Customer" value={`${orderDetail.user_full_name} (${orderDetail.user_email})`} />
-              <DetailRow label="Amount" value={formatInr(orderDetail.amount_paise)} />
-              <DetailRow label="SKU / credits" value={`${orderDetail.sku} · ${orderDetail.credits_granted}`} />
-              <DetailRow label="Status" value={orderDetail.status} />
-              <DetailRow label="Razorpay order" value={orderDetail.razorpay_order_id ?? "—"} />
-              <DetailRow label="Razorpay payment" value={orderDetail.razorpay_payment_id ?? "—"} />
-              <DetailRow label="Wallet balance" value={String(orderDetail.user_wallet_balance)} />
+              <DetailRow
+                label={t("detailCustomer")}
+                value={`${orderDetail.user_full_name} (${orderDetail.user_email})`}
+              />
+              <DetailRow label={t("detailAmount")} value={formatInr(orderDetail.amount_paise)} />
+              <DetailRow
+                label={t("detailSkuCredits")}
+                value={`${orderDetail.sku} · ${orderDetail.credits_granted}`}
+              />
+              <DetailRow label={tc("status")} value={orderDetail.status} />
+              <DetailRow label={t("detailRazorpayOrder")} value={orderDetail.razorpay_order_id ?? "—"} />
+              <DetailRow
+                label={t("detailRazorpayPayment")}
+                value={orderDetail.razorpay_payment_id ?? "—"}
+              />
+              <DetailRow
+                label={t("detailWalletBalance")}
+                value={String(orderDetail.user_wallet_balance)}
+              />
             </dl>
             <div className="mt-4 flex gap-2">
               <Link
                 href={`/platform/users/${orderDetail.user_id}`}
                 className="btn-secondary text-xs"
               >
-                View user
+                {t("viewUser")}
               </Link>
               <button
                 type="button"
@@ -293,12 +307,12 @@ export default function PlatformBillingPage() {
                   setGrantOpen(true);
                 }}
               >
-                Grant credits
+                {t("grantCredits")}
               </button>
             </div>
             {orderDetail.payment_events.length > 0 ? (
               <div className="mt-6">
-                <h3 className="text-sm font-semibold">Related payment events</h3>
+                <h3 className="text-sm font-semibold">{t("relatedPaymentEvents")}</h3>
                 <ul className="mt-2 space-y-2 text-xs text-stone-600">
                   {orderDetail.payment_events.map((ev) => (
                     <li key={ev.id} className="rounded-lg border border-stone-100 p-2 dark:border-stone-800">
@@ -315,9 +329,9 @@ export default function PlatformBillingPage() {
 
       <StepUpModal
         open={grantOpen}
-        title="Grant AI scan credits"
-        description="Re-enter your password to adjust this user's purchased scan balance."
-        confirmLabel="Grant credits"
+        title={t("stepUpGrantTitle")}
+        description={t("stepUpGrantDesc")}
+        confirmLabel={t("grantCredits")}
         busy={grant.isPending}
         onClose={() => setGrantOpen(false)}
         onConfirm={(password) => grant.mutate(password)}

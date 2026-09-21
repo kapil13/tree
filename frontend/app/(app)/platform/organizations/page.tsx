@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -15,6 +16,8 @@ import { downloadBlob } from "@/lib/download-blob";
 import type { PlatformHotkey } from "@/lib/use-platform-hotkeys";
 
 export default function PlatformOrganizationsPage() {
+  const t = useTranslations("platformAdmin.organizations");
+  const tc = useTranslations("platformAdmin.common");
   const qc = useQueryClient();
   const { user } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
@@ -64,7 +67,7 @@ export default function PlatformOrganizationsPage() {
         password_confirm,
       }),
     onSuccess: () => {
-      notifyPlatformAction("Organization updated.", {
+      notifyPlatformAction(t("notifyUpdated"), {
         audit: { actionPrefix: "platform.organization." },
       });
       setSuspendTarget(null);
@@ -93,7 +96,7 @@ export default function PlatformOrganizationsPage() {
       setSuspendTarget(null);
       setSelectedIds(new Set());
       notifyPlatformAction(
-        `Bulk action complete: ${result.processed} processed, ${result.skipped} skipped.`,
+        t("notifyBulkComplete", { processed: result.processed, skipped: result.skipped }),
         { audit: { actionPrefix: "platform.organization.bulk_" } },
       );
       qc.invalidateQueries({ queryKey: ["platform-organizations"] });
@@ -111,7 +114,7 @@ export default function PlatformOrganizationsPage() {
       }),
     onSuccess: (blob) => {
       downloadBlob(blob, "platform-organizations.csv");
-      notifyPlatformAction("Organizations exported.");
+      notifyPlatformAction(t("notifyExported"));
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -134,24 +137,21 @@ export default function PlatformOrganizationsPage() {
   };
 
   const pageHotkeys: PlatformHotkey[] = [
-    { keys: "/", description: "Focus search", handler: () => searchRef.current?.focus() },
+    { keys: "/", description: tc("focusSearch"), handler: () => searchRef.current?.focus() },
   ];
 
   return (
     <PlatformShell pageHotkeys={pageHotkeys}>
       <div className="space-y-4">
-        <p className="text-sm text-stone-600 dark:text-stone-300">
-          View and manage tenant organizations. Suspending blocks member sign-in while preserving
-          data. Use bulk actions for incident response at scale.
-        </p>
+        <p className="text-sm text-stone-600 dark:text-stone-300">{t("description")}</p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="flex-1 text-sm">
-            <span className="mb-1 block text-stone-600">Search</span>
+            <span className="mb-1 block text-stone-600">{tc("search")}</span>
             <input
               ref={searchRef}
               className="input w-full"
-              placeholder="Name or slug"
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -160,7 +160,7 @@ export default function PlatformOrganizationsPage() {
             />
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-stone-600">Status</span>
+            <span className="mb-1 block text-stone-600">{tc("status")}</span>
             <select
               className="input"
               value={activeFilter}
@@ -169,9 +169,9 @@ export default function PlatformOrganizationsPage() {
                 setPage(1);
               }}
             >
-              <option value="">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Suspended</option>
+              <option value="">{tc("all")}</option>
+              <option value="active">{tc("active")}</option>
+              <option value="inactive">{t("statusSuspended")}</option>
             </select>
           </label>
           <button
@@ -181,7 +181,7 @@ export default function PlatformOrganizationsPage() {
             onClick={() => exportCsv.mutate()}
           >
             <Download className="h-4 w-4" />
-            Export CSV
+            {tc("exportCsv")}
           </button>
         </div>
 
@@ -192,7 +192,7 @@ export default function PlatformOrganizationsPage() {
               className="btn-secondary text-xs text-rose-700"
               onClick={() => setSuspendTarget({ kind: "bulk", suspending: true })}
             >
-              Suspend selected
+              {t("suspendSelected")}
             </button>
             <button
               type="button"
@@ -200,24 +200,20 @@ export default function PlatformOrganizationsPage() {
               disabled={bulkOrgAction.isPending}
               onClick={() => setSuspendTarget({ kind: "bulk", suspending: false })}
             >
-              Reactivate selected
+              {t("reactivateSelected")}
             </button>
           </BulkActionBar>
         ) : null}
 
         {isLoading ? (
-          <p className="text-sm text-stone-500">Loading organizations…</p>
+          <p className="text-sm text-stone-500">{t("loading")}</p>
         ) : (data?.items.length ?? 0) === 0 ? (
           <div className="rounded-2xl border border-dashed border-stone-300 px-6 py-12 text-center dark:border-stone-700">
             <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
-              {search || activeFilter
-                ? "No organizations match these filters."
-                : "No organizations yet."}
+              {search || activeFilter ? t("emptyFiltered") : t("emptyDefault")}
             </p>
             <p className="mt-1 text-xs text-stone-500">
-              {search || activeFilter
-                ? "Clear search or status filters to broaden results."
-                : "Tenant orgs created during signup or program onboarding appear here."}
+              {search || activeFilter ? t("emptyHintFiltered") : t("emptyHintDefault")}
             </p>
             {search || activeFilter ? (
               <button
@@ -229,7 +225,7 @@ export default function PlatformOrganizationsPage() {
                   setPage(1);
                 }}
               >
-                Clear filters
+                {tc("clearFilters")}
               </button>
             ) : null}
           </div>
@@ -242,7 +238,7 @@ export default function PlatformOrganizationsPage() {
                     <th className="px-4 py-3">
                       <input
                         type="checkbox"
-                        aria-label="Select all on page"
+                        aria-label={tc("selectAllOnPage")}
                         checked={
                           (data?.items ?? []).length > 0 &&
                           (data?.items ?? []).every((row) => selectedIds.has(row.id))
@@ -251,12 +247,12 @@ export default function PlatformOrganizationsPage() {
                       />
                     </th>
                   ) : null}
-                  <th className="px-4 py-3 font-medium">Organization</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
-                  <th className="px-4 py-3 font-medium">Members</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Created</th>
-                  {fullAdmin ? <th className="px-4 py-3 font-medium">Actions</th> : null}
+                  <th className="px-4 py-3 font-medium">{t("tableOrganization")}</th>
+                  <th className="px-4 py-3 font-medium">{t("tableType")}</th>
+                  <th className="px-4 py-3 font-medium">{t("tableMembers")}</th>
+                  <th className="px-4 py-3 font-medium">{tc("status")}</th>
+                  <th className="px-4 py-3 font-medium">{t("tableCreated")}</th>
+                  {fullAdmin ? <th className="px-4 py-3 font-medium">{tc("actions")}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -290,7 +286,7 @@ export default function PlatformOrganizationsPage() {
                             : "inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800"
                         }
                       >
-                        {row.is_active ? "Active" : "Suspended"}
+                        {row.is_active ? tc("active") : t("statusSuspended")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-stone-500">
@@ -311,7 +307,7 @@ export default function PlatformOrganizationsPage() {
                               })
                             }
                           >
-                            Suspend
+                            {t("suspend")}
                           </button>
                         ) : (
                           <button
@@ -327,7 +323,7 @@ export default function PlatformOrganizationsPage() {
                               })
                             }
                           >
-                            Reactivate
+                            {t("reactivate")}
                           </button>
                         )}
                       </td>
@@ -342,8 +338,7 @@ export default function PlatformOrganizationsPage() {
         {data && data.total > 0 ? (
           <div className="flex items-center justify-between text-sm text-stone-600">
             <span>
-              {data.total} organization{data.total !== 1 ? "s" : ""} · page {data.page} of{" "}
-              {totalPages}
+              {t("pagination", { total: data.total, page: data.page, totalPages })}
             </span>
             <div className="flex gap-2">
               <button
@@ -352,7 +347,7 @@ export default function PlatformOrganizationsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                Previous
+                {tc("previous")}
               </button>
               <button
                 type="button"
@@ -360,12 +355,11 @@ export default function PlatformOrganizationsPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {tc("next")}
               </button>
             </div>
           </div>
         ) : null}
-
       </div>
 
       <OrgSuspendModal
@@ -388,7 +382,7 @@ export default function PlatformOrganizationsPage() {
 
       <OrgSuspendModal
         open={suspendTarget?.kind === "bulk"}
-        orgName={`${selectedIds.size} organizations`}
+        orgName={t("bulkOrgCount", { count: selectedIds.size })}
         suspending={suspendTarget?.kind === "bulk" ? suspendTarget.suspending : true}
         busy={bulkOrgAction.isPending}
         onClose={() => setSuspendTarget(null)}
@@ -402,7 +396,6 @@ export default function PlatformOrganizationsPage() {
           });
         }}
       />
-
     </PlatformShell>
   );
 }

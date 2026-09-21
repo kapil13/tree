@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -14,6 +15,8 @@ import { platformAdmin, type PlatformSatelliteHealth } from "@/lib/platform-api"
 import { cn } from "@/lib/cn";
 
 export default function PlatformSatelliteHealthPage() {
+  const t = useTranslations("platformAdmin.satellite");
+  const tc = useTranslations("platformAdmin.common");
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["platform-satellite-health"],
     queryFn: () => platformAdmin.satelliteHealth(),
@@ -31,40 +34,37 @@ export default function PlatformSatelliteHealthPage() {
     <PlatformShell>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            Optical, SAR, and Bhoonidhi provider status with live vs stub scan telemetry.
-          </p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">{t("description")}</p>
           <button
             type="button"
             className="btn-secondary text-xs"
             disabled={isFetching}
             onClick={() => void refetch()}
           >
-            {isFetching ? "Refreshing…" : "Refresh"}
+            {isFetching ? tc("refreshing") : tc("refresh")}
           </button>
         </div>
 
         {isLoading || !data ? (
-          <p className="text-sm text-stone-500">Loading satellite health…</p>
+          <p className="text-sm text-stone-500">{t("loading")}</p>
         ) : (
           <>
             {degraded ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-                <p className="font-medium">Satellite health needs attention</p>
+                <p className="font-medium">{t("needsAttention")}</p>
                 <p className="mt-1 text-xs text-amber-900/80 dark:text-amber-200/80">
-                  Check provider credentials, retry failed satellite jobs, or follow the admin
-                  runbook.
+                  {t("needsAttentionDesc")}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3">
                   <Link
                     href="/platform/ops"
                     className="inline-flex items-center gap-1 text-xs font-medium text-amber-950 underline-offset-2 hover:underline dark:text-amber-100"
                   >
-                    Open Operations → Jobs
+                    {t("openOpsJobs")}
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                   <span className="text-xs text-amber-800/80 dark:text-amber-200/70">
-                    Use the Runbook control in the header for credential and stub-scan guidance.
+                    {t("runbookHint")}
                   </span>
                 </div>
               </div>
@@ -72,17 +72,17 @@ export default function PlatformSatelliteHealthPage() {
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatusCard
-                label="Overall"
+                label={t("overall")}
                 status={data.status}
-                hint={`Updated ${new Date(data.generated_at).toLocaleString()}`}
+                hint={t("updatedAt", { date: new Date(data.generated_at).toLocaleString() })}
               />
               <StatusCard
-                label="Optical (Sentinel-2)"
+                label={t("opticalSentinel")}
                 status={data.providers.optical.configured ? "ok" : "degraded"}
                 hint={data.providers.optical.mode}
               />
               <StatusCard
-                label="SAR (Sentinel-1)"
+                label={t("sarSentinel")}
                 status={
                   data.providers.sar.credentials_ready
                     ? "ok"
@@ -93,7 +93,7 @@ export default function PlatformSatelliteHealthPage() {
                 hint={data.providers.sar.live_data_provider || data.providers.sar.primary}
               />
               <StatusCard
-                label="Bhoonidhi STAC"
+                label={t("bhoonidhiStac")}
                 status={data.providers.bhoonidhi.configured ? "ok" : "degraded"}
                 hint={data.providers.bhoonidhi.mode}
               />
@@ -102,71 +102,68 @@ export default function PlatformSatelliteHealthPage() {
             <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
               <div className="mb-4 flex items-center gap-2">
                 <Satellite className="h-5 w-5 text-forest-700" />
-                <h2 className="text-lg font-semibold">Provider configuration</h2>
+                <h2 className="text-lg font-semibold">{t("providerConfig")}</h2>
               </div>
               <div className="grid gap-4 lg:grid-cols-3">
-                <ProviderCard title="Optical" provider={data.providers.optical} />
+                <ProviderCard title={t("optical")} provider={data.providers.optical} />
                 <SarProviderCard sar={data.providers.sar} />
-                <ProviderCard title="Bhoonidhi" provider={data.providers.bhoonidhi} />
+                <ProviderCard title={t("bhoonidhi")} provider={data.providers.bhoonidhi} />
               </div>
             </section>
 
             <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
               <h2 className="text-lg font-semibold">
-                Scan counts ({data.scans.window_days}-day window)
+                {t("scanCounts", { days: data.scans.window_days })}
               </h2>
               <p className="mt-1 text-sm text-stone-500">
-                Since {new Date(data.scans.since).toLocaleDateString()}
+                {t("since", { date: new Date(data.scans.since).toLocaleDateString() })}
               </p>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <CountTile label="Optical live" value={data.scans.combined.optical_live} tone="ok" />
+                <CountTile label={t("opticalLive")} value={data.scans.combined.optical_live} tone="ok" />
                 <CountTile
-                  label="Optical stub"
+                  label={t("opticalStub")}
                   value={data.scans.combined.optical_stub}
                   tone={data.scans.combined.optical_stub > 0 ? "warn" : "neutral"}
                 />
-                <CountTile label="SAR live" value={data.scans.combined.sar_live} tone="ok" />
+                <CountTile label={t("sarLive")} value={data.scans.combined.sar_live} tone="ok" />
                 <CountTile
-                  label="SAR stub"
+                  label={t("sarStub")}
                   value={data.scans.combined.sar_stub}
                   tone={data.scans.combined.sar_stub > 0 ? "warn" : "neutral"}
                 />
               </div>
 
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                <ScanBreakdown title="Plantation fences" scans={data.scans.plantation_fences} />
-                <ScanBreakdown title="Trees" scans={data.scans.trees} />
+                <ScanBreakdown title={t("plantationFences")} scans={data.scans.plantation_fences} />
+                <ScanBreakdown title={t("trees")} scans={data.scans.trees} />
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <LatestScan
-                  label="Latest plantation scan"
-                  scan={data.scans.latest_plantation_scan}
-                />
-                <LatestScan label="Latest SAR scan" scan={data.scans.latest_sar_scan} />
+                <LatestScan label={t("latestPlantationScan")} scan={data.scans.latest_plantation_scan} />
+                <LatestScan label={t("latestSarScan")} scan={data.scans.latest_sar_scan} />
               </div>
             </section>
 
             <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
               <div className="mb-4 flex items-center gap-2">
                 <Server className="h-5 w-5 text-forest-700" />
-                <h2 className="text-lg font-semibold">Recent satellite jobs</h2>
+                <h2 className="text-lg font-semibold">{t("recentJobs")}</h2>
               </div>
               {!data.recent_jobs.length ? (
-                <p className="text-sm text-stone-500">No recent satellite or SAR jobs recorded.</p>
+                <p className="text-sm text-stone-500">{t("noRecentJobs")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead className="text-left text-stone-500">
                       <tr>
-                        <th className="px-2 py-2 font-medium">Job</th>
-                        <th className="px-2 py-2 font-medium">Status</th>
-                        <th className="px-2 py-2 font-medium">Finished</th>
-                        <th className="px-2 py-2 font-medium">Scanned</th>
-                        <th className="px-2 py-2 font-medium">Live</th>
-                        <th className="px-2 py-2 font-medium">Stub</th>
-                        <th className="px-2 py-2 font-medium">Error</th>
+                        <th className="px-2 py-2 font-medium">{t("tableJob")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableStatus")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableFinished")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableScanned")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableLive")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableStub")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableError")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -245,17 +242,22 @@ function ProviderCard({
   title: string;
   provider: { label: string; configured?: boolean; mode: string; provider_tag?: string };
 }) {
+  const t = useTranslations("platformAdmin.satellite");
+  const tc = useTranslations("platformAdmin.common");
   return (
     <div className="rounded-xl border border-stone-100 px-4 py-3 dark:border-stone-800">
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-1 text-xs text-stone-500">{provider.label}</p>
       <dl className="mt-3 space-y-1 text-sm">
-        <Row label="Mode" value={provider.mode} />
+        <Row label={t("mode")} value={provider.mode} />
         {"provider_tag" in provider && provider.provider_tag ? (
-          <Row label="Tag" value={provider.provider_tag} />
+          <Row label={t("tag")} value={provider.provider_tag} />
         ) : null}
         {"configured" in provider ? (
-          <Row label="Configured" value={provider.configured ? "yes" : "no"} />
+          <Row
+            label={t("configured")}
+            value={provider.configured ? tc("yes") : tc("no")}
+          />
         ) : null}
       </dl>
     </div>
@@ -267,21 +269,26 @@ function SarProviderCard({
 }: {
   sar: PlatformSatelliteHealth["providers"]["sar"];
 }) {
+  const t = useTranslations("platformAdmin.satellite");
+  const tc = useTranslations("platformAdmin.common");
   return (
     <div className="rounded-xl border border-stone-100 px-4 py-3 dark:border-stone-800">
-      <h3 className="text-sm font-semibold">SAR</h3>
+      <h3 className="text-sm font-semibold">{t("sar")}</h3>
       <p className="mt-1 text-xs text-stone-500">{sar.label}</p>
       <dl className="mt-3 space-y-1 text-sm">
-        <Row label="Enabled" value={sar.enabled ? "yes" : "no"} />
-        <Row label="Primary" value={sar.primary} />
-        <Row label="Fallback" value={sar.fallback || "—"} />
-        <Row label="Service" value={sar.service_name} />
-        <Row label="Live provider" value={sar.live_data_provider || "—"} />
-        <Row label="Credentials" value={sar.credentials_ready ? "ready" : "missing"} />
-        <Row label="GEE initialized" value={sar.gee_initialized ? "yes" : "no"} />
+        <Row label={t("enabled")} value={sar.enabled ? tc("yes") : tc("no")} />
+        <Row label={t("primary")} value={sar.primary} />
+        <Row label={t("fallback")} value={sar.fallback || "—"} />
+        <Row label={t("service")} value={sar.service_name} />
+        <Row label={t("liveProvider")} value={sar.live_data_provider || "—"} />
         <Row
-          label="Sentinel Hub SAR"
-          value={sar.sentinel_hub_sar_configured ? "configured" : "not configured"}
+          label={t("credentials")}
+          value={sar.credentials_ready ? t("credentialsReady") : t("credentialsMissing")}
+        />
+        <Row label={t("geeInitialized")} value={sar.gee_initialized ? tc("yes") : tc("no")} />
+        <Row
+          label={t("sentinelHubSar")}
+          value={sar.sentinel_hub_sar_configured ? t("configuredYes") : t("notConfigured")}
         />
       </dl>
     </div>
@@ -327,24 +334,30 @@ function ScanBreakdown({
   title: string;
   scans: PlatformSatelliteHealth["scans"]["plantation_fences"];
 }) {
+  const t = useTranslations("platformAdmin.satellite");
   return (
     <div>
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="mt-1 text-xs text-stone-500">
-        {scans.total} total · {scans.optical_live} optical live · {scans.optical_stub} optical stub
-        · {scans.sar_live} SAR live · {scans.sar_stub} SAR stub
+        {t("scanBreakdown", {
+          total: scans.total,
+          opticalLive: scans.optical_live,
+          opticalStub: scans.optical_stub,
+          sarLive: scans.sar_live,
+          sarStub: scans.sar_stub,
+        })}
       </p>
       {!scans.by_provider.length ? (
-        <p className="mt-2 text-xs text-stone-500">No scans in window.</p>
+        <p className="mt-2 text-xs text-stone-500">{t("noScansInWindow")}</p>
       ) : (
         <div className="mt-2 overflow-x-auto">
           <table className="min-w-full text-xs">
             <thead className="text-left text-stone-500">
               <tr>
-                <th className="px-2 py-1 font-medium">Provider</th>
-                <th className="px-2 py-1 font-medium">Modality</th>
-                <th className="px-2 py-1 font-medium">Bucket</th>
-                <th className="px-2 py-1 font-medium">Count</th>
+                <th className="px-2 py-1 font-medium">{t("tableProvider")}</th>
+                <th className="px-2 py-1 font-medium">{t("tableModality")}</th>
+                <th className="px-2 py-1 font-medium">{t("tableBucket")}</th>
+                <th className="px-2 py-1 font-medium">{t("tableCount")}</th>
               </tr>
             </thead>
             <tbody>
@@ -371,6 +384,7 @@ function LatestScan({
   label: string;
   scan: PlatformSatelliteHealth["scans"]["latest_plantation_scan"];
 }) {
+  const t = useTranslations("platformAdmin.satellite");
   return (
     <div className="rounded-xl border border-stone-100 px-4 py-3 dark:border-stone-800">
       <p className="text-xs font-medium text-stone-500">{label}</p>
@@ -384,7 +398,7 @@ function LatestScan({
           </p>
         </>
       ) : (
-        <p className="mt-1 text-sm text-stone-500">No scans recorded</p>
+        <p className="mt-1 text-sm text-stone-500">{t("noScansRecorded")}</p>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Activity, CheckCircle2, CreditCard, Loader2, Server, ShieldCheck, Webhook, XCircle, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -10,25 +11,29 @@ import { plantingProjects } from "@/lib/api";
 import { platformAdmin } from "@/lib/platform-api";
 import { cn } from "@/lib/cn";
 
-const TRIGGERABLE_JOBS = [
-  { value: "daily_health_roundup", label: "Daily health roundup" },
-  { value: "monthly_satellite_sweep", label: "Monthly satellite sweep" },
-  { value: "daily_satellite_health_digest", label: "Daily satellite health digest" },
-  { value: "threat_watch_scan", label: "Threat watch scan" },
-  { value: "compliance_deadline_scan", label: "Compliance deadline scan" },
-  { value: "survival_survey_reminders", label: "Survival survey reminders" },
-  { value: "biodiversity_baseline", label: "Biodiversity baseline" },
-];
+const TRIGGERABLE_JOB_VALUES = [
+  "daily_health_roundup",
+  "monthly_satellite_sweep",
+  "daily_satellite_health_digest",
+  "threat_watch_scan",
+  "compliance_deadline_scan",
+  "survival_survey_reminders",
+  "biodiversity_baseline",
+] as const;
+
+const JOB_LABEL_KEYS: Record<(typeof TRIGGERABLE_JOB_VALUES)[number], string> = {
+  daily_health_roundup: "jobDailyHealthRoundup",
+  monthly_satellite_sweep: "jobMonthlySatelliteSweep",
+  daily_satellite_health_digest: "jobDailySatelliteHealthDigest",
+  threat_watch_scan: "jobThreatWatchScan",
+  compliance_deadline_scan: "jobComplianceDeadlineScan",
+  survival_survey_reminders: "jobSurvivalSurveyReminders",
+  biodiversity_baseline: "jobBiodiversityBaseline",
+};
 
 type OpsTab = "health" | "webhooks" | "jobs" | "schemes" | "config";
 
-const TABS: Array<{ id: OpsTab; label: string }> = [
-  { id: "health", label: "Health" },
-  { id: "webhooks", label: "Webhooks" },
-  { id: "jobs", label: "Jobs" },
-  { id: "schemes", label: "Schemes" },
-  { id: "config", label: "Config" },
-];
+const TAB_IDS: OpsTab[] = ["health", "webhooks", "jobs", "schemes", "config"];
 
 type StepUpAction =
   | { kind: "retry_webhook"; deliveryId: string }
@@ -36,10 +41,38 @@ type StepUpAction =
   | { kind: "trigger_job"; jobName: string };
 
 export default function PlatformOpsPage() {
+  const t = useTranslations("platformAdmin.ops");
+  const tc = useTranslations("platformAdmin.common");
+  const triggerableJobs = useMemo(
+    () =>
+      TRIGGERABLE_JOB_VALUES.map((value) => ({
+        value,
+        label: t(JOB_LABEL_KEYS[value] as "jobDailyHealthRoundup"),
+      })),
+    [t],
+  );
+  const tabs = useMemo(
+    () =>
+      TAB_IDS.map((id) => ({
+        id,
+        label: t(
+          id === "health"
+            ? "tabHealth"
+            : id === "webhooks"
+              ? "tabWebhooks"
+              : id === "jobs"
+                ? "tabJobs"
+                : id === "schemes"
+                  ? "tabSchemes"
+                  : "tabConfig",
+        ),
+      })),
+    [t],
+  );
   const [tab, setTab] = useState<OpsTab>("health");
   const [apoCsv, setApoCsv] = useState("");
   const [apvCsv, setApvCsv] = useState("");
-  const [triggerJobName, setTriggerJobName] = useState(TRIGGERABLE_JOBS[0]?.value ?? "");
+  const [triggerJobName, setTriggerJobName] = useState<string>(TRIGGERABLE_JOB_VALUES[0] ?? "");
   const [backfillLimit, setBackfillLimit] = useState(50);
   const [backfillAsync, setBackfillAsync] = useState(false);
   const [stepUpOpen, setStepUpOpen] = useState(false);
@@ -73,7 +106,7 @@ export default function PlatformOpsPage() {
   const pingIntegrations = useMutation({
     mutationFn: () => platformAdmin.pingIntegrations(),
     onSuccess: () => {
-      notifyPlatformAction("Integration ping complete.");
+      notifyPlatformAction(t("notifyPingComplete"));
       void refetch();
     },
     onError: (err) => notifyPlatformError(err),
@@ -84,7 +117,7 @@ export default function PlatformOpsPage() {
     onSuccess: () => {
       refetchSchemes();
       setApoCsv("");
-      notifyPlatformAction("APO import complete.");
+      notifyPlatformAction(t("notifyApoImportComplete"));
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -94,7 +127,7 @@ export default function PlatformOpsPage() {
     onSuccess: () => {
       refetchSchemes();
       setApvCsv("");
-      notifyPlatformAction("APV site import complete.");
+      notifyPlatformAction(t("notifyApvImportComplete"));
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -108,11 +141,17 @@ export default function PlatformOpsPage() {
     onSuccess: (result) => {
       if (result.status === "queued") {
         notifyPlatformAction(
-          `Integrity fusion backfill queued (task ${result.task_id ?? "—"}, limit ${result.limit_projects ?? backfillLimit}).`,
+          t("notifyBackfillQueued", {
+            taskId: result.task_id ?? "—",
+            limit: result.limit_projects ?? backfillLimit,
+          }),
         );
       } else {
         notifyPlatformAction(
-          `Integrity fusion backfill complete: ${result.projects_processed ?? 0} projects, ${result.trees_refreshed ?? 0} trees refreshed.`,
+          t("notifyBackfillComplete", {
+            projects: result.projects_processed ?? 0,
+            trees: result.trees_refreshed ?? 0,
+          }),
         );
       }
     },
@@ -136,19 +175,19 @@ export default function PlatformOpsPage() {
       setStepUpAction(null);
       if (action?.kind === "retry_webhook") {
         const webhookResult = result as { status?: string };
-        notifyPlatformAction(`Webhook retry queued (${webhookResult?.status ?? "queued"}).`, {
+        notifyPlatformAction(t("notifyWebhookRetry", { status: webhookResult?.status ?? "queued" }), {
           audit: { actionPrefix: "platform.ops.webhook_retry" },
         });
         void refetchWebhooks();
       } else if (action?.kind === "retry_job") {
         const jobResult = result as { job_name?: string };
-        notifyPlatformAction(`Job retry queued: ${jobResult?.job_name ?? "job"}.`, {
+        notifyPlatformAction(t("notifyJobRetry", { jobName: jobResult?.job_name ?? "job" }), {
           audit: { actionPrefix: "platform.ops.job_retry" },
         });
         void refetch();
       } else if (action?.kind === "trigger_job") {
         const jobResult = result as { job_name?: string };
-        notifyPlatformAction(`Job triggered: ${jobResult?.job_name ?? "job"}.`, {
+        notifyPlatformAction(t("notifyJobTriggered", { jobName: jobResult?.job_name ?? "job" }), {
           audit: { actionPrefix: "platform.ops.job_trigger" },
         });
         void refetch();
@@ -175,9 +214,7 @@ export default function PlatformOpsPage() {
     <PlatformShell>
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            Worker health, integrations, webhooks, payments, and background jobs.
-          </p>
+          <p className="text-sm text-stone-600 dark:text-stone-300">{t("description")}</p>
           <button
             type="button"
             className="btn-secondary text-xs"
@@ -188,16 +225,16 @@ export default function PlatformOpsPage() {
               void refetchPaymentEvents();
             }}
           >
-            {isFetching ? "Refreshing…" : "Refresh"}
+            {isFetching ? tc("refreshing") : tc("refresh")}
           </button>
         </div>
 
         <div
           className="inline-flex flex-wrap gap-1 rounded-xl border border-stone-200 bg-stone-100/80 p-1 dark:border-stone-800 dark:bg-stone-900"
           role="tablist"
-          aria-label="Operations sections"
+          aria-label={t("tabListAria")}
         >
-          {TABS.map((item) => {
+          {tabs.map((item) => {
             const badge =
               item.id === "webhooks"
                 ? tabBadges.webhooks
@@ -230,41 +267,43 @@ export default function PlatformOpsPage() {
         </div>
 
         {isLoading || !data ? (
-          <p className="text-sm text-stone-500">Loading operations summary…</p>
+          <p className="text-sm text-stone-500">{t("loading")}</p>
         ) : (
           <>
             {tab === "health" ? (
               <div className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <HealthCard
-                    label="Overall"
+                    label={t("overall")}
                     status={data.status}
-                    hint={`${data.jobs.recent_count} recent job runs`}
+                    hint={t("recentJobRuns", { count: data.jobs.recent_count })}
                   />
                   <HealthCard
-                    label="Celery workers"
+                    label={t("celeryWorkers")}
                     status={data.workers.celery.reachable ? "ok" : "error"}
                     hint={
                       data.workers.celery.workers.length
                         ? data.workers.celery.workers.join(", ")
-                        : data.workers.celery.error || "No workers responding"
+                        : data.workers.celery.error || t("noWorkersResponding")
                     }
                   />
                   <HealthCard
-                    label="Integrations"
+                    label={t("integrations")}
                     status={data.integrations.status}
-                    hint={`${Object.keys(data.integrations.integrations).length} providers checked`}
+                    hint={t("providersChecked", {
+                      count: Object.keys(data.integrations.integrations).length,
+                    })}
                   />
                   <HealthCard
-                    label="Failed jobs (recent)"
+                    label={t("failedJobsRecent")}
                     status={data.workers.failed_job_count > 0 ? "degraded" : "ok"}
-                    hint={`${data.workers.failed_job_count} failures in recent window`}
+                    hint={t("failuresInWindow", { count: data.workers.failed_job_count })}
                   />
                 </div>
 
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold">Integrations</h2>
+                    <h2 className="text-lg font-semibold">{t("integrations")}</h2>
                     <button
                       type="button"
                       className="btn-secondary text-xs"
@@ -274,12 +313,12 @@ export default function PlatformOpsPage() {
                       {pingIntegrations.isPending ? (
                         <>
                           <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
-                          Pinging…
+                          {t("pinging")}
                         </>
                       ) : (
                         <>
                           <Zap className="mr-1 inline h-3 w-3" />
-                          Ping integrations
+                          {t("pingIntegrations")}
                         </>
                       )}
                     </button>
@@ -309,7 +348,7 @@ export default function PlatformOpsPage() {
 
                 {data.workers.bioacoustic ? (
                   <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
-                    <h2 className="text-lg font-semibold">Bioacoustic pipeline</h2>
+                    <h2 className="text-lg font-semibold">{t("bioacousticPipeline")}</h2>
                     <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
                       {Object.entries(data.workers.bioacoustic).map(([key, value]) => (
                         <div
@@ -331,20 +370,20 @@ export default function PlatformOpsPage() {
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
                   <div className="mb-4 flex items-center gap-2">
                     <Webhook className="h-5 w-5 text-forest-700" />
-                    <h2 className="text-lg font-semibold">Failed webhook deliveries</h2>
+                    <h2 className="text-lg font-semibold">{t("failedWebhookDeliveries")}</h2>
                   </div>
                   {!failedWebhooks?.length ? (
-                    <p className="text-sm text-stone-500">No failed webhook deliveries.</p>
+                    <p className="text-sm text-stone-500">{t("noFailedWebhooks")}</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <thead className="text-left text-stone-500">
                           <tr>
-                            <th className="px-2 py-2 font-medium">Organization</th>
-                            <th className="px-2 py-2 font-medium">Endpoint</th>
-                            <th className="px-2 py-2 font-medium">Event</th>
-                            <th className="px-2 py-2 font-medium">Attempts</th>
-                            <th className="px-2 py-2 font-medium">Error</th>
+                            <th className="px-2 py-2 font-medium">{t("tableOrganization")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableEndpoint")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableEvent")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableAttempts")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableError")}</th>
                             <th className="px-2 py-2 font-medium" />
                           </tr>
                         </thead>
@@ -368,7 +407,7 @@ export default function PlatformOpsPage() {
                                     openStepUp({ kind: "retry_webhook", deliveryId: w.id })
                                   }
                                 >
-                                  Retry
+                                  {tc("retry")}
                                 </button>
                               </td>
                             </tr>
@@ -382,20 +421,20 @@ export default function PlatformOpsPage() {
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
                   <div className="mb-4 flex items-center gap-2">
                     <CreditCard className="h-5 w-5 text-forest-700" />
-                    <h2 className="text-lg font-semibold">Failed payment webhook events</h2>
+                    <h2 className="text-lg font-semibold">{t("failedPaymentEvents")}</h2>
                   </div>
                   {!paymentEvents?.length ? (
-                    <p className="text-sm text-stone-500">No failed payment events.</p>
+                    <p className="text-sm text-stone-500">{t("noFailedPaymentEvents")}</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <thead className="text-left text-stone-500">
                           <tr>
-                            <th className="px-2 py-2 font-medium">Event ID</th>
-                            <th className="px-2 py-2 font-medium">Type</th>
-                            <th className="px-2 py-2 font-medium">Provider</th>
-                            <th className="px-2 py-2 font-medium">Received</th>
-                            <th className="px-2 py-2 font-medium">Payload</th>
+                            <th className="px-2 py-2 font-medium">{t("tableEventId")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableType")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableProvider")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tableReceived")}</th>
+                            <th className="px-2 py-2 font-medium">{t("tablePayload")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -426,17 +465,17 @@ export default function PlatformOpsPage() {
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-forest-700" />
-                    <h2 className="text-lg font-semibold">Monitoring jobs</h2>
+                    <h2 className="text-lg font-semibold">{t("monitoringJobs")}</h2>
                   </div>
                   <div className="flex flex-wrap items-end gap-2">
                     <div>
-                      <label className="kpi-label">Trigger job</label>
+                      <label className="kpi-label">{t("triggerJob")}</label>
                       <select
                         className="input mt-1 min-w-[220px] text-sm"
                         value={triggerJobName}
                         onChange={(e) => setTriggerJobName(e.target.value)}
                       >
-                        {TRIGGERABLE_JOBS.map((job) => (
+                        {triggerableJobs.map((job) => (
                           <option key={job.value} value={job.value}>
                             {job.label}
                           </option>
@@ -449,7 +488,7 @@ export default function PlatformOpsPage() {
                       disabled={!triggerJobName}
                       onClick={() => openStepUp({ kind: "trigger_job", jobName: triggerJobName })}
                     >
-                      Trigger
+                      {t("trigger")}
                     </button>
                   </div>
                 </div>
@@ -457,10 +496,10 @@ export default function PlatformOpsPage() {
                   <table className="min-w-full text-sm">
                     <thead className="text-left text-stone-500">
                       <tr>
-                        <th className="px-2 py-2 font-medium">Job</th>
-                        <th className="px-2 py-2 font-medium">Status</th>
-                        <th className="px-2 py-2 font-medium">Finished</th>
-                        <th className="px-2 py-2 font-medium">Error</th>
+                        <th className="px-2 py-2 font-medium">{t("tableJob")}</th>
+                        <th className="px-2 py-2 font-medium">{tc("status")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableFinished")}</th>
+                        <th className="px-2 py-2 font-medium">{t("tableError")}</th>
                         <th className="px-2 py-2 font-medium" />
                       </tr>
                     </thead>
@@ -484,7 +523,7 @@ export default function PlatformOpsPage() {
                                 className="btn-secondary text-xs"
                                 onClick={() => openStepUp({ kind: "retry_job", runId: job.id })}
                               >
-                                Retry
+                                {tc("retry")}
                               </button>
                             ) : (
                               "—"
@@ -497,8 +536,7 @@ export default function PlatformOpsPage() {
                 </div>
                 {failedJobs.length > 0 ? (
                   <p className="mt-3 text-xs text-amber-700">
-                    {failedJobs.length} failed run(s) in the recent window — retry requires step-up
-                    verification.
+                    {t("failedRunsHint", { count: failedJobs.length })}
                   </p>
                 ) : null}
               </section>
@@ -508,17 +546,14 @@ export default function PlatformOpsPage() {
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-forest-700" />
                     <div>
-                      <h2 className="text-lg font-semibold">Integrity fusion backfill</h2>
-                      <p className="mt-1 text-sm text-stone-500">
-                        Recompute fusion scores for projects with trees missing scores. Nightly beat
-                        runs automatically; use this for manual catch-up after deploy.
-                      </p>
+                      <h2 className="text-lg font-semibold">{t("integrityBackfill")}</h2>
+                      <p className="mt-1 text-sm text-stone-500">{t("integrityBackfillDesc")}</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-end gap-3">
                   <div>
-                    <label className="kpi-label">Project limit</label>
+                    <label className="kpi-label">{t("projectLimit")}</label>
                     <input
                       type="number"
                       min={1}
@@ -534,7 +569,7 @@ export default function PlatformOpsPage() {
                       checked={backfillAsync}
                       onChange={(e) => setBackfillAsync(e.target.checked)}
                     />
-                    Queue via Celery
+                    {t("queueViaCelery")}
                   </label>
                   <button
                     type="button"
@@ -542,14 +577,17 @@ export default function PlatformOpsPage() {
                     disabled={integrityBackfill.isPending}
                     onClick={() => integrityBackfill.mutate()}
                   >
-                    {integrityBackfill.isPending ? "Running…" : "Run backfill"}
+                    {integrityBackfill.isPending ? t("running") : t("runBackfill")}
                   </button>
                 </div>
                 {integrityBackfill.data ? (
                   <p className="mt-3 text-xs text-stone-600">
                     {integrityBackfill.data.status === "queued"
-                      ? `Queued task ${integrityBackfill.data.task_id ?? "—"}`
-                      : `Processed ${integrityBackfill.data.projects_processed ?? 0} projects · ${integrityBackfill.data.trees_refreshed ?? 0} trees refreshed`}
+                      ? t("queuedTask", { taskId: integrityBackfill.data.task_id ?? "—" })
+                      : t("backfillResult", {
+                          projects: integrityBackfill.data.projects_processed ?? 0,
+                          trees: integrityBackfill.data.trees_refreshed ?? 0,
+                        })}
                   </p>
                 ) : null}
               </section>
@@ -559,19 +597,21 @@ export default function PlatformOpsPage() {
             {tab === "schemes" ? (
               schemeSummary ? (
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
-                  <h2 className="text-lg font-semibold">Central scheme rollup</h2>
+                  <h2 className="text-lg font-semibold">{t("schemeRollup")}</h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    {schemeSummary.tagged_project_count} tagged projects ·{" "}
-                    {schemeSummary.untagged_project_count} without scheme
+                    {t("schemeRollupHint", {
+                      tagged: schemeSummary.tagged_project_count,
+                      untagged: schemeSummary.untagged_project_count,
+                    })}
                   </p>
                   <div className="mt-4 overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead className="text-left text-stone-500">
                         <tr>
-                          <th className="px-2 py-2 font-medium">Scheme</th>
-                          <th className="px-2 py-2 font-medium">Ministry</th>
-                          <th className="px-2 py-2 font-medium">Projects</th>
-                          <th className="px-2 py-2 font-medium">Trees</th>
+                          <th className="px-2 py-2 font-medium">{t("tableScheme")}</th>
+                          <th className="px-2 py-2 font-medium">{t("tableMinistry")}</th>
+                          <th className="px-2 py-2 font-medium">{t("tableProjects")}</th>
+                          <th className="px-2 py-2 font-medium">{t("tableTrees")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -591,16 +631,13 @@ export default function PlatformOpsPage() {
                   </div>
 
                   <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-                    <h3 className="text-sm font-medium">CAMPA APO CSV import</h3>
-                    <p className="mt-1 text-xs text-stone-500">
-                      Paste CSV with columns: pca_number, state_name, apo_financial_year, project_code,
-                      project_name
-                    </p>
+                    <h3 className="text-sm font-medium">{t("campaApoImport")}</h3>
+                    <p className="mt-1 text-xs text-stone-500">{t("campaApoColumns")}</p>
                     <textarea
                       className="input mt-2 min-h-[100px] font-mono text-xs"
                       value={apoCsv}
                       onChange={(e) => setApoCsv(e.target.value)}
-                      placeholder="pca_number,state_name,apo_financial_year,project_code,project_name"
+                      placeholder={t("campaApoPlaceholder")}
                     />
                     <button
                       type="button"
@@ -608,30 +645,26 @@ export default function PlatformOpsPage() {
                       disabled={apoImport.isPending || apoCsv.trim().length < 10}
                       onClick={() => apoImport.mutate()}
                     >
-                      {apoImport.isPending ? "Importing…" : "Import APO rows"}
+                      {apoImport.isPending ? t("importing") : t("importApoRows")}
                     </button>
                     {apoImport.data ? (
                       <p className="mt-2 text-xs text-stone-600">
-                        Imported {apoImport.data.imported} project
-                        {apoImport.data.imported === 1 ? "" : "s"}
-                        {apoImport.data.unmatched.length > 0 &&
-                          ` · ${apoImport.data.unmatched.length} unmatched codes`}
+                        {t("importedProjects", { count: apoImport.data.imported })}
+                        {apoImport.data.unmatched.length > 0
+                          ? t("unmatchedCodes", { count: apoImport.data.unmatched.length })
+                          : ""}
                       </p>
                     ) : null}
                   </div>
 
                   <div className="mt-6 border-t border-stone-100 pt-4 dark:border-stone-800">
-                    <h3 className="text-sm font-medium">Amrit Poshan Vatika site CSV import</h3>
-                    <p className="mt-1 text-xs text-stone-500">
-                      Paste CSV with columns: apv_site_id, project_code, project_name, site_type,
-                      gram_panchayat, site_area_ha (optional: awc_code, block_nutrition_officer,
-                      beneficiary_households)
-                    </p>
+                    <h3 className="text-sm font-medium">{t("apvImport")}</h3>
+                    <p className="mt-1 text-xs text-stone-500">{t("apvColumns")}</p>
                     <textarea
                       className="input mt-2 min-h-[100px] font-mono text-xs"
                       value={apvCsv}
                       onChange={(e) => setApvCsv(e.target.value)}
-                      placeholder="apv_site_id,project_code,project_name,site_type,gram_panchayat,site_area_ha"
+                      placeholder={t("apvPlaceholder")}
                     />
                     <button
                       type="button"
@@ -639,30 +672,32 @@ export default function PlatformOpsPage() {
                       disabled={apvImport.isPending || apvCsv.trim().length < 10}
                       onClick={() => apvImport.mutate()}
                     >
-                      {apvImport.isPending ? "Importing…" : "Import APV site rows"}
+                      {apvImport.isPending ? t("importing") : t("importApvRows")}
                     </button>
                     {apvImport.data ? (
                       <p className="mt-2 text-xs text-stone-600">
-                        Imported {apvImport.data.imported} project
-                        {apvImport.data.imported === 1 ? "" : "s"}
-                        {apvImport.data.unmatched.length > 0 &&
-                          ` · ${apvImport.data.unmatched.length} unmatched codes`}
+                        {t("importedProjects", { count: apvImport.data.imported })}
+                        {apvImport.data.unmatched.length > 0
+                          ? t("unmatchedCodes", { count: apvImport.data.unmatched.length })
+                          : ""}
                       </p>
                     ) : null}
                   </div>
                 </section>
               ) : (
-                <p className="text-sm text-stone-500">Loading scheme rollup…</p>
+                <p className="text-sm text-stone-500">{t("loadingSchemeRollup")}</p>
               )
             ) : null}
 
             {tab === "config" ? (
               settings ? (
                 <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
-                  <h2 className="text-lg font-semibold">System configuration</h2>
+                  <h2 className="text-lg font-semibold">{t("systemConfig")}</h2>
                   <p className="mt-1 text-sm text-stone-500">
-                    Read-only snapshot of integration and feature flags ({settings.app_env} · v
-                    {settings.app_version}).
+                    {t("systemConfigDesc", {
+                      env: settings.app_env,
+                      version: settings.app_version,
+                    })}
                   </p>
                   <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
                     {Object.entries(settings).map(([key, value]) => (
@@ -677,7 +712,7 @@ export default function PlatformOpsPage() {
                   </dl>
                 </section>
               ) : (
-                <p className="text-sm text-stone-500">Loading configuration…</p>
+                <p className="text-sm text-stone-500">{t("loadingConfig")}</p>
               )
             ) : null}
           </>
@@ -688,18 +723,18 @@ export default function PlatformOpsPage() {
         open={stepUpOpen}
         title={
           stepUpAction?.kind === "retry_webhook"
-            ? "Retry webhook delivery"
+            ? t("stepUpRetryWebhook")
             : stepUpAction?.kind === "retry_job"
-              ? "Retry monitoring job"
-              : "Trigger monitoring job"
+              ? t("stepUpRetryJob")
+              : t("stepUpTriggerJob")
         }
-        description="Re-enter your admin password to confirm this operations action."
+        description={t("stepUpDesc")}
         confirmLabel={
           stepUpAction?.kind === "trigger_job"
-            ? "Trigger job"
+            ? t("stepUpTriggerJobConfirm")
             : stepUpAction?.kind === "retry_job"
-              ? "Retry job"
-              : "Retry webhook"
+              ? t("stepUpRetryJobConfirm")
+              : t("stepUpRetryWebhookConfirm")
         }
         busy={stepUpMutation.isPending}
         onClose={() => {
