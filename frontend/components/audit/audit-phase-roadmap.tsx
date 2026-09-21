@@ -22,6 +22,7 @@ const STEP_IDS = [
   "risk",
   "sampling",
   "field",
+  "reconciliation",
   "export",
   "attestation",
 ] as const;
@@ -32,8 +33,20 @@ const STEP_UNLOCK_STATUS: Record<(typeof STEP_IDS)[number], string> = {
   risk: "confidence_mapped",
   sampling: "risk_assessed",
   field: "sampling_planned",
+  reconciliation: "sampling_planned",
   export: "field_verified",
   attestation: "export_ready",
+};
+
+const STEP_TO_PHASE: Record<(typeof STEP_IDS)[number], string> = {
+  satellite: "satellite",
+  confidence: "confidence",
+  risk: "risk",
+  sampling: "sampling",
+  field: "sampling",
+  reconciliation: "reconciliation",
+  export: "export",
+  attestation: "attestation",
 };
 
 function statusIndex(status: string): number {
@@ -59,7 +72,7 @@ export function AuditPhaseRoadmap({
     confidence: "confidence",
     risk: "risk",
     sampling: "field",
-    reconciliation: "field",
+    reconciliation: "reconciliation",
     export: "export",
     attestation: "attestation",
   };
@@ -89,35 +102,13 @@ export function AuditPhaseRoadmap({
                 locked && "border-stone-200 bg-white/60 text-stone-500 dark:bg-stone-950/40",
                 clickable && "cursor-pointer hover:border-forest-200",
               )}
-              onClick={
-                clickable
-                  ? () => {
-                      const phaseMap: Record<string, string> = {
-                        satellite: "satellite",
-                        confidence: "confidence",
-                        risk: "risk",
-                        field: "sampling",
-                        export: "export",
-                        attestation: "attestation",
-                      };
-                      onSelectPhase?.(phaseMap[stepId] ?? stepId);
-                    }
-                  : undefined
-              }
+              onClick={clickable ? () => onSelectPhase?.(STEP_TO_PHASE[stepId]) : undefined}
               onKeyDown={
                 clickable
                   ? (e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const phaseMap: Record<string, string> = {
-                          satellite: "satellite",
-                          confidence: "confidence",
-                          risk: "risk",
-                          field: "sampling",
-                          export: "export",
-                          attestation: "attestation",
-                        };
-                        onSelectPhase?.(phaseMap[stepId] ?? stepId);
+                        onSelectPhase?.(STEP_TO_PHASE[stepId]);
                       }
                     }
                   : undefined

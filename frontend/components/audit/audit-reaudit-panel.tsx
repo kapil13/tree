@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { RefreshCw } from "lucide-react";
 import { auditEngagements, errorMessage } from "@/lib/api";
 import { AuditPanelShell } from "@/components/audit/audit-panel-shell";
-import { formatAuditStatus } from "@/lib/audit-workspace";
+import { auditEngagementStatusLabel } from "@/lib/audit-portfolio-status";
 
 export function AuditReauditPanel({
   engagementId,
@@ -58,7 +58,9 @@ export function AuditReauditPanel({
       ) : (
         <>
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            {t("currentStatus", { status: formatAuditStatus(cycles?.status ?? engagementStatus) })}
+            {t("currentStatus", {
+              status: auditEngagementStatusLabel(cycles?.status ?? engagementStatus),
+            })}
           </p>
 
           {cycles && cycles.cycles.length > 0 ? (

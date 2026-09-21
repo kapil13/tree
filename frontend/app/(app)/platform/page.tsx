@@ -30,7 +30,7 @@ const QUICK_LINKS = [
   { href: "/platform/users", label: "Manage users", icon: Users },
   { href: "/platform/organizations", label: "Organizations", icon: Building2 },
   { href: "/platform/program-access", label: "Program queue", icon: ClipboardList },
-  { href: "/platform/audit", label: "Audit log", icon: ScrollText },
+  { href: "/platform/audit", label: "Activity log", icon: ScrollText },
   { href: "/platform/governance", label: "Governance", icon: Shield },
 ];
 

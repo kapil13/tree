@@ -26,7 +26,7 @@ export function AuditCrossLinks({
 
   const links = [
     {
-      href: fieldOpsHref({ section: "audit" }),
+      href: fieldOpsHref({ section: "audit", projectId }),
       icon: ClipboardList,
       label: t("linkFieldOps"),
       description: t("linkFieldOpsDesc"),
@@ -44,7 +44,7 @@ export function AuditCrossLinks({
       description: t("linkSatelliteDesc"),
     },
     {
-      href: "/field-ops?section=audit",
+      href: "/field-ops/sync-queue",
       icon: Smartphone,
       label: t("linkMobile"),
       description: t("linkMobileDesc"),
@@ -63,7 +63,7 @@ export function AuditCrossLinks({
         {t("crossLinksTitle")}
       </p>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{t("crossLinksDesc")}</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {links.map((link) => {
           const Icon = link.icon;
           return (

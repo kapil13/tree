@@ -13,7 +13,7 @@ const GLOBAL_HOTKEYS: PlatformHotkey[] = [
   { keys: "G then O", description: "Go to overview" },
   { keys: "G then U", description: "Go to users" },
   { keys: "G then R", description: "Go to organizations" },
-  { keys: "G then A", description: "Go to audit log" },
+  { keys: "G then A", description: "Go to activity log" },
   { keys: "G then G", description: "Go to governance" },
 ];
 

@@ -73,7 +73,7 @@ const NAV: NavItem[] = [
   },
   {
     href: "/platform/audit",
-    label: "Audit log",
+    label: "Activity log",
     icon: ScrollText,
     visible: (user) => canManagePlatformUsers(user),
   },

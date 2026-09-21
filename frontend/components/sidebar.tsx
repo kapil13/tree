@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -49,6 +49,7 @@ export type NavItem = {
   excludeViewers?: boolean;
   exact?: boolean;
   featureFlag?: OrgFeatureFlagKey;
+  tabQuery?: { key: string; value: string };
   children?: NavItem[];
 };
 
@@ -111,6 +112,15 @@ const NAV_GROUPS: NavGroup[] = [
         icon: Activity,
         audience: ["professional", "field_supervisor"],
         exact: true,
+        featureFlag: "satellite",
+      },
+      {
+        href: "/portfolio-health?tab=audit",
+        labelKey: "estateWatch",
+        hintKey: "estateWatchHint",
+        icon: ShieldCheck,
+        audience: ["professional", "field_supervisor"],
+        tabQuery: { key: "tab", value: "audit" },
         featureFlag: "satellite",
       },
       {
@@ -265,12 +275,24 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-function isActive(path: string | null, item: NavItem): boolean {
+function isActive(
+  path: string | null,
+  item: NavItem,
+  searchParams?: URLSearchParams | null,
+): boolean {
   if (!path) return false;
-  if (item.children?.some((child) => isActive(path, child))) return true;
-  if (item.exact) return path === item.href;
+  if (item.children?.some((child) => isActive(path, child, searchParams))) return true;
+  if (item.tabQuery) {
+    const basePath = item.href.split("?")[0];
+    return (
+      path === basePath && searchParams?.get(item.tabQuery.key) === item.tabQuery.value
+    );
+  }
+  if (item.exact) return path === item.href.split("?")[0];
   if (item.href === "/dashboard") return path === "/dashboard";
-  if (item.href === "/portfolio-health") return path === "/portfolio-health";
+  if (item.href === "/portfolio-health") {
+    return path === "/portfolio-health" && searchParams?.get("tab") !== "audit";
+  }
   if (item.href === "/trees") {
     return path === "/trees" || (path.startsWith("/trees/") && !path.startsWith("/trees/new"));
   }
@@ -341,15 +363,17 @@ function NavItemLink({
 function ReportsNavDropdown({
   item,
   path,
+  searchParams,
   onNavigate,
 }: {
   item: NavItem;
   path: string | null;
+  searchParams: URLSearchParams | null;
   onNavigate?: () => void;
 }) {
   const t = useTranslations("nav");
   const children = item.children ?? [];
-  const sectionActive = isActive(path, item);
+  const sectionActive = isActive(path, item, searchParams);
   const [open, setOpen] = useState(sectionActive);
 
   useEffect(() => {
@@ -399,7 +423,7 @@ function ReportsNavDropdown({
             <NavItemLink
               key={child.href}
               item={child}
-              active={isActive(path, child)}
+              active={isActive(path, child, searchParams)}
               onNavigate={onNavigate}
               nested
             />
@@ -438,6 +462,7 @@ function filterNavTree(
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { flags } = useOrgFeatureFlagMap();
   const { pendingCount } = useOfflineTreeQueue();
@@ -520,11 +545,12 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                     key={item.href}
                     item={item}
                     path={path}
+                    searchParams={searchParams}
                     onNavigate={onNavigate}
                   />
                 );
               }
-              const active = isActive(path, item);
+              const active = isActive(path, item, searchParams);
               return (
                 <NavItemLink
                   key={item.href}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
@@ -52,6 +53,7 @@ export function PortfolioAuditTab({
   const { user } = useAuth();
   const t = useTranslations("portfolioTabs.audit");
   const tc = useTranslations("portfolioTabs.common");
+  const [showAllEngagements, setShowAllEngagements] = useState(false);
 
   const [summaryQ, queueQ] = useQueries({
     queries: [
@@ -111,6 +113,8 @@ export function PortfolioAuditTab({
       p.engagement_status === "field_verified",
   );
 
+  const displayedProjects = showAllEngagements ? projects : attentionProjects;
+
   const crossLinks = [
     {
       href: auditFieldOpsHref,
@@ -119,7 +123,7 @@ export function PortfolioAuditTab({
       description: t("crossLinks.fieldOpsDesc"),
     },
     {
-      href: auditFieldOpsHref,
+      href: "/field-ops/sync-queue",
       icon: Smartphone,
       label: t("crossLinks.mobile"),
       description: t("crossLinks.mobileDesc"),
@@ -228,77 +232,167 @@ export function PortfolioAuditTab({
         description={t("engagements.desc")}
         action={{ label: t("engagements.openFieldOps"), href: auditFieldOpsHref }}
       >
-        {attentionProjects.length === 0 ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-stone-100 px-4 py-2 dark:border-stone-800">
+          <button
+            type="button"
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset transition",
+              showAllEngagements
+                ? "bg-forest-50 text-forest-800 ring-forest-200 dark:bg-forest-950/40 dark:text-forest-200"
+                : "bg-white text-stone-600 ring-stone-200 hover:bg-stone-50 dark:bg-stone-950 dark:text-stone-300",
+            )}
+            onClick={() => setShowAllEngagements((value) => !value)}
+            aria-pressed={showAllEngagements}
+          >
+            {showAllEngagements ? t("engagements.showPriority") : t("engagements.showAll")}
+          </button>
+        </div>
+        {displayedProjects.length === 0 ? (
           <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">{t("engagements.empty")}</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
-              <tr>
-                <th className="px-4 py-2">{t("table.project")}</th>
-                <th className="px-4 py-2">{t("table.segment")}</th>
-                <th className="px-4 py-2">{t("table.status")}</th>
-                <th className="px-4 py-2">{t("table.plotsDue")}</th>
-                <th className="px-4 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {attentionProjects.map((project) => (
-                <tr key={project.id} className="border-t border-stone-100 dark:border-stone-800">
-                  <td className="px-4 py-2">
-                    <Link
-                      href={projectAuditHref(project.id)}
-                      className="font-medium text-forest-800 hover:underline dark:text-forest-300"
-                    >
-                      {project.name}
-                    </Link>
-                    <div className="text-xs text-stone-500">{project.code}</div>
-                  </td>
-                  <td className="px-4 py-2">{SEGMENT_LABEL[project.segment] ?? project.segment}</td>
-                  <td className="px-4 py-2">
+          <>
+            <div className="space-y-3 p-4 md:hidden">
+              {displayedProjects.map((project) => (
+                <article
+                  key={project.id}
+                  className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-950"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={projectAuditHref(project.id)}
+                        className="font-medium text-forest-800 hover:underline dark:text-forest-300"
+                      >
+                        {project.name}
+                      </Link>
+                      <p className="text-xs text-stone-500">{project.code}</p>
+                    </div>
                     <span
                       className={cn(
-                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
+                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
                         auditEngagementStatusTone(project.engagement_status),
                       )}
                     >
                       {auditEngagementStatusLabel(project.engagement_status)}
                     </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    {project.audit_plots_due > 0 ? (
-                      <span className="text-amber-700 dark:text-amber-300">{project.audit_plots_due}</span>
-                    ) : (
-                      "0"
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right">
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <dt className="text-stone-500">{t("table.segment")}</dt>
+                      <dd className="font-medium text-stone-800 dark:text-stone-100">
+                        {SEGMENT_LABEL[project.segment] ?? project.segment}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-stone-500">{t("table.plotsDue")}</dt>
+                      <dd
+                        className={cn(
+                          "font-medium",
+                          project.audit_plots_due > 0
+                            ? "text-amber-700 dark:text-amber-300"
+                            : "text-stone-800 dark:text-stone-100",
+                        )}
+                      >
+                        {project.audit_plots_due}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 text-right">
                     {project.audit_plots_due > 0 ? (
                       <Link
                         href={auditFieldOpsHref}
-                        className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        className="text-xs font-medium text-forest-700 hover:underline dark:text-forest-300"
                       >
                         {tc("relatedAudit")}
                       </Link>
                     ) : auditAttestationEnabled(project.engagement_status) ? (
                       <Link
                         href={projectAuditHref(project.id)}
-                        className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        className="text-xs font-medium text-forest-700 hover:underline dark:text-forest-300"
                       >
                         {t("openAttestation")}
                       </Link>
                     ) : (
                       <Link
                         href={projectAuditHref(project.id)}
-                        className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        className="text-xs font-medium text-forest-700 hover:underline dark:text-forest-300"
                       >
                         {t("openAudit")}
                       </Link>
                     )}
-                  </td>
-                </tr>
+                  </div>
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <table className="hidden w-full text-sm md:table">
+              <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
+                <tr>
+                  <th className="px-4 py-2">{t("table.project")}</th>
+                  <th className="px-4 py-2">{t("table.segment")}</th>
+                  <th className="px-4 py-2">{t("table.status")}</th>
+                  <th className="px-4 py-2">{t("table.plotsDue")}</th>
+                  <th className="px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {displayedProjects.map((project) => (
+                  <tr key={project.id} className="border-t border-stone-100 dark:border-stone-800">
+                    <td className="px-4 py-2">
+                      <Link
+                        href={projectAuditHref(project.id)}
+                        className="font-medium text-forest-800 hover:underline dark:text-forest-300"
+                      >
+                        {project.name}
+                      </Link>
+                      <div className="text-xs text-stone-500">{project.code}</div>
+                    </td>
+                    <td className="px-4 py-2">{SEGMENT_LABEL[project.segment] ?? project.segment}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
+                          auditEngagementStatusTone(project.engagement_status),
+                        )}
+                      >
+                        {auditEngagementStatusLabel(project.engagement_status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      {project.audit_plots_due > 0 ? (
+                        <span className="text-amber-700 dark:text-amber-300">{project.audit_plots_due}</span>
+                      ) : (
+                        "0"
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {project.audit_plots_due > 0 ? (
+                        <Link
+                          href={auditFieldOpsHref}
+                          className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        >
+                          {tc("relatedAudit")}
+                        </Link>
+                      ) : auditAttestationEnabled(project.engagement_status) ? (
+                        <Link
+                          href={projectAuditHref(project.id)}
+                          className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        >
+                          {t("openAttestation")}
+                        </Link>
+                      ) : (
+                        <Link
+                          href={projectAuditHref(project.id)}
+                          className="text-xs text-forest-700 hover:underline dark:text-forest-300"
+                        >
+                          {t("openAudit")}
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </PortfolioSection>
 

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { MetricGrid } from "@/components/ui";
 import type { AuditEngagementDetail } from "@/lib/api";
-import { formatAuditStatus } from "@/lib/audit-workspace";
+import { auditEngagementStatusLabel } from "@/lib/audit-portfolio-status";
 
 export function AuditMetricsStrip({
   engagement,
@@ -21,7 +21,7 @@ export function AuditMetricsStrip({
   const metrics = [
     {
       label: t("metricPhase"),
-      value: formatAuditStatus(engagement.status),
+      value: auditEngagementStatusLabel(engagement.status),
       tone: engagement.status === "attested" ? "positive" : "default",
     },
     {

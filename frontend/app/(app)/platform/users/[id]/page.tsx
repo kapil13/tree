@@ -255,7 +255,7 @@ export default function PlatformUserDetailPage() {
         {fullAdmin ? (
           <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold">Audit trail</h3>
+              <h3 className="text-lg font-semibold">Activity log</h3>
               <Link
                 href={buildPlatformAuditUrl({
                   resourceType: "user",
@@ -263,7 +263,7 @@ export default function PlatformUserDetailPage() {
                 })}
                 className="inline-flex items-center gap-1 text-xs font-medium text-forest-700 hover:underline"
               >
-                Open in audit log
+                Open in activity log
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </div>
