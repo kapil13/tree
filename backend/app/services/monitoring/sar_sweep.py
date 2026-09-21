@@ -20,6 +20,7 @@ from app.services.monitoring.alert_engine import create_monitoring_alert
 from app.services.monitoring.sar_alert_links import enrich_sar_alert_payload
 from app.services.monitoring.sar_field_tasks import maybe_create_sar_field_verification
 from app.services.monitoring.sar_fusion_alerts import fusion_from_metadata, maybe_alert_sar_fusion
+from app.services.monitoring.sweep_batch_context import FenceSarBatchContext
 from app.services.satellite.sar_analytics import analysis_to_dict, analyze_sar_sample
 from app.services.satellite.sar_fusion import analyze_sar_fusion, fusion_to_dict
 from app.services.satellite.sar_service import get_sar_service, is_sar_provider_record
@@ -246,6 +247,7 @@ async def scan_and_persist_fence_sar(
     fence: PlantationFence,
     *,
     notify_user_id: uuid.UUID | None = None,
+    batch_ctx: FenceSarBatchContext | None = None,
 ) -> tuple[PlantationSatelliteRecord, SarAnalysisResult] | None:
     try:
         boundary = geography_to_geojson_polygon(fence.boundary)
@@ -259,8 +261,12 @@ async def scan_and_persist_fence_sar(
         log.warning("fence_sar_scan_failed", fence_id=str(fence.id), error=str(exc))
         return None
 
-    optical = await _latest_optical_context_fence(db, fence.id)
-    prior_rec = await latest_sar_record_for_fence(db, fence.id)
+    if batch_ctx is not None:
+        optical = batch_ctx.optical_context(fence.id)
+        prior_rec = batch_ctx.prior_sar_record(fence.id)
+    else:
+        optical = await _latest_optical_context_fence(db, fence.id)
+        prior_rec = await latest_sar_record_for_fence(db, fence.id)
     prior_fusion = fusion_from_metadata(prior_rec.raw_metadata if prior_rec else None)
     analysis = analyze_sar_sample(sample, ndvi_mean=optical.ndvi_mean if optical else None)
     fusion = fusion_to_dict(analyze_sar_fusion(sample, optical=optical))
@@ -279,7 +285,10 @@ async def scan_and_persist_fence_sar(
     await db.flush()
 
     owner_id = notify_user_id or fence.owner_user_id
-    owner = await db.get(User, owner_id) if owner_id else None
+    if batch_ctx is not None:
+        owner = batch_ctx.owner(owner_id)
+    else:
+        owner = await db.get(User, owner_id) if owner_id else None
     await maybe_alert_sar_risks(
         db,
         user=owner,

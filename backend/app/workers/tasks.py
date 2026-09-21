@@ -143,20 +143,24 @@ def monthly_sar_sweep() -> dict:
             notify_project_owners_sweep_health,
             summarize_sweep_counts,
         )
+        from app.services.monitoring.sweep_batch_context import build_fence_sar_batch_context
         from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 
-        scanned = failed = skipped = stub_scans = live_scans = 0
+        scanned = failed = stub_scans = live_scans = 0
         touched_projects: set = set()
         async with AsyncSessionLocal() as db:
             fences = await fetch_satellite_watch_fences(db)
+            to_scan = [
+                fence
+                for fence in fences
+                if not fence.last_satellite_at
+                or (datetime.now(UTC) - fence.last_satellite_at).days >= 20
+            ]
+            skipped = len(fences) - len(to_scan)
+            batch_ctx = await build_fence_sar_batch_context(db, to_scan)
 
-            for fence in fences:
-                if fence.last_satellite_at:
-                    age_days = (datetime.now(UTC) - fence.last_satellite_at).days
-                    if age_days < 20:
-                        skipped += 1
-                        continue
-                result = await scan_and_persist_fence_sar(db, fence)
+            for fence in to_scan:
+                result = await scan_and_persist_fence_sar(db, fence, batch_ctx=batch_ctx)
                 if result:
                     rec, _analysis = result
                     scanned += 1
@@ -205,6 +209,7 @@ def weekly_sar_integrity_watch() -> dict:
             notify_project_owners_sweep_health,
             summarize_sweep_counts,
         )
+        from app.services.monitoring.sweep_batch_context import build_fence_sar_batch_context
         from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 
         scanned = failed = stub_scans = live_scans = 0
@@ -213,11 +218,10 @@ def weekly_sar_integrity_watch() -> dict:
             fences = await fetch_satellite_watch_fences(db)
             at_risk_ids = await list_at_risk_fence_ids(db, [f.id for f in fences], limit=20)
             fence_by_id = {f.id: f for f in fences}
-            for fence_id in at_risk_ids:
-                fence = fence_by_id.get(fence_id)
-                if fence is None:
-                    continue
-                result = await scan_and_persist_fence_sar(db, fence)
+            to_scan = [fence_by_id[fid] for fid in at_risk_ids if fid in fence_by_id]
+            batch_ctx = await build_fence_sar_batch_context(db, to_scan)
+            for fence in to_scan:
+                result = await scan_and_persist_fence_sar(db, fence, batch_ctx=batch_ctx)
                 if result:
                     rec, _analysis = result
                     scanned += 1

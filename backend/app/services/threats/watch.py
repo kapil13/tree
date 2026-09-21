@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.user import User
@@ -19,6 +20,8 @@ from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.fire_watch import assess_fire_proximity
 from app.services.threats.flood_extent import assess_fence_flood_extent
 from app.services.weather.alerts import evaluate_weather_alerts, weather_alert_summary
+
+log = get_logger("threats.watch")
 
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
 
@@ -171,23 +174,35 @@ async def build_portfolio_threat_watch(
     stmt = _fence_scope(select(PlantationFence), user).order_by(PlantationFence.created_at.desc())
     fences = list((await db.execute(stmt.limit(limit))).scalars().all())
 
-    project_cache: dict[uuid.UUID, PlantingProject] = {}
+    project_ids = {fence.project_id for fence in fences if fence.project_id}
+    project_cache: dict[uuid.UUID, PlantingProject | None] = {}
+    if project_ids:
+        res = await db.execute(select(PlantingProject).where(PlantingProject.id.in_(project_ids)))
+        project_cache = {project.id: project for project in res.scalars().all()}
+
     sites: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
 
     for fence in fences:
-        project = None
-        if fence.project_id:
-            if fence.project_id not in project_cache:
-                res = await db.execute(
-                    select(PlantingProject).where(PlantingProject.id == fence.project_id)
-                )
-                project_cache[fence.project_id] = res.scalar_one_or_none()
-            project = project_cache.get(fence.project_id)
+        project = project_cache.get(fence.project_id) if fence.project_id else None
 
         try:
             site = await build_site_threat_watch(db, fence=fence, project=project)
             sites.append(site)
-        except Exception:
+        except Exception as exc:
+            log.warning(
+                "portfolio_threat_watch.site_failed",
+                fence_id=str(fence.id),
+                work_area_name=fence.name,
+                error=str(exc),
+            )
+            failures.append(
+                {
+                    "work_area_id": str(fence.id),
+                    "work_area_name": fence.name,
+                    "error": str(exc)[:500],
+                }
+            )
             continue
 
     sites.sort(
@@ -229,7 +244,9 @@ async def build_portfolio_threat_watch(
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "summary": {
+            "sites_requested": len(fences),
             "sites_monitored": len(sites),
+            "sites_failed": len(failures),
             "weather_alerts_count": weather_count,
             "pest_high_count": pest_high,
             "locust_watch_count": locust_watch,
@@ -238,4 +255,5 @@ async def build_portfolio_threat_watch(
             "highest_risk": highest,
         },
         "sites": sites,
+        "failures": failures,
     }

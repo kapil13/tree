@@ -9,7 +9,9 @@ def test_threat_watch_response_includes_fire_flood_summary():
     data = {
         "generated_at": "2026-09-12T00:00:00+00:00",
         "summary": {
+            "sites_requested": 2,
             "sites_monitored": 2,
+            "sites_failed": 0,
             "weather_alerts_count": 1,
             "pest_high_count": 0,
             "locust_watch_count": 0,
@@ -48,8 +50,11 @@ def test_threat_watch_response_includes_fire_flood_summary():
                 ],
             }
         ],
+        "failures": [],
     }
     parsed = ThreatWatchResponse.model_validate(data)
+    assert parsed.summary.sites_requested == 2
+    assert parsed.summary.sites_failed == 0
     assert parsed.summary.fire_watch_count == 1
     assert parsed.summary.flood_extent_watch_count == 1
     assert parsed.sites[0].fire_watch is not None

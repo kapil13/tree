@@ -18,6 +18,10 @@ from app.models.tree import Tree
 from app.models.user import User
 from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.ndvi_change_alerts import emit_ndvi_change_alerts
+from app.services.monitoring.sweep_batch_context import (
+    FenceSatelliteBatchContext,
+    build_fence_satellite_batch_context,
+)
 from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 
@@ -123,6 +127,7 @@ async def scan_and_persist_work_area(
     require_sentinel: bool = False,
     run_health_analysis: bool = True,
     notify_user_id: uuid.UUID | None = None,
+    batch_ctx: FenceSatelliteBatchContext | None = None,
 ) -> PlantationSatelliteRecord | None:
     boundary = geography_to_geojson_polygon(fence.boundary)
     try:
@@ -134,7 +139,10 @@ async def scan_and_persist_work_area(
     sample = result.sample
     change = sample.change_vs_baseline
     if sample.ndvi_mean is not None:
-        computed = await _baseline_ndvi_change(db, fence.id, float(sample.ndvi_mean))
+        if batch_ctx is not None:
+            computed = batch_ctx.baseline_ndvi_change(fence.id, float(sample.ndvi_mean))
+        else:
+            computed = await _baseline_ndvi_change(db, fence.id, float(sample.ndvi_mean))
         if computed != 0.0:
             change = computed
 
@@ -162,9 +170,15 @@ async def scan_and_persist_work_area(
 
     if change is not None and sample.ndvi_mean is not None:
         owner_id = notify_user_id or fence.owner_user_id
-        owner = await db.get(User, owner_id) if owner_id else None
+        if batch_ctx is not None:
+            owner = batch_ctx.owner(owner_id)
+        else:
+            owner = await db.get(User, owner_id) if owner_id else None
         if owner:
-            recent = await _recent_ndvi_values_for_fence(db, fence.id)
+            if batch_ctx is not None:
+                recent = batch_ctx.recent_ndvi_values(fence.id)
+            else:
+                recent = await _recent_ndvi_values_for_fence(db, fence.id)
             await emit_ndvi_change_alerts(
                 db,
                 user=owner,
@@ -264,14 +278,22 @@ async def run_monthly_satellite_sweep(db: AsyncSession) -> dict[str, Any]:
     skipped = 0
 
     fences = await fetch_satellite_watch_fences(db)
+    to_scan = [
+        fence
+        for fence in fences
+        if not fence.last_satellite_at
+        or (datetime.now(UTC) - fence.last_satellite_at).days >= 25
+    ]
+    skipped = len(fences) - len(to_scan)
+    batch_ctx = await build_fence_satellite_batch_context(db, to_scan)
 
-    for fence in fences:
-        if fence.last_satellite_at:
-            age_days = (datetime.now(UTC) - fence.last_satellite_at).days
-            if age_days < 25:
-                skipped += 1
-                continue
-        rec = await scan_and_persist_work_area(db, fence, require_sentinel=False)
+    for fence in to_scan:
+        rec = await scan_and_persist_work_area(
+            db,
+            fence,
+            require_sentinel=False,
+            batch_ctx=batch_ctx,
+        )
         if rec:
             scanned += 1
         else:
@@ -295,8 +317,15 @@ async def run_project_satellite_scan(db: AsyncSession, project_id: uuid.UUID) ->
     res = await db.execute(
         select(PlantationFence).where(PlantationFence.project_id == project_id)
     )
-    for fence in res.scalars().all():
-        rec = await scan_and_persist_work_area(db, fence, require_sentinel=False)
+    fences = list(res.scalars().all())
+    batch_ctx = await build_fence_satellite_batch_context(db, fences)
+    for fence in fences:
+        rec = await scan_and_persist_work_area(
+            db,
+            fence,
+            require_sentinel=False,
+            batch_ctx=batch_ctx,
+        )
         if rec:
             scanned += 1
         else:
