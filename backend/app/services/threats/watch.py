@@ -16,6 +16,7 @@ from app.models.user import User
 from app.services.alerts.interpreter import build_site_preparedness_brief
 from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
+from app.services.monitoring.data_freshness import build_site_data_freshness
 from app.services.monitoring.monitoring_read_cache import (
     get_cached_threat_watch,
     set_cached_threat_watch,
@@ -91,6 +92,7 @@ async def build_site_threat_watch(
     lat, lon = polygon_centroid(boundary)
 
     intel = await build_pest_intel(db, fence=fence, project=project, weather_days=weather_days)
+    data_freshness = await build_site_data_freshness(db, fence.id, intel=intel)
 
     weather_alerts: list[dict[str, Any]] = []
     forecast_summary = "Forecast unavailable."
@@ -163,6 +165,7 @@ async def build_site_threat_watch(
         },
         "forecast_summary": forecast_summary,
         "recommended_actions": intel.get("recommended_actions", []),
+        "data_freshness": data_freshness,
     }
     site_data["preparedness_brief"] = build_site_preparedness_brief(site_data)
     return site_data

@@ -23,6 +23,7 @@ from app.services.monitoring.monitoring_read_cache import (
     get_cached_fence_health_latest,
     get_cached_tree_health_latest,
     invalidate_fence_health_latest,
+    invalidate_threat_watch_for_user,
     invalidate_tree_health_latest,
     set_cached_fence_health_latest,
     set_cached_tree_health_latest,
@@ -225,6 +226,8 @@ async def analyze_tree_satellite_health(
     )
     out = _out_from_row(row)
     await invalidate_tree_health_latest(tree_id)
+    if notify_user:
+        await invalidate_threat_watch_for_user(notify_user)
     await set_cached_tree_health_latest(tree_id, out.model_dump(mode="json"))
     return out
 
@@ -276,6 +279,8 @@ async def analyze_fence_satellite_health(
     )
     out = _out_from_row(row)
     await invalidate_fence_health_latest(fence_id)
+    if notify_user:
+        await invalidate_threat_watch_for_user(notify_user)
     await set_cached_fence_health_latest(fence_id, out.model_dump(mode="json"))
     return out
 

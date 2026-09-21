@@ -16,7 +16,7 @@ from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.models.user import User
-from app.services.geo import geography_to_geojson_polygon
+from app.services.monitoring.boundary_validation import try_fence_boundary_geojson
 from app.services.monitoring.ndvi_change_alerts import emit_ndvi_change_alerts
 from app.services.monitoring.sweep_batch_context import (
     FenceSatelliteBatchContext,
@@ -128,7 +128,9 @@ async def scan_and_persist_work_area(
     notify_user_id: uuid.UUID | None = None,
     batch_ctx: FenceSatelliteBatchContext | None = None,
 ) -> PlantationSatelliteRecord | None:
-    boundary = geography_to_geojson_polygon(fence.boundary)
+    boundary = try_fence_boundary_geojson(fence)
+    if boundary is None:
+        return None
     try:
         result = await scan_plantation_polygon(boundary, require_sentinel=require_sentinel)
     except Exception as exc:

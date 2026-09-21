@@ -154,61 +154,24 @@ def monthly_sar_sweep(cursor: str | None = None, batch_size: int | None = None) 
 
 
 @celery_app.task(name="app.workers.tasks.weekly_sar_integrity_watch")
-def weekly_sar_integrity_watch() -> dict:
-    log.info("worker.weekly_sar_integrity_watch")
+def weekly_sar_integrity_watch(cursor: str | None = None, batch_size: int | None = None) -> dict:
+    log.info("worker.weekly_sar_integrity_watch", cursor=cursor, batch_size=batch_size)
 
     async def _run() -> dict:
-
         from app.core.database import AsyncSessionLocal
-        from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
-        from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
-        from app.services.monitoring.sar_sweep_health import (
-            classify_sar_provider,
-            notify_project_owners_sweep_health,
-            summarize_sweep_counts,
-        )
-        from app.services.monitoring.sweep_batch_context import build_fence_sar_batch_context
-        from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
+        from app.services.monitoring.sweep_jobs import run_weekly_sar_integrity_watch_page
 
-        scanned = failed = stub_scans = live_scans = 0
-        touched_projects: set = set()
         async with AsyncSessionLocal() as db:
-            fences = await fetch_satellite_watch_fences(db)
-            at_risk_ids = await list_at_risk_fence_ids(db, [f.id for f in fences], limit=20)
-            fence_by_id = {f.id: f for f in fences}
-            to_scan = [fence_by_id[fid] for fid in at_risk_ids if fid in fence_by_id]
-            batch_ctx = await build_fence_sar_batch_context(db, to_scan)
-            for fence in to_scan:
-                result = await scan_and_persist_fence_sar(db, fence, batch_ctx=batch_ctx)
-                if result:
-                    rec, _analysis = result
-                    scanned += 1
-                    if fence.project_id:
-                        touched_projects.add(fence.project_id)
-                    if classify_sar_provider(rec.provider) == "live":
-                        live_scans += 1
-                    elif classify_sar_provider(rec.provider) == "stub":
-                        stub_scans += 1
-                else:
-                    failed += 1
-            outcome = summarize_sweep_counts(
-                scanned=scanned,
-                failed=failed,
-                stub_scans=stub_scans,
-                live_scans=live_scans,
-            )
-            await notify_project_owners_sweep_health(
+            result = await run_weekly_sar_integrity_watch_page(
                 db,
-                project_ids=touched_projects,
-                job_name="weekly_sar_integrity_watch",
-                outcome=outcome,
+                cursor=cursor,
+                batch_size=batch_size,
             )
-            await db.commit()
-        return {
-            **outcome,
-            "candidates": len(at_risk_ids),
-            "watch_gated": True,
-        }
+        next_cursor = result.get("next_cursor")
+        if next_cursor:
+            weekly_sar_integrity_watch.delay(cursor=next_cursor, batch_size=batch_size)
+            result["chained"] = True
+        return result
 
     return _execute_recorded("weekly_sar_integrity_watch", _run)
 

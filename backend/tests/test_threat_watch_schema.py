@@ -48,9 +48,17 @@ def test_threat_watch_response_includes_fire_flood_summary():
                         "distance_km": 12.4,
                     }
                 ],
+                "data_freshness": {
+                    "satellite_health_stale": True,
+                    "optical_stale": False,
+                    "sar_stale": False,
+                    "sar_live": True,
+                    "sar_provider_mode": "live",
+                },
             }
         ],
         "failures": [],
+        "cache_hit": False,
     }
     parsed = ThreatWatchResponse.model_validate(data)
     assert parsed.summary.sites_requested == 2

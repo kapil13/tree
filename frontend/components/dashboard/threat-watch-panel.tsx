@@ -52,10 +52,19 @@ export type ThreatWatchSite = {
   preparedness_brief?: PreparednessBrief | null;
 };
 
+export type ThreatWatchFailure = {
+  work_area_id: string;
+  work_area_name: string;
+  error: string;
+};
+
 export type ThreatWatchData = {
   generated_at: string;
+  cache_hit?: boolean;
   summary: {
+    sites_requested?: number;
     sites_monitored: number;
+    sites_failed?: number;
     weather_alerts_count: number;
     pest_high_count: number;
     locust_watch_count: number;
@@ -64,6 +73,7 @@ export type ThreatWatchData = {
     highest_risk: string;
   };
   sites: ThreatWatchSite[];
+  failures?: ThreatWatchFailure[];
 };
 
 const RISK_CLASS: Record<string, string> = {
@@ -111,11 +121,33 @@ export function ThreatWatchPanel() {
 
   const summary = data.summary;
   const sites = data.sites ?? [];
+  const failures = data.failures ?? [];
   const topSites = sites.slice(0, 5);
+  const sitesFailed = summary.sites_failed ?? failures.length;
 
   return (
     <div className="space-y-4">
       <FirmsStatusBanner />
+      {sitesFailed > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">{te("threatWatchPartialFailureTitle")}</p>
+          <p className="mt-1 text-xs text-amber-800">
+            {te("threatWatchPartialFailure", {
+              failed: sitesFailed,
+              requested: summary.sites_requested ?? sitesFailed + summary.sites_monitored,
+            })}
+          </p>
+          {failures.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-amber-800">
+              {failures.slice(0, 3).map((failure) => (
+                <li key={failure.work_area_id}>
+                  <span className="font-medium">{failure.work_area_name}</span>: {failure.error}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {[
           {
@@ -294,6 +326,7 @@ export function ThreatWatchPanel() {
 
       {data.generated_at && (
         <p className="text-[11px] text-stone-400">
+          {data.cache_hit ? `${te("threatWatchCached")} · ` : ""}
           Updated {timeAgo(data.generated_at)} · forecasts from plantation GPS centroids
         </p>
       )}

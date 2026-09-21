@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.services.monitoring.sweep_batch_context import (
@@ -60,6 +60,21 @@ def test_baseline_ndvi_change_uses_prior_samples():
     ]
     change = baseline_ndvi_change_from_fence_records(records, current_ndvi=0.7)
     assert change == 0.15
+
+
+def test_optical_context_skips_stale_scenes():
+    now = datetime.now(UTC)
+    records = [
+        _record(
+            provider="sentinel_hub",
+            ndvi_mean=0.72,
+            acquired=now - timedelta(days=90),
+        ),
+        _record(provider="sentinel_hub", ndvi_mean=0.61, acquired=now - timedelta(days=10)),
+    ]
+    ctx = optical_context_from_fence_records(records, max_stale_days=60)
+    assert ctx is not None
+    assert ctx.ndvi_mean == 0.61
 
 
 def test_recent_ndvi_values_limits_and_filters():
