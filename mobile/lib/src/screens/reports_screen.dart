@@ -124,6 +124,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _downloadMis() async {
+    final l10n = AppLocalizations.of(context)!;
     final report = plantationMisReportById(_misReportId);
     if (report == null) return;
     setState(() => _downloadingMisId = report.id);
@@ -137,7 +138,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       await Share.shareXFiles([XFile(path)], text: report.label);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${report.label} ready to share')),
+          SnackBar(content: Text(l10n.reportReadyShareNamed(report.label))),
         );
       }
     } catch (e) {
@@ -166,7 +167,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       await Share.shareXFiles([XFile(path)], text: l10n.navReports);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report ready to share')),
+          SnackBar(content: Text(l10n.reportReadyToShare)),
         );
       }
     } catch (e) {
@@ -258,7 +259,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       )
                                     : IconButton(
                                         icon: const Icon(Icons.download_outlined),
-                                        tooltip: 'Download',
+                                        tooltip: l10n.downloadLabel,
                                         onPressed: () => _download(Map<String, dynamic>.from(raw)),
                                       ))
                                 : null,
@@ -266,10 +267,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ),
                       if (canGenerate) ...[
                         const SizedBox(height: 24),
-                        Text('Plantation MIS reports', style: Theme.of(context).textTheme.titleMedium),
+                        Text(l10n.reportMisTitle, style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 4),
                         Text(
-                          'Operational exports used by government plantation programmes',
+                          l10n.reportMisSubtitle,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AranyixColors.onSurfaceMuted,
                               ),
@@ -277,7 +278,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           value: _misReportId,
-                          decoration: const InputDecoration(labelText: 'Report type'),
+                          decoration: InputDecoration(labelText: l10n.reportTypeLabel),
                           items: [
                             for (final report in mobilePlantationMisReports)
                               DropdownMenuItem(
@@ -314,7 +315,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
                               : const Icon(Icons.download_outlined),
-                          label: Text(_downloadingMisId != null ? 'Downloading…' : 'Download MIS report'),
+                          label: Text(_downloadingMisId != null ? l10n.reportDownloading : l10n.reportDownloadMis),
                         ),
                       ],
                     ],

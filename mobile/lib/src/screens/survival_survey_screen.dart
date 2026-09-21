@@ -232,7 +232,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
               DropdownMenuItem(value: 'stressed', child: Text(l10n.survivalStressed)),
               DropdownMenuItem(value: 'dead', child: Text(l10n.survivalDead)),
               DropdownMenuItem(value: 'replaced', child: Text(l10n.survivalReplaced)),
-              const DropdownMenuItem(value: 'missing', child: Text('Missing / uprooted')),
+              DropdownMenuItem(value: 'missing', child: Text(l10n.survivalMissingUprooted)),
             ],
             onChanged: _submitting ? null : (v) => setState(() => _survivalStatus = v ?? _survivalStatus),
           ),
@@ -241,9 +241,9 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
             value: _measurementMethod,
             decoration: InputDecoration(labelText: l10n.measurementMethodLabel),
             items: [
-              const DropdownMenuItem(value: 'tape', child: Text('Tape measure (DBH at 1.3 m)')),
+              DropdownMenuItem(value: 'tape', child: Text(l10n.survivalTapeMeasure)),
               DropdownMenuItem(value: 'caliper', child: Text(l10n.caliper)),
-              const DropdownMenuItem(value: 'clinometer', child: Text('Clinometer (height)')),
+              DropdownMenuItem(value: 'clinometer', child: Text(l10n.survivalClinometer)),
               DropdownMenuItem(value: 'visual_estimate', child: Text(l10n.visualEstimate)),
             ],
             onChanged: _submitting ? null : (v) => setState(() => _measurementMethod = v ?? _measurementMethod),
@@ -280,8 +280,8 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
             icon: const Icon(Icons.add_a_photo_outlined),
             label: Text(
               _surveyPhotoKey != null || _localPhotoPath != null
-                  ? 'Survey photo attached'
-                  : (_photoBusy ? 'Capturing photo…' : 'Add survey photo (camera)'),
+                  ? l10n.survivalPhotoAttached
+                  : (_photoBusy ? l10n.survivalCapturingPhoto : l10n.survivalAddPhoto),
             ),
           ),
           const SizedBox(height: 12),
@@ -289,7 +289,7 @@ class _SurvivalSurveyScreenState extends ConsumerState<SurvivalSurveyScreen> {
             controller: _remarks,
             decoration: InputDecoration(
               labelText: l10n.remarksLabel,
-              hintText: 'Condition, replacement notes…',
+              hintText: l10n.survivalRemarksHint,
             ),
             maxLines: 3,
           ),

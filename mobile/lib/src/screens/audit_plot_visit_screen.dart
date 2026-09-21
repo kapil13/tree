@@ -116,12 +116,13 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
   Future<void> _submitVisit() async {
     final plot = _activePlot;
     if (plot == null) return;
+    final l10n = AppLocalizations.of(context)!;
     if (_gps == null) {
-      setState(() => _error = 'Capture GPS before saving the visit.');
+      setState(() => _error = l10n.auditGpsRequired);
       return;
     }
     if (_photoKeys.isEmpty && _localPhotoPaths.isEmpty) {
-      setState(() => _error = 'Add at least one field photo.');
+      setState(() => _error = l10n.auditPhotoRequired);
       return;
     }
     setState(() {
@@ -186,7 +187,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            queuedOffline ? 'Visit queued for sync when online' : 'Audit plot visit saved',
+            queuedOffline ? l10n.auditVisitQueued : l10n.auditVisitSaved,
           ),
         ),
       );
@@ -255,7 +256,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                 if (_activePlot != null) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Visit ${_activePlot!['plot_code']}',
+                    l10n.auditVisitTitle('${_activePlot!['plot_code']}'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -264,13 +265,13 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                       OutlinedButton.icon(
                         onPressed: _gpsBusy ? null : _captureGps,
                         icon: const Icon(Icons.my_location, size: 18),
-                        label: Text(_gpsBusy ? 'Capturing GPS…' : 'Refresh GPS'),
+                        label: Text(_gpsBusy ? l10n.auditCapturingGps : l10n.refreshGps),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
                         onPressed: () => _openMaps(_activePlot!),
                         icon: const Icon(Icons.map_outlined, size: 18),
-                        label: const Text('Navigate'),
+                        label: Text(l10n.auditPlotNavigate),
                       ),
                     ],
                   ),
@@ -278,19 +279,22 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'GPS: ${_gps!.latitude.toStringAsFixed(5)}, ${_gps!.longitude.toStringAsFixed(5)}',
+                        l10n.syncQueueGpsLine(
+                          _gps!.latitude.toStringAsFixed(5),
+                          _gps!.longitude.toStringAsFixed(5),
+                        ),
                         style: const TextStyle(color: Colors.green, fontSize: 12),
                       ),
                     ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _treePresence,
-                    decoration: const InputDecoration(labelText: 'Tree presence'),
-                    items: const [
-                      DropdownMenuItem(value: 'present', child: Text('Trees present')),
-                      DropdownMenuItem(value: 'absent', child: Text('No trees / bare ground')),
-                      DropdownMenuItem(value: 'sparse', child: Text('Sparse / scattered')),
-                      DropdownMenuItem(value: 'not_assessable', child: Text('Cannot assess')),
+                    decoration: InputDecoration(labelText: l10n.auditTreePresence),
+                    items: [
+                      DropdownMenuItem(value: 'present', child: Text(l10n.auditTreesPresent)),
+                      DropdownMenuItem(value: 'absent', child: Text(l10n.auditTreesAbsent)),
+                      DropdownMenuItem(value: 'sparse', child: Text(l10n.auditTreesSparse)),
+                      DropdownMenuItem(value: 'not_assessable', child: Text(l10n.auditCannotAssess)),
                     ],
                     onChanged: (v) => setState(() => _treePresence = v ?? 'present'),
                   ),
@@ -298,22 +302,22 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                   TextField(
                     controller: _treesObservedController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Trees observed'),
+                    decoration: InputDecoration(labelText: l10n.auditTreesObserved),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _treesAliveController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Trees alive'),
+                    decoration: InputDecoration(labelText: l10n.auditTreesAlive),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _outcome,
-                    decoration: const InputDecoration(labelText: 'Outcome'),
-                    items: const [
-                      DropdownMenuItem(value: 'inconclusive', child: Text('Inconclusive')),
-                      DropdownMenuItem(value: 'claim_supported', child: Text('Supported')),
-                      DropdownMenuItem(value: 'claim_unsupported', child: Text('Unsupported')),
+                    decoration: InputDecoration(labelText: l10n.auditOutcome),
+                    items: [
+                      DropdownMenuItem(value: 'inconclusive', child: Text(l10n.auditOutcomeInconclusive)),
+                      DropdownMenuItem(value: 'claim_supported', child: Text(l10n.auditOutcomeSupported)),
+                      DropdownMenuItem(value: 'claim_unsupported', child: Text(l10n.auditOutcomeUnsupported)),
                     ],
                     onChanged: (v) => setState(() => _outcome = v ?? 'inconclusive'),
                   ),
@@ -321,7 +325,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                   TextField(
                     controller: _notesController,
                     maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Field notes'),
+                    decoration: InputDecoration(labelText: l10n.auditFieldNotes),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
@@ -332,8 +336,8 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                     icon: const Icon(Icons.camera_alt_outlined, size: 18),
                     label: Text(
                       _photoBusy
-                          ? 'Uploading photo…'
-                          : 'Add field photo (${_photoKeys.length + _localPhotoPaths.length}/5)',
+                          ? l10n.auditUploadingPhoto
+                          : l10n.auditAddFieldPhoto(_photoKeys.length + _localPhotoPaths.length),
                     ),
                   ),
                   if (_error != null) ...[
@@ -345,7 +349,7 @@ class _AuditPlotVisitScreenState extends ConsumerState<AuditPlotVisitScreen> {
                     children: [
                       FilledButton(
                         onPressed: _saving ? null : _submitVisit,
-                        child: Text(_saving ? 'Saving…' : 'Save visit'),
+                        child: Text(_saving ? l10n.saving : l10n.auditSaveVisit),
                       ),
                       const SizedBox(width: 8),
                       TextButton(
@@ -379,7 +383,7 @@ class _AuditPlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final code = plot['plot_code'] as String? ?? 'Plot';
+    final code = plot['plot_code'] as String? ?? l10n.plotFallback;
     final project = plot['project_name'] as String? ?? '';
     final risk = plot['risk_level'] as String? ?? '';
     return Card(
@@ -400,7 +404,7 @@ class _AuditPlotCard extends StatelessWidget {
             Text(
               [
                 if (project.isNotEmpty) project,
-                if (risk.isNotEmpty) '$risk risk',
+                if (risk.isNotEmpty) l10n.auditRiskSuffix(risk),
               ].join(' · '),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AranyixColors.onSurfaceMuted,

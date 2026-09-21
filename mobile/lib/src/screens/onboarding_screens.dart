@@ -14,9 +14,8 @@ class OnboardingPendingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AuthScaffold(
-      title: 'Application received',
-      subtitle:
-          'Your organization profile is under review. We will email you when your account is approved — usually within 1–2 business days.',
+      title: l10n.applicationReceivedTitle,
+      subtitle: l10n.onboardingPendingSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -31,9 +30,9 @@ class OnboardingPendingScreen extends StatelessWidget {
               children: [
                 Text(l10n.whatHappensNext, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                const Text('• Our team verifies your organization details'),
-                const Text('• You receive an approval email'),
-                const Text('• Open the app and sign in to access your dashboard'),
+                Text(l10n.onboardingVerifyOrg),
+                Text(l10n.onboardingApprovalEmail),
+                Text(l10n.onboardingSignInDashboard),
               ],
             ),
           ),

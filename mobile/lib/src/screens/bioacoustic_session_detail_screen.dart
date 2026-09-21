@@ -17,16 +17,16 @@ final bioacousticRecordingProvider =
   return api.getBioacousticRecording(id);
 });
 
-String _tierLabel(String? tier) {
+String _tierLabel(AppLocalizations l10n, String? tier) {
   switch (tier) {
     case 'accepted':
-      return 'Accepted';
+      return l10n.bioDetectionTierAccepted;
     case 'probable':
-      return 'Probable';
+      return l10n.bioDetectionTierProbable;
     case 'review_required':
-      return 'Review required';
+      return l10n.bioDetectionTierReview;
     default:
-      return 'Unknown';
+      return l10n.unknownSpecies;
   }
 }
 
@@ -85,7 +85,7 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
 
     return stackRouteScaffold(
       location: '/bioacoustic/${widget.recordingId}',
-      appBar: const PrototypeBackBar(title: 'Session detail'),
+      appBar: PrototypeBackBar(title: l10n?.bioSessionDetailTitle ?? 'Session detail'),
       body: recordingAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) => Center(
@@ -98,7 +98,7 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: () => ref.invalidate(bioacousticRecordingProvider(widget.recordingId)),
-                  child: const Text('Retry'),
+                  child: Text(l10n?.retry ?? 'Retry'),
                 ),
               ],
             ),
@@ -111,7 +111,7 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
           });
 
           final detections = List<Map<String, dynamic>>.from(rec['species_detections'] ?? []);
-          final site = rec['plantation_fence_name'] as String? ?? rec['site_name'] as String? ?? 'Field site';
+          final site = rec['plantation_fence_name'] as String? ?? rec['site_name'] as String? ?? (l10n?.bioFieldSite ?? 'Field site');
           final duration = (rec['duration_seconds'] as num?)?.toStringAsFixed(0) ?? '—';
           final created = rec['created_at'] as String? ?? '';
           final score = rec['biodiversity_confidence_score'] ?? rec['bioacoustic_health_score'];
@@ -150,9 +150,9 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
                       const SizedBox(height: 10),
                       Text(
                         [
-                          if (score != null) 'Confidence $score/100',
-                          if (richness != null) 'Accepted $richness',
-                          if (shannon != null) 'Shannon $shannon',
+                          if (score != null) l10n!.bioConfidenceScore('$score'),
+                          if (richness != null) l10n!.bioAcceptedCount('$richness'),
+                          if (shannon != null) l10n!.bioShannonLine('$shannon'),
                         ].join(' · '),
                         style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.brandForest),
                       ),
@@ -195,13 +195,13 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Detected species', style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(l10n!.bioDetectedSpecies, style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               if (detections.isEmpty)
                 Text(
                   _analysisPending(status)
-                      ? 'Species detections will appear when analysis completes.'
-                      : 'No species detections yet.',
+                      ? l10n!.bioDetectionsPending
+                      : l10n!.bioNoDetections,
                   style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
                 )
               else
@@ -226,7 +226,7 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
                                 style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
                               ),
                               Text(
-                                '${s['taxon_group']} · ${s['call_count']} calls · ${_tierLabel(s['detection_tier'] as String?)}',
+                                '${s['taxon_group']} · ${l10n!.bioCallsCount('${s['call_count']}')} · ${_tierLabel(l10n!, s['detection_tier'] as String?)}',
                                 style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                               ),
                             ],
@@ -248,17 +248,17 @@ class _BioacousticSessionDetailScreenState extends ConsumerState<BioacousticSess
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => context.go('/biodiversity'),
-                child: const Text('View biodiversity fusion'),
+                child: Text(l10n!.bioViewBiodiversityFusion),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: () => context.go('/evidence'),
-                child: const Text('Add to evidence bundle'),
+                child: Text(l10n!.bioAddToEvidence),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => context.go('/map'),
-                child: const Text('View on map'),
+                child: Text(l10n!.viewOnMap),
               ),
             ],
           );

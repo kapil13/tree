@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
   }
 
   Future<void> _exportMrv(String format) async {
+    final l10n = AppLocalizations.of(context)!;
     final projectId = _selectedProjectId;
     if (projectId == null) return;
     setState(() => _exportBusy = true);
@@ -42,10 +44,10 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
         projectCode: code,
         format: format,
       );
-      await Share.shareXFiles([XFile(path)], text: 'MRV compliance export');
+      await Share.shareXFiles([XFile(path)], text: l10n.evidenceMrvShareText);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('MRV export ready to share')),
+          SnackBar(content: Text(l10n.evidenceMrvReady)),
         );
       }
     } catch (e) {
@@ -61,6 +63,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
   }
 
   Future<void> _exportEvidenceBundle() async {
+    final l10n = AppLocalizations.of(context)!;
     final projectId = _selectedProjectId;
     if (projectId == null) return;
     setState(() => _exportBusy = true);
@@ -72,10 +75,10 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
         projectId: projectId,
         projectCode: code,
       );
-      await Share.shareXFiles([XFile(path)], text: 'Evidence bundle');
+      await Share.shareXFiles([XFile(path)], text: l10n.evidenceBundleShareText);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Evidence bundle ready to share')),
+          SnackBar(content: Text(l10n.evidenceBundleReady)),
         );
       }
     } catch (e) {
@@ -92,6 +95,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dashAsync = ref.watch(dashboardProvider);
     final monitoringAsync = ref.watch(monitoringSummaryProvider);
     final projectsAsync = ref.watch(plantingProjectsProvider);
@@ -102,7 +106,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
 
     return stackRouteScaffold(
       location: '/evidence',
-      appBar: const PrototypeBackBar(title: 'Evidence & MRV'),
+      appBar: PrototypeBackBar(title: l10n.evidenceTitle),
       body: dashAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) => Center(child: Text(apiErrorMessage(e))),
@@ -122,24 +126,24 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
             final due = (survival?['trees_due'] as num?)?.toInt() ?? 0;
             if (due > 0) {
               gaps.add({
-                'item': 'Survival survey evidence due',
-                'project': '$due trees',
+                'item': l10n.evidenceGapSurvivalDue,
+                'project': l10n.evidenceGapTreesCount('$due'),
                 'status': 'due',
                 'route': '/projects/$projectId',
               });
             }
             if (violations != null && violations.isNotEmpty) {
               gaps.add({
-                'item': 'Compliance violations open',
-                'project': '${violations.length} open',
+                'item': l10n.evidenceGapViolationsOpen,
+                'project': l10n.evidenceGapOpenCount('${violations.length}'),
                 'status': 'open',
                 'route': '/projects/$projectId',
               });
             }
             if (integrity != null && integrity['monitoring_ready'] != true) {
               gaps.add({
-                'item': 'Integrity monitoring gate blocked',
-                'project': 'Credit transitions',
+                'item': l10n.evidenceGapIntegrityBlocked,
+                'project': l10n.evidenceGapCreditTransitions,
                 'status': 'blocked',
                 'route': '/projects/$projectId',
               });
@@ -151,16 +155,16 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
             );
             if (survivalDue > 0) {
               gaps.add({
-                'item': 'Survival survey evidence due',
-                'project': '$survivalDue trees',
+                'item': l10n.evidenceGapSurvivalDue,
+                'project': l10n.evidenceGapTreesCount('$survivalDue'),
                 'status': 'due',
                 'route': '/field',
               });
             }
             if (pending > 0) {
               gaps.add({
-                'item': 'Compliance violations open',
-                'project': 'Field ops',
+                'item': l10n.evidenceGapViolationsOpen,
+                'project': l10n.evidenceGapFieldOps,
                 'status': 'open',
                 'route': '/field',
               });
@@ -170,27 +174,27 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Project scope', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(l10n.evidenceProjectScope, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               projectsAsync.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, _) => Text(apiErrorMessage(e)),
                 data: (projects) {
                   if (projects.isEmpty) {
-                    return const Text('No projects available');
+                    return Text(l10n.evidenceNoProjects);
                   }
                   return DropdownButtonFormField<String?>(
                     value: projectId,
-                    decoration: const InputDecoration(
-                      labelText: 'Select project',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.evidenceSelectProject,
+                      border: const OutlineInputBorder(),
                     ),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('Portfolio (all)')),
+                      DropdownMenuItem(value: null, child: Text(l10n.evidencePortfolioAll)),
                       for (final raw in projects)
                         DropdownMenuItem(
                           value: (raw as Map)['id'] as String,
-                          child: Text((raw)['name'] as String? ?? 'Project'),
+                          child: Text((raw)['name'] as String? ?? l10n.projectFallback),
                         ),
                     ],
                     onChanged: (v) => setState(() => _selectedProjectId = v),
@@ -198,23 +202,23 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              Text('Evidence pipeline', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(l10n.evidencePipeline, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               PrototypeEvidencePipeline(activeStep: pending > 0 ? 2 : 3),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  PrototypeStatBox(value: '$verified', label: 'Verified'),
+                  PrototypeStatBox(value: '$verified', label: l10n.evidenceVerified),
                   const SizedBox(width: 8),
-                  PrototypeStatBox(value: '$pending', label: 'Pending'),
+                  PrototypeStatBox(value: '$pending', label: l10n.evidencePending),
                   const SizedBox(width: 8),
-                  PrototypeStatBox(value: '${gaps.length}', label: 'Gaps'),
+                  PrototypeStatBox(value: '${gaps.length}', label: l10n.evidenceGaps),
                 ],
               ),
               const SizedBox(height: 20),
-              const PrototypeSectionHeader(title: 'Gaps needing attention'),
+              PrototypeSectionHeader(title: l10n.evidenceGapsHeader),
               if (gaps.isEmpty)
-                const PrototypeEmptyState(icon: '✓', title: 'No evidence gaps', subtitle: 'Portfolio evidence is up to date')
+                PrototypeEmptyState(icon: '✓', title: l10n.evidenceNoGaps, subtitle: l10n.evidenceNoGapsSub)
               else
                 for (final g in gaps)
                   PrototypePriorityCard(
@@ -227,7 +231,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
                   ),
               if (projectId != null) ...[
                 const SizedBox(height: 20),
-                const PrototypeSectionHeader(title: 'Exports'),
+                PrototypeSectionHeader(title: l10n.evidenceExports),
                 if (_exportBusy)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
@@ -240,19 +244,19 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
                       backgroundColor: PrototypeColors.brandForest,
                       minimumSize: const Size.fromHeight(48),
                     ),
-                    child: const Text('Download MRV pack (PDF)'),
+                    child: Text(l10n.evidenceDownloadMrvPdf),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () => _exportMrv('xlsx'),
                     style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size.fromHeight(48))),
-                    child: const Text('Download MRV pack (Excel)'),
+                    child: Text(l10n.evidenceDownloadMrvExcel),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: _exportEvidenceBundle,
                     style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size.fromHeight(48))),
-                    child: const Text('Download evidence bundle (ZIP)'),
+                    child: Text(l10n.evidenceDownloadBundle),
                   ),
                 ],
               ],
@@ -260,7 +264,7 @@ class _EvidenceScreenState extends ConsumerState<EvidenceScreen> {
               OutlinedButton(
                 onPressed: () => context.push('/reports'),
                 style: const ButtonStyle(minimumSize: WidgetStatePropertyAll(Size.fromHeight(48))),
-                child: const Text('Reports & exports'),
+                child: Text(l10n.evidenceReportsExports),
               ),
             ],
           );

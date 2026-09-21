@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1927,4 +1928,1022 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get schemeSiteAreaHa => 'Site area (ha)';
+
+  @override
+  String get syncQueueSyncing => 'Syncing…';
+
+  @override
+  String syncQueueSyncedCount(int count) {
+    return 'Synced $count item(s)';
+  }
+
+  @override
+  String get syncQueueDeleteConfirmBody =>
+      'This removes the offline item from your device. It cannot be undone.';
+
+  @override
+  String get deleteLabel => 'Delete';
+
+  @override
+  String get syncQueueItemRemoved => 'Item removed';
+
+  @override
+  String get syncQueueTreeRegistration => 'Tree registration';
+
+  @override
+  String syncQueueStatusLine(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String syncQueuePhotosLine(int count) {
+    return 'Photos: $count';
+  }
+
+  @override
+  String syncQueueGpsLine(String lat, String lon) {
+    return 'GPS: $lat, $lon';
+  }
+
+  @override
+  String syncQueueQueuedLine(String time) {
+    return 'Queued: $time';
+  }
+
+  @override
+  String get syncQueueRetryUpload => 'Retry upload';
+
+  @override
+  String get syncQueueDeleteFromQueue => 'Delete from queue';
+
+  @override
+  String get syncQueueDeleteTreeTitle => 'Delete tree registration?';
+
+  @override
+  String get syncQueueBioRecording => 'Bioacoustic recording';
+
+  @override
+  String syncQueueDurationLine(String seconds) {
+    return 'Duration: ${seconds}s';
+  }
+
+  @override
+  String get syncQueueDeleteRecordingTitle => 'Delete recording?';
+
+  @override
+  String get syncQueueAuditPlotVisit => 'Audit plot visit';
+
+  @override
+  String syncQueuePresenceLine(String value) {
+    return 'Presence: $value';
+  }
+
+  @override
+  String get syncQueueDeleteAuditVisitTitle => 'Delete audit visit?';
+
+  @override
+  String get syncQueueSurvivalSurveyTitle => 'Survival survey';
+
+  @override
+  String syncQueueTreeLine(String id) {
+    return 'Tree: $id';
+  }
+
+  @override
+  String syncQueueSurvivalStatusLine(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String syncQueueQueueLine(String status) {
+    return 'Queue: $status';
+  }
+
+  @override
+  String get syncQueueDeleteSurvivalTitle => 'Delete survival survey?';
+
+  @override
+  String syncQueueRecordingMeta(String seconds) {
+    return '${seconds}s recording';
+  }
+
+  @override
+  String syncQueuePhotosMeta(int count, String status) {
+    return '$count photo(s) · $status';
+  }
+
+  @override
+  String get plotFallback => 'Plot';
+
+  @override
+  String get surveyFallback => 'survey';
+
+  @override
+  String get visitFallback => 'visit';
+
+  @override
+  String get evidenceTitle => 'Evidence & MRV';
+
+  @override
+  String get evidenceMrvShareText => 'MRV compliance export';
+
+  @override
+  String get evidenceMrvReady => 'MRV export ready to share';
+
+  @override
+  String get evidenceBundleShareText => 'Evidence bundle';
+
+  @override
+  String get evidenceBundleReady => 'Evidence bundle ready to share';
+
+  @override
+  String get evidenceProjectScope => 'Project scope';
+
+  @override
+  String get evidenceNoProjects => 'No projects available';
+
+  @override
+  String get evidenceSelectProject => 'Select project';
+
+  @override
+  String get evidencePortfolioAll => 'Portfolio (all)';
+
+  @override
+  String get evidencePipeline => 'Evidence pipeline';
+
+  @override
+  String get evidenceVerified => 'Verified';
+
+  @override
+  String get evidencePending => 'Pending';
+
+  @override
+  String get evidenceGaps => 'Gaps';
+
+  @override
+  String get evidenceGapsHeader => 'Gaps needing attention';
+
+  @override
+  String get evidenceNoGaps => 'No evidence gaps';
+
+  @override
+  String get evidenceNoGapsSub => 'Portfolio evidence is up to date';
+
+  @override
+  String get evidenceExports => 'Exports';
+
+  @override
+  String get evidenceDownloadMrvPdf => 'Download MRV pack (PDF)';
+
+  @override
+  String get evidenceDownloadMrvExcel => 'Download MRV pack (Excel)';
+
+  @override
+  String get evidenceDownloadBundle => 'Download evidence bundle (ZIP)';
+
+  @override
+  String get evidenceReportsExports => 'Reports & exports';
+
+  @override
+  String get evidenceGapSurvivalDue => 'Survival survey evidence due';
+
+  @override
+  String get evidenceGapViolationsOpen => 'Compliance violations open';
+
+  @override
+  String get evidenceGapIntegrityBlocked => 'Integrity monitoring gate blocked';
+
+  @override
+  String get evidenceGapCreditTransitions => 'Credit transitions';
+
+  @override
+  String get evidenceGapFieldOps => 'Field ops';
+
+  @override
+  String evidenceGapTreesCount(String count) {
+    return '$count trees';
+  }
+
+  @override
+  String evidenceGapOpenCount(String count) {
+    return '$count open';
+  }
+
+  @override
+  String get treeRegistryTitle => 'Tree registry';
+
+  @override
+  String get filtersTitle => 'Filters';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get treeRegistrySearchHint => 'Search ID, species, area…';
+
+  @override
+  String get sortRecent => 'Recent';
+
+  @override
+  String get sortTreeId => 'Tree ID';
+
+  @override
+  String get treesCountSuffix => 'trees';
+
+  @override
+  String get registryCategoryAttention => 'Attention';
+
+  @override
+  String get registryCategoryMissingEvidence => 'Missing evidence';
+
+  @override
+  String get registryCategoryUnverified => 'Unverified';
+
+  @override
+  String get registryCategoryHealthy => 'Healthy';
+
+  @override
+  String registryOnPageTotal(int onPage, int total) {
+    return '$onPage on page · $total total';
+  }
+
+  @override
+  String registryPageOf(int current, int pages) {
+    return 'Page $current of $pages';
+  }
+
+  @override
+  String get registryPrev => '← Prev';
+
+  @override
+  String get registryNext => 'Next →';
+
+  @override
+  String get registryNoMatch => 'No trees match';
+
+  @override
+  String get registryNoMatchSub => 'Try a different filter or search term';
+
+  @override
+  String get registryCachedList => 'Showing cached tree list';
+
+  @override
+  String registryCachedListFrom(String time) {
+    return 'Showing cached tree list from $time';
+  }
+
+  @override
+  String get statusUnverified => 'Unverified';
+
+  @override
+  String get projectCreditLedger => 'Credit ledger';
+
+  @override
+  String get projectSetupTitle => 'Project setup';
+
+  @override
+  String get completeSetup => 'Complete setup';
+
+  @override
+  String get openSetupOnWeb => 'Open setup on web';
+
+  @override
+  String get survivalSurveysDue => 'Survival surveys due';
+
+  @override
+  String survivalNoSurveysDue(int total, String interval) {
+    return 'No survival surveys due ($total trees on $interval day interval)';
+  }
+
+  @override
+  String survivalTreesNeedRegeotag(int due, int total, String interval) {
+    return '$due of $total trees need re-geotag ($interval day interval)';
+  }
+
+  @override
+  String treeIdLabel(String id) {
+    return 'Tree $id';
+  }
+
+  @override
+  String moreCount(int count) {
+    return '+ $count more';
+  }
+
+  @override
+  String get integrityMonitoringGate => 'Integrity monitoring gate';
+
+  @override
+  String get integrityGatePassed =>
+      'Monitoring gate passed for credit transitions.';
+
+  @override
+  String get integrityGateBlocked =>
+      'Monitoring gate blocked for credit transitions.';
+
+  @override
+  String integrityEligibleAudit(
+    String eligible,
+    String total,
+    String auditReady,
+  ) {
+    return 'Eligible $eligible/$total · Audit ready $auditReady/$total';
+  }
+
+  @override
+  String treesWithBlockingIssues(int count) {
+    return '$count tree(s) with blocking issues';
+  }
+
+  @override
+  String get satelliteNoScan => 'Satellite: no scan yet';
+
+  @override
+  String get satelliteScanned => 'Satellite: scanned';
+
+  @override
+  String satelliteStale(int days) {
+    return 'Satellite: stale ($days days ago)';
+  }
+
+  @override
+  String get satelliteScannedToday => 'Satellite: scanned today';
+
+  @override
+  String satelliteDaysAgo(int days) {
+    return 'Satellite: $days days ago';
+  }
+
+  @override
+  String treesPerHa(String count) {
+    return '$count trees/ha';
+  }
+
+  @override
+  String workAreaBlock(String code) {
+    return 'block $code';
+  }
+
+  @override
+  String get treeDetailOverview => 'Overview';
+
+  @override
+  String get treeDetailField => 'Field';
+
+  @override
+  String get treeDetailIntelligence => 'Intelligence';
+
+  @override
+  String get treeDetailMap => 'Map';
+
+  @override
+  String get treeDetailInspect => 'Inspect';
+
+  @override
+  String get treeDetailEvidence => 'Evidence';
+
+  @override
+  String get treeDetailMonitor => 'Monitor';
+
+  @override
+  String get treeDetailVerified => 'Verified';
+
+  @override
+  String get treeDetailFieldLocation => 'Field location';
+
+  @override
+  String get treeDetailFollowUpPhotoAdded => 'Follow-up photo added';
+
+  @override
+  String get treeDetailCachedDetail =>
+      'Showing cached tree detail — connect to refresh';
+
+  @override
+  String get treeDetailUploadingPhoto => 'Uploading photo…';
+
+  @override
+  String get treeDetailAddFollowUpPhoto => 'Add follow-up photo';
+
+  @override
+  String get treeDetailPhotoGallery => 'Photo gallery';
+
+  @override
+  String get treeDetailNoPhotos => 'No photos yet';
+
+  @override
+  String get treeDetailNoPhotosSub =>
+      'Add a follow-up photo from Overview or during survival survey';
+
+  @override
+  String get treeDetailMeasurementHistory => 'Measurement history';
+
+  @override
+  String get treeDetailNoMeasurements => 'No measurements recorded';
+
+  @override
+  String get treeDetailNoMeasurementsSub =>
+      'Survival surveys and field captures appear here';
+
+  @override
+  String get treeDetailAiHistory => 'AI analysis history';
+
+  @override
+  String get treeDetailNoAiAnalyses => 'No AI analyses yet';
+
+  @override
+  String get treeDetailNoAiAnalysesSub =>
+      'Run AI analysis from the Overview tab';
+
+  @override
+  String get treeDetailSarFusion => 'SAR integrity fusion';
+
+  @override
+  String get treeDetailGroundStatus => 'Ground status';
+
+  @override
+  String get treeDetailIntegrityScoreLabel => 'Integrity score';
+
+  @override
+  String get treeDetailAuditBlockers => 'Audit-ready blockers';
+
+  @override
+  String get treeDetailTimeline => 'Timeline';
+
+  @override
+  String treeDetailRegistered(String date) {
+    return 'Registered · $date';
+  }
+
+  @override
+  String get treeDetailFieldCapture => 'Field capture';
+
+  @override
+  String get treeDetailSatelliteVerified => 'Satellite verified';
+
+  @override
+  String get treeDetailRemoteSensingPassed => 'Remote sensing check passed';
+
+  @override
+  String treeDetailNdviSignal(String level) {
+    return 'NDVI signal · $level';
+  }
+
+  @override
+  String get treeDetailMeasurement => 'Measurement';
+
+  @override
+  String get treeDetailCanopy => 'Canopy';
+
+  @override
+  String get treeDetailAnalysis => 'Analysis';
+
+  @override
+  String treeDetailFusionScore(String score) {
+    return 'Fusion score $score';
+  }
+
+  @override
+  String treeDetailCarbonSummary(String kg, String dbh) {
+    return 'Carbon $kg kg · DBH $dbh cm';
+  }
+
+  @override
+  String treeDetailHealthLine(String health) {
+    return 'Health $health';
+  }
+
+  @override
+  String get auditVisitQueued => 'Visit queued for sync when online';
+
+  @override
+  String get auditVisitSaved => 'Audit plot visit saved';
+
+  @override
+  String auditVisitTitle(String code) {
+    return 'Visit $code';
+  }
+
+  @override
+  String get auditCapturingGps => 'Capturing GPS…';
+
+  @override
+  String get auditTreePresence => 'Tree presence';
+
+  @override
+  String get auditTreesPresent => 'Trees present';
+
+  @override
+  String get auditTreesAbsent => 'No trees / bare ground';
+
+  @override
+  String get auditTreesSparse => 'Sparse / scattered';
+
+  @override
+  String get auditCannotAssess => 'Cannot assess';
+
+  @override
+  String get auditTreesObserved => 'Trees observed';
+
+  @override
+  String get auditTreesAlive => 'Trees alive';
+
+  @override
+  String get auditOutcome => 'Outcome';
+
+  @override
+  String get auditOutcomeInconclusive => 'Inconclusive';
+
+  @override
+  String get auditOutcomeSupported => 'Supported';
+
+  @override
+  String get auditOutcomeUnsupported => 'Unsupported';
+
+  @override
+  String get auditFieldNotes => 'Field notes';
+
+  @override
+  String get auditUploadingPhoto => 'Uploading photo…';
+
+  @override
+  String auditAddFieldPhoto(int current) {
+    return 'Add field photo ($current/5)';
+  }
+
+  @override
+  String get auditSaveVisit => 'Save visit';
+
+  @override
+  String get auditGpsRequired => 'Capture GPS before saving the visit.';
+
+  @override
+  String get auditPhotoRequired => 'Add at least one field photo.';
+
+  @override
+  String auditRiskSuffix(String risk) {
+    return '$risk risk';
+  }
+
+  @override
+  String get bioSessionDetailTitle => 'Session detail';
+
+  @override
+  String get bioDetectionTierAccepted => 'Accepted';
+
+  @override
+  String get bioDetectionTierProbable => 'Probable';
+
+  @override
+  String get bioDetectionTierReview => 'Review required';
+
+  @override
+  String get bioFieldSite => 'Field site';
+
+  @override
+  String get bioDetectedSpecies => 'Detected species';
+
+  @override
+  String get bioDetectionsPending =>
+      'Species detections will appear when analysis completes.';
+
+  @override
+  String get bioNoDetections => 'No species detections yet.';
+
+  @override
+  String get bioViewBiodiversityFusion => 'View biodiversity fusion';
+
+  @override
+  String get bioAddToEvidence => 'Add to evidence bundle';
+
+  @override
+  String get viewOnMap => 'View on map';
+
+  @override
+  String bioConfidenceScore(String score) {
+    return 'Confidence $score/100';
+  }
+
+  @override
+  String bioAcceptedCount(String count) {
+    return 'Accepted $count';
+  }
+
+  @override
+  String bioShannonLine(String value) {
+    return 'Shannon $value';
+  }
+
+  @override
+  String bioCallsCount(String count) {
+    return '$count calls';
+  }
+
+  @override
+  String get biodiversityTitle => 'Biodiversity';
+
+  @override
+  String get bioTaxa => 'Taxa';
+
+  @override
+  String get bioShannonLabel => 'Shannon';
+
+  @override
+  String get bioConfidenceLabel => 'Confidence';
+
+  @override
+  String bioConfidenceHint(int count) {
+    return 'Biodiversity Confidence from $count analyzed recordings (evidence quality, not habitat health)';
+  }
+
+  @override
+  String bioRegionalSpeciesNear(String lat, String lon) {
+    return 'Regional species near $lat, $lon';
+  }
+
+  @override
+  String get bioRegionalSpeciesGbif => 'Regional species (GBIF)';
+
+  @override
+  String get bioHotspotsByWorkArea => 'Hotspots by work area';
+
+  @override
+  String get bioNoWorkAreas => 'No work areas';
+
+  @override
+  String get bioNoWorkAreasMapped => 'No work areas mapped';
+
+  @override
+  String bioConfidenceMeta(int score) {
+    return 'Confidence $score/100';
+  }
+
+  @override
+  String get bioStrong => 'Strong';
+
+  @override
+  String get bioWatch => 'Watch';
+
+  @override
+  String get bioAcousticDetail => 'Bioacoustic detail';
+
+  @override
+  String get bioRunSurvey => 'Run bioacoustic survey';
+
+  @override
+  String get bioNoLocationSpecies => 'No location for species list';
+
+  @override
+  String get bioNoLocationSpeciesSub =>
+      'Add a work area boundary or register a tree with GPS to load regional fauna.';
+
+  @override
+  String get bioNoRegionalSpecies => 'No regional species found';
+
+  @override
+  String get bioNoRegionalSpeciesSub =>
+      'GBIF returned no nearby occurrences for this site.';
+
+  @override
+  String get bioViewOnMapMeta => 'View on map';
+
+  @override
+  String get bioOpen => 'Open';
+
+  @override
+  String get carbonPortfolioTco2e => 'tCO₂e estimated (portfolio)';
+
+  @override
+  String carbonAnnualPace(int pct) {
+    return '$pct% of annual sequestration pace';
+  }
+
+  @override
+  String carbonTreesInPortfolio(int count) {
+    return '$count trees in portfolio';
+  }
+
+  @override
+  String get carbonByProject => 'By project';
+
+  @override
+  String get carbonEnterSpecies => 'Enter a species name.';
+
+  @override
+  String get carbonEstimateDisclaimer =>
+      'Estimate CO₂e from species and optional measurements. This is an Estimate — not a Live field measurement or registry-issued credit.';
+
+  @override
+  String carbonCo2eRange(String lower, String upper) {
+    return '$lower–$upper kg CO₂e (90% CI)';
+  }
+
+  @override
+  String carbonCo2eSingle(String value) {
+    return '$value kg CO₂e';
+  }
+
+  @override
+  String carbonUncertainty(String pct) {
+    return '±$pct% measurement + model uncertainty';
+  }
+
+  @override
+  String get carbonHonestyLabel =>
+      'Honesty label: Estimate (modelled). Not Live sensor data.';
+
+  @override
+  String get reportReadyToShare => 'Report ready to share';
+
+  @override
+  String get reportMisTitle => 'Plantation MIS reports';
+
+  @override
+  String get reportMisSubtitle =>
+      'Operational exports used by government plantation programmes';
+
+  @override
+  String get reportTypeLabel => 'Report type';
+
+  @override
+  String get reportDownloading => 'Downloading…';
+
+  @override
+  String get reportDownloadMis => 'Download MIS report';
+
+  @override
+  String reportReadyShareNamed(String name) {
+    return '$name ready to share';
+  }
+
+  @override
+  String get downloadLabel => 'Download';
+
+  @override
+  String get creditIntegrityFusion => 'Integrity fusion';
+
+  @override
+  String get creditAuditReady => 'Audit ready';
+
+  @override
+  String get creditEligible => 'Credit eligible';
+
+  @override
+  String get creditStatusHistory => 'Status history';
+
+  @override
+  String get creditSerials => 'Credit serials';
+
+  @override
+  String get creditSerialFallback => 'Serial';
+
+  @override
+  String get viewProject => 'View project';
+
+  @override
+  String get projectLedgers => 'Project ledgers';
+
+  @override
+  String get alertRecommendedAction => 'Recommended action';
+
+  @override
+  String get alertMarkReviewed => 'Mark reviewed';
+
+  @override
+  String get alertViewAffectedTree => 'View affected tree →';
+
+  @override
+  String get createProjectTitle => 'Create project';
+
+  @override
+  String get createProjectSubtitle =>
+      'Supervisors can start a planting project and finish setup on the web.';
+
+  @override
+  String get createProjectNameLabel => 'Project name';
+
+  @override
+  String get createProjectDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get createProjectSegmentLabel => 'Segment';
+
+  @override
+  String get createProjectNameRequired => 'Project name is required';
+
+  @override
+  String get newProject => 'New project';
+
+  @override
+  String get survivalMissingUprooted => 'Missing / uprooted';
+
+  @override
+  String get survivalTapeMeasure => 'Tape measure (DBH at 1.3 m)';
+
+  @override
+  String get survivalClinometer => 'Clinometer (height)';
+
+  @override
+  String get survivalPhotoAttached => 'Survey photo attached';
+
+  @override
+  String get survivalCapturingPhoto => 'Capturing photo…';
+
+  @override
+  String get survivalAddPhoto => 'Add survey photo (camera)';
+
+  @override
+  String get survivalRemarksHint => 'Condition, replacement notes…';
+
+  @override
+  String get openInMaps => 'Open in Maps';
+
+  @override
+  String get myLocation => 'My location';
+
+  @override
+  String get closeLabel => 'Close';
+
+  @override
+  String get prepareLabel => 'Prepare';
+
+  @override
+  String get schemeProgramme => 'Scheme programme';
+
+  @override
+  String get governmentReferences => 'Government references';
+
+  @override
+  String get schemeFallback => 'Scheme';
+
+  @override
+  String get onboardingVerifyOrg =>
+      '• Our team verifies your organization details';
+
+  @override
+  String get onboardingApprovalEmail => '• You receive an approval email';
+
+  @override
+  String get onboardingSignInDashboard =>
+      '• Open the app and sign in to access your dashboard';
+
+  @override
+  String get onboardingPendingSubtitle =>
+      'Your organization profile is under review. We will email you when your account is approved — usually within 1–2 business days.';
+
+  @override
+  String get blockerInsufficientPhotos => 'Need at least 2 photos';
+
+  @override
+  String get blockerPhotoSpanTooShort => 'Photos must span 30+ days';
+
+  @override
+  String get blockerSatelliteScanStale => 'Satellite scan older than 90 days';
+
+  @override
+  String get blockerFusionBelowAudit => 'Fusion score below 75';
+
+  @override
+  String get blockerMissingExif => 'Missing camera EXIF';
+
+  @override
+  String get blockerMissingPhotoGps => 'Photo missing GPS';
+
+  @override
+  String get blockerMissingPhotoTimestamp => 'Photo missing timestamp';
+
+  @override
+  String get blockerPhotoTimestampStale => 'Photo older than 7 days';
+
+  @override
+  String get blockerRegeotagMismatch => 'Re-geotag mismatch';
+
+  @override
+  String get blockerDuplicatePhoto => 'Duplicate photo';
+
+  @override
+  String get blockerDuplicateCoordinate => 'Duplicate coordinate';
+
+  @override
+  String get blockerAiConfidenceLow => 'Low AI confidence';
+
+  @override
+  String get blockerSarIntegrityBelow => 'SAR forest integrity below minimum';
+
+  @override
+  String get blockerOpticalScanStale => 'Work area optical scan stale';
+
+  @override
+  String get blockerFusionBelowMinimum => 'Fusion score below minimum';
+
+  @override
+  String get blockerNotCreditEligible => 'Not credit eligible';
+
+  @override
+  String get remediationAddFollowUpPhoto =>
+      'Add a follow-up field photo from the tree detail page.';
+
+  @override
+  String get remediationRunSurvivalSurvey =>
+      'Run a survival survey with GPS and an optional survey photo.';
+
+  @override
+  String get remediationTriggerSatellite =>
+      'Trigger a satellite health scan from tree detail.';
+
+  @override
+  String get remediationReviewMonitoring =>
+      'Review monitoring coverage for this project.';
+
+  @override
+  String get monitoringNeedsDecision => 'Needs decision';
+
+  @override
+  String get monitoringNoUrgentAlerts => 'No urgent alerts';
+
+  @override
+  String get monitoringSignalsStable => 'Monitoring signals are stable';
+
+  @override
+  String get monitoringSitePulse => 'Site pulse';
+
+  @override
+  String get alertCategoryFire => 'Fire';
+
+  @override
+  String get alertCategoryFlood => 'Flood';
+
+  @override
+  String get alertCategoryWeather => 'Weather';
+
+  @override
+  String get alertCategoryPest => 'Pest';
+
+  @override
+  String get alertCategorySatellite => 'Satellite';
+
+  @override
+  String get alertUrgencyActNow => 'Act now';
+
+  @override
+  String get alertUrgencyPrepare => 'Prepare';
+
+  @override
+  String get alertUrgencyMonitor => 'Monitor';
+
+  @override
+  String get healthFilterHealthy => 'healthy';
+
+  @override
+  String get healthFilterStressed => 'stressed';
+
+  @override
+  String get healthFilterDead => 'dead';
+
+  @override
+  String get monthJan => 'Jan';
+
+  @override
+  String get monthFeb => 'Feb';
+
+  @override
+  String get monthMar => 'Mar';
+
+  @override
+  String get monthApr => 'Apr';
+
+  @override
+  String get monthMay => 'May';
+
+  @override
+  String get monthJun => 'Jun';
+
+  @override
+  String get monthJul => 'Jul';
+
+  @override
+  String get monthAug => 'Aug';
+
+  @override
+  String get monthSep => 'Sep';
+
+  @override
+  String get monthOct => 'Oct';
+
+  @override
+  String get monthNov => 'Nov';
+
+  @override
+  String get monthDec => 'Dec';
+
+  @override
+  String get methodologyTitle => 'Methodology';
+
+  @override
+  String get alertUrgencyActToday => 'Act today';
+
+  @override
+  String get alertUrgencyThisWeek => 'This week';
 }

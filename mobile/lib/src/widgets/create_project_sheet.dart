@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,10 +37,11 @@ Future<void> showCreateProjectSheet(BuildContext context, WidgetRef ref) async {
     builder: (sheetContext) {
       return StatefulBuilder(
         builder: (context, setState) {
+          final l10n = AppLocalizations.of(context)!;
           Future<void> submit() async {
             final name = nameController.text.trim();
             if (name.isEmpty) {
-              setState(() => error = 'Project name is required');
+              setState(() => error = l10n.createProjectNameRequired);
               return;
             }
             setState(() {
@@ -79,30 +81,30 @@ Future<void> showCreateProjectSheet(BuildContext context, WidgetRef ref) async {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Create project',
+                  l10n.createProjectTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Supervisors can start a planting project and finish setup on the web.',
+                  l10n.createProjectSubtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: PrototypeColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Project name'),
+                  decoration: InputDecoration(labelText: l10n.createProjectNameLabel),
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description (optional)'),
+                  decoration: InputDecoration(labelText: l10n.createProjectDescriptionLabel),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: segment,
-                  decoration: const InputDecoration(labelText: 'Segment'),
+                  decoration: InputDecoration(labelText: l10n.createProjectSegmentLabel),
                   items: segmentLabels.entries
                       .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
                       .toList(),
@@ -122,7 +124,7 @@ Future<void> showCreateProjectSheet(BuildContext context, WidgetRef ref) async {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Create project'),
+                      : Text(l10n.createProjectTitle),
                 ),
               ],
             ),

@@ -84,7 +84,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _syncing = true;
-      _status = 'Syncing…';
+      _status = l10n.syncQueueSyncing;
     });
     try {
       final treeSync = ref.read(treeRegistrationSyncProvider);
@@ -102,7 +102,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
       ref.invalidate(dashboardProvider);
       await _reload();
       if (mounted) {
-        setState(() => _status = 'Synced ${treeCount + bioCount + auditCount + survivalCount} item(s)');
+        setState(() => _status = l10n.syncQueueSyncedCount(treeCount + bioCount + auditCount + survivalCount));
       }
     } catch (e) {
       if (maybeRedirectUnauthorized(ref, context, e)) return;
@@ -116,21 +116,25 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
     required String title,
     required Future<void> Function() onDelete,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: const Text('This removes the offline item from your device. It cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
-        ],
-      ),
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(title),
+          content: Text(dialogL10n.syncQueueDeleteConfirmBody),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(dialogL10n.cancel)),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(dialogL10n.deleteLabel)),
+          ],
+        );
+      },
     );
     if (confirmed == true) {
       await onDelete();
       await _reload();
-      if (mounted) setState(() => _status = 'Item removed');
+      if (mounted) setState(() => _status = l10n.syncQueueItemRemoved);
     }
   }
 
@@ -143,6 +147,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
@@ -150,19 +155,19 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                payload['species_text'] as String? ?? 'Tree registration',
+                payload['species_text'] as String? ?? sheetL10n.syncQueueTreeRegistration,
                 style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text('Status: ${_queueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Photos: ${item.photoPaths.length}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueStatusLine(_queueLabel(item.status)), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueuePhotosLine(item.photoPaths.length), style: GoogleFonts.dmSans(fontSize: 13)),
               if (payload['latitude'] != null && payload['longitude'] != null)
                 Text(
-                  'GPS: ${payload['latitude']}, ${payload['longitude']}',
+                  sheetL10n.syncQueueGpsLine('${payload['latitude']}', '${payload['longitude']}'),
                   style: GoogleFonts.dmSans(fontSize: 13),
                 ),
               Text(
-                'Queued: ${item.createdAt.toLocal()}',
+                sheetL10n.syncQueueQueuedLine(item.createdAt.toLocal().toString()),
                 style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
               ),
               if (item.errorMessage != null) ...[
@@ -207,17 +212,17 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     await ref.read(treeRegistrationQueueProvider).markPending(item.id);
                     await _syncAll();
                   },
-                  child: const Text('Retry upload'),
+                  child: Text(sheetL10n.syncQueueRetryUpload),
                 ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await _confirmDelete(
-                    title: 'Delete tree registration?',
+                    title: sheetL10n.syncQueueDeleteTreeTitle,
                     onDelete: () => ref.read(treeRegistrationQueueProvider).remove(item.id),
                   );
                 },
-                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+                child: Text(sheetL10n.syncQueueDeleteFromQueue, style: const TextStyle(color: PrototypeColors.statusDanger)),
               ),
             ],
           ),
@@ -234,6 +239,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
@@ -241,18 +247,18 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Bioacoustic recording',
+                sheetL10n.syncQueueBioRecording,
                 style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text('Duration: ${item.durationSeconds.toStringAsFixed(0)}s', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Status: ${_bioQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueDurationLine(item.durationSeconds.toStringAsFixed(0)), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueStatusLine(_bioQueueLabel(item.status)), style: GoogleFonts.dmSans(fontSize: 13)),
               Text(
-                'GPS: ${item.latitude}, ${item.longitude}',
+                sheetL10n.syncQueueGpsLine('${item.latitude}', '${item.longitude}'),
                 style: GoogleFonts.dmSans(fontSize: 13),
               ),
               Text(
-                'Queued: ${item.createdAt.toLocal()}',
+                sheetL10n.syncQueueQueuedLine(item.createdAt.toLocal().toString()),
                 style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
               ),
               if (item.errorMessage != null) ...[
@@ -270,17 +276,17 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     await ref.read(bioacousticQueueProvider).markPending(item.id);
                     await _syncAll();
                   },
-                  child: const Text('Retry upload'),
+                  child: Text(sheetL10n.syncQueueRetryUpload),
                 ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await _confirmDelete(
-                    title: 'Delete recording?',
+                    title: sheetL10n.syncQueueDeleteRecordingTitle,
                     onDelete: () => ref.read(bioacousticQueueProvider).remove(item.id),
                   );
                 },
-                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+                child: Text(sheetL10n.syncQueueDeleteFromQueue, style: const TextStyle(color: PrototypeColors.statusDanger)),
               ),
             ],
           ),
@@ -369,9 +375,9 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
               PrototypeSectionHeader(title: l10n.pendingTreeRegistrations),
               for (final item in _treeItems)
                 PrototypeRegistryRow(
-                  code: item.payload['species_text'] as String? ?? 'Tree',
+                  code: item.payload['species_text'] as String? ?? l10n.treeFallback,
                   species: item.payload['species_text'] as String? ?? '—',
-                  meta: '${item.photoPaths.length} photo(s) · ${_queueLabel(item.status)}',
+                  meta: l10n.syncQueuePhotosMeta(item.photoPaths.length, _queueLabel(item.status)),
                   health: null,
                   badges: [
                     if (item.status == TreeQueueStatus.syncing)
@@ -390,9 +396,9 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
               PrototypeSectionHeader(title: l10n.survivalSurvey),
               for (final item in _survivalItems)
                 PrototypeRegistryRow(
-                  code: item.payload['tree_id'] as String? ?? 'Tree',
-                  species: item.payload['survival_status'] as String? ?? 'survey',
-                  meta: '${item.photoPaths.length} photo(s) · ${_survivalQueueLabel(item.status)}',
+                  code: item.payload['tree_id'] as String? ?? l10n.treeFallback,
+                  species: item.payload['survival_status'] as String? ?? l10n.surveyFallback,
+                  meta: l10n.syncQueuePhotosMeta(item.photoPaths.length, _survivalQueueLabel(item.status)),
                   health: null,
                   badges: [
                     if (item.status == SurvivalSurveyQueueStatus.syncing)
@@ -423,9 +429,9 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                 ),
               for (final item in _auditItems)
                 PrototypeRegistryRow(
-                  code: item.payload['plot_code'] as String? ?? 'Plot',
-                  species: item.payload['tree_presence'] as String? ?? 'visit',
-                  meta: '${item.photoPaths.length} photo(s) · ${_auditQueueLabel(item.status)}',
+                  code: item.payload['plot_code'] as String? ?? l10n.plotFallback,
+                  species: item.payload['tree_presence'] as String? ?? l10n.visitFallback,
+                  meta: l10n.syncQueuePhotosMeta(item.photoPaths.length, _auditQueueLabel(item.status)),
                   health: null,
                   badges: [
                     if (item.status == AuditVisitQueueStatus.syncing)
@@ -445,7 +451,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
               for (final item in _bioItems)
                 PrototypeRegistryRow(
                   code: '🎙',
-                  species: '${item.durationSeconds.toStringAsFixed(0)}s recording',
+                  species: l10n.syncQueueRecordingMeta(item.durationSeconds.toStringAsFixed(0)),
                   meta: item.createdAt.toLocal().toString().substring(0, 16),
                   health: null,
                   badges: [
@@ -487,6 +493,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
@@ -494,13 +501,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                payload['plot_code'] as String? ?? 'Audit plot visit',
+                payload['plot_code'] as String? ?? sheetL10n.syncQueueAuditPlotVisit,
                 style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text('Presence: ${payload['tree_presence']}', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Status: ${_auditQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Photos: ${item.photoPaths.length}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueuePresenceLine('${payload['tree_presence']}'), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueStatusLine(_auditQueueLabel(item.status)), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueuePhotosLine(item.photoPaths.length), style: GoogleFonts.dmSans(fontSize: 13)),
               if (item.errorMessage != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -516,17 +523,17 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     await ref.read(auditVisitQueueProvider).markPending(item.id);
                     await _syncAll();
                   },
-                  child: const Text('Retry upload'),
+                  child: Text(sheetL10n.syncQueueRetryUpload),
                 ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await _confirmDelete(
-                    title: 'Delete audit visit?',
+                    title: sheetL10n.syncQueueDeleteAuditVisitTitle,
                     onDelete: () => ref.read(auditVisitQueueProvider).remove(item.id),
                   );
                 },
-                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+                child: Text(sheetL10n.syncQueueDeleteFromQueue, style: const TextStyle(color: PrototypeColors.statusDanger)),
               ),
             ],
           ),
@@ -544,6 +551,7 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
@@ -551,13 +559,13 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Survival survey',
+                sheetL10n.syncQueueSurvivalSurveyTitle,
                 style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text('Tree: ${payload['tree_id']}', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Status: ${payload['survival_status']}', style: GoogleFonts.dmSans(fontSize: 13)),
-              Text('Queue: ${_survivalQueueLabel(item.status)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueTreeLine('${payload['tree_id']}'), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueSurvivalStatusLine('${payload['survival_status']}'), style: GoogleFonts.dmSans(fontSize: 13)),
+              Text(sheetL10n.syncQueueQueueLine(_survivalQueueLabel(item.status)), style: GoogleFonts.dmSans(fontSize: 13)),
               if (item.errorMessage != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -573,17 +581,17 @@ class _SyncQueueScreenState extends ConsumerState<SyncQueueScreen> {
                     await ref.read(survivalSurveyQueueProvider).markPending(item.id);
                     await _syncAll();
                   },
-                  child: const Text('Retry upload'),
+                  child: Text(sheetL10n.syncQueueRetryUpload),
                 ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await _confirmDelete(
-                    title: 'Delete survival survey?',
+                    title: sheetL10n.syncQueueDeleteSurvivalTitle,
                     onDelete: () => ref.read(survivalSurveyQueueProvider).remove(item.id),
                   );
                 },
-                child: const Text('Delete from queue', style: TextStyle(color: PrototypeColors.statusDanger)),
+                child: Text(sheetL10n.syncQueueDeleteFromQueue, style: const TextStyle(color: PrototypeColors.statusDanger)),
               ),
             ],
           ),

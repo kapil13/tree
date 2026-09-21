@@ -63,7 +63,7 @@ import 'app_localizations_hi.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -86,16 +86,16 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('hi')
+    Locale('hi'),
   ];
 
   /// No description provided for @appTitle.
@@ -3541,6 +3541,1804 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Site area (ha)'**
   String get schemeSiteAreaHa;
+
+  /// No description provided for @syncQueueSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get syncQueueSyncing;
+
+  /// No description provided for @syncQueueSyncedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {count} item(s)'**
+  String syncQueueSyncedCount(int count);
+
+  /// No description provided for @syncQueueDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the offline item from your device. It cannot be undone.'**
+  String get syncQueueDeleteConfirmBody;
+
+  /// No description provided for @deleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteLabel;
+
+  /// No description provided for @syncQueueItemRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Item removed'**
+  String get syncQueueItemRemoved;
+
+  /// No description provided for @syncQueueTreeRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree registration'**
+  String get syncQueueTreeRegistration;
+
+  /// No description provided for @syncQueueStatusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String syncQueueStatusLine(String status);
+
+  /// No description provided for @syncQueuePhotosLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos: {count}'**
+  String syncQueuePhotosLine(int count);
+
+  /// No description provided for @syncQueueGpsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS: {lat}, {lon}'**
+  String syncQueueGpsLine(String lat, String lon);
+
+  /// No description provided for @syncQueueQueuedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued: {time}'**
+  String syncQueueQueuedLine(String time);
+
+  /// No description provided for @syncQueueRetryUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry upload'**
+  String get syncQueueRetryUpload;
+
+  /// No description provided for @syncQueueDeleteFromQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete from queue'**
+  String get syncQueueDeleteFromQueue;
+
+  /// No description provided for @syncQueueDeleteTreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tree registration?'**
+  String get syncQueueDeleteTreeTitle;
+
+  /// No description provided for @syncQueueBioRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Bioacoustic recording'**
+  String get syncQueueBioRecording;
+
+  /// No description provided for @syncQueueDurationLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration: {seconds}s'**
+  String syncQueueDurationLine(String seconds);
+
+  /// No description provided for @syncQueueDeleteRecordingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete recording?'**
+  String get syncQueueDeleteRecordingTitle;
+
+  /// No description provided for @syncQueueAuditPlotVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit plot visit'**
+  String get syncQueueAuditPlotVisit;
+
+  /// No description provided for @syncQueuePresenceLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Presence: {value}'**
+  String syncQueuePresenceLine(String value);
+
+  /// No description provided for @syncQueueDeleteAuditVisitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete audit visit?'**
+  String get syncQueueDeleteAuditVisitTitle;
+
+  /// No description provided for @syncQueueSurvivalSurveyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival survey'**
+  String get syncQueueSurvivalSurveyTitle;
+
+  /// No description provided for @syncQueueTreeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree: {id}'**
+  String syncQueueTreeLine(String id);
+
+  /// No description provided for @syncQueueSurvivalStatusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String syncQueueSurvivalStatusLine(String status);
+
+  /// No description provided for @syncQueueQueueLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue: {status}'**
+  String syncQueueQueueLine(String status);
+
+  /// No description provided for @syncQueueDeleteSurvivalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete survival survey?'**
+  String get syncQueueDeleteSurvivalTitle;
+
+  /// No description provided for @syncQueueRecordingMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s recording'**
+  String syncQueueRecordingMeta(String seconds);
+
+  /// No description provided for @syncQueuePhotosMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photo(s) · {status}'**
+  String syncQueuePhotosMeta(int count, String status);
+
+  /// No description provided for @plotFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Plot'**
+  String get plotFallback;
+
+  /// No description provided for @surveyFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'survey'**
+  String get surveyFallback;
+
+  /// No description provided for @visitFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'visit'**
+  String get visitFallback;
+
+  /// No description provided for @evidenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence & MRV'**
+  String get evidenceTitle;
+
+  /// No description provided for @evidenceMrvShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'MRV compliance export'**
+  String get evidenceMrvShareText;
+
+  /// No description provided for @evidenceMrvReady.
+  ///
+  /// In en, this message translates to:
+  /// **'MRV export ready to share'**
+  String get evidenceMrvReady;
+
+  /// No description provided for @evidenceBundleShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence bundle'**
+  String get evidenceBundleShareText;
+
+  /// No description provided for @evidenceBundleReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence bundle ready to share'**
+  String get evidenceBundleReady;
+
+  /// No description provided for @evidenceProjectScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Project scope'**
+  String get evidenceProjectScope;
+
+  /// No description provided for @evidenceNoProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects available'**
+  String get evidenceNoProjects;
+
+  /// No description provided for @evidenceSelectProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get evidenceSelectProject;
+
+  /// No description provided for @evidencePortfolioAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Portfolio (all)'**
+  String get evidencePortfolioAll;
+
+  /// No description provided for @evidencePipeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence pipeline'**
+  String get evidencePipeline;
+
+  /// No description provided for @evidenceVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get evidenceVerified;
+
+  /// No description provided for @evidencePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get evidencePending;
+
+  /// No description provided for @evidenceGaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaps'**
+  String get evidenceGaps;
+
+  /// No description provided for @evidenceGapsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaps needing attention'**
+  String get evidenceGapsHeader;
+
+  /// No description provided for @evidenceNoGaps.
+  ///
+  /// In en, this message translates to:
+  /// **'No evidence gaps'**
+  String get evidenceNoGaps;
+
+  /// No description provided for @evidenceNoGapsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Portfolio evidence is up to date'**
+  String get evidenceNoGapsSub;
+
+  /// No description provided for @evidenceExports.
+  ///
+  /// In en, this message translates to:
+  /// **'Exports'**
+  String get evidenceExports;
+
+  /// No description provided for @evidenceDownloadMrvPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Download MRV pack (PDF)'**
+  String get evidenceDownloadMrvPdf;
+
+  /// No description provided for @evidenceDownloadMrvExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download MRV pack (Excel)'**
+  String get evidenceDownloadMrvExcel;
+
+  /// No description provided for @evidenceDownloadBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download evidence bundle (ZIP)'**
+  String get evidenceDownloadBundle;
+
+  /// No description provided for @evidenceReportsExports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports & exports'**
+  String get evidenceReportsExports;
+
+  /// No description provided for @evidenceGapSurvivalDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival survey evidence due'**
+  String get evidenceGapSurvivalDue;
+
+  /// No description provided for @evidenceGapViolationsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliance violations open'**
+  String get evidenceGapViolationsOpen;
+
+  /// No description provided for @evidenceGapIntegrityBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity monitoring gate blocked'**
+  String get evidenceGapIntegrityBlocked;
+
+  /// No description provided for @evidenceGapCreditTransitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit transitions'**
+  String get evidenceGapCreditTransitions;
+
+  /// No description provided for @evidenceGapFieldOps.
+  ///
+  /// In en, this message translates to:
+  /// **'Field ops'**
+  String get evidenceGapFieldOps;
+
+  /// No description provided for @evidenceGapTreesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees'**
+  String evidenceGapTreesCount(String count);
+
+  /// No description provided for @evidenceGapOpenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} open'**
+  String evidenceGapOpenCount(String count);
+
+  /// No description provided for @treeRegistryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree registry'**
+  String get treeRegistryTitle;
+
+  /// No description provided for @filtersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get filtersTitle;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFilters;
+
+  /// No description provided for @treeRegistrySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ID, species, area…'**
+  String get treeRegistrySearchHint;
+
+  /// No description provided for @sortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get sortRecent;
+
+  /// No description provided for @sortTreeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree ID'**
+  String get sortTreeId;
+
+  /// No description provided for @treesCountSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'trees'**
+  String get treesCountSuffix;
+
+  /// No description provided for @registryCategoryAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention'**
+  String get registryCategoryAttention;
+
+  /// No description provided for @registryCategoryMissingEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing evidence'**
+  String get registryCategoryMissingEvidence;
+
+  /// No description provided for @registryCategoryUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get registryCategoryUnverified;
+
+  /// No description provided for @registryCategoryHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get registryCategoryHealthy;
+
+  /// No description provided for @registryOnPageTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{onPage} on page · {total} total'**
+  String registryOnPageTotal(int onPage, int total);
+
+  /// No description provided for @registryPageOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {current} of {pages}'**
+  String registryPageOf(int current, int pages);
+
+  /// No description provided for @registryPrev.
+  ///
+  /// In en, this message translates to:
+  /// **'← Prev'**
+  String get registryPrev;
+
+  /// No description provided for @registryNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next →'**
+  String get registryNext;
+
+  /// No description provided for @registryNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No trees match'**
+  String get registryNoMatch;
+
+  /// No description provided for @registryNoMatchSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different filter or search term'**
+  String get registryNoMatchSub;
+
+  /// No description provided for @registryCachedList.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing cached tree list'**
+  String get registryCachedList;
+
+  /// No description provided for @registryCachedListFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing cached tree list from {time}'**
+  String registryCachedListFrom(String time);
+
+  /// No description provided for @statusUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get statusUnverified;
+
+  /// No description provided for @projectCreditLedger.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit ledger'**
+  String get projectCreditLedger;
+
+  /// No description provided for @projectSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project setup'**
+  String get projectSetupTitle;
+
+  /// No description provided for @completeSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete setup'**
+  String get completeSetup;
+
+  /// No description provided for @openSetupOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Open setup on web'**
+  String get openSetupOnWeb;
+
+  /// No description provided for @survivalSurveysDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival surveys due'**
+  String get survivalSurveysDue;
+
+  /// No description provided for @survivalNoSurveysDue.
+  ///
+  /// In en, this message translates to:
+  /// **'No survival surveys due ({total} trees on {interval} day interval)'**
+  String survivalNoSurveysDue(int total, String interval);
+
+  /// No description provided for @survivalTreesNeedRegeotag.
+  ///
+  /// In en, this message translates to:
+  /// **'{due} of {total} trees need re-geotag ({interval} day interval)'**
+  String survivalTreesNeedRegeotag(int due, int total, String interval);
+
+  /// No description provided for @treeIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree {id}'**
+  String treeIdLabel(String id);
+
+  /// No description provided for @moreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+ {count} more'**
+  String moreCount(int count);
+
+  /// No description provided for @integrityMonitoringGate.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity monitoring gate'**
+  String get integrityMonitoringGate;
+
+  /// No description provided for @integrityGatePassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring gate passed for credit transitions.'**
+  String get integrityGatePassed;
+
+  /// No description provided for @integrityGateBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring gate blocked for credit transitions.'**
+  String get integrityGateBlocked;
+
+  /// No description provided for @integrityEligibleAudit.
+  ///
+  /// In en, this message translates to:
+  /// **'Eligible {eligible}/{total} · Audit ready {auditReady}/{total}'**
+  String integrityEligibleAudit(
+    String eligible,
+    String total,
+    String auditReady,
+  );
+
+  /// No description provided for @treesWithBlockingIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tree(s) with blocking issues'**
+  String treesWithBlockingIssues(int count);
+
+  /// No description provided for @satelliteNoScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite: no scan yet'**
+  String get satelliteNoScan;
+
+  /// No description provided for @satelliteScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite: scanned'**
+  String get satelliteScanned;
+
+  /// No description provided for @satelliteStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite: stale ({days} days ago)'**
+  String satelliteStale(int days);
+
+  /// No description provided for @satelliteScannedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite: scanned today'**
+  String get satelliteScannedToday;
+
+  /// No description provided for @satelliteDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite: {days} days ago'**
+  String satelliteDaysAgo(int days);
+
+  /// No description provided for @treesPerHa.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees/ha'**
+  String treesPerHa(String count);
+
+  /// No description provided for @workAreaBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'block {code}'**
+  String workAreaBlock(String code);
+
+  /// No description provided for @treeDetailOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get treeDetailOverview;
+
+  /// No description provided for @treeDetailField.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get treeDetailField;
+
+  /// No description provided for @treeDetailIntelligence.
+  ///
+  /// In en, this message translates to:
+  /// **'Intelligence'**
+  String get treeDetailIntelligence;
+
+  /// No description provided for @treeDetailMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get treeDetailMap;
+
+  /// No description provided for @treeDetailInspect.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect'**
+  String get treeDetailInspect;
+
+  /// No description provided for @treeDetailEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get treeDetailEvidence;
+
+  /// No description provided for @treeDetailMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor'**
+  String get treeDetailMonitor;
+
+  /// No description provided for @treeDetailVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get treeDetailVerified;
+
+  /// No description provided for @treeDetailFieldLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Field location'**
+  String get treeDetailFieldLocation;
+
+  /// No description provided for @treeDetailFollowUpPhotoAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up photo added'**
+  String get treeDetailFollowUpPhotoAdded;
+
+  /// No description provided for @treeDetailCachedDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing cached tree detail — connect to refresh'**
+  String get treeDetailCachedDetail;
+
+  /// No description provided for @treeDetailUploadingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get treeDetailUploadingPhoto;
+
+  /// No description provided for @treeDetailAddFollowUpPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add follow-up photo'**
+  String get treeDetailAddFollowUpPhoto;
+
+  /// No description provided for @treeDetailPhotoGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo gallery'**
+  String get treeDetailPhotoGallery;
+
+  /// No description provided for @treeDetailNoPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos yet'**
+  String get treeDetailNoPhotos;
+
+  /// No description provided for @treeDetailNoPhotosSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a follow-up photo from Overview or during survival survey'**
+  String get treeDetailNoPhotosSub;
+
+  /// No description provided for @treeDetailMeasurementHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement history'**
+  String get treeDetailMeasurementHistory;
+
+  /// No description provided for @treeDetailNoMeasurements.
+  ///
+  /// In en, this message translates to:
+  /// **'No measurements recorded'**
+  String get treeDetailNoMeasurements;
+
+  /// No description provided for @treeDetailNoMeasurementsSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Survival surveys and field captures appear here'**
+  String get treeDetailNoMeasurementsSub;
+
+  /// No description provided for @treeDetailAiHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'AI analysis history'**
+  String get treeDetailAiHistory;
+
+  /// No description provided for @treeDetailNoAiAnalyses.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI analyses yet'**
+  String get treeDetailNoAiAnalyses;
+
+  /// No description provided for @treeDetailNoAiAnalysesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Run AI analysis from the Overview tab'**
+  String get treeDetailNoAiAnalysesSub;
+
+  /// No description provided for @treeDetailSarFusion.
+  ///
+  /// In en, this message translates to:
+  /// **'SAR integrity fusion'**
+  String get treeDetailSarFusion;
+
+  /// No description provided for @treeDetailGroundStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Ground status'**
+  String get treeDetailGroundStatus;
+
+  /// No description provided for @treeDetailIntegrityScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity score'**
+  String get treeDetailIntegrityScoreLabel;
+
+  /// No description provided for @treeDetailAuditBlockers.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit-ready blockers'**
+  String get treeDetailAuditBlockers;
+
+  /// No description provided for @treeDetailTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get treeDetailTimeline;
+
+  /// No description provided for @treeDetailRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered · {date}'**
+  String treeDetailRegistered(String date);
+
+  /// No description provided for @treeDetailFieldCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Field capture'**
+  String get treeDetailFieldCapture;
+
+  /// No description provided for @treeDetailSatelliteVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite verified'**
+  String get treeDetailSatelliteVerified;
+
+  /// No description provided for @treeDetailRemoteSensingPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote sensing check passed'**
+  String get treeDetailRemoteSensingPassed;
+
+  /// No description provided for @treeDetailNdviSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'NDVI signal · {level}'**
+  String treeDetailNdviSignal(String level);
+
+  /// No description provided for @treeDetailMeasurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Measurement'**
+  String get treeDetailMeasurement;
+
+  /// No description provided for @treeDetailCanopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Canopy'**
+  String get treeDetailCanopy;
+
+  /// No description provided for @treeDetailAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis'**
+  String get treeDetailAnalysis;
+
+  /// No description provided for @treeDetailFusionScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Fusion score {score}'**
+  String treeDetailFusionScore(String score);
+
+  /// No description provided for @treeDetailCarbonSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon {kg} kg · DBH {dbh} cm'**
+  String treeDetailCarbonSummary(String kg, String dbh);
+
+  /// No description provided for @treeDetailHealthLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Health {health}'**
+  String treeDetailHealthLine(String health);
+
+  /// No description provided for @auditVisitQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit queued for sync when online'**
+  String get auditVisitQueued;
+
+  /// No description provided for @auditVisitSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit plot visit saved'**
+  String get auditVisitSaved;
+
+  /// No description provided for @auditVisitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit {code}'**
+  String auditVisitTitle(String code);
+
+  /// No description provided for @auditCapturingGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing GPS…'**
+  String get auditCapturingGps;
+
+  /// No description provided for @auditTreePresence.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree presence'**
+  String get auditTreePresence;
+
+  /// No description provided for @auditTreesPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Trees present'**
+  String get auditTreesPresent;
+
+  /// No description provided for @auditTreesAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'No trees / bare ground'**
+  String get auditTreesAbsent;
+
+  /// No description provided for @auditTreesSparse.
+  ///
+  /// In en, this message translates to:
+  /// **'Sparse / scattered'**
+  String get auditTreesSparse;
+
+  /// No description provided for @auditCannotAssess.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot assess'**
+  String get auditCannotAssess;
+
+  /// No description provided for @auditTreesObserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Trees observed'**
+  String get auditTreesObserved;
+
+  /// No description provided for @auditTreesAlive.
+  ///
+  /// In en, this message translates to:
+  /// **'Trees alive'**
+  String get auditTreesAlive;
+
+  /// No description provided for @auditOutcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Outcome'**
+  String get auditOutcome;
+
+  /// No description provided for @auditOutcomeInconclusive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inconclusive'**
+  String get auditOutcomeInconclusive;
+
+  /// No description provided for @auditOutcomeSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported'**
+  String get auditOutcomeSupported;
+
+  /// No description provided for @auditOutcomeUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported'**
+  String get auditOutcomeUnsupported;
+
+  /// No description provided for @auditFieldNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Field notes'**
+  String get auditFieldNotes;
+
+  /// No description provided for @auditUploadingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo…'**
+  String get auditUploadingPhoto;
+
+  /// No description provided for @auditAddFieldPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add field photo ({current}/5)'**
+  String auditAddFieldPhoto(int current);
+
+  /// No description provided for @auditSaveVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save visit'**
+  String get auditSaveVisit;
+
+  /// No description provided for @auditGpsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture GPS before saving the visit.'**
+  String get auditGpsRequired;
+
+  /// No description provided for @auditPhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one field photo.'**
+  String get auditPhotoRequired;
+
+  /// No description provided for @auditRiskSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'{risk} risk'**
+  String auditRiskSuffix(String risk);
+
+  /// No description provided for @bioSessionDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session detail'**
+  String get bioSessionDetailTitle;
+
+  /// No description provided for @bioDetectionTierAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get bioDetectionTierAccepted;
+
+  /// No description provided for @bioDetectionTierProbable.
+  ///
+  /// In en, this message translates to:
+  /// **'Probable'**
+  String get bioDetectionTierProbable;
+
+  /// No description provided for @bioDetectionTierReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review required'**
+  String get bioDetectionTierReview;
+
+  /// No description provided for @bioFieldSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Field site'**
+  String get bioFieldSite;
+
+  /// No description provided for @bioDetectedSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected species'**
+  String get bioDetectedSpecies;
+
+  /// No description provided for @bioDetectionsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Species detections will appear when analysis completes.'**
+  String get bioDetectionsPending;
+
+  /// No description provided for @bioNoDetections.
+  ///
+  /// In en, this message translates to:
+  /// **'No species detections yet.'**
+  String get bioNoDetections;
+
+  /// No description provided for @bioViewBiodiversityFusion.
+  ///
+  /// In en, this message translates to:
+  /// **'View biodiversity fusion'**
+  String get bioViewBiodiversityFusion;
+
+  /// No description provided for @bioAddToEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to evidence bundle'**
+  String get bioAddToEvidence;
+
+  /// No description provided for @viewOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View on map'**
+  String get viewOnMap;
+
+  /// No description provided for @bioConfidenceScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence {score}/100'**
+  String bioConfidenceScore(String score);
+
+  /// No description provided for @bioAcceptedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted {count}'**
+  String bioAcceptedCount(String count);
+
+  /// No description provided for @bioShannonLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Shannon {value}'**
+  String bioShannonLine(String value);
+
+  /// No description provided for @bioCallsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calls'**
+  String bioCallsCount(String count);
+
+  /// No description provided for @biodiversityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Biodiversity'**
+  String get biodiversityTitle;
+
+  /// No description provided for @bioTaxa.
+  ///
+  /// In en, this message translates to:
+  /// **'Taxa'**
+  String get bioTaxa;
+
+  /// No description provided for @bioShannonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shannon'**
+  String get bioShannonLabel;
+
+  /// No description provided for @bioConfidenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence'**
+  String get bioConfidenceLabel;
+
+  /// No description provided for @bioConfidenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Biodiversity Confidence from {count} analyzed recordings (evidence quality, not habitat health)'**
+  String bioConfidenceHint(int count);
+
+  /// No description provided for @bioRegionalSpeciesNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Regional species near {lat}, {lon}'**
+  String bioRegionalSpeciesNear(String lat, String lon);
+
+  /// No description provided for @bioRegionalSpeciesGbif.
+  ///
+  /// In en, this message translates to:
+  /// **'Regional species (GBIF)'**
+  String get bioRegionalSpeciesGbif;
+
+  /// No description provided for @bioHotspotsByWorkArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotspots by work area'**
+  String get bioHotspotsByWorkArea;
+
+  /// No description provided for @bioNoWorkAreas.
+  ///
+  /// In en, this message translates to:
+  /// **'No work areas'**
+  String get bioNoWorkAreas;
+
+  /// No description provided for @bioNoWorkAreasMapped.
+  ///
+  /// In en, this message translates to:
+  /// **'No work areas mapped'**
+  String get bioNoWorkAreasMapped;
+
+  /// No description provided for @bioConfidenceMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence {score}/100'**
+  String bioConfidenceMeta(int score);
+
+  /// No description provided for @bioStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong'**
+  String get bioStrong;
+
+  /// No description provided for @bioWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get bioWatch;
+
+  /// No description provided for @bioAcousticDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Bioacoustic detail'**
+  String get bioAcousticDetail;
+
+  /// No description provided for @bioRunSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Run bioacoustic survey'**
+  String get bioRunSurvey;
+
+  /// No description provided for @bioNoLocationSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'No location for species list'**
+  String get bioNoLocationSpecies;
+
+  /// No description provided for @bioNoLocationSpeciesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a work area boundary or register a tree with GPS to load regional fauna.'**
+  String get bioNoLocationSpeciesSub;
+
+  /// No description provided for @bioNoRegionalSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'No regional species found'**
+  String get bioNoRegionalSpecies;
+
+  /// No description provided for @bioNoRegionalSpeciesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'GBIF returned no nearby occurrences for this site.'**
+  String get bioNoRegionalSpeciesSub;
+
+  /// No description provided for @bioViewOnMapMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'View on map'**
+  String get bioViewOnMapMeta;
+
+  /// No description provided for @bioOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get bioOpen;
+
+  /// No description provided for @carbonPortfolioTco2e.
+  ///
+  /// In en, this message translates to:
+  /// **'tCO₂e estimated (portfolio)'**
+  String get carbonPortfolioTco2e;
+
+  /// No description provided for @carbonAnnualPace.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct}% of annual sequestration pace'**
+  String carbonAnnualPace(int pct);
+
+  /// No description provided for @carbonTreesInPortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees in portfolio'**
+  String carbonTreesInPortfolio(int count);
+
+  /// No description provided for @carbonByProject.
+  ///
+  /// In en, this message translates to:
+  /// **'By project'**
+  String get carbonByProject;
+
+  /// No description provided for @carbonEnterSpecies.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a species name.'**
+  String get carbonEnterSpecies;
+
+  /// No description provided for @carbonEstimateDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate CO₂e from species and optional measurements. This is an Estimate — not a Live field measurement or registry-issued credit.'**
+  String get carbonEstimateDisclaimer;
+
+  /// No description provided for @carbonCo2eRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{lower}–{upper} kg CO₂e (90% CI)'**
+  String carbonCo2eRange(String lower, String upper);
+
+  /// No description provided for @carbonCo2eSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} kg CO₂e'**
+  String carbonCo2eSingle(String value);
+
+  /// No description provided for @carbonUncertainty.
+  ///
+  /// In en, this message translates to:
+  /// **'±{pct}% measurement + model uncertainty'**
+  String carbonUncertainty(String pct);
+
+  /// No description provided for @carbonHonestyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Honesty label: Estimate (modelled). Not Live sensor data.'**
+  String get carbonHonestyLabel;
+
+  /// No description provided for @reportReadyToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Report ready to share'**
+  String get reportReadyToShare;
+
+  /// No description provided for @reportMisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plantation MIS reports'**
+  String get reportMisTitle;
+
+  /// No description provided for @reportMisSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational exports used by government plantation programmes'**
+  String get reportMisSubtitle;
+
+  /// No description provided for @reportTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report type'**
+  String get reportTypeLabel;
+
+  /// No description provided for @reportDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get reportDownloading;
+
+  /// No description provided for @reportDownloadMis.
+  ///
+  /// In en, this message translates to:
+  /// **'Download MIS report'**
+  String get reportDownloadMis;
+
+  /// No description provided for @reportReadyShareNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ready to share'**
+  String reportReadyShareNamed(String name);
+
+  /// No description provided for @downloadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadLabel;
+
+  /// No description provided for @creditIntegrityFusion.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrity fusion'**
+  String get creditIntegrityFusion;
+
+  /// No description provided for @creditAuditReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit ready'**
+  String get creditAuditReady;
+
+  /// No description provided for @creditEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit eligible'**
+  String get creditEligible;
+
+  /// No description provided for @creditStatusHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Status history'**
+  String get creditStatusHistory;
+
+  /// No description provided for @creditSerials.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit serials'**
+  String get creditSerials;
+
+  /// No description provided for @creditSerialFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Serial'**
+  String get creditSerialFallback;
+
+  /// No description provided for @viewProject.
+  ///
+  /// In en, this message translates to:
+  /// **'View project'**
+  String get viewProject;
+
+  /// No description provided for @projectLedgers.
+  ///
+  /// In en, this message translates to:
+  /// **'Project ledgers'**
+  String get projectLedgers;
+
+  /// No description provided for @alertRecommendedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended action'**
+  String get alertRecommendedAction;
+
+  /// No description provided for @alertMarkReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark reviewed'**
+  String get alertMarkReviewed;
+
+  /// No description provided for @alertViewAffectedTree.
+  ///
+  /// In en, this message translates to:
+  /// **'View affected tree →'**
+  String get alertViewAffectedTree;
+
+  /// No description provided for @createProjectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create project'**
+  String get createProjectTitle;
+
+  /// No description provided for @createProjectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisors can start a planting project and finish setup on the web.'**
+  String get createProjectSubtitle;
+
+  /// No description provided for @createProjectNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get createProjectNameLabel;
+
+  /// No description provided for @createProjectDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get createProjectDescriptionLabel;
+
+  /// No description provided for @createProjectSegmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Segment'**
+  String get createProjectSegmentLabel;
+
+  /// No description provided for @createProjectNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name is required'**
+  String get createProjectNameRequired;
+
+  /// No description provided for @newProject.
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get newProject;
+
+  /// No description provided for @survivalMissingUprooted.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing / uprooted'**
+  String get survivalMissingUprooted;
+
+  /// No description provided for @survivalTapeMeasure.
+  ///
+  /// In en, this message translates to:
+  /// **'Tape measure (DBH at 1.3 m)'**
+  String get survivalTapeMeasure;
+
+  /// No description provided for @survivalClinometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinometer (height)'**
+  String get survivalClinometer;
+
+  /// No description provided for @survivalPhotoAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey photo attached'**
+  String get survivalPhotoAttached;
+
+  /// No description provided for @survivalCapturingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing photo…'**
+  String get survivalCapturingPhoto;
+
+  /// No description provided for @survivalAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add survey photo (camera)'**
+  String get survivalAddPhoto;
+
+  /// No description provided for @survivalRemarksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition, replacement notes…'**
+  String get survivalRemarksHint;
+
+  /// No description provided for @openInMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Maps'**
+  String get openInMaps;
+
+  /// No description provided for @myLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'My location'**
+  String get myLocation;
+
+  /// No description provided for @closeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeLabel;
+
+  /// No description provided for @prepareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare'**
+  String get prepareLabel;
+
+  /// No description provided for @schemeProgramme.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme programme'**
+  String get schemeProgramme;
+
+  /// No description provided for @governmentReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Government references'**
+  String get governmentReferences;
+
+  /// No description provided for @schemeFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get schemeFallback;
+
+  /// No description provided for @onboardingVerifyOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'• Our team verifies your organization details'**
+  String get onboardingVerifyOrg;
+
+  /// No description provided for @onboardingApprovalEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'• You receive an approval email'**
+  String get onboardingApprovalEmail;
+
+  /// No description provided for @onboardingSignInDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'• Open the app and sign in to access your dashboard'**
+  String get onboardingSignInDashboard;
+
+  /// No description provided for @onboardingPendingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organization profile is under review. We will email you when your account is approved — usually within 1–2 business days.'**
+  String get onboardingPendingSubtitle;
+
+  /// No description provided for @blockerInsufficientPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Need at least 2 photos'**
+  String get blockerInsufficientPhotos;
+
+  /// No description provided for @blockerPhotoSpanTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos must span 30+ days'**
+  String get blockerPhotoSpanTooShort;
+
+  /// No description provided for @blockerSatelliteScanStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite scan older than 90 days'**
+  String get blockerSatelliteScanStale;
+
+  /// No description provided for @blockerFusionBelowAudit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fusion score below 75'**
+  String get blockerFusionBelowAudit;
+
+  /// No description provided for @blockerMissingExif.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing camera EXIF'**
+  String get blockerMissingExif;
+
+  /// No description provided for @blockerMissingPhotoGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo missing GPS'**
+  String get blockerMissingPhotoGps;
+
+  /// No description provided for @blockerMissingPhotoTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo missing timestamp'**
+  String get blockerMissingPhotoTimestamp;
+
+  /// No description provided for @blockerPhotoTimestampStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo older than 7 days'**
+  String get blockerPhotoTimestampStale;
+
+  /// No description provided for @blockerRegeotagMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-geotag mismatch'**
+  String get blockerRegeotagMismatch;
+
+  /// No description provided for @blockerDuplicatePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate photo'**
+  String get blockerDuplicatePhoto;
+
+  /// No description provided for @blockerDuplicateCoordinate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate coordinate'**
+  String get blockerDuplicateCoordinate;
+
+  /// No description provided for @blockerAiConfidenceLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low AI confidence'**
+  String get blockerAiConfidenceLow;
+
+  /// No description provided for @blockerSarIntegrityBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'SAR forest integrity below minimum'**
+  String get blockerSarIntegrityBelow;
+
+  /// No description provided for @blockerOpticalScanStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Work area optical scan stale'**
+  String get blockerOpticalScanStale;
+
+  /// No description provided for @blockerFusionBelowMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Fusion score below minimum'**
+  String get blockerFusionBelowMinimum;
+
+  /// No description provided for @blockerNotCreditEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'Not credit eligible'**
+  String get blockerNotCreditEligible;
+
+  /// No description provided for @remediationAddFollowUpPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a follow-up field photo from the tree detail page.'**
+  String get remediationAddFollowUpPhoto;
+
+  /// No description provided for @remediationRunSurvivalSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a survival survey with GPS and an optional survey photo.'**
+  String get remediationRunSurvivalSurvey;
+
+  /// No description provided for @remediationTriggerSatellite.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger a satellite health scan from tree detail.'**
+  String get remediationTriggerSatellite;
+
+  /// No description provided for @remediationReviewMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Review monitoring coverage for this project.'**
+  String get remediationReviewMonitoring;
+
+  /// No description provided for @monitoringNeedsDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs decision'**
+  String get monitoringNeedsDecision;
+
+  /// No description provided for @monitoringNoUrgentAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No urgent alerts'**
+  String get monitoringNoUrgentAlerts;
+
+  /// No description provided for @monitoringSignalsStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring signals are stable'**
+  String get monitoringSignalsStable;
+
+  /// No description provided for @monitoringSitePulse.
+  ///
+  /// In en, this message translates to:
+  /// **'Site pulse'**
+  String get monitoringSitePulse;
+
+  /// No description provided for @alertCategoryFire.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire'**
+  String get alertCategoryFire;
+
+  /// No description provided for @alertCategoryFlood.
+  ///
+  /// In en, this message translates to:
+  /// **'Flood'**
+  String get alertCategoryFlood;
+
+  /// No description provided for @alertCategoryWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get alertCategoryWeather;
+
+  /// No description provided for @alertCategoryPest.
+  ///
+  /// In en, this message translates to:
+  /// **'Pest'**
+  String get alertCategoryPest;
+
+  /// No description provided for @alertCategorySatellite.
+  ///
+  /// In en, this message translates to:
+  /// **'Satellite'**
+  String get alertCategorySatellite;
+
+  /// No description provided for @alertUrgencyActNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Act now'**
+  String get alertUrgencyActNow;
+
+  /// No description provided for @alertUrgencyPrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare'**
+  String get alertUrgencyPrepare;
+
+  /// No description provided for @alertUrgencyMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor'**
+  String get alertUrgencyMonitor;
+
+  /// No description provided for @healthFilterHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'healthy'**
+  String get healthFilterHealthy;
+
+  /// No description provided for @healthFilterStressed.
+  ///
+  /// In en, this message translates to:
+  /// **'stressed'**
+  String get healthFilterStressed;
+
+  /// No description provided for @healthFilterDead.
+  ///
+  /// In en, this message translates to:
+  /// **'dead'**
+  String get healthFilterDead;
+
+  /// No description provided for @monthJan.
+  ///
+  /// In en, this message translates to:
+  /// **'Jan'**
+  String get monthJan;
+
+  /// No description provided for @monthFeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Feb'**
+  String get monthFeb;
+
+  /// No description provided for @monthMar.
+  ///
+  /// In en, this message translates to:
+  /// **'Mar'**
+  String get monthMar;
+
+  /// No description provided for @monthApr.
+  ///
+  /// In en, this message translates to:
+  /// **'Apr'**
+  String get monthApr;
+
+  /// No description provided for @monthMay.
+  ///
+  /// In en, this message translates to:
+  /// **'May'**
+  String get monthMay;
+
+  /// No description provided for @monthJun.
+  ///
+  /// In en, this message translates to:
+  /// **'Jun'**
+  String get monthJun;
+
+  /// No description provided for @monthJul.
+  ///
+  /// In en, this message translates to:
+  /// **'Jul'**
+  String get monthJul;
+
+  /// No description provided for @monthAug.
+  ///
+  /// In en, this message translates to:
+  /// **'Aug'**
+  String get monthAug;
+
+  /// No description provided for @monthSep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sep'**
+  String get monthSep;
+
+  /// No description provided for @monthOct.
+  ///
+  /// In en, this message translates to:
+  /// **'Oct'**
+  String get monthOct;
+
+  /// No description provided for @monthNov.
+  ///
+  /// In en, this message translates to:
+  /// **'Nov'**
+  String get monthNov;
+
+  /// No description provided for @monthDec.
+  ///
+  /// In en, this message translates to:
+  /// **'Dec'**
+  String get monthDec;
+
+  /// No description provided for @methodologyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Methodology'**
+  String get methodologyTitle;
+
+  /// No description provided for @alertUrgencyActToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Act today'**
+  String get alertUrgencyActToday;
+
+  /// No description provided for @alertUrgencyThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get alertUrgencyThisWeek;
 }
 
 class _AppLocalizationsDelegate
@@ -3570,8 +5368,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

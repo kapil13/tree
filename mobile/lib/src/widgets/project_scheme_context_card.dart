@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Scheme label and government reference summary for planting projects.
@@ -23,16 +24,17 @@ class ProjectSchemeContextCard extends StatelessWidget {
       project['metadata'] as Map?,
     );
 
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Scheme programme', style: Theme.of(context).textTheme.titleMedium),
+            Text(l10n.schemeProgramme, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
-              scheme!['label'] as String? ?? schemeCode ?? 'Scheme',
+              scheme!['label'] as String? ?? schemeCode ?? l10n.schemeFallback,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             if (scheme!['ministry'] != null)
@@ -42,7 +44,7 @@ class ProjectSchemeContextCard extends StatelessWidget {
               ),
             if (rows.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('Government references', style: Theme.of(context).textTheme.labelLarge),
+              Text(l10n.governmentReferences, style: Theme.of(context).textTheme.labelLarge),
               const SizedBox(height: 6),
               for (final row in rows)
                 Padding(

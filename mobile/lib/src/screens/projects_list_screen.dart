@@ -39,7 +39,7 @@ class ProjectsListScreen extends ConsumerWidget {
               onPressed: () => showCreateProjectSheet(context, ref),
               backgroundColor: const Color(0xFF15803D),
               icon: const Icon(Icons.add),
-              label: const Text('New project'),
+              label: Text(l10n.newProject),
             )
           : null,
       body: projectsAsync.when(

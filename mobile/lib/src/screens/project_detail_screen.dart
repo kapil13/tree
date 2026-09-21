@@ -42,7 +42,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                 ? () => context.push('/trees/new?project=$projectId')
                 : () => _openSetup(context, ref),
             icon: Icon(setup.canRegisterTree ? Icons.add : Icons.settings_outlined),
-            label: Text(setup.canRegisterTree ? l10n.registerTreeBtn : 'Complete setup'),
+            label: Text(setup.canRegisterTree ? l10n.registerTreeBtn : l10n.completeSetup),
           );
         },
         orElse: () => null,
@@ -83,6 +83,7 @@ class ProjectDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _SetupStatusCard(
                 setup: setup,
+                l10n: l10n,
                 onOpenSetup: () => _openSetup(context, ref),
               ),
               const SizedBox(height: 16),
@@ -92,6 +93,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                 data: (integrity) => _IntegrityMonitoringCard(
                   integrity: integrity,
                   projectId: projectId,
+                  l10n: l10n,
                 ),
               ),
               const SizedBox(height: 16),
@@ -100,6 +102,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                 error: (e, _) => Text(apiErrorMessage(e)),
                 data: (survival) => _SurvivalDueCard(
                   survival: survival,
+                  l10n: l10n,
                   onTreeTap: (treeId) => context.push('/trees/$treeId/survival'),
                 ),
               ),
@@ -146,14 +149,14 @@ class ProjectDetailScreen extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => context.push('/credits/projects/$projectId'),
-                      child: const Text('Credit ledger'),
+                      child: Text(l10n.projectCreditLedger),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => context.push('/evidence?project=$projectId'),
-                      child: const Text('Evidence & MRV'),
+                      child: Text(l10n.evidenceTitle),
                     ),
                   ),
                 ],
@@ -172,15 +175,15 @@ class ProjectDetailScreen extends ConsumerWidget {
                     children: areas.map((wa) {
                       final m = wa as Map<String, dynamic>;
                       final id = m['id'] as String;
-                      final density = _densityLabel(m, segment);
+                      final density = _densityLabel(l10n, m, segment);
                       final lastScan = m['last_satellite_at'] as String?;
-                      final scanLabel = _satelliteLabel(lastScan);
+                      final scanLabel = _satelliteLabel(l10n, lastScan);
                       return Card(
                         child: ListTile(
                           title: Text(m['name'] as String? ?? l10n.workAreaFallback),
                           subtitle: Text(
-                            '${m['geometry_type']} · ${m['tree_count'] ?? 0} trees'
-                            '${m['segment_code'] != null ? ' · block ${m['segment_code']}' : ''}'
+                            '${m['geometry_type']} · ${m['tree_count'] ?? 0} ${l10n.treesCountSuffix}'
+                            '${m['segment_code'] != null ? ' · ${l10n.workAreaBlock(m['segment_code'] as String)}' : ''}'
                             '${density.isNotEmpty ? ' · $density' : ''}'
                             '${scanLabel.isNotEmpty ? '\n$scanLabel' : ''}',
                           ),
@@ -211,22 +214,22 @@ class ProjectDetailScreen extends ConsumerWidget {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  String _densityLabel(Map<String, dynamic> wa, String segment) {
+  String _densityLabel(AppLocalizations l10n, Map<String, dynamic> wa, String segment) {
     if (segment != 'industrial_greenbelt') return '';
     final area = (wa['area_ha'] as num?)?.toDouble();
     final trees = (wa['tree_count'] as num?)?.toInt() ?? 0;
     if (area == null || area <= 0) return '';
-    return '${(trees / area).toStringAsFixed(0)} trees/ha';
+    return l10n.treesPerHa((trees / area).toStringAsFixed(0));
   }
 
-  String _satelliteLabel(String? lastScanIso) {
-    if (lastScanIso == null) return 'Satellite: no scan yet';
+  String _satelliteLabel(AppLocalizations l10n, String? lastScanIso) {
+    if (lastScanIso == null) return l10n.satelliteNoScan;
     final parsed = DateTime.tryParse(lastScanIso);
-    if (parsed == null) return 'Satellite: scanned';
+    if (parsed == null) return l10n.satelliteScanned;
     final days = DateTime.now().toUtc().difference(parsed.toUtc()).inDays;
-    if (days > 35) return 'Satellite: stale ($days days ago)';
-    if (days == 0) return 'Satellite: scanned today';
-    return 'Satellite: $days days ago';
+    if (days > 35) return l10n.satelliteStale(days);
+    if (days == 0) return l10n.satelliteScannedToday;
+    return l10n.satelliteDaysAgo(days);
   }
 
   Color? _satelliteIconColor(String? lastScanIso) {
@@ -247,9 +250,10 @@ class ProjectDetailScreen extends ConsumerWidget {
 }
 
 class _SetupStatusCard extends StatelessWidget {
-  const _SetupStatusCard({required this.setup, required this.onOpenSetup});
+  const _SetupStatusCard({required this.setup, required this.l10n, required this.onOpenSetup});
 
   final ProjectSetupStatus setup;
+  final AppLocalizations l10n;
   final VoidCallback onOpenSetup;
 
   @override
@@ -267,7 +271,7 @@ class _SetupStatusCard extends StatelessWidget {
                   color: setup.canRegisterTree ? Colors.green.shade700 : Colors.orange.shade800,
                 ),
                 const SizedBox(width: 8),
-                Text('Project setup', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.projectSetupTitle, style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
             if (setup.blockReason != null) ...[
@@ -300,7 +304,7 @@ class _SetupStatusCard extends StatelessWidget {
               ),
             if (!setup.canRegisterTree) ...[
               const SizedBox(height: 8),
-              TextButton(onPressed: onOpenSetup, child: const Text('Open setup on web')),
+              TextButton(onPressed: onOpenSetup, child: Text(l10n.openSetupOnWeb)),
             ],
           ],
         ),
@@ -310,9 +314,10 @@ class _SetupStatusCard extends StatelessWidget {
 }
 
 class _SurvivalDueCard extends StatelessWidget {
-  const _SurvivalDueCard({required this.survival, required this.onTreeTap});
+  const _SurvivalDueCard({required this.survival, required this.l10n, required this.onTreeTap});
 
   final Map<String, dynamic> survival;
+  final AppLocalizations l10n;
   final void Function(String treeId) onTreeTap;
 
   @override
@@ -330,7 +335,7 @@ class _SurvivalDueCard extends StatelessWidget {
             children: [
               Icon(Icons.verified_user, color: Colors.green.shade700),
               const SizedBox(width: 8),
-              Expanded(child: Text('No survival surveys due ($total trees on ${interval ?? '—'} day interval)')),
+              Expanded(child: Text(l10n.survivalNoSurveysDue(total, interval?.toString() ?? '—'))),
             ],
           ),
         ),
@@ -344,21 +349,21 @@ class _SurvivalDueCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Survival surveys due',
+              l10n.survivalSurveysDue,
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            Text('$due of $total trees need re-geotag (${interval ?? '—'} day interval)'),
+            Text(l10n.survivalTreesNeedRegeotag(due, total, interval?.toString() ?? '—')),
             const SizedBox(height: 8),
             for (final id in dueIds.take(8))
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                title: Text('Tree $id', style: const TextStyle(fontSize: 13)),
+                title: Text(l10n.treeIdLabel(id), style: const TextStyle(fontSize: 13)),
                 trailing: const Icon(Icons.chevron_right, size: 18),
                 onTap: () => onTreeTap(id),
               ),
             if (dueIds.length > 8)
-              Text('+ ${dueIds.length - 8} more', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(l10n.moreCount(dueIds.length - 8), style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
       ),
@@ -367,10 +372,11 @@ class _SurvivalDueCard extends StatelessWidget {
 }
 
 class _IntegrityMonitoringCard extends StatelessWidget {
-  const _IntegrityMonitoringCard({required this.integrity, required this.projectId});
+  const _IntegrityMonitoringCard({required this.integrity, required this.projectId, required this.l10n});
 
   final Map<String, dynamic> integrity;
   final String projectId;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -394,16 +400,14 @@ class _IntegrityMonitoringCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Integrity monitoring gate',
+                  l10n.integrityMonitoringGate,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              monitoringReady
-                  ? 'Monitoring gate passed for credit transitions.'
-                  : 'Monitoring gate blocked for credit transitions.',
+              monitoringReady ? l10n.integrityGatePassed : l10n.integrityGateBlocked,
             ),
             if (monitoringGate?['message'] != null) ...[
               const SizedBox(height: 6),
@@ -423,7 +427,7 @@ class _IntegrityMonitoringCard extends StatelessWidget {
                       const Text('• '),
                       Expanded(
                         child: Text(
-                          resolveIntegrityRemediation(reason, projectId: projectId).label,
+                          resolveIntegrityRemediation(l10n, reason, projectId: projectId).label,
                         ),
                       ),
                     ],
@@ -432,14 +436,17 @@ class _IntegrityMonitoringCard extends StatelessWidget {
             ],
             const SizedBox(height: 8),
             Text(
-              'Eligible ${integrity['credit_eligible_count'] ?? 0}/${integrity['tree_count'] ?? 0} · '
-              'Audit ready ${integrity['audit_ready_count'] ?? 0}/${integrity['tree_count'] ?? 0}',
+              l10n.integrityEligibleAudit(
+                '${integrity['credit_eligible_count'] ?? 0}',
+                '${integrity['tree_count'] ?? 0}',
+                '${integrity['audit_ready_count'] ?? 0}',
+              ),
               style: const TextStyle(fontSize: 12),
             ),
             if (blocking.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                '${blocking.length} tree(s) with blocking issues',
+                l10n.treesWithBlockingIssues(blocking.length),
                 style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
               ),
               for (final raw in blocking.take(5))
@@ -447,13 +454,13 @@ class _IntegrityMonitoringCard extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   title: Text(
-                    (raw as Map)['public_code'] as String? ?? 'Tree',
+                    (raw as Map)['public_code'] as String? ?? l10n.treeFallback,
                     style: const TextStyle(fontSize: 13),
                   ),
                   subtitle: Text(
                     ((raw['blockers'] as List?) ?? [])
                         .whereType<String>()
-                        .map(integrityBlockerLabel)
+                        .map((code) => integrityBlockerLabel(l10n, code))
                         .join(', '),
                     style: const TextStyle(fontSize: 11),
                   ),
