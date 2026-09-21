@@ -8,7 +8,8 @@
     "start": "next start --port 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "i18n:check": "node scripts/check-i18n-parity.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
