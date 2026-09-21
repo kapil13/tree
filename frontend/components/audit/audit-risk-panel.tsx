@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, ListOrdered, ShieldAlert, Sparkles } from "lucide-react";
@@ -63,6 +63,7 @@ export function AuditRiskPanel({
   const qc = useQueryClient();
   const [explainRun, setExplainRun] = useState<AuditExplainRun | null>(null);
   const [explainingId, setExplainingId] = useState<string | null>(null);
+  const explainResultRef = useRef<HTMLDivElement | null>(null);
 
   const { data: queue, isLoading: queueLoading } = useQuery({
     queryKey: ["audit-auditor-queue", engagementId],
@@ -108,6 +109,12 @@ export function AuditRiskPanel({
     },
     onError: () => setExplainingId(null),
   });
+
+  useEffect(() => {
+    if (explainRun && explainResultRef.current) {
+      explainResultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [explainRun]);
 
   const unlocked =
     engagementStatus === "confidence_mapped" ||
@@ -172,6 +179,18 @@ export function AuditRiskPanel({
           </div>
         )}
       </div>
+
+      {explain.isPending ? (
+        <p className="text-sm text-stone-500">{t("explaining")}</p>
+      ) : null}
+      {explainRun ? (
+        <div ref={explainResultRef}>
+          <AuditExplainResult run={explainRun} />
+        </div>
+      ) : null}
+      {explain.isError ? (
+        <p className="text-sm text-rose-700">{errorMessage(explain.error)}</p>
+      ) : null}
 
       <div className="space-y-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-800">
@@ -278,11 +297,6 @@ export function AuditRiskPanel({
           </ul>
         </section>
       )}
-
-      {explainRun ? <AuditExplainResult run={explainRun} /> : null}
-      {explain.isError ? (
-        <p className="text-sm text-rose-700">{errorMessage(explain.error)}</p>
-      ) : null}
 
       {Object.keys(severityCounts).length > 0 && (
         <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-stone-900">

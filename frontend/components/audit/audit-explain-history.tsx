@@ -79,7 +79,11 @@ export function AuditExplainHistory({
   }
 
   if (historyQ.error) {
-    return null;
+    return (
+      <p className={cn("text-sm text-amber-700", className)}>
+        {t("error")}
+      </p>
+    );
   }
 
   return (
