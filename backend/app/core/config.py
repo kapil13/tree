@@ -197,9 +197,12 @@ class Settings(BaseSettings):
 
     # Intelligence cache (Redis)
     intelligence_cache_ttl_seconds: int = Field(default=600, ge=60, le=3600)
+    satellite_health_cache_ttl_seconds: int = Field(default=86400, ge=300, le=604800)
+    threat_watch_cache_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
 
     # Phase A — scheduled satellite scan quotas
     monitoring_tree_scan_batch_limit: int = Field(default=500, ge=50, le=10000)
+    monitoring_sweep_batch_size: int = Field(default=50, ge=1, le=500)
     monitoring_org_daily_scan_limit: int = Field(default=2000, ge=100, le=100000)
     monitoring_tile_batch_enabled: bool = True
 

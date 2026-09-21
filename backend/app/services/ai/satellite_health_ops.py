@@ -19,6 +19,14 @@ from app.services.ai.satellite_health import analyze_satellite_ndvi_health
 from app.services.ai.satellite_health_llm import enrich_satellite_health_narrative
 from app.services.ai.satellite_health_types import NdviObservation, SatelliteHealthResult
 from app.services.alerts.service import create_satellite_health_alert
+from app.services.monitoring.monitoring_read_cache import (
+    get_cached_fence_health_latest,
+    get_cached_tree_health_latest,
+    invalidate_fence_health_latest,
+    invalidate_tree_health_latest,
+    set_cached_fence_health_latest,
+    set_cached_tree_health_latest,
+)
 
 
 def _record_to_obs_tree(rec: SatelliteRecord) -> NdviObservation:
@@ -215,7 +223,10 @@ async def analyze_tree_satellite_health(
         target_label=target_label,
         prior_risk=prior,
     )
-    return _out_from_row(row)
+    out = _out_from_row(row)
+    await invalidate_tree_health_latest(tree_id)
+    await set_cached_tree_health_latest(tree_id, out.model_dump(mode="json"))
+    return out
 
 
 async def analyze_fence_satellite_health(
@@ -263,12 +274,23 @@ async def analyze_fence_satellite_health(
         target_label=target_label,
         prior_risk=prior,
     )
-    return _out_from_row(row)
+    out = _out_from_row(row)
+    await invalidate_fence_health_latest(fence_id)
+    await set_cached_fence_health_latest(fence_id, out.model_dump(mode="json"))
+    return out
 
 
 async def latest_tree_analysis(
-    db: AsyncSession, tree_id: uuid.UUID
+    db: AsyncSession,
+    tree_id: uuid.UUID,
+    *,
+    use_cache: bool = True,
 ) -> SatelliteHealthAnalysisOut | None:
+    if use_cache:
+        cached = await get_cached_tree_health_latest(tree_id)
+        if cached is not None:
+            return SatelliteHealthAnalysisOut.model_validate(cached)
+
     res = await db.execute(
         select(SatelliteHealthAnalysis)
         .where(SatelliteHealthAnalysis.tree_id == tree_id)
@@ -276,12 +298,25 @@ async def latest_tree_analysis(
         .limit(1)
     )
     row = res.scalar_one_or_none()
-    return _out_from_row(row) if row else None
+    if row is None:
+        return None
+    out = _out_from_row(row)
+    if use_cache:
+        await set_cached_tree_health_latest(tree_id, out.model_dump(mode="json"))
+    return out
 
 
 async def latest_fence_analysis(
-    db: AsyncSession, fence_id: uuid.UUID
+    db: AsyncSession,
+    fence_id: uuid.UUID,
+    *,
+    use_cache: bool = True,
 ) -> SatelliteHealthAnalysisOut | None:
+    if use_cache:
+        cached = await get_cached_fence_health_latest(fence_id)
+        if cached is not None:
+            return SatelliteHealthAnalysisOut.model_validate(cached)
+
     res = await db.execute(
         select(SatelliteHealthAnalysis)
         .where(SatelliteHealthAnalysis.fence_id == fence_id)
@@ -289,4 +324,9 @@ async def latest_fence_analysis(
         .limit(1)
     )
     row = res.scalar_one_or_none()
-    return _out_from_row(row) if row else None
+    if row is None:
+        return None
+    out = _out_from_row(row)
+    if use_cache:
+        await set_cached_fence_health_latest(fence_id, out.model_dump(mode="json"))
+    return out

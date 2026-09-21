@@ -22,7 +22,6 @@ from app.services.monitoring.sweep_batch_context import (
     FenceSatelliteBatchContext,
     build_fence_satellite_batch_context,
 )
-from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 
 log = get_logger("monitoring.satellite")
@@ -272,43 +271,24 @@ async def scan_and_persist_tree(
 
 
 async def run_monthly_satellite_sweep(db: AsyncSession) -> dict[str, Any]:
-    """Scan work areas on satellite-watch-enabled projects only."""
-    scanned = 0
-    failed = 0
-    skipped = 0
+    """Scan all due work areas (legacy full sweep — processes every page in-process)."""
+    from app.services.monitoring.sweep_jobs import run_satellite_sweep_page
 
-    fences = await fetch_satellite_watch_fences(db)
-    to_scan = [
-        fence
-        for fence in fences
-        if not fence.last_satellite_at
-        or (datetime.now(UTC) - fence.last_satellite_at).days >= 25
-    ]
-    skipped = len(fences) - len(to_scan)
-    batch_ctx = await build_fence_satellite_batch_context(db, to_scan)
-
-    for fence in to_scan:
-        rec = await scan_and_persist_work_area(
-            db,
-            fence,
-            require_sentinel=False,
-            batch_ctx=batch_ctx,
-        )
-        if rec:
-            scanned += 1
-        else:
-            failed += 1
-
-    await db.commit()
-    result = {
-        "scanned": scanned,
-        "failed": failed,
-        "skipped": skipped,
-        "total": len(fences),
-        "watch_gated": True,
-    }
-    log.info("monthly_satellite_sweep.complete", **result)
-    return result
+    cursor: str | None = None
+    totals = {"scanned": 0, "failed": 0, "skipped": 0, "total": 0}
+    while True:
+        page = await run_satellite_sweep_page(db, cursor=cursor)
+        totals["scanned"] += int(page.get("scanned") or 0)
+        totals["failed"] += int(page.get("failed") or 0)
+        totals["skipped"] = int(page.get("skipped") or 0)
+        totals["total"] = int(page.get("total") or 0)
+        cursor = page.get("next_cursor")
+        if not cursor:
+            break
+    totals["watch_gated"] = True
+    totals["due_total"] = page.get("due_total")
+    log.info("monthly_satellite_sweep.complete", **totals)
+    return totals
 
 
 async def run_project_satellite_scan(db: AsyncSession, project_id: uuid.UUID) -> dict[str, Any]:
