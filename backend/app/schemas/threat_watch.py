@@ -67,8 +67,16 @@ class SiteThreatWatchOut(BaseModel):
     preparedness_brief: PreparednessBriefOut | None = None
 
 
+class ThreatWatchFailureOut(BaseModel):
+    work_area_id: str
+    work_area_name: str
+    error: str
+
+
 class ThreatWatchSummaryOut(BaseModel):
+    sites_requested: int = 0
     sites_monitored: int = 0
+    sites_failed: int = 0
     weather_alerts_count: int = 0
     pest_high_count: int = 0
     locust_watch_count: int = 0
@@ -81,3 +89,4 @@ class ThreatWatchResponse(BaseModel):
     generated_at: str
     summary: ThreatWatchSummaryOut
     sites: list[SiteThreatWatchOut] = Field(default_factory=list)
+    failures: list[ThreatWatchFailureOut] = Field(default_factory=list)
