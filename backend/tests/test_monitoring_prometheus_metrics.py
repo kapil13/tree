@@ -8,7 +8,6 @@ from prometheus_client import REGISTRY, generate_latest
 
 from app.core.config import settings
 from app.main import app
-
 from app.services.monitoring.prometheus_metrics import (
     observe_celery_job,
     observe_data_freshness_stale,
