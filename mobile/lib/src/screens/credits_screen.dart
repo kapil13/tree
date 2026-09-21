@@ -114,7 +114,7 @@ class _CreditsScreenState extends ConsumerState<CreditsScreen> {
                           ),
                       ],
                       const SizedBox(height: 20),
-                      Text('Project ledgers', style: Theme.of(context).textTheme.titleMedium),
+                      Text(l10n.projectLedgers, style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       projectsAsync.when(
                         loading: () => const LinearProgressIndicator(),

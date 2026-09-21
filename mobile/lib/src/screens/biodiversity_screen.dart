@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,7 @@ class BiodiversityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final summaryAsync = ref.watch(bioacousticSummaryProvider);
     final dashAsync = ref.watch(dashboardProvider);
     final fencesAsync = ref.watch(plantationFencesProvider);
@@ -42,7 +44,7 @@ class BiodiversityScreen extends ConsumerWidget {
 
     return stackRouteScaffold(
       location: '/biodiversity',
-      appBar: const PrototypeBackBar(title: 'Biodiversity'),
+      appBar: PrototypeBackBar(title: l10n.biodiversityTitle),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) {
@@ -51,6 +53,7 @@ class BiodiversityScreen extends ConsumerWidget {
             error: (e2, _) => Center(child: Text(apiErrorMessage(e2))),
             data: (dashboard) => _buildFromDashboard(
               context,
+              l10n,
               dashboard,
               fencesAsync,
               faunaAsync,
@@ -60,6 +63,7 @@ class BiodiversityScreen extends ConsumerWidget {
         },
         data: (summary) => _buildFromSummary(
           context,
+          l10n,
           ref,
           summary,
           fencesAsync,
@@ -70,12 +74,12 @@ class BiodiversityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _speciesSection(AsyncValue<Map<String, dynamic>>? faunaAsync) {
+  Widget _speciesSection(AppLocalizations l10n, AsyncValue<Map<String, dynamic>>? faunaAsync) {
     if (faunaAsync == null) {
-      return const PrototypeEmptyState(
+      return PrototypeEmptyState(
         icon: '🦋',
-        title: 'No location for species list',
-        subtitle: 'Add a work area boundary or register a tree with GPS to load regional fauna.',
+        title: l10n.bioNoLocationSpecies,
+        subtitle: l10n.bioNoLocationSpeciesSub,
       );
     }
     return faunaAsync.when(
@@ -87,10 +91,10 @@ class BiodiversityScreen extends ConsumerWidget {
       data: (fauna) {
         final species = List<dynamic>.from(fauna['species'] ?? []);
         if (species.isEmpty) {
-          return const PrototypeEmptyState(
+          return PrototypeEmptyState(
             icon: '🦋',
-            title: 'No regional species found',
-            subtitle: 'GBIF returned no nearby occurrences for this site.',
+            title: l10n.bioNoRegionalSpecies,
+            subtitle: l10n.bioNoRegionalSpeciesSub,
           );
         }
         return Column(
@@ -123,6 +127,7 @@ class BiodiversityScreen extends ConsumerWidget {
 
   Widget _buildFromSummary(
     BuildContext context,
+    AppLocalizations l10n,
     WidgetRef ref,
     Map<String, dynamic> summary,
     AsyncValue<List<dynamic>> fencesAsync,
@@ -142,36 +147,36 @@ class BiodiversityScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            PrototypeStatBox(value: '$taxa', label: 'Taxa'),
+            PrototypeStatBox(value: '$taxa', label: l10n.bioTaxa),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: 'Shannon'),
+            PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: l10n.bioShannonLabel),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: '$fusion', label: 'Confidence'),
+            PrototypeStatBox(value: '$fusion', label: l10n.bioConfidenceLabel),
           ],
         ),
         const SizedBox(height: 12),
         Text(
-          'Biodiversity Confidence from $recordings analyzed recordings (evidence quality, not habitat health)',
+          l10n.bioConfidenceHint(recordings),
           style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
         ),
         if (coords != null) ...[
           const SizedBox(height: 8),
           Text(
-            'Regional species near ${coords.lat.toStringAsFixed(3)}, ${coords.lon.toStringAsFixed(3)}',
+            l10n.bioRegionalSpeciesNear(coords.lat.toStringAsFixed(3), coords.lon.toStringAsFixed(3)),
             style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textTertiary),
           ),
         ],
         const SizedBox(height: 20),
-        const PrototypeSectionHeader(title: 'Regional species (GBIF)'),
-        _speciesSection(faunaAsync),
+        PrototypeSectionHeader(title: l10n.bioRegionalSpeciesGbif),
+        _speciesSection(l10n, faunaAsync),
         const SizedBox(height: 20),
-        const PrototypeSectionHeader(title: 'Hotspots by work area'),
+        PrototypeSectionHeader(title: l10n.bioHotspotsByWorkArea),
         fencesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const PrototypeEmptyState(icon: '🦋', title: 'No work areas'),
+          error: (_, __) => PrototypeEmptyState(icon: '🦋', title: l10n.bioNoWorkAreas),
           data: (fences) {
             if (fences.isEmpty) {
-              return const PrototypeEmptyState(icon: '🦋', title: 'No work areas mapped');
+              return PrototypeEmptyState(icon: '🦋', title: l10n.bioNoWorkAreasMapped);
             }
             return Column(
               children: fences.take(8).map((raw) {
@@ -180,9 +185,9 @@ class BiodiversityScreen extends ConsumerWidget {
                     (f['bioacoustic_health_score'] as num?)?.toInt() ??
                     fusion;
                 return PrototypeConnectedProject(
-                  name: f['name'] as String? ?? 'Site',
-                  meta: 'Confidence $score/100',
-                  badge: score >= 75 ? 'Strong' : 'Watch',
+                  name: f['name'] as String? ?? l10n.siteFallback,
+                  meta: l10n.bioConfidenceMeta(score),
+                  badge: score >= 75 ? l10n.bioStrong : l10n.bioWatch,
                   badgeOk: score >= 75,
                   onTap: () => context.go('/map'),
                 );
@@ -194,7 +199,7 @@ class BiodiversityScreen extends ConsumerWidget {
         OutlinedButton(
           onPressed: () => context.go('/bioacoustic'),
           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-          child: const Text('Bioacoustic detail'),
+          child: Text(l10n.bioAcousticDetail),
         ),
       ],
     );
@@ -202,6 +207,7 @@ class BiodiversityScreen extends ConsumerWidget {
 
   Widget _buildFromDashboard(
     BuildContext context,
+    AppLocalizations l10n,
     Map<String, dynamic> dashboard,
     AsyncValue<List<dynamic>> fencesAsync,
     AsyncValue<Map<String, dynamic>>? faunaAsync,
@@ -217,25 +223,25 @@ class BiodiversityScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            PrototypeStatBox(value: '$taxa', label: 'Taxa'),
+            PrototypeStatBox(value: '$taxa', label: l10n.bioTaxa),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: 'Shannon'),
+            PrototypeStatBox(value: shannon != null ? shannon.toString() : '—', label: l10n.bioShannonLabel),
             const SizedBox(width: 8),
-            PrototypeStatBox(value: '$fusion', label: 'Confidence'),
+            PrototypeStatBox(value: '$fusion', label: l10n.bioConfidenceLabel),
           ],
         ),
         if (coords != null) ...[
           const SizedBox(height: 8),
           Text(
-            'Regional species near ${coords.lat.toStringAsFixed(3)}, ${coords.lon.toStringAsFixed(3)}',
+            l10n.bioRegionalSpeciesNear(coords.lat.toStringAsFixed(3), coords.lon.toStringAsFixed(3)),
             style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textTertiary),
           ),
         ],
         const SizedBox(height: 20),
-        const PrototypeSectionHeader(title: 'Regional species (GBIF)'),
-        _speciesSection(faunaAsync),
+        PrototypeSectionHeader(title: l10n.bioRegionalSpeciesGbif),
+        _speciesSection(l10n, faunaAsync),
         const SizedBox(height: 20),
-        const PrototypeSectionHeader(title: 'Hotspots by work area'),
+        PrototypeSectionHeader(title: l10n.bioHotspotsByWorkArea),
         fencesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => const SizedBox.shrink(),
@@ -243,9 +249,9 @@ class BiodiversityScreen extends ConsumerWidget {
             children: fences.take(8).map((raw) {
               final f = raw as Map<String, dynamic>;
               return PrototypeConnectedProject(
-                name: f['name'] as String? ?? 'Site',
-                meta: 'View on map',
-                badge: 'Open',
+                name: f['name'] as String? ?? l10n.siteFallback,
+                meta: l10n.bioViewOnMapMeta,
+                badge: l10n.bioOpen,
                 badgeOk: true,
                 onTap: () => context.go('/map'),
               );
@@ -256,7 +262,7 @@ class BiodiversityScreen extends ConsumerWidget {
         FilledButton(
           onPressed: () => context.go('/bioacoustic'),
           style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest, minimumSize: const Size.fromHeight(48)),
-          child: const Text('Run bioacoustic survey'),
+          child: Text(l10n.bioRunSurvey),
         ),
       ],
     );

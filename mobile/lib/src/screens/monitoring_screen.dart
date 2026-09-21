@@ -129,23 +129,23 @@ class MonitoringScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 PrototypeSectionHeader(
-                  title: 'Needs decision',
-                  linkLabel: 'Field',
+                  title: l10n.monitoringNeedsDecision,
+                  linkLabel: l10n.navField,
                   onLink: canSeeFieldOps(user) ? () => context.go('/field') : null,
                 ),
                 if (decisionAlerts.isEmpty)
-                  const PrototypeEmptyState(icon: '✓', title: 'No urgent alerts', subtitle: 'Monitoring signals are stable')
+                  PrototypeEmptyState(icon: '✓', title: l10n.monitoringNoUrgentAlerts, subtitle: l10n.monitoringSignalsStable)
                 else
                   for (final raw in decisionAlerts)
                     PrototypeMonitorCard(
-                      title: (raw as Map)['title'] as String? ?? 'Alert',
+                      title: (raw as Map)['title'] as String? ?? l10n.alertFallback,
                       subtitle: (raw)['message'] as String? ?? '',
                       actionHint: alertKindLabel((raw)['kind'] as String? ?? '', languageCode: lang),
                       severity: (raw)['severity'] as String? ?? 'moderate',
                       onTap: () => context.push('/alerts/${(raw)['id']}'),
                     ),
                 PrototypeSectionHeader(
-                  title: 'Site pulse',
+                  title: l10n.monitoringSitePulse,
                   linkLabel: l10n.map,
                   onLink: () => context.go('/map'),
                 ),

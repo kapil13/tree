@@ -15,6 +15,7 @@ import '../providers.dart';
 import '../services/analytics_service.dart';
 import '../session.dart';
 import '../widgets/stack_route_scaffold.dart';
+import '../integrity_remediation.dart';
 import '../widgets/prototype/prototype_ui.dart';
 
 class TreeDetailScreen extends ConsumerStatefulWidget {
@@ -173,24 +174,6 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
 
   String _str(dynamic v) => v?.toString() ?? '—';
 
-  String _auditBlockerLabel(String code) {
-    const labels = {
-      'insufficient_photos': 'Need at least 2 photos',
-      'photo_span_too_short': 'Photos must span 30+ days',
-      'satellite_scan_stale': 'Satellite scan older than 90 days',
-      'fusion_below_audit_minimum': 'Fusion score below 75',
-      'missing_exif': 'Missing camera EXIF',
-      'missing_photo_gps': 'Photo missing GPS',
-      'missing_photo_timestamp': 'Photo missing timestamp',
-      'photo_timestamp_stale': 'Photo older than 7 days',
-      'regeotag_mismatch': 'Re-geotag mismatch',
-      'duplicate_photo': 'Duplicate photo',
-      'duplicate_coordinate': 'Duplicate coordinate',
-      'ai_confidence_low': 'Low AI confidence',
-    };
-    return labels[code] ?? code.replaceAll('_', ' ');
-  }
-
   List<String> _auditBlockers(Map<String, dynamic>? risk) {
     if (risk == null) return const [];
     final details = risk['fusion_details'];
@@ -212,7 +195,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       ref.invalidate(treesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Follow-up photo added')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.treeDetailFollowUpPhotoAdded)),
         );
       }
     } catch (e) {
@@ -282,7 +265,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
                 )
               : Column(
                   children: [
-                    _hero(t!),
+                    _hero(l10n, t!),
                     Material(
                       color: PrototypeColors.bgSurface,
                       child: TabBar(
@@ -290,16 +273,16 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
                         labelColor: PrototypeColors.brandForest,
                         unselectedLabelColor: PrototypeColors.textSecondary,
                         indicatorColor: PrototypeColors.brandCanopy,
-                        tabs: const [
-                          Tab(text: 'Overview'),
-                          Tab(text: 'Field'),
-                          Tab(text: 'Intelligence'),
+                        tabs: [
+                          Tab(text: l10n.treeDetailOverview),
+                          Tab(text: l10n.treeDetailField),
+                          Tab(text: l10n.treeDetailIntelligence),
                         ],
                       ),
                     ),
                     if (_showingCache)
                       MaterialBanner(
-                        content: const Text('Showing cached tree detail — connect to refresh'),
+                        content: Text(l10n.treeDetailCachedDetail),
                         actions: [
                           TextButton(onPressed: _load, child: Text(l10n.retry)),
                         ],
@@ -329,14 +312,14 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _stateSummary(t, risk, satellite),
+        _stateSummary(l10n, t, risk, satellite),
         const SizedBox(height: 14),
         PrototypeActionRail(
           actions: [
-            (label: 'Map', onTap: () => context.go('/map'), primary: true),
-            (label: 'Inspect', onTap: () => context.push('/trees/${widget.id}/survival'), primary: false),
-            (label: 'Evidence', onTap: () => context.push(evidenceRoute), primary: false),
-            (label: 'Monitor', onTap: () => context.go('/monitoring'), primary: false),
+            (label: l10n.treeDetailMap, onTap: () => context.go('/map'), primary: true),
+            (label: l10n.treeDetailInspect, onTap: () => context.push('/trees/${widget.id}/survival'), primary: false),
+            (label: l10n.treeDetailEvidence, onTap: () => context.push(evidenceRoute), primary: false),
+            (label: l10n.treeDetailMonitor, onTap: () => context.go('/monitoring'), primary: false),
           ],
         ),
         if (isCitizenByotUser(sessionController.user) && t['project_id'] == null) ...[
@@ -350,17 +333,17 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
           ),
         ],
         const SizedBox(height: 12),
-        _locationChip(t),
+        _locationChip(l10n, t),
         if (blockers.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _auditBlockersCard(blockers),
+          _auditBlockersCard(l10n, blockers),
         ],
         if (satellite != null) ...[
           const SizedBox(height: 16),
           _satelliteCard(l10n, satellite!),
         ],
         const SizedBox(height: 16),
-        _timelineSection(t, satellite),
+        _timelineSection(l10n, t, satellite),
         const SizedBox(height: 16),
         _qrSection(t),
         const SizedBox(height: 16),
@@ -374,7 +357,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
           OutlinedButton.icon(
             onPressed: photoBusy ? null : _addFollowUpPhoto,
             icon: const Icon(Icons.add_a_photo_outlined),
-            label: Text(photoBusy ? 'Uploading photo…' : 'Add follow-up photo'),
+            label: Text(photoBusy ? l10n.treeDetailUploadingPhoto : l10n.treeDetailAddFollowUpPhoto),
           ),
           const SizedBox(height: 8),
         ],
@@ -399,13 +382,13 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Photo gallery', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(l10n.treeDetailPhotoGallery, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (images.isEmpty)
-          const PrototypeEmptyState(
+          PrototypeEmptyState(
             icon: '📷',
-            title: 'No photos yet',
-            subtitle: 'Add a follow-up photo from Overview or during survival survey',
+            title: l10n.treeDetailNoPhotos,
+            subtitle: l10n.treeDetailNoPhotosSub,
           )
         else
           GridView.builder(
@@ -429,17 +412,17 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
             },
           ),
         const SizedBox(height: 20),
-        Text('Measurement history', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(l10n.treeDetailMeasurementHistory, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (measurements.isEmpty)
-          const PrototypeEmptyState(
+          PrototypeEmptyState(
             icon: '📏',
-            title: 'No measurements recorded',
-            subtitle: 'Survival surveys and field captures appear here',
+            title: l10n.treeDetailNoMeasurements,
+            subtitle: l10n.treeDetailNoMeasurementsSub,
           )
         else
           for (final raw in measurements)
-            _measurementTile(raw as Map<String, dynamic>),
+            _measurementTile(l10n, raw as Map<String, dynamic>),
         if (canWriteInApp(sessionController.user)) ...[
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -452,7 +435,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _measurementTile(Map<String, dynamic> m) {
+  Widget _measurementTile(AppLocalizations l10n, Map<String, dynamic> m) {
     final measuredAt = m['measured_at'] as String?;
     final parts = <String>[];
     if (m['dbh_cm'] != null) parts.add('DBH ${m['dbh_cm']} cm');
@@ -461,9 +444,9 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(m['source'] as String? ?? 'Measurement'),
+        title: Text(m['source'] as String? ?? l10n.treeDetailMeasurement),
         subtitle: Text(
-          '${parts.join(' · ')}\n${m['method'] ?? ''}${measuredAt != null ? ' · ${_shortDate(measuredAt)}' : ''}',
+          '${parts.join(' · ')}\n${m['method'] ?? ''}${measuredAt != null ? ' · ${_shortDate(l10n, measuredAt)}' : ''}',
         ),
         isThreeLine: true,
       ),
@@ -475,24 +458,24 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       padding: const EdgeInsets.all(16),
       children: [
         if (sarFusion != null) ...[
-          _sarFusionCard(sarFusion!),
+          _sarFusionCard(l10n, sarFusion!),
           const SizedBox(height: 16),
         ],
         if (satellite != null) ...[
           _satelliteCard(l10n, satellite!),
           const SizedBox(height: 16),
         ],
-        Text('AI analysis history', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(l10n.treeDetailAiHistory, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         if (analyses.isEmpty)
-          const PrototypeEmptyState(
+          PrototypeEmptyState(
             icon: '🤖',
-            title: 'No AI analyses yet',
-            subtitle: 'Run AI analysis from the Overview tab',
+            title: l10n.treeDetailNoAiAnalyses,
+            subtitle: l10n.treeDetailNoAiAnalysesSub,
           )
         else
           for (final raw in analyses)
-            _analysisTile(raw as Map<String, dynamic>),
+            _analysisTile(l10n, raw as Map<String, dynamic>),
         const SizedBox(height: 16),
         FilledButton.icon(
           onPressed: analyzing ? null : _analyze,
@@ -504,7 +487,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _sarFusionCard(Map<String, dynamic> sar) {
+  Widget _sarFusionCard(AppLocalizations l10n, Map<String, dynamic> sar) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -515,10 +498,10 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SAR integrity fusion', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(l10n.treeDetailSarFusion, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          if (sar['ground_status'] != null) _row('Ground status', _str(sar['ground_status'])),
-          if (sar['integrity_score'] != null) _row('Integrity score', _str(sar['integrity_score'])),
+          if (sar['ground_status'] != null) _row(l10n.treeDetailGroundStatus, _str(sar['ground_status'])),
+          if (sar['integrity_score'] != null) _row(l10n.treeDetailIntegrityScoreLabel, _str(sar['integrity_score'])),
           if (sar['summary'] != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -529,18 +512,18 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _analysisTile(Map<String, dynamic> a) {
+  Widget _analysisTile(AppLocalizations l10n, Map<String, dynamic> a) {
     final created = a['created_at'] as String?;
     final species = List<dynamic>.from(a['species_topk'] ?? []);
     final topSpecies = species.isNotEmpty ? (species.first as Map)['scientific'] as String? : null;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(topSpecies ?? a['health'] as String? ?? 'Analysis'),
+        title: Text(topSpecies ?? a['health'] as String? ?? l10n.treeDetailAnalysis),
         subtitle: Text(
-          'Health ${a['health'] ?? '—'}'
+          '${l10n.treeDetailHealthLine('${a['health'] ?? '—'}')}'
           '${a['estimated_dbh_cm'] != null ? ' · DBH ${a['estimated_dbh_cm']} cm' : ''}'
-          '${created != null ? '\n${_shortDate(created)}' : ''}',
+          '${created != null ? '\n${_shortDate(l10n, created)}' : ''}',
         ),
         isThreeLine: created != null,
         trailing: a['overall_confidence'] != null
@@ -550,7 +533,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _hero(Map<String, dynamic> t) {
+  Widget _hero(AppLocalizations l10n, Map<String, dynamic> t) {
     final images = (t['images'] as List?) ?? [];
     final firstImage = images.isNotEmpty ? (images.first as Map)['url'] as String? : null;
     return SizedBox(
@@ -583,7 +566,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
                   style: GoogleFonts.ibmPlexMono(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 Text(
-                  t['species_text'] as String? ?? 'Tree',
+                  t['species_text'] as String? ?? l10n.treeFallback,
                   style: GoogleFonts.dmSans(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
               ],
@@ -602,7 +585,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _stateSummary(Map<String, dynamic> t, Map<String, dynamic>? risk, Map<String, dynamic>? sat) {
+  Widget _stateSummary(AppLocalizations l10n, Map<String, dynamic> t, Map<String, dynamic>? risk, Map<String, dynamic>? sat) {
     final ndvi = sat?['ndvi_current'];
     final summary = sat?['summary'] as String?;
     return Container(
@@ -621,24 +604,25 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
             children: [
               PrototypeHealthBadge(health: t['current_health'] as String?),
               if (t['satellite_verified'] == true)
-                const PrototypeStatusBadge(label: 'Verified', variant: 'ok')
+                PrototypeStatusBadge(label: l10n.treeDetailVerified, variant: 'ok')
               else
-                const PrototypeStatusBadge(label: 'Unverified', variant: 'warn'),
+                PrototypeStatusBadge(label: l10n.statusUnverified, variant: 'warn'),
               if (t['verification_status'] != null)
                 PrototypeStatusBadge(label: _str(t['verification_status']).replaceAll('_', ' '), variant: 'info'),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            summary ?? 'Carbon ${t['current_carbon_kg']} kg · DBH ${t['current_dbh_cm'] ?? '—'} cm'
-            '${ndvi != null ? ' · NDVI $ndvi' : ''}',
+            summary ??
+                '${l10n.treeDetailCarbonSummary('${t['current_carbon_kg']}', '${t['current_dbh_cm'] ?? '—'}')}'
+                    '${ndvi != null ? ' · NDVI $ndvi' : ''}',
             style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
           ),
           if (risk?['fusion_score'] != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Fusion score ${risk!['fusion_score']}',
+                l10n.treeDetailFusionScore('${risk!['fusion_score']}'),
                 style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
               ),
             ),
@@ -647,7 +631,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _locationChip(Map<String, dynamic> t) {
+  Widget _locationChip(AppLocalizations l10n, Map<String, dynamic> t) {
     final lat = (t['latitude'] as num?)?.toDouble();
     final lon = (t['longitude'] as num?)?.toDouble();
     return Material(
@@ -668,7 +652,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  t['work_area_name'] as String? ?? 'Field location',
+                  t['work_area_name'] as String? ?? l10n.treeDetailFieldLocation,
                   style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -685,7 +669,7 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _auditBlockersCard(List<String> blockers) {
+  Widget _auditBlockersCard(AppLocalizations l10n, List<String> blockers) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -696,12 +680,12 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Audit-ready blockers', style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(l10n.treeDetailAuditBlockers, style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           for (final b in blockers)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text('• ${_auditBlockerLabel(b)}', style: GoogleFonts.dmSans(fontSize: 13)),
+              child: Text('• ${integrityBlockerLabel(l10n, b)}', style: GoogleFonts.dmSans(fontSize: 13)),
             ),
         ],
       ),
@@ -731,23 +715,23 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  Widget _timelineSection(Map<String, dynamic> t, Map<String, dynamic>? sat) {
+  Widget _timelineSection(AppLocalizations l10n, Map<String, dynamic> t, Map<String, dynamic>? sat) {
     final created = t['created_at'] as String?;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Timeline', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+        Text(l10n.treeDetailTimeline, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         if (created != null)
           PrototypeTimelineItem(
-            title: 'Registered · ${_shortDate(created)}',
-            subtitle: 'Field capture',
+            title: l10n.treeDetailRegistered(_shortDate(l10n, created)),
+            subtitle: l10n.treeDetailFieldCapture,
           ),
         if (t['satellite_verified'] == true)
-          const PrototypeTimelineItem(title: 'Satellite verified', subtitle: 'Remote sensing check passed'),
+          PrototypeTimelineItem(title: l10n.treeDetailSatelliteVerified, subtitle: l10n.treeDetailRemoteSensingPassed),
         if (sat?['risk_level'] != null && sat!['risk_level'] != 'low')
           PrototypeTimelineItem(
-            title: 'NDVI signal · ${sat['risk_level']}',
+            title: l10n.treeDetailNdviSignal('${sat['risk_level']}'),
             subtitle: _str(sat['summary']),
             warn: true,
           ),
@@ -785,16 +769,19 @@ class _TreeDetailScreenState extends ConsumerState<TreeDetailScreen>
     );
   }
 
-  String _shortDate(String iso) {
+  String _shortDate(AppLocalizations l10n, String iso) {
     try {
       final dt = DateTime.parse(iso);
-      return '${dt.day} ${_month(dt.month)}';
+      return '${dt.day} ${_month(l10n, dt.month)}';
     } catch (_) {
       return iso.length > 10 ? iso.substring(0, 10) : iso;
     }
   }
 
-  String _month(int m) => const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+  String _month(AppLocalizations l10n, int m) => [
+    l10n.monthJan, l10n.monthFeb, l10n.monthMar, l10n.monthApr, l10n.monthMay, l10n.monthJun,
+    l10n.monthJul, l10n.monthAug, l10n.monthSep, l10n.monthOct, l10n.monthNov, l10n.monthDec,
+  ][m - 1];
 
   Widget _row(String label, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),

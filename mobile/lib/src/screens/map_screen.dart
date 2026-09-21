@@ -811,7 +811,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 (_selectedTree!['longitude'] as num).toDouble(),
                               ),
                               icon: const Icon(Icons.navigation_outlined, size: 18),
-                              label: const Text('Open in Maps'),
+                              label: Text(l10n.openInMaps),
                             ),
                           ),
                         ),
@@ -838,7 +838,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   children: [
                     FloatingActionButton.small(
                       heroTag: 'map_my_location',
-                      tooltip: 'My location',
+                      tooltip: l10n.myLocation,
                       onPressed: _centerOnUser,
                       child: const Icon(Icons.my_location),
                     ),
