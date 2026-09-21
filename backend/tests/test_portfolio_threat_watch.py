@@ -66,7 +66,7 @@ async def test_portfolio_threat_watch_records_failures():
         "app.services.threats.watch.build_site_threat_watch",
         side_effect=fake_site,
     ):
-        result = await build_portfolio_threat_watch(db, user=user, limit=12)
+        result = await build_portfolio_threat_watch(db, user=user, limit=12, use_cache=False)
 
     assert result["summary"]["sites_requested"] == 2
     assert result["summary"]["sites_monitored"] == 1
@@ -134,7 +134,7 @@ async def test_portfolio_threat_watch_batches_project_lookup():
         "app.services.threats.watch.build_site_threat_watch",
         side_effect=fake_site,
     ):
-        result = await build_portfolio_threat_watch(db, user=user, limit=12)
+        result = await build_portfolio_threat_watch(db, user=user, limit=12, use_cache=False)
 
     assert db.execute.await_count == 2
     assert captured["project"] is project

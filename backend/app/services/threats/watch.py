@@ -16,6 +16,10 @@ from app.models.user import User
 from app.services.alerts.interpreter import build_site_preparedness_brief
 from app.services.data_scope import apply_owner_org_scope
 from app.services.geo import geography_to_geojson_polygon, polygon_centroid
+from app.services.monitoring.monitoring_read_cache import (
+    get_cached_threat_watch,
+    set_cached_threat_watch,
+)
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.fire_watch import assess_fire_proximity
 from app.services.threats.flood_extent import assess_fence_flood_extent
@@ -169,8 +173,14 @@ async def build_portfolio_threat_watch(
     *,
     user: User,
     limit: int = 12,
+    use_cache: bool = True,
 ) -> dict[str, Any]:
     """Aggregate threat watch across all accessible plantation work areas."""
+    if use_cache:
+        cached = await get_cached_threat_watch(user.id, limit)
+        if cached is not None:
+            return cached
+
     stmt = _fence_scope(select(PlantationFence), user).order_by(PlantationFence.created_at.desc())
     fences = list((await db.execute(stmt.limit(limit))).scalars().all())
 
@@ -241,7 +251,7 @@ async def build_portfolio_threat_watch(
         if RISK_ORDER.get(r, 0) > RISK_ORDER.get(highest, 0):
             highest = r
 
-    return {
+    result = {
         "generated_at": datetime.now(UTC).isoformat(),
         "summary": {
             "sites_requested": len(fences),
@@ -256,4 +266,8 @@ async def build_portfolio_threat_watch(
         },
         "sites": sites,
         "failures": failures,
+        "cache_hit": False,
     }
+    if use_cache:
+        await set_cached_threat_watch(user.id, limit, result)
+    return result

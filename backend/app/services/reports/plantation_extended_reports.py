@@ -400,7 +400,22 @@ async def build_satellite_health_report(
     *,
     project_id: uuid.UUID | None = None,
     financial_year: str | None = None,
+    use_cache: bool = True,
 ) -> dict[str, Any]:
+    from app.services.monitoring.monitoring_read_cache import (
+        get_cached_satellite_health_report,
+        set_cached_satellite_health_report,
+    )
+
+    if use_cache and getattr(user, "id", None):
+        cached = await get_cached_satellite_health_report(
+            user.id,
+            project_id=project_id,
+            financial_year=financial_year,
+        )
+        if cached is not None:
+            return cached
+
     ctx = await build_work_area_site_report(
         db,
         user,
@@ -423,11 +438,19 @@ async def build_satellite_health_report(
                 "sar_alert": row.get("sar_alert"),
             }
         )
-    return _report_envelope(
+    result = _report_envelope(
         "satellite_health",
         ctx["filters"],
         items,
     )
+    if use_cache and getattr(user, "id", None):
+        await set_cached_satellite_health_report(
+            user.id,
+            project_id=project_id,
+            financial_year=financial_year,
+            payload=result,
+        )
+    return result
 
 
 async def build_scheme_kpi_report(

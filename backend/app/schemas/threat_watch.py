@@ -90,3 +90,4 @@ class ThreatWatchResponse(BaseModel):
     summary: ThreatWatchSummaryOut
     sites: list[SiteThreatWatchOut] = Field(default_factory=list)
     failures: list[ThreatWatchFailureOut] = Field(default_factory=list)
+    cache_hit: bool = False

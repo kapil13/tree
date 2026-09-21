@@ -130,67 +130,25 @@ def run_sar_scan(tree_id: str) -> dict:
 
 
 @celery_app.task(name="app.workers.tasks.monthly_sar_sweep")
-def monthly_sar_sweep() -> dict:
-    log.info("worker.monthly_sar_sweep")
+def monthly_sar_sweep(cursor: str | None = None, batch_size: int | None = None) -> dict:
+    log.info("worker.monthly_sar_sweep", cursor=cursor, batch_size=batch_size)
 
     async def _run() -> dict:
-        from datetime import UTC, datetime
-
         from app.core.database import AsyncSessionLocal
-        from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
-        from app.services.monitoring.sar_sweep_health import (
-            classify_sar_provider,
-            notify_project_owners_sweep_health,
-            summarize_sweep_counts,
-        )
-        from app.services.monitoring.sweep_batch_context import build_fence_sar_batch_context
-        from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
+        from app.services.monitoring.sweep_jobs import run_sar_sweep_page
 
-        scanned = failed = stub_scans = live_scans = 0
-        touched_projects: set = set()
         async with AsyncSessionLocal() as db:
-            fences = await fetch_satellite_watch_fences(db)
-            to_scan = [
-                fence
-                for fence in fences
-                if not fence.last_satellite_at
-                or (datetime.now(UTC) - fence.last_satellite_at).days >= 20
-            ]
-            skipped = len(fences) - len(to_scan)
-            batch_ctx = await build_fence_sar_batch_context(db, to_scan)
-
-            for fence in to_scan:
-                result = await scan_and_persist_fence_sar(db, fence, batch_ctx=batch_ctx)
-                if result:
-                    rec, _analysis = result
-                    scanned += 1
-                    if fence.project_id:
-                        touched_projects.add(fence.project_id)
-                    if classify_sar_provider(rec.provider) == "live":
-                        live_scans += 1
-                    elif classify_sar_provider(rec.provider) == "stub":
-                        stub_scans += 1
-                else:
-                    failed += 1
-            outcome = summarize_sweep_counts(
-                scanned=scanned,
-                failed=failed,
-                stub_scans=stub_scans,
-                live_scans=live_scans,
-            )
-            await notify_project_owners_sweep_health(
+            result = await run_sar_sweep_page(
                 db,
-                project_ids=touched_projects,
+                cursor=cursor,
+                batch_size=batch_size,
                 job_name="monthly_sar_sweep",
-                outcome=outcome,
             )
-            await db.commit()
-        return {
-            **outcome,
-            "skipped": skipped,
-            "total": len(fences),
-            "watch_gated": True,
-        }
+        next_cursor = result.get("next_cursor")
+        if next_cursor:
+            monthly_sar_sweep.delay(cursor=next_cursor, batch_size=batch_size)
+            result["chained"] = True
+        return result
 
     return _execute_recorded("monthly_sar_sweep", _run)
 
@@ -356,15 +314,24 @@ def send_notification(
 
 
 @celery_app.task(name="app.workers.tasks.monthly_satellite_sweep")
-def monthly_satellite_sweep() -> dict:
-    log.info("worker.monthly_satellite_sweep")
+def monthly_satellite_sweep(cursor: str | None = None, batch_size: int | None = None) -> dict:
+    log.info("worker.monthly_satellite_sweep", cursor=cursor, batch_size=batch_size)
 
     async def _run() -> dict:
         from app.core.database import AsyncSessionLocal
-        from app.services.monitoring.satellite_sweep import run_monthly_satellite_sweep
+        from app.services.monitoring.sweep_jobs import run_satellite_sweep_page
 
         async with AsyncSessionLocal() as db:
-            return await run_monthly_satellite_sweep(db)
+            result = await run_satellite_sweep_page(
+                db,
+                cursor=cursor,
+                batch_size=batch_size,
+            )
+        next_cursor = result.get("next_cursor")
+        if next_cursor:
+            monthly_satellite_sweep.delay(cursor=next_cursor, batch_size=batch_size)
+            result["chained"] = True
+        return result
 
     return _execute_recorded("monthly_satellite_sweep", _run)
 
