@@ -618,6 +618,44 @@
     "noExclusions": "अभी कोई अपवर्जन नहीं।",
     "refresh": "रीफ्रेश"
   },
+  "auditRoadmap": {
+    "title": "एस्टेट वॉच ऑडिट पाइपलाइन",
+    "subtitle": "इस पृष्ठ पर प्रत्येक चरण पूरा करें — अगले चरण पिछली क्रिया सफल होने पर खुलते हैं।",
+    "steps": {
+      "satellite": {
+        "title": "उपग्रह विश्लेषण",
+        "action": "विश्लेषण तैयार चिह्नित करें"
+      },
+      "confidence": {
+        "title": "विश्वास मानचित्र",
+        "action": "विश्वास मानचित्र बनाएँ"
+      },
+      "risk": {
+        "title": "जोखिम और विसंगति",
+        "action": "जोखिम स्कैन चलाएँ"
+      },
+      "sampling": {
+        "title": "फील्ड नमूनाकरण",
+        "action": "नमूनाकरण योजना बनाएँ"
+      },
+      "field": {
+        "title": "फील्ड सत्यापन",
+        "action": "वेब या फील्ड ऑप्स पर विज़िट दर्ज करें"
+      },
+      "reconciliation": {
+        "title": "समाधान",
+        "action": "दावा बनाम अवलोकन कुल की तुलना करें"
+      },
+      "export": {
+        "title": "साक्ष्य निर्यात",
+        "action": "हस्ताक्षरित ऑडिट बंडल डाउनलोड करें"
+      },
+      "attestation": {
+        "title": "प्रमाणन",
+        "action": "ऑडिटर प्रमाणन हस्ताक्षरित करें"
+      }
+    }
+  },
   "auditSatellite": {
     "title": "उपग्रह और कालिक विश्लेषण",
     "subtitle": "रोपण तिथि पर T0 आधार रेखा स्थापित करें, T0–T4 वनस्पति समयरेखा बनाएँ।",
@@ -625,10 +663,15 @@
     "intakeRequired": "उपग्रह विश्लेषण से पहले ऑडिट इनटेक पूर्ण करें।",
     "loading": "उपग्रह समयरेखा लोड हो रही है…",
     "statusReady": "विश्लेषण तैयार",
+    "nextStepHint": "जब हर प्लॉट पर T0 आधार रेखा और समयरेखा हो, ऊपर विश्लेषण तैयार चिह्नित करें — नीचे विश्वास मानचित्र और जोखिम इंजन खुलेंगे।",
     "promoteBoundaries": "कार्य क्षेत्र में प्रोमोट करें",
     "establishT0": "T0 आधार रेखा स्थापित करें",
     "runTemporal": "T0–T4 समयरेखा बनाएँ",
     "markReady": "विश्लेषण तैयार चिह्नित करें",
+    "promoteSuccess": "सीमाएँ कार्य क्षेत्र में प्रोमोट की गईं।",
+    "t0Success": "T0 आधार रेखाएँ स्थापित की गईं।",
+    "temporalSuccess": "T0–T4 समयरेखा बनाई गई।",
+    "analysisReadySuccess": "विश्लेषण तैयार चिह्नित — विश्वास मानचित्र और जोखिम इंजन अब खुले हैं।",
     "summary": "{blocks} ब्लॉक · {t0} T0 आधार रेखा",
     "noBlocks": "कोई ब्लॉक नहीं — पहले इनटेक में सीमाएँ आयात करें।",
     "openSatellite": "उपग्रह मानचित्र खोलें",
@@ -890,6 +933,7 @@
     "statusVerified": "फील्ड सत्यापित",
     "generate": "सैंपलिंग योजना बनाएँ",
     "regenerate": "योजना पुनः बनाएँ",
+    "generateSuccess": "नमूनाकरण योजना {count} फील्ड प्लॉट के साथ बनाई गई।",
     "noPlots": "अभी कोई नमूना प्लॉट नहीं — जोखिम-भारित योजना बनाएँ।",
     "visitProgress": "{visited}/{total} प्लॉट विज़िट किए",
     "completeVerification": "फील्ड सत्यापन पूर्ण करें",
@@ -903,7 +947,26 @@
     "outcomeInconclusive": "अनिर्णायक",
     "outcomeSupported": "दावा मैदान पर समर्थित",
     "outcomeUnsupported": "दावा मैदान पर असमर्थित",
-    "visited": "विज़िट — {outcome}",
+    "visited": "विज़िट — {outcome} · पेड़ {presence}",
+    "treePresence": "प्लॉट पर पेड़ उपस्थिति",
+    "treePresencePresent": "पेड़ मौजूद",
+    "treePresenceAbsent": "कोई पेड़ नहीं / खाली ज़मीन",
+    "treePresenceSparse": "विरल / बिखरे पेड़",
+    "treePresenceNotAssessable": "मूल्यांकन नहीं हो सका",
+    "openInMaps": "प्लॉट पर नेविगेट करें",
+    "mapLegend": "ऑडिट सीमाओं पर नमूना प्लॉट (नारंगी = बाकी, हरा = विज़िट किया)",
+    "addPhoto": "फील्ड फ़ोटो जोड़ें",
+    "uploadingPhoto": "फ़ोटो अपलोड हो रही है…",
+    "photosAttached": "{count, plural, one {# फ़ोटो संलग्न} other {# फ़ोटो संलग्न}}",
+    "photoRequired": "सहेजने से पहले कम से कम एक फील्ड फ़ोटो जोड़ें।",
+    "photoRequiredHint": "ऑडिट साक्ष्य के लिए कम से कम एक ऑन-साइट फ़ोटो आवश्यक है।",
+    "photoUploadFailed": "फ़ोटो अपलोड विफल — पुनः प्रयास करें।",
+    "gpsRequired": "विज़िट सहेजने से पहले GPS स्थान कैप्चर करें।",
+    "gpsCaptureFailed": "GPS कैप्चर नहीं हो सका — स्थान सक्षम करें और पुनः प्रयास करें।",
+    "gpsCaptured": "GPS कैप्चर: {lat}, {lng}",
+    "capturingGps": "GPS कैप्चर हो रहा है…",
+    "refreshGps": "GPS रीफ़्रेश करें",
+    "visitSavedWithWarnings": "स्थान चेतावनियों के साथ विज़िट सहेजी गई: {warnings}",
     "samplingControls": "नमूनाकरण डिज़ाइन",
     "samplingMode": "नमूनाकरण मोड",
     "modeRiskWeighted": "केवल जोखिम-भारित",
@@ -946,7 +1009,16 @@
     "notes": "फील्ड नोट्स",
     "saveVisit": "विज़िट सहेजें",
     "saving": "सहेजा जा रहा है…",
-    "cancel": "रद्द करें"
+    "cancel": "रद्द करें",
+    "openInMaps": "प्लॉट पर नेविगेट करें",
+    "treePresence": "पेड़ उपस्थिति",
+    "treePresencePresent": "पेड़ मौजूद",
+    "treePresenceAbsent": "कोई पेड़ नहीं / खाली ज़मीन",
+    "treePresenceSparse": "विरल / बिखरे पेड़",
+    "treePresenceNotAssessable": "मूल्यांकन नहीं हो सका",
+    "addPhoto": "फील्ड फ़ोटो जोड़ें",
+    "photoRequired": "कम से कम एक फील्ड फ़ोटो जोड़ें।",
+    "gpsRequired": "विज़िट सहेजने से पहले GPS स्थान कैप्चर करें।"
   },
   "auditRisk": {
     "title": "जोखिम और विसंगति इंजन",
@@ -1977,5 +2049,448 @@
     "sentinelCompactLive": " · साइट Sentinel: कॉन्फ़िगर होने पर लाइव",
     "live": "लाइव",
     "estimate": "अनुमान"
+  },
+  "verificationPage": {
+    "purpose": "स्वतंत्र सत्यापन",
+    "title": "सत्यापनकर्ता कतार",
+    "description": "स्ट्रैटिफाइड पेड़ नमूनों की समीक्षा करें और फील्ड डेटा संपादित किए बिना मापों पर प्रमाणित करें।",
+    "section": "इंटेलिजेंस",
+    "breadcrumb": "सत्यापनकर्ता कतार",
+    "loadingSamples": "सत्यापन नमूने लोड हो रहे हैं…",
+    "emptyTitle": "कोई खुला सत्यापन नमूना नहीं",
+    "emptyDescription": "पर्यवेक्षक परियोजना के अनुपालन कार्यक्षेत्र से नमूने बनाते हैं। लंबित प्रमाणन यहाँ दिखते हैं।",
+    "openProjects": "परियोजनाएँ खोलें",
+    "openSamples": "खुले नमूने",
+    "projectSample": "परियोजना नमूना",
+    "pendingCount": "{pct}% · {pending} लंबित",
+    "review": "समीक्षा",
+    "selectSample": "लंबित पेड़ों की समीक्षा के लिए नमूना चुनें।",
+    "loadingItems": "नमूना आइटम लोड हो रहे हैं…",
+    "sampleCompleteTitle": "नमूना पूर्ण",
+    "sampleCompleteDescription": "इस नमूने के सभी पेड़ प्रमाणित हो गए हैं।",
+    "pendingAttestation": "लंबित प्रमाणन",
+    "approve": "स्वीकृत",
+    "reject": "अस्वीकृत"
+  },
+  "monitoringPage": {
+    "redirecting": "पोर्टफोलियो स्वास्थ्य पर रीडायरेक्ट हो रहा है…"
+  },
+  "intelligencePage": {
+    "redirecting": "पोर्टफोलियो स्वास्थ्य पर रीडायरेक्ट हो रहा है…"
+  },
+  "settingsAuditPage": {
+    "title": "गतिविधि लॉग",
+    "description": "संवेदनशील क्रियाओं का अपरिवर्तनीय लॉग — पेड़ परिवर्तन, निर्यात, लॉगिन और अनुपालन अपडेट।",
+    "accessDenied": "गतिविधि लॉग के लिए अधिकृत भूमिका (सरकार, कॉर्पोरेट, एनजीओ, फील्ड पर्यवेक्षक या व्यवस्थापक) आवश्यक है।",
+    "loading": "ऑडिट इवेंट लोड हो रहे हैं…",
+    "emptyTitle": "अभी कोई ऑडिट इवेंट नहीं",
+    "emptyDescription": "पेड़ पंजीकरण, MRV निर्यात और लॉगिन यहाँ दिखेंगे।",
+    "colTime": "समय (UTC)",
+    "colAction": "क्रिया",
+    "colResource": "संसाधन",
+    "colActor": "कर्ता",
+    "colIp": "IP",
+    "colDetails": "विवरण",
+    "viewJson": "JSON देखें",
+    "showingEvents": "{shown} में से {total} इवेंट दिखाए जा रहे हैं",
+    "system": "सिस्टम",
+    "you": "आप",
+    "actions": {
+      "tree": {
+        "create": "पेड़ बनाया गया",
+        "update": "पेड़ अपडेट किया गया",
+        "delete": "पेड़ हटाया गया",
+        "regeotag": "पेड़ पुनः जियो-टैग किया गया",
+        "image": {
+          "add": "पेड़ फ़ोटो जोड़ी गई"
+        }
+      },
+      "project": {
+        "create": "परियोजना बनाई गई",
+        "update": "परियोजना अपडेट की गई",
+        "delete": "परियोजना हटाई गई"
+      },
+      "auth": {
+        "login": "साइन इन",
+        "logout": "साइन आउट",
+        "password_reset": "पासवर्ड रीसेट"
+      },
+      "export": {
+        "mrv": "MRV निर्यात",
+        "report": "रिपोर्ट निर्यात"
+      },
+      "compliance": {
+        "update": "अनुपालन अपडेट"
+      },
+      "member": {
+        "invite": "टीम सदस्य आमंत्रित",
+        "update": "टीम सदस्य अपडेट"
+      },
+      "program": {
+        "access_request": "कार्यक्रम पहुँच अनुरोध"
+      }
+    }
+  },
+  "settingsTeamPage": {
+    "title": "टीम",
+    "description": "अपने संगठन में पर्यवेक्षक, फील्ड कर्मी और दर्शक आमंत्रित करें। सदस्य आपकी NHAI, ESG या एनजीओ कार्यक्रम पहुँच प्राप्त करते हैं।"
+  },
+  "settingsWebhooksPage": {
+    "title": "वेबहुक",
+    "description": "पेड़, निर्यात, क्रेडिट या अनुपालन क्रियाओं पर हस्ताक्षरित JSON सूचना प्राप्त करें।",
+    "loadingEndpoints": "एंडपॉइंट लोड हो रहे हैं…",
+    "endpointCount": "{count, plural, one {# एंडपॉइंट कॉन्फ़िगर} other {# एंडपॉइंट कॉन्फ़िगर}}",
+    "noEndpoints": "अभी कोई एंडपॉइंट नहीं — इवेंट प्राप्त करने के लिए एक जोड़ें।",
+    "addEndpoint": "एंडपॉइंट जोड़ें",
+    "cancel": "रद्द करें",
+    "createdMessage": "वेबहुक बनाया गया। हस्ताक्षर गुप्त कॉपी करें — यह फिर नहीं दिखेगा।",
+    "testSent": "टेस्ट इवेंट भेजा गया।",
+    "signingSecret": "हस्ताक्षर गुप्त: {secret}",
+    "noWebhooks": "अभी कोई वेबहुक कॉन्फ़िगर नहीं।",
+    "disabled": "अक्षम",
+    "enable": "सक्षम करें",
+    "disable": "अक्षम करें",
+    "test": "टेस्ट",
+    "delete": "हटाएँ",
+    "newEndpoint": "नया एंडपॉइंट",
+    "firstEndpoint": "अपना पहला एंडपॉइंट जोड़ें",
+    "label": "लेबल",
+    "labelPlaceholder": "ऑप्स Slack ब्रिज",
+    "httpsUrl": "HTTPS URL",
+    "urlPlaceholder": "https://example.com/webhooks/aranyix",
+    "notifyWhen": "मुझे सूचित करें जब",
+    "creating": "बनाया जा रहा है…",
+    "createWebhook": "वेबहुक बनाएँ",
+    "recentDeliveries": "हाल की डिलीवरी",
+    "noDeliveries": "अभी कोई डिलीवरी नहीं।",
+    "colTime": "समय",
+    "colEvent": "इवेंट",
+    "colStatus": "स्थिति",
+    "colHttp": "HTTP",
+    "events": {
+      "tree": {
+        "registered": "पेड़ पंजीकृत",
+        "updated": "पेड़ अपडेट"
+      },
+      "compliance": {
+        "violation": {
+          "resolved": "अनुपालन अंतर हल"
+        },
+        "checklist": {
+          "updated": "चेकलिस्ट अपडेट"
+        }
+      },
+      "project": {
+        "mrv": {
+          "exported": "MRV निर्यात तैयार"
+        },
+        "evidence_bundle": {
+          "generated": "साक्ष्य बंडल बनाया"
+        },
+        "framework_report": {
+          "exported": "फ्रेमवर्क रिपोर्ट निर्यात"
+        },
+        "credit_ledger": {
+          "updated": "क्रेडिट लेजर अपडेट"
+        }
+      },
+      "webhook": {
+        "test": "टेस्ट पिंग"
+      }
+    }
+  },
+  "settingsCarbonPage": {
+    "breadcrumbSettings": "सेटिंग्स",
+    "breadcrumbCarbon": "कार्बन कैलकुलेटर",
+    "disclaimer": "यह <strong>कैलकुलेटर उपकरण</strong> है योजना अनुमानों के लिए — सत्यापित कार्बन क्रेडिट लेजर नहीं।",
+    "title": "कार्बन कैलकुलेटर",
+    "description": "एक पेड़ के लिए बायोमास, संग्रहीत कार्बन, CO₂e और क्रेडिट क्षमता का अनुमान लगाएँ।"
+  },
+  "fieldOpsOfflinePage": {
+    "redirectNote": "पुराना रूट — सिंक कतार पर रीडायरेक्ट।"
+  },
+  "fieldOpsSyncPage": {
+    "title": "सिंक कतार",
+    "description": "ऑफ़लाइन पेड़ पंजीकरण ऑनलाइन होने पर अपलोड होते हैं।",
+    "breadcrumbOperate": "संचालन",
+    "breadcrumbSync": "सिंक कतार",
+    "online": "ऑनलाइन",
+    "offline": "ऑफ़लाइन — कनेक्ट होने तक आइटम कतार में रहेंगे",
+    "syncNow": "अभी सिंक करें",
+    "allSynced": "सभी पेड़ पंजीकरण सिंक हो गए।",
+    "pendingUpload": "{count} पंजीकरण अपलोड की प्रतीक्षा में।",
+    "queuedOffline": "पेड़ पंजीकरण ऑफ़लाइन सहेजा — कनेक्ट होने पर सिंक करें।",
+    "syncing": "सिंक हो रहा है…",
+    "syncedCount": "{count} पेड़ पंजीकरण सिंक किए",
+    "allSyncedStatus": "सभी सिंक",
+    "syncFailed": "सिंक विफल — ऑनलाइन होने पर पुनः प्रयास करें",
+    "confirmRemove": "इस कतारबद्ध पंजीकरण को अपने डिवाइस से हटाएँ?",
+    "itemRemoved": "आइटम हटाया गया",
+    "loading": "कतार लोड हो रही है…",
+    "emptyTitle": "कतार खाली",
+    "emptyDescription": "डिस्कनेक्ट होने पर ऑफ़लाइन सहेजे पेड़ पंजीकरण यहाँ दिखेंगे।",
+    "registerTree": "पेड़ पंजीकृत करें",
+    "treeRegistration": "पेड़ पंजीकरण",
+    "photoCount": "{count} फ़ोटो",
+    "retry": "पुनः प्रयास",
+    "delete": "हटाएँ",
+    "footerPrefix": "केवल इस ब्राउज़र पर कतारबद्ध। खोलें",
+    "footerLink": "पेड़ पंजीकरण",
+    "footerSuffix": "ऑफ़लाइन और पेड़ कैप्चर करने के लिए।"
+  },
+  "publicImpactPage": {
+    "brand": "Aranyix",
+    "header": "सार्वजनिक प्रभाव",
+    "loadingAria": "प्रभाव स्नैपशॉट लोड हो रहा है",
+    "unavailableTitle": "प्रभाव पृष्ठ अनुपलब्ध",
+    "defaultTitle": "वृक्षारोपण प्रभाव",
+    "eyebrow": "सत्यापित फील्ड साक्ष्य",
+    "heroDescription": "Aranyix वृक्षारोपण ऑपरेटिंग सिस्टम से जियो-टैग पेड़, अनुपालन संकेत और कार्बन अनुमान।",
+    "estimateBadge": "कार्बन आँकड़े अनुमान हैं — जारी क्रेडिट नहीं",
+    "ledgerBadge": "लेजर स्थिति मौजूद",
+    "snapshotMeta": "स्नैपशॉट {date}",
+    "treesRegistered": "पंजीकृत पेड़",
+    "workAreas": "कार्य क्षेत्र",
+    "openComplianceGaps": "खुले अनुपालन अंतर",
+    "nativeSpecies": "देशी प्रजाति",
+    "carbonLedger": "कार्बन लेजर",
+    "status": "स्थिति",
+    "netTco2e": "शुद्ध tCO₂e",
+    "methodology": "पद्धति",
+    "sampleTrees": "नमूना पेड़",
+    "cryptoProof": "क्रिप्टोग्राफिक प्रमाण",
+    "cryptoDescription": "अखंडता जाँच के लिए इस प्रभाव स्नैपशॉट का SHA-256 हैश।",
+    "ctaTitle": "अपना वृक्षारोपण OS चलाएँ",
+    "ctaDescription": "पेड़ पंजीकृत करें, अस्तित्व ट्रैक करें और Aranyix के साथ सत्यापित प्रभाव साझा करें।",
+    "ctaButton": "Aranyix से शुरू करें"
+  },
+  "publicVerifyPage": {
+    "brand": "Aranyix",
+    "header": "सार्वजनिक सत्यापन",
+    "loadingAria": "सत्यापन स्नैपशॉट लोड हो रहा है",
+    "unavailableTitle": "सत्यापन लिंक अनुपलब्ध",
+    "defaultTitle": "पर्यावरण रिकॉर्ड",
+    "eyebrow": "सत्यापित स्नैपशॉट",
+    "heroDescription": "Aranyix से जियो-टैग पेड़, अनुपालन संकेत और कार्बन अनुमान का स्वतंत्र सार्वजनिक रिकॉर्ड।",
+    "generatedMeta": "जनरेट {date}",
+    "trees": "पेड़",
+    "workAreas": "कार्य क्षेत्र",
+    "openGaps": "खुले अंतर",
+    "nativeSpecies": "देशी प्रजाति",
+    "creditLedger": "क्रेडिट लेजर",
+    "ledgerStatus": "स्थिति: {status}{net}",
+    "checklistReadiness": "चेकलिस्ट तैयारी",
+    "colCode": "कोड",
+    "colSpecies": "प्रजाति",
+    "colHealth": "स्वास्थ्य",
+    "colCarbon": "कार्बन (kg)",
+    "colGeoTagged": "जियो-टैग",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "treeDetail": "{code} · {species}",
+    "treeHealthStatus": "स्वास्थ्य: {health} · स्थिति: {status}",
+    "treeCarbonSatellite": "कार्बन: {carbon} kg · उपग्रह सत्यापित: {verified}",
+    "cryptoProof": "क्रिप्टोग्राफिक प्रमाण",
+    "cryptoDescription": "इस सत्यापन स्नैपशॉट का SHA-256 हैश। जनरेशन के बाद से पृष्ठ सामग्री अपरिवर्तित है यह पुष्टि करने के लिए उपयोग करें।"
+  },
+  "projectPages": {
+    "auditLoading": "लोड हो रहा है…",
+    "auditUnavailable": "ऑडिट केवल एस्टेट और फॉरेस्ट वॉच परियोजनाओं के लिए उपलब्ध है।",
+    "auditBackLink": "परियोजना अवलोकन पर वापस",
+    "new": {
+      "title": "नई रोपण परियोजना",
+      "allProjects": "सभी परियोजनाएँ",
+      "showingSchemesFor": "योजनाएँ दिखाई जा रही हैं",
+      "showAudienceOnly": "केवल दर्शक विकल्प दिखाएँ",
+      "showAllSchemes": "सभी योजनाएँ दिखाएँ",
+      "selectScheme": "केंद्रीय योजना चुनें",
+      "linkedScheme": "लिंक की गई योजना",
+      "changeScheme": "योजना बदलें",
+      "projectCode": "परियोजना कोड",
+      "projectCodeHint": "रिपोर्ट और APO आयात मिलान के लिए अद्वितीय ID",
+      "projectName": "परियोजना नाम",
+      "descriptionOptional": "विवरण (वैकल्पिक)",
+      "descriptionPlaceholder": "आपकी टीम के लिए जिला, पैकेज या ब्लॉक विवरण",
+      "plantingTemplate": "रोपण मानक टेम्पलेट",
+      "targetTrees": "लक्ष्य पेड़ (वैकल्पिक)",
+      "surveyInterval": "अस्तित्व सर्वेक्षण अंतराल",
+      "every15Days": "हर 15 दिन",
+      "every30Days": "हर 30 दिन",
+      "advancedTitle": "उन्नत: सेगमेंट, कार्यक्रम और अनुपालन",
+      "segment": "सेगमेंट",
+      "complianceMode": "अनुपालन मोड",
+      "complianceStrict": "सख्त (उल्लंघन ब्लॉक)",
+      "complianceGuided": "मार्गदर्शित (चेतावनी)",
+      "complianceOpen": "खुला (कोई सीमा नहीं)",
+      "program": "कार्यक्रम",
+      "programGovernment": "सरकार / सार्वजनिक क्षेत्र",
+      "programCorporate": "कॉर्पोरेट ESG",
+      "programNgo": "एनजीओ / समुदाय",
+      "programByot": "BYOT",
+      "govRefIds": "सरकारी संदर्भ ID",
+      "govRefHint": "{label} · {ministry}. ये पेड़ पंजीकरण और ऑडिट निर्यात में जाते हैं — बाद में सेटअप विज़ार्ड में संपादित कर सकते हैं।",
+      "step4Title": "चरण 4 · कार्य क्षेत्र बनाएँ",
+      "setupComplete": "सेटअप पूर्ण",
+      "drawTitle": "रोपण कहाँ होता है बनाएँ",
+      "drawDescriptionRequired": "साइट खोजने के लिए खोज या GPS उपयोग करें, मानचित्र पर बिंदु रखें, फिर नामित बहुभुज या कॉरिडोर सहेजें। पेड़ पंजीकृत करने से पहले कम से कम एक कार्य क्षेत्र आवश्यक है।",
+      "drawDescriptionOptional": "साइट खोजने के लिए खोज या GPS उपयोग करें, मानचित्र पर बिंदु रखें, फिर नामित बहुभुज या कॉरिडोर सहेजें। कार्य क्षेत्र पेड़ व्यवस्थित करते हैं लेकिन खुले मोड में वैकल्पिक हैं।",
+      "skipToProject": "अभी छोड़ें — परियोजना पर जाएँ",
+      "viewOverview": "परियोजना अवलोकन देखें",
+      "registerFirstTree": "पहला पेड़ पंजीकृत करें",
+      "drawWorkAreaFirst": "पहले कार्य क्षेत्र बनाएँ",
+      "backToSchemes": "योजनाओं पर वापस",
+      "backToDetails": "परियोजना विवरण पर वापस",
+      "creating": "बनाया जा रहा है…",
+      "continueToRefs": "योजना संदर्भ पर जारी रखें",
+      "createAndDraw": "परियोजना बनाएँ और क्षेत्र बनाएँ",
+      "creatingProject": "परियोजना बनाई जा रही है…",
+      "errors": {
+        "codeNameRequired": "परियोजना कोड और नाम आवश्यक हैं।",
+        "locationRequired": "जारी रखने से पहले परियोजना स्थान फ़ील्ड पूर्ण करें।",
+        "standardRequired": "जारी रखने से पहले रोपण मानक की पुष्टि करें।",
+        "siteRulesRequired": "कम से कम एक साइट नियम बदलें, या साइट समायोजन बंद करें।",
+        "defaultsRequired": "जारी रखने से पहले पेड़ पंजीकरण डिफ़ॉल्ट पूर्ण करें।",
+        "refsRequired": "सभी आवश्यक योजना संदर्भ और पेड़ पंजीकरण डिफ़ॉल्ट भरें।"
+      },
+      "stepSubtitles": {
+        "1": "अपनी साइट को केंद्रीय सरकारी योजना से जोड़ें ताकि अनुपालन चेकलिस्ट, सरकारी संदर्भ ID और ऑडिट निर्यात स्वचालित कॉन्फ़िगर हों।",
+        "2": "परियोजना का नाम दें, रोपण मानक की पुष्टि करें और वैकल्पिक रूप से साइट-विशिष्ट नियम समायोजित करें। योजना संदर्भ अगला है।",
+        "3": "अभी सरकारी संदर्भ ID दर्ज करें ताकि पेड़ पंजीकरण स्वचालित रूप से कानूनी संदर्भ प्राप्त करे — बाद में कोई आश्चर्य नहीं।",
+        "4": "अपनी साइट खोजें, GPS उपयोग करें और कम से कम एक बहुभुज या कॉरिडोर बनाएँ। पेड़ कार्य क्षेत्र के अंदर होने चाहिए।"
+      },
+      "segments": {
+        "nhai_highway": {
+          "label": "NHAI / राजमार्ग",
+          "hint": "रैखिक कॉरिडोर + चेनेज, सख्त अंतराल"
+        },
+        "industrial_greenbelt": {
+          "label": "खान / सीमेंट / फैक्टरी",
+          "hint": "बहुभुज हरित बेल्ट, घनत्व और देशी प्रजाति"
+        },
+        "township_landscape": {
+          "label": "टाउनशिप / बड़ा समाज",
+          "hint": "मार्ग और लैंडस्केप ब्लॉक"
+        },
+        "nagar_van_urban": {
+          "label": "नगर वन / शहरी वन",
+          "hint": "ULB शहर-वन ब्लॉक, 10,000+ पेड़ लक्ष्य"
+        },
+        "sahakar_van_coop": {
+          "label": "सहकार वन / सहकारी वन",
+          "hint": "NCCF–Amul Miyawaki + पारंपरिक शुष्क भूमि रोपण"
+        },
+        "ngo_watershed": {
+          "label": "एनजीओ / जलग्रह",
+          "hint": "सामुदायिक प्लॉट, मार्गदर्शित अनुपालन"
+        },
+        "nutri_garden": {
+          "label": "न्यूट्री-गार्डन / पोषण वाटिका",
+          "hint": "आंगनबाड़ी, SHG और पंचायत फल बगीचे (0.1–0.5 हे.)"
+        },
+        "general": {
+          "label": "सामान्य वृक्षारोपण",
+          "hint": "लचीली सीमाएँ"
+        }
+      }
+    }
+  },
+  "platformAdmin": {
+    "shell": {
+      "badge": "प्लेटफ़ॉर्म व्यवस्थापक",
+      "subtitleFull": "उपयोगकर्ता, संगठन, कार्यक्रम, ऑप्स, CMS।",
+      "subtitleDelegated": "आपके अनुदान के लिए प्रत्यायोजित मॉड्यूल।",
+      "shortcuts": "शॉर्टकट",
+      "shortcutsTitle": "कीबोर्ड शॉर्टकट",
+      "nav": {
+        "overview": "अवलोकन",
+        "users": "उपयोगकर्ता",
+        "organizations": "संगठन",
+        "programAccess": "कार्यक्रम पहुँच",
+        "activityLog": "गतिविधि लॉग",
+        "governance": "शासन",
+        "roles": "भूमिकाएँ और मॉड्यूल",
+        "billing": "बिलिंग",
+        "operations": "संचालन",
+        "satelliteHealth": "उपग्रह स्वास्थ्य",
+        "websiteCms": "वेबसाइट CMS"
+      }
+    },
+    "overview": {
+      "loading": "अवलोकन लोड हो रहा है…",
+      "needsAttention": "ध्यान आवश्यक",
+      "pendingAccess": "{count, plural, one {# लंबित कार्यक्रम पहुँच अनुरोध} other {# लंबित कार्यक्रम पहुँच अनुरोध}}",
+      "failedJobs": "हाल की विंडो में {count, plural, one {# विफल निगरानी जॉब} other {# विफल निगरानी जॉब}}",
+      "users": "उपयोगकर्ता",
+      "usersHint": "{active} सक्रिय · {inactive} निष्क्रिय",
+      "organizations": "संगठन",
+      "pendingProgramRequests": "लंबित कार्यक्रम अनुरोध",
+      "platformAdmins": "प्लेटफ़ॉर्म व्यवस्थापक",
+      "recentActivity": "हाल की गतिविधि",
+      "viewAll": "सभी देखें",
+      "loadingActivity": "गतिविधि लोड हो रही है…",
+      "noActivity": "कोई हालिया प्लेटफ़ॉर्म क्रिया नहीं।",
+      "quickLinks": "त्वरित लिंक",
+      "manageUsers": "उपयोगकर्ता प्रबंधित करें",
+      "programQueue": "कार्यक्रम कतार",
+      "activityLog": "गतिविधि लॉग",
+      "governance": "शासन",
+      "userChangeAudit": "उपयोगकर्ता परिवर्तन ऑडिट",
+      "system": "सिस्टम"
+    },
+    "programAccess": {
+      "description": "सरकार और सार्वजनिक क्षेत्र, कॉर्पोरेट ESG और एनजीओ कार्यक्रमों के लिए नागरिक अनुरोधों की समीक्षा करें। स्वीकृति से उपयोगकर्ता तुरंत नामांकित होता है।"
+    },
+    "roles": {
+      "moduleUpdated": "मॉड्यूल पहुँच अपडेट। प्रभावित उपयोगकर्ताओं को फिर साइन इन करना होगा।"
+    },
+    "actions": {
+      "platform": {
+        "user": {
+          "role_update": "उपयोगकर्ता भूमिका बदली",
+          "impersonate": "प्रतिरूपण शुरू",
+          "impersonate_stop": "प्रतिरूपण समाप्त",
+          "revoke_sessions": "सत्र रद्द",
+          "grants_update": "अनुदान अपडेट",
+          "force_password_reset": "पासवर्ड रीसेट भेजा",
+          "resend_verification": "सत्यापन पुनः भेजा",
+          "mark_verified": "सत्यापित चिह्नित",
+          "bulk_activate": "बल्क उपयोगकर्ता सक्रिय",
+          "bulk_deactivate": "बल्क उपयोगकर्ता निष्क्रिय"
+        },
+        "organization": {
+          "bulk_suspend": "बल्क संगठन निलंबित",
+          "bulk_activate": "बल्क संगठन सक्रिय",
+          "feature_flags": "संगठन फ़ीचर फ़्लैग अपडेट",
+          "update": "संगठन अपडेट"
+        },
+        "governance": {
+          "update": "शासन सेटिंग्स अपडेट"
+        },
+        "program_access": {
+          "bulk_approve": "बल्क कार्यक्रम पहुँच स्वीकृत",
+          "bulk_reject": "बल्क कार्यक्रम पहुँच अस्वीकृत"
+        },
+        "module": {
+          "update": "मॉड्यूल नियम अपडेट"
+        }
+      }
+    },
+    "common": {
+      "loading": "लोड हो रहा है…",
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय",
+      "never": "कभी नहीं",
+      "cancel": "रद्द करें",
+      "save": "सहेजें",
+      "delete": "हटाएँ",
+      "enable": "सक्षम करें",
+      "disable": "अक्षम करें",
+      "export": "निर्यात",
+      "search": "खोजें",
+      "filter": "फ़िल्टर",
+      "previous": "पिछला",
+      "next": "अगला",
+      "system": "सिस्टम"
+    }
   }
 }

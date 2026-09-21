@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Shield } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -10,6 +11,7 @@ import { isFullPlatformAdmin } from "@/lib/platform-access";
 import { useAuth } from "@/lib/auth-store";
 
 export default function PlatformRolesPage() {
+  const t = useTranslations("platformAdmin.roles");
   const qc = useQueryClient();
   const { user } = useAuth();
   const fullAdmin = isFullPlatformAdmin(user);
@@ -40,7 +42,7 @@ export default function PlatformRolesPage() {
       allowed_roles: string[];
     }) => platformAdmin.updateModule(moduleKey, { allowed_roles }),
     onSuccess: () => {
-      setMessage("Module access updated. Affected users must sign in again.");
+      setMessage(t("moduleUpdated"));
       qc.invalidateQueries({ queryKey: ["platform-modules"] });
     },
     onError: (err) => setMessage(errorMessage(err)),

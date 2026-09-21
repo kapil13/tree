@@ -1,28 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { OrgAdminGuard } from "@/components/org-admin-guard";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { errorMessage, webhooks, type WebhookEventType } from "@/lib/api";
 
-const EVENT_LABELS: Record<string, string> = {
-  "tree.registered": "Tree registered",
-  "tree.updated": "Tree updated",
-  "compliance.violation.resolved": "Compliance gap resolved",
-  "project.mrv.exported": "MRV export ready",
-  "project.evidence_bundle.generated": "Evidence bundle generated",
-  "project.framework_report.exported": "Framework report exported",
-  "project.credit_ledger.updated": "Credit ledger updated",
-  "compliance.checklist.updated": "Checklist updated",
-  "webhook.test": "Test ping",
-};
-
-function eventLabel(event: string) {
-  return EVENT_LABELS[event] ?? event.replace(/[._]/g, " ");
-}
-
 export default function WebhooksSettingsPage() {
+  const t = useTranslations("settingsWebhooksPage");
   const qc = useQueryClient();
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
@@ -30,6 +16,14 @@ export default function WebhooksSettingsPage() {
   const [newSecret, setNewSecret] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+
+  function eventLabel(event: string) {
+    const key = `events.${event}`;
+    if (t.has(key as "events.tree.registered")) {
+      return t(key as "events.tree.registered");
+    }
+    return event.replace(/[._]/g, " ");
+  }
 
   const { data: eventTypes = [] } = useQuery({
     queryKey: ["webhook-events"],
@@ -52,7 +46,7 @@ export default function WebhooksSettingsPage() {
       setNewSecret(row.signing_secret);
       setLabel("");
       setUrl("");
-      setMessage("Webhook created. Copy the signing secret now — it won't be shown again.");
+      setMessage(t("createdMessage"));
       setShowCreate(false);
       qc.invalidateQueries({ queryKey: ["webhooks"] });
     },
@@ -68,7 +62,7 @@ export default function WebhooksSettingsPage() {
   const test = useMutation({
     mutationFn: (id: string) => webhooks.test(id),
     onSuccess: () => {
-      setMessage("Test event sent.");
+      setMessage(t("testSent"));
       qc.invalidateQueries({ queryKey: ["webhook-deliveries"] });
     },
     onError: (err) => setMessage(errorMessage(err)),
@@ -88,17 +82,14 @@ export default function WebhooksSettingsPage() {
   return (
     <OrgAdminGuard>
       <div className="space-y-8">
-        <SettingsSection
-          title="Webhooks"
-          description="Get a signed JSON notification when trees, exports, credits, or compliance actions happen."
-        >
+        <SettingsSection title={t("title")} description={t("description")}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-stone-600 dark:text-stone-400">
               {isLoading
-                ? "Loading endpoints…"
+                ? t("loadingEndpoints")
                 : endpoints.length
-                  ? `${endpoints.length} endpoint${endpoints.length === 1 ? "" : "s"} configured`
-                  : "No endpoints yet — add one to start receiving events."}
+                  ? t("endpointCount", { count: endpoints.length })
+                  : t("noEndpoints")}
             </p>
             {endpoints.length > 0 ? (
               <button
@@ -106,7 +97,7 @@ export default function WebhooksSettingsPage() {
                 className="btn-primary text-sm"
                 onClick={() => setShowCreate((v) => !v)}
               >
-                {showCreate ? "Cancel" : "Add endpoint"}
+                {showCreate ? t("cancel") : t("addEndpoint")}
               </button>
             ) : null}
           </div>
@@ -114,7 +105,7 @@ export default function WebhooksSettingsPage() {
           {message ? <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">{message}</p> : null}
           {newSecret ? (
             <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 font-mono text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30">
-              Signing secret: {newSecret}
+              {t("signingSecret", { secret: newSecret })}
             </p>
           ) : null}
 
@@ -125,7 +116,7 @@ export default function WebhooksSettingsPage() {
                 <div className="h-16 animate-pulse rounded-lg bg-stone-100 dark:bg-stone-800" />
               </div>
             ) : !endpoints.length ? (
-              <p className="text-sm text-stone-500">No webhooks configured yet.</p>
+              <p className="text-sm text-stone-500">{t("noWebhooks")}</p>
             ) : (
               <ul className="space-y-3">
                 {endpoints.map((row) => (
@@ -138,7 +129,7 @@ export default function WebhooksSettingsPage() {
                         <p className="font-medium">
                           {row.label}
                           {!row.enabled ? (
-                            <span className="ml-2 text-xs font-normal text-stone-500">Disabled</span>
+                            <span className="ml-2 text-xs font-normal text-stone-500">{t("disabled")}</span>
                           ) : null}
                         </p>
                         <p className="mt-1 break-all text-xs text-stone-500">{row.url}</p>
@@ -154,7 +145,7 @@ export default function WebhooksSettingsPage() {
                           className="btn-secondary text-xs"
                           onClick={() => toggle.mutate({ id: row.id, enabled: !row.enabled })}
                         >
-                          {row.enabled ? "Disable" : "Enable"}
+                          {row.enabled ? t("disable") : t("enable")}
                         </button>
                         <button
                           type="button"
@@ -162,14 +153,14 @@ export default function WebhooksSettingsPage() {
                           disabled={test.isPending}
                           onClick={() => test.mutate(row.id)}
                         >
-                          Test
+                          {t("test")}
                         </button>
                         <button
                           type="button"
                           className="btn-secondary text-xs text-rose-700"
                           onClick={() => remove.mutate(row.id)}
                         >
-                          Delete
+                          {t("delete")}
                         </button>
                       </div>
                     </div>
@@ -182,30 +173,30 @@ export default function WebhooksSettingsPage() {
           {showCreate || !endpoints.length ? (
             <div className="card mt-4 space-y-4">
               <h3 className="text-sm font-medium text-stone-900 dark:text-stone-50">
-                {endpoints.length ? "New endpoint" : "Add your first endpoint"}
+                {endpoints.length ? t("newEndpoint") : t("firstEndpoint")}
               </h3>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <label className="label">Label</label>
+                  <label className="label">{t("label")}</label>
                   <input
                     className="input mt-1"
-                    placeholder="Ops Slack bridge"
+                    placeholder={t("labelPlaceholder")}
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="label">HTTPS URL</label>
+                  <label className="label">{t("httpsUrl")}</label>
                   <input
                     className="input mt-1"
-                    placeholder="https://example.com/webhooks/aranyix"
+                    placeholder={t("urlPlaceholder")}
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                   />
                 </div>
               </div>
               <div>
-                <p className="label">Notify me when</p>
+                <p className="label">{t("notifyWhen")}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {eventTypes.map((event) => (
                     <button
@@ -230,25 +221,25 @@ export default function WebhooksSettingsPage() {
                 disabled={create.isPending || !label.trim() || !url.trim() || !events.length}
                 onClick={() => create.mutate()}
               >
-                {create.isPending ? "Creating…" : "Create webhook"}
+                {create.isPending ? t("creating") : t("createWebhook")}
               </button>
             </div>
           ) : null}
         </SettingsSection>
 
-        <SettingsSection title="Recent deliveries">
+        <SettingsSection title={t("recentDeliveries")}>
           <div className="card">
             {!deliveries.length ? (
-              <p className="text-sm text-stone-500">No deliveries yet.</p>
+              <p className="text-sm text-stone-500">{t("noDeliveries")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead className="text-left text-stone-500">
                     <tr>
-                      <th className="px-2 py-1 font-medium">Time</th>
-                      <th className="px-2 py-1 font-medium">Event</th>
-                      <th className="px-2 py-1 font-medium">Status</th>
-                      <th className="px-2 py-1 font-medium">HTTP</th>
+                      <th className="px-2 py-1 font-medium">{t("colTime")}</th>
+                      <th className="px-2 py-1 font-medium">{t("colEvent")}</th>
+                      <th className="px-2 py-1 font-medium">{t("colStatus")}</th>
+                      <th className="px-2 py-1 font-medium">{t("colHttp")}</th>
                     </tr>
                   </thead>
                   <tbody>

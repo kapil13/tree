@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsSection } from "@/components/settings/settings-section";
@@ -9,42 +10,13 @@ import { organizations } from "@/lib/organizations-api";
 import { useAuth } from "@/lib/auth-store";
 import { ScrollText } from "lucide-react";
 
-const ACTION_LABELS: Record<string, string> = {
-  "tree.create": "Tree created",
-  "tree.update": "Tree updated",
-  "tree.delete": "Tree deleted",
-  "tree.regeotag": "Tree re-geotagged",
-  "tree.image.add": "Tree photo added",
-  "project.create": "Project created",
-  "project.update": "Project updated",
-  "project.delete": "Project deleted",
-  "auth.login": "Signed in",
-  "auth.logout": "Signed out",
-  "auth.password_reset": "Password reset",
-  "export.mrv": "MRV export",
-  "export.report": "Report exported",
-  "compliance.update": "Compliance updated",
-  "member.invite": "Team member invited",
-  "member.update": "Team member updated",
-  "program.access_request": "Program access requested",
-};
-
-function humanizeAction(action: string): string {
-  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
-  const parts = action.split(".");
-  const last = parts[parts.length - 1] ?? action;
-  const noun = parts[0] ?? "";
-  const verb = last.replace(/_/g, " ");
-  const label = `${noun} ${verb}`.trim();
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
 function shortId(id: string | null | undefined): string {
   if (!id) return "—";
   return `${id.slice(0, 8)}…`;
 }
 
 export default function AuditLogPage() {
+  const t = useTranslations("settingsAuditPage");
   const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryKey: ["audit-logs"],
@@ -61,16 +33,29 @@ export default function AuditLogPage() {
   const actorById = useMemo(() => {
     const map = new Map<string, { name: string; email: string }>();
     if (user?.id) {
-      map.set(user.id, { name: user.full_name || "You", email: user.email || "" });
+      map.set(user.id, { name: user.full_name || t("you"), email: user.email || "" });
     }
     for (const m of membersQ.data?.members ?? []) {
       map.set(m.id, { name: m.full_name || m.email, email: m.email });
     }
     return map;
-  }, [membersQ.data?.members, user?.email, user?.full_name, user?.id]);
+  }, [membersQ.data?.members, t, user?.email, user?.full_name, user?.id]);
+
+  function humanizeAction(action: string): string {
+    const key = `actions.${action.replace(/\./g, ".")}`;
+    if (t.has(key as "actions.tree.create")) {
+      return t(key as "actions.tree.create");
+    }
+    const parts = action.split(".");
+    const last = parts[parts.length - 1] ?? action;
+    const noun = parts[0] ?? "";
+    const verb = last.replace(/_/g, " ");
+    const label = `${noun} ${verb}`.trim();
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
 
   function actorLabel(actorId: string | null): string {
-    if (!actorId) return "System";
+    if (!actorId) return t("system");
     const known = actorById.get(actorId);
     if (known) {
       return known.email ? `${known.name} (${known.email})` : known.name;
@@ -79,21 +64,18 @@ export default function AuditLogPage() {
   }
 
   return (
-    <SettingsSection
-      title="Activity log"
-      description="Immutable log of sensitive actions — tree changes, exports, logins, and compliance updates."
-    >
+    <SettingsSection title={t("title")} description={t("description")}>
       {error ? (
         <div className="card border-amber-200 bg-amber-50 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          Activity logs require an authorized role (government, corporate, NGO, field supervisor, or admin).
+          {t("accessDenied")}
         </div>
       ) : isLoading ? (
-        <p className="text-sm text-stone-500">Loading audit events…</p>
+        <p className="text-sm text-stone-500">{t("loading")}</p>
       ) : !data?.items.length ? (
         <EmptyState
           icon={ScrollText}
-          title="No audit events yet"
-          description="Tree registration, MRV exports, and logins will appear here."
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
         />
       ) : (
         <div className="card overflow-hidden p-0">
@@ -101,12 +83,12 @@ export default function AuditLogPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-800/50">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Time (UTC)</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                  <th className="px-4 py-3 font-medium">Resource</th>
-                  <th className="px-4 py-3 font-medium">Actor</th>
-                  <th className="px-4 py-3 font-medium">IP</th>
-                  <th className="px-4 py-3 font-medium">Details</th>
+                  <th className="px-4 py-3 font-medium">{t("colTime")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colAction")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colResource")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colActor")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colIp")}</th>
+                  <th className="px-4 py-3 font-medium">{t("colDetails")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,7 +118,7 @@ export default function AuditLogPage() {
                     <td className="max-w-xs px-4 py-3">
                       {row.diff ? (
                         <details>
-                          <summary className="cursor-pointer text-xs text-forest-700">View JSON</summary>
+                          <summary className="cursor-pointer text-xs text-forest-700">{t("viewJson")}</summary>
                           <pre className="mt-1 overflow-x-auto rounded bg-stone-50 p-2 text-[10px] text-stone-600 dark:bg-stone-900">
                             {JSON.stringify(row.diff, null, 2).slice(0, 400)}
                             {JSON.stringify(row.diff).length > 400 ? "…" : ""}
@@ -152,7 +134,7 @@ export default function AuditLogPage() {
             </table>
           </div>
           <p className="border-t border-stone-100 px-4 py-2 text-xs text-stone-500 dark:border-stone-800">
-            Showing {data.items.length} of {data.total} events
+            {t("showingEvents", { shown: data.items.length, total: data.total })}
           </p>
         </div>
       )}

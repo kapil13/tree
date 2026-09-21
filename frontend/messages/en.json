@@ -2049,5 +2049,449 @@
     "sentinelCompactLive": " · Site Sentinel: live when configured",
     "live": "Live",
     "estimate": "Estimate"
+  },
+  "verificationPage": {
+    "purpose": "Independent verification",
+    "title": "Verifier queue",
+    "description": "Review stratified tree samples and attest measurements without editing field data.",
+    "section": "Intelligence",
+    "breadcrumb": "Verifier queue",
+    "loadingSamples": "Loading verification samples…",
+    "emptyTitle": "No open verification samples",
+    "emptyDescription": "Supervisors create samples from a project's compliance workspace. Pending attestations appear here.",
+    "openProjects": "Open projects",
+    "openSamples": "Open samples",
+    "projectSample": "Project sample",
+    "pendingCount": "{pct}% · {pending} pending",
+    "review": "Review",
+    "selectSample": "Select a sample to review pending trees.",
+    "loadingItems": "Loading sample items…",
+    "sampleCompleteTitle": "Sample complete",
+    "sampleCompleteDescription": "All trees in this sample have been attested.",
+    "pendingAttestation": "Pending attestation",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "monitoringPage": {
+    "redirecting": "Redirecting to portfolio health…"
+  },
+  "intelligencePage": {
+    "redirecting": "Redirecting to portfolio health…"
+  },
+  "settingsAuditPage": {
+    "title": "Activity log",
+    "description": "Immutable log of sensitive actions — tree changes, exports, logins, and compliance updates.",
+    "accessDenied": "Activity logs require an authorized role (government, corporate, NGO, field supervisor, or admin).",
+    "loading": "Loading audit events…",
+    "emptyTitle": "No audit events yet",
+    "emptyDescription": "Tree registration, MRV exports, and logins will appear here.",
+    "colTime": "Time (UTC)",
+    "colAction": "Action",
+    "colResource": "Resource",
+    "colActor": "Actor",
+    "colIp": "IP",
+    "colDetails": "Details",
+    "viewJson": "View JSON",
+    "showingEvents": "Showing {shown} of {total} events",
+    "system": "System",
+    "you": "You",
+    "actions": {
+      "tree": {
+        "create": "Tree created",
+        "update": "Tree updated",
+        "delete": "Tree deleted",
+        "regeotag": "Tree re-geotagged",
+        "image": {
+          "add": "Tree photo added"
+        }
+      },
+      "project": {
+        "create": "Project created",
+        "update": "Project updated",
+        "delete": "Project deleted"
+      },
+      "auth": {
+        "login": "Signed in",
+        "logout": "Signed out",
+        "password_reset": "Password reset"
+      },
+      "export": {
+        "mrv": "MRV export",
+        "report": "Report exported"
+      },
+      "compliance": {
+        "update": "Compliance updated"
+      },
+      "member": {
+        "invite": "Team member invited",
+        "update": "Team member updated"
+      },
+      "program": {
+        "access_request": "Program access requested"
+      }
+    }
+  },
+  "settingsTeamPage": {
+    "title": "Team",
+    "description": "Invite supervisors, field workers, and viewers to your organization. Members inherit your NHAI, ESG, or NGO program access."
+  },
+  "settingsWebhooksPage": {
+    "title": "Webhooks",
+    "description": "Get a signed JSON notification when trees, exports, credits, or compliance actions happen.",
+    "loadingEndpoints": "Loading endpoints…",
+    "endpointCount": "{count, plural, one {# endpoint configured} other {# endpoints configured}}",
+    "noEndpoints": "No endpoints yet — add one to start receiving events.",
+    "addEndpoint": "Add endpoint",
+    "cancel": "Cancel",
+    "createdMessage": "Webhook created. Copy the signing secret now — it won't be shown again.",
+    "testSent": "Test event sent.",
+    "signingSecret": "Signing secret: {secret}",
+    "noWebhooks": "No webhooks configured yet.",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "test": "Test",
+    "delete": "Delete",
+    "newEndpoint": "New endpoint",
+    "firstEndpoint": "Add your first endpoint",
+    "label": "Label",
+    "labelPlaceholder": "Ops Slack bridge",
+    "httpsUrl": "HTTPS URL",
+    "urlPlaceholder": "https://example.com/webhooks/aranyix",
+    "notifyWhen": "Notify me when",
+    "creating": "Creating…",
+    "createWebhook": "Create webhook",
+    "recentDeliveries": "Recent deliveries",
+    "noDeliveries": "No deliveries yet.",
+    "colTime": "Time",
+    "colEvent": "Event",
+    "colStatus": "Status",
+    "colHttp": "HTTP",
+    "events": {
+      "tree": {
+        "registered": "Tree registered",
+        "updated": "Tree updated"
+      },
+      "compliance": {
+        "violation": {
+          "resolved": "Compliance gap resolved"
+        },
+        "checklist": {
+          "updated": "Checklist updated"
+        }
+      },
+      "project": {
+        "mrv": {
+          "exported": "MRV export ready"
+        },
+        "evidence_bundle": {
+          "generated": "Evidence bundle generated"
+        },
+        "framework_report": {
+          "exported": "Framework report exported"
+        },
+        "credit_ledger": {
+          "updated": "Credit ledger updated"
+        }
+      },
+      "webhook": {
+        "test": "Test ping"
+      }
+    }
+  },
+  "settingsCarbonPage": {
+    "breadcrumbSettings": "Settings",
+    "breadcrumbCarbon": "Carbon calculator",
+    "disclaimer": "This is a <strong>calculator tool</strong> for planning estimates — not a verified carbon credit ledger.",
+    "title": "Carbon calculator",
+    "description": "Estimate biomass, stored carbon, CO₂e, and credit potential for a single tree."
+  },
+  "fieldOpsOfflinePage": {
+    "redirectNote": "Legacy route — redirects to sync queue."
+  },
+  "fieldOpsSyncPage": {
+    "title": "Sync queue",
+    "description": "Offline tree registrations upload when you are back online.",
+    "breadcrumbOperate": "Operate",
+    "breadcrumbSync": "Sync queue",
+    "online": "Online",
+    "offline": "Offline — items stay queued until connected",
+    "syncNow": "Sync now",
+    "allSynced": "All tree registrations are synced.",
+    "pendingUpload": "{count} registration(s) waiting to upload.",
+    "queuedOffline": "Tree registration saved offline — sync when connected.",
+    "syncing": "Syncing…",
+    "syncedCount": "Synced {count} tree registration(s)",
+    "allSyncedStatus": "All synced",
+    "syncFailed": "Sync failed — try again when online",
+    "confirmRemove": "Remove this queued registration from your device?",
+    "itemRemoved": "Item removed",
+    "loading": "Loading queue…",
+    "emptyTitle": "Queue empty",
+    "emptyDescription": "Tree registrations saved offline while disconnected will appear here.",
+    "registerTree": "Register a tree",
+    "treeRegistration": "Tree registration",
+    "photoCount": "{count} photo(s)",
+    "retry": "Retry",
+    "delete": "Delete",
+    "footerPrefix": "Queued on this browser only. Open",
+    "footerLink": "tree registration",
+    "footerSuffix": "to capture more trees when offline."
+  },
+  "publicImpactPage": {
+    "brand": "Aranyix",
+    "header": "Public impact",
+    "loadingAria": "Loading impact snapshot",
+    "unavailableTitle": "Impact page unavailable",
+    "defaultTitle": "Plantation impact",
+    "eyebrow": "Verified field evidence",
+    "heroDescription": "Geo-tagged trees, compliance signals, and carbon estimates from the Aranyix plantation operating system.",
+    "estimateBadge": "Carbon figures are estimates — not issued credits",
+    "ledgerBadge": "Ledger status present",
+    "snapshotMeta": "Snapshot {date}",
+    "treesRegistered": "Trees registered",
+    "workAreas": "Work areas",
+    "openComplianceGaps": "Open compliance gaps",
+    "nativeSpecies": "Native species",
+    "carbonLedger": "Carbon ledger",
+    "status": "Status",
+    "netTco2e": "Net tCO₂e",
+    "methodology": "Methodology",
+    "sampleTrees": "Sample trees",
+    "cryptoProof": "Cryptographic proof",
+    "cryptoDescription": "SHA-256 hash of this impact snapshot for integrity checks.",
+    "ctaTitle": "Run your own plantation OS",
+    "ctaDescription": "Register trees, track survival, and share verified impact with Aranyix.",
+    "ctaButton": "Start with Aranyix"
+  },
+  "publicVerifyPage": {
+    "brand": "Aranyix",
+    "header": "Public verification",
+    "loadingAria": "Loading verification snapshot",
+    "unavailableTitle": "Verification link unavailable",
+    "defaultTitle": "Environmental record",
+    "eyebrow": "Verified snapshot",
+    "heroDescription": "Independent public record of geo-tagged trees, compliance signals, and carbon estimates from Aranyix.",
+    "generatedMeta": "Generated {date}",
+    "trees": "Trees",
+    "workAreas": "Work areas",
+    "openGaps": "Open gaps",
+    "nativeSpecies": "Native species",
+    "creditLedger": "Credit ledger",
+    "ledgerStatus": "Status: {status}{net}",
+    "checklistReadiness": "Checklist readiness",
+    "colCode": "Code",
+    "colSpecies": "Species",
+    "colHealth": "Health",
+    "colCarbon": "Carbon (kg)",
+    "colGeoTagged": "Geo-tagged",
+    "yes": "Yes",
+    "no": "No",
+    "treeDetail": "{code} · {species}",
+    "treeHealthStatus": "Health: {health} · Status: {status}",
+    "treeCarbonSatellite": "Carbon: {carbon} kg · Satellite verified: {verified}",
+    "cryptoProof": "Cryptographic proof",
+    "cryptoDescription": "SHA-256 hash of this verification snapshot. Use it to confirm the page contents have not been altered since generation."
+  },
+  "projectPages": {
+    "auditLoading": "Loading…",
+    "auditUnavailable": "Audit is available for Estate & Forest Watch projects only.",
+    "auditBackLink": "Back to project overview",
+    "new": {
+      "title": "New planting project",
+      "allProjects": "All projects",
+      "showingSchemesFor": "Showing schemes for",
+      "showAudienceOnly": "Show audience picks only",
+      "showAllSchemes": "Show all schemes",
+      "selectScheme": "Select a central scheme",
+      "linkedScheme": "Linked scheme",
+      "changeScheme": "Change scheme",
+      "projectCode": "Project code",
+      "projectCodeHint": "Unique ID for reports and APO import matching",
+      "projectName": "Project name",
+      "descriptionOptional": "Description (optional)",
+      "descriptionPlaceholder": "District, package, or block details for your team",
+      "plantingTemplate": "Planting standard template",
+      "targetTrees": "Target trees (optional)",
+      "surveyInterval": "Survival survey interval",
+      "every15Days": "Every 15 days",
+      "every30Days": "Every 30 days",
+      "advancedTitle": "Advanced: segment, program & compliance",
+      "segment": "Segment",
+      "complianceMode": "Compliance mode",
+      "complianceStrict": "Strict (block violations)",
+      "complianceGuided": "Guided (warn)",
+      "complianceOpen": "Open (no boundary)",
+      "program": "Program",
+      "programGovernment": "Government / Public sector",
+      "programCorporate": "Corporate ESG",
+      "programNgo": "NGO / Community",
+      "programByot": "BYOT",
+      "govRefIds": "Government reference IDs",
+      "govRefHint": "{label} · {ministry}. These flow into tree registration and audit exports — you can edit them later in the project setup wizard.",
+      "step4Title": "Step 4 · Draw work areas",
+      "setupComplete": "Setup complete",
+      "drawTitle": "Draw where planting happens",
+      "drawDescriptionRequired": "Use search or GPS to find your site, click the map to place points, then save a named polygon or corridor. At least one work area is required before you can register trees.",
+      "drawDescriptionOptional": "Use search or GPS to find your site, click the map to place points, then save a named polygon or corridor. Work areas help organize trees but are optional in open mode.",
+      "skipToProject": "Skip for now — go to project",
+      "viewOverview": "View project overview",
+      "registerFirstTree": "Register first tree",
+      "drawWorkAreaFirst": "Draw a work area first",
+      "backToSchemes": "Back to schemes",
+      "backToDetails": "Back to project details",
+      "creating": "Creating…",
+      "continueToRefs": "Continue to scheme references",
+      "createAndDraw": "Create project & draw areas",
+      "creatingProject": "Creating project…",
+      "errors": {
+        "codeNameRequired": "Project code and name are required.",
+        "locationRequired": "Complete the project location fields before continuing.",
+        "standardRequired": "Confirm the planting standard before continuing.",
+        "siteRulesRequired": "Change at least one site rule, or turn off site adjustments.",
+        "defaultsRequired": "Complete tree registration defaults before continuing.",
+        "refsRequired": "Fill all required scheme references and tree registration defaults."
+      },
+      "stepSubtitles": {
+        "1": "Link your site to a central government scheme so compliance checklists, govt reference IDs, and audit exports are configured automatically.",
+        "2": "Name your project, confirm the planting standard, and optionally adjust site-specific rules. Scheme references come next.",
+        "3": "Enter government reference IDs now so tree registration inherits legal context automatically — no surprises later.",
+        "4": "Search your site, use GPS, and draw at least one polygon or corridor. Trees must fall inside a work area."
+      },
+      "segments": {
+        "nhai_highway": {
+          "label": "NHAI / Highway",
+          "hint": "Linear corridor + chainage, strict spacing"
+        },
+        "industrial_greenbelt": {
+          "label": "Mine / Cement / Factory",
+          "hint": "Polygon green belt, density & native species"
+        },
+        "township_landscape": {
+          "label": "Township / Large society",
+          "hint": "Avenue and landscape blocks"
+        },
+        "nagar_van_urban": {
+          "label": "Nagar Van / Urban forest",
+          "hint": "ULB city-forest blocks, 10,000+ tree targets"
+        },
+        "sahakar_van_coop": {
+          "label": "Sahakar Van / Cooperative forest",
+          "hint": "NCCF–Amul Miyawaki + conventional arid-land planting"
+        },
+        "ngo_watershed": {
+          "label": "NGO / Watershed",
+          "hint": "Community plots, guided compliance"
+        },
+        "nutri_garden": {
+          "label": "Nutri-garden / Poshan Vatika",
+          "hint": "Anganwadi, SHG, and panchayat fruit gardens (0.1–0.5 ha)"
+        },
+        "general": {
+          "label": "General plantation",
+          "hint": "Flexible boundaries"
+        }
+      }
+    }
+  },
+  "platformAdmin": {
+    "shell": {
+      "badge": "Platform admin",
+      "subtitleFull": "Users, orgs, programs, ops, CMS.",
+      "subtitleDelegated": "Delegated modules for your grants.",
+      "shortcuts": "Shortcuts",
+      "shortcutsTitle": "Keyboard shortcuts",
+      "nav": {
+        "overview": "Overview",
+        "users": "Users",
+        "organizations": "Organizations",
+        "programAccess": "Program access",
+        "activityLog": "Activity log",
+        "governance": "Governance",
+        "roles": "Roles & modules",
+        "billing": "Billing",
+        "operations": "Operations",
+        "satelliteHealth": "Satellite health",
+        "websiteCms": "Website CMS"
+      }
+    },
+    "overview": {
+      "loading": "Loading overview…",
+      "needsAttention": "Needs attention",
+      "pendingAccess": "{count, plural, one {# pending program access request} other {# pending program access requests}}",
+      "failedJobs": "{count, plural, one {# failed monitoring job} other {# failed monitoring jobs}} in the recent window",
+      "users": "Users",
+      "usersHint": "{active} active · {inactive} inactive",
+      "organizations": "Organizations",
+      "pendingProgramRequests": "Pending program requests",
+      "platformAdmins": "Platform admins",
+      "recentActivity": "Recent activity",
+      "viewAll": "View all",
+      "loadingActivity": "Loading activity…",
+      "noActivity": "No recent platform actions.",
+      "quickLinks": "Quick links",
+      "manageUsers": "Manage users",
+      "programQueue": "Program queue",
+      "activityLog": "Activity log",
+      "governance": "Governance",
+      "userChangeAudit": "User change audit",
+      "system": "System"
+    },
+    "programAccess": {
+      "description": "Review citizen requests for Government & Public Sector, Corporate ESG, and NGO programs. Approving enrolls the user immediately."
+    },
+    "roles": {
+      "moduleUpdated": "Module access updated. Affected users must sign in again."
+    },
+    "actions": {
+      "platform": {
+        "user": {
+          "role_update": "User role changed",
+          "impersonate": "Impersonation started",
+          "impersonate_stop": "Impersonation ended",
+          "revoke_sessions": "Sessions revoked",
+          "grants_update": "Grants updated",
+          "force_password_reset": "Password reset sent",
+          "resend_verification": "Verification resent",
+          "mark_verified": "Marked verified",
+          "bulk_activate": "Bulk user activate",
+          "bulk_deactivate": "Bulk user deactivate",
+          "bulk_revoke_sessions": "Bulk session revoke"
+        },
+        "organization": {
+          "bulk_suspend": "Bulk org suspend",
+          "bulk_activate": "Bulk org activate",
+          "feature_flags": "Org feature flags updated",
+          "update": "Organization updated"
+        },
+        "governance": {
+          "update": "Governance settings updated"
+        },
+        "program_access": {
+          "bulk_approve": "Bulk program access approved",
+          "bulk_reject": "Bulk program access rejected"
+        },
+        "module": {
+          "update": "Module rules updated"
+        }
+      }
+    },
+    "common": {
+      "loading": "Loading…",
+      "active": "Active",
+      "inactive": "Inactive",
+      "never": "Never",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "enable": "Enable",
+      "disable": "Disable",
+      "export": "Export",
+      "search": "Search",
+      "filter": "Filter",
+      "previous": "Previous",
+      "next": "Next",
+      "system": "System"
+    }
   }
 }

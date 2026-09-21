@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Download, ChevronDown, ChevronUp } from "lucide-react";
@@ -9,35 +10,21 @@ import { notifyPlatformAction } from "@/lib/platform-admin-feedback";
 import { platformAdmin } from "@/lib/platform-api";
 import { cn } from "@/lib/cn";
 
-const ACTION_LABELS: Record<string, string> = {
-  "platform.user.role_update": "User role changed",
-  "platform.user.impersonate": "Impersonation started",
-  "platform.user.impersonate_stop": "Impersonation ended",
-  "platform.user.grants_update": "Platform grants updated",
-  "platform.user.force_password_reset": "Password reset sent",
-  "platform.user.resend_verification": "Verification resent",
-  "platform.user.mark_verified": "User marked verified",
-  "platform.user.revoke_sessions": "Sessions revoked",
-  "platform.user.bulk_activate": "Bulk user activate",
-  "platform.user.bulk_deactivate": "Bulk user deactivate",
-  "platform.user.bulk_revoke_sessions": "Bulk session revoke",
-  "platform.organization.bulk_suspend": "Bulk org suspend",
-  "platform.organization.bulk_activate": "Bulk org activate",
-  "platform.governance.update": "Governance settings updated",
-  "platform.organization.feature_flags": "Org feature flags updated",
-  "platform.program_access.bulk_approve": "Bulk program access approved",
-  "platform.program_access.bulk_reject": "Bulk program access rejected",
-  "platform.organization.update": "Organization updated",
-  "platform.module.update": "Module rules updated",
-};
-
 function formatDiff(diff: Record<string, unknown> | null): string {
   if (!diff || Object.keys(diff).length === 0) return "";
   return JSON.stringify(diff, null, 2);
 }
 
 export default function PlatformAuditPage() {
+  const ta = useTranslations("platformAdmin.actions");
   const router = useRouter();
+
+  function actionLabel(action: string): string {
+    if (ta.has(action as "platform.user.role_update")) {
+      return ta(action as "platform.user.role_update");
+    }
+    return action;
+  }
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -323,7 +310,7 @@ export default function PlatformAuditPage() {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">
-                          {ACTION_LABELS[entry.action] ?? entry.action}
+                          {actionLabel(entry.action)}
                         </div>
                         <div className="mt-0.5 text-stone-600">
                           {entry.resource_type}
