@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Loader2, Trees } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { auth } from "@/lib/api";
 import { SIGNUP_PROGRAM_OPTIONS } from "@/lib/program-catalog";
 
 export default function OnboardingPendingPage() {
+  const t = useTranslations("onboardingAudience");
   const router = useRouter();
 
   const { data: onboarding, isLoading } = useQuery({
@@ -34,12 +36,12 @@ export default function OnboardingPendingPage() {
   if (onboarding?.status === "rejected") {
     return (
       <div className="rounded-2xl border border-rose-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-xl font-semibold text-stone-900">Application not approved</h1>
+        <h1 className="text-xl font-semibold text-stone-900">{t("rejectedTitle")}</h1>
         <p className="mt-2 text-sm text-stone-600">
-          {onboarding.admin_note || "Please contact support or update your details and resubmit."}
+          {onboarding.admin_note || t("rejectedDefaultNote")}
         </p>
         <Link href="/onboarding/org-profile" className="btn-primary mt-6 inline-flex">
-          Update and resubmit
+          {t("updateAndResubmit")}
         </Link>
       </div>
     );
@@ -48,25 +50,24 @@ export default function OnboardingPendingPage() {
   const programName =
     onboarding?.program_name ??
     SIGNUP_PROGRAM_OPTIONS.find((p) => p.code === onboarding?.program_code)?.name ??
-    "Professional program";
+    t("professionalProgramFallback");
 
   return (
     <div className="rounded-[2rem] border border-white/80 bg-white/95 p-8 text-center shadow-lg">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
         <Clock className="h-7 w-7" />
       </div>
-      <h1 className="mt-4 text-xl font-semibold text-stone-950">Application under review</h1>
+      <h1 className="mt-4 text-xl font-semibold text-stone-950">{t("pendingTitle")}</h1>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">
-        Your <span className="font-medium">{programName}</span> access request is pending admin
-        approval. You can continue using BYOT citizen features in the meantime.
+        {t("pendingDescription", { program: programName })}
       </p>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
         <Link href="/trees/new" className="btn-primary inline-flex items-center justify-center gap-2">
           <Trees className="h-4 w-4" />
-          Register a tree
+          {t("registerTree")}
         </Link>
         <Link href="/dashboard" className="btn-secondary inline-flex justify-center">
-          Go to dashboard
+          {t("goToDashboard")}
         </Link>
       </div>
     </div>

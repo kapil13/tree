@@ -24,8 +24,8 @@ import {
 
 export type ReportColumn = {
   key: string;
-  label: string;
-  render?: (row: Record<string, unknown>) => ReactNode;
+  labelKey: string;
+  render?: (row: Record<string, unknown>, t: (key: string) => string) => ReactNode;
 };
 
 export type OperationalReportConfig = {
@@ -44,10 +44,10 @@ export type OperationalReportConfig = {
   }) => ReactNode;
 };
 
-function defaultCell(value: unknown): ReactNode {
+function defaultCell(value: unknown, t: (key: string) => string): ReactNode {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "number") return fmtNum(value);
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "boolean") return value ? t("yes") : t("no");
   return String(value);
 }
 
@@ -104,7 +104,7 @@ export function PlantationOperationalReportPage({ config }: { config: Operationa
               <tr>
                 {config.columns.map((col) => (
                   <th key={col.key} className="px-4 py-3">
-                    {col.label}
+                    {t(col.labelKey as "colSpecies")}
                   </th>
                 ))}
               </tr>
@@ -114,7 +114,7 @@ export function PlantationOperationalReportPage({ config }: { config: Operationa
                 <tr key={String(row.id ?? row.project_id ?? row.tree_code ?? row.violation_id ?? idx)} className="hover:bg-stone-50/80 dark:hover:bg-stone-900/40">
                   {config.columns.map((col) => (
                     <td key={col.key} className="max-w-[240px] truncate px-4 py-3 text-stone-700 dark:text-stone-200">
-                      {col.render ? col.render(row) : defaultCell(row[col.key])}
+                      {col.render ? col.render(row, t) : defaultCell(row[col.key], t)}
                     </td>
                   ))}
                 </tr>

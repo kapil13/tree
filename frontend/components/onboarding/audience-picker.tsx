@@ -9,6 +9,7 @@ import {
   Loader2,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import type { AudiencePreset, PlantingAudience } from "@/lib/audience";
 
@@ -36,20 +37,16 @@ type AudiencePickerProps = {
 };
 
 export function AudiencePicker({ presets, selected, busy, onSelect }: AudiencePickerProps) {
+  const t = useTranslations("onboardingAudience");
+
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center sm:text-left">
         <p className="text-xs font-semibold uppercase tracking-wide text-forest-700">
-          One-time setup · Step 1 of 2
+          {t("stepLabel")}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-          What is your planting focus?
-        </h1>
-        <p className="text-sm leading-relaxed text-stone-600">
-          We use this once to sort scheme suggestions, dashboard shortcuts, and compliance
-          defaults for your account. It does not lock you out of any program — when you create a
-          project you can still browse the full scheme catalog.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{t("title")}</h1>
+        <p className="text-sm leading-relaxed text-stone-600">{t("description")}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -89,7 +86,7 @@ export function AudiencePicker({ presets, selected, busy, onSelect }: AudiencePi
       {busy ? (
         <div className="flex items-center justify-center gap-2 text-sm text-stone-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Saving your selection…
+          {t("savingSelection")}
         </div>
       ) : null}
     </div>

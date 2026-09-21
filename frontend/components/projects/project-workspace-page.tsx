@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ProjectFocusedOverview } from "@/components/projects/project-focused-overview";
 import { ProjectSecondarySection } from "@/components/projects/project-secondary-section";
 import { ProjectWorkspaceShell } from "@/components/projects/project-workspace-shell";
@@ -18,6 +19,7 @@ export function ProjectWorkspacePage({
 }: {
   section: "overview" | ProjectSecondaryTab;
 }) {
+  const t = useTranslations("projectPages.workspace");
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,7 +45,7 @@ export function ProjectWorkspacePage({
   }, [section, isLoading]);
 
   if (isLoading || !project) {
-    return <p className="text-sm text-stone-500">Loading project workspace…</p>;
+    return <p className="text-sm text-stone-500">{t("loading")}</p>;
   }
 
   const openViolations = project.summary?.open_violations ?? 0;
@@ -84,9 +86,10 @@ export function ProjectWorkspacePage({
 }
 
 export function ProjectSecondaryRoutePage({ tab }: { tab: ProjectSecondaryTab }) {
+  const t = useTranslations("projectPages.workspace");
   const parsed = parseProjectSecondarySegment(tab);
   if (!parsed) {
-    return <p className="text-sm text-stone-500">Unknown project section.</p>;
+    return <p className="text-sm text-stone-500">{t("unknownSection")}</p>;
   }
   return <ProjectWorkspacePage section={parsed} />;
 }

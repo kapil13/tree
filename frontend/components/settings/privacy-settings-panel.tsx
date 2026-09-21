@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { Download, Shield, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { errorMessage, privacy } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 
 export function PrivacySettingsPanel() {
+  const t = useTranslations("settingsPrivacyPage");
   const { user, logout } = useAuth();
   const qc = useQueryClient();
   const [grievanceSubject, setGrievanceSubject] = useState("");
@@ -60,19 +62,22 @@ export function PrivacySettingsPanel() {
 
   const consents = summary.data?.consents ?? [];
 
+  const consentHint = (purpose: string) => {
+    if (purpose === "essential") return t("consentEssentialHint");
+    if (purpose === "analytics") return t("consentAnalyticsHint");
+    return t("consentMarketingHint");
+  };
+
   return (
     <div className="space-y-8">
-      <SettingsSection
-        title="Your data (DPDP)"
-        description="Download, manage consent, and contact our Data Protection Officer."
-      >
+      <SettingsSection title={t("dataTitle")} description={t("dataDescription")}>
         <div className="card space-y-4">
           <p className="text-sm text-stone-600">
-            Policy version: <strong>{summary.data?.policy_version ?? "—"}</strong>
+            {t("policyVersion")}: <strong>{summary.data?.policy_version ?? "—"}</strong>
             {officer.data ? (
               <>
                 {" · "}
-                DPO:{" "}
+                {t("dpo")}:{" "}
                 <a href={`mailto:${officer.data.email}`} className="text-forest-700 underline">
                   {officer.data.email}
                 </a>
@@ -86,7 +91,7 @@ export function PrivacySettingsPanel() {
             onClick={() => exportData.mutate()}
           >
             <Download className="h-4 w-4" />
-            {exportData.isPending ? "Preparing export…" : "Download my data (JSON)"}
+            {exportData.isPending ? t("preparingExport") : t("downloadData")}
           </button>
           {exportData.error ? (
             <p className="text-sm text-rose-700">{errorMessage(exportData.error)}</p>
@@ -94,7 +99,7 @@ export function PrivacySettingsPanel() {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Consent preferences">
+      <SettingsSection title={t("consentTitle")}>
         <div className="card divide-y divide-stone-200 dark:divide-stone-800">
           {["essential", "analytics", "marketing"].map((purpose) => {
             const row = consents.find((c) => c.purpose === purpose && c.active);
@@ -102,17 +107,13 @@ export function PrivacySettingsPanel() {
             return (
               <div key={purpose} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div>
-                  <p className="font-medium capitalize text-stone-900 dark:text-stone-50">{purpose}</p>
-                  <p className="text-xs text-stone-500">
-                    {purpose === "essential"
-                      ? "Required for core platform operation"
-                      : purpose === "analytics"
-                        ? "Product analytics and usage insights"
-                        : "Marketing and product updates"}
+                  <p className="font-medium capitalize text-stone-900 dark:text-stone-50">
+                    {t(`consentPurpose.${purpose}` as "consentPurpose.essential")}
                   </p>
+                  <p className="text-xs text-stone-500">{consentHint(purpose)}</p>
                 </div>
                 {purpose === "essential" ? (
-                  <span className="text-xs text-stone-500">Required</span>
+                  <span className="text-xs text-stone-500">{t("required")}</span>
                 ) : active ? (
                   <button
                     type="button"
@@ -120,7 +121,7 @@ export function PrivacySettingsPanel() {
                     disabled={withdraw.isPending}
                     onClick={() => withdraw.mutate(purpose)}
                   >
-                    Withdraw
+                    {t("withdraw")}
                   </button>
                 ) : (
                   <button
@@ -129,7 +130,7 @@ export function PrivacySettingsPanel() {
                     disabled={grant.isPending}
                     onClick={() => grant.mutate(purpose as "analytics" | "marketing")}
                   >
-                    Grant
+                    {t("grant")}
                   </button>
                 )}
               </div>
@@ -138,17 +139,17 @@ export function PrivacySettingsPanel() {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="File a privacy grievance">
+      <SettingsSection title={t("grievanceTitle")}>
         <div className="card space-y-3">
           <input
             className="input w-full"
-            placeholder="Subject"
+            placeholder={t("grievanceSubjectPlaceholder")}
             value={grievanceSubject}
             onChange={(e) => setGrievanceSubject(e.target.value)}
           />
           <textarea
             className="input min-h-24 w-full"
-            placeholder="Describe your concern…"
+            placeholder={t("grievanceBodyPlaceholder")}
             value={grievanceBody}
             onChange={(e) => setGrievanceBody(e.target.value)}
           />
@@ -159,28 +160,23 @@ export function PrivacySettingsPanel() {
             onClick={() => fileGrievance.mutate()}
           >
             <Shield className="h-4 w-4" />
-            Submit grievance
+            {t("submitGrievance")}
           </button>
         </div>
       </SettingsSection>
 
-      <SettingsSection
-        title="Delete account"
-        description="Permanently deactivate your account and redact personal information."
-      >
+      <SettingsSection title={t("deleteTitle")} description={t("deleteDescription")}>
         <div className="card space-y-3 border-rose-200 bg-rose-50/50 dark:border-rose-900 dark:bg-rose-950/20">
-          <p className="text-sm text-stone-600">
-            Audit and credit ledger aggregates may be retained in anonymized form. Type your email to confirm.
-          </p>
+          <p className="text-sm text-stone-600">{t("deleteWarning")}</p>
           <input
             className="input w-full"
-            placeholder={user?.email ?? "Confirm email"}
+            placeholder={user?.email ?? t("confirmEmailPlaceholder")}
             value={deleteEmail}
             onChange={(e) => setDeleteEmail(e.target.value)}
           />
           <input
             className="input w-full"
-            placeholder="Reason (optional)"
+            placeholder={t("reasonPlaceholder")}
             value={deleteReason}
             onChange={(e) => setDeleteReason(e.target.value)}
           />
@@ -191,7 +187,7 @@ export function PrivacySettingsPanel() {
             onClick={() => deleteAccount.mutate()}
           >
             <Trash2 className="h-4 w-4" />
-            Delete my account
+            {t("deleteAccount")}
           </button>
           {deleteAccount.error ? (
             <p className="text-sm text-rose-700">{errorMessage(deleteAccount.error)}</p>
@@ -200,9 +196,9 @@ export function PrivacySettingsPanel() {
       </SettingsSection>
 
       <p className="text-xs text-stone-500">
-        Read our{" "}
+        {t("readPolicy")}{" "}
         <Link href="/privacy" className="text-forest-700 underline" target="_blank">
-          Privacy Policy
+          {t("privacyPolicy")}
         </Link>
         .
       </p>
