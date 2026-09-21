@@ -39,7 +39,7 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
   Future<void> _complete() async {
     final tokens = parseOAuthCallbackUri(widget.uri);
     if (tokens == null) {
-      setState(() => _error = 'Google sign-in did not return tokens.');
+      setState(() => _error = context.l10n.googleOAuthNoTokens);
       return;
     }
     try {
@@ -110,7 +110,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   Future<void> _requestCode() async {
     if (!_email.text.contains('@')) {
-      setState(() => _error = 'Enter a valid email address.');
+      setState(() => _error = context.l10n.authValidEmail);
       return;
     }
     setState(() {
@@ -135,11 +135,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   Future<void> _confirmReset() async {
     if (_otp.length < 4) {
-      setState(() => _error = 'Enter the verification code from your email.');
+      setState(() => _error = context.l10n.authEnterEmailVerificationCode);
       return;
     }
     if (_password.text.length < 12) {
-      setState(() => _error = 'Password must be at least 12 characters.');
+      setState(() => _error = context.l10n.authPasswordMin12);
       return;
     }
     setState(() {
@@ -186,8 +186,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       child: AuthScaffold(
       title: _step2 ? l10n.passwordLabel : l10n.forgotPassword,
       subtitle: _step2
-          ? 'Enter the code sent to ${_email.text.trim()} and choose a new password.'
-          : 'We will email you a one-time code to reset your password.',
+          ? l10n.forgotPasswordStep2Subtitle(_email.text.trim())
+          : l10n.forgotPasswordStep1Subtitle,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: _busy ? null : () => context.pop(),
@@ -209,7 +209,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: l10n.passwordLabel,
-                helperText: 'At least 12 characters',
+                helperText: l10n.passwordHelperMin12,
               ),
             ),
           ],
@@ -225,10 +225,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           FilledButton(
             onPressed: _busy ? null : (_step2 ? _confirmReset : _requestCode),
             child: Text(_busy
-                ? 'Please wait…'
+                ? l10n.pleaseWait
                 : _step2
-                    ? 'Update password'
-                    : 'Send reset code'),
+                    ? l10n.updatePassword
+                    : l10n.sendResetCode),
           ),
         ],
       ),
@@ -276,12 +276,12 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
 
   Future<void> _sendCode() async {
     if (!isValidIndianMobile(_phone.text)) {
-      setState(() => _error = 'Enter a valid 10-digit Indian mobile number.');
+      setState(() => _error = context.l10n.authValidIndianMobile);
       return;
     }
     if (widget._needsCaptchaToken &&
         (widget.captchaToken == null || widget.captchaToken!.isEmpty)) {
-      setState(() => _error = 'Complete the security check before continuing.');
+      setState(() => _error = context.l10n.completeSecurityCheck);
       return;
     }
     setState(() {
@@ -309,7 +309,7 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
 
   Future<void> _verify() async {
     if (_otp.length < 4) {
-      setState(() => _error = 'Enter the code from your SMS.');
+      setState(() => _error = context.l10n.authEnterSmsCode);
       return;
     }
     setState(() {
@@ -355,9 +355,9 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Mobile (+91)',
-              hintText: '10-digit number',
+            decoration: InputDecoration(
+              labelText: l10n.mobilePlus91Label,
+              hintText: l10n.tenDigitNumberHint,
             ),
             onChanged: (v) {
               final d = sanitizePhoneDigits(v);
@@ -371,14 +371,14 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
           ),
           const SizedBox(height: 8),
           Text(
-            'SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.',
+            l10n.phoneOtpServerNote,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AranyixColors.onSurfaceMuted,
                 ),
           ),
         ] else ...[
           Text(
-            'Code sent to ${formatPhoneDisplay(_phone.text)}',
+            l10n.codeSentToPhone(formatPhoneDisplay(_phone.text)),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -410,7 +410,7 @@ class _PhoneOtpLoginPanelState extends ConsumerState<PhoneOtpLoginPanel> {
               ? l10n.saving
               : _codeSent
                   ? l10n.signIn
-                  : 'Send SMS code'),
+                  : l10n.sendSmsCode),
         ),
         TextButton(
           onPressed: _busy ? null : widget.onSwitchToEmail,

@@ -12,7 +12,7 @@ import '../providers.dart';
 import '../widgets/project_scheme_context_card.dart';
 import '../widgets/shell_scaffold.dart';
 import '../widgets/stack_route_scaffold.dart';
-import 'projects_list_screen.dart' show segmentLabels;
+import '../project/segment_labels.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -62,7 +62,7 @@ class ProjectDetailScreen extends ConsumerWidget {
             children: [
               Text(project['name'] as String, style: Theme.of(context).textTheme.headlineSmall),
               Text(
-                '${project['code']} · ${segment == 'nutri_garden' ? l10n.segmentNutriGarden : segmentLabels[segment] ?? segment}',
+                '${project['code']} · ${segmentLabel(l10n, segment)}',
               ),
               const SizedBox(height: 8),
               Text(project['description'] as String? ?? ''),

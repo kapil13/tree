@@ -1593,5 +1593,203 @@
   "monthDec": "Dec",
   "methodologyTitle": "Methodology",
   "alertUrgencyActToday": "Act today",
-  "alertUrgencyThisWeek": "This week"
+  "alertUrgencyThisWeek": "This week",
+  "bioEcosystemAcousticHealthHeading": "ECOSYSTEM ACOUSTIC HEALTH",
+  "scoreOutOfHundred": "/100",
+  "bioSpeciesCount": "{count} species",
+  "@bioSpeciesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bioRecordingsCount": "{count} recordings",
+  "@bioRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepCapture": "Capture",
+  "pipelineStepEvidence": "Evidence",
+  "pipelineStepVerify": "Verify",
+  "pipelineStepMrv": "MRV",
+  "pipelineStepReport": "Report",
+  "detailsLabel": "Details",
+  "bioEcosystemAcousticHealthDefault": "Ecosystem acoustic health",
+  "bioRecordingDurationStatus": "{seconds}s · {status}",
+  "@bioRecordingDurationStatus": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "bioLocationLine": "Location {coords}",
+  "@bioLocationLine": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "survivalDueTreesSubtitle": "{count} trees due · {segment}",
+  "@survivalDueTreesSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "segment": {
+        "type": "String"
+      }
+    }
+  },
+  "forestHealthExcellent": "Excellent",
+  "forestHealthGood": "Good",
+  "forestHealthFair": "Fair",
+  "forestHealthNeedsCare": "Needs care",
+  "briefInspectionZones": "{count, plural, =1{1 plantation zone requires inspection today.} other{{count} plantation zones require inspection today.}}",
+  "@briefInspectionZones": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "briefTreeHealthBelowTarget": "Tree health is below target — schedule a field review this week.",
+  "briefNoTreesRegistered": "No trees registered yet — add your first plantation to begin monitoring.",
+  "briefAllZonesHealthy": "All monitored zones are within expected health parameters.",
+  "briefTomorrowWeather": "{description} tomorrow may reduce survival in exposed zones.",
+  "@briefTomorrowWeather": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "briefBiodiversityIncreased": "Biodiversity increased by {pct}% based on recent acoustic surveys.",
+  "@briefBiodiversityIncreased": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "briefRunBioacousticSurvey": "Run a bioacoustic survey to enrich biodiversity intelligence.",
+  "homeQueueSurvivalTitle": "{project} — survival due",
+  "@homeQueueSurvivalTitle": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQueueTreesDue": "{count} trees due",
+  "@homeQueueTreesDue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "priorityAlertFallback": "Priority alert",
+  "quickMetricCarbonCredits": "Carbon Credits",
+  "quickMetricWeatherRisk": "Weather Risk",
+  "weatherRiskHigh": "High",
+  "weatherRiskMed": "Med",
+  "weatherRiskLow": "Low",
+  "speciesCountAbbrev": "{count} sp.",
+  "@speciesCountAbbrev": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "segmentNhaiHighway": "NHAI / Highway",
+  "segmentIndustrialGreenbelt": "Mine / Green belt",
+  "segmentTownshipLandscape": "Township / Society",
+  "segmentNagarVanUrban": "Nagar Van / Urban forest",
+  "segmentSahakarVanCoop": "Sahakar Van / Cooperative forest",
+  "segmentNgoWatershed": "NGO / Watershed",
+  "segmentGeneral": "General",
+  "projectTreesCount": "{count} trees",
+  "@projectTreesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectViolationsSuffix": " · {count} violations",
+  "@projectViolationsSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signupAccountSubtitle": "A few details — then quick OTP checks.",
+  "codeSentToPhone": "Code sent to {phone}",
+  "@codeSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentToEmail": "Code sent to {email}",
+  "@codeSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "fullNameFieldLabel": "Full name",
+  "mobilePhoneLabel": "Mobile phone number",
+  "passwordMin8": "Min. 8 characters",
+  "passwordMin12": "Min. 12 characters",
+  "acceptTermsPrivacy": "I agree to the Terms & Privacy Policy",
+  "otpSmsPrompt": "Enter the 6-digit SMS code",
+  "otpEmailPrompt": "Enter the 6-digit email code",
+  "finishSignup": "Finish signup",
+  "signupValidEmail": "Please enter a valid email address.",
+  "signupPasswordMinChars": "Password must be at least {count} characters.",
+  "@signupPasswordMinChars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signupAcceptTerms": "Please accept the terms to continue.",
+  "signupEnterPhoneOtp": "Enter the 6-digit code sent to your phone.",
+  "signupEnterEmailOtp": "Enter the 6-digit code sent to your email.",
+  "googleOAuthNoTokens": "Google sign-in did not return tokens.",
+  "authValidEmail": "Enter a valid email address.",
+  "authEnterEmailVerificationCode": "Enter the verification code from your email.",
+  "authPasswordMin12": "Password must be at least 12 characters.",
+  "forgotPasswordStep2Subtitle": "Enter the code sent to {email} and choose a new password.",
+  "@forgotPasswordStep2Subtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPasswordStep1Subtitle": "We will email you a one-time code to reset your password.",
+  "pleaseWait": "Please wait…",
+  "authValidIndianMobile": "Enter a valid 10-digit Indian mobile number.",
+  "completeSecurityCheck": "Complete the security check before continuing.",
+  "authEnterSmsCode": "Enter the code from your SMS.",
+  "mobilePlus91Label": "Mobile (+91)",
+  "tenDigitNumberHint": "10-digit number",
+  "phoneOtpServerNote": "SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.",
+  "passwordHelperMin12": "At least 12 characters"
 }

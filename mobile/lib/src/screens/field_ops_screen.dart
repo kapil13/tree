@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../project/segment_labels.dart';
 import '../widgets/session_aware_error.dart';
 import '../field_ops_actions.dart';
 import '../nav_access.dart';
@@ -16,7 +17,6 @@ class FieldOpsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     final summaryAsync = ref.watch(fieldOpsSummaryProvider);
 
     return stackRouteScaffold(
@@ -100,7 +100,12 @@ class FieldOpsScreen extends ConsumerWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text((raw as Map)['name'] as String? ?? l10n.projectFallback),
-                      subtitle: Text('${raw['survival_due']} trees due · ${raw['segment'] ?? ''}'),
+                      subtitle: Text(
+                        l10n.survivalDueTreesSubtitle(
+                          '${raw['survival_due']}',
+                          segmentLabel(l10n, raw['segment'] as String? ?? ''),
+                        ),
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => context.push('/projects/${raw['id']}'),
                     ),

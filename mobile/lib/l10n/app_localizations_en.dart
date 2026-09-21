@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2246,10 +2245,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String integrityEligibleAudit(
-    String eligible,
-    String total,
-    String auditReady,
-  ) {
+      String eligible, String total, String auditReady) {
     return 'Eligible $eligible/$total · Audit ready $auditReady/$total';
   }
 
@@ -2946,4 +2942,274 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get alertUrgencyThisWeek => 'This week';
+
+  @override
+  String get bioEcosystemAcousticHealthHeading => 'ECOSYSTEM ACOUSTIC HEALTH';
+
+  @override
+  String get scoreOutOfHundred => '/100';
+
+  @override
+  String bioSpeciesCount(int count) {
+    return '$count species';
+  }
+
+  @override
+  String bioRecordingsCount(int count) {
+    return '$count recordings';
+  }
+
+  @override
+  String get pipelineStepCapture => 'Capture';
+
+  @override
+  String get pipelineStepEvidence => 'Evidence';
+
+  @override
+  String get pipelineStepVerify => 'Verify';
+
+  @override
+  String get pipelineStepMrv => 'MRV';
+
+  @override
+  String get pipelineStepReport => 'Report';
+
+  @override
+  String get detailsLabel => 'Details';
+
+  @override
+  String get bioEcosystemAcousticHealthDefault => 'Ecosystem acoustic health';
+
+  @override
+  String bioRecordingDurationStatus(String seconds, String status) {
+    return '${seconds}s · $status';
+  }
+
+  @override
+  String bioLocationLine(String coords) {
+    return 'Location $coords';
+  }
+
+  @override
+  String survivalDueTreesSubtitle(String count, String segment) {
+    return '$count trees due · $segment';
+  }
+
+  @override
+  String get forestHealthExcellent => 'Excellent';
+
+  @override
+  String get forestHealthGood => 'Good';
+
+  @override
+  String get forestHealthFair => 'Fair';
+
+  @override
+  String get forestHealthNeedsCare => 'Needs care';
+
+  @override
+  String briefInspectionZones(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantation zones require inspection today.',
+      one: '1 plantation zone requires inspection today.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get briefTreeHealthBelowTarget =>
+      'Tree health is below target — schedule a field review this week.';
+
+  @override
+  String get briefNoTreesRegistered =>
+      'No trees registered yet — add your first plantation to begin monitoring.';
+
+  @override
+  String get briefAllZonesHealthy =>
+      'All monitored zones are within expected health parameters.';
+
+  @override
+  String briefTomorrowWeather(String description) {
+    return '$description tomorrow may reduce survival in exposed zones.';
+  }
+
+  @override
+  String briefBiodiversityIncreased(String pct) {
+    return 'Biodiversity increased by $pct% based on recent acoustic surveys.';
+  }
+
+  @override
+  String get briefRunBioacousticSurvey =>
+      'Run a bioacoustic survey to enrich biodiversity intelligence.';
+
+  @override
+  String homeQueueSurvivalTitle(String project) {
+    return '$project — survival due';
+  }
+
+  @override
+  String homeQueueTreesDue(int count) {
+    return '$count trees due';
+  }
+
+  @override
+  String get priorityAlertFallback => 'Priority alert';
+
+  @override
+  String get quickMetricCarbonCredits => 'Carbon Credits';
+
+  @override
+  String get quickMetricWeatherRisk => 'Weather Risk';
+
+  @override
+  String get weatherRiskHigh => 'High';
+
+  @override
+  String get weatherRiskMed => 'Med';
+
+  @override
+  String get weatherRiskLow => 'Low';
+
+  @override
+  String speciesCountAbbrev(int count) {
+    return '$count sp.';
+  }
+
+  @override
+  String get segmentNhaiHighway => 'NHAI / Highway';
+
+  @override
+  String get segmentIndustrialGreenbelt => 'Mine / Green belt';
+
+  @override
+  String get segmentTownshipLandscape => 'Township / Society';
+
+  @override
+  String get segmentNagarVanUrban => 'Nagar Van / Urban forest';
+
+  @override
+  String get segmentSahakarVanCoop => 'Sahakar Van / Cooperative forest';
+
+  @override
+  String get segmentNgoWatershed => 'NGO / Watershed';
+
+  @override
+  String get segmentGeneral => 'General';
+
+  @override
+  String projectTreesCount(int count) {
+    return '$count trees';
+  }
+
+  @override
+  String projectViolationsSuffix(int count) {
+    return ' · $count violations';
+  }
+
+  @override
+  String get signupAccountSubtitle => 'A few details — then quick OTP checks.';
+
+  @override
+  String codeSentToPhone(String phone) {
+    return 'Code sent to $phone';
+  }
+
+  @override
+  String codeSentToEmail(String email) {
+    return 'Code sent to $email';
+  }
+
+  @override
+  String get fullNameFieldLabel => 'Full name';
+
+  @override
+  String get mobilePhoneLabel => 'Mobile phone number';
+
+  @override
+  String get passwordMin8 => 'Min. 8 characters';
+
+  @override
+  String get passwordMin12 => 'Min. 12 characters';
+
+  @override
+  String get acceptTermsPrivacy => 'I agree to the Terms & Privacy Policy';
+
+  @override
+  String get otpSmsPrompt => 'Enter the 6-digit SMS code';
+
+  @override
+  String get otpEmailPrompt => 'Enter the 6-digit email code';
+
+  @override
+  String get finishSignup => 'Finish signup';
+
+  @override
+  String get signupValidEmail => 'Please enter a valid email address.';
+
+  @override
+  String signupPasswordMinChars(int count) {
+    return 'Password must be at least $count characters.';
+  }
+
+  @override
+  String get signupAcceptTerms => 'Please accept the terms to continue.';
+
+  @override
+  String get signupEnterPhoneOtp =>
+      'Enter the 6-digit code sent to your phone.';
+
+  @override
+  String get signupEnterEmailOtp =>
+      'Enter the 6-digit code sent to your email.';
+
+  @override
+  String get googleOAuthNoTokens => 'Google sign-in did not return tokens.';
+
+  @override
+  String get authValidEmail => 'Enter a valid email address.';
+
+  @override
+  String get authEnterEmailVerificationCode =>
+      'Enter the verification code from your email.';
+
+  @override
+  String get authPasswordMin12 => 'Password must be at least 12 characters.';
+
+  @override
+  String forgotPasswordStep2Subtitle(String email) {
+    return 'Enter the code sent to $email and choose a new password.';
+  }
+
+  @override
+  String get forgotPasswordStep1Subtitle =>
+      'We will email you a one-time code to reset your password.';
+
+  @override
+  String get pleaseWait => 'Please wait…';
+
+  @override
+  String get authValidIndianMobile =>
+      'Enter a valid 10-digit Indian mobile number.';
+
+  @override
+  String get completeSecurityCheck =>
+      'Complete the security check before continuing.';
+
+  @override
+  String get authEnterSmsCode => 'Enter the code from your SMS.';
+
+  @override
+  String get mobilePlus91Label => 'Mobile (+91)';
+
+  @override
+  String get tenDigitNumberHint => '10-digit number';
+
+  @override
+  String get phoneOtpServerNote =>
+      'SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.';
+
+  @override
+  String get passwordHelperMin12 => 'At least 12 characters';
 }

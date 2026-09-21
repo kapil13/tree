@@ -63,7 +63,7 @@ import 'app_localizations_hi.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -86,16 +86,16 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('hi'),
+    Locale('hi')
   ];
 
   /// No description provided for @appTitle.
@@ -4087,10 +4087,7 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eligible {eligible}/{total} · Audit ready {auditReady}/{total}'**
   String integrityEligibleAudit(
-    String eligible,
-    String total,
-    String auditReady,
-  );
+      String eligible, String total, String auditReady);
 
   /// No description provided for @treesWithBlockingIssues.
   ///
@@ -5339,6 +5336,444 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This week'**
   String get alertUrgencyThisWeek;
+
+  /// No description provided for @bioEcosystemAcousticHealthHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'ECOSYSTEM ACOUSTIC HEALTH'**
+  String get bioEcosystemAcousticHealthHeading;
+
+  /// No description provided for @scoreOutOfHundred.
+  ///
+  /// In en, this message translates to:
+  /// **'/100'**
+  String get scoreOutOfHundred;
+
+  /// No description provided for @bioSpeciesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} species'**
+  String bioSpeciesCount(int count);
+
+  /// No description provided for @bioRecordingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} recordings'**
+  String bioRecordingsCount(int count);
+
+  /// No description provided for @pipelineStepCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture'**
+  String get pipelineStepCapture;
+
+  /// No description provided for @pipelineStepEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence'**
+  String get pipelineStepEvidence;
+
+  /// No description provided for @pipelineStepVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get pipelineStepVerify;
+
+  /// No description provided for @pipelineStepMrv.
+  ///
+  /// In en, this message translates to:
+  /// **'MRV'**
+  String get pipelineStepMrv;
+
+  /// No description provided for @pipelineStepReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get pipelineStepReport;
+
+  /// No description provided for @detailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsLabel;
+
+  /// No description provided for @bioEcosystemAcousticHealthDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Ecosystem acoustic health'**
+  String get bioEcosystemAcousticHealthDefault;
+
+  /// No description provided for @bioRecordingDurationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s · {status}'**
+  String bioRecordingDurationStatus(String seconds, String status);
+
+  /// No description provided for @bioLocationLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Location {coords}'**
+  String bioLocationLine(String coords);
+
+  /// No description provided for @survivalDueTreesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees due · {segment}'**
+  String survivalDueTreesSubtitle(String count, String segment);
+
+  /// No description provided for @forestHealthExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get forestHealthExcellent;
+
+  /// No description provided for @forestHealthGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get forestHealthGood;
+
+  /// No description provided for @forestHealthFair.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair'**
+  String get forestHealthFair;
+
+  /// No description provided for @forestHealthNeedsCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs care'**
+  String get forestHealthNeedsCare;
+
+  /// No description provided for @briefInspectionZones.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 plantation zone requires inspection today.} other{{count} plantation zones require inspection today.}}'**
+  String briefInspectionZones(int count);
+
+  /// No description provided for @briefTreeHealthBelowTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree health is below target — schedule a field review this week.'**
+  String get briefTreeHealthBelowTarget;
+
+  /// No description provided for @briefNoTreesRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'No trees registered yet — add your first plantation to begin monitoring.'**
+  String get briefNoTreesRegistered;
+
+  /// No description provided for @briefAllZonesHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'All monitored zones are within expected health parameters.'**
+  String get briefAllZonesHealthy;
+
+  /// No description provided for @briefTomorrowWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'{description} tomorrow may reduce survival in exposed zones.'**
+  String briefTomorrowWeather(String description);
+
+  /// No description provided for @briefBiodiversityIncreased.
+  ///
+  /// In en, this message translates to:
+  /// **'Biodiversity increased by {pct}% based on recent acoustic surveys.'**
+  String briefBiodiversityIncreased(String pct);
+
+  /// No description provided for @briefRunBioacousticSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a bioacoustic survey to enrich biodiversity intelligence.'**
+  String get briefRunBioacousticSurvey;
+
+  /// No description provided for @homeQueueSurvivalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{project} — survival due'**
+  String homeQueueSurvivalTitle(String project);
+
+  /// No description provided for @homeQueueTreesDue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees due'**
+  String homeQueueTreesDue(int count);
+
+  /// No description provided for @priorityAlertFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority alert'**
+  String get priorityAlertFallback;
+
+  /// No description provided for @quickMetricCarbonCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbon Credits'**
+  String get quickMetricCarbonCredits;
+
+  /// No description provided for @quickMetricWeatherRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather Risk'**
+  String get quickMetricWeatherRisk;
+
+  /// No description provided for @weatherRiskHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get weatherRiskHigh;
+
+  /// No description provided for @weatherRiskMed.
+  ///
+  /// In en, this message translates to:
+  /// **'Med'**
+  String get weatherRiskMed;
+
+  /// No description provided for @weatherRiskLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get weatherRiskLow;
+
+  /// No description provided for @speciesCountAbbrev.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sp.'**
+  String speciesCountAbbrev(int count);
+
+  /// No description provided for @segmentNhaiHighway.
+  ///
+  /// In en, this message translates to:
+  /// **'NHAI / Highway'**
+  String get segmentNhaiHighway;
+
+  /// No description provided for @segmentIndustrialGreenbelt.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine / Green belt'**
+  String get segmentIndustrialGreenbelt;
+
+  /// No description provided for @segmentTownshipLandscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Township / Society'**
+  String get segmentTownshipLandscape;
+
+  /// No description provided for @segmentNagarVanUrban.
+  ///
+  /// In en, this message translates to:
+  /// **'Nagar Van / Urban forest'**
+  String get segmentNagarVanUrban;
+
+  /// No description provided for @segmentSahakarVanCoop.
+  ///
+  /// In en, this message translates to:
+  /// **'Sahakar Van / Cooperative forest'**
+  String get segmentSahakarVanCoop;
+
+  /// No description provided for @segmentNgoWatershed.
+  ///
+  /// In en, this message translates to:
+  /// **'NGO / Watershed'**
+  String get segmentNgoWatershed;
+
+  /// No description provided for @segmentGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get segmentGeneral;
+
+  /// No description provided for @projectTreesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trees'**
+  String projectTreesCount(int count);
+
+  /// No description provided for @projectViolationsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' · {count} violations'**
+  String projectViolationsSuffix(int count);
+
+  /// No description provided for @signupAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A few details — then quick OTP checks.'**
+  String get signupAccountSubtitle;
+
+  /// No description provided for @codeSentToPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent to {phone}'**
+  String codeSentToPhone(String phone);
+
+  /// No description provided for @codeSentToEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent to {email}'**
+  String codeSentToEmail(String email);
+
+  /// No description provided for @fullNameFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fullNameFieldLabel;
+
+  /// No description provided for @mobilePhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile phone number'**
+  String get mobilePhoneLabel;
+
+  /// No description provided for @passwordMin8.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. 8 characters'**
+  String get passwordMin8;
+
+  /// No description provided for @passwordMin12.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. 12 characters'**
+  String get passwordMin12;
+
+  /// No description provided for @acceptTermsPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the Terms & Privacy Policy'**
+  String get acceptTermsPrivacy;
+
+  /// No description provided for @otpSmsPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit SMS code'**
+  String get otpSmsPrompt;
+
+  /// No description provided for @otpEmailPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit email code'**
+  String get otpEmailPrompt;
+
+  /// No description provided for @finishSignup.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signup'**
+  String get finishSignup;
+
+  /// No description provided for @signupValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address.'**
+  String get signupValidEmail;
+
+  /// No description provided for @signupPasswordMinChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least {count} characters.'**
+  String signupPasswordMinChars(int count);
+
+  /// No description provided for @signupAcceptTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Please accept the terms to continue.'**
+  String get signupAcceptTerms;
+
+  /// No description provided for @signupEnterPhoneOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to your phone.'**
+  String get signupEnterPhoneOtp;
+
+  /// No description provided for @signupEnterEmailOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent to your email.'**
+  String get signupEnterEmailOtp;
+
+  /// No description provided for @googleOAuthNoTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in did not return tokens.'**
+  String get googleOAuthNoTokens;
+
+  /// No description provided for @authValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get authValidEmail;
+
+  /// No description provided for @authEnterEmailVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code from your email.'**
+  String get authEnterEmailVerificationCode;
+
+  /// No description provided for @authPasswordMin12.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 12 characters.'**
+  String get authPasswordMin12;
+
+  /// No description provided for @forgotPasswordStep2Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code sent to {email} and choose a new password.'**
+  String forgotPasswordStep2Subtitle(String email);
+
+  /// No description provided for @forgotPasswordStep1Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We will email you a one-time code to reset your password.'**
+  String get forgotPasswordStep1Subtitle;
+
+  /// No description provided for @pleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait…'**
+  String get pleaseWait;
+
+  /// No description provided for @authValidIndianMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 10-digit Indian mobile number.'**
+  String get authValidIndianMobile;
+
+  /// No description provided for @completeSecurityCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the security check before continuing.'**
+  String get completeSecurityCheck;
+
+  /// No description provided for @authEnterSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code from your SMS.'**
+  String get authEnterSmsCode;
+
+  /// No description provided for @mobilePlus91Label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile (+91)'**
+  String get mobilePlus91Label;
+
+  /// No description provided for @tenDigitNumberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'10-digit number'**
+  String get tenDigitNumberHint;
+
+  /// No description provided for @phoneOtpServerNote.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.'**
+  String get phoneOtpServerNote;
+
+  /// No description provided for @passwordHelperMin12.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 12 characters'**
+  String get passwordHelperMin12;
 }
 
 class _AppLocalizationsDelegate
@@ -5368,9 +5803,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

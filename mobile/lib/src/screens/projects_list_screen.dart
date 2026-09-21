@@ -8,20 +8,10 @@ import '../api/auth_redirect.dart';
 import '../nav_access.dart';
 import '../providers.dart';
 import '../session.dart';
+import '../project/segment_labels.dart';
 import '../widgets/create_project_sheet.dart';
 import '../widgets/offline_tree_queue_section.dart';
 import '../widgets/shell_scaffold.dart';
-
-const segmentLabels = {
-  'nhai_highway': 'NHAI / Highway',
-  'industrial_greenbelt': 'Mine / Green belt',
-  'township_landscape': 'Township / Society',
-  'nagar_van_urban': 'Nagar Van / Urban forest',
-  'sahakar_van_coop': 'Sahakar Van / Cooperative forest',
-  'nutri_garden': 'Nutri-garden / Poshan Vatika',
-  'ngo_watershed': 'NGO / Watershed',
-  'general': 'General',
-};
 
 class ProjectsListScreen extends ConsumerWidget {
   const ProjectsListScreen({super.key});
@@ -81,14 +71,15 @@ class ProjectsListScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final summary = p['summary'] as Map<String, dynamic>?;
     final segment = p['segment'] as String? ?? 'general';
-    final openV = summary?['open_violations'] ?? 0;
+    final openV = (summary?['open_violations'] as num?)?.toInt() ?? 0;
+    final treeCount = (summary?['tree_count'] as num?)?.toInt() ?? 0;
     return Card(
       child: ListTile(
         title: Text(p['name'] as String? ?? p['code'] as String),
         subtitle: Text(
-          '${segment == 'nutri_garden' ? l10n.segmentNutriGarden : segmentLabels[segment] ?? segment} · ${p['compliance_mode']} · '
-          '${summary?['tree_count'] ?? 0} trees'
-          '${openV > 0 ? ' · $openV violations' : ''}',
+          '${segmentLabel(l10n, segment)} · ${p['compliance_mode']} · '
+          '${l10n.projectTreesCount(treeCount)}'
+          '${openV > 0 ? l10n.projectViolationsSuffix(openV) : ''}',
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/projects/${p['id']}'),

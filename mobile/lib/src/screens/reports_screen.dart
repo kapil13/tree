@@ -248,7 +248,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(Icons.description_outlined, color: AranyixColors.forest),
-                            title: Text('${(raw as Map)['kind']} · ${raw['format']}'),
+                            title: Text(
+                              '${_reportKindLabel(l10n, (raw as Map)['kind'] as String? ?? '')} · ${(raw['format'] as String?)?.toUpperCase() ?? ''}',
+                            ),
                             subtitle: Text('${raw['status']} · ${raw['created_at'] ?? ''}'),
                             trailing: _isReady(raw)
                                 ? (_downloadingId == raw['id']

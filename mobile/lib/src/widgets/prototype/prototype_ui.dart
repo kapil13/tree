@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -1274,6 +1275,7 @@ class PrototypeBioHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
@@ -1288,7 +1290,7 @@ class PrototypeBioHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'ECOSYSTEM ACOUSTIC HEALTH',
+            l10n.bioEcosystemAcousticHealthHeading,
             style: GoogleFonts.dmSans(fontSize: 11, letterSpacing: 0.5, color: Colors.white70),
           ),
           const SizedBox(height: 8),
@@ -1297,19 +1299,19 @@ class PrototypeBioHero extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text('$score', style: GoogleFonts.ibmPlexMono(fontSize: 48, fontWeight: FontWeight.w700, color: Colors.white)),
-              Text('/100', style: GoogleFonts.dmSans(fontSize: 16, color: Colors.white70)),
+              Text(l10n.scoreOutOfHundred, style: GoogleFonts.dmSans(fontSize: 16, color: Colors.white70)),
             ],
           ),
           Text(label, style: GoogleFonts.dmSans(fontSize: 13, color: Colors.white.withValues(alpha: 0.9))),
           const SizedBox(height: 12),
           Row(
             children: [
-              Text('$speciesCount species', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+              Text(l10n.bioSpeciesCount(speciesCount), style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
               const SizedBox(width: 16),
-              Text('$recordingsCount recordings', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+              Text(l10n.bioRecordingsCount(recordingsCount), style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
               if (shannon != null) ...[
                 const SizedBox(width: 16),
-                Text('Shannon $shannon', style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
+                Text(l10n.bioShannonLine(shannon!), style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white70)),
               ],
             ],
           ),
@@ -1326,7 +1328,14 @@ class PrototypeEvidencePipeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const steps = ['Capture', 'Evidence', 'Verify', 'MRV', 'Report'];
+    final l10n = AppLocalizations.of(context)!;
+    final steps = [
+      l10n.pipelineStepCapture,
+      l10n.pipelineStepEvidence,
+      l10n.pipelineStepVerify,
+      l10n.pipelineStepMrv,
+      l10n.pipelineStepReport,
+    ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -1477,7 +1486,7 @@ class PrototypeMapPinSheet extends StatelessWidget {
     this.healthVariant = 'ok',
     this.accentColor,
     this.photoUrl,
-    this.primaryLabel = 'Details',
+    this.primaryLabel,
     this.onPrimary,
     this.onClose,
   });
@@ -1489,13 +1498,15 @@ class PrototypeMapPinSheet extends StatelessWidget {
   final String healthVariant;
   final Color? accentColor;
   final String? photoUrl;
-  final String primaryLabel;
+  final String? primaryLabel;
   final VoidCallback? onPrimary;
   final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final accent = accentColor ?? PrototypeColors.brandForest;
+    final resolvedPrimaryLabel = primaryLabel ?? l10n.detailsLabel;
     return Material(
       elevation: 12,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -1560,12 +1571,12 @@ class PrototypeMapPinSheet extends StatelessWidget {
                             backgroundColor: PrototypeColors.brandForest,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           ),
-                          child: Text(primaryLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                          child: Text(resolvedPrimaryLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
                         const SizedBox(width: 8),
                         OutlinedButton(
                           onPressed: onClose,
-                          child: Text('Close', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                          child: Text(l10n.closeLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),

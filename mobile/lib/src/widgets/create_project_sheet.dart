@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../api/api_errors.dart';
 import '../providers.dart';
-import '../screens/projects_list_screen.dart';
+import '../project/segment_labels.dart';
 import 'prototype/prototype_ui.dart';
 
 String projectCodeFromName(String name) {
@@ -105,8 +105,8 @@ Future<void> showCreateProjectSheet(BuildContext context, WidgetRef ref) async {
                 DropdownButtonFormField<String>(
                   value: segment,
                   decoration: InputDecoration(labelText: l10n.createProjectSegmentLabel),
-                  items: segmentLabels.entries
-                      .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  items: plantingSegmentKeys
+                      .map((key) => DropdownMenuItem(value: key, child: Text(segmentLabel(l10n, key))))
                       .toList(),
                   onChanged: busy ? null : (v) => setState(() => segment = v ?? 'general'),
                 ),

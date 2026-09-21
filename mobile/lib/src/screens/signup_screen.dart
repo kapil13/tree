@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,21 +96,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     };
   }
 
-  String get _stepLabel {
+  String _stepLabel(AppLocalizations l10n) {
     return switch (_step) {
-      _SignupStep.account => 'Step 1 of $_totalSignupSteps',
-      _SignupStep.verifyPhone => 'Step 2 of $_totalSignupSteps',
-      _SignupStep.verifyEmail => 'Step $_totalSignupSteps of $_totalSignupSteps',
+      _SignupStep.account => l10n.addTreeStepOf(1, _totalSignupSteps),
+      _SignupStep.verifyPhone => l10n.addTreeStepOf(2, _totalSignupSteps),
+      _SignupStep.verifyEmail => l10n.addTreeStepOf(_totalSignupSteps, _totalSignupSteps),
     };
   }
 
   Future<void> _startSignup() async {
+    final l10n = context.l10n;
     if (_name.text.trim().length < 2) {
-      setState(() => _error = 'Please enter your full name.');
+      setState(() => _error = l10n.fullNameValidation);
       return;
     }
     if (!_isCitizenFast && !_email.text.contains('@')) {
-      setState(() => _error = 'Please enter a valid email address.');
+      setState(() => _error = l10n.signupValidEmail);
       return;
     }
     if (!isValidIndianMobile(_phone.text)) {
@@ -118,11 +120,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
     final minPassword = _isCitizenFast ? 8 : 12;
     if (_password.text.length < minPassword) {
-      setState(() => _error = 'Password must be at least $minPassword characters.');
+      setState(() => _error = l10n.signupPasswordMinChars(minPassword));
       return;
     }
     if (!_acceptedTerms) {
-      setState(() => _error = 'Please accept the terms to continue.');
+      setState(() => _error = l10n.signupAcceptTerms);
       return;
     }
     if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
@@ -178,7 +180,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
     if (_phoneOtp.length != _otpLength) {
-      setState(() => _error = 'Enter the 6-digit code sent to your phone.');
+      setState(() => _error = context.l10n.signupEnterPhoneOtp);
       return;
     }
     setState(() {
@@ -234,7 +236,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _completeSignup() async {
     if (_emailOtp.length != _otpLength) {
-      setState(() => _error = 'Enter the 6-digit code sent to your email.');
+      setState(() => _error = context.l10n.signupEnterEmailOtp);
       return;
     }
     setState(() {
@@ -279,16 +281,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         compact: true,
         title: switch (_step) {
           _SignupStep.account => l10n.createAccount,
-          _SignupStep.verifyPhone => 'Verify phone',
-          _SignupStep.verifyEmail => 'Verify email',
+          _SignupStep.verifyPhone => l10n.verifyPhone,
+          _SignupStep.verifyEmail => l10n.verifyEmail,
         },
         subtitle: switch (_step) {
-          _SignupStep.account => 'A few details — then quick OTP checks.',
-          _SignupStep.verifyPhone =>
-            'Code sent to ${formatPhoneDisplay(_phone.text)}',
-          _SignupStep.verifyEmail => 'Code sent to ${_email.text.trim()}',
+          _SignupStep.account => l10n.signupAccountSubtitle,
+          _SignupStep.verifyPhone => l10n.codeSentToPhone(formatPhoneDisplay(_phone.text)),
+          _SignupStep.verifyEmail => l10n.codeSentToEmail(_email.text.trim()),
         },
-        stepLabel: _stepLabel,
+        stepLabel: _stepLabel(l10n),
         stepProgress: _progress,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -346,34 +347,34 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             if (_step == _SignupStep.account)
               Semantics(
                 button: true,
-                label: 'Continue',
+                label: l10n.continueBtn,
                 child: FilledButton(
                   onPressed: _busy ? null : _startSignup,
-                  child: Text(_busy ? 'Creating…' : 'Continue'),
+                  child: Text(_busy ? l10n.creating : l10n.continueBtn),
                 ),
               )
             else if (_step == _SignupStep.verifyPhone)
               Semantics(
                 button: true,
-                label: _isCitizenFast ? 'Finish signup' : 'Verify phone',
+                label: _isCitizenFast ? l10n.finishSignup : l10n.verifyPhone,
                 child: FilledButton(
                   onPressed: _busy ? null : _verifyPhone,
                   child: Text(
                     _busy
-                        ? 'Verifying…'
+                        ? l10n.verifying
                         : _isCitizenFast
-                            ? 'Finish'
-                            : 'Verify phone',
+                            ? l10n.finish
+                            : l10n.verifyPhone,
                   ),
                 ),
               )
             else
               Semantics(
                 button: true,
-                label: 'Finish signup',
+                label: l10n.finishSignup,
                 child: FilledButton(
                   onPressed: _busy ? null : _completeSignup,
-                  child: Text(_busy ? 'Finishing…' : 'Finish'),
+                  child: Text(_busy ? l10n.finishing : l10n.finish),
                 ),
               ),
             const SizedBox(height: 8),
@@ -393,7 +394,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'I am joining as',
+          l10n.joiningAs,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: AranyixColors.onSurfaceMuted,
                 fontWeight: FontWeight.w600,
@@ -418,15 +419,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         const SizedBox(height: 18),
         Semantics(
-          label: 'Full name',
+          label: l10n.fullNameFieldLabel,
           textField: true,
           child: TextField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Full name',
-              prefixIcon: Icon(Icons.person_outline, size: 20),
+            decoration: InputDecoration(
+              labelText: l10n.fullNameFieldLabel,
+              prefixIcon: const Icon(Icons.person_outline, size: 20),
             ),
           ),
         ),
@@ -449,17 +450,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ],
         const SizedBox(height: 10),
         Semantics(
-          label: 'Mobile phone number',
+          label: l10n.mobilePhoneLabel,
           textField: true,
           child: TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Mobile',
+            decoration: InputDecoration(
+              labelText: l10n.mobileLabel,
               prefixText: '+91  ',
               hintText: '98765 43210',
-              prefixIcon: Icon(Icons.phone_iphone, size: 20),
+              prefixIcon: const Icon(Icons.phone_iphone, size: 20),
             ),
             onChanged: (v) {
               final d = sanitizePhoneDigits(v);
@@ -482,7 +483,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               labelText: l10n.passwordLabel,
-              helperText: _isCitizenFast ? 'Min. 8 characters' : 'Min. 12 characters',
+              helperText: _isCitizenFast ? l10n.passwordMin8 : l10n.passwordMin12,
               helperMaxLines: 1,
               prefixIcon: const Icon(Icons.lock_outline, size: 20),
               suffixIcon: IconButton(
@@ -513,10 +514,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'I agree to the Terms & Privacy Policy',
-                    style: TextStyle(fontSize: 13.5, height: 1.3),
+                    l10n.acceptTermsPrivacy,
+                    style: const TextStyle(fontSize: 13.5, height: 1.3),
                   ),
                 ),
               ],
@@ -528,6 +529,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildOtpStep({required bool isPhone}) {
+    final l10n = context.l10n;
     return Column(
       children: [
         Container(
@@ -546,7 +548,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                isPhone ? 'Enter the 6-digit SMS code' : 'Enter the 6-digit email code',
+                isPhone ? l10n.otpSmsPrompt : l10n.otpEmailPrompt,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
