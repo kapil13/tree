@@ -801,6 +801,8 @@
     "explainAll": "Explain reconciliation",
     "explainBlock": "Explain",
     "explaining": "Explaining…",
+    "explainForBlock": "Explanation for {block}",
+    "explainForSummary": "Reconciliation summary",
     "lastComputed": "Last persisted run: {time}"
   },
   "auditExport": {

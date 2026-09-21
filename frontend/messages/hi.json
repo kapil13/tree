@@ -758,6 +758,8 @@
     "explainAll": "समन्वय समझाएँ",
     "explainBlock": "समझाएँ",
     "explaining": "समझाया जा रहा है…",
+    "explainForBlock": "{block} के लिए व्याख्या",
+    "explainForSummary": "समन्वय सारांश",
     "lastComputed": "अंतिम रन: {time}"
   },
   "auditExport": {
