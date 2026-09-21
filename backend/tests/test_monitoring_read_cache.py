@@ -9,6 +9,7 @@ import pytest
 
 from app.services.monitoring.monitoring_read_cache import (
     get_cached_threat_watch,
+    invalidate_threat_watch_for_owners,
     set_cached_threat_watch,
 )
 
@@ -37,3 +38,14 @@ async def test_threat_watch_cache_round_trip():
         assert cached is not None
         assert cached["cache_hit"] is True
         assert cached["summary"]["sites_monitored"] == 1
+
+
+@pytest.mark.asyncio
+async def test_invalidate_threat_watch_for_owners_deletes_all_limits():
+    owner_ids = {uuid.uuid4(), uuid.uuid4()}
+    with patch(
+        "app.services.monitoring.monitoring_read_cache.cache_delete",
+        new_callable=AsyncMock,
+    ) as mock_delete:
+        await invalidate_threat_watch_for_owners(owner_ids)
+    assert mock_delete.await_count == len(owner_ids) * 4

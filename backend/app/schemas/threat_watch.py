@@ -44,6 +44,25 @@ class FloodExtentWatchOut(BaseModel):
     rain_mm_48h: float | None = None
 
 
+class DataFreshnessOut(BaseModel):
+    satellite_health_at: str | None = None
+    satellite_health_age_hours: int | None = None
+    satellite_health_stale: bool = True
+    weather_generated_at: str | None = None
+    optical_last_at: str | None = None
+    optical_stale_days: int | None = None
+    optical_stale: bool = True
+    sar_last_at: str | None = None
+    sar_stale: bool = True
+    sar_live: bool = False
+    sar_provider: str | None = None
+    sar_provider_mode: str = "none"
+    optical_max_stale_days: int = 60
+    sar_max_stale_days: int = 35
+    ndvi_source: str = "unknown"
+    days_since_sar_scan: int | None = None
+
+
 class SiteThreatWatchOut(BaseModel):
     work_area_id: str
     work_area_name: str
@@ -65,6 +84,7 @@ class SiteThreatWatchOut(BaseModel):
     forecast_summary: str = ""
     recommended_actions: list[str] = Field(default_factory=list)
     preparedness_brief: PreparednessBriefOut | None = None
+    data_freshness: DataFreshnessOut | None = None
 
 
 class ThreatWatchFailureOut(BaseModel):

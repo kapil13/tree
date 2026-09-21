@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.user import User
+from app.services.monitoring.monitoring_constants import VERIFIED_MAX_OPTICAL_STALE_DAYS
 from app.services.satellite.sar_fusion import OpticalContext
 from app.services.satellite.sar_service import is_sar_provider_record
 
@@ -19,10 +21,17 @@ DEFAULT_RECORDS_PER_FENCE = 20
 
 def optical_context_from_fence_records(
     records: list[PlantationSatelliteRecord],
+    *,
+    max_stale_days: int = VERIFIED_MAX_OPTICAL_STALE_DAYS,
 ) -> OpticalContext | None:
+    now = datetime.now(UTC)
     for row in records:
         if is_sar_provider_record(row.provider):
             continue
+        if row.scene_acquired_at is not None:
+            age_days = (now - row.scene_acquired_at).days
+            if age_days > max_stale_days:
+                continue
         return OpticalContext(
             ndvi_mean=float(row.ndvi_mean) if row.ndvi_mean is not None else None,
             cloud_cover_pct=float(row.cloud_cover_pct) if row.cloud_cover_pct is not None else None,

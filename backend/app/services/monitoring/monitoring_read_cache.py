@@ -56,6 +56,12 @@ async def invalidate_threat_watch_for_user(user_id: uuid.UUID) -> None:
         await cache_delete(_threat_watch_key(user_id, limit))
 
 
+async def invalidate_threat_watch_for_owners(owner_ids: set[uuid.UUID]) -> None:
+    for owner_id in owner_ids:
+        if owner_id:
+            await invalidate_threat_watch_for_user(owner_id)
+
+
 async def get_cached_fence_health_latest(fence_id: uuid.UUID) -> dict[str, Any] | None:
     return await cache_get(_satellite_health_latest_fence_key(fence_id))
 

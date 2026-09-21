@@ -105,6 +105,10 @@ async def test_site_threat_watch_with_active_fire_nearby():
             AsyncMock(return_value={"risk_level": "none"}),
         ),
         patch("app.services.threats.watch.build_site_preparedness_brief", return_value=None),
+        patch(
+            "app.services.threats.watch.build_site_data_freshness",
+            AsyncMock(return_value={"satellite_health_stale": True, "optical_stale": True}),
+        ),
     ):
         site = await build_site_threat_watch(db, fence=fence, project=None)
 
@@ -148,6 +152,10 @@ async def test_site_threat_watch_with_missing_weather_data():
             AsyncMock(return_value={"risk_level": "none"}),
         ),
         patch("app.services.threats.watch.build_site_preparedness_brief", return_value=None),
+        patch(
+            "app.services.threats.watch.build_site_data_freshness",
+            AsyncMock(return_value={"satellite_health_stale": True, "optical_stale": True}),
+        ),
     ):
         site = await build_site_threat_watch(db, fence=fence, project=None)
 

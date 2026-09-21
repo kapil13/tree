@@ -15,8 +15,8 @@ from app.models.plantation_satellite_record import PlantationSatelliteRecord
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.models.user import User
-from app.services.geo import geography_to_geojson_polygon
 from app.services.monitoring.alert_engine import create_monitoring_alert
+from app.services.monitoring.boundary_validation import try_fence_boundary_geojson
 from app.services.monitoring.sar_alert_links import enrich_sar_alert_payload
 from app.services.monitoring.sar_field_tasks import maybe_create_sar_field_verification
 from app.services.monitoring.sar_fusion_alerts import fusion_from_metadata, maybe_alert_sar_fusion
@@ -249,10 +249,8 @@ async def scan_and_persist_fence_sar(
     notify_user_id: uuid.UUID | None = None,
     batch_ctx: FenceSarBatchContext | None = None,
 ) -> tuple[PlantationSatelliteRecord, SarAnalysisResult] | None:
-    try:
-        boundary = geography_to_geojson_polygon(fence.boundary)
-    except Exception as exc:
-        log.warning("fence_sar_boundary_failed", fence_id=str(fence.id), error=str(exc))
+    boundary = try_fence_boundary_geojson(fence)
+    if boundary is None:
         return None
 
     try:
