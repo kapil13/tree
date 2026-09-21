@@ -1245,7 +1245,7 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
                 ],
                 if (_chainageLabel != null) ...[
                   const SizedBox(height: 4),
-                  Text(l10n.chainageKm(_chainageLabel), style: Theme.of(context).textTheme.bodySmall),
+                  Text(l10n.chainageKm(_chainageLabel!), style: Theme.of(context).textTheme.bodySmall),
                 ],
               ],
             ),
