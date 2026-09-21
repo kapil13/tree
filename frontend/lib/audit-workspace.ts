@@ -56,12 +56,9 @@ export function defaultAuditPhase(engagementStatus: string): AuditPhase {
   if (engagementStatus === "confidence_mapped") return "risk";
   if (engagementStatus === "risk_assessed") return "sampling";
   if (engagementStatus === "sampling_planned") return "sampling";
-  if (engagementStatus === "field_verified") return "export";
+  if (engagementStatus === "field_verified") return "reconciliation";
   if (engagementStatus === "export_ready" || engagementStatus === "under_review") return "attestation";
   if (engagementStatus === "attested") return "attestation";
   return "intake";
 }
 
-export function formatAuditStatus(status: string): string {
-  return status.replaceAll("_", " ");
-}

@@ -10,15 +10,17 @@ export function AuditMetricsStrip({
   plotsVisited,
   plotsTotal,
   reconciliationMismatch,
+  compact = false,
 }: {
   engagement: AuditEngagementDetail;
   plotsVisited?: number;
   plotsTotal?: number;
   reconciliationMismatch?: number;
+  compact?: boolean;
 }) {
   const t = useTranslations("auditWorkspace");
 
-  const metrics = [
+  const allMetrics = [
     {
       label: t("metricPhase"),
       value: auditEngagementStatusLabel(engagement.status),
@@ -52,5 +54,9 @@ export function AuditMetricsStrip({
     },
   ] as const;
 
-  return <MetricGrid metrics={[...metrics]} columns={4} />;
+  const metrics = compact
+    ? allMetrics.filter((metric) => metric.label !== t("metricPhase") && metric.label !== t("metricBlocks"))
+    : allMetrics;
+
+  return <MetricGrid metrics={[...metrics]} columns={compact ? 2 : 4} />;
 }

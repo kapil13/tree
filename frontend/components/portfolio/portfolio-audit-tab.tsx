@@ -22,9 +22,11 @@ import {
 import { fieldOpsHref } from "@/lib/field-ops-links";
 import { scopeAuditPortfolioKpis } from "@/lib/portfolio-kpi-scope";
 import { projectAuditHref } from "@/lib/project-focused-ui";
+import { resolveAuditWorkspaceMode } from "@/lib/audit-workspace-mode";
 import { scopedKey } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/cn";
+import { PortfolioAuditFieldQueue } from "./portfolio-audit-field-queue";
 import { PortfolioKpiCard } from "./portfolio-kpi-card";
 import { PortfolioKpiGrid } from "./portfolio-kpi-grid";
 import { PortfolioSection } from "./portfolio-section";
@@ -51,6 +53,9 @@ export function PortfolioAuditTab({
   projectName?: string | null;
 }) {
   const { user } = useAuth();
+  const workspaceMode = resolveAuditWorkspaceMode(user);
+  const isFieldMode = workspaceMode === "field";
+  const isReviewMode = workspaceMode === "review";
   const t = useTranslations("portfolioTabs.audit");
   const tc = useTranslations("portfolioTabs.common");
   const [showAllEngagements, setShowAllEngagements] = useState(false);
@@ -113,7 +118,17 @@ export function PortfolioAuditTab({
       p.engagement_status === "field_verified",
   );
 
-  const displayedProjects = showAllEngagements ? projects : attentionProjects;
+  const baseProjects = showAllEngagements ? projects : attentionProjects;
+  const displayedProjects = isReviewMode
+    ? [...baseProjects].sort((a, b) => {
+        const rank = (status: string) => {
+          if (status === "under_review" || status === "export_ready") return 0;
+          if (status === "field_verified") return 1;
+          return 2;
+        };
+        return rank(a.engagement_status) - rank(b.engagement_status);
+      })
+    : baseProjects;
 
   const crossLinks = [
     {
@@ -128,25 +143,30 @@ export function PortfolioAuditTab({
       label: t("crossLinks.mobile"),
       description: t("crossLinks.mobileDesc"),
     },
-    {
-      href: "/reports",
-      icon: Gavel,
-      label: t("crossLinks.reports"),
-      description: t("crossLinks.reportsDesc"),
-    },
+    ...(isFieldMode
+      ? []
+      : [
+          {
+            href: "/reports",
+            icon: Gavel,
+            label: t("crossLinks.reports"),
+            description: t("crossLinks.reportsDesc"),
+          },
+        ]),
   ];
 
-  return (
-    <PortfolioTabShell tab="audit" projectId={projectId} projectName={projectName}>
-      <section
-        className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-800 dark:bg-stone-900/40"
-        aria-label={t("crossLinks.title")}
-      >
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-          {t("crossLinks.title")}
-        </p>
-        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{t("crossLinks.desc")}</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+  const crossLinksSection = (
+    <section
+      className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-800 dark:bg-stone-900/40"
+      aria-label={t("crossLinks.title")}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+        {t("crossLinks.title")}
+      </p>
+      <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+        {isFieldMode ? t("fieldIntro") : t("crossLinks.desc")}
+      </p>
+      <div className={cn("mt-3 grid gap-2", isFieldMode ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
           {crossLinks.map((link) => {
             const Icon = link.icon;
             return (
@@ -168,47 +188,53 @@ export function PortfolioAuditTab({
               </Link>
             );
           })}
-        </div>
-      </section>
+      </div>
+    </section>
+  );
 
-      <PortfolioCrossOrgAuditSection />
-
-      <AuditPortfolioOpsSection projectId={projectId} />
-
-      <PortfolioKpiGrid>
+  const kpiSection = (
+    <PortfolioKpiGrid>
+      {!isFieldMode ? (
         <PortfolioKpiCard
           icon={ClipboardCheck}
           label={t("kpi.engagements")}
           value={String(scopedKpis.engagementCount)}
         />
-        <PortfolioKpiCard
-          icon={MapPin}
-          label={t("kpi.plotsDue")}
-          value={String(scopedKpis.auditPlotsDue)}
-          warn={scopedKpis.auditPlotsDue > 0}
-          href={auditFieldOpsHref}
-        />
-        <PortfolioKpiCard
-          icon={MapPin}
-          label={t("kpi.inField")}
-          value={String(scopedKpis.engagementsInField)}
-          warn={scopedKpis.engagementsInField > 0}
-          href={auditFieldOpsHref}
-        />
-        <PortfolioKpiCard
-          icon={ShieldCheck}
-          label={t("kpi.exportReady")}
-          value={String(scopedKpis.engagementsExportReady)}
-          warn={scopedKpis.engagementsExportReady > 0}
-        />
-        <PortfolioKpiCard
-          icon={Gavel}
-          label={t("kpi.attested")}
-          value={String(scopedKpis.engagementsAttested)}
-        />
-      </PortfolioKpiGrid>
+      ) : null}
+      <PortfolioKpiCard
+        icon={MapPin}
+        label={t("kpi.plotsDue")}
+        value={String(scopedKpis.auditPlotsDue)}
+        warn={scopedKpis.auditPlotsDue > 0}
+        href={auditFieldOpsHref}
+      />
+      <PortfolioKpiCard
+        icon={MapPin}
+        label={t("kpi.inField")}
+        value={String(scopedKpis.engagementsInField)}
+        warn={scopedKpis.engagementsInField > 0}
+        href={auditFieldOpsHref}
+      />
+      {!isFieldMode ? (
+        <>
+          <PortfolioKpiCard
+            icon={ShieldCheck}
+            label={t("kpi.exportReady")}
+            value={String(scopedKpis.engagementsExportReady)}
+            warn={scopedKpis.engagementsExportReady > 0}
+          />
+          <PortfolioKpiCard
+            icon={Gavel}
+            label={t("kpi.attested")}
+            value={String(scopedKpis.engagementsAttested)}
+          />
+        </>
+      ) : null}
+    </PortfolioKpiGrid>
+  );
 
-      {statusEntries.length > 0 ? (
+  const statusSection =
+    !isFieldMode && statusEntries.length > 0 ? (
         <PortfolioSection title={t("statusBreakdown.title")} description={t("statusBreakdown.desc")}>
           <div className="flex flex-wrap gap-2 px-4 pb-4">
             {statusEntries.map(([status, count]) => (
@@ -225,11 +251,12 @@ export function PortfolioAuditTab({
             ))}
           </div>
         </PortfolioSection>
-      ) : null}
+    ) : null;
 
-      <PortfolioSection
-        title={t("engagements.title")}
-        description={t("engagements.desc")}
+  const engagementsSection = (
+    <PortfolioSection
+        title={isReviewMode ? t("engagements.reviewTitle") : t("engagements.title")}
+        description={isReviewMode ? t("engagements.reviewDesc") : t("engagements.desc")}
         action={{ label: t("engagements.openFieldOps"), href: auditFieldOpsHref }}
       >
         <div className="flex flex-wrap items-center justify-end gap-2 border-b border-stone-100 px-4 py-2 dark:border-stone-800">
@@ -395,51 +422,32 @@ export function PortfolioAuditTab({
           </>
         )}
       </PortfolioSection>
+  );
 
-      <PortfolioSection
-        title={t("fieldQueue.title")}
-        description={t("fieldQueue.desc")}
-        action={{ label: t("fieldQueue.openQueue"), href: auditFieldOpsHref }}
-      >
-        {queueItems.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-stone-500 dark:text-stone-400">{t("fieldQueue.empty")}</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500 dark:bg-stone-900/50 dark:text-stone-400">
-              <tr>
-                <th className="px-4 py-2">{t("table.plot")}</th>
-                <th className="px-4 py-2">{t("table.project")}</th>
-                <th className="px-4 py-2">{t("table.risk")}</th>
-                <th className="px-4 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {queueItems.slice(0, 8).map((plot) => (
-                <tr key={plot.plot_id} className="border-t border-stone-100 dark:border-stone-800">
-                  <td className="px-4 py-2 font-medium">{plot.plot_code}</td>
-                  <td className="px-4 py-2">
-                    <Link
-                      href={projectAuditHref(plot.project_id)}
-                      className="text-forest-800 hover:underline dark:text-forest-300"
-                    >
-                      {plot.project_name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 capitalize">{plot.risk_level}</td>
-                  <td className="px-4 py-2 text-right">
-                    <Link
-                      href={auditFieldOpsHref}
-                      className="text-xs text-forest-700 hover:underline dark:text-forest-300"
-                    >
-                      {t("fieldQueue.recordVisit")}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </PortfolioSection>
+  const fieldQueueSection = (
+    <PortfolioAuditFieldQueue queueItems={queueItems} auditFieldOpsHref={auditFieldOpsHref} />
+  );
+
+  return (
+    <PortfolioTabShell tab="audit" projectId={projectId} projectName={projectName}>
+      {isFieldMode ? (
+        <>
+          {crossLinksSection}
+          {fieldQueueSection}
+          {kpiSection}
+          {engagementsSection}
+        </>
+      ) : (
+        <>
+          {crossLinksSection}
+          {!isFieldMode ? <PortfolioCrossOrgAuditSection /> : null}
+          {!isFieldMode ? <AuditPortfolioOpsSection projectId={projectId} /> : null}
+          {kpiSection}
+          {statusSection}
+          {engagementsSection}
+          {fieldQueueSection}
+        </>
+      )}
     </PortfolioTabShell>
   );
 }

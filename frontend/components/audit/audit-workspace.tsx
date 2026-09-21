@@ -29,15 +29,23 @@ import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { AuditTabError, AuditTabLoading } from "@/components/audit/audit-tab-state";
 import { AuditWorkspaceAdvanced } from "@/components/audit/audit-workspace-advanced";
+import { AuditWorkspaceRoleBanner } from "@/components/audit/audit-workspace-role-banner";
 import { PageHeader, SectionNav } from "@/components/ui";
 import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
 import {
   auditEngagementStatusLabel,
   auditEngagementStatusTone,
 } from "@/lib/audit-portfolio-status";
 import {
+  auditPhasesForMode,
+  coerceAuditPhaseForMode,
+  defaultAuditPhaseForMode,
+  isAuditPhaseVisibleInMode,
+  resolveAuditWorkspaceMode,
+} from "@/lib/audit-workspace-mode";
+import {
   type AuditPhase,
-  defaultAuditPhase,
   isAuditPhaseUnlocked,
 } from "@/lib/audit-workspace";
 import { portfolioAuditHref } from "@/lib/portfolio-health-links";
@@ -55,6 +63,17 @@ const PHASE_ICONS: Record<AuditPhase, typeof Shield> = {
   attestation: ShieldCheck,
 };
 
+const ALL_PHASES: AuditPhase[] = [
+  "intake",
+  "satellite",
+  "confidence",
+  "risk",
+  "sampling",
+  "reconciliation",
+  "export",
+  "attestation",
+];
+
 export function AuditWorkspace({
   projectId,
   satelliteHref,
@@ -64,6 +83,8 @@ export function AuditWorkspace({
 }) {
   const t = useTranslations("auditWorkspace");
   const tc = useTranslations("chrome");
+  const { user } = useAuth();
+  const workspaceMode = resolveAuditWorkspaceMode(user);
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<AuditPhase>("intake");
 
@@ -97,15 +118,15 @@ export function AuditWorkspace({
   });
 
   const urlPhase = parseAuditPhase(searchParams.get("phase"));
+  const visiblePhases = auditPhasesForMode(workspaceMode);
 
   useEffect(() => {
     if (!engagement?.status) return;
-    if (urlPhase) {
-      setPhase(urlPhase);
-      return;
-    }
-    setPhase(defaultAuditPhase(engagement.status));
-  }, [engagement?.id, engagement?.status, urlPhase]);
+    const next = urlPhase
+      ? coerceAuditPhaseForMode(urlPhase, engagement.status, workspaceMode)
+      : defaultAuditPhaseForMode(engagement.status, workspaceMode);
+    setPhase(next);
+  }, [engagement?.id, engagement?.status, urlPhase, workspaceMode]);
 
   const selectPhase = useCallback(
     (next: AuditPhase) => {
@@ -118,8 +139,9 @@ export function AuditWorkspace({
 
   const navItems = useMemo(
     () =>
-      (["intake", "satellite", "confidence", "risk", "sampling", "reconciliation", "export", "attestation"] as AuditPhase[]).map(
-        (id) => ({
+      ALL_PHASES
+        .filter((id) => isAuditPhaseVisibleInMode(id, workspaceMode))
+        .map((id) => ({
           id,
           label: t(`phase.${id}`),
           shortLabel: t(`phaseShort.${id}`),
@@ -130,9 +152,8 @@ export function AuditWorkspace({
               : id === "reconciliation" && reconciliation?.mismatch_count
                 ? reconciliation.mismatch_count
                 : undefined,
-        }),
-      ),
-    [t, sampling?.visit_stats?.planned, reconciliation?.mismatch_count],
+        })),
+    [t, sampling?.visit_stats?.planned, reconciliation?.mismatch_count, workspaceMode],
   );
 
   if (isLoading) {
@@ -144,13 +165,16 @@ export function AuditWorkspace({
   }
 
   const statusLabel = auditEngagementStatusLabel(engagement.status);
+  const phaseHiddenFromMode = !visiblePhases.includes(phase);
 
   return (
     <div className="space-y-6">
       <PageHeader
         purpose={t("purpose")}
         title={t("title")}
-        description={t("description")}
+        description={
+          workspaceMode === "field" ? t("modes.field.pageDesc") : t("description")
+        }
         breadcrumbs={[
           { label: tc("sectionIntelligence"), href: portfolioAuditHref(projectId) },
           { label: t("breadcrumbProject"), href: projectOverviewHref(projectId) },
@@ -180,24 +204,31 @@ export function AuditWorkspace({
         }
       />
 
-      <AuditNextStepBanner
-        engagementStatus={engagement.status}
-        activePhase={phase}
-        onSelectPhase={selectPhase}
-      />
+      <AuditWorkspaceRoleBanner mode={workspaceMode} projectId={projectId} />
+
+      {workspaceMode === "full" ? (
+        <AuditNextStepBanner
+          engagementStatus={engagement.status}
+          activePhase={phase}
+          onSelectPhase={selectPhase}
+        />
+      ) : null}
 
       <AuditMetricsStrip
         engagement={engagement}
         plotsVisited={sampling?.visit_stats?.visited}
         plotsTotal={sampling?.visit_stats?.total}
         reconciliationMismatch={reconciliation?.mismatch_count}
+        compact={workspaceMode === "field"}
       />
 
-      <AuditPhaseRoadmap
-        status={engagement.status}
-        activePhase={phase}
-        onSelectPhase={(next) => selectPhase(next as AuditPhase)}
-      />
+      {workspaceMode === "full" ? (
+        <AuditPhaseRoadmap
+          status={engagement.status}
+          activePhase={phase}
+          onSelectPhase={(next) => selectPhase(next as AuditPhase)}
+        />
+      ) : null}
 
       <SectionNav
         ariaLabel={t("phaseNavAria")}
@@ -207,15 +238,23 @@ export function AuditWorkspace({
       />
 
       <div className="min-h-[320px]">
-        {phase === "intake" ? (
+        {phaseHiddenFromMode ? (
+          <AuditLockedSection
+            title={t(`phase.${phase}`)}
+            message={t("phaseHiddenForRole", { mode: t(`modes.${workspaceMode}.title`) })}
+            actionLabel={t("goToCurrentStep")}
+            actionHref={undefined}
+            onAction={() => selectPhase(defaultAuditPhaseForMode(engagement.status, workspaceMode))}
+          />
+        ) : phase === "intake" ? (
           <AuditIntakePanel projectId={projectId} wizardOnly />
         ) : !isAuditPhaseUnlocked(phase, engagement.status) ? (
           <AuditLockedSection
             title={t(`phase.${phase}`)}
             message={t("phaseLocked", { phase: t(`phase.${phase}`) })}
-            actionLabel={t("goToIntake")}
+            actionLabel={t("goToCurrentStep")}
             actionHref={undefined}
-            onAction={() => selectPhase(defaultAuditPhase(engagement.status))}
+            onAction={() => selectPhase(defaultAuditPhaseForMode(engagement.status, workspaceMode))}
           />
         ) : (
           <>
@@ -270,6 +309,7 @@ export function AuditWorkspace({
         engagementId={engagement.id}
         engagementStatus={engagement.status}
         satelliteHref={satelliteHref}
+        mode={workspaceMode}
       />
     </div>
   );

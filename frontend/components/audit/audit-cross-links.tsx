@@ -17,39 +17,50 @@ export function AuditCrossLinks({
   projectId,
   satelliteHref,
   className,
+  variant = "full",
 }: {
   projectId: string;
   satelliteHref: string;
   className?: string;
+  variant?: "full" | "field";
 }) {
   const t = useTranslations("auditWorkspace");
 
-  const links = [
+  const allLinks = [
     {
+      id: "fieldOps",
       href: fieldOpsHref({ section: "audit", projectId }),
       icon: ClipboardList,
       label: t("linkFieldOps"),
       description: t("linkFieldOpsDesc"),
     },
     {
+      id: "portfolio",
       href: portfolioAuditHref(projectId),
       icon: LayoutGrid,
       label: t("linkPortfolio"),
       description: t("linkPortfolioDesc"),
     },
     {
+      id: "satellite",
       href: satelliteHref,
       icon: Satellite,
       label: t("linkSatellite"),
       description: t("linkSatelliteDesc"),
     },
     {
+      id: "mobile",
       href: "/field-ops/sync-queue",
       icon: Smartphone,
       label: t("linkMobile"),
       description: t("linkMobileDesc"),
     },
   ];
+
+  const links =
+    variant === "field"
+      ? allLinks.filter((link) => link.id === "fieldOps" || link.id === "mobile")
+      : allLinks;
 
   return (
     <section
