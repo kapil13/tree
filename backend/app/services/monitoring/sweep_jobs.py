@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -12,6 +13,10 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.monitoring.boundary_validation import try_fence_boundary_geojson
 from app.services.monitoring.monitoring_read_cache import invalidate_threat_watch_for_owners
+from app.services.monitoring.prometheus_metrics import (
+    observe_sweep_page_duration,
+    observe_sweep_page_result,
+)
 from app.services.monitoring.sar_portfolio import list_at_risk_fence_ids
 from app.services.monitoring.sar_sweep import scan_and_persist_fence_sar
 from app.services.monitoring.sar_sweep_health import (
@@ -84,6 +89,7 @@ async def run_sar_sweep_page(
     job_name: str = "monthly_sar_sweep",
 ) -> dict[str, Any]:
     """Process one page of SAR fence scans. Returns next_cursor when more work remains."""
+    started = time.perf_counter()
     page_size = batch_size or settings.monitoring_sweep_batch_size
     fences = await fetch_satellite_watch_fences(db)
     due = _sar_due_fences(fences)
@@ -147,6 +153,8 @@ async def run_sar_sweep_page(
         "next_cursor": next_cursor,
         "watch_gated": True,
     }
+    observe_sweep_page_result(job_name, result)
+    observe_sweep_page_duration(job_name, time.perf_counter() - started)
     log.info("sar_sweep_page.complete", job_name=job_name, **result)
     return result
 
@@ -158,6 +166,8 @@ async def run_weekly_sar_integrity_watch_page(
     batch_size: int | None = None,
 ) -> dict[str, Any]:
     """Process one page of at-risk SAR integrity rescans."""
+    started = time.perf_counter()
+    job_name = "weekly_sar_integrity_watch"
     page_size = batch_size or settings.monitoring_sweep_batch_size
     fences = await fetch_satellite_watch_fences(db)
     at_risk_ids = await list_at_risk_fence_ids(
@@ -225,6 +235,8 @@ async def run_weekly_sar_integrity_watch_page(
         "next_cursor": next_cursor,
         "watch_gated": True,
     }
+    observe_sweep_page_result(job_name, result)
+    observe_sweep_page_duration(job_name, time.perf_counter() - started)
     log.info("weekly_sar_integrity_watch_page.complete", **result)
     return result
 
@@ -236,6 +248,8 @@ async def run_satellite_sweep_page(
     batch_size: int | None = None,
 ) -> dict[str, Any]:
     """Process one page of optical satellite fence scans."""
+    started = time.perf_counter()
+    job_name = "monthly_satellite_sweep"
     page_size = batch_size or settings.monitoring_sweep_batch_size
     fences = await fetch_satellite_watch_fences(db)
     due = _satellite_due_fences(fences)
@@ -276,5 +290,7 @@ async def run_satellite_sweep_page(
         "next_cursor": next_cursor,
         "watch_gated": True,
     }
+    observe_sweep_page_result(job_name, result)
+    observe_sweep_page_duration(job_name, time.perf_counter() - started)
     log.info("satellite_sweep_page.complete", **result)
     return result

@@ -21,12 +21,16 @@ def _execute_recorded(job_name: str, work):
     """Run async job work and persist a monitoring job_run row in one event loop."""
 
     async def _wrapped():
+        from app.services.monitoring.prometheus_metrics import observe_celery_job
+
         try:
             result = await work()
             await _record(job_name, "ok", result)
+            observe_celery_job(job_name, "ok")
             return result
         except Exception as exc:
             await _record(job_name, "error", error=str(exc))
+            observe_celery_job(job_name, "error")
             raise
 
     return run_async(_wrapped())

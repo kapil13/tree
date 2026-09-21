@@ -8,6 +8,7 @@ from typing import Any
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.cache.redis_cache import cache_delete, cache_get, cache_set
+from app.services.monitoring.prometheus_metrics import observe_read_cache
 
 log = get_logger("monitoring.read_cache")
 
@@ -37,6 +38,7 @@ def _satellite_health_report_key(
 
 async def get_cached_threat_watch(user_id: uuid.UUID, limit: int) -> dict[str, Any] | None:
     cached = await cache_get(_threat_watch_key(user_id, limit))
+    observe_read_cache("threat_watch", hit=cached is not None)
     if cached:
         cached["cache_hit"] = True
     return cached
@@ -52,6 +54,7 @@ async def set_cached_threat_watch(user_id: uuid.UUID, limit: int, payload: dict[
 
 
 async def invalidate_threat_watch_for_user(user_id: uuid.UUID) -> None:
+    observe_read_cache("threat_watch", hit=None)
     for limit in (6, 12, 15, 20):
         await cache_delete(_threat_watch_key(user_id, limit))
 
@@ -63,7 +66,9 @@ async def invalidate_threat_watch_for_owners(owner_ids: set[uuid.UUID]) -> None:
 
 
 async def get_cached_fence_health_latest(fence_id: uuid.UUID) -> dict[str, Any] | None:
-    return await cache_get(_satellite_health_latest_fence_key(fence_id))
+    cached = await cache_get(_satellite_health_latest_fence_key(fence_id))
+    observe_read_cache("fence_health", hit=cached is not None)
+    return cached
 
 
 async def set_cached_fence_health_latest(fence_id: uuid.UUID, payload: dict[str, Any]) -> None:
@@ -75,11 +80,14 @@ async def set_cached_fence_health_latest(fence_id: uuid.UUID, payload: dict[str,
 
 
 async def invalidate_fence_health_latest(fence_id: uuid.UUID) -> None:
+    observe_read_cache("fence_health", hit=None)
     await cache_delete(_satellite_health_latest_fence_key(fence_id))
 
 
 async def get_cached_tree_health_latest(tree_id: uuid.UUID) -> dict[str, Any] | None:
-    return await cache_get(_satellite_health_latest_tree_key(tree_id))
+    cached = await cache_get(_satellite_health_latest_tree_key(tree_id))
+    observe_read_cache("tree_health", hit=cached is not None)
+    return cached
 
 
 async def set_cached_tree_health_latest(tree_id: uuid.UUID, payload: dict[str, Any]) -> None:
@@ -91,6 +99,7 @@ async def set_cached_tree_health_latest(tree_id: uuid.UUID, payload: dict[str, A
 
 
 async def invalidate_tree_health_latest(tree_id: uuid.UUID) -> None:
+    observe_read_cache("tree_health", hit=None)
     await cache_delete(_satellite_health_latest_tree_key(tree_id))
 
 
@@ -103,6 +112,7 @@ async def get_cached_satellite_health_report(
     cached = await cache_get(
         _satellite_health_report_key(user_id, project_id=project_id, financial_year=financial_year)
     )
+    observe_read_cache("sat_health_report", hit=cached is not None)
     if cached:
         cached["cache_hit"] = True
     return cached

@@ -21,6 +21,12 @@ from app.services.monitoring.monitoring_read_cache import (
     get_cached_threat_watch,
     set_cached_threat_watch,
 )
+from app.services.monitoring.prometheus_metrics import (
+    observe_data_freshness_stale,
+    observe_threat_watch_cache,
+    observe_threat_watch_sites,
+    track_threat_watch_duration,
+)
 from app.services.planting_projects.pest_intel import build_pest_intel
 from app.services.threats.fire_watch import assess_fire_proximity
 from app.services.threats.flood_extent import assess_fence_flood_extent
@@ -179,98 +185,105 @@ async def build_portfolio_threat_watch(
     use_cache: bool = True,
 ) -> dict[str, Any]:
     """Aggregate threat watch across all accessible plantation work areas."""
-    if use_cache:
-        cached = await get_cached_threat_watch(user.id, limit)
-        if cached is not None:
-            return cached
+    with track_threat_watch_duration():
+        if use_cache:
+            cached = await get_cached_threat_watch(user.id, limit)
+            if cached is not None:
+                observe_threat_watch_cache(True)
+                return cached
 
-    stmt = _fence_scope(select(PlantationFence), user).order_by(PlantationFence.created_at.desc())
-    fences = list((await db.execute(stmt.limit(limit))).scalars().all())
+        observe_threat_watch_cache(False)
 
-    project_ids = {fence.project_id for fence in fences if fence.project_id}
-    project_cache: dict[uuid.UUID, PlantingProject | None] = {}
-    if project_ids:
-        res = await db.execute(select(PlantingProject).where(PlantingProject.id.in_(project_ids)))
-        project_cache = {project.id: project for project in res.scalars().all()}
+        stmt = _fence_scope(select(PlantationFence), user).order_by(PlantationFence.created_at.desc())
+        fences = list((await db.execute(stmt.limit(limit))).scalars().all())
 
-    sites: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
+        project_ids = {fence.project_id for fence in fences if fence.project_id}
+        project_cache: dict[uuid.UUID, PlantingProject | None] = {}
+        if project_ids:
+            res = await db.execute(select(PlantingProject).where(PlantingProject.id.in_(project_ids)))
+            project_cache = {project.id: project for project in res.scalars().all()}
 
-    for fence in fences:
-        project = project_cache.get(fence.project_id) if fence.project_id else None
+        sites: list[dict[str, Any]] = []
+        failures: list[dict[str, Any]] = []
 
-        try:
-            site = await build_site_threat_watch(db, fence=fence, project=project)
-            sites.append(site)
-        except Exception as exc:
-            log.warning(
-                "portfolio_threat_watch.site_failed",
-                fence_id=str(fence.id),
-                work_area_name=fence.name,
-                error=str(exc),
-            )
-            failures.append(
-                {
-                    "work_area_id": str(fence.id),
-                    "work_area_name": fence.name,
-                    "error": str(exc)[:500],
-                }
-            )
-            continue
+        for fence in fences:
+            project = project_cache.get(fence.project_id) if fence.project_id else None
 
-    sites.sort(
-        key=lambda s: (
-            RISK_ORDER.get(s.get("composite_risk", "low"), 0),
-            len([a for a in s.get("weather_alerts", []) if a.get("severity") in ("warning", "critical")]),
-            len(s.get("early_warnings", [])),
-        ),
-        reverse=True,
-    )
+            try:
+                site = await build_site_threat_watch(db, fence=fence, project=project)
+                sites.append(site)
+                observe_data_freshness_stale(site.get("data_freshness"))
+            except Exception as exc:
+                log.warning(
+                    "portfolio_threat_watch.site_failed",
+                    fence_id=str(fence.id),
+                    work_area_name=fence.name,
+                    error=str(exc),
+                )
+                failures.append(
+                    {
+                        "work_area_id": str(fence.id),
+                        "work_area_name": fence.name,
+                        "error": str(exc)[:500],
+                    }
+                )
+                continue
 
-    weather_count = sum(
-        1
-        for s in sites
-        for a in s.get("weather_alerts", [])
-        if a.get("severity") in ("warning", "critical")
-    )
-    pest_high = sum(1 for s in sites if s.get("composite_risk") in ("high", "critical"))
-    locust_watch = sum(
-        1 for s in sites for w in s.get("early_warnings", []) if w.get("kind") == "locust"
-    )
-    fire_watch = sum(
-        1
-        for s in sites
-        if s.get("fire_watch", {}).get("risk_level") not in (None, "none")
-    )
-    flood_extent_watch = sum(
-        1
-        for s in sites
-        if s.get("flood_extent_watch", {}).get("risk_level") not in (None, "none")
-    )
+        sites.sort(
+            key=lambda s: (
+                RISK_ORDER.get(s.get("composite_risk", "low"), 0),
+                len([a for a in s.get("weather_alerts", []) if a.get("severity") in ("warning", "critical")]),
+                len(s.get("early_warnings", [])),
+            ),
+            reverse=True,
+        )
 
-    highest = "low"
-    for s in sites:
-        r = s.get("composite_risk", "low")
-        if RISK_ORDER.get(r, 0) > RISK_ORDER.get(highest, 0):
-            highest = r
+        weather_count = sum(
+            1
+            for s in sites
+            for a in s.get("weather_alerts", [])
+            if a.get("severity") in ("warning", "critical")
+        )
+        pest_high = sum(1 for s in sites if s.get("composite_risk") in ("high", "critical"))
+        locust_watch = sum(
+            1 for s in sites for w in s.get("early_warnings", []) if w.get("kind") == "locust"
+        )
+        fire_watch = sum(
+            1
+            for s in sites
+            if s.get("fire_watch", {}).get("risk_level") not in (None, "none")
+        )
+        flood_extent_watch = sum(
+            1
+            for s in sites
+            if s.get("flood_extent_watch", {}).get("risk_level") not in (None, "none")
+        )
 
-    result = {
-        "generated_at": datetime.now(UTC).isoformat(),
-        "summary": {
-            "sites_requested": len(fences),
-            "sites_monitored": len(sites),
-            "sites_failed": len(failures),
-            "weather_alerts_count": weather_count,
-            "pest_high_count": pest_high,
-            "locust_watch_count": locust_watch,
-            "fire_watch_count": fire_watch,
-            "flood_extent_watch_count": flood_extent_watch,
-            "highest_risk": highest,
-        },
-        "sites": sites,
-        "failures": failures,
-        "cache_hit": False,
-    }
-    if use_cache:
-        await set_cached_threat_watch(user.id, limit, result)
-    return result
+        highest = "low"
+        for s in sites:
+            r = s.get("composite_risk", "low")
+            if RISK_ORDER.get(r, 0) > RISK_ORDER.get(highest, 0):
+                highest = r
+
+        observe_threat_watch_sites(succeeded=len(sites), failed=len(failures))
+
+        result = {
+            "generated_at": datetime.now(UTC).isoformat(),
+            "summary": {
+                "sites_requested": len(fences),
+                "sites_monitored": len(sites),
+                "sites_failed": len(failures),
+                "weather_alerts_count": weather_count,
+                "pest_high_count": pest_high,
+                "locust_watch_count": locust_watch,
+                "fire_watch_count": fire_watch,
+                "flood_extent_watch_count": flood_extent_watch,
+                "highest_risk": highest,
+            },
+            "sites": sites,
+            "failures": failures,
+            "cache_hit": False,
+        }
+        if use_cache:
+            await set_cached_threat_watch(user.id, limit, result)
+        return result
