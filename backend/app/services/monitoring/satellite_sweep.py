@@ -22,7 +22,6 @@ from app.services.monitoring.sweep_batch_context import (
     FenceSatelliteBatchContext,
     build_fence_satellite_batch_context,
 )
-from app.services.monitoring.watch_scope import fetch_satellite_watch_fences
 from app.services.satellite.plantation import scan_plantation_polygon
 
 log = get_logger("monitoring.satellite")
