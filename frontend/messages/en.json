@@ -797,7 +797,26 @@
     "mode": "Mode: {mode}",
     "llmFallback": "LLM enrichment unavailable ({error}) — rules fallback used.",
     "citations": "Citations",
-    "disclaimer": "This explanation does not change grades, anomalies, or attestation outcomes."
+    "disclaimer": "This explanation does not change grades, anomalies, or attestation outcomes.",
+    "emptyAnswer": "The explain service returned an empty response. Check that Wave E backend (migration 0086) is deployed."
+  },
+  "auditExplainHistory": {
+    "title": "Explain history",
+    "subtitle": "Recent grounded narratives for this engagement — newest first.",
+    "patternTitle": "Pattern explain history",
+    "loading": "Loading explain history…",
+    "empty": "No explanations yet — use Explain on anomalies, reconciliation, or the evidence graph.",
+    "error": "Could not load explain history — the explain API may not be deployed yet.",
+    "count": "{count} run(s)",
+    "filterAll": "All",
+    "unknownTime": "Unknown time",
+    "targetType": {
+      "anomaly": "Anomaly",
+      "reconciliation_summary": "Reconciliation summary",
+      "reconciliation_block": "Reconciliation block",
+      "evidence_graph": "Evidence graph",
+      "cross_estate_pattern": "Cross-estate pattern"
+    }
   },
   "auditEvidenceGraph": {
     "title": "Evidence graph",
@@ -980,6 +999,7 @@
     "anomalyCount": "{count} anomaly signal(s)",
     "anomalySummary": "{total} total anomalies ({critical} critical, {high} high)",
     "explain": "Explain",
+    "explaining": "Generating explanation…",
     "allAnomalies": "All anomaly events"
   },
   "projectCompliance": {

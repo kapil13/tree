@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { GitCompare, Sparkles } from "lucide-react";
-import { auditEngagements, errorMessage } from "@/lib/api";
+import { auditEngagements, errorMessage, type AuditExplainRun } from "@/lib/api";
 import { AuditExplainResult } from "@/components/audit/audit-explain-result";
 import { AuditEvidenceGraphPanel } from "@/components/audit/audit-evidence-graph-panel";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
@@ -45,7 +45,7 @@ export function AuditReconciliationPanel({
 }) {
   const t = useTranslations("auditReconciliation");
   const qc = useQueryClient();
-  const [explainBoundaryId, setExplainBoundaryId] = useState<string | null>(null);
+  const [latestExplain, setLatestExplain] = useState<AuditExplainRun | null>(null);
 
   const unlocked =
     engagementStatus === "sampling_planned" ||
@@ -70,12 +70,19 @@ export function AuditReconciliationPanel({
 
   const explainAll = useMutation({
     mutationFn: () => auditEngagements.explainReconciliation(engagementId),
+    onSuccess: (run) => {
+      setLatestExplain(run);
+      void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
+    },
   });
 
   const explainBlock = useMutation({
     mutationFn: (boundaryVersionId: string) =>
       auditEngagements.explainReconciliation(engagementId, boundaryVersionId),
-    onSuccess: () => setExplainBoundaryId(null),
+    onSuccess: (run) => {
+      setLatestExplain(run);
+      void qc.invalidateQueries({ queryKey: ["audit-explain-runs", engagementId] });
+    },
   });
 
   if (!unlocked) {
@@ -120,9 +127,12 @@ export function AuditReconciliationPanel({
           ) : null}
         </div>
 
-        {explainAll.data ? <AuditExplainResult run={explainAll.data} className="mt-4" /> : null}
+        {latestExplain ? <AuditExplainResult run={latestExplain} className="mt-4" /> : null}
         {explainAll.isError ? (
           <p className="text-sm text-rose-700">{errorMessage(explainAll.error)}</p>
+        ) : null}
+        {explainBlock.isError ? (
+          <p className="text-sm text-rose-700">{errorMessage(explainBlock.error)}</p>
         ) : null}
 
         {data && (
@@ -204,12 +214,9 @@ export function AuditReconciliationPanel({
                         className="text-xs text-forest-700 hover:underline dark:text-forest-300"
                         disabled={
                           explainBlock.isPending &&
-                          explainBoundaryId === block.boundary_version_id
+                          explainBlock.variables === block.boundary_version_id
                         }
-                        onClick={() => {
-                          setExplainBoundaryId(block.boundary_version_id);
-                          explainBlock.mutate(block.boundary_version_id);
-                        }}
+                        onClick={() => explainBlock.mutate(block.boundary_version_id)}
                       >
                         {t("explainBlock")}
                       </button>
@@ -221,12 +228,6 @@ export function AuditReconciliationPanel({
           </div>
         )}
 
-        {explainBlock.data && explainBoundaryId ? (
-          <AuditExplainResult run={explainBlock.data} className="mt-4" />
-        ) : null}
-        {explainBlock.isError ? (
-          <p className="text-sm text-rose-700">{errorMessage(explainBlock.error)}</p>
-        ) : null}
       </AuditPanelShell>
 
       <AuditEvidenceGraphPanel engagementId={engagementId} engagementStatus={engagementStatus} />
