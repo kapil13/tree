@@ -1,12 +1,18 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:byot_mobile/src/dashboard/dashboard_brief.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+AppLocalizations _enL10n() => lookupAppLocalizations(const Locale('en'));
 
 void main() {
   test('buildHomeQueueItems merges violations, survival, and alerts', () {
+    final l10n = _enL10n();
     final items = buildHomeQueueItems(
       alerts: [
         {'title': 'Wind alert', 'message': 'High wind', 'is_read': false, 'severity': 'high'},
       ],
+      l10n: l10n,
       fieldSummary: {
         'recent_violations': [
           {'message': 'Missing photo', 'project_name': 'NHAI-1'},

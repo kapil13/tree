@@ -26,7 +26,7 @@ class AlertDetailScreen extends ConsumerWidget {
 
     return stackRouteScaffold(
       location: '/alerts/$alertId',
-      appBar: PrototypeBackBar(title: 'Alert'),
+      appBar: PrototypeBackBar(title: l10n.alertFallback),
       body: alertAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: PrototypeColors.brandCanopy)),
         error: (e, _) => SessionAwareErrorView(
@@ -35,7 +35,7 @@ class AlertDetailScreen extends ConsumerWidget {
         ),
         data: (alert) {
           final severity = alert['severity'] as String? ?? 'moderate';
-          final title = alert['title'] as String? ?? 'Alert';
+          final title = alert['title'] as String? ?? l10n.alertFallback;
           final message = alert['message'] as String? ?? '';
           final time = alert['created_at'] as String? ?? '';
           final kind = alert['kind'] as String?;
@@ -44,7 +44,7 @@ class AlertDetailScreen extends ConsumerWidget {
           final treeId = alert['tree_id'] as String? ?? payload?['tree_id'] as String?;
           final fenceId = payload?['fence_id'] as String?;
           final projectId = payload?['project_id'] as String?;
-          final actionLabel = kind != null ? alertKindLabel(kind, languageCode: lang) : 'View on map';
+          final actionLabel = kind != null ? alertKindLabel(kind, languageCode: lang) : l10n.viewOnMap;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -93,7 +93,7 @@ class AlertDetailScreen extends ConsumerWidget {
                 AlertPreparednessCard(interpretation: interpretation),
               ],
               const SizedBox(height: 20),
-              Text('Recommended action', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(l10n.alertRecommendedAction, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () {
@@ -137,13 +137,13 @@ class AlertDetailScreen extends ConsumerWidget {
                   }
                 },
                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                child: const Text('Mark reviewed'),
+                child: Text(l10n.alertMarkReviewed),
               ),
               if (treeId != null) ...[
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => context.push('/trees/$treeId'),
-                  child: const Text('View affected tree →'),
+                  child: Text(l10n.alertViewAffectedTree),
                 ),
               ],
             ],

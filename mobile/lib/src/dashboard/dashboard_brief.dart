@@ -1,5 +1,7 @@
 // Executive briefing helpers — derive calm, human-readable insights from API data.
 
+import 'package:byot_mobile/l10n/app_localizations.dart';
+
 class ForestHealthSnapshot {
   const ForestHealthSnapshot({
     required this.score,
@@ -40,7 +42,10 @@ class PriorityAlertView {
   final String? alertId;
 }
 
-ForestHealthSnapshot computeForestHealth(Map<String, dynamic> dashboard) {
+ForestHealthSnapshot computeForestHealth(
+  Map<String, dynamic> dashboard, {
+  required AppLocalizations l10n,
+}) {
   final kpi = dashboard['kpi'] as Map<String, dynamic>? ?? {};
   final bio = dashboard['bioacoustic'] as Map<String, dynamic>? ?? {};
 
@@ -52,10 +57,10 @@ ForestHealthSnapshot computeForestHealth(Map<String, dynamic> dashboard) {
   final score = raw.round().clamp(0, 100);
 
   final label = switch (score) {
-    >= 85 => 'Excellent',
-    >= 70 => 'Good',
-    >= 50 => 'Fair',
-    _ => 'Needs care',
+    >= 85 => l10n.forestHealthExcellent,
+    >= 70 => l10n.forestHealthGood,
+    >= 50 => l10n.forestHealthFair,
+    _ => l10n.forestHealthNeedsCare,
   };
 
   final unreadBias = (kpi['pct_satellite_verified'] as num? ?? 0) > 50 ? 2 : 0;
@@ -66,6 +71,7 @@ ForestHealthSnapshot computeForestHealth(Map<String, dynamic> dashboard) {
 
 List<String> buildAiBriefLines({
   required Map<String, dynamic> dashboard,
+  required AppLocalizations l10n,
   List<dynamic> alerts = const [],
   Map<String, dynamic>? weather,
 }) {
@@ -87,15 +93,13 @@ List<String> buildAiBriefLines({
       .length;
 
   if (inspectionZones > 0) {
-    lines.add(
-      '$inspectionZones plantation zone${inspectionZones == 1 ? '' : 's'} require inspection today.',
-    );
+    lines.add(l10n.briefInspectionZones(inspectionZones));
   } else if (trees > 0 && pctHealthy < 75) {
-    lines.add('Tree health is below target — schedule a field review this week.');
+    lines.add(l10n.briefTreeHealthBelowTarget);
   } else if (trees == 0) {
-    lines.add('No trees registered yet — add your first plantation to begin monitoring.');
+    lines.add(l10n.briefNoTreesRegistered);
   } else {
-    lines.add('All monitored zones are within expected health parameters.');
+    lines.add(l10n.briefAllZonesHealthy);
   }
 
   if (weather != null) {
@@ -105,16 +109,17 @@ List<String> buildAiBriefLines({
       final precip = (tomorrow['precipitation_mm'] as num?)?.toDouble() ?? 0;
       final desc = tomorrow['description'] as String? ?? 'rain';
       if (precip >= 8) {
-        lines.add('${desc[0].toUpperCase()}${desc.substring(1)} tomorrow may reduce survival in exposed zones.');
+        final description = '${desc[0].toUpperCase()}${desc.substring(1)}';
+        lines.add(l10n.briefTomorrowWeather(description));
       }
     }
   }
 
   if (species > 0) {
     final biodiversityPct = (shannon * 12).clamp(1, 15).toStringAsFixed(0);
-    lines.add('Biodiversity increased by $biodiversityPct% based on recent acoustic surveys.');
+    lines.add(l10n.briefBiodiversityIncreased(biodiversityPct));
   } else if (trees > 0) {
-    lines.add('Run a bioacoustic survey to enrich biodiversity intelligence.');
+    lines.add(l10n.briefRunBioacousticSurvey);
   }
 
   return lines.take(3).toList();
@@ -140,6 +145,7 @@ class HomeQueueItem {
 
 List<HomeQueueItem> buildHomeQueueItems({
   required List<dynamic> alerts,
+  required AppLocalizations l10n,
   Map<String, dynamic>? fieldSummary,
   bool includeFieldOps = false,
   int limit = 3,
@@ -154,7 +160,7 @@ List<HomeQueueItem> buildHomeQueueItems({
           kind: 'violation',
           title: violation['message'] as String? ??
               violation['violation_type'] as String? ??
-              'Violation',
+              l10n.violationFallback,
           subtitle: violation['project_name'] as String? ?? '',
           severity: 'high',
           violation: violation,
@@ -168,8 +174,8 @@ List<HomeQueueItem> buildHomeQueueItems({
       items.add(
         HomeQueueItem(
           kind: 'survival',
-          title: '${project['name'] ?? 'Project'} — survival due',
-          subtitle: '$due trees due',
+          title: l10n.homeQueueSurvivalTitle(project['name'] as String? ?? l10n.projectFallback),
+          subtitle: l10n.homeQueueTreesDue(due),
           severity: 'moderate',
           projectId: project['id']?.toString(),
         ),
@@ -183,7 +189,7 @@ List<HomeQueueItem> buildHomeQueueItems({
     items.add(
       HomeQueueItem(
         kind: 'alert',
-        title: alert['title'] as String? ?? 'Alert',
+        title: alert['title'] as String? ?? l10n.alertFallback,
         subtitle: alert['message'] as String? ?? alert['severity'] as String? ?? '',
         severity: alert['severity'] as String? ?? 'medium',
       ),
@@ -214,7 +220,7 @@ String homeContextMeta({
   return '$treePart · $weatherPart';
 }
 
-PriorityAlertView? pickPriorityAlert(List<dynamic> alerts) {
+PriorityAlertView? pickPriorityAlert(List<dynamic> alerts, {required AppLocalizations l10n}) {
   for (final raw in alerts) {
     final a = raw as Map<String, dynamic>;
     if (a['is_read'] == true) continue;
@@ -225,10 +231,10 @@ PriorityAlertView? pickPriorityAlert(List<dynamic> alerts) {
     final zone = payload?['zone'] as String? ??
         payload?['fence_name'] as String? ??
         payload?['region'] as String? ??
-        'Site';
+        l10n.siteFallback;
 
     return PriorityAlertView(
-      title: a['title'] as String? ?? 'Priority alert',
+      title: a['title'] as String? ?? l10n.priorityAlertFallback,
       zone: zone,
       severity: severity,
       alertId: a['id'] as String?,
@@ -239,6 +245,7 @@ PriorityAlertView? pickPriorityAlert(List<dynamic> alerts) {
 
 List<QuickMetric> buildQuickMetrics({
   required Map<String, dynamic> dashboard,
+  required AppLocalizations l10n,
   Map<String, dynamic>? weather,
 }) {
   final kpi = dashboard['kpi'] as Map<String, dynamic>? ?? {};
@@ -247,40 +254,40 @@ List<QuickMetric> buildQuickMetrics({
   final trees = (kpi['total_trees'] as num?)?.toInt() ?? 0;
   final species = (bio['total_species_detected'] as num?)?.toInt() ?? 0;
   final credits = (kpi['lifetime_credits_tco2e'] as num?)?.toDouble() ?? 0;
-  final weatherRisk = _weatherRiskLabel(weather);
+  final weatherRisk = _weatherRiskLabel(weather, l10n);
 
   return [
     QuickMetric(
       emoji: '🌳',
-      label: 'Trees',
+      label: l10n.treesCountLabel,
       value: _formatCompact(trees),
       trend: trees > 0 ? '↑' : '—',
     ),
     QuickMetric(
       emoji: '🌿',
-      label: 'Biodiversity',
-      value: species > 0 ? '$species sp.' : '—',
+      label: l10n.biodiversityTitle,
+      value: species > 0 ? l10n.speciesCountAbbrev(species) : '—',
       trend: species > 2 ? '↑' : '—',
     ),
     QuickMetric(
       emoji: '💰',
-      label: 'Carbon Credits',
+      label: l10n.quickMetricCarbonCredits,
       value: credits >= 1 ? credits.toStringAsFixed(1) : credits.toStringAsFixed(2),
       trend: credits > 0 ? '↑' : '—',
     ),
     QuickMetric(
       emoji: '🌧',
-      label: 'Weather Risk',
+      label: l10n.quickMetricWeatherRisk,
       value: weatherRisk.$1,
       trend: weatherRisk.$2,
     ),
   ];
 }
 
-(String, String) _weatherRiskLabel(Map<String, dynamic>? weather) {
+(String, String) _weatherRiskLabel(Map<String, dynamic>? weather, AppLocalizations l10n) {
   if (weather == null) return ('—', '—');
   final days = weather['days'] as List<dynamic>? ?? [];
-  if (days.isEmpty) return ('Low', '—');
+  if (days.isEmpty) return (l10n.weatherRiskLow, '—');
 
   double maxPrecip = 0;
   for (final d in days.take(3)) {
@@ -289,9 +296,9 @@ List<QuickMetric> buildQuickMetrics({
     if (p > maxPrecip) maxPrecip = p;
   }
 
-  if (maxPrecip >= 20) return ('High', '↑');
-  if (maxPrecip >= 8) return ('Med', '↑');
-  return ('Low', '↓');
+  if (maxPrecip >= 20) return (l10n.weatherRiskHigh, '↑');
+  if (maxPrecip >= 8) return (l10n.weatherRiskMed, '↑');
+  return (l10n.weatherRiskLow, '↓');
 }
 
 String _formatCompact(int n) {

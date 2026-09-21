@@ -38,8 +38,9 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
 
   Future<void> _estimate() async {
     final species = _species.text.trim();
+    final l10n = AppLocalizations.of(context)!;
     if (species.isEmpty) {
-      setState(() => _error = 'Enter a species name.');
+      setState(() => _error = l10n.carbonEnterSpecies);
       return;
     }
     setState(() {
@@ -128,7 +129,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                           style: GoogleFonts.dmSans(fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white),
                         ),
                         Text(
-                          'tCO₂e estimated (portfolio)',
+                          l10n.carbonPortfolioTco2e,
                           style: GoogleFonts.dmSans(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
                         ),
                         const SizedBox(height: 16),
@@ -144,15 +145,15 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                         const SizedBox(height: 8),
                         Text(
                           annualSeq > 0
-                              ? '${(progress * 100).round()}% of annual sequestration pace'
-                              : '$totalTrees trees in portfolio',
+                              ? l10n.carbonAnnualPace((progress * 100).round())
+                              : l10n.carbonTreesInPortfolio(totalTrees),
                           style: GoogleFonts.dmSans(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('By project', style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text(l10n.carbonByProject, style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   projectsAsync.when(
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -160,7 +161,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                     data: (projects) {
                       if (projects.isEmpty) {
                         return Text(
-                          'No planting projects yet.',
+                          l10n.noProjectsYet,
                           style: GoogleFonts.dmSans(fontSize: 13, color: PrototypeColors.textSecondary),
                         );
                       }
@@ -205,8 +206,7 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
             },
           ),
           Text(
-            'Estimate CO₂e from species and optional measurements. '
-            'This is an Estimate — not a Live field measurement or registry-issued credit.',
+            l10n.carbonEstimateDisclaimer,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AranyixColors.onSurfaceMuted),
           ),
           const SizedBox(height: 16),
@@ -254,16 +254,16 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                     const SizedBox(height: 8),
                     Text(
                       lower != null && upper != null && upper > lower
-                          ? '${lower.toStringAsFixed(1)}–${upper.toStringAsFixed(1)} kg CO₂e (90% CI)'
+                          ? l10n.carbonCo2eRange(lower.toStringAsFixed(1), upper.toStringAsFixed(1))
                           : co2e != null
-                              ? '${co2e.toStringAsFixed(1)} kg CO₂e'
+                              ? l10n.carbonCo2eSingle(co2e.toStringAsFixed(1))
                               : '—',
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                     ),
                     if (uncertainty != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '±${uncertainty.toStringAsFixed(1)}% measurement + model uncertainty',
+                        l10n.carbonUncertainty(uncertainty.toStringAsFixed(1)),
                         style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
                       ),
                     ],
@@ -272,9 +272,9 @@ class _CarbonScreenState extends ConsumerState<CarbonScreen> {
                     Text(l10n.inputCompleteness((_result!['confidence'] as num?)?.toStringAsFixed(2) ?? '—')),
                     Text(l10n.methodologyLabel(_result!['methodology']?.toString() ?? '—')),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Honesty label: Estimate (modelled). Not Live sensor data.',
-                      style: TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
+                    Text(
+                      l10n.carbonHonestyLabel,
+                      style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
                     ),
                     if (notes.isNotEmpty) ...[
                       const SizedBox(height: 8),

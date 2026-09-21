@@ -198,6 +198,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(PrototypeRadii.lg)),
       ),
       builder: (ctx) {
+        final sheetL10n = AppLocalizations.of(ctx)!;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -205,9 +206,9 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Filters', style: GoogleFonts.dmSans(fontSize: 17, fontWeight: FontWeight.w600)),
+                Text(sheetL10n.filtersTitle, style: GoogleFonts.dmSans(fontSize: 17, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
-                Text('Health', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
+                Text(sheetL10n.healthLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
@@ -215,7 +216,14 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                   children: [
                     for (final h in [null, 'healthy', 'stressed', 'dead'])
                       PrototypeFilterChip(
-                        label: h ?? 'All',
+                        label: h == null
+                            ? sheetL10n.filterAll
+                            : switch (h) {
+                                'healthy' => sheetL10n.healthFilterHealthy,
+                                'stressed' => sheetL10n.healthFilterStressed,
+                                'dead' => sheetL10n.healthFilterDead,
+                                _ => h,
+                              },
                         selected: _healthFilter == h,
                         onTap: () {
                           setState(() => _healthFilter = h);
@@ -236,7 +244,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                     _load(page: 1);
                   },
                   style: FilledButton.styleFrom(backgroundColor: PrototypeColors.brandForest),
-                  child: const Text('Clear filters'),
+                  child: Text(sheetL10n.clearFilters),
                 ),
               ],
             ),
@@ -266,7 +274,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
     return Scaffold(
       backgroundColor: PrototypeColors.bgApp,
       appBar: PrototypeBackBar(
-        title: 'Tree registry',
+        title: l10n.treeRegistryTitle,
         actions: [
           if (canAdd)
             IconButton(
@@ -282,8 +290,9 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
           if (_showingCache)
             MaterialBanner(
               content: Text(
-                'Showing cached tree list'
-                '${_cacheSavedAt != null && _cacheSavedAt!.isNotEmpty ? ' from ${_cacheSavedAt!.substring(0, 16)}' : ''}',
+                _cacheSavedAt != null && _cacheSavedAt!.isNotEmpty
+                    ? l10n.registryCachedListFrom(_cacheSavedAt!.substring(0, 16))
+                    : l10n.registryCachedList,
               ),
               actions: [
                 TextButton(onPressed: () => _load(page: 1), child: Text(l10n.retry)),
@@ -309,7 +318,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                   child: TextField(
                     controller: _searchCtrl,
                     decoration: InputDecoration(
-                      hintText: 'Search ID, species, area…',
+                      hintText: l10n.treeRegistrySearchHint,
                       hintStyle: GoogleFonts.dmSans(fontSize: 14, color: PrototypeColors.textTertiary),
                       filled: true,
                       fillColor: PrototypeColors.bgSurface,
@@ -347,10 +356,10 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                     child: DropdownButton<_RegistrySort>(
                       value: _sort,
                       isDense: true,
-                      items: const [
-                        DropdownMenuItem(value: _RegistrySort.recent, child: Text('Recent')),
-                        DropdownMenuItem(value: _RegistrySort.code, child: Text('Tree ID')),
-                        DropdownMenuItem(value: _RegistrySort.health, child: Text('Health')),
+                      items: [
+                        DropdownMenuItem(value: _RegistrySort.recent, child: Text(l10n.sortRecent)),
+                        DropdownMenuItem(value: _RegistrySort.code, child: Text(l10n.sortTreeId)),
+                        DropdownMenuItem(value: _RegistrySort.health, child: Text(l10n.healthLabel)),
                       ],
                       onChanged: (v) {
                         if (v != null) setState(() => _sort = v);
@@ -370,7 +379,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                   style: GoogleFonts.ibmPlexMono(fontSize: 28, fontWeight: FontWeight.w700, color: PrototypeColors.brandForest),
                 ),
                 const SizedBox(width: 6),
-                Text('trees', style: GoogleFonts.dmSans(fontSize: 14, color: PrototypeColors.textSecondary)),
+                Text(l10n.treesCountSuffix, style: GoogleFonts.dmSans(fontSize: 14, color: PrototypeColors.textSecondary)),
               ],
             ),
           ),
@@ -382,35 +391,35 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
               children: [
                 PrototypeRegistryCategory(
                   count: _categoryCount(_RegistryCategory.all),
-                  label: 'All',
+                  label: l10n.filterAll,
                   selected: _category == _RegistryCategory.all,
                   onTap: () => setState(() => _category = _RegistryCategory.all),
                 ),
                 const SizedBox(width: 8),
                 PrototypeRegistryCategory(
                   count: _categoryCount(_RegistryCategory.attention),
-                  label: 'Attention',
+                  label: l10n.registryCategoryAttention,
                   selected: _category == _RegistryCategory.attention,
                   onTap: () => setState(() => _category = _RegistryCategory.attention),
                 ),
                 const SizedBox(width: 8),
                 PrototypeRegistryCategory(
                   count: _categoryCount(_RegistryCategory.missingEvidence),
-                  label: 'Missing evidence',
+                  label: l10n.registryCategoryMissingEvidence,
                   selected: _category == _RegistryCategory.missingEvidence,
                   onTap: () => setState(() => _category = _RegistryCategory.missingEvidence),
                 ),
                 const SizedBox(width: 8),
                 PrototypeRegistryCategory(
                   count: _categoryCount(_RegistryCategory.unverified),
-                  label: 'Unverified',
+                  label: l10n.registryCategoryUnverified,
                   selected: _category == _RegistryCategory.unverified,
                   onTap: () => setState(() => _category = _RegistryCategory.unverified),
                 ),
                 const SizedBox(width: 8),
                 PrototypeRegistryCategory(
                   count: _categoryCount(_RegistryCategory.healthy),
-                  label: 'Healthy',
+                  label: l10n.registryCategoryHealthy,
                   selected: _category == _RegistryCategory.healthy,
                   onTap: () => setState(() => _category = _RegistryCategory.healthy),
                 ),
@@ -422,11 +431,11 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
             child: Row(
               children: [
                 Text(
-                  '${filtered.length} on page · $_total total',
+                  l10n.registryOnPageTotal(filtered.length, _total),
                   style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary),
                 ),
                 const Spacer(),
-                Text('Page $_page of $pages', style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
+                Text(l10n.registryPageOf(_page, pages), style: GoogleFonts.dmSans(fontSize: 12, color: PrototypeColors.textSecondary)),
               ],
             ),
           ),
@@ -459,8 +468,8 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                                 children: [
                                   PrototypeEmptyState(
                                     icon: '🌳',
-                                    title: 'No trees match',
-                                    subtitle: 'Try a different filter or search term',
+                                    title: l10n.registryNoMatch,
+                                    subtitle: l10n.registryNoMatchSub,
                                     action: canAdd
                                         ? FilledButton(
                                             onPressed: () => context.push('/trees/new'),
@@ -478,7 +487,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                                   final t = filtered[i] as Map<String, dynamic>;
                                   final badges = <Widget>[];
                                   if (t['satellite_verified'] != true) {
-                                    badges.add(const PrototypeStatusBadge(label: 'Unverified', variant: 'warn'));
+                                    badges.add(PrototypeStatusBadge(label: l10n.statusUnverified, variant: 'warn'));
                                   }
                                   final meta = [
                                     if (t['work_area_name'] != null) t['work_area_name'],
@@ -509,7 +518,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                 children: [
                   OutlinedButton(
                     onPressed: _page <= 1 ? null : () => _load(page: _page - 1),
-                    child: const Text('← Prev'),
+                    child: Text(l10n.registryPrev),
                   ),
                   Expanded(
                     child: Text(
@@ -520,7 +529,7 @@ class _TreeListScreenState extends ConsumerState<TreeListScreen> {
                   ),
                   OutlinedButton(
                     onPressed: _page >= pages ? null : () => _load(page: _page + 1),
-                    child: const Text('Next →'),
+                    child: Text(l10n.registryNext),
                   ),
                 ],
               ),

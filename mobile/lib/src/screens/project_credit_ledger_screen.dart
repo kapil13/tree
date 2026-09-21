@@ -80,23 +80,23 @@ class ProjectCreditLedgerScreen extends ConsumerWidget {
                   _row(l10n.netCredits, _num(ledger['net_credits_tco2e'])),
                   _row(l10n.issuedCredits, _num(ledger['issued_credits_tco2e'])),
                   if (ledger['methodology'] != null)
-                    _row('Methodology', '${ledger['methodology']}'),
+                    _row(l10n.methodologyTitle, '${ledger['methodology']}'),
                   if (fusion != null) ...[
                     const SizedBox(height: 20),
-                    Text('Integrity fusion', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l10n.creditIntegrityFusion, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     _row(
-                      'Audit ready',
+                      l10n.creditAuditReady,
                       '${fusion['audit_ready_count'] ?? 0}/${fusion['tree_count'] ?? 0}',
                     ),
                     _row(
-                      'Credit eligible',
+                      l10n.creditEligible,
                       '${fusion['credit_eligible_count'] ?? 0}/${fusion['tree_count'] ?? 0}',
                     ),
                   ],
                   if (events.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    Text('Status history', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l10n.creditStatusHistory, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     for (final raw in events)
                       ListTile(
@@ -112,12 +112,12 @@ class ProjectCreditLedgerScreen extends ConsumerWidget {
                   ],
                   if (serials.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    Text('Credit serials', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l10n.creditSerials, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     for (final raw in serials)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text((raw as Map)['serial_number'] as String? ?? 'Serial'),
+                        title: Text((raw as Map)['serial_number'] as String? ?? l10n.creditSerialFallback),
                         subtitle: Text(
                           '${raw['status'] ?? ''} · ${_num(raw['quantity_tco2e'])} tCO₂e',
                         ),
@@ -126,7 +126,7 @@ class ProjectCreditLedgerScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: () => context.push('/projects/$projectId'),
-                    child: const Text('View project'),
+                    child: Text(l10n.viewProject),
                   ),
                 ],
               ),

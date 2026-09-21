@@ -18,16 +18,16 @@ import '../widgets/prototype/prototype_ui.dart';
 import '../widgets/shell_scaffold.dart';
 import '../theme.dart';
 
-String _tierLabel(String? tier) {
+String _tierLabel(String? tier, AppLocalizations l10n) {
   switch (tier) {
     case 'accepted':
-      return 'Accepted';
+      return l10n.bioDetectionTierAccepted;
     case 'probable':
-      return 'Probable';
+      return l10n.bioDetectionTierProbable;
     case 'review_required':
-      return 'Review required';
+      return l10n.bioDetectionTierReview;
     default:
-      return 'Unknown';
+      return l10n.unknownSpecies;
   }
 }
 
@@ -336,7 +336,9 @@ class _BioacousticScreenState extends ConsumerState<BioacousticScreen>
                   final recordingsCount = (bio['recordings_total'] as num?)?.toInt() ??
                       (bio['total_recordings'] as num?)?.toInt() ?? 0;
                   final shannon = bio['shannon_diversity_index']?.toString();
-                  final label = bio['ecosystem_label'] as String? ?? bio['health_label'] as String? ?? 'Ecosystem acoustic health';
+                  final label = bio['ecosystem_label'] as String? ??
+                      bio['health_label'] as String? ??
+                      l10n.bioEcosystemAcousticHealthDefault;
                   return PrototypeBioHero(
                     score: score,
                     label: label,
@@ -506,7 +508,7 @@ class _RecordTab extends StatelessWidget {
               final m = f as Map<String, dynamic>;
               return DropdownMenuItem<String?>(
                 value: m['id'] as String,
-                child: Text(m['name'] as String? ?? 'Site'),
+                child: Text(m['name'] as String? ?? l10n.siteFallback),
               );
             }),
           ],
@@ -649,12 +651,18 @@ class _HistoryTab extends StatelessWidget {
                         child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${r['duration_seconds']}s · ${r['status']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            l10n.bioRecordingDurationStatus(
+                              '${r['duration_seconds']}',
+                              '${r['status']}',
+                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           if (r['biodiversity_confidence_score'] != null || r['bioacoustic_health_score'] != null)
                             Text(
-                              'Confidence ${r['biodiversity_confidence_score'] ?? r['bioacoustic_health_score']}/100 · '
-                              'Accepted ${r['accepted_species_count'] ?? r['species_richness'] ?? r['total_species_count']} · '
-                              'Shannon ${r['shannon_diversity_index']}',
+                              '${l10n.bioConfidenceMeta(((r['biodiversity_confidence_score'] ?? r['bioacoustic_health_score']) as num).toInt())} · '
+                              '${l10n.bioAcceptedCount('${r['accepted_species_count'] ?? r['species_richness'] ?? r['total_species_count']}')} · '
+                              '${l10n.bioShannonLine('${r['shannon_diversity_index']}')}',
                             ),
                           if (r['analysis_summary'] != null)
                             Padding(
@@ -668,9 +676,9 @@ class _HistoryTab extends StatelessWidget {
                               contentPadding: EdgeInsets.zero,
                               title: Text('${s['common_name']} (${s['scientific_name']})'),
                               subtitle: Text(
-                                '${s['taxon_group']} · ${s['call_count']} calls · '
+                                '${s['taxon_group']} · ${l10n.bioCallsCount('${s['call_count']}')} · '
                                 '${((s['confidence'] as num) * 100).toStringAsFixed(0)}% · '
-                                '${_tierLabel(s['detection_tier'] as String?)}',
+                                '${_tierLabel(s['detection_tier'] as String?, l10n)}',
                               ),
                               trailing: Text(
                                 s['iucn_status'] as String? ?? '',
@@ -743,6 +751,7 @@ class _OfflineQueueSectionState extends State<_OfflineQueueSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,16 +773,21 @@ class _OfflineQueueSectionState extends State<_OfflineQueueSection> {
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
               leading: Icon(widget.statusIcon(item.status)),
-              title: Text('${item.durationSeconds.toStringAsFixed(0)}s · ${widget.statusLabel(item.status)}'),
+              title: Text(
+                l10n.bioRecordingDurationStatus(
+                  item.durationSeconds.toStringAsFixed(0),
+                  widget.statusLabel(item.status),
+                ),
+              ),
               subtitle: Text(
                 '${item.createdAt.toLocal().toString().substring(0, 16)}\n'
-                'Location ${formatCoordinates(item.latitude, item.longitude)}'
+                '${l10n.bioLocationLine(formatCoordinates(item.latitude, item.longitude))}'
                 '${item.errorMessage != null ? '\n${item.errorMessage}' : ''}',
               ),
               isThreeLine: item.errorMessage != null,
               trailing: item.status == BioacousticQueueStatus.failed
                   ? IconButton(
-                      tooltip: 'Retry',
+                      tooltip: l10n.retry,
                       onPressed: widget.busy ? null : () => widget.onRetry(item),
                       icon: const Icon(Icons.refresh),
                     )

@@ -1,3 +1,4 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,6 +19,7 @@ class AlertPreparednessCard extends StatelessWidget {
     final category = interpretation['category'] as String? ?? 'general';
 
     if (headline.isEmpty && meaning.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -38,10 +40,10 @@ class AlertPreparednessCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _Chip(label: _categoryLabel(category)),
+              _Chip(label: _categoryLabel(l10n, category)),
               if (urgency != 'monitor') ...[
                 const SizedBox(width: 6),
-                _Chip(label: _urgencyLabel(urgency), accent: true),
+                _Chip(label: _urgencyLabel(l10n, urgency), accent: true),
               ],
             ],
           ),
@@ -51,7 +53,7 @@ class AlertPreparednessCard extends StatelessWidget {
           ],
           if (prepare.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Prepare', style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
+            Text(l10n.prepareLabel, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             for (final step in prepare)
               Padding(
@@ -70,22 +72,22 @@ class AlertPreparednessCard extends StatelessWidget {
     );
   }
 
-  String _categoryLabel(String category) {
+  String _categoryLabel(AppLocalizations l10n, String category) {
     return switch (category) {
-      'fire' => 'Fire',
-      'flood' => 'Flood',
-      'weather' => 'Weather',
-      'pest' => 'Pest',
-      'satellite' => 'Satellite',
-      _ => 'Alert',
+      'fire' => l10n.alertCategoryFire,
+      'flood' => l10n.alertCategoryFlood,
+      'weather' => l10n.alertCategoryWeather,
+      'pest' => l10n.alertCategoryPest,
+      'satellite' => l10n.alertCategorySatellite,
+      _ => l10n.alertFallback,
     };
   }
 
-  String _urgencyLabel(String urgency) {
+  String _urgencyLabel(AppLocalizations l10n, String urgency) {
     return switch (urgency) {
-      'today' => 'Act today',
-      'this_week' => 'This week',
-      _ => 'Monitor',
+      'today' => l10n.alertUrgencyActToday,
+      'this_week' => l10n.alertUrgencyThisWeek,
+      _ => l10n.alertUrgencyMonitor,
     };
   }
 }

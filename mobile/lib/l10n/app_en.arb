@@ -180,8 +180,12 @@
   "addTreeStepOf": "Step {current} of {total}",
   "@addTreeStepOf": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "addTreeBack": "Back",
@@ -215,27 +219,37 @@
   "addTreeAddPhoto": "Add photo ({count}/{target})",
   "@addTreeAddPhoto": {
     "placeholders": {
-      "count": {"type": "int"},
-      "target": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
     }
   },
   "addTreeOfflinePhotos": "{count} photo(s) saved offline",
   "@addTreeOfflinePhotos": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "addTreeReviewTitle": "Review registration",
   "addTreeSessionCount": "{count} this session",
   "@addTreeSessionCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "addTreeMinPhotosWarning": "Program recommends at least {min} photos.",
   "@addTreeMinPhotosWarning": {
     "placeholders": {
-      "min": {"type": "int"}
+      "min": {
+        "type": "int"
+      }
     }
   },
   "addTreeValidationContext": "Finish project setup or select a work area before continuing.",
@@ -245,7 +259,9 @@
   "addTreeValidationMinPhotos": "Add at least {min} photos before continuing.",
   "@addTreeValidationMinPhotos": {
     "placeholders": {
-      "min": {"type": "int"}
+      "min": {
+        "type": "int"
+      }
     }
   },
   "addTreeValidationSchemeProject": "Government and ESG programmes require a planting project. Open a project and register trees from there.",
@@ -260,14 +276,18 @@
   "addTreeGpsAccuracyWarning": "GPS accuracy is low (±{meters} m). Move outdoors with clear sky and tap Refresh.",
   "@addTreeGpsAccuracyWarning": {
     "placeholders": {
-      "meters": {"type": "int"}
+      "meters": {
+        "type": "int"
+      }
     }
   },
   "addTreeOpenLocationSettings": "Open app settings",
   "addTreePhotosNextHint": "Add at least {target} photo(s), then tap Next to review.",
   "@addTreePhotosNextHint": {
     "placeholders": {
-      "target": {"type": "int"}
+      "target": {
+        "type": "int"
+      }
     }
   },
   "setupStepSchemeRefs": "Scheme references",
@@ -277,15 +297,21 @@
   "bioRecordingTarget": "Target: {min}–{max} s · 48 kHz mono WAV",
   "@bioRecordingTarget": {
     "placeholders": {
-      "min": {"type": "int"},
-      "max": {"type": "int"}
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "bioStopAndSave": "Stop & save",
   "bioStopMin": "Stop ({seconds}s min)",
   "@bioStopMin": {
     "placeholders": {
-      "seconds": {"type": "int"}
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "bioSiteOptional": "Plantation site (optional)",
@@ -295,7 +321,9 @@
   "bioSplLevel": "Ambient SPL ≈ {level} dB",
   "@bioSplLevel": {
     "placeholders": {
-      "level": {"type": "String"}
+      "level": {
+        "type": "String"
+      }
     }
   },
   "bioNoiseWarning": "High background noise — traffic, wind, or machinery may reduce accuracy.",
@@ -306,15 +334,21 @@
   "bioTooShort": "Record at least {min} seconds (currently {elapsed} s).",
   "@bioTooShort": {
     "placeholders": {
-      "min": {"type": "int"},
-      "elapsed": {"type": "int"}
+      "min": {
+        "type": "int"
+      },
+      "elapsed": {
+        "type": "int"
+      }
     }
   },
   "bioSaving": "Saving recording…",
   "bioSavedOfflineGps": "Saved offline. {note}",
   "@bioSavedOfflineGps": {
     "placeholders": {
-      "note": {"type": "String"}
+      "note": {
+        "type": "String"
+      }
     }
   },
   "bioSavedOffline": "Saved offline. Will upload and analyze automatically when you have signal.",
@@ -325,7 +359,9 @@
   "bioSyncedCount": "Synced {count} recording(s).",
   "@bioSyncedCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "bioNothingToSync": "No pending recordings to sync.",
@@ -348,21 +384,29 @@
   "monitoringNoWorkAreas": "No work-area monitoring rows yet. Open violations: {violations}, survival due: {survival}.",
   "@monitoringNoWorkAreas": {
     "placeholders": {
-      "violations": {"type": "String"},
-      "survival": {"type": "String"}
+      "violations": {
+        "type": "String"
+      },
+      "survival": {
+        "type": "String"
+      }
     }
   },
   "monitoringDaysSinceNdvi": "{days}d since NDVI",
   "@monitoringDaysSinceNdvi": {
     "placeholders": {
-      "days": {"type": "String"}
+      "days": {
+        "type": "String"
+      }
     }
   },
   "homeWelcomeBack": "Welcome back",
   "homeHello": "Hello, {name}",
   "@homeHello": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeForestHealth": "Forest Health",
@@ -400,7 +444,9 @@
   "homeTrend": "Trend: {trend}",
   "@homeTrend": {
     "placeholders": {
-      "trend": {"type": "String"}
+      "trend": {
+        "type": "String"
+      }
     }
   },
   "signOut": "Sign out",
@@ -468,25 +514,33 @@
   "carbonKg": "Carbon: {kg} kg",
   "@carbonKg": {
     "placeholders": {
-      "kg": {"type": "String"}
+      "kg": {
+        "type": "String"
+      }
     }
   },
   "inputCompleteness": "Input completeness: {value}",
   "@inputCompleteness": {
     "placeholders": {
-      "value": {"type": "String"}
+      "value": {
+        "type": "String"
+      }
     }
   },
   "methodologyLabel": "Methodology: {value}",
   "@methodologyLabel": {
     "placeholders": {
-      "value": {"type": "String"}
+      "value": {
+        "type": "String"
+      }
     }
   },
   "chainageKm": "Chainage: {km} km",
   "@chainageKm": {
     "placeholders": {
-      "km": {"type": "String"}
+      "km": {
+        "type": "String"
+      }
     }
   },
   "exploreByot": "Explore BYOT features",
@@ -524,7 +578,9 @@
   "integrityScore": "Integrity {score}",
   "@integrityScore": {
     "placeholders": {
-      "score": {"type": "String"}
+      "score": {
+        "type": "String"
+      }
     }
   },
   "forestIntegrityTitle": "Forest Integrity",
@@ -533,19 +589,25 @@
   "atRiskCount": "{count} at risk",
   "@atRiskCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "divergentCount": "{count} divergent",
   "@divergentCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "alignedCount": "{count} aligned",
   "@alignedCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sarBaselineHint": "Run SAR scans on the web satellite page to establish Forest Integrity baselines.",
@@ -553,7 +615,9 @@
   "devHint": "Dev hint: {hint}",
   "@devHint": {
     "placeholders": {
-      "hint": {"type": "String"}
+      "hint": {
+        "type": "String"
+      }
     }
   },
   "registrationPrograms": "Registration programs",
@@ -573,7 +637,9 @@
   "ageYearsCount": "{count} years",
   "@ageYearsCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "saveProfile": "Save profile",
@@ -663,7 +729,6 @@
   "welcomeJourneySub": "From field capture to executive clarity.",
   "indiaFirstMrv": "India-first MRV",
   "treeSavedReadyNext": "Tree saved. Ready for the next gap.",
-  "setupStepSchemeRefs": "Scheme references",
   "setupStepTreeDefaults": "Tree registration defaults",
   "setupStepPlantingStandard": "Planting standard",
   "setupStepWorkAreas": "Work areas on map",
@@ -675,14 +740,18 @@
   "setupWorkAreasCount": "{count} area(s) defined",
   "@setupWorkAreasCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "setupDrawWorkArea": "Draw at least one polygon or corridor",
   "setupMissingFields": "Missing: {fields}",
   "@setupMissingFields": {
     "placeholders": {
-      "fields": {"type": "String"}
+      "fields": {
+        "type": "String"
+      }
     }
   },
   "fieldOpsQuickActions": "Quick actions",
@@ -703,7 +772,9 @@
   "auditPlotsDueTitle": "{count, plural, =1{1 plot needs a visit} other{{count} plots need visits}}",
   "@auditPlotsDueTitle": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "auditPlotsDueSubtitle": "Capture GPS, photos, and tree counts at assigned plots",
@@ -717,7 +788,9 @@
   "auditPlotsWaiting": "{count, plural, =1{1 plot waiting for verifier visit} other{{count} plots waiting for verifier visits}}",
   "@auditPlotsWaiting": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "auditPlotsAllVisitedShort": "All assigned audit plots are visited for the current scope.",
@@ -756,20 +829,28 @@
   "auditSignaturesTitle": "{count} of {required} signatures",
   "@auditSignaturesTitle": {
     "placeholders": {
-      "count": {"type": "int"},
-      "required": {"type": "int"}
+      "count": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
     }
   },
   "auditPendingCosign": "{count, plural, =1{1 co-signature pending} other{{count} co-signatures pending}}",
   "@auditPendingCosign": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "auditSignedVerdict": "Signed: {verdict}",
   "@auditSignedVerdict": {
     "placeholders": {
-      "verdict": {"type": "String"}
+      "verdict": {
+        "type": "String"
+      }
     }
   },
   "auditCreateVerifyLink": "Create public verify link",
@@ -787,7 +868,9 @@
   "pendingSyncBannerWaiting": "{count, plural, =1{1 item waiting to sync when online} other{{count} items waiting to sync when online}}",
   "@pendingSyncBannerWaiting": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "syncNow": "Sync now",
@@ -795,16 +878,26 @@
   "syncQueuePendingCount": "{count, plural, =1{1 item pending} other{{count} items pending}}",
   "@syncQueuePendingCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "syncQueueBreakdown": "{trees} trees · {survival} survival · {audit} audit · {bio} bio",
   "@syncQueueBreakdown": {
     "placeholders": {
-      "trees": {"type": "int"},
-      "survival": {"type": "int"},
-      "audit": {"type": "int"},
-      "bio": {"type": "int"}
+      "trees": {
+        "type": "int"
+      },
+      "survival": {
+        "type": "int"
+      },
+      "audit": {
+        "type": "int"
+      },
+      "bio": {
+        "type": "int"
+      }
     }
   },
   "fieldAlertsTitle": "Field alerts",
@@ -820,12 +913,883 @@
   "dashboardTreesRegistered": "{count} trees registered",
   "@dashboardTreesRegistered": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "segmentNutriGarden": "Nutri-garden / Poshan Vatika",
   "schemePoshanVatika": "Amrit Poshan Vatika",
   "schemeApvSiteId": "APV site ID",
   "schemeGramPanchayat": "Gram panchayat",
-  "schemeSiteAreaHa": "Site area (ha)"
+  "schemeSiteAreaHa": "Site area (ha)",
+  "syncQueueSyncing": "Syncing…",
+  "syncQueueSyncedCount": "Synced {count} item(s)",
+  "@syncQueueSyncedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueDeleteConfirmBody": "This removes the offline item from your device. It cannot be undone.",
+  "deleteLabel": "Delete",
+  "syncQueueItemRemoved": "Item removed",
+  "syncQueueTreeRegistration": "Tree registration",
+  "syncQueueStatusLine": "Status: {status}",
+  "@syncQueueStatusLine": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueuePhotosLine": "Photos: {count}",
+  "@syncQueuePhotosLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueGpsLine": "GPS: {lat}, {lon}",
+  "@syncQueueGpsLine": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueQueuedLine": "Queued: {time}",
+  "@syncQueueQueuedLine": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueRetryUpload": "Retry upload",
+  "syncQueueDeleteFromQueue": "Delete from queue",
+  "syncQueueDeleteTreeTitle": "Delete tree registration?",
+  "syncQueueBioRecording": "Bioacoustic recording",
+  "syncQueueDurationLine": "Duration: {seconds}s",
+  "@syncQueueDurationLine": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueDeleteRecordingTitle": "Delete recording?",
+  "syncQueueAuditPlotVisit": "Audit plot visit",
+  "syncQueuePresenceLine": "Presence: {value}",
+  "@syncQueuePresenceLine": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueDeleteAuditVisitTitle": "Delete audit visit?",
+  "syncQueueSurvivalSurveyTitle": "Survival survey",
+  "syncQueueTreeLine": "Tree: {id}",
+  "@syncQueueTreeLine": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueSurvivalStatusLine": "Status: {status}",
+  "@syncQueueSurvivalStatusLine": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueQueueLine": "Queue: {status}",
+  "@syncQueueQueueLine": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueDeleteSurvivalTitle": "Delete survival survey?",
+  "syncQueueRecordingMeta": "{seconds}s recording",
+  "@syncQueueRecordingMeta": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueuePhotosMeta": "{count} photo(s) · {status}",
+  "@syncQueuePhotosMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "plotFallback": "Plot",
+  "surveyFallback": "survey",
+  "visitFallback": "visit",
+  "evidenceTitle": "Evidence & MRV",
+  "evidenceMrvShareText": "MRV compliance export",
+  "evidenceMrvReady": "MRV export ready to share",
+  "evidenceBundleShareText": "Evidence bundle",
+  "evidenceBundleReady": "Evidence bundle ready to share",
+  "evidenceProjectScope": "Project scope",
+  "evidenceNoProjects": "No projects available",
+  "evidenceSelectProject": "Select project",
+  "evidencePortfolioAll": "Portfolio (all)",
+  "evidencePipeline": "Evidence pipeline",
+  "evidenceVerified": "Verified",
+  "evidencePending": "Pending",
+  "evidenceGaps": "Gaps",
+  "evidenceGapsHeader": "Gaps needing attention",
+  "evidenceNoGaps": "No evidence gaps",
+  "evidenceNoGapsSub": "Portfolio evidence is up to date",
+  "evidenceExports": "Exports",
+  "evidenceDownloadMrvPdf": "Download MRV pack (PDF)",
+  "evidenceDownloadMrvExcel": "Download MRV pack (Excel)",
+  "evidenceDownloadBundle": "Download evidence bundle (ZIP)",
+  "evidenceReportsExports": "Reports & exports",
+  "evidenceGapSurvivalDue": "Survival survey evidence due",
+  "evidenceGapViolationsOpen": "Compliance violations open",
+  "evidenceGapIntegrityBlocked": "Integrity monitoring gate blocked",
+  "evidenceGapCreditTransitions": "Credit transitions",
+  "evidenceGapFieldOps": "Field ops",
+  "evidenceGapTreesCount": "{count} trees",
+  "@evidenceGapTreesCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "evidenceGapOpenCount": "{count} open",
+  "@evidenceGapOpenCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "treeRegistryTitle": "Tree registry",
+  "filtersTitle": "Filters",
+  "filterAll": "All",
+  "clearFilters": "Clear filters",
+  "treeRegistrySearchHint": "Search ID, species, area…",
+  "sortRecent": "Recent",
+  "sortTreeId": "Tree ID",
+  "treesCountSuffix": "trees",
+  "registryCategoryAttention": "Attention",
+  "registryCategoryMissingEvidence": "Missing evidence",
+  "registryCategoryUnverified": "Unverified",
+  "registryCategoryHealthy": "Healthy",
+  "registryOnPageTotal": "{onPage} on page · {total} total",
+  "@registryOnPageTotal": {
+    "placeholders": {
+      "onPage": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "registryPageOf": "Page {current} of {pages}",
+  "@registryPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "registryPrev": "← Prev",
+  "registryNext": "Next →",
+  "registryNoMatch": "No trees match",
+  "registryNoMatchSub": "Try a different filter or search term",
+  "registryCachedList": "Showing cached tree list",
+  "registryCachedListFrom": "Showing cached tree list from {time}",
+  "@registryCachedListFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "statusUnverified": "Unverified",
+  "projectCreditLedger": "Credit ledger",
+  "projectSetupTitle": "Project setup",
+  "completeSetup": "Complete setup",
+  "openSetupOnWeb": "Open setup on web",
+  "survivalSurveysDue": "Survival surveys due",
+  "survivalNoSurveysDue": "No survival surveys due ({total} trees on {interval} day interval)",
+  "@survivalNoSurveysDue": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "survivalTreesNeedRegeotag": "{due} of {total} trees need re-geotag ({interval} day interval)",
+  "@survivalTreesNeedRegeotag": {
+    "placeholders": {
+      "due": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "interval": {
+        "type": "String"
+      }
+    }
+  },
+  "treeIdLabel": "Tree {id}",
+  "@treeIdLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "moreCount": "+ {count} more",
+  "@moreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "integrityMonitoringGate": "Integrity monitoring gate",
+  "integrityGatePassed": "Monitoring gate passed for credit transitions.",
+  "integrityGateBlocked": "Monitoring gate blocked for credit transitions.",
+  "integrityEligibleAudit": "Eligible {eligible}/{total} · Audit ready {auditReady}/{total}",
+  "@integrityEligibleAudit": {
+    "placeholders": {
+      "eligible": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      },
+      "auditReady": {
+        "type": "String"
+      }
+    }
+  },
+  "treesWithBlockingIssues": "{count} tree(s) with blocking issues",
+  "@treesWithBlockingIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "satelliteNoScan": "Satellite: no scan yet",
+  "satelliteScanned": "Satellite: scanned",
+  "satelliteStale": "Satellite: stale ({days} days ago)",
+  "@satelliteStale": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "satelliteScannedToday": "Satellite: scanned today",
+  "satelliteDaysAgo": "Satellite: {days} days ago",
+  "@satelliteDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "treesPerHa": "{count} trees/ha",
+  "@treesPerHa": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "workAreaBlock": "block {code}",
+  "@workAreaBlock": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "treeDetailOverview": "Overview",
+  "treeDetailField": "Field",
+  "treeDetailIntelligence": "Intelligence",
+  "treeDetailMap": "Map",
+  "treeDetailInspect": "Inspect",
+  "treeDetailEvidence": "Evidence",
+  "treeDetailMonitor": "Monitor",
+  "treeDetailVerified": "Verified",
+  "treeDetailFieldLocation": "Field location",
+  "treeDetailFollowUpPhotoAdded": "Follow-up photo added",
+  "treeDetailCachedDetail": "Showing cached tree detail — connect to refresh",
+  "treeDetailUploadingPhoto": "Uploading photo…",
+  "treeDetailAddFollowUpPhoto": "Add follow-up photo",
+  "treeDetailPhotoGallery": "Photo gallery",
+  "treeDetailNoPhotos": "No photos yet",
+  "treeDetailNoPhotosSub": "Add a follow-up photo from Overview or during survival survey",
+  "treeDetailMeasurementHistory": "Measurement history",
+  "treeDetailNoMeasurements": "No measurements recorded",
+  "treeDetailNoMeasurementsSub": "Survival surveys and field captures appear here",
+  "treeDetailAiHistory": "AI analysis history",
+  "treeDetailNoAiAnalyses": "No AI analyses yet",
+  "treeDetailNoAiAnalysesSub": "Run AI analysis from the Overview tab",
+  "treeDetailSarFusion": "SAR integrity fusion",
+  "treeDetailGroundStatus": "Ground status",
+  "treeDetailIntegrityScoreLabel": "Integrity score",
+  "treeDetailAuditBlockers": "Audit-ready blockers",
+  "treeDetailTimeline": "Timeline",
+  "treeDetailRegistered": "Registered · {date}",
+  "@treeDetailRegistered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "treeDetailFieldCapture": "Field capture",
+  "treeDetailSatelliteVerified": "Satellite verified",
+  "treeDetailRemoteSensingPassed": "Remote sensing check passed",
+  "treeDetailNdviSignal": "NDVI signal · {level}",
+  "@treeDetailNdviSignal": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "treeDetailMeasurement": "Measurement",
+  "treeDetailCanopy": "Canopy",
+  "treeDetailAnalysis": "Analysis",
+  "treeDetailFusionScore": "Fusion score {score}",
+  "@treeDetailFusionScore": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "treeDetailCarbonSummary": "Carbon {kg} kg · DBH {dbh} cm",
+  "@treeDetailCarbonSummary": {
+    "placeholders": {
+      "kg": {
+        "type": "String"
+      },
+      "dbh": {
+        "type": "String"
+      }
+    }
+  },
+  "treeDetailHealthLine": "Health {health}",
+  "@treeDetailHealthLine": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "auditVisitQueued": "Visit queued for sync when online",
+  "auditVisitSaved": "Audit plot visit saved",
+  "auditVisitTitle": "Visit {code}",
+  "@auditVisitTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "auditCapturingGps": "Capturing GPS…",
+  "auditTreePresence": "Tree presence",
+  "auditTreesPresent": "Trees present",
+  "auditTreesAbsent": "No trees / bare ground",
+  "auditTreesSparse": "Sparse / scattered",
+  "auditCannotAssess": "Cannot assess",
+  "auditTreesObserved": "Trees observed",
+  "auditTreesAlive": "Trees alive",
+  "auditOutcome": "Outcome",
+  "auditOutcomeInconclusive": "Inconclusive",
+  "auditOutcomeSupported": "Supported",
+  "auditOutcomeUnsupported": "Unsupported",
+  "auditFieldNotes": "Field notes",
+  "auditUploadingPhoto": "Uploading photo…",
+  "auditAddFieldPhoto": "Add field photo ({current}/5)",
+  "@auditAddFieldPhoto": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      }
+    }
+  },
+  "auditSaveVisit": "Save visit",
+  "auditGpsRequired": "Capture GPS before saving the visit.",
+  "auditPhotoRequired": "Add at least one field photo.",
+  "auditRiskSuffix": "{risk} risk",
+  "@auditRiskSuffix": {
+    "placeholders": {
+      "risk": {
+        "type": "String"
+      }
+    }
+  },
+  "bioSessionDetailTitle": "Session detail",
+  "bioDetectionTierAccepted": "Accepted",
+  "bioDetectionTierProbable": "Probable",
+  "bioDetectionTierReview": "Review required",
+  "bioFieldSite": "Field site",
+  "bioDetectedSpecies": "Detected species",
+  "bioDetectionsPending": "Species detections will appear when analysis completes.",
+  "bioNoDetections": "No species detections yet.",
+  "bioViewBiodiversityFusion": "View biodiversity fusion",
+  "bioAddToEvidence": "Add to evidence bundle",
+  "viewOnMap": "View on map",
+  "bioConfidenceScore": "Confidence {score}/100",
+  "@bioConfidenceScore": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "bioAcceptedCount": "Accepted {count}",
+  "@bioAcceptedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "bioShannonLine": "Shannon {value}",
+  "@bioShannonLine": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "bioCallsCount": "{count} calls",
+  "@bioCallsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "biodiversityTitle": "Biodiversity",
+  "bioTaxa": "Taxa",
+  "bioShannonLabel": "Shannon",
+  "bioConfidenceLabel": "Confidence",
+  "bioConfidenceHint": "Biodiversity Confidence from {count} analyzed recordings (evidence quality, not habitat health)",
+  "@bioConfidenceHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bioRegionalSpeciesNear": "Regional species near {lat}, {lon}",
+  "@bioRegionalSpeciesNear": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lon": {
+        "type": "String"
+      }
+    }
+  },
+  "bioRegionalSpeciesGbif": "Regional species (GBIF)",
+  "bioHotspotsByWorkArea": "Hotspots by work area",
+  "bioNoWorkAreas": "No work areas",
+  "bioNoWorkAreasMapped": "No work areas mapped",
+  "bioConfidenceMeta": "Confidence {score}/100",
+  "@bioConfidenceMeta": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "bioStrong": "Strong",
+  "bioWatch": "Watch",
+  "bioAcousticDetail": "Bioacoustic detail",
+  "bioRunSurvey": "Run bioacoustic survey",
+  "bioNoLocationSpecies": "No location for species list",
+  "bioNoLocationSpeciesSub": "Add a work area boundary or register a tree with GPS to load regional fauna.",
+  "bioNoRegionalSpecies": "No regional species found",
+  "bioNoRegionalSpeciesSub": "GBIF returned no nearby occurrences for this site.",
+  "bioViewOnMapMeta": "View on map",
+  "bioOpen": "Open",
+  "carbonPortfolioTco2e": "tCO₂e estimated (portfolio)",
+  "carbonAnnualPace": "{pct}% of annual sequestration pace",
+  "@carbonAnnualPace": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "carbonTreesInPortfolio": "{count} trees in portfolio",
+  "@carbonTreesInPortfolio": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "carbonByProject": "By project",
+  "carbonEnterSpecies": "Enter a species name.",
+  "carbonEstimateDisclaimer": "Estimate CO₂e from species and optional measurements. This is an Estimate — not a Live field measurement or registry-issued credit.",
+  "carbonCo2eRange": "{lower}–{upper} kg CO₂e (90% CI)",
+  "@carbonCo2eRange": {
+    "placeholders": {
+      "lower": {
+        "type": "String"
+      },
+      "upper": {
+        "type": "String"
+      }
+    }
+  },
+  "carbonCo2eSingle": "{value} kg CO₂e",
+  "@carbonCo2eSingle": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "carbonUncertainty": "±{pct}% measurement + model uncertainty",
+  "@carbonUncertainty": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "carbonHonestyLabel": "Honesty label: Estimate (modelled). Not Live sensor data.",
+  "reportReadyToShare": "Report ready to share",
+  "reportMisTitle": "Plantation MIS reports",
+  "reportMisSubtitle": "Operational exports used by government plantation programmes",
+  "reportTypeLabel": "Report type",
+  "reportDownloading": "Downloading…",
+  "reportDownloadMis": "Download MIS report",
+  "reportReadyShareNamed": "{name} ready to share",
+  "@reportReadyShareNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadLabel": "Download",
+  "creditIntegrityFusion": "Integrity fusion",
+  "creditAuditReady": "Audit ready",
+  "creditEligible": "Credit eligible",
+  "creditStatusHistory": "Status history",
+  "creditSerials": "Credit serials",
+  "creditSerialFallback": "Serial",
+  "viewProject": "View project",
+  "projectLedgers": "Project ledgers",
+  "alertRecommendedAction": "Recommended action",
+  "alertMarkReviewed": "Mark reviewed",
+  "alertViewAffectedTree": "View affected tree →",
+  "createProjectTitle": "Create project",
+  "createProjectSubtitle": "Supervisors can start a planting project and finish setup on the web.",
+  "createProjectNameLabel": "Project name",
+  "createProjectDescriptionLabel": "Description (optional)",
+  "createProjectSegmentLabel": "Segment",
+  "createProjectNameRequired": "Project name is required",
+  "newProject": "New project",
+  "survivalMissingUprooted": "Missing / uprooted",
+  "survivalTapeMeasure": "Tape measure (DBH at 1.3 m)",
+  "survivalClinometer": "Clinometer (height)",
+  "survivalPhotoAttached": "Survey photo attached",
+  "survivalCapturingPhoto": "Capturing photo…",
+  "survivalAddPhoto": "Add survey photo (camera)",
+  "survivalRemarksHint": "Condition, replacement notes…",
+  "openInMaps": "Open in Maps",
+  "myLocation": "My location",
+  "closeLabel": "Close",
+  "prepareLabel": "Prepare",
+  "schemeProgramme": "Scheme programme",
+  "governmentReferences": "Government references",
+  "schemeFallback": "Scheme",
+  "onboardingVerifyOrg": "• Our team verifies your organization details",
+  "onboardingApprovalEmail": "• You receive an approval email",
+  "onboardingSignInDashboard": "• Open the app and sign in to access your dashboard",
+  "onboardingPendingSubtitle": "Your organization profile is under review. We will email you when your account is approved — usually within 1–2 business days.",
+  "blockerInsufficientPhotos": "Need at least 2 photos",
+  "blockerPhotoSpanTooShort": "Photos must span 30+ days",
+  "blockerSatelliteScanStale": "Satellite scan older than 90 days",
+  "blockerFusionBelowAudit": "Fusion score below 75",
+  "blockerMissingExif": "Missing camera EXIF",
+  "blockerMissingPhotoGps": "Photo missing GPS",
+  "blockerMissingPhotoTimestamp": "Photo missing timestamp",
+  "blockerPhotoTimestampStale": "Photo older than 7 days",
+  "blockerRegeotagMismatch": "Re-geotag mismatch",
+  "blockerDuplicatePhoto": "Duplicate photo",
+  "blockerDuplicateCoordinate": "Duplicate coordinate",
+  "blockerAiConfidenceLow": "Low AI confidence",
+  "blockerSarIntegrityBelow": "SAR forest integrity below minimum",
+  "blockerOpticalScanStale": "Work area optical scan stale",
+  "blockerFusionBelowMinimum": "Fusion score below minimum",
+  "blockerNotCreditEligible": "Not credit eligible",
+  "remediationAddFollowUpPhoto": "Add a follow-up field photo from the tree detail page.",
+  "remediationRunSurvivalSurvey": "Run a survival survey with GPS and an optional survey photo.",
+  "remediationTriggerSatellite": "Trigger a satellite health scan from tree detail.",
+  "remediationReviewMonitoring": "Review monitoring coverage for this project.",
+  "monitoringNeedsDecision": "Needs decision",
+  "monitoringNoUrgentAlerts": "No urgent alerts",
+  "monitoringSignalsStable": "Monitoring signals are stable",
+  "monitoringSitePulse": "Site pulse",
+  "alertCategoryFire": "Fire",
+  "alertCategoryFlood": "Flood",
+  "alertCategoryWeather": "Weather",
+  "alertCategoryPest": "Pest",
+  "alertCategorySatellite": "Satellite",
+  "alertUrgencyActNow": "Act now",
+  "alertUrgencyPrepare": "Prepare",
+  "alertUrgencyMonitor": "Monitor",
+  "healthFilterHealthy": "healthy",
+  "healthFilterStressed": "stressed",
+  "healthFilterDead": "dead",
+  "monthJan": "Jan",
+  "monthFeb": "Feb",
+  "monthMar": "Mar",
+  "monthApr": "Apr",
+  "monthMay": "May",
+  "monthJun": "Jun",
+  "monthJul": "Jul",
+  "monthAug": "Aug",
+  "monthSep": "Sep",
+  "monthOct": "Oct",
+  "monthNov": "Nov",
+  "monthDec": "Dec",
+  "methodologyTitle": "Methodology",
+  "alertUrgencyActToday": "Act today",
+  "alertUrgencyThisWeek": "This week",
+  "bioEcosystemAcousticHealthHeading": "ECOSYSTEM ACOUSTIC HEALTH",
+  "scoreOutOfHundred": "/100",
+  "bioSpeciesCount": "{count} species",
+  "@bioSpeciesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bioRecordingsCount": "{count} recordings",
+  "@bioRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepCapture": "Capture",
+  "pipelineStepEvidence": "Evidence",
+  "pipelineStepVerify": "Verify",
+  "pipelineStepMrv": "MRV",
+  "pipelineStepReport": "Report",
+  "detailsLabel": "Details",
+  "bioEcosystemAcousticHealthDefault": "Ecosystem acoustic health",
+  "bioRecordingDurationStatus": "{seconds}s · {status}",
+  "@bioRecordingDurationStatus": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "bioLocationLine": "Location {coords}",
+  "@bioLocationLine": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "survivalDueTreesSubtitle": "{count} trees due · {segment}",
+  "@survivalDueTreesSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "segment": {
+        "type": "String"
+      }
+    }
+  },
+  "forestHealthExcellent": "Excellent",
+  "forestHealthGood": "Good",
+  "forestHealthFair": "Fair",
+  "forestHealthNeedsCare": "Needs care",
+  "briefInspectionZones": "{count, plural, =1{1 plantation zone requires inspection today.} other{{count} plantation zones require inspection today.}}",
+  "@briefInspectionZones": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "briefTreeHealthBelowTarget": "Tree health is below target — schedule a field review this week.",
+  "briefNoTreesRegistered": "No trees registered yet — add your first plantation to begin monitoring.",
+  "briefAllZonesHealthy": "All monitored zones are within expected health parameters.",
+  "briefTomorrowWeather": "{description} tomorrow may reduce survival in exposed zones.",
+  "@briefTomorrowWeather": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "briefBiodiversityIncreased": "Biodiversity increased by {pct}% based on recent acoustic surveys.",
+  "@briefBiodiversityIncreased": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "briefRunBioacousticSurvey": "Run a bioacoustic survey to enrich biodiversity intelligence.",
+  "homeQueueSurvivalTitle": "{project} — survival due",
+  "@homeQueueSurvivalTitle": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQueueTreesDue": "{count} trees due",
+  "@homeQueueTreesDue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "priorityAlertFallback": "Priority alert",
+  "quickMetricCarbonCredits": "Carbon Credits",
+  "quickMetricWeatherRisk": "Weather Risk",
+  "weatherRiskHigh": "High",
+  "weatherRiskMed": "Med",
+  "weatherRiskLow": "Low",
+  "speciesCountAbbrev": "{count} sp.",
+  "@speciesCountAbbrev": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "segmentNhaiHighway": "NHAI / Highway",
+  "segmentIndustrialGreenbelt": "Mine / Green belt",
+  "segmentTownshipLandscape": "Township / Society",
+  "segmentNagarVanUrban": "Nagar Van / Urban forest",
+  "segmentSahakarVanCoop": "Sahakar Van / Cooperative forest",
+  "segmentNgoWatershed": "NGO / Watershed",
+  "segmentGeneral": "General",
+  "projectTreesCount": "{count} trees",
+  "@projectTreesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectViolationsSuffix": " · {count} violations",
+  "@projectViolationsSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signupAccountSubtitle": "A few details — then quick OTP checks.",
+  "codeSentToPhone": "Code sent to {phone}",
+  "@codeSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "codeSentToEmail": "Code sent to {email}",
+  "@codeSentToEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "fullNameFieldLabel": "Full name",
+  "mobilePhoneLabel": "Mobile phone number",
+  "passwordMin8": "Min. 8 characters",
+  "passwordMin12": "Min. 12 characters",
+  "acceptTermsPrivacy": "I agree to the Terms & Privacy Policy",
+  "otpSmsPrompt": "Enter the 6-digit SMS code",
+  "otpEmailPrompt": "Enter the 6-digit email code",
+  "finishSignup": "Finish signup",
+  "signupValidEmail": "Please enter a valid email address.",
+  "signupPasswordMinChars": "Password must be at least {count} characters.",
+  "@signupPasswordMinChars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signupAcceptTerms": "Please accept the terms to continue.",
+  "signupEnterPhoneOtp": "Enter the 6-digit code sent to your phone.",
+  "signupEnterEmailOtp": "Enter the 6-digit code sent to your email.",
+  "googleOAuthNoTokens": "Google sign-in did not return tokens.",
+  "authValidEmail": "Enter a valid email address.",
+  "authEnterEmailVerificationCode": "Enter the verification code from your email.",
+  "authPasswordMin12": "Password must be at least 12 characters.",
+  "forgotPasswordStep2Subtitle": "Enter the code sent to {email} and choose a new password.",
+  "@forgotPasswordStep2Subtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPasswordStep1Subtitle": "We will email you a one-time code to reset your password.",
+  "pleaseWait": "Please wait…",
+  "authValidIndianMobile": "Enter a valid 10-digit Indian mobile number.",
+  "completeSecurityCheck": "Complete the security check before continuing.",
+  "authEnterSmsCode": "Enter the code from your SMS.",
+  "mobilePlus91Label": "Mobile (+91)",
+  "tenDigitNumberHint": "10-digit number",
+  "phoneOtpServerNote": "SMS OTP will work once your server has MSG91/SMS configured. Until then, use email sign-in.",
+  "passwordHelperMin12": "At least 12 characters"
 }

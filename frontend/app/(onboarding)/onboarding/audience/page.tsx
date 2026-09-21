@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AudiencePicker } from "@/components/onboarding/audience-picker";
 import { audienceOnboarding, auth } from "@/lib/api";
 import { resolvePlantingAudience, type PlantingAudience } from "@/lib/audience";
@@ -11,6 +12,7 @@ import { useAuth } from "@/lib/auth-store";
 import { onboardingRedirectPath } from "@/lib/onboarding-routing";
 
 export default function OnboardingAudiencePage() {
+  const t = useTranslations("onboardingAudience");
   const router = useRouter();
   const { user, setUser } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -68,16 +70,16 @@ export default function OnboardingAudiencePage() {
         }}
       />
       <p className="text-center text-xs text-stone-500">
-        Not sure yet?{" "}
+        {t("skipPrompt")}{" "}
         <button
           type="button"
           className="font-medium text-forest-700 hover:underline"
           disabled={busy}
           onClick={() => void handleSelect("general")}
         >
-          Skip — use general plantation
+          {t("skipAction")}
         </button>{" "}
-        (you can still browse every scheme when creating a project).
+        {t("skipSuffix")}
       </p>
     </div>
   );

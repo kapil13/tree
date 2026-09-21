@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CloudOff, RefreshCw, Trash2, TreePine, Wifi } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/offline/tree-registration-sync";
 
 export default function SyncQueuePage() {
+  const t = useTranslations("fieldOpsSyncPage");
   const searchParams = useSearchParams();
   const [items, setItems] = useState<QueuedTreeRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,29 +42,29 @@ export default function SyncQueuePage() {
 
   useEffect(() => {
     if (searchParams.get("queued") === "1") {
-      setStatus("Tree registration saved offline — sync when connected.");
+      setStatus(t("queuedOffline"));
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   async function syncAll() {
     setSyncing(true);
-    setStatus("Syncing…");
+    setStatus(t("syncing"));
     try {
       const count = await syncQueuedTreeRegistrations();
       await reload();
-      setStatus(count > 0 ? `Synced ${count} tree registration(s)` : "All synced");
+      setStatus(count > 0 ? t("syncedCount", { count }) : t("allSyncedStatus"));
     } catch {
-      setStatus("Sync failed — try again when online");
+      setStatus(t("syncFailed"));
     } finally {
       setSyncing(false);
     }
   }
 
   async function removeItem(id: string) {
-    if (!confirm("Remove this queued registration from your device?")) return;
+    if (!confirm(t("confirmRemove"))) return;
     await removeTreeRegistration(id);
     await reload();
-    setStatus("Item removed");
+    setStatus(t("itemRemoved"));
   }
 
   async function retryItem(item: QueuedTreeRegistration) {
@@ -75,11 +77,11 @@ export default function SyncQueuePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4">
       <PageHeader
-        title="Sync queue"
-        description="Offline tree registrations upload when you are back online."
+        title={t("title")}
+        description={t("description")}
         breadcrumbs={[
-          { label: "Operate", href: "/field-ops" },
-          { label: "Sync queue" },
+          { label: t("breadcrumbOperate"), href: "/field-ops" },
+          { label: t("breadcrumbSync") },
         ]}
       />
 
@@ -91,7 +93,7 @@ export default function SyncQueuePage() {
             ) : (
               <CloudOff className="h-4 w-4 text-amber-600" />
             )}
-            {online ? "Online" : "Offline — items stay queued until connected"}
+            {online ? t("online") : t("offline")}
           </div>
           <button
             type="button"
@@ -100,37 +102,35 @@ export default function SyncQueuePage() {
             onClick={() => void syncAll()}
           >
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            Sync now
+            {t("syncNow")}
           </button>
         </div>
         <p className="text-sm text-stone-600">
-          {pending === 0
-            ? "All tree registrations are synced."
-            : `${pending} registration(s) waiting to upload.`}
+          {pending === 0 ? t("allSynced") : t("pendingUpload", { count: pending })}
         </p>
         {status ? <p className="text-xs text-forest-700">{status}</p> : null}
       </div>
 
       {loading ? (
-        <p className="text-sm text-stone-500">Loading queue…</p>
+        <p className="text-sm text-stone-500">{t("loading")}</p>
       ) : items.length === 0 ? (
         <EmptyState
           icon={TreePine}
-          title="Queue empty"
-          description="Tree registrations saved offline while disconnected will appear here."
-          action={{ label: "Register a tree", href: "/trees/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
+          action={{ label: t("registerTree"), href: "/trees/new" }}
         />
       ) : (
         <ul className="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
           {items.map((item) => {
             const species =
-              (item.payload.species_text as string | undefined) ?? "Tree registration";
+              (item.payload.species_text as string | undefined) ?? t("treeRegistration");
             return (
               <li key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-medium text-stone-900">{species}</p>
                   <p className="text-xs text-stone-500">
-                    {item.photos.length} photo(s) · {item.status} ·{" "}
+                    {t("photoCount", { count: item.photos.length })} · {item.status} ·{" "}
                     {new Date(item.createdAt).toLocaleString()}
                   </p>
                   {item.errorMessage ? (
@@ -156,7 +156,7 @@ export default function SyncQueuePage() {
                       className="btn-secondary text-xs"
                       onClick={() => void retryItem(item)}
                     >
-                      Retry
+                      {t("retry")}
                     </button>
                   ) : null}
                   <button
@@ -165,7 +165,7 @@ export default function SyncQueuePage() {
                     onClick={() => void removeItem(item.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Delete
+                    {t("delete")}
                   </button>
                 </div>
               </li>
@@ -175,11 +175,11 @@ export default function SyncQueuePage() {
       )}
 
       <p className="text-xs text-stone-500">
-        Queued on this browser only. Open{" "}
+        {t("footerPrefix")}{" "}
         <Link href="/trees/new" className="text-forest-700 hover:underline">
-          tree registration
+          {t("footerLink")}
         </Link>{" "}
-        to capture more trees when offline.
+        {t("footerSuffix")}
       </p>
     </div>
   );

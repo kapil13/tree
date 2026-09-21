@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, Lock, XCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { errorMessage, plantingPrograms, type PlantingProgram, type ProgramAccessRequest } from "@/lib/api";
 import { getProgramTheme } from "@/components/registration/program-theme";
@@ -16,6 +17,7 @@ function requestForProgram(
 }
 
 export default function SettingsProgramsPage() {
+  const t = useTranslations("settingsProgramsPage");
   const qc = useQueryClient();
   const [selectedProgram, setSelectedProgram] = useState<PlantingProgram | null>(null);
   const [message, setMessage] = useState("");
@@ -38,7 +40,7 @@ export default function SettingsProgramsPage() {
         message: message.trim() || undefined,
       }),
     onSuccess: () => {
-      setFeedback("Access request submitted. An admin will review it shortly.");
+      setFeedback(t("requestSubmitted"));
       setSelectedProgram(null);
       setMessage("");
       qc.invalidateQueries({ queryKey: ["planting-programs"] });
@@ -49,17 +51,14 @@ export default function SettingsProgramsPage() {
   const withdrawRequest = useMutation({
     mutationFn: (requestId: string) => plantingPrograms.withdrawAccessRequest(requestId),
     onSuccess: () => {
-      setFeedback("Request withdrawn.");
+      setFeedback(t("requestWithdrawn"));
       qc.invalidateQueries({ queryKey: ["planting-programs"] });
     },
     onError: (err) => setFeedback(errorMessage(err)),
   });
 
   return (
-    <SettingsSection
-      title="Your programs"
-      description="BYOT Public is active on every account. Additional programs appear here once your organization is approved or assigned."
-    >
+    <SettingsSection title={t("title")} description={t("description")}>
       {feedback ? (
         <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200">
           {feedback}
@@ -68,7 +67,7 @@ export default function SettingsProgramsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         {isLoading ? (
-          <p className="col-span-full py-6 text-center text-sm text-stone-500">Loading programs…</p>
+          <p className="col-span-full py-6 text-center text-sm text-stone-500">{t("loading")}</p>
         ) : (
           (data?.available || []).map((program) => {
             const active = enrolled.has(program.code);
@@ -101,28 +100,30 @@ export default function SettingsProgramsPage() {
                       <p className="font-medium text-stone-900 dark:text-stone-50">{program.name}</p>
                       {program.is_default || active ? (
                         <span className="rounded bg-forest-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-forest-800 dark:bg-forest-950/40 dark:text-forest-200">
-                          Active
+                          {t("active")}
                         </span>
                       ) : access?.status === "pending" ? (
                         <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                           <Clock className="h-3 w-3" />
-                          Pending review
+                          {t("pendingReview")}
                         </span>
                       ) : access?.status === "rejected" ? (
                         <span className="inline-flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-800 dark:bg-red-950/40 dark:text-red-200">
                           <XCircle className="h-3 w-3" />
-                          Not approved
+                          {t("notApproved")}
                         </span>
                       ) : locked ? (
                         <span className="inline-flex items-center gap-1 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-stone-600 dark:bg-stone-700 dark:text-stone-300">
                           <Lock className="h-3 w-3" />
-                          Approval required
+                          {t("approvalRequired")}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm text-stone-500">{program.description}</p>
                     {access?.admin_note && access.status === "rejected" ? (
-                      <p className="mt-1 text-xs text-stone-500">Note: {access.admin_note}</p>
+                      <p className="mt-1 text-xs text-stone-500">
+                        {t("adminNote", { note: access.admin_note })}
+                      </p>
                     ) : null}
                   </div>
                 </div>
@@ -136,7 +137,7 @@ export default function SettingsProgramsPage() {
                         disabled={withdrawRequest.isPending}
                         onClick={() => withdrawRequest.mutate(access.id)}
                       >
-                        Withdraw request
+                        {t("withdrawRequest")}
                       </button>
                     ) : (
                       <button
@@ -148,7 +149,7 @@ export default function SettingsProgramsPage() {
                           setFeedback(null);
                         }}
                       >
-                        {access?.status === "rejected" ? "Request again" : "Request access"}
+                        {access?.status === "rejected" ? t("requestAgain") : t("requestAccess")}
                       </button>
                     )}
                   </div>
@@ -162,21 +163,20 @@ export default function SettingsProgramsPage() {
       {selectedProgram ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-xl dark:border-stone-700 dark:bg-stone-900">
-            <h3 className="text-lg font-semibold">Request access — {selectedProgram.name}</h3>
-            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
-              Tell us briefly about your organization or use case. An admin will review and enable the
-              program on your account.
-            </p>
+            <h3 className="text-lg font-semibold">
+              {t("modalTitle", { name: selectedProgram.name })}
+            </h3>
+            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">{t("modalDescription")}</p>
             <textarea
               className="input mt-4 min-h-[120px] w-full"
-              placeholder="e.g. NHAI regional office, corporate CSR team, watershed NGO…"
+              placeholder={t("modalPlaceholder")}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               maxLength={2000}
             />
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" className="btn-ghost" onClick={() => setSelectedProgram(null)}>
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 type="button"
@@ -184,7 +184,7 @@ export default function SettingsProgramsPage() {
                 disabled={submitRequest.isPending}
                 onClick={() => submitRequest.mutate()}
               >
-                {submitRequest.isPending ? "Submitting…" : "Submit request"}
+                {submitRequest.isPending ? t("submitting") : t("submitRequest")}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -16,6 +17,8 @@ import { useAuth } from "@/lib/auth-store";
 import { downloadBlob } from "@/lib/download-blob";
 
 export default function PlatformOrganizationDetailPage() {
+  const t = useTranslations("platformAdmin.organizationsDetail");
+  const tc = useTranslations("platformAdmin.common");
   const params = useParams<{ id: string }>();
   const orgId = params.id;
   const qc = useQueryClient();
@@ -50,7 +53,7 @@ export default function PlatformOrganizationDetailPage() {
       }),
     onSuccess: () => {
       setStepUpOpen(false);
-      notifyPlatformAction("Organization owner updated.", {
+      notifyPlatformAction(t("notifyOwnerUpdated"), {
         audit: { actionPrefix: "platform.organization." },
       });
       qc.invalidateQueries({ queryKey: ["platform-organization", orgId] });
@@ -69,7 +72,7 @@ export default function PlatformOrganizationDetailPage() {
     }) => platformAdmin.updateOrganization(orgId, payload),
     onSuccess: () => {
       setSuspendOpen(false);
-      notifyPlatformAction("Organization updated.", {
+      notifyPlatformAction(t("notifyUpdated"), {
         audit: { actionPrefix: "platform.organization." },
       });
       qc.invalidateQueries({ queryKey: ["platform-organization", orgId] });
@@ -83,7 +86,7 @@ export default function PlatformOrganizationDetailPage() {
     mutationFn: () => platformAdmin.exportOrgMembers(orgId),
     onSuccess: (blob) => {
       downloadBlob(blob, `org-${orgId}-members.csv`);
-      notifyPlatformAction("Members exported.");
+      notifyPlatformAction(t("notifyMembersExported"));
     },
     onError: (err) => notifyPlatformError(err),
   });
@@ -91,7 +94,7 @@ export default function PlatformOrganizationDetailPage() {
   if (isLoading || !org) {
     return (
       <PlatformShell>
-        <p className="text-sm text-stone-500">Loading organization…</p>
+        <p className="text-sm text-stone-500">{t("loading")}</p>
       </PlatformShell>
     );
   }
@@ -104,30 +107,25 @@ export default function PlatformOrganizationDetailPage() {
       <div className="space-y-6">
         <div>
           <Link href="/platform/organizations" className="text-sm text-forest-700 hover:underline">
-            ← Organizations
+            {t("backToOrganizations")}
           </Link>
           <h2 className="mt-2 text-2xl font-semibold">{org.name}</h2>
           <p className="text-sm text-stone-500">
-            {org.slug} · {org.type} · {org.is_active ? "Active" : "Suspended"}
+            {org.slug} · {org.type} · {org.is_active ? tc("active") : tc("suspended")}
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Stat label="Members" value={String(org.member_count)} />
-          <Stat label="Projects" value={String(org.project_count)} />
-          <Stat
-            label="Created"
-            value={new Date(org.created_at).toLocaleDateString()}
-          />
+          <Stat label={t("statMembers")} value={String(org.member_count)} />
+          <Stat label={t("statProjects")} value={String(org.project_count)} />
+          <Stat label={t("statCreated")} value={new Date(org.created_at).toLocaleDateString()} />
         </div>
 
         {fullAdmin ? (
           <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-            <h3 className="text-lg font-semibold">Organization status</h3>
+            <h3 className="text-lg font-semibold">{t("statusTitle")}</h3>
             <p className="mt-1 text-sm text-stone-600">
-              {org.is_active
-                ? "This organization is active. Suspend to block member access."
-                : "This organization is suspended. Members cannot sign in."}
+              {org.is_active ? t("statusActiveDesc") : t("statusSuspendedDesc")}
             </p>
             <div className="mt-3">
               {org.is_active ? (
@@ -136,7 +134,7 @@ export default function PlatformOrganizationDetailPage() {
                   className="btn-secondary text-rose-700"
                   onClick={() => setSuspendOpen(true)}
                 >
-                  Suspend organization
+                  {t("suspendOrganization")}
                 </button>
               ) : (
                 <button
@@ -145,7 +143,7 @@ export default function PlatformOrganizationDetailPage() {
                   disabled={updateOrg.isPending}
                   onClick={() => updateOrg.mutate({ is_active: true })}
                 >
-                  Reactivate organization
+                  {t("reactivateOrganization")}
                 </button>
               )}
             </div>
@@ -154,11 +152,8 @@ export default function PlatformOrganizationDetailPage() {
 
         {fullAdmin ? (
           <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-            <h3 className="text-lg font-semibold">Feature flags</h3>
-            <p className="mt-1 text-sm text-stone-600">
-              Toggle capabilities for this organization. Disabled features return a permission error
-              for org members.
-            </p>
+            <h3 className="text-lg font-semibold">{t("featureFlagsTitle")}</h3>
+            <p className="mt-1 text-sm text-stone-600">{t("featureFlagsDesc")}</p>
             <div className="mt-4">
               <OrgFeatureFlagsPanel orgId={orgId} />
             </div>
@@ -167,20 +162,20 @@ export default function PlatformOrganizationDetailPage() {
 
         {fullAdmin ? (
           <section className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-stone-800 dark:bg-stone-900">
-            <h3 className="text-lg font-semibold">Ownership</h3>
+            <h3 className="text-lg font-semibold">{t("ownershipTitle")}</h3>
             <p className="mt-1 text-sm text-stone-600">
-              Current owner:{" "}
-              {owner ? `${owner.full_name} (${owner.email})` : "Not assigned"}
+              {t("currentOwner")}{" "}
+              {owner ? `${owner.full_name} (${owner.email})` : t("notAssigned")}
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
               <label className="flex-1 text-sm">
-                <span className="mb-1 block text-stone-600">Transfer to member</span>
+                <span className="mb-1 block text-stone-600">{t("transferToMember")}</span>
                 <select
                   className="input w-full"
                   value={transferOwnerId}
                   onChange={(e) => setTransferOwnerId(e.target.value)}
                 >
-                  <option value="">Select member…</option>
+                  <option value="">{t("selectMember")}</option>
                   {eligibleOwners.map((member) => (
                     <option key={member.id} value={member.id}>
                       {member.full_name} ({member.email})
@@ -198,7 +193,7 @@ export default function PlatformOrganizationDetailPage() {
                 }
                 onClick={() => setStepUpOpen(true)}
               >
-                Transfer ownership
+                {t("transferOwnership")}
               </button>
             </div>
           </section>
@@ -206,7 +201,7 @@ export default function PlatformOrganizationDetailPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold">Members</h3>
+            <h3 className="text-lg font-semibold">{t("membersTitle")}</h3>
             <button
               type="button"
               className="btn-secondary inline-flex items-center gap-2 text-xs"
@@ -214,17 +209,17 @@ export default function PlatformOrganizationDetailPage() {
               onClick={() => exportMembers.mutate()}
             >
               <Download className="h-4 w-4" />
-              Export CSV
+              {tc("exportCsv")}
             </button>
           </div>
           <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
             <table className="min-w-full text-sm">
               <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-950">
                 <tr>
-                  <th className="px-4 py-3 font-medium">User</th>
-                  <th className="px-4 py-3 font-medium">Platform role</th>
-                  <th className="px-4 py-3 font-medium">Org role</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">{t("tableUser")}</th>
+                  <th className="px-4 py-3 font-medium">{t("tablePlatformRole")}</th>
+                  <th className="px-4 py-3 font-medium">{t("tableOrgRole")}</th>
+                  <th className="px-4 py-3 font-medium">{tc("status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,7 +229,7 @@ export default function PlatformOrganizationDetailPage() {
                       <div className="font-medium">
                         {member.full_name}
                         {member.id === org.owner_user_id ? (
-                          <span className="ml-2 text-xs text-forest-700">Owner</span>
+                          <span className="ml-2 text-xs text-forest-700">{tc("owner")}</span>
                         ) : null}
                       </div>
                       <div className="text-xs text-stone-500">{member.email}</div>
@@ -242,9 +237,11 @@ export default function PlatformOrganizationDetailPage() {
                     <td className="px-4 py-3">{member.role}</td>
                     <td className="px-4 py-3">
                       {member.org_role ?? "—"}
-                      {member.is_org_admin ? " (admin)" : ""}
+                      {member.is_org_admin ? t("orgAdminSuffix") : ""}
                     </td>
-                    <td className="px-4 py-3">{member.is_active ? "Active" : "Inactive"}</td>
+                    <td className="px-4 py-3">
+                      {member.is_active ? tc("active") : tc("inactive")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -253,18 +250,18 @@ export default function PlatformOrganizationDetailPage() {
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-lg font-semibold">Planting projects</h3>
+          <h3 className="text-lg font-semibold">{t("plantingProjectsTitle")}</h3>
           {(projects?.items ?? []).length === 0 ? (
-            <p className="text-sm text-stone-500">No projects linked to this organization.</p>
+            <p className="text-sm text-stone-500">{t("noProjects")}</p>
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
               <table className="min-w-full text-sm">
                 <thead className="bg-stone-50 text-left text-stone-600 dark:bg-stone-950">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Project</th>
-                    <th className="px-4 py-3 font-medium">Segment</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Program</th>
+                    <th className="px-4 py-3 font-medium">{t("tableProject")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableSegment")}</th>
+                    <th className="px-4 py-3 font-medium">{tc("status")}</th>
+                    <th className="px-4 py-3 font-medium">{t("tableProgram")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,7 +281,6 @@ export default function PlatformOrganizationDetailPage() {
             </div>
           )}
         </section>
-
       </div>
 
       <OrgSuspendModal
@@ -305,9 +301,9 @@ export default function PlatformOrganizationDetailPage() {
 
       <StepUpModal
         open={stepUpOpen}
-        title="Transfer organization ownership"
-        description="Re-enter your password to assign a new owner. The new owner becomes an org admin."
-        confirmLabel="Transfer ownership"
+        title={t("stepUpTransferTitle")}
+        description={t("stepUpTransferDesc")}
+        confirmLabel={t("transferOwnership")}
         busy={transferOwnership.isPending}
         onClose={() => setStepUpOpen(false)}
         onConfirm={(password) => transferOwnership.mutate(password)}

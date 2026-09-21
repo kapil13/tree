@@ -103,9 +103,9 @@ class HomeScreen extends ConsumerWidget {
             final alerts = alertsAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
             final weather = weatherAsync.maybeWhen(data: (d) => d, orElse: () => null);
             final fences = fencesAsync.maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
-            final health = computeForestHealth(dashboard);
-            final briefLines = buildAiBriefLines(dashboard: dashboard, alerts: alerts, weather: weather);
-            final priority = pickPriorityAlert(alerts);
+            final health = computeForestHealth(dashboard, l10n: l10n);
+            final briefLines = buildAiBriefLines(dashboard: dashboard, l10n: l10n, alerts: alerts, weather: weather);
+            final priority = pickPriorityAlert(alerts, l10n: l10n);
             final kpi = dashboard['kpi'] as Map<String, dynamic>? ?? {};
             final bio = dashboard['bioacoustic'] as Map<String, dynamic>? ?? {};
             final trees = (kpi['total_trees'] as num?)?.toInt() ?? 0;
@@ -127,6 +127,7 @@ class HomeScreen extends ConsumerWidget {
             final fieldSummary = fieldOpsAsync.maybeWhen(data: (d) => d, orElse: () => null);
             final queueItems = buildHomeQueueItems(
               alerts: alerts,
+              l10n: l10n,
               fieldSummary: fieldSummary,
               includeFieldOps: canSeeFieldOps(user),
             );

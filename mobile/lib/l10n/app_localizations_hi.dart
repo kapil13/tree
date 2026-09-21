@@ -1921,4 +1921,1286 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get schemeSiteAreaHa => 'साइट क्षेत्र (हे.)';
+
+  @override
+  String get syncQueueSyncing => 'सिंक हो रहा है…';
+
+  @override
+  String syncQueueSyncedCount(int count) {
+    return '$count आइटम सिंक हुए';
+  }
+
+  @override
+  String get syncQueueDeleteConfirmBody =>
+      'यह ऑफ़लाइन आइटम आपके डिवाइस से हटा देगा। इसे पूर्ववत नहीं किया जा सकता।';
+
+  @override
+  String get deleteLabel => 'हटाएँ';
+
+  @override
+  String get syncQueueItemRemoved => 'आइटम हटाया गया';
+
+  @override
+  String get syncQueueTreeRegistration => 'पेड़ पंजीकरण';
+
+  @override
+  String syncQueueStatusLine(String status) {
+    return 'स्थिति: $status';
+  }
+
+  @override
+  String syncQueuePhotosLine(int count) {
+    return 'फ़ोटो: $count';
+  }
+
+  @override
+  String syncQueueGpsLine(String lat, String lon) {
+    return 'GPS: $lat, $lon';
+  }
+
+  @override
+  String syncQueueQueuedLine(String time) {
+    return 'कतार में: $time';
+  }
+
+  @override
+  String get syncQueueRetryUpload => 'अपलोड पुनः प्रयास';
+
+  @override
+  String get syncQueueDeleteFromQueue => 'कतार से हटाएँ';
+
+  @override
+  String get syncQueueDeleteTreeTitle => 'पेड़ पंजीकरण हटाएँ?';
+
+  @override
+  String get syncQueueBioRecording => 'जैव ध्वनि रिकॉर्डिंग';
+
+  @override
+  String syncQueueDurationLine(String seconds) {
+    return 'अवधि: ${seconds}s';
+  }
+
+  @override
+  String get syncQueueDeleteRecordingTitle => 'रिकॉर्डिंग हटाएँ?';
+
+  @override
+  String get syncQueueAuditPlotVisit => 'ऑडिट प्लॉट विज़िट';
+
+  @override
+  String syncQueuePresenceLine(String value) {
+    return 'उपस्थिति: $value';
+  }
+
+  @override
+  String get syncQueueDeleteAuditVisitTitle => 'ऑडिट विज़िट हटाएँ?';
+
+  @override
+  String get syncQueueSurvivalSurveyTitle => 'अस्तित्व सर्वे';
+
+  @override
+  String syncQueueTreeLine(String id) {
+    return 'पेड़: $id';
+  }
+
+  @override
+  String syncQueueSurvivalStatusLine(String status) {
+    return 'स्थिति: $status';
+  }
+
+  @override
+  String syncQueueQueueLine(String status) {
+    return 'कतार: $status';
+  }
+
+  @override
+  String get syncQueueDeleteSurvivalTitle => 'अस्तित्व सर्वे हटाएँ?';
+
+  @override
+  String syncQueueRecordingMeta(String seconds) {
+    return '${seconds}s रिकॉर्डिंग';
+  }
+
+  @override
+  String syncQueuePhotosMeta(int count, String status) {
+    return '$count फ़ोटो · $status';
+  }
+
+  @override
+  String get plotFallback => 'प्लॉट';
+
+  @override
+  String get surveyFallback => 'सर्वे';
+
+  @override
+  String get visitFallback => 'विज़िट';
+
+  @override
+  String get evidenceTitle => 'प्रमाण और MRV';
+
+  @override
+  String get evidenceMrvShareText => 'MRV अनुपालन निर्यात';
+
+  @override
+  String get evidenceMrvReady => 'MRV निर्यात साझा करने के लिए तैयार';
+
+  @override
+  String get evidenceBundleShareText => 'प्रमाण बंडल';
+
+  @override
+  String get evidenceBundleReady => 'प्रमाण बंडल साझा करने के लिए तैयार';
+
+  @override
+  String get evidenceProjectScope => 'परियोजना दायरा';
+
+  @override
+  String get evidenceNoProjects => 'कोई परियोजना उपलब्ध नहीं';
+
+  @override
+  String get evidenceSelectProject => 'परियोजना चुनें';
+
+  @override
+  String get evidencePortfolioAll => 'पोर्टफोलियो (सभी)';
+
+  @override
+  String get evidencePipeline => 'प्रमाण पाइपलाइन';
+
+  @override
+  String get evidenceVerified => 'सत्यापित';
+
+  @override
+  String get evidencePending => 'लंबित';
+
+  @override
+  String get evidenceGaps => 'अंतराल';
+
+  @override
+  String get evidenceGapsHeader => 'ध्यान देने योग्य अंतराल';
+
+  @override
+  String get evidenceNoGaps => 'कोई प्रमाण अंतराल नहीं';
+
+  @override
+  String get evidenceNoGapsSub => 'पोर्टफोलियो प्रमाण अद्यतन है';
+
+  @override
+  String get evidenceExports => 'निर्यात';
+
+  @override
+  String get evidenceDownloadMrvPdf => 'MRV पैक डाउनलोड (PDF)';
+
+  @override
+  String get evidenceDownloadMrvExcel => 'MRV पैक डाउनलोड (Excel)';
+
+  @override
+  String get evidenceDownloadBundle => 'प्रमाण बंडल डाउनलोड (ZIP)';
+
+  @override
+  String get evidenceReportsExports => 'रिपोर्ट और निर्यात';
+
+  @override
+  String get evidenceGapSurvivalDue => 'अस्तित्व सर्वे प्रमाण बकाया';
+
+  @override
+  String get evidenceGapViolationsOpen => 'अनुपालन उल्लंघन खुले';
+
+  @override
+  String get evidenceGapIntegrityBlocked => 'अखंडता निगरानी गेट अवरुद्ध';
+
+  @override
+  String get evidenceGapCreditTransitions => 'क्रेडिट संक्रमण';
+
+  @override
+  String get evidenceGapFieldOps => 'फील्ड कार्य';
+
+  @override
+  String evidenceGapTreesCount(String count) {
+    return '$count पेड़';
+  }
+
+  @override
+  String evidenceGapOpenCount(String count) {
+    return '$count खुले';
+  }
+
+  @override
+  String get treeRegistryTitle => 'पेड़ पंजी';
+
+  @override
+  String get filtersTitle => 'फ़िल्टर';
+
+  @override
+  String get filterAll => 'सभी';
+
+  @override
+  String get clearFilters => 'फ़िल्टर साफ़ करें';
+
+  @override
+  String get treeRegistrySearchHint => 'ID, प्रजाति, क्षेत्र खोजें…';
+
+  @override
+  String get sortRecent => 'हाल का';
+
+  @override
+  String get sortTreeId => 'पेड़ ID';
+
+  @override
+  String get treesCountSuffix => 'पेड़';
+
+  @override
+  String get registryCategoryAttention => 'ध्यान';
+
+  @override
+  String get registryCategoryMissingEvidence => 'प्रमाण अनुपस्थित';
+
+  @override
+  String get registryCategoryUnverified => 'असत्यापित';
+
+  @override
+  String get registryCategoryHealthy => 'स्वस्थ';
+
+  @override
+  String registryOnPageTotal(int onPage, int total) {
+    return 'पृष्ठ पर $onPage · कुल $total';
+  }
+
+  @override
+  String registryPageOf(int current, int pages) {
+    return 'पृष्ठ $current / $pages';
+  }
+
+  @override
+  String get registryPrev => '← पिछला';
+
+  @override
+  String get registryNext => 'अगला →';
+
+  @override
+  String get registryNoMatch => 'कोई पेड़ मेल नहीं';
+
+  @override
+  String get registryNoMatchSub => 'दूसरा फ़िल्टर या खोज शब्द आज़माएँ';
+
+  @override
+  String get registryCachedList => 'कैश की गई पेड़ सूची दिखाई जा रही है';
+
+  @override
+  String registryCachedListFrom(String time) {
+    return '$time से कैश की गई पेड़ सूची';
+  }
+
+  @override
+  String get statusUnverified => 'असत्यापित';
+
+  @override
+  String get projectCreditLedger => 'क्रेडिट खाता';
+
+  @override
+  String get projectSetupTitle => 'परियोजना सेटअप';
+
+  @override
+  String get completeSetup => 'सेटअप पूरा करें';
+
+  @override
+  String get openSetupOnWeb => 'वेब पर सेटअप खोलें';
+
+  @override
+  String get survivalSurveysDue => 'अस्तित्व सर्वे बकाया';
+
+  @override
+  String survivalNoSurveysDue(int total, String interval) {
+    return 'कोई अस्तित्व सर्वे बकाया नहीं ($total पेड़, $interval दिन अंतराल)';
+  }
+
+  @override
+  String survivalTreesNeedRegeotag(int due, int total, String interval) {
+    return '$total में से $due पेड़ों को पुनः जियो-टैग चाहिए ($interval दिन अंतराल)';
+  }
+
+  @override
+  String treeIdLabel(String id) {
+    return 'पेड़ $id';
+  }
+
+  @override
+  String moreCount(int count) {
+    return '+ $count और';
+  }
+
+  @override
+  String get integrityMonitoringGate => 'अखंडता निगरानी गेट';
+
+  @override
+  String get integrityGatePassed => 'क्रेडिट संक्रमण के लिए निगरानी गेट पास।';
+
+  @override
+  String get integrityGateBlocked =>
+      'क्रेडिट संक्रमण के लिए निगरानी गेट अवरुद्ध।';
+
+  @override
+  String integrityEligibleAudit(
+      String eligible, String total, String auditReady) {
+    return 'योग्य $eligible/$total · ऑडिट तैयार $auditReady/$total';
+  }
+
+  @override
+  String treesWithBlockingIssues(int count) {
+    return '$count पेड़(ों) में अवरोधक समस्याएँ';
+  }
+
+  @override
+  String get satelliteNoScan => 'उपग्रह: अभी कोई स्कैन नहीं';
+
+  @override
+  String get satelliteScanned => 'उपग्रह: स्कैन किया';
+
+  @override
+  String satelliteStale(int days) {
+    return 'उपग्रह: पुराना ($days दिन पहले)';
+  }
+
+  @override
+  String get satelliteScannedToday => 'उपग्रह: आज स्कैन किया';
+
+  @override
+  String satelliteDaysAgo(int days) {
+    return 'उपग्रह: $days दिन पहले';
+  }
+
+  @override
+  String treesPerHa(String count) {
+    return '$count पेड़/हे.';
+  }
+
+  @override
+  String workAreaBlock(String code) {
+    return 'ब्लॉक $code';
+  }
+
+  @override
+  String get treeDetailOverview => 'अवलोकन';
+
+  @override
+  String get treeDetailField => 'फील्ड';
+
+  @override
+  String get treeDetailIntelligence => 'बुद्धिमत्ता';
+
+  @override
+  String get treeDetailMap => 'मानचित्र';
+
+  @override
+  String get treeDetailInspect => 'निरीक्षण';
+
+  @override
+  String get treeDetailEvidence => 'प्रमाण';
+
+  @override
+  String get treeDetailMonitor => 'निगरानी';
+
+  @override
+  String get treeDetailVerified => 'सत्यापित';
+
+  @override
+  String get treeDetailFieldLocation => 'फील्ड स्थान';
+
+  @override
+  String get treeDetailFollowUpPhotoAdded => 'फॉलो-अप फ़ोटो जोड़ी';
+
+  @override
+  String get treeDetailCachedDetail =>
+      'कैश किया पेड़ विवरण — रीफ़्रेश के लिए कनेक्ट करें';
+
+  @override
+  String get treeDetailUploadingPhoto => 'फ़ोटो अपलोड…';
+
+  @override
+  String get treeDetailAddFollowUpPhoto => 'फॉलो-अप फ़ोटो जोड़ें';
+
+  @override
+  String get treeDetailPhotoGallery => 'फ़ोटो गैलरी';
+
+  @override
+  String get treeDetailNoPhotos => 'अभी कोई फ़ोटो नहीं';
+
+  @override
+  String get treeDetailNoPhotosSub =>
+      'अवलोकन या अस्तित्व सर्वे से फॉलो-अप फ़ोटो जोड़ें';
+
+  @override
+  String get treeDetailMeasurementHistory => 'माप इतिहास';
+
+  @override
+  String get treeDetailNoMeasurements => 'कोई माप दर्ज नहीं';
+
+  @override
+  String get treeDetailNoMeasurementsSub =>
+      'अस्तित्व सर्वे और फील्ड कैप्चर यहाँ दिखेंगे';
+
+  @override
+  String get treeDetailAiHistory => 'AI विश्लेषण इतिहास';
+
+  @override
+  String get treeDetailNoAiAnalyses => 'अभी कोई AI विश्लेषण नहीं';
+
+  @override
+  String get treeDetailNoAiAnalysesSub => 'अवलोकन टैब से AI विश्लेषण चलाएँ';
+
+  @override
+  String get treeDetailSarFusion => 'SAR अखंडता फ्यूजन';
+
+  @override
+  String get treeDetailGroundStatus => 'भूमि स्थिति';
+
+  @override
+  String get treeDetailIntegrityScoreLabel => 'अखंडता स्कोर';
+
+  @override
+  String get treeDetailAuditBlockers => 'ऑडिट-तैयार अवरोधक';
+
+  @override
+  String get treeDetailTimeline => 'समयरेखा';
+
+  @override
+  String treeDetailRegistered(String date) {
+    return 'पंजीकृत · $date';
+  }
+
+  @override
+  String get treeDetailFieldCapture => 'फील्ड कैप्चर';
+
+  @override
+  String get treeDetailSatelliteVerified => 'उपग्रह सत्यापित';
+
+  @override
+  String get treeDetailRemoteSensingPassed => 'रिमोट सेंसिंग जाँच पास';
+
+  @override
+  String treeDetailNdviSignal(String level) {
+    return 'NDVI संकेत · $level';
+  }
+
+  @override
+  String get treeDetailMeasurement => 'माप';
+
+  @override
+  String get treeDetailCanopy => 'छत्र';
+
+  @override
+  String get treeDetailAnalysis => 'विश्लेषण';
+
+  @override
+  String treeDetailFusionScore(String score) {
+    return 'फ्यूजन स्कोर $score';
+  }
+
+  @override
+  String treeDetailCarbonSummary(String kg, String dbh) {
+    return 'कार्बन $kg kg · DBH $dbh cm';
+  }
+
+  @override
+  String treeDetailHealthLine(String health) {
+    return 'स्वास्थ्य $health';
+  }
+
+  @override
+  String get auditVisitQueued => 'ऑनलाइन होने पर सिंक के लिए विज़िट कतार में';
+
+  @override
+  String get auditVisitSaved => 'ऑडिट प्लॉट विज़िट सहेजी';
+
+  @override
+  String auditVisitTitle(String code) {
+    return 'विज़िट $code';
+  }
+
+  @override
+  String get auditCapturingGps => 'GPS लिया जा रहा है…';
+
+  @override
+  String get auditTreePresence => 'पेड़ उपस्थिति';
+
+  @override
+  String get auditTreesPresent => 'पेड़ मौजूद';
+
+  @override
+  String get auditTreesAbsent => 'कोई पेड़ नहीं / खुली ज़मीन';
+
+  @override
+  String get auditTreesSparse => 'विरल / बिखरे';
+
+  @override
+  String get auditCannotAssess => 'मूल्यांकन नहीं हो सका';
+
+  @override
+  String get auditTreesObserved => 'देखे गए पेड़';
+
+  @override
+  String get auditTreesAlive => 'जीवित पेड़';
+
+  @override
+  String get auditOutcome => 'परिणाम';
+
+  @override
+  String get auditOutcomeInconclusive => 'अनिर्णायक';
+
+  @override
+  String get auditOutcomeSupported => 'समर्थित';
+
+  @override
+  String get auditOutcomeUnsupported => 'असमर्थित';
+
+  @override
+  String get auditFieldNotes => 'फील्ड नोट्स';
+
+  @override
+  String get auditUploadingPhoto => 'फ़ोटो अपलोड…';
+
+  @override
+  String auditAddFieldPhoto(int current) {
+    return 'फील्ड फ़ोटो जोड़ें ($current/5)';
+  }
+
+  @override
+  String get auditSaveVisit => 'विज़िट सहेजें';
+
+  @override
+  String get auditGpsRequired => 'विज़िट सहेजने से पहले GPS लें।';
+
+  @override
+  String get auditPhotoRequired => 'कम से कम एक फील्ड फ़ोटो जोड़ें।';
+
+  @override
+  String auditRiskSuffix(String risk) {
+    return '$risk जोखिम';
+  }
+
+  @override
+  String get bioSessionDetailTitle => 'सत्र विवरण';
+
+  @override
+  String get bioDetectionTierAccepted => 'स्वीकृत';
+
+  @override
+  String get bioDetectionTierProbable => 'संभावित';
+
+  @override
+  String get bioDetectionTierReview => 'समीक्षा आवश्यक';
+
+  @override
+  String get bioFieldSite => 'फील्ड साइट';
+
+  @override
+  String get bioDetectedSpecies => 'पहचानी गई प्रजातियाँ';
+
+  @override
+  String get bioDetectionsPending =>
+      'विश्लेषण पूरा होने पर प्रजाति पहचान दिखेगी।';
+
+  @override
+  String get bioNoDetections => 'अभी कोई प्रजाति पहचान नहीं।';
+
+  @override
+  String get bioViewBiodiversityFusion => 'जैव विविधता फ्यूजन देखें';
+
+  @override
+  String get bioAddToEvidence => 'प्रमाण बंडल में जोड़ें';
+
+  @override
+  String get viewOnMap => 'मानचित्र पर देखें';
+
+  @override
+  String bioConfidenceScore(String score) {
+    return 'विश्वास $score/100';
+  }
+
+  @override
+  String bioAcceptedCount(String count) {
+    return 'स्वीकृत $count';
+  }
+
+  @override
+  String bioShannonLine(String value) {
+    return 'शैनन $value';
+  }
+
+  @override
+  String bioCallsCount(String count) {
+    return '$count कॉल';
+  }
+
+  @override
+  String get biodiversityTitle => 'जैव विविधता';
+
+  @override
+  String get bioTaxa => 'टैक्सा';
+
+  @override
+  String get bioShannonLabel => 'शैनन';
+
+  @override
+  String get bioConfidenceLabel => 'विश्वास';
+
+  @override
+  String bioConfidenceHint(int count) {
+    return '$count विश्लेषित रिकॉर्डिंग से जैव विविधता विश्वास (प्रमाण गुणवत्ता, आवास स्वास्थ्य नहीं)';
+  }
+
+  @override
+  String bioRegionalSpeciesNear(String lat, String lon) {
+    return '$lat, $lon के पास क्षेत्रीय प्रजातियाँ';
+  }
+
+  @override
+  String get bioRegionalSpeciesGbif => 'क्षेत्रीय प्रजातियाँ (GBIF)';
+
+  @override
+  String get bioHotspotsByWorkArea => 'कार्य क्षेत्र के हॉटस्पॉट';
+
+  @override
+  String get bioNoWorkAreas => 'कोई कार्य क्षेत्र नहीं';
+
+  @override
+  String get bioNoWorkAreasMapped => 'कोई कार्य क्षेत्र मैप नहीं';
+
+  @override
+  String bioConfidenceMeta(int score) {
+    return 'विश्वास $score/100';
+  }
+
+  @override
+  String get bioStrong => 'मजबूत';
+
+  @override
+  String get bioWatch => 'निगरानी';
+
+  @override
+  String get bioAcousticDetail => 'जैव ध्वनि विवरण';
+
+  @override
+  String get bioRunSurvey => 'जैव ध्वनि सर्वे चलाएँ';
+
+  @override
+  String get bioNoLocationSpecies => 'प्रजाति सूची के लिए स्थान नहीं';
+
+  @override
+  String get bioNoLocationSpeciesSub =>
+      'क्षेत्रीय जीवों के लिए कार्य क्षेत्र सीमा या GPS वाला पेड़ जोड़ें।';
+
+  @override
+  String get bioNoRegionalSpecies => 'कोई क्षेत्रीय प्रजाति नहीं मिली';
+
+  @override
+  String get bioNoRegionalSpeciesSub =>
+      'GBIF ने इस साइट के पास कोई घटना नहीं लौटाई।';
+
+  @override
+  String get bioViewOnMapMeta => 'मानचित्र पर देखें';
+
+  @override
+  String get bioOpen => 'खोलें';
+
+  @override
+  String get carbonPortfolioTco2e => 'tCO₂e अनुमानित (पोर्टफोलियो)';
+
+  @override
+  String carbonAnnualPace(int pct) {
+    return 'वार्षिक अवशोषण गति का $pct%';
+  }
+
+  @override
+  String carbonTreesInPortfolio(int count) {
+    return 'पोर्टफोलियो में $count पेड़';
+  }
+
+  @override
+  String get carbonByProject => 'परियोजना के अनुसार';
+
+  @override
+  String get carbonEnterSpecies => 'प्रजाति का नाम दर्ज करें।';
+
+  @override
+  String get carbonEstimateDisclaimer =>
+      'प्रजाति और वैकल्पिक माप से CO₂e अनुमान। यह अनुमान है — लाइव फील्ड माप या रजिस्ट्री जारी क्रेडिट नहीं।';
+
+  @override
+  String carbonCo2eRange(String lower, String upper) {
+    return '$lower–$upper kg CO₂e (90% CI)';
+  }
+
+  @override
+  String carbonCo2eSingle(String value) {
+    return '$value kg CO₂e';
+  }
+
+  @override
+  String carbonUncertainty(String pct) {
+    return '±$pct% माप + मॉडल अनिश्चितता';
+  }
+
+  @override
+  String get carbonHonestyLabel =>
+      'ईमानदारी लेबल: अनुमान (मॉडल)। लाइव सेंसर डेटा नहीं।';
+
+  @override
+  String get reportReadyToShare => 'रिपोर्ट साझा करने के लिए तैयार';
+
+  @override
+  String get reportMisTitle => 'वृक्षारोपण MIS रिपोर्ट';
+
+  @override
+  String get reportMisSubtitle =>
+      'सरकारी वृक्षारोपण कार्यक्रमों के परिचालन निर्यात';
+
+  @override
+  String get reportTypeLabel => 'रिपोर्ट प्रकार';
+
+  @override
+  String get reportDownloading => 'डाउनलोड…';
+
+  @override
+  String get reportDownloadMis => 'MIS रिपोर्ट डाउनलोड';
+
+  @override
+  String reportReadyShareNamed(String name) {
+    return '$name साझा करने के लिए तैयार';
+  }
+
+  @override
+  String get downloadLabel => 'डाउनलोड';
+
+  @override
+  String get creditIntegrityFusion => 'अखंडता फ्यूजन';
+
+  @override
+  String get creditAuditReady => 'ऑडिट तैयार';
+
+  @override
+  String get creditEligible => 'क्रेडिट योग्य';
+
+  @override
+  String get creditStatusHistory => 'स्थिति इतिहास';
+
+  @override
+  String get creditSerials => 'क्रेडिट सीरियल';
+
+  @override
+  String get creditSerialFallback => 'सीरियल';
+
+  @override
+  String get viewProject => 'परियोजना देखें';
+
+  @override
+  String get projectLedgers => 'परियोजना खाते';
+
+  @override
+  String get alertRecommendedAction => 'अनुशंसित कार्रवाई';
+
+  @override
+  String get alertMarkReviewed => 'समीक्षित चिह्नित करें';
+
+  @override
+  String get alertViewAffectedTree => 'प्रभावित पेड़ देखें →';
+
+  @override
+  String get createProjectTitle => 'परियोजना बनाएँ';
+
+  @override
+  String get createProjectSubtitle =>
+      'पर्यवेक्षक रोपण परियोजना शुरू कर सकते हैं और वेब पर सेटअप पूरा करें।';
+
+  @override
+  String get createProjectNameLabel => 'परियोजना नाम';
+
+  @override
+  String get createProjectDescriptionLabel => 'विवरण (वैकल्पिक)';
+
+  @override
+  String get createProjectSegmentLabel => 'खंड';
+
+  @override
+  String get createProjectNameRequired => 'परियोजना नाम आवश्यक है';
+
+  @override
+  String get newProject => 'नई परियोजना';
+
+  @override
+  String get survivalMissingUprooted => 'अनुपस्थित / उखाड़ा';
+
+  @override
+  String get survivalTapeMeasure => 'टेप माप (1.3 m पर DBH)';
+
+  @override
+  String get survivalClinometer => 'क्लिनोमीटर (ऊँचाई)';
+
+  @override
+  String get survivalPhotoAttached => 'सर्वे फ़ोटो जुड़ी';
+
+  @override
+  String get survivalCapturingPhoto => 'फ़ोटो ली जा रही है…';
+
+  @override
+  String get survivalAddPhoto => 'सर्वे फ़ोटो जोड़ें (कैमरा)';
+
+  @override
+  String get survivalRemarksHint => 'स्थिति, प्रतिस्थापन नोट्स…';
+
+  @override
+  String get openInMaps => 'मानचित्र में खोलें';
+
+  @override
+  String get myLocation => 'मेरा स्थान';
+
+  @override
+  String get closeLabel => 'बंद करें';
+
+  @override
+  String get prepareLabel => 'तैयारी';
+
+  @override
+  String get schemeProgramme => 'योजना कार्यक्रम';
+
+  @override
+  String get governmentReferences => 'सरकारी संदर्भ';
+
+  @override
+  String get schemeFallback => 'योजना';
+
+  @override
+  String get onboardingVerifyOrg =>
+      '• हमारी टीम आपके संगठन विवरण सत्यापित करती है';
+
+  @override
+  String get onboardingApprovalEmail => '• आपको स्वीकृति ईमेल मिलेगा';
+
+  @override
+  String get onboardingSignInDashboard =>
+      '• ऐप खोलें और डैशबोर्ड के लिए साइन इन करें';
+
+  @override
+  String get onboardingPendingSubtitle =>
+      'आपकी संगठन प्रोफ़ाइल समीक्षा में है। स्वीकृति पर ईमेल करेंगे — आमतौर पर 1–2 कार्य दिवस।';
+
+  @override
+  String get blockerInsufficientPhotos => 'कम से कम 2 फ़ोटो चाहिए';
+
+  @override
+  String get blockerPhotoSpanTooShort => 'फ़ोटो 30+ दिनों में होनी चाहिए';
+
+  @override
+  String get blockerSatelliteScanStale => 'उपग्रह स्कैन 90 दिन से पुराना';
+
+  @override
+  String get blockerFusionBelowAudit => 'फ्यूजन स्कोर 75 से कम';
+
+  @override
+  String get blockerMissingExif => 'कैमरा EXIF अनुपस्थित';
+
+  @override
+  String get blockerMissingPhotoGps => 'फ़ोटो में GPS नहीं';
+
+  @override
+  String get blockerMissingPhotoTimestamp => 'फ़ोटो में समय मुहर नहीं';
+
+  @override
+  String get blockerPhotoTimestampStale => 'फ़ोटो 7 दिन से पुरानी';
+
+  @override
+  String get blockerRegeotagMismatch => 'पुनः जियो-टैग असमान';
+
+  @override
+  String get blockerDuplicatePhoto => 'डुप्लिकेट फ़ोटो';
+
+  @override
+  String get blockerDuplicateCoordinate => 'डुप्लिकेट निर्देशांक';
+
+  @override
+  String get blockerAiConfidenceLow => 'कम AI विश्वास';
+
+  @override
+  String get blockerSarIntegrityBelow => 'SAR वन अखंडता न्यूनतम से कम';
+
+  @override
+  String get blockerOpticalScanStale => 'कार्य क्षेत्र ऑप्टिकल स्कैन पुराना';
+
+  @override
+  String get blockerFusionBelowMinimum => 'फ्यूजन स्कोर न्यूनतम से कम';
+
+  @override
+  String get blockerNotCreditEligible => 'क्रेडिट के लिए योग्य नहीं';
+
+  @override
+  String get remediationAddFollowUpPhoto =>
+      'पेड़ विवरण पृष्ठ से फॉलो-अप फील्ड फ़ोटो जोड़ें।';
+
+  @override
+  String get remediationRunSurvivalSurvey =>
+      'GPS और वैकल्पिक सर्वे फ़ोटो के साथ अस्तित्व सर्वे चलाएँ।';
+
+  @override
+  String get remediationTriggerSatellite =>
+      'पेड़ विवरण से उपग्रह स्वास्थ्य स्कैन ट्रिगर करें।';
+
+  @override
+  String get remediationReviewMonitoring =>
+      'इस परियोजना के लिए निगरानी कवरेज समीक्षा करें।';
+
+  @override
+  String get monitoringNeedsDecision => 'निर्णय चाहिए';
+
+  @override
+  String get monitoringNoUrgentAlerts => 'कोई तत्काल अलर्ट नहीं';
+
+  @override
+  String get monitoringSignalsStable => 'निगरानी संकेत स्थिर';
+
+  @override
+  String get monitoringSitePulse => 'साइट पल्स';
+
+  @override
+  String get alertCategoryFire => 'आग';
+
+  @override
+  String get alertCategoryFlood => 'बाढ़';
+
+  @override
+  String get alertCategoryWeather => 'मौसम';
+
+  @override
+  String get alertCategoryPest => 'कीट';
+
+  @override
+  String get alertCategorySatellite => 'उपग्रह';
+
+  @override
+  String get alertUrgencyActNow => 'अभी कार्रवाई';
+
+  @override
+  String get alertUrgencyPrepare => 'तैयारी';
+
+  @override
+  String get alertUrgencyMonitor => 'निगरानी';
+
+  @override
+  String get healthFilterHealthy => 'स्वस्थ';
+
+  @override
+  String get healthFilterStressed => 'तनावग्रस्त';
+
+  @override
+  String get healthFilterDead => 'मृत';
+
+  @override
+  String get monthJan => 'जन';
+
+  @override
+  String get monthFeb => 'फ़र';
+
+  @override
+  String get monthMar => 'मार्च';
+
+  @override
+  String get monthApr => 'अप्रै';
+
+  @override
+  String get monthMay => 'मई';
+
+  @override
+  String get monthJun => 'जून';
+
+  @override
+  String get monthJul => 'जुल';
+
+  @override
+  String get monthAug => 'अग';
+
+  @override
+  String get monthSep => 'सित';
+
+  @override
+  String get monthOct => 'अक्टू';
+
+  @override
+  String get monthNov => 'नव';
+
+  @override
+  String get monthDec => 'दिस';
+
+  @override
+  String get methodologyTitle => 'कार्यप्रणाली';
+
+  @override
+  String get alertUrgencyActToday => 'आज कार्रवाई';
+
+  @override
+  String get alertUrgencyThisWeek => 'इस सप्ताह';
+
+  @override
+  String get bioEcosystemAcousticHealthHeading =>
+      'पारिस्थितिक ध्वनिक स्वास्थ्य';
+
+  @override
+  String get scoreOutOfHundred => '/100';
+
+  @override
+  String bioSpeciesCount(int count) {
+    return '$count प्रजातियाँ';
+  }
+
+  @override
+  String bioRecordingsCount(int count) {
+    return '$count रिकॉर्डिंग';
+  }
+
+  @override
+  String get pipelineStepCapture => 'कैप्चर';
+
+  @override
+  String get pipelineStepEvidence => 'प्रमाण';
+
+  @override
+  String get pipelineStepVerify => 'सत्यापन';
+
+  @override
+  String get pipelineStepMrv => 'MRV';
+
+  @override
+  String get pipelineStepReport => 'रिपोर्ट';
+
+  @override
+  String get detailsLabel => 'विवरण';
+
+  @override
+  String get bioEcosystemAcousticHealthDefault =>
+      'पारिस्थितिक ध्वनिक स्वास्थ्य';
+
+  @override
+  String bioRecordingDurationStatus(String seconds, String status) {
+    return '$secondsसे · $status';
+  }
+
+  @override
+  String bioLocationLine(String coords) {
+    return 'स्थान $coords';
+  }
+
+  @override
+  String survivalDueTreesSubtitle(String count, String segment) {
+    return '$count पेड़ बकाया · $segment';
+  }
+
+  @override
+  String get forestHealthExcellent => 'उत्कृष्ट';
+
+  @override
+  String get forestHealthGood => 'अच्छा';
+
+  @override
+  String get forestHealthFair => 'ठीक';
+
+  @override
+  String get forestHealthNeedsCare => 'देखभाल आवश्यक';
+
+  @override
+  String briefInspectionZones(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count वृक्षारोपण क्षेत्रों की आज निरीक्षण आवश्यक है।',
+      one: '1 वृक्षारोपण क्षेत्र की आज निरीक्षण आवश्यक है।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get briefTreeHealthBelowTarget =>
+      'पेड़ों का स्वास्थ्य लक्ष्य से नीचे है — इस सप्ताह फील्ड समीक्षा निर्धारित करें।';
+
+  @override
+  String get briefNoTreesRegistered =>
+      'अभी कोई पेड़ पंजीकृत नहीं — निगरानी शुरू करने के लिए पहला वृक्षारोपण जोड़ें।';
+
+  @override
+  String get briefAllZonesHealthy =>
+      'सभी निगरानी क्षेत्र अपेक्षित स्वास्थ्य सीमा में हैं।';
+
+  @override
+  String briefTomorrowWeather(String description) {
+    return 'कल $description खुले क्षेत्रों में अस्तित्व को कम कर सकता है।';
+  }
+
+  @override
+  String briefBiodiversityIncreased(String pct) {
+    return 'हाल की ध्वनिक सर्वेक्षणों के आधार पर जैव विविधता $pct% बढ़ी।';
+  }
+
+  @override
+  String get briefRunBioacousticSurvey =>
+      'जैव विविधता बुद्धिमत्ता के लिए जैवध्वनिक सर्वेक्षण चलाएँ।';
+
+  @override
+  String homeQueueSurvivalTitle(String project) {
+    return '$project — अस्तित्व बकाया';
+  }
+
+  @override
+  String homeQueueTreesDue(int count) {
+    return '$count पेड़ बकाया';
+  }
+
+  @override
+  String get priorityAlertFallback => 'प्राथमिकता अलर्ट';
+
+  @override
+  String get quickMetricCarbonCredits => 'कार्बन क्रेडिट';
+
+  @override
+  String get quickMetricWeatherRisk => 'मौसम जोखिम';
+
+  @override
+  String get weatherRiskHigh => 'उच्च';
+
+  @override
+  String get weatherRiskMed => 'मध्यम';
+
+  @override
+  String get weatherRiskLow => 'निम्न';
+
+  @override
+  String speciesCountAbbrev(int count) {
+    return '$count प्रजा.';
+  }
+
+  @override
+  String get segmentNhaiHighway => 'NHAI / राजमार्ग';
+
+  @override
+  String get segmentIndustrialGreenbelt => 'खदान / हरित पट्टी';
+
+  @override
+  String get segmentTownshipLandscape => 'टाउनशिप / सोसाइटी';
+
+  @override
+  String get segmentNagarVanUrban => 'नगर वन / शहरी वन';
+
+  @override
+  String get segmentSahakarVanCoop => 'सहकार वन / सहकारी वन';
+
+  @override
+  String get segmentNgoWatershed => 'NGO / जलग्रहण';
+
+  @override
+  String get segmentGeneral => 'सामान्य';
+
+  @override
+  String projectTreesCount(int count) {
+    return '$count पेड़';
+  }
+
+  @override
+  String projectViolationsSuffix(int count) {
+    return ' · $count उल्लंघन';
+  }
+
+  @override
+  String get signupAccountSubtitle => 'कुछ विवरण — फिर त्वरित OTP जाँच।';
+
+  @override
+  String codeSentToPhone(String phone) {
+    return 'कोड भेजा गया: $phone';
+  }
+
+  @override
+  String codeSentToEmail(String email) {
+    return 'कोड भेजा गया: $email';
+  }
+
+  @override
+  String get fullNameFieldLabel => 'पूरा नाम';
+
+  @override
+  String get mobilePhoneLabel => 'मोबाइल नंबर';
+
+  @override
+  String get passwordMin8 => 'न्यूनतम 8 अक्षर';
+
+  @override
+  String get passwordMin12 => 'न्यूनतम 12 अक्षर';
+
+  @override
+  String get acceptTermsPrivacy => 'मैं नियम और गोपनीयता नीति से सहमत हूँ';
+
+  @override
+  String get otpSmsPrompt => '6-अंकीय SMS कोड दर्ज करें';
+
+  @override
+  String get otpEmailPrompt => '6-अंकीय ईमेल कोड दर्ज करें';
+
+  @override
+  String get finishSignup => 'साइन अप पूरा करें';
+
+  @override
+  String get signupValidEmail => 'कृपया मान्य ईमेल पता दर्ज करें।';
+
+  @override
+  String signupPasswordMinChars(int count) {
+    return 'पासवर्ड कम से कम $count अक्षर का होना चाहिए।';
+  }
+
+  @override
+  String get signupAcceptTerms => 'जारी रखने के लिए नियम स्वीकार करें।';
+
+  @override
+  String get signupEnterPhoneOtp => 'फ़ोन पर भेजा 6-अंकीय कोड दर्ज करें।';
+
+  @override
+  String get signupEnterEmailOtp => 'ईमेल पर भेजा 6-अंकीय कोड दर्ज करें।';
+
+  @override
+  String get googleOAuthNoTokens => 'Google साइन-इन से टोकन नहीं मिले।';
+
+  @override
+  String get authValidEmail => 'मान्य ईमेल पता दर्ज करें।';
+
+  @override
+  String get authEnterEmailVerificationCode => 'ईमेल से सत्यापन कोड दर्ज करें।';
+
+  @override
+  String get authPasswordMin12 => 'पासवर्ड कम से कम 12 अक्षर का होना चाहिए।';
+
+  @override
+  String forgotPasswordStep2Subtitle(String email) {
+    return '$email पर भेजा कोड दर्ज करें और नया पासवर्ड चुनें।';
+  }
+
+  @override
+  String get forgotPasswordStep1Subtitle =>
+      'पासवर्ड रीसेट के लिए हम एक बार का कोड ईमेल करेंगे।';
+
+  @override
+  String get pleaseWait => 'कृपया प्रतीक्षा करें…';
+
+  @override
+  String get authValidIndianMobile =>
+      'मान्य 10-अंकीय भारतीय मोबाइल नंबर दर्ज करें।';
+
+  @override
+  String get completeSecurityCheck =>
+      'जारी रखने से पहले सुरक्षा जाँच पूरी करें।';
+
+  @override
+  String get authEnterSmsCode => 'SMS से कोड दर्ज करें।';
+
+  @override
+  String get mobilePlus91Label => 'मोबाइल (+91)';
+
+  @override
+  String get tenDigitNumberHint => '10-अंकीय नंबर';
+
+  @override
+  String get phoneOtpServerNote =>
+      'SMS OTP सर्वर पर MSG91/SMS सेट होने पर काम करेगा। तब तक ईमेल साइन-इन उपयोग करें।';
+
+  @override
+  String get passwordHelperMin12 => 'कम से कम 12 अक्षर';
 }

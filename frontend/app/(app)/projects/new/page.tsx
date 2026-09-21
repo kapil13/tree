@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, Leaf, Loader2 } from "lucide-react";
 import {
@@ -56,67 +57,23 @@ import {
   type ProjectLocation,
 } from "@/lib/project-location";
 
-const SEGMENTS: { code: ProjectSegment; label: string; hint: string }[] = [
-  {
-    code: "nhai_highway",
-    label: "NHAI / Highway",
-    hint: "Linear corridor + chainage, strict spacing",
-  },
-  {
-    code: "industrial_greenbelt",
-    label: "Mine / Cement / Factory",
-    hint: "Polygon green belt, density & native species",
-  },
-  {
-    code: "township_landscape",
-    label: "Township / Large society",
-    hint: "Avenue and landscape blocks",
-  },
-  {
-    code: "nagar_van_urban",
-    label: "Nagar Van / Urban forest",
-    hint: "ULB city-forest blocks, 10,000+ tree targets",
-  },
-  {
-    code: "sahakar_van_coop",
-    label: "Sahakar Van / Cooperative forest",
-    hint: "NCCF–Amul Miyawaki + conventional arid-land planting",
-  },
-  {
-    code: "ngo_watershed",
-    label: "NGO / Watershed",
-    hint: "Community plots, guided compliance",
-  },
-  {
-    code: "nutri_garden",
-    label: "Nutri-garden / Poshan Vatika",
-    hint: "Anganwadi, SHG, and panchayat fruit gardens (0.1–0.5 ha)",
-  },
-  {
-    code: "general",
-    label: "General plantation",
-    hint: "Flexible boundaries",
-  },
+const SEGMENT_CODES: ProjectSegment[] = [
+  "nhai_highway",
+  "industrial_greenbelt",
+  "township_landscape",
+  "nagar_van_urban",
+  "sahakar_van_coop",
+  "ngo_watershed",
+  "nutri_garden",
+  "general",
 ];
 
 type Selection =
   | { kind: "scheme"; scheme: CentralScheme }
   | { kind: "flex"; code: FlexProjectCode };
 
-function stepSubtitle(step: ProjectWizardStep, hasSchemeRefsStep: boolean): string {
-  if (step === 1) {
-    return "Link your site to a central government scheme so compliance checklists, govt reference IDs, and audit exports are configured automatically.";
-  }
-  if (step === 2) {
-    return "Name your project, confirm the planting standard, and optionally adjust site-specific rules. Scheme references come next.";
-  }
-  if (step === 3 && hasSchemeRefsStep) {
-    return "Enter government reference IDs now so tree registration inherits legal context automatically — no surprises later.";
-  }
-  return "Search your site, use GPS, and draw at least one polygon or corridor. Trees must fall inside a work area.";
-}
-
 export default function NewProjectPage() {
+  const t = useTranslations("projectPages.new");
   const router = useRouter();
   const { user } = useAuth();
   const plantingAudience = resolvePlantingAudience(user?.audience);
@@ -267,20 +224,26 @@ export default function NewProjectPage() {
     setShowAdvanced(false);
   }
 
+  function stepSubtitle(step: ProjectWizardStep, hasSchemeRefsStep: boolean): string {
+    if (step === 3 && hasSchemeRefsStep) return t("stepSubtitles.3");
+    if (step === 4) return t("stepSubtitles.4");
+    return t(`stepSubtitles.${step}` as "stepSubtitles.1");
+  }
+
   function validateDetailsStep(): boolean {
     if (!code.trim() || !name.trim()) {
-      setError("Project code and name are required.");
+      setError(t("errors.codeNameRequired"));
       return false;
     }
     const locErrors = validateProjectLocation(location);
     if (Object.keys(locErrors).length > 0) {
       setLocationErrors(locErrors);
-      setError("Complete the project location fields before continuing.");
+      setError(t("errors.locationRequired"));
       return false;
     }
     setLocationErrors({});
     if (templates.length > 0 && !standardConfirmed) {
-      setError("Confirm the planting standard before continuing.");
+      setError(t("errors.standardRequired"));
       return false;
     }
     if (
@@ -288,7 +251,7 @@ export default function NewProjectPage() {
       selectedTemplate &&
       !wizardRulesDifferFromBase(selectedTemplate.rules ?? {}, siteAdjustments.rules)
     ) {
-      setError("Change at least one site rule, or turn off site adjustments.");
+      setError(t("errors.siteRulesRequired"));
       return false;
     }
     setError(null);
@@ -367,7 +330,7 @@ export default function NewProjectPage() {
       const defaultErrors = validateTreeRegistrationDefaults(treeDefaults);
       if (Object.keys(defaultErrors).length > 0) {
         setTreeDefaultErrors(defaultErrors);
-        setError("Complete tree registration defaults before continuing.");
+        setError(t("errors.defaultsRequired"));
         return;
       }
     }
@@ -381,7 +344,7 @@ export default function NewProjectPage() {
     if (Object.keys(errors).length > 0 || Object.keys(defaultErrors).length > 0) {
       setRefErrors(errors);
       setTreeDefaultErrors(defaultErrors);
-      setError("Fill all required scheme references and tree registration defaults.");
+      setError(t("errors.refsRequired"));
       return;
     }
     setRefErrors({});
@@ -390,7 +353,7 @@ export default function NewProjectPage() {
   }
 
   const selectionLabel =
-    selectedScheme?.label ?? selectedFlex?.label ?? "Select a central scheme";
+    selectedScheme?.label ?? selectedFlex?.label ?? t("selectScheme");
 
   const requiresWorkArea =
     createdProject?.compliance_mode === "strict" ||
@@ -411,12 +374,12 @@ export default function NewProjectPage() {
           className="inline-flex items-center gap-1.5 text-sm font-medium text-forest-700 hover:text-forest-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          All projects
+          {t("allProjects")}
         </Link>
 
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl dark:text-stone-50">
-            New planting project
+            {t("title")}
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-stone-600">
             {stepSubtitle(step, hasSchemeRefsStep)}
@@ -431,7 +394,7 @@ export default function NewProjectPage() {
           {plantingAudience !== "general" ? (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-forest-100 bg-forest-50/70 px-4 py-3 text-sm text-stone-700">
               <span>
-                Showing schemes for{" "}
+                {t("showingSchemesFor")}{" "}
                 <span className="font-medium text-forest-900">
                   {PLANTING_AUDIENCE_LABEL[plantingAudience]}
                 </span>
@@ -442,7 +405,7 @@ export default function NewProjectPage() {
                 className="font-medium text-forest-800 underline-offset-2 hover:underline"
                 onClick={() => setShowAllSchemes((value) => !value)}
               >
-                {showAllSchemes ? "Show audience picks only" : "Show all schemes"}
+                {showAllSchemes ? t("showAudienceOnly") : t("showAllSchemes")}
               </button>
             </div>
           ) : null}
@@ -473,7 +436,7 @@ export default function NewProjectPage() {
 
           <div className="grid gap-5 md:grid-cols-2">
             <div>
-              <label className="label">Project code</label>
+              <label className="label">{t("projectCode")}</label>
               <input
                 className="field-input mt-1"
                 required
@@ -489,10 +452,10 @@ export default function NewProjectPage() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
               />
-              <p className="mt-1 text-xs text-stone-400">Unique ID for reports and APO import matching</p>
+              <p className="mt-1 text-xs text-stone-400">{t("projectCodeHint")}</p>
             </div>
             <div>
-              <label className="label">Project name</label>
+              <label className="label">{t("projectName")}</label>
               <input
                 className="field-input mt-1"
                 required
@@ -504,10 +467,10 @@ export default function NewProjectPage() {
           </div>
 
           <div>
-            <label className="label">Description (optional)</label>
+            <label className="label">{t("descriptionOptional")}</label>
             <textarea
               className="field-input mt-1 min-h-[88px]"
-              placeholder="District, package, or block details for your team"
+              placeholder={t("descriptionPlaceholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -543,7 +506,7 @@ export default function NewProjectPage() {
 
           {templates.length > 0 && (
             <div className="space-y-3">
-              <label className="label">Planting standard template</label>
+              <label className="label">{t("plantingTemplate")}</label>
               <select
                 className="input mt-1"
                 value={selectedTemplate?.code ?? ""}
@@ -580,7 +543,7 @@ export default function NewProjectPage() {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <label className="label">Target trees (optional)</label>
+              <label className="label">{t("targetTrees")}</label>
               <input
                 className="field-input mt-1"
                 type="number"
@@ -591,14 +554,14 @@ export default function NewProjectPage() {
               />
             </div>
             <div>
-              <label className="label">Survival survey interval</label>
+              <label className="label">{t("surveyInterval")}</label>
               <select
                 className="input mt-1"
                 value={surveyIntervalDays}
                 onChange={(e) => setSurveyIntervalDays(Number(e.target.value) as 15 | 30)}
               >
-                <option value={15}>Every 15 days</option>
-                <option value={30}>Every 30 days</option>
+                <option value={15}>{t("every15Days")}</option>
+                <option value={30}>{t("every30Days")}</option>
               </select>
             </div>
           </div>
@@ -622,14 +585,14 @@ export default function NewProjectPage() {
           )}
 
           <WizardNav
-            backLabel="Back to schemes"
+            backLabel={t("backToSchemes")}
             onBack={() => setStep(1)}
             primaryLabel={
               busy
-                ? "Creating…"
+                ? t("creating")
                 : hasSchemeRefsStep
-                  ? "Continue to scheme references"
-                  : "Create project & draw areas"
+                  ? t("continueToRefs")
+                  : t("createAndDraw")
             }
             primaryDisabled={busy}
             primaryType="submit"
@@ -647,10 +610,12 @@ export default function NewProjectPage() {
           />
 
           <div>
-            <h2 className="text-sm font-medium text-stone-900">Government reference IDs</h2>
+            <h2 className="text-sm font-medium text-stone-900">{t("govRefIds")}</h2>
             <p className="mt-1 text-sm text-stone-500">
-              {selectedScheme?.label} · {selectedScheme?.ministry}. These flow into tree registration
-              and audit exports — you can edit them later in the project setup wizard.
+              {t("govRefHint", {
+                label: selectedScheme?.label ?? "",
+                ministry: selectedScheme?.ministry ?? "",
+              })}
             </p>
           </div>
 
@@ -686,9 +651,9 @@ export default function NewProjectPage() {
           )}
 
           <WizardNav
-            backLabel="Back to project details"
+            backLabel={t("backToDetails")}
             onBack={() => setStep(2)}
-            primaryLabel={busy ? "Creating project…" : "Create project & draw areas"}
+            primaryLabel={busy ? t("creatingProject") : t("createAndDraw")}
             primaryDisabled={busy}
             primaryType="submit"
           />
@@ -698,7 +663,7 @@ export default function NewProjectPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-forest-700">
-                Step 4 · Draw work areas
+                {t("step4Title")}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-stone-900">{createdProject.name}</h2>
               <p className="text-sm text-stone-500">{createdProject.code}</p>
@@ -706,19 +671,15 @@ export default function NewProjectPage() {
             {canFinishSetup && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Setup complete
+                {t("setupComplete")}
               </span>
             )}
           </div>
 
           <div className="rounded-xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm text-sky-950">
-            <p className="font-medium">Draw where planting happens</p>
+            <p className="font-medium">{t("drawTitle")}</p>
             <p className="mt-1 text-sky-900/80">
-              Use search or GPS to find your site, click the map to place points, then save a named
-              polygon or corridor.{" "}
-              {requiresWorkArea
-                ? "At least one work area is required before you can register trees."
-                : "Work areas help organize trees but are optional in open mode."}
+              {requiresWorkArea ? t("drawDescriptionRequired") : t("drawDescriptionOptional")}
             </p>
           </div>
 
@@ -745,14 +706,14 @@ export default function NewProjectPage() {
               disabled={busy}
               onClick={() => router.push(`/projects/${createdProject.id}`)}
             >
-              Skip for now — go to project
+              {t("skipToProject")}
             </button>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Link
                 href={`/projects/${createdProject.id}`}
                 className="btn-secondary justify-center"
               >
-                View project overview
+                {t("viewOverview")}
               </Link>
               <button
                 type="button"
@@ -761,7 +722,7 @@ export default function NewProjectPage() {
                 onClick={() => router.push(canFinishSetup ? registerHref : `#work-areas`)}
               >
                 <Leaf className="h-4 w-4" />
-                {canFinishSetup ? "Register first tree" : "Draw a work area first"}
+                {canFinishSetup ? t("registerFirstTree") : t("drawWorkAreaFirst")}
               </button>
             </div>
           </div>
@@ -780,11 +741,12 @@ function LinkedSchemeBanner({
   ministry?: string;
   onChangeScheme: () => void;
 }) {
+  const t = useTranslations("projectPages.new");
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-forest-100 bg-gradient-to-r from-forest-50/80 to-white px-4 py-3">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-forest-700">
-          Linked scheme
+          {t("linkedScheme")}
         </p>
         <p className="mt-1 font-medium text-stone-900">{label}</p>
         {ministry && <p className="text-xs text-stone-500">{ministry}</p>}
@@ -794,7 +756,7 @@ function LinkedSchemeBanner({
         className="text-sm font-medium text-forest-700 underline-offset-2 hover:underline"
         onClick={onChangeScheme}
       >
-        Change scheme
+        {t("changeScheme")}
       </button>
     </div>
   );
@@ -819,6 +781,7 @@ function AdvancedSegmentPanel({
   onComplianceChange: (mode: ComplianceMode) => void;
   onProgramChange: (code: string) => void;
 }) {
+  const t = useTranslations("projectPages.new");
   return (
     <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700">
       <button
@@ -826,28 +789,28 @@ function AdvancedSegmentPanel({
         className="flex w-full items-center justify-between bg-stone-50/80 px-4 py-3 text-left text-sm font-medium text-stone-700 dark:bg-stone-800/50"
         onClick={onToggle}
       >
-        Advanced: segment, program &amp; compliance
+        {t("advancedTitle")}
         {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
       {showAdvanced && (
         <div className="space-y-4 border-t border-stone-200 px-4 py-4 dark:border-stone-700">
           <div>
-            <label className="label">Segment</label>
+            <label className="label">{t("segment")}</label>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {SEGMENTS.map((s) => (
+              {SEGMENT_CODES.map((code) => (
                 <button
-                  key={s.code}
+                  key={code}
                   type="button"
                   className={cn(
                     "rounded-xl border p-3 text-left text-sm transition",
-                    segment === s.code
+                    segment === code
                       ? "border-forest-500 bg-forest-50 ring-2 ring-forest-500/15"
                       : "border-stone-200 hover:border-stone-300",
                   )}
-                  onClick={() => onSegmentChange(s.code)}
+                  onClick={() => onSegmentChange(code)}
                 >
-                  <div className="font-medium">{s.label}</div>
-                  <div className="text-xs text-stone-500">{s.hint}</div>
+                  <div className="font-medium">{t(`segments.${code}.label` as "segments.general.label")}</div>
+                  <div className="text-xs text-stone-500">{t(`segments.${code}.hint` as "segments.general.hint")}</div>
                 </button>
               ))}
             </div>
@@ -855,28 +818,28 @@ function AdvancedSegmentPanel({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Compliance mode</label>
+              <label className="label">{t("complianceMode")}</label>
               <select
                 className="input mt-1"
                 value={complianceMode}
                 onChange={(e) => onComplianceChange(e.target.value as ComplianceMode)}
               >
-                <option value="strict">Strict (block violations)</option>
-                <option value="guided">Guided (warn)</option>
-                <option value="open">Open (no boundary)</option>
+                <option value="strict">{t("complianceStrict")}</option>
+                <option value="guided">{t("complianceGuided")}</option>
+                <option value="open">{t("complianceOpen")}</option>
               </select>
             </div>
             <div>
-              <label className="label">Program</label>
+              <label className="label">{t("program")}</label>
               <select
                 className="input mt-1"
                 value={programCode}
                 onChange={(e) => onProgramChange(e.target.value)}
               >
-                <option value="government_nhai">Government / Public sector</option>
-                <option value="corporate_esg">Corporate ESG</option>
-                <option value="ngo_community">NGO / Community</option>
-                <option value="byot">BYOT</option>
+                <option value="government_nhai">{t("programGovernment")}</option>
+                <option value="corporate_esg">{t("programCorporate")}</option>
+                <option value="ngo_community">{t("programNgo")}</option>
+                <option value="byot">{t("programByot")}</option>
               </select>
             </div>
           </div>
