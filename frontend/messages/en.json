@@ -30,6 +30,8 @@
     "trees": "Trees",
     "map": "Map",
     "portfolioHealth": "Portfolio health",
+    "estateWatch": "Estate Watch",
+    "estateWatchHint": "Audit engagements & attestation",
     "satellite": "Satellite",
     "biodiversity": "Biodiversity",
     "alerts": "Alerts",
@@ -427,7 +429,7 @@
     "team": "Team",
     "carbonCalculator": "Carbon calculator",
     "privacy": "Privacy",
-    "auditTrail": "Audit trail",
+    "auditTrail": "Activity log",
     "webhooks": "Webhooks",
     "websiteCms": "Website CMS",
     "programAccess": "Program access",
@@ -530,7 +532,16 @@
     "linkSatellite": "Satellite monitoring",
     "linkSatelliteDesc": "NDVI scans and timeline for this estate",
     "linkMobile": "Mobile sync",
-    "linkMobileDesc": "Offline visit queue on Field ops"
+    "linkMobileDesc": "Offline visit queue on Field ops",
+    "advanced": {
+      "title": "Advanced tools",
+      "desc": "Integrity bridge, methodology, explain history, re-audit, and cross-module links"
+    },
+    "nextStep": {
+      "title": "Recommended next step",
+      "desc": "Your engagement is ready for {phase}.",
+      "action": "Go to {phase}"
+    }
   },
   "auditIntake": {
     "title": "Estate Watch — audit intake",
@@ -612,6 +623,10 @@
       "field": {
         "title": "Field verification",
         "action": "Record visits on web or Field ops"
+      },
+      "reconciliation": {
+        "title": "Reconciliation",
+        "action": "Compare claim vs observation totals"
       },
       "export": {
         "title": "Evidence export",
@@ -798,7 +813,7 @@
     "llmFallback": "LLM enrichment unavailable ({error}) — rules fallback used.",
     "citations": "Citations",
     "disclaimer": "This explanation does not change grades, anomalies, or attestation outcomes.",
-    "emptyAnswer": "The explain service returned an empty response. Check that Wave E backend (migration 0086) is deployed."
+    "emptyAnswer": "No explanation was returned. Try again in a moment, or contact support if this persists."
   },
   "auditExplainHistory": {
     "title": "Explain history",
@@ -1283,7 +1298,9 @@
         "title": "Priority engagements",
         "desc": "Projects needing field visits, export review, or attestation",
         "empty": "No engagements need immediate action.",
-        "openFieldOps": "Open field queue"
+        "openFieldOps": "Open field queue",
+        "showAll": "Show all engagements",
+        "showPriority": "Show priority only"
       },
       "fieldQueue": {
         "title": "Field plot queue",
@@ -1315,7 +1332,7 @@
         "attested": "Attested",
         "orgMeta": "{projects} projects · {attested} attested · {inField} in field",
         "cycle": "Cycle {number}",
-        "platformAudit": "Platform audit log"
+        "platformAudit": "Platform activity log"
       },
       "table": {
         "project": "Project",

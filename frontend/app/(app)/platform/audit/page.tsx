@@ -170,7 +170,7 @@ export default function PlatformAuditPage() {
       a.download = "platform-audit.csv";
       a.click();
       URL.revokeObjectURL(url);
-      notifyPlatformAction("Audit log exported.");
+      notifyPlatformAction("Activity log exported.");
     },
   });
 
@@ -301,7 +301,7 @@ export default function PlatformAuditPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-stone-500">Loading audit log…</p>
+          <p className="text-sm text-stone-500">Loading activity log…</p>
         ) : (
           <div className="divide-y divide-stone-100 rounded-2xl border border-stone-200 bg-white dark:divide-stone-800 dark:border-stone-800 dark:bg-stone-900">
             {data?.items.length === 0 ? (

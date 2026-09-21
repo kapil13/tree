@@ -80,12 +80,12 @@ export default function AuditLogPage() {
 
   return (
     <SettingsSection
-      title="Audit trail"
+      title="Activity log"
       description="Immutable log of sensitive actions — tree changes, exports, logins, and compliance updates."
     >
       {error ? (
         <div className="card border-amber-200 bg-amber-50 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          Audit logs require an authorized role (government, corporate, NGO, field supervisor, or admin).
+          Activity logs require an authorized role (government, corporate, NGO, field supervisor, or admin).
         </div>
       ) : isLoading ? (
         <p className="text-sm text-stone-500">Loading audit events…</p>

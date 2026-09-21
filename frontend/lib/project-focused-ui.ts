@@ -1,3 +1,5 @@
+import { AUDIT_PHASES, type AuditPhase } from "@/lib/audit-workspace";
+
 /** Sprint D: focused project page — secondary sections as sub-routes. */
 export const PROJECT_SECONDARY_TABS = [
   "compliance",
@@ -29,8 +31,14 @@ export function projectOverviewHref(projectId: string): string {
   return `/projects/${projectId}`;
 }
 
-export function projectAuditHref(projectId: string): string {
-  return `/projects/${projectId}/audit`;
+export function parseAuditPhase(value: string | null): AuditPhase | null {
+  if (!value) return null;
+  return AUDIT_PHASES.includes(value as AuditPhase) ? (value as AuditPhase) : null;
+}
+
+export function projectAuditHref(projectId: string, phase?: AuditPhase): string {
+  const base = `/projects/${projectId}/audit`;
+  return phase ? `${base}?phase=${phase}` : base;
 }
 
 export function projectSetupHref(projectId: string, step?: 1 | 2 | 3 | 4): string {

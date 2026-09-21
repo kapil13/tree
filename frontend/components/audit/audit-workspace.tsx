@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Archive,
@@ -16,30 +17,31 @@ import {
 } from "lucide-react";
 import { AuditAttestationPanel } from "@/components/audit/audit-attestation-panel";
 import { AuditConfidencePanel } from "@/components/audit/audit-confidence-panel";
-import { AuditCrossLinks } from "@/components/audit/audit-cross-links";
 import { AuditExportPanel } from "@/components/audit/audit-export-panel";
 import { AuditIntakePanel } from "@/components/audit/audit-intake-panel";
 import { AuditLockedSection } from "@/components/audit/audit-locked-section";
 import { AuditMetricsStrip } from "@/components/audit/audit-metrics-strip";
-import { AuditIntegrityBridgePanel } from "@/components/audit/audit-integrity-bridge-panel";
-import { AuditExplainHistory } from "@/components/audit/audit-explain-history";
-import { AuditMethodologyPanel } from "@/components/audit/audit-methodology-panel";
+import { AuditNextStepBanner } from "@/components/audit/audit-next-step-banner";
 import { AuditPhaseRoadmap } from "@/components/audit/audit-phase-roadmap";
-import { AuditReauditPanel } from "@/components/audit/audit-reaudit-panel";
 import { AuditReconciliationPanel } from "@/components/audit/audit-reconciliation-panel";
 import { AuditRiskPanel } from "@/components/audit/audit-risk-panel";
 import { AuditSamplingPanel } from "@/components/audit/audit-sampling-panel";
 import { AuditSatellitePanel } from "@/components/audit/audit-satellite-panel";
 import { AuditTabError, AuditTabLoading } from "@/components/audit/audit-tab-state";
+import { AuditWorkspaceAdvanced } from "@/components/audit/audit-workspace-advanced";
 import { PageHeader, SectionNav } from "@/components/ui";
 import { auditEngagements, type AuditEngagementDetail } from "@/lib/api";
 import {
+  auditEngagementStatusLabel,
+  auditEngagementStatusTone,
+} from "@/lib/audit-portfolio-status";
+import {
   type AuditPhase,
   defaultAuditPhase,
-  formatAuditStatus,
   isAuditPhaseUnlocked,
 } from "@/lib/audit-workspace";
-import { projectOverviewHref } from "@/lib/project-focused-ui";
+import { portfolioAuditHref } from "@/lib/portfolio-health-links";
+import { parseAuditPhase, projectAuditHref, projectOverviewHref } from "@/lib/project-focused-ui";
 import { cn } from "@/lib/cn";
 
 const PHASE_ICONS: Record<AuditPhase, typeof Shield> = {
@@ -62,6 +64,7 @@ export function AuditWorkspace({
 }) {
   const t = useTranslations("auditWorkspace");
   const tc = useTranslations("chrome");
+  const searchParams = useSearchParams();
   const [phase, setPhase] = useState<AuditPhase>("intake");
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -93,11 +96,25 @@ export function AuditWorkspace({
     enabled: Boolean(engagement?.id && isAuditPhaseUnlocked("reconciliation", engagement!.status)),
   });
 
+  const urlPhase = parseAuditPhase(searchParams.get("phase"));
+
   useEffect(() => {
-    if (engagement?.status) {
-      setPhase(defaultAuditPhase(engagement.status));
+    if (!engagement?.status) return;
+    if (urlPhase) {
+      setPhase(urlPhase);
+      return;
     }
-  }, [engagement?.id, engagement?.status]);
+    setPhase(defaultAuditPhase(engagement.status));
+  }, [engagement?.id, engagement?.status, urlPhase]);
+
+  const selectPhase = useCallback(
+    (next: AuditPhase) => {
+      setPhase(next);
+      const href = projectAuditHref(projectId, next);
+      window.history.replaceState(null, "", href);
+    },
+    [projectId],
+  );
 
   const navItems = useMemo(
     () =>
@@ -126,7 +143,7 @@ export function AuditWorkspace({
     return <AuditTabError onRetry={() => refetch()} />;
   }
 
-  const statusLabel = formatAuditStatus(engagement.status);
+  const statusLabel = auditEngagementStatusLabel(engagement.status);
 
   return (
     <div className="space-y-6">
@@ -135,7 +152,7 @@ export function AuditWorkspace({
         title={t("title")}
         description={t("description")}
         breadcrumbs={[
-          { label: tc("sectionOperate"), href: "/field-ops" },
+          { label: tc("sectionIntelligence"), href: portfolioAuditHref(projectId) },
           { label: t("breadcrumbProject"), href: projectOverviewHref(projectId) },
           { label: t("breadcrumbAudit") },
         ]}
@@ -153,18 +170,20 @@ export function AuditWorkspace({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                "rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
-                engagement.status === "attested"
-                  ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
-                  : engagement.status === "draft"
-                    ? "bg-amber-50 text-amber-800 ring-amber-200"
-                    : "bg-sky-50 text-sky-800 ring-sky-200",
+                "rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
+                auditEngagementStatusTone(engagement.status),
               )}
             >
               {statusLabel}
             </span>
           </div>
         }
+      />
+
+      <AuditNextStepBanner
+        engagementStatus={engagement.status}
+        activePhase={phase}
+        onSelectPhase={selectPhase}
       />
 
       <AuditMetricsStrip
@@ -174,27 +193,17 @@ export function AuditWorkspace({
         reconciliationMismatch={reconciliation?.mismatch_count}
       />
 
-      <AuditCrossLinks projectId={projectId} satelliteHref={satelliteHref} />
-
-      <AuditIntegrityBridgePanel engagementId={engagement.id} projectId={projectId} />
-
-      <AuditMethodologyPanel engagementId={engagement.id} />
-
-      <AuditExplainHistory engagementId={engagement.id} />
-
-      <AuditReauditPanel engagementId={engagement.id} engagementStatus={engagement.status} />
-
       <AuditPhaseRoadmap
         status={engagement.status}
         activePhase={phase}
-        onSelectPhase={(next) => setPhase(next as AuditPhase)}
+        onSelectPhase={(next) => selectPhase(next as AuditPhase)}
       />
 
       <SectionNav
         ariaLabel={t("phaseNavAria")}
         items={navItems}
         active={phase}
-        onSelect={(id) => setPhase(id as AuditPhase)}
+        onSelect={(id) => selectPhase(id as AuditPhase)}
       />
 
       <div className="min-h-[320px]">
@@ -206,7 +215,7 @@ export function AuditWorkspace({
             message={t("phaseLocked", { phase: t(`phase.${phase}`) })}
             actionLabel={t("goToIntake")}
             actionHref={undefined}
-            onAction={() => setPhase(defaultAuditPhase(engagement.status))}
+            onAction={() => selectPhase(defaultAuditPhase(engagement.status))}
           />
         ) : (
           <>
@@ -255,6 +264,13 @@ export function AuditWorkspace({
           </>
         )}
       </div>
+
+      <AuditWorkspaceAdvanced
+        projectId={projectId}
+        engagementId={engagement.id}
+        engagementStatus={engagement.status}
+        satelliteHref={satelliteHref}
+      />
     </div>
   );
 }

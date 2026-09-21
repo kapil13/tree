@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   getProjectWorkspaceNav,
+  parseAuditPhase,
   parseProjectSecondarySegment,
   parseProjectSecondaryTab,
   PROJECT_FOCUSED_LAYOUT_MARKER,
   PROJECT_SECONDARY_TABS,
+  projectAuditHref,
   projectOverviewHref,
   projectSecondaryHref,
   resolveLegacyProjectTabHref,
@@ -26,8 +28,16 @@ describe("project-focused-ui", () => {
 
   it("builds sub-route hrefs", () => {
     expect(projectOverviewHref("abc")).toBe("/projects/abc");
+    expect(projectAuditHref("abc")).toBe("/projects/abc/audit");
+    expect(projectAuditHref("abc", "sampling")).toBe("/projects/abc/audit?phase=sampling");
     expect(projectSecondaryHref("abc", "compliance")).toBe("/projects/abc/compliance");
     expect(parseProjectSecondarySegment("team")).toBe("team");
+  });
+
+  it("parses audit phase query values", () => {
+    expect(parseAuditPhase("reconciliation")).toBe("reconciliation");
+    expect(parseAuditPhase("invalid")).toBeNull();
+    expect(parseAuditPhase(null)).toBeNull();
   });
 
   it("maps legacy ?tab= query values to sub-routes", () => {
