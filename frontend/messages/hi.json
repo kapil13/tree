@@ -758,7 +758,26 @@
     "mode": "मोड: {mode}",
     "llmFallback": "LLM उपलब्ध नहीं ({error}) — नियम फ़ॉलबैक।",
     "citations": "उद्धरण",
-    "disclaimer": "यह व्याख्या ग्रेड, विसंगति या प्रमाणन परिणाम नहीं बदलती।"
+    "disclaimer": "यह व्याख्या ग्रेड, विसंगति या प्रमाणन परिणाम नहीं बदलती।",
+    "emptyAnswer": "व्याख्या सेवा ने खाली प्रतिक्रिया दी। जाँचें कि Wave E backend (migration 0086) deploy है।"
+  },
+  "auditExplainHistory": {
+    "title": "व्याख्या इतिहास",
+    "subtitle": "इस engagement की हाल की grounded व्याख्याएँ — नवीनतम पहले।",
+    "patternTitle": "पैटर्न व्याख्या इतिहास",
+    "loading": "व्याख्या इतिहास लोड हो रहा है…",
+    "empty": "अभी कोई व्याख्या नहीं — विसंगति, समन्वय या साक्ष्य ग्राफ पर Explain उपयोग करें।",
+    "error": "व्याख्या इतिहास लोड नहीं हो सका — explain API शायद deploy नहीं है।",
+    "count": "{count} रन",
+    "filterAll": "सभी",
+    "unknownTime": "अज्ञात समय",
+    "targetType": {
+      "anomaly": "विसंगति",
+      "reconciliation_summary": "समन्वय सारांश",
+      "reconciliation_block": "समन्वय ब्लॉक",
+      "evidence_graph": "साक्ष्य ग्राफ",
+      "cross_estate_pattern": "क्रॉस-एस्टेट पैटर्न"
+    }
   },
   "auditEvidenceGraph": {
     "title": "साक्ष्य ग्राफ",
@@ -912,6 +931,7 @@
     "anomalyCount": "{count} विसंगति संकेत",
     "anomalySummary": "कुल {total} विसंगतियाँ ({critical} गंभीर, {high} उच्च)",
     "explain": "समझाएँ",
+    "explaining": "व्याख्या तैयार हो रही है…",
     "allAnomalies": "सभी विसंगति घटनाएँ"
   },
   "projectCompliance": {

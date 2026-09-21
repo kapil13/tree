@@ -13,6 +13,15 @@ export function AuditExplainResult({
   className?: string;
 }) {
   const t = useTranslations("auditExplain");
+  const answer = run.answer?.trim();
+
+  if (!answer) {
+    return (
+      <div className={cn("rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900", className)}>
+        {t("emptyAnswer")}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -41,7 +50,7 @@ export function AuditExplainResult({
           </>
         ) : null}
       </div>
-      <p className="mt-3 whitespace-pre-wrap text-stone-800 dark:text-stone-100">{run.answer}</p>
+      <p className="mt-3 whitespace-pre-wrap text-stone-800 dark:text-stone-100">{answer}</p>
       {run.llm_error ? (
         <p className="mt-2 text-xs text-amber-700">{t("llmFallback", { error: run.llm_error })}</p>
       ) : null}

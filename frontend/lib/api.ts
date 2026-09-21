@@ -4329,6 +4329,7 @@ export const auditEngagements = {
     return (
       await api.post<AuditExplainRun>(
         `/v1/audit-engagements/${engagementId}/anomalies/${anomalyId}/explain`,
+        {},
       )
     ).data;
   },
@@ -4344,6 +4345,7 @@ export const auditEngagements = {
     return (
       await api.post<AuditExplainRun>(
         `/v1/audit-engagements/${engagementId}/evidence-graph/explain`,
+        {},
       )
     ).data;
   },
@@ -4351,6 +4353,7 @@ export const auditEngagements = {
     return (
       await api.post<AuditExplainRun>(
         `/v1/audit-engagements/cross-estate-patterns/${patternId}/explain`,
+        {},
       )
     ).data;
   },

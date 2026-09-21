@@ -65,6 +65,7 @@ Future Estate Watch work should add `cycle_id` to new period-scoped evidence or 
 - **P0 export history** — `audit-export-panel.tsx`: list exports, frozen download, signature verify.
 - **P1 evidence graph** — `audit-evidence-graph-panel.tsx` under reconciliation phase.
 - **P1 explain** — `audit-explain-result.tsx` + explain buttons on risk anomalies and portfolio patterns.
+- **Explain history** — `audit-explain-history.tsx` on project audit workspace (`GET /explain-runs`); `audit-pattern-explain-history.tsx` for org-scoped pattern explains on portfolio tab.
 - **P2 portfolio ops** — `audit-portfolio-ops-section.tsx` on `/portfolio-health?tab=audit`: rollups, benchmarks, patterns, workspace, digests.
 - **P3 methodology** — `audit-methodology-panel.tsx` on project audit workspace.
 - API client: `auditEngagements` methods in `frontend/lib/api.ts` for Waves C–E endpoints.
