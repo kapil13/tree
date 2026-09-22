@@ -32,6 +32,10 @@
       {
         "label": "How it works",
         "href": "#how-it-works"
+      },
+      {
+        "label": "Solutions",
+        "href": "/resources"
       }
     ],
     "sign_in": {
@@ -86,6 +90,31 @@
           {
             "label": "NGO & community",
             "href": "/auth?mode=signup"
+          }
+        ]
+      },
+      {
+        "title": "Solutions",
+        "links": [
+          {
+            "label": "CSR plantation MRV",
+            "href": "/solutions/csr-plantation"
+          },
+          {
+            "label": "Mining green belts",
+            "href": "/solutions/mining-greening"
+          },
+          {
+            "label": "CAMPA afforestation",
+            "href": "/solutions/campa-afforestation"
+          },
+          {
+            "label": "BRSR & ESG evidence",
+            "href": "/solutions/brsr-esg"
+          },
+          {
+            "label": "Product overview",
+            "href": "/product/mrv"
           }
         ]
       },

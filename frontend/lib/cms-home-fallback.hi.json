@@ -32,6 +32,10 @@
       {
         "label": "यह कैसे काम करता है",
         "href": "#how-it-works"
+      },
+      {
+        "label": "समाधान",
+        "href": "/resources"
       }
     ],
     "sign_in": {
@@ -86,6 +90,31 @@
           {
             "label": "NGO और समुदाय",
             "href": "/auth?mode=signup"
+          }
+        ]
+      },
+      {
+        "title": "समाधान",
+        "links": [
+          {
+            "label": "CSR वृक्षारोपण MRV",
+            "href": "/solutions/csr-plantation"
+          },
+          {
+            "label": "खनन हरित पट्टियाँ",
+            "href": "/solutions/mining-greening"
+          },
+          {
+            "label": "CAMPA वनरोपण",
+            "href": "/solutions/campa-afforestation"
+          },
+          {
+            "label": "BRSR और ESG प्रमाण",
+            "href": "/solutions/brsr-esg"
+          },
+          {
+            "label": "उत्पाद अवलोकन",
+            "href": "/product/mrv"
           }
         ]
       },
