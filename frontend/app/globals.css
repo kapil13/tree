@@ -147,6 +147,64 @@ html[lang="hi"] body {
 .badge-unhealthy { @apply badge bg-rose-100 text-rose-800; }
 .badge-unknown { @apply badge bg-stone-100 text-stone-700; }
 
+.resource-prose {
+  @apply text-base leading-relaxed text-stone-700;
+}
+
+.resource-prose h2 {
+  @apply mt-10 font-display text-2xl font-semibold text-stone-900 first:mt-0;
+}
+
+.resource-prose h3 {
+  @apply mt-6 text-lg font-semibold text-stone-900;
+}
+
+.resource-prose p {
+  @apply mt-4;
+}
+
+.resource-prose ul,
+.resource-prose ol {
+  @apply mt-4 space-y-2 pl-5;
+}
+
+.resource-prose ul {
+  @apply list-disc;
+}
+
+.resource-prose ol {
+  @apply list-decimal;
+}
+
+.resource-prose li {
+  @apply pl-1;
+}
+
+.resource-prose table {
+  @apply mt-6 w-full border-collapse overflow-hidden rounded-xl border border-stone-200 text-sm;
+}
+
+.resource-prose th,
+.resource-prose td {
+  @apply border border-stone-200 px-4 py-3 text-left align-top;
+}
+
+.resource-prose th {
+  @apply bg-stone-50 font-semibold text-stone-900;
+}
+
+.resource-prose a {
+  @apply font-medium text-forest-700 underline decoration-forest-200 underline-offset-2 hover:text-forest-800;
+}
+
+.resource-prose strong {
+  @apply font-semibold text-stone-900;
+}
+
+.resource-prose blockquote {
+  @apply mt-4 border-l-4 border-forest-300 bg-forest-50/60 px-4 py-3 text-stone-700;
+}
+
 .marketing-page {
   @apply min-h-screen bg-[#f7faf8] text-stone-900;
   background-image:
