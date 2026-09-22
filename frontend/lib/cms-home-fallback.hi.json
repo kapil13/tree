@@ -111,6 +111,27 @@
         ]
       },
       {
+        "title": "संपर्क",
+        "links": [
+          {
+            "label": "संपर्क फ़ॉर्म",
+            "href": "/contact"
+          },
+          {
+            "label": "बिक्री और साझेदारी",
+            "href": "mailto:kapil@axentis.tech"
+          },
+          {
+            "label": "डेमो का अनुरोध",
+            "href": "/contact"
+          },
+          {
+            "label": "साइन इन",
+            "href": "/auth?mode=signin"
+          }
+        ]
+      },
+      {
         "title": "कानूनी",
         "links": [
           {
@@ -124,10 +145,6 @@
           {
             "label": "डेटा उपयोग नीति",
             "href": "/data-use"
-          },
-          {
-            "label": "साइन इन",
-            "href": "/auth?mode=signin"
           }
         ]
       }
