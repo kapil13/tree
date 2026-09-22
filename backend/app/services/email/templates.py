@@ -246,3 +246,76 @@ def program_access_decision_email(
             f"{_button('View status', pending_url)}"
         )
     return subject, text, _base_layout(title=subject, preheader=preheader, body_html=body)
+
+
+ORGANIZATION_TYPE_LABELS = {
+    "corporate_esg": "Corporate ESG",
+    "government": "Government / public sector",
+    "mining": "Mining & industrial reclamation",
+    "ngo": "NGO / community",
+    "international": "International donor / verifier",
+    "other": "Other",
+}
+
+LAND_HECTARES_LABELS = {
+    "under_100": "Under 100 ha",
+    "100_1000": "100 - 1,000 ha",
+    "1000_10000": "1,000 - 10,000 ha",
+    "over_10000": "10,000+ ha",
+}
+
+SITE_COUNT_LABELS = {
+    "1": "1 site",
+    "2_10": "2 - 10 sites",
+    "11_50": "11 - 50 sites",
+    "50_plus": "50+ sites",
+}
+
+
+def _label(mapping: dict[str, str], key: str) -> str:
+    return mapping.get(key, key.replace("_", " ").title())
+
+
+def contact_inquiry_email(
+    *,
+    full_name: str,
+    email: str,
+    phone: str,
+    organization: str,
+    organization_type: str,
+    state: str,
+    land_hectares_band: str,
+    site_count_band: str,
+    message: str,
+) -> tuple[str, str, str]:
+    org_type = _label(ORGANIZATION_TYPE_LABELS, organization_type)
+    hectares = _label(LAND_HECTARES_LABELS, land_hectares_band)
+    sites = _label(SITE_COUNT_LABELS, site_count_band)
+    subject = f"Aranyix contact inquiry - {organization}"
+    preheader = f"New inquiry from {full_name} at {organization}."
+    text = (
+        "New contact inquiry from the Aranyix website\n\n"
+        f"Name: {full_name}\n"
+        f"Email: {email}\n"
+        f"Phone: {phone}\n"
+        f"Organization: {organization}\n"
+        f"Organization type: {org_type}\n"
+        f"State / region: {state}\n"
+        f"Land under management: {hectares}\n"
+        f"Number of sites: {sites}\n\n"
+        f"Message:\n{message}\n"
+    )
+    body = (
+        "<h1 style=\"margin:0 0 12px 0;font-size:20px;color:#1A1F24;\">New contact inquiry</h1>"
+        f"<p><strong>Name:</strong> {escape(full_name)}</p>"
+        f"<p><strong>Email:</strong> {escape(email)}</p>"
+        f"<p><strong>Phone:</strong> {escape(phone)}</p>"
+        f"<p><strong>Organization:</strong> {escape(organization)}</p>"
+        f"<p><strong>Organization type:</strong> {escape(org_type)}</p>"
+        f"<p><strong>State / region:</strong> {escape(state)}</p>"
+        f"<p><strong>Land under management:</strong> {escape(hectares)}</p>"
+        f"<p><strong>Number of sites:</strong> {escape(sites)}</p>"
+        f"<p><strong>Message:</strong></p>"
+        f"<p style=\"white-space:pre-wrap;\">{escape(message)}</p>"
+    )
+    return subject, text, _base_layout(title=subject, preheader=preheader, body_html=body)
