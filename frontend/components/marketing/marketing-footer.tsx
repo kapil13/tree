@@ -14,7 +14,7 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
   return (
     <footer className="marketing-footer">
       <div className="mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_repeat(4,minmax(0,1fr))]">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div className="space-y-5 sm:col-span-2 lg:col-span-1">
             <AranyixLogo className="h-12 w-auto max-w-[260px]" />
             <p className="max-w-sm text-sm leading-relaxed text-emerald-100/75">{footer.description}</p>
@@ -22,15 +22,13 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
               <Leaf className="mt-0.5 h-3.5 w-3.5 shrink-0 text-lime-300" />
               <span>{footer.badge}</span>
             </div>
-            <div className="space-y-1 text-sm text-emerald-100/70">
+            <div className="space-y-2 text-sm text-emerald-100/70">
               <p className="font-medium text-white">{t("contactTitle")}</p>
-              <a
-                href="mailto:kapil@axentis.tech"
-                className="transition hover:text-lime-300"
-              >
-                kapil@axentis.tech
-              </a>
+              <Link href="/contact" className="transition hover:text-lime-300">
+                {t("contactFooterCta")}
+              </Link>
               <p className="text-xs text-emerald-100/55">{t("contactHint")}</p>
+              <p className="text-xs text-emerald-100/50">{t("alsoKnownAs")}</p>
             </div>
           </div>
 

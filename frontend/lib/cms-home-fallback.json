@@ -119,11 +119,11 @@
           },
           {
             "label": "Sales & partnerships",
-            "href": "mailto:kapil@axentis.tech"
+            "href": "/contact"
           },
           {
             "label": "Request a demo",
-            "href": "/contact"
+            "href": "/demo"
           },
           {
             "label": "Sign in",
@@ -164,6 +164,7 @@
         "title": "Environmental intelligence",
         "title_highlight": "from field to audit room",
         "subtitle": "Register trees on mobile, fuse NDVI with SAR integrity, score biodiversity with bioacoustics, and export BRSR, ISO 14064-2, TNFD, and VM0047 evidence — one platform for citizens, corporates, and government programs.",
+        "keyword_subhead": "Plantation MRV software for CSR, mining green belts, CAMPA afforestation, and BRSR reporting in India.",
         "stats": [
           {
             "value": "15+",
