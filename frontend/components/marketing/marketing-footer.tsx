@@ -14,13 +14,23 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
   return (
     <footer className="marketing-footer">
       <div className="mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div className="space-y-5">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_repeat(4,minmax(0,1fr))]">
+          <div className="space-y-5 sm:col-span-2 lg:col-span-1">
             <AranyixLogo className="h-12 w-auto max-w-[260px]" />
             <p className="max-w-sm text-sm leading-relaxed text-emerald-100/75">{footer.description}</p>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.22em] text-emerald-100/70">
-              <Leaf className="h-3.5 w-3.5 text-lime-300" />
-              {footer.badge}
+            <div className="inline-flex max-w-sm items-start gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-[11px] font-medium uppercase leading-snug tracking-[0.12em] text-emerald-100/75 sm:text-xs">
+              <Leaf className="mt-0.5 h-3.5 w-3.5 shrink-0 text-lime-300" />
+              <span>{footer.badge}</span>
+            </div>
+            <div className="space-y-1 text-sm text-emerald-100/70">
+              <p className="font-medium text-white">{t("contactTitle")}</p>
+              <a
+                href="mailto:kapil@axentis.tech"
+                className="transition hover:text-lime-300"
+              >
+                kapil@axentis.tech
+              </a>
+              <p className="text-xs text-emerald-100/55">{t("contactHint")}</p>
             </div>
           </div>
 
@@ -34,11 +44,14 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
                     link.href === "/dashboard" || link.href.startsWith("/dashboard?")
                       ? "/auth?mode=signin&next=/dashboard"
                       : link.href;
+                  const className = "text-sm text-emerald-100/65 transition hover:text-lime-300";
                   return (
                     <li key={`${col.title}-${link.label}`}>
-                      <Link href={href} className="text-sm text-emerald-100/65 transition hover:text-lime-300">
-                        {link.label}
-                      </Link>
+                      {href.startsWith("mailto:") ? (
+                        <a href={href} className={className}>{link.label}</a>
+                      ) : (
+                        <Link href={href} className={className}>{link.label}</Link>
+                      )}
                     </li>
                   );
                 })}
