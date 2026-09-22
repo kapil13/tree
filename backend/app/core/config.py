@@ -68,8 +68,8 @@ class Settings(BaseSettings):
     fcm_server_key: str | None = None
     ses_endpoint_url: str | None = None
     contact_inquiry_to_email: str = "kapil@axentis.tech"
-    contact_inquiry_from_email: str = "no-reply@byot.earth"
-    contact_inquiry_reply_to_email: str = "no-reply@byot.earth"
+    contact_inquiry_from_email: str = "no-reply@aranyix.tech"
+    contact_inquiry_reply_to_email: str = "no-reply@aranyix.tech"
 
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
