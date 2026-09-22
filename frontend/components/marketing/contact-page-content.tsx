@@ -1,10 +1,8 @@
 "use client";
 
-import { Building2, Clock3, Leaf, Mail, MapPin } from "lucide-react";
+import { Building2, Clock3, Leaf, MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ContactForm } from "@/components/marketing/contact-form";
-
-const CONTACT_EMAIL = "kapil@axentis.tech";
 
 export function ContactPageContent() {
   const t = useTranslations("marketing.contact");
@@ -32,25 +30,6 @@ export function ContactPageContent() {
               <p className="mt-2 text-sm leading-relaxed text-stone-600">{t("infoBody")}</p>
 
               <dl className="mt-6 space-y-4">
-                <div className="flex gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest-50 text-forest-700">
-                    <Mail className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                      {t("emailLabel")}
-                    </dt>
-                    <dd className="mt-1">
-                      <a
-                        href={`mailto:${CONTACT_EMAIL}`}
-                        className="text-sm font-medium text-forest-700 underline decoration-forest-200 underline-offset-2 hover:text-forest-800"
-                      >
-                        {CONTACT_EMAIL}
-                      </a>
-                    </dd>
-                  </div>
-                </div>
-
                 <div className="flex gap-3">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest-50 text-forest-700">
                     <Clock3 className="h-4 w-4" />

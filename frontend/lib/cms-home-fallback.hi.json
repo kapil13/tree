@@ -32,6 +32,10 @@
       {
         "label": "यह कैसे काम करता है",
         "href": "#how-it-works"
+      },
+      {
+        "label": "समाधान",
+        "href": "/resources"
       }
     ],
     "sign_in": {
@@ -90,6 +94,31 @@
         ]
       },
       {
+        "title": "समाधान",
+        "links": [
+          {
+            "label": "CSR वृक्षारोपण MRV",
+            "href": "/solutions/csr-plantation"
+          },
+          {
+            "label": "खनन हरित पट्टियाँ",
+            "href": "/solutions/mining-greening"
+          },
+          {
+            "label": "CAMPA वनरोपण",
+            "href": "/solutions/campa-afforestation"
+          },
+          {
+            "label": "BRSR और ESG प्रमाण",
+            "href": "/solutions/brsr-esg"
+          },
+          {
+            "label": "उत्पाद अवलोकन",
+            "href": "/product/mrv"
+          }
+        ]
+      },
+      {
         "title": "अनुपालन",
         "links": [
           {
@@ -119,11 +148,11 @@
           },
           {
             "label": "बिक्री और साझेदारी",
-            "href": "mailto:kapil@axentis.tech"
+            "href": "/contact"
           },
           {
             "label": "डेमो का अनुरोध",
-            "href": "/contact"
+            "href": "/demo"
           },
           {
             "label": "साइन इन",
@@ -164,6 +193,7 @@
         "title": "पर्यावरणीय बुद्धिमत्ता",
         "title_highlight": "फील्ड से ऑडिट कक्ष तक",
         "subtitle": "मोबाइल पर पेड़ पंजीकृत करें, NDVI को SAR अखंडता के साथ जोड़ें, जैव ध्वनि से विविधता स्कोर करें, और BRSR, ISO 14064-2, TNFD और VM0047 प्रमाण निर्यात करें — नागरिकों, कॉर्पोरेट और सरकारी कार्यक्रमों के लिए एक प्लेटफ़ॉर्म।",
+        "keyword_subhead": "CSR, खनन हरित पट्टियाँ, CAMPA वनरोपण और BRSR रिपोर्टिंग के लिए भारत में वृक्षारोपण MRV सॉफ़्टवेयर।",
         "stats": [
           {
             "value": "15+",

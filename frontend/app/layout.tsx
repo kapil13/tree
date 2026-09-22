@@ -1,10 +1,10 @@
 import "./globals.css";
-import type { Metadata } from "next";
 import { Noto_Sans_Devanagari, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
 import { PwaRegister } from "@/components/pwa/pwa-register";
+import { ROOT_METADATA } from "@/lib/seo/metadata";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -24,21 +24,7 @@ const notoDevanagari = Noto_Sans_Devanagari({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Aranyix — Intelligence for a Thriving Planet",
-  description:
-    "Environmental MRV platform — tree registration, satellite SAR fusion, bioacoustic biodiversity, and audit-ready BRSR, ISO 14064-2, TNFD, and VM0047 exports.",
-  manifest: "/manifest.webmanifest",
-  themeColor: "#052e1f",
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
-  },
-  appleWebApp: {
-    capable: true,
-    title: "Aranyix",
-  },
-};
+export const metadata = ROOT_METADATA;
 
 export const dynamic = "force-dynamic";
 

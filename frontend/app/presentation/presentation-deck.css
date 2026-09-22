@@ -1,7 +1,10 @@
 /* Aranyix client deck — Fortune 500 16:9 slides */
 
 .presentation-layout {
-  font-family: var(--font-deck-sans), "DM Sans", system-ui, sans-serif;
+  /* Reuse root layout fonts so CI builds do not fetch extra Google Fonts. */
+  --font-deck-sans: var(--font-sans);
+  --font-deck-serif: var(--font-display);
+  font-family: var(--font-deck-sans), system-ui, sans-serif;
 }
 
 .deck-root {

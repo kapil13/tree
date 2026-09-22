@@ -140,6 +140,11 @@ export function CmsSectionRenderer({ section }: { section: CmsSection }) {
                 <p className="max-w-xl text-base leading-relaxed text-emerald-50/90 sm:text-lg">
                   {String(c.subtitle || "")}
                 </p>
+                {c.keyword_subhead ? (
+                  <p className="max-w-xl text-sm leading-relaxed text-emerald-100/70">
+                    {String(c.keyword_subhead)}
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-3 motion-fade-up-delay">
                 <CtaLink
