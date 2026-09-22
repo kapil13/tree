@@ -25,15 +25,15 @@ ORGANIZATION_TYPE_LABELS = {
 
 LAND_HECTARES_LABELS = {
     "under_100": "Under 100 ha",
-    "100_1000": "100 – 1,000 ha",
-    "1000_10000": "1,000 – 10,000 ha",
+    "100_1000": "100 - 1,000 ha",
+    "1000_10000": "1,000 - 10,000 ha",
     "over_10000": "10,000+ ha",
 }
 
 SITE_COUNT_LABELS = {
     "1": "1 site",
-    "2_10": "2 – 10 sites",
-    "11_50": "11 – 50 sites",
+    "2_10": "2 - 10 sites",
+    "11_50": "11 - 50 sites",
     "50_plus": "50+ sites",
 }
 
