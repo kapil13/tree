@@ -111,6 +111,27 @@
         ]
       },
       {
+        "title": "Contact",
+        "links": [
+          {
+            "label": "Contact form",
+            "href": "/contact"
+          },
+          {
+            "label": "Sales & partnerships",
+            "href": "mailto:kapil@axentis.tech"
+          },
+          {
+            "label": "Request a demo",
+            "href": "/contact"
+          },
+          {
+            "label": "Sign in",
+            "href": "/auth?mode=signin"
+          }
+        ]
+      },
+      {
         "title": "Legal",
         "links": [
           {
@@ -124,14 +145,6 @@
           {
             "label": "Data Use Policy",
             "href": "/data-use"
-          },
-          {
-            "label": "Contact us",
-            "href": "/contact"
-          },
-          {
-            "label": "Sign in",
-            "href": "/auth?mode=signin"
           }
         ]
       }
