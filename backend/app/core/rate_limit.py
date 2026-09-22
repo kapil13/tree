@@ -28,14 +28,20 @@ def rate_limit(times: int, seconds: int):
     """Returns a FastAPI dependency that enforces N requests per S seconds per IP+route."""
 
     async def dependency(request: Request) -> None:
-        client = await _client()
+        try:
+            client = await _client()
+        except Exception:
+            client = None
         if client is None:
             return
         ip = request.client.host if request.client else "anon"
         key = f"rl:{ip}:{request.url.path}:{int(time.time() // seconds)}"
-        count = await client.incr(key)
-        if count == 1:
-            await client.expire(key, seconds)
+        try:
+            count = await client.incr(key)
+            if count == 1:
+                await client.expire(key, seconds)
+        except Exception:
+            return
         if count > times:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

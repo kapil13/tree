@@ -72,7 +72,10 @@ export default function HomePage() {
       <footer className="border-t border-stone-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 text-sm text-stone-500 sm:flex-row">
           <span>© {new Date().getFullYear()} BYOT — Bring Your Own Tree</span>
-          <span>Apache-2.0</span>
+          <div className="flex items-center gap-4">
+            <Link href="/contact" className="hover:text-forest-700">Contact us</Link>
+            <span>Apache-2.0</span>
+          </div>
         </div>
       </footer>
     </div>

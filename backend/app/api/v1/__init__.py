@@ -2,9 +2,10 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import alerts, analysis, auth, carbon, dashboard, reports, satellite, trees
+from app.api.v1 import alerts, analysis, auth, carbon, contact, dashboard, reports, satellite, trees
 
 api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(contact.router)
 api_router.include_router(auth.router)
 api_router.include_router(trees.router)
 api_router.include_router(analysis.router)
