@@ -15,6 +15,7 @@ from app.api.v1 import (
     citizen,
     cms,
     compliance,
+    contact,
     credits,
     dashboard,
     devices,
@@ -75,6 +76,7 @@ api_router.include_router(carbon.router)
 api_router.include_router(evidence.router)
 api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
+api_router.include_router(contact.router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.core.logging import get_logger
+from app.schemas.contact import ContactInquiryCreate
 from app.services.email import templates
 from app.services.email.config import (
     email_otp_configured,
@@ -93,6 +94,30 @@ async def send_organization_invitation(
         html=html,
         log_event="email.org_invite_sent",
         org=org_name,
+    )
+
+
+async def send_contact_inquiry_notification(*, to: str, inquiry: ContactInquiryCreate) -> None:
+    if not resend_configured():
+        raise EmailSendError("email_not_configured")
+    subject, text, html = templates.contact_inquiry_email(
+        full_name=inquiry.full_name,
+        email=str(inquiry.email),
+        phone=inquiry.phone,
+        organization=inquiry.organization,
+        organization_type=inquiry.organization_type.value,
+        state=inquiry.state,
+        land_hectares_band=inquiry.land_hectares_band.value,
+        site_count_band=inquiry.site_count_band.value,
+        message=inquiry.message,
+    )
+    await _send_template(
+        to=to,
+        subject=subject,
+        text=text,
+        html=html,
+        log_event="email.contact_inquiry_sent",
+        organization=inquiry.organization,
     )
 
 

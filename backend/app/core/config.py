@@ -103,6 +103,7 @@ class Settings(BaseSettings):
     resend_api_key: str | None = None
     resend_from_email: str = "no-reply@aranyix.tech"
     resend_from_name: str = "Aranyix"
+    contact_inquiry_to_email: str = "kapil@axentis.tech"
     # Gmail API — legacy fallback for org invites and program-access notifications
     gmail_sender: str | None = None
     google_service_account_json: str | None = None
