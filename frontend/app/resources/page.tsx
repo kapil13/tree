@@ -1,20 +1,21 @@
 import { MarketingShell } from "@/components/marketing/marketing-shell";
-import { SolutionLandingPage } from "@/components/marketing/solution-landing-page";
+import { ResourcesHub } from "@/components/marketing/resources-hub";
+import { getAllResources } from "@/lib/content/resources";
 import { buildPageMetadata } from "@/lib/seo/metadata";
-import { getSolutionPage } from "@/lib/seo/solution-pages";
-
-const page = getSolutionPage("/resources")!;
 
 export const metadata = buildPageMetadata({
   title: "MRV resources & guides",
-  description: page.description,
-  path: page.path,
+  description:
+    "Practical plantation MRV guides for CSR, mining green belts, geo-tagged field capture, and agency white-label programmes in India.",
+  path: "/resources",
 });
 
-export default function ResourcesPage() {
+export default async function ResourcesPage() {
+  const articles = await getAllResources();
+
   return (
     <MarketingShell>
-      <SolutionLandingPage page={page} />
+      <ResourcesHub articles={articles} />
     </MarketingShell>
   );
 }
