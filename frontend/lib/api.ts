@@ -161,3 +161,24 @@ export const assistant = {
     ).data;
   },
 };
+
+export type ContactInquiryPayload = {
+  full_name: string;
+  email: string;
+  phone: string;
+  organization: string;
+  organization_type: string;
+  state: string;
+  land_hectares_band: string;
+  site_count_band: string;
+  message: string;
+  website?: string;
+};
+
+export const contact = {
+  async submit(payload: ContactInquiryPayload) {
+    return (
+      await api.post<{ success: boolean; message: string }>("/v1/contact", payload)
+    ).data;
+  },
+};
