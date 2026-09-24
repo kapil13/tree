@@ -35,7 +35,7 @@
       },
       {
         "label": "Solutions",
-        "href": "/resources"
+        "href": "/solutions"
       }
     ],
     "sign_in": {
@@ -96,6 +96,10 @@
       {
         "title": "Solutions",
         "links": [
+          {
+            "label": "All solutions",
+            "href": "/solutions"
+          },
           {
             "label": "CSR plantation MRV",
             "href": "/solutions/csr-plantation"

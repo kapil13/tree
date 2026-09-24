@@ -9,6 +9,7 @@ import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { LanguageSwitcher } from "@/components/settings/language-switcher";
 import type { CmsPublicSite } from "@/lib/cms-api";
 import { CMS_HEADER_FALLBACK, linkProps } from "@/lib/cms-defaults";
+import { ensureSolutionsHubNav } from "@/lib/marketing-solutions-nav";
 import { cn } from "@/lib/cn";
 
 export function MarketingHeader({
@@ -30,6 +31,7 @@ export function MarketingHeader({
 
   const signIn = linkProps(header.sign_in);
   const getStarted = linkProps(header.get_started);
+  const nav = ensureSolutionsHubNav(header.nav);
   const activeMode = authMode ?? "signin";
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export function MarketingHeader({
           className={cn("hidden items-center gap-1 md:flex", compact && "gap-0")}
           aria-label={t("primaryNav")}
         >
-          {header.nav.map((item) => {
+          {nav.map((item) => {
             const link = linkProps(item);
             return (
               <a
@@ -163,7 +165,7 @@ export function MarketingHeader({
             </div>
 
             <nav className="flex flex-1 flex-col gap-1 px-3 py-4" aria-label={t("mobilePrimaryNav")}>
-              {header.nav.map((item) => {
+              {nav.map((item) => {
                 const link = linkProps(item);
                 return (
                   <a

@@ -15,6 +15,7 @@ const PUBLIC_ROUTES: Array<{
   { path: "/resources", changeFrequency: "weekly", priority: 0.7 },
   { path: "/product/mrv", changeFrequency: "monthly", priority: 0.85 },
   { path: "/partners/agencies", changeFrequency: "monthly", priority: 0.75 },
+  { path: "/solutions", changeFrequency: "monthly", priority: 0.85 },
   { path: "/solutions/csr-plantation", changeFrequency: "monthly", priority: 0.9 },
   { path: "/solutions/mining-greening", changeFrequency: "monthly", priority: 0.9 },
   { path: "/solutions/campa-afforestation", changeFrequency: "monthly", priority: 0.9 },

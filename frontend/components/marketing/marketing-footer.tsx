@@ -6,10 +6,12 @@ import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import { Leaf } from "lucide-react";
 import type { CmsPublicSite } from "@/lib/cms-api";
 import { CMS_FOOTER_FALLBACK, linkProps } from "@/lib/cms-defaults";
+import { ensureSolutionsHubFooter } from "@/lib/marketing-solutions-nav";
 
 export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: CmsPublicSite["site"]["footer"] }) {
   const t = useTranslations("marketing");
   const year = new Date().getFullYear();
+  const columns = ensureSolutionsHubFooter(footer).columns;
 
   return (
     <footer className="marketing-footer">
@@ -32,7 +34,7 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
             </div>
           </div>
 
-          {footer.columns.map((col) => (
+          {columns.map((col) => (
             <div key={col.title}>
               <h3 className="text-sm font-semibold text-white">{col.title}</h3>
               <ul className="mt-4 space-y-2.5">
