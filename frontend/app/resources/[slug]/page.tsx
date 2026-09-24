@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { MarketingShell } from "@/components/marketing/marketing-shell";
 import { ResourceArticlePage } from "@/components/marketing/resource-article-page";
-import { getPublishedResourceSlugs, getResourceBySlug } from "@/lib/content/resources";
+import { getAllResources, getPublishedResourceSlugs, getResourceBySlug } from "@/lib/content/resources";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
 type PageProps = {
@@ -35,15 +35,20 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ResourceSlugPage({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getResourceBySlug(slug);
+  const articles = await getAllResources();
+  const article = articles.find((item) => item.slug === slug);
 
   if (!article) {
     notFound();
   }
 
+  const relatedGuides = articles
+    .filter((item) => item.slug !== article.slug)
+    .map((item) => ({ title: item.title, slug: item.slug }));
+
   return (
     <MarketingShell>
-      <ResourceArticlePage article={article} />
+      <ResourceArticlePage article={article} relatedGuides={relatedGuides} />
     </MarketingShell>
   );
 }

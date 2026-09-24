@@ -128,4 +128,4 @@ Software cost is usually small compared to plantation spend. The expensive failu
 
 ## CTA
 
-Aranyix registers plantations with GPS, passports, and scheduled reports for CSR events and corporate programmes. [See a demo](/demo).
+Register GPS, passports, and scheduled survival reports for CSR events and corporate programmes. [Book a 90-day Plant → Track → Report pilot](/demo). Exports are audit-prep evidence and estimates, not registry carbon credits.

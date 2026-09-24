@@ -8,11 +8,23 @@ import type { ResourceArticle } from "@/lib/content/resources";
 const RELATED_LINKS = [
   { label: "CSR plantation MRV", href: "/solutions/csr-plantation" },
   { label: "Mining green belt monitoring", href: "/solutions/mining-greening" },
+  { label: "BRSR & ESG evidence", href: "/solutions/brsr-esg" },
   { label: "Plantation MRV product", href: "/product/mrv" },
   { label: "Book a demo", href: "/demo" },
 ];
 
-export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
+export type ResourceGuideLink = {
+  title: string;
+  slug: string;
+};
+
+export function ResourceArticlePage({
+  article,
+  relatedGuides,
+}: {
+  article: ResourceArticle;
+  relatedGuides: ResourceGuideLink[];
+}) {
   const published = new Date(article.date).toLocaleDateString("en-IN", {
     year: "numeric",
     month: "long",
@@ -67,6 +79,41 @@ export function ResourceArticlePage({ article }: { article: ResourceArticle }) {
             className="resource-prose mt-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
             dangerouslySetInnerHTML={{ __html: article.ctaHtml }}
           />
+        ) : null}
+
+        <section className="mt-10 rounded-2xl bg-forest-900 px-6 py-6 text-white shadow-sm">
+          <h2 className="text-lg font-semibold">Book a 90-day Plant → Track → Report pilot</h2>
+          <p className="mt-2 text-sm leading-relaxed text-emerald-50/90">
+            Walk through geo-tagged registration, survival tracking, and audit-prep exports on one
+            bounded site. Modeled figures stay estimates. Aranyix does not issue registry carbon
+            credits and is not a certification body.
+          </p>
+          <Link
+            href="/demo"
+            className="btn-primary mt-5 inline-flex items-center gap-2 bg-white px-5 py-2.5 text-sm text-forest-900 shadow-lg shadow-black/20 hover:bg-emerald-50"
+          >
+            Book a demo
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </section>
+
+        {relatedGuides.length > 0 ? (
+          <section className="mt-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-stone-900">Related reading</h2>
+            <ul className="mt-4 space-y-2">
+              {relatedGuides.map((guide) => (
+                <li key={guide.slug}>
+                  <Link
+                    href={`/resources/${guide.slug}`}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-forest-700 hover:text-forest-800"
+                  >
+                    {guide.title}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         ) : null}
 
         <section className="mt-12 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">

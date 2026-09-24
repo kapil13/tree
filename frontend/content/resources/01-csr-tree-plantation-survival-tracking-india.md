@@ -114,4 +114,4 @@ Align with your client’s audit cycle. Many corporates retain plantation eviden
 
 ## CTA
 
-Aranyix helps teams **plant, track, and report** CSR plantations in India — including agency white-label packs and multi-year care plans. [Book a 20-minute demo](/demo).
+If the board question is whether the trees are still alive — not only how many were planted — [book a 90-day Plant → Track → Report pilot](/demo). Aranyix keeps geo-tags, survival checks, and audit-prep exports. Modeled CO₂e stays an estimate; we do not issue registry carbon credits.

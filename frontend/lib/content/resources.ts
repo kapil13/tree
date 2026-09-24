@@ -32,6 +32,20 @@ export type ResourceArticle = ResourceFrontmatter & {
 
 const CONTENT_DIR = path.join(process.cwd(), "content/resources");
 
+/**
+ * Resource pages render `frontmatter.title` as the only H1.
+ * Drop a leading ATX H1 (the duplicate title) and demote any later H1 to H2.
+ */
+export function normalizeResourceBodyMarkdown(markdown: string): string {
+  const withoutLeadingTitle = markdown.replace(/^# [^\n]*\r?\n*/, "");
+  return withoutLeadingTitle.replace(/^# /gm, "## ").trim();
+}
+
+/** Last-line guard so remark output cannot introduce a second page H1. */
+export function demoteHtmlH1(html: string): string {
+  return html.replace(/<(\/?)h1(\s|>)/gi, "<$1h2$2");
+}
+
 function splitMarkdownSections(markdown: string) {
   const faqMatch = markdown.match(/^## FAQ\s*$/im);
   const ctaMatch = markdown.match(/^## CTA\s*$/im);
@@ -77,7 +91,7 @@ export function parseFaqsFromMarkdown(faqSection: string): ResourceFaq[] {
 async function markdownToHtml(markdown: string): Promise<string> {
   if (!markdown.trim()) return "";
   const file = await remark().use(remarkGfm).use(remarkHtml, { sanitize: false }).process(markdown);
-  return String(file);
+  return demoteHtmlH1(String(file));
 }
 
 function resolveDescription(data: ResourceFrontmatter): string {
@@ -94,11 +108,14 @@ async function parseResourceFile(filePath: string): Promise<ResourceArticle | nu
   }
 
   const { main, faqSection, ctaSection } = splitMarkdownSections(content);
+  const body = normalizeResourceBodyMarkdown(main);
+  const faqBody = normalizeResourceBodyMarkdown(faqSection);
+  const ctaBody = normalizeResourceBodyMarkdown(ctaSection);
   const faqs = parseFaqsFromMarkdown(faqSection);
   const [contentHtml, faqHtml, ctaHtml] = await Promise.all([
-    markdownToHtml(main),
-    markdownToHtml(faqSection ? `## FAQ\n\n${faqSection}` : ""),
-    markdownToHtml(ctaSection ? `## Next step\n\n${ctaSection}` : ""),
+    markdownToHtml(body),
+    markdownToHtml(faqBody ? `## FAQ\n\n${faqBody}` : ""),
+    markdownToHtml(ctaBody ? `## Next step\n\n${ctaBody}` : ""),
   ]);
 
   const rawDate = data.date as string | Date;
