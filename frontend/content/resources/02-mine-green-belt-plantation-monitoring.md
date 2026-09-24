@@ -86,6 +86,8 @@ Consultants remain valuable for specialized studies. Your operational MRV layer 
 
 Be explicit in internal reports: Aranyix-style platforms provide **audit-prep MRV evidence**. They do not issue closure certificates, forest approvals, or registry carbon credits.
 
+Operators shortlisting that operational layer can read [plantation MRV software India](/resources/plantation-mrv-software-india): geo-tagged registration, survival cadence, and audit-prep packs, with modeled estimates kept separate from field facts.
+
 ## FAQ
 
 **Is this the same as e-Green Watch?**  
