@@ -1,9 +1,31 @@
 import Link from "next/link";
 import { ArrowRight, Leaf } from "lucide-react";
 
+import { splitInlineLinks } from "@/lib/seo/inline-links";
 import { faqPageJsonLd, JsonLd } from "@/lib/seo/json-ld";
 import { HONESTY_DISCLAIMER } from "@/lib/seo/site";
 import type { SolutionPage } from "@/lib/seo/solution-pages";
+
+function ParagraphWithLinks({ text }: { text: string }) {
+  const segments = splitInlineLinks(text);
+  return (
+    <p className="text-base leading-relaxed text-stone-700">
+      {segments.map((segment, index) =>
+        segment.type === "text" ? (
+          <span key={index}>{segment.text}</span>
+        ) : (
+          <Link
+            key={index}
+            href={segment.href}
+            className="font-medium text-forest-700 underline decoration-forest-200 underline-offset-2 hover:text-forest-800"
+          >
+            {segment.label}
+          </Link>
+        ),
+      )}
+    </p>
+  );
+}
 
 export function SolutionLandingPage({ page }: { page: SolutionPage }) {
   return (
@@ -40,9 +62,7 @@ export function SolutionLandingPage({ page }: { page: SolutionPage }) {
             <article key={section.heading} className="space-y-4">
               <h2 className="font-display text-2xl font-semibold text-stone-900">{section.heading}</h2>
               {section.paragraphs.map((paragraph) => (
-                <p key={paragraph.slice(0, 48)} className="text-base leading-relaxed text-stone-700">
-                  {paragraph}
-                </p>
+                <ParagraphWithLinks key={paragraph.slice(0, 48)} text={paragraph} />
               ))}
               {section.bullets && section.bullets.length > 0 ? (
                 <ul className="space-y-2 pl-1">

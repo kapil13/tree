@@ -26,6 +26,17 @@ export function ResourcesHub({ articles }: { articles: ResourceArticle[] }) {
               agency white-label programmes in India — with honest limits on what MRV software does and
               does not certify.
             </p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-emerald-100/90 sm:text-base">
+              Featured:{" "}
+              <Link
+                href="/resources/plantation-mrv-software-india"
+                className="font-semibold text-white underline decoration-white/40 underline-offset-2 hover:text-emerald-50"
+              >
+                plantation MRV software India
+              </Link>{" "}
+              — how buyers shortlist geo-tags, survival tracking, and audit-prep exports with modeled
+              estimates only.
+            </p>
             <div className="mt-8">
               <Link
                 href="/demo"

@@ -58,6 +58,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
         heading: "Typical CSR rollout",
         paragraphs: [
           "Most corporates start with a 90-day pilot on one to three sites, then expand to a full state or national CSR footprint. We help you define species lists, survival check cadence, and export templates aligned to your auditor's ask — not a generic certificate.",
+          "For a buyer checklist before you scope sites, read [plantation MRV software India](/resources/plantation-mrv-software-india) — geo-tags, survival tracking, and audit-prep exports with modeled estimates only.",
           "Ready to scope a pilot? Use the contact form with your hectares, site count, and reporting deadline. We respond within two business days with a recommended rollout plan.",
         ],
       },
@@ -80,6 +81,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
       },
     ],
     relatedLinks: [
+      { label: "Plantation MRV software India", href: "/resources/plantation-mrv-software-india" },
       { label: "BRSR & ESG reporting", href: "/solutions/brsr-esg" },
       { label: "Plantation MRV product", href: "/product/mrv" },
       { label: "Resources & guides", href: "/resources" },
@@ -121,6 +123,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
         heading: "From pilot block to full lease area",
         paragraphs: [
           "Operators typically pilot on one disturbed block or nursery-linked plantation, then scale across the lease after field crews adopt the mobile app. We support offline capture for low-connectivity pits and stockyards.",
+          "The same buyer checklist is in [plantation MRV software India](/resources/plantation-mrv-software-india), including how green-belt monitoring stays audit-prep evidence with modeled estimates only.",
           "Share your lease hectares, number of active blocks, and next statutory review date — we will recommend a monitoring cadence and export set matched to your reclamation plan.",
         ],
       },
@@ -143,6 +146,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
       },
     ],
     relatedLinks: [
+      { label: "Plantation MRV software India", href: "/resources/plantation-mrv-software-india" },
       { label: "CAMPA afforestation programmes", href: "/solutions/campa-afforestation" },
       { label: "Government agency partnerships", href: "/partners/agencies" },
       { label: "Plantation MRV product", href: "/product/mrv" },
@@ -310,6 +314,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
         heading: "Deployment and pilots",
         paragraphs: [
           "Most customers begin with a 90-day pilot across a bounded hectares band and a defined field team. We provide onboarding, species templates, and export configuration — then expand to full portfolio monitoring after crews adopt mobile registration.",
+          "Buyers comparing options can start with [plantation MRV software India](/resources/plantation-mrv-software-india): geo-tagged registration, survival cadence, and audit-prep exports, with modeled estimates only.",
           "Explore solution-specific pages for CSR, mining, CAMPA, and BRSR workflows, or contact us with your site count and reporting needs.",
         ],
       },
@@ -332,6 +337,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
       },
     ],
     relatedLinks: [
+      { label: "Plantation MRV software India", href: "/resources/plantation-mrv-software-india" },
       { label: "CSR plantations", href: "/solutions/csr-plantation" },
       { label: "Mining green belts", href: "/solutions/mining-greening" },
       { label: "Request a demo", href: "/demo" },

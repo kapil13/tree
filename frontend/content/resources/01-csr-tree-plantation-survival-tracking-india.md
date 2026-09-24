@@ -93,6 +93,8 @@ CSR reports should separate facts from estimates:
 
 If your client asks for “carbon impact,” explain that CSR events rarely map to registry credits without a separate methodology and external process. Honest language protects both the agency and the brand during assurance.
 
+If you are comparing platforms rather than only a field checklist, the [plantation MRV software India](/resources/plantation-mrv-software-india) buyer guide maps the same Plant → Track → Report loop to audit-prep exports and modeled estimates.
+
 ## FAQ
 
 **Is geo-tagging enough for BRSR?**  
