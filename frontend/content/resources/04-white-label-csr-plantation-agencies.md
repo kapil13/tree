@@ -117,4 +117,4 @@ Use project scoping per city with shared species and QA rules. National dashboar
 
 ## CTA
 
-Partner with Aranyix on a **CSR Event Pack**. [Book a 20-minute walkthrough](/demo).
+Partner with Aranyix on a **CSR Event Pack**, or [book a 90-day Plant → Track → Report pilot](/demo) so the brand can see survival after event day. Reports are audit-prep evidence and estimates — not registry credit issuance.

@@ -108,4 +108,4 @@ Same evidence stack when industrial belts or campuses need geo-tags and survival
 
 ## CTA
 
-If you are shortlisting **plantation MRV software India** buyers can defend in front of boards and assurance — [book a demo](/demo) and scope a 90-day Plant → Track → Report pilot, CSR Event Pack, or Mining Greening Retainer against your live sites.
+If you are shortlisting **plantation MRV software India** buyers can defend in front of boards and assurance — [book a 90-day Plant → Track → Report pilot](/demo). Scope it on live sites as a CSR Event Pack or Mining Greening Retainer. Audit-prep evidence and modeled estimates only — Aranyix does not issue registry carbon credits.

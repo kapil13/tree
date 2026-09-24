@@ -105,4 +105,4 @@ Yes, with project scoping. Separate work areas and reporting tags so CSR events 
 
 ## CTA
 
-Aranyix runs **Mining Greening Retainers** and 90-day pilots: plant, track, report on one block first. [Talk to us](/demo).
+Aranyix runs **Mining Greening Retainers** on the same loop. [Book a 90-day Plant → Track → Report pilot](/demo) on one block first. Evidence is audit-prep MRV and estimates — not closure certificates or registry carbon credits.
