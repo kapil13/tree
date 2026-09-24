@@ -110,3 +110,5 @@ Disclose limitations honestly, start a digital registry for new planting, and av
 ## CTA
 
 If your next BRSR cycle needs plantation evidence that survives sampling — not just planting-day photos — [book a 90-day Plant → Track → Report pilot](/demo). The pack is audit-prep evidence and estimates, not registry credit issuance.
+
+Related reading: [CSR survival tracking](/resources/csr-tree-plantation-survival-tracking-india), [mine green belt monitoring](/resources/mine-green-belt-plantation-monitoring-india), the [BRSR solution page](/solutions/brsr-esg), and [plantation MRV software India](/resources/plantation-mrv-software-india).

@@ -75,6 +75,8 @@ Train client-facing teams to use honest language:
 
 Aranyix provides MRV and audit-prep tooling. It does not issue Verra, Gold Standard, or other registry credits, and it is not a certification body. Agencies protect client trust by mirroring that honesty in decks and SOWs.
 
+When a brand asks what sits under the white-label pack, share the [buyer guide: plantation MRV software](/resources/plantation-mrv-software-india) so the offer stays audit-prep evidence and modeled estimates.
+
 ## Technology clients expect
 
 Minimum client expectations in 2026:

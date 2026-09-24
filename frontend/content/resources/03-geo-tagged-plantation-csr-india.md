@@ -107,6 +107,8 @@ Each mistake is fixable with discipline and the right mobile workflow.
 
 For community blocks or campus woodlots larger than a few hectares, satellite NDVI or SAR stress screens help supervisors decide where to send teams. Treat satellite output as **triage**, not proof of survival. Field revisits with geo-tagged photos remain the audit conversation.
 
+For how geo-tags fit a full buyer shortlist, see [plantation MRV software India](/resources/plantation-mrv-software-india) — registration, survival tracking, and audit-prep exports with modeled estimates only.
+
 ## FAQ
 
 **What GPS accuracy is good enough?**  
