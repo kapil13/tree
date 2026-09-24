@@ -5,7 +5,7 @@ primary_keyword: industrial green belt monitoring India
 secondary: oil refinery green belt monitoring India, construction site greening CSR India, industrial site plantation survival tracking, EC compliance plantation evidence
 meta_description: "Industrial green belt monitoring India for oil & construction: geo-tagged EC plantation evidence, survival tracking, and audit-prep exports—not carbon credits."
 date: 2026-09-24
-draft: true
+draft: false
 ---
 
 # Industrial Green Belt Monitoring in India: Oil, Construction & EC Evidence
