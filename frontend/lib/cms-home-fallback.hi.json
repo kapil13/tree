@@ -35,7 +35,7 @@
       },
       {
         "label": "समाधान",
-        "href": "/resources"
+        "href": "/solutions"
       }
     ],
     "sign_in": {
@@ -96,6 +96,10 @@
       {
         "title": "समाधान",
         "links": [
+          {
+            "label": "सभी समाधान",
+            "href": "/solutions"
+          },
           {
             "label": "CSR वृक्षारोपण MRV",
             "href": "/solutions/csr-plantation"
