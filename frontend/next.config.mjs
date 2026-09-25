@@ -11,6 +11,8 @@ const backendUrl =
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  // Public URLs have no trailing slash. Do not set this to true.
+  trailingSlash: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.cloudfront.net" },

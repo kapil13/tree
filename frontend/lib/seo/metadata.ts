@@ -29,6 +29,21 @@ export function homePageMetadata(): Metadata {
   };
 }
 
+/** Path-only canonical: no query, no hash, no trailing slash (root stays "/"). */
+function canonicalPath(path: string): string {
+  const withoutSuffix = path.trim().split(/[?#]/)[0] ?? "";
+  const withSlash = withoutSuffix.startsWith("/") ? withoutSuffix : `/${withoutSuffix}`;
+  if (withSlash.length > 1 && withSlash.endsWith("/")) {
+    return withSlash.replace(/\/+$/, "");
+  }
+  return withSlash || "/";
+}
+
+function absoluteCanonicalUrl(path: string): string {
+  const canonical = canonicalPath(path);
+  return canonical === "/" ? SITE_URL : `${SITE_URL}${canonical}`;
+}
+
 export function buildPageMetadata({
   title,
   description = DEFAULT_DESCRIPTION,
@@ -38,8 +53,8 @@ export function buildPageMetadata({
   description?: string;
   path: string;
 }): Metadata {
-  const canonical = path.startsWith("/") ? path : `/${path}`;
-  const url = `${SITE_URL}${canonical}`;
+  const canonical = canonicalPath(path);
+  const url = absoluteCanonicalUrl(path);
 
   return {
     title,
@@ -69,11 +84,13 @@ export const ROOT_METADATA: Metadata = {
     template: `%s${BRAND_TITLE_SUFFIX}`,
   },
   description: DEFAULT_DESCRIPTION,
-  alternates: { canonical: "/" },
+  // "./" resolves against the request pathname (no query) via metadataBase.
+  // Homepage becomes https://aranyix.tech with no trailing slash.
+  alternates: { canonical: "./" },
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: SITE_URL,
+    url: "./",
     siteName: "Aranyix",
     title: DEFAULT_OG_TITLE,
     description: DEFAULT_DESCRIPTION,

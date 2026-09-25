@@ -25,20 +25,28 @@ const PUBLIC_ROUTES: Array<{
   { path: "/data-use", changeFrequency: "yearly", priority: 0.3 },
 ];
 
+/** Final public URL: https://aranyix.tech, no www, no trailing slash, no query. */
+function toSitemapUrl(path: string): string {
+  const withoutSuffix = path.trim().split(/[?#]/)[0] ?? "";
+  const withSlash = withoutSuffix.startsWith("/") ? withoutSuffix : `/${withoutSuffix}`;
+  if (withSlash === "/") return SITE_URL;
+  return `${SITE_URL}${withSlash.replace(/\/+$/, "")}`;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
   const paths = new Set([...PUBLIC_ROUTES.map((route) => route.path), ...MONEY_PAGE_PATHS]);
   const resources = await getAllResources();
 
   const staticEntries = PUBLIC_ROUTES.filter((route) => paths.has(route.path)).map((route) => ({
-    url: `${SITE_URL}${route.path}`,
+    url: toSitemapUrl(route.path),
     lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
 
   const resourceEntries = resources.map((resource) => ({
-    url: `${SITE_URL}/resources/${resource.slug}`,
+    url: toSitemapUrl(`/resources/${resource.slug}`),
     lastModified: new Date(resource.date),
     changeFrequency: "weekly" as const,
     priority: 0.6,

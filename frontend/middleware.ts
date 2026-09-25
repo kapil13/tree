@@ -27,15 +27,44 @@ const PROTECTED_PREFIXES = [
   "/stewardship",
 ] as const;
 
+/** Routes that must not be indexed. Prefix match is boundary-safe (`/p` ≠ `/privacy`). */
+const NOINDEX_PREFIXES = [
+  "/auth",
+  "/login",
+  "/signup",
+  "/verify",
+  "/impact",
+  "/p",
+  "/presentation",
+  "/presentationa",
+  ...PROTECTED_PREFIXES,
+] as const;
+
+const NOINDEX_ROBOTS_HEADER = "noindex, nofollow";
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  return PROTECTED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+function isNoindexPath(pathname: string): boolean {
+  return NOINDEX_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+function applyNoindex(response: NextResponse): NextResponse {
+  response.headers.set("X-Robots-Tag", NOINDEX_ROBOTS_HEADER);
+  return response;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtectedPath(pathname)) {
+    if (isNoindexPath(pathname)) {
+      return applyNoindex(NextResponse.next());
+    }
     return NextResponse.next();
   }
 
@@ -47,10 +76,10 @@ export async function middleware(request: NextRequest) {
     loginUrl.search = "";
     loginUrl.searchParams.set("mode", "signin");
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return applyNoindex(NextResponse.redirect(loginUrl));
   }
 
-  return NextResponse.next();
+  return applyNoindex(NextResponse.next());
 }
 
 export const config = {
@@ -74,5 +103,13 @@ export const config = {
     "/onboarding/:path*",
     "/verification/:path*",
     "/stewardship/:path*",
+    "/auth/:path*",
+    "/login/:path*",
+    "/signup/:path*",
+    "/verify/:path*",
+    "/impact/:path*",
+    "/p/:path*",
+    "/presentation/:path*",
+    "/presentationa/:path*",
   ],
 };

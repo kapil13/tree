@@ -69,6 +69,27 @@ app = FastAPI(
 )
 
 
+class XRobotsTagMiddleware:
+    """Mark every API response non-indexable (api.aranyix.tech is not a website)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_robots(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers") or [])
+                headers.append((b"x-robots-tag", b"noindex, nofollow"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_robots)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -76,6 +97,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Outermost: header is present on success, errors, and /robots.txt.
+app.add_middleware(XRobotsTagMiddleware)
 
 if settings.metrics_exposed:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
@@ -150,6 +173,12 @@ async def integrations_health(
     from app.services.intelligence.integrations import check_all_integrations
 
     return await check_all_integrations()
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt() -> Response:
+    """Crawlers that only read robots.txt still cannot index the API host."""
+    return Response(content="User-agent: *\nDisallow: /\n", media_type="text/plain")
 
 
 @app.get("/", include_in_schema=False)

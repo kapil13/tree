@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+import { NOINDEX_METADATA } from "@/lib/seo/noindex";
+
+export const metadata: Metadata = NOINDEX_METADATA;
 
 export default async function SignupPage({
   searchParams,
