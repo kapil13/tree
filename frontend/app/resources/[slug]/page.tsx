@@ -19,11 +19,14 @@ export async function generateMetadata({ params }: PageProps) {
   const article = await getResourceBySlug(slug);
 
   if (!article) {
-    return buildPageMetadata({
-      title: "Resource not found",
-      description: "The requested guide could not be found.",
-      path: `/resources/${slug}`,
-    });
+    return {
+      ...buildPageMetadata({
+        title: "Resource not found",
+        description: "The requested guide could not be found.",
+        path: `/resources/${slug}`,
+      }),
+      robots: { index: false, follow: false },
+    };
   }
 
   return buildPageMetadata({

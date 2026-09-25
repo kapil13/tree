@@ -9,8 +9,11 @@ import { OrgFeatureFlagsBanner } from "@/components/org-feature-flags-banner";
 import { MaintenanceBanner } from "@/components/platform/maintenance-banner";
 import { LocaleBootstrap } from "@/components/locale-bootstrap";
 import { ProjectContextProvider } from "@/lib/project-context";
+import { NOINDEX_METADATA } from "@/lib/seo/noindex";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = NOINDEX_METADATA;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

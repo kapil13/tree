@@ -48,7 +48,10 @@ www.{$APP_DOMAIN} {
 {$API_DOMAIN} {
 	import common_security
 	header {
+		defer
 		X-Frame-Options "DENY"
+		# API host is not a website. Backend also sets this on every response.
+		X-Robots-Tag "noindex, nofollow"
 	}
 	encode gzip zstd
 	reverse_proxy backend:8000

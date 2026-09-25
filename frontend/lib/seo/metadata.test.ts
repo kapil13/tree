@@ -26,4 +26,24 @@ describe("homePageMetadata", () => {
     expect(metadata.openGraph).toMatchObject({ title: "Contact us | Aranyix" });
     expect(metadata.twitter).toMatchObject({ title: "Contact us | Aranyix" });
   });
+
+  it("emits a self-referencing canonical and matching og:url without query or trailing slash", () => {
+    const home = homePageMetadata();
+    expect(home.alternates).toEqual({ canonical: "/" });
+    expect(home.openGraph).toMatchObject({ url: "https://aranyix.tech" });
+
+    const contact = buildPageMetadata({
+      title: "Contact us",
+      path: "/contact/",
+    });
+    expect(contact.alternates).toEqual({ canonical: "/contact" });
+    expect(contact.openGraph).toMatchObject({ url: "https://aranyix.tech/contact" });
+
+    const withQuery = buildPageMetadata({
+      title: "Auth",
+      path: "/auth?mode=signin&next=/map",
+    });
+    expect(withQuery.alternates).toEqual({ canonical: "/auth" });
+    expect(withQuery.openGraph).toMatchObject({ url: "https://aranyix.tech/auth" });
+  });
 });

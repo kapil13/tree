@@ -2,61 +2,25 @@ import type { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/lib/seo/site";
 
+/**
+ * App, auth, token, and presentation routes send noindex (meta robots and
+ * X-Robots-Tag). Do not Disallow them until they drop out of Google's index —
+ * Google has to crawl the URL to see noindex. Re-add Disallow once Search
+ * Console shows the pages have dropped out of the index:
+ * /auth, /login, /signup, /onboarding, /verify, /impact, /p/, /dashboard,
+ * /settings, /platform, /projects, /intelligence, /trees, /satellite,
+ * /field-ops, /monitoring, /portfolio-health, /bioacoustic, /alerts,
+ * /assistant, /reports, /map, /tools, /verification, /stewardship,
+ * /presentation, /presentationa.
+ *
+ * /api/ stays disallowed: it is a reverse proxy, not an HTML document.
+ */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [
-        "/api/",
-        "/auth",
-        "/auth/",
-        "/login",
-        "/signup",
-        "/onboarding",
-        "/onboarding/",
-        "/verify/",
-        "/impact/",
-        "/p/",
-        "/dashboard",
-        "/dashboard/",
-        "/settings",
-        "/settings/",
-        "/platform",
-        "/platform/",
-        "/projects",
-        "/projects/",
-        "/intelligence",
-        "/intelligence/",
-        "/trees",
-        "/trees/",
-        "/satellite",
-        "/satellite/",
-        "/field-ops",
-        "/field-ops/",
-        "/monitoring",
-        "/monitoring/",
-        "/portfolio-health",
-        "/portfolio-health/",
-        "/bioacoustic",
-        "/bioacoustic/",
-        "/alerts",
-        "/alerts/",
-        "/assistant",
-        "/assistant/",
-        "/reports",
-        "/reports/",
-        "/map",
-        "/map/",
-        "/tools",
-        "/tools/",
-        "/verification",
-        "/verification/",
-        "/stewardship",
-        "/stewardship/",
-        "/presentation",
-        "/presentationa",
-      ],
+      disallow: ["/api/"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
