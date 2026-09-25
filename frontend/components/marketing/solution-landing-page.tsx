@@ -3,6 +3,7 @@ import { ArrowRight, Leaf } from "lucide-react";
 
 import { splitInlineLinks } from "@/lib/seo/inline-links";
 import { faqPageJsonLd, JsonLd } from "@/lib/seo/json-ld";
+import { solutionPageBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { HONESTY_DISCLAIMER } from "@/lib/seo/site";
 import type { SolutionPage } from "@/lib/seo/solution-pages";
 
@@ -28,9 +29,12 @@ function ParagraphWithLinks({ text }: { text: string }) {
 }
 
 export function SolutionLandingPage({ page }: { page: SolutionPage }) {
+  const breadcrumb = solutionPageBreadcrumbJsonLd({ name: page.title, path: page.path });
+
   return (
     <>
       <JsonLd data={faqPageJsonLd(page.faqs)} />
+      {breadcrumb ? <JsonLd data={breadcrumb} /> : null}
 
       <section className="marketing-hero relative overflow-hidden border-b border-forest-900/30">
         <div className="marketing-hero-noise" aria-hidden />

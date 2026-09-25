@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Leaf } from "lucide-react";
 
 import { faqPageJsonLd, JsonLd } from "@/lib/seo/json-ld";
+import { resourceArticleJsonLd, resourceGuideBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { HONESTY_DISCLAIMER } from "@/lib/seo/site";
 import type { ResourceArticle } from "@/lib/content/resources";
 
@@ -34,6 +35,13 @@ export function ResourceArticlePage({
   return (
     <>
       {article.faqs.length > 0 ? <JsonLd data={faqPageJsonLd(article.faqs)} /> : null}
+      <JsonLd
+        data={resourceGuideBreadcrumbJsonLd({
+          name: article.title,
+          path: `/resources/${article.slug}`,
+        })}
+      />
+      <JsonLd data={resourceArticleJsonLd(article)} />
 
       <section className="marketing-hero relative overflow-hidden border-b border-forest-900/30">
         <div className="marketing-hero-noise" aria-hidden />

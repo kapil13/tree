@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 import type { ResourceArticle } from "@/lib/content/resources";
+import { JsonLd } from "@/lib/seo/json-ld";
+import { resourceHubBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 
 const SOLUTION_LINKS = [
   { label: "CSR plantation monitoring", href: "/solutions/csr-plantation" },
@@ -15,6 +17,7 @@ const SOLUTION_LINKS = [
 export function ResourcesHub({ articles }: { articles: ResourceArticle[] }) {
   return (
     <>
+      <JsonLd data={resourceHubBreadcrumbJsonLd()} />
       <section className="marketing-hero relative overflow-hidden border-b border-forest-900/30">
         <div className="marketing-hero-noise" aria-hidden />
         <div className="relative mx-auto max-w-7xl px-6 py-14 sm:py-16 lg:py-20">

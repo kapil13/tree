@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Leaf } from "lucide-react";
 
+import { JsonLd } from "@/lib/seo/json-ld";
 import { HONESTY_DISCLAIMER } from "@/lib/seo/site";
 import { getSolutionPage } from "@/lib/seo/solution-pages";
+import { solutionHubBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 
 const SOLUTION_PATHS = [
   { path: "/solutions/csr-plantation", title: "CSR plantation" },
@@ -29,6 +31,7 @@ export function SolutionsHub() {
 
   return (
     <>
+      <JsonLd data={solutionHubBreadcrumbJsonLd()} />
       <section className="marketing-hero relative overflow-hidden border-b border-forest-900/30">
         <div className="marketing-hero-noise" aria-hidden />
         <div className="relative mx-auto max-w-7xl px-6 py-14 sm:py-16 lg:py-20">

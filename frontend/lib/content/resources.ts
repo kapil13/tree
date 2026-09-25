@@ -6,6 +6,8 @@ import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 
+import { readSchemaDate } from "@/lib/seo/structured-data";
+
 export type ResourceFaq = {
   question: string;
   answer: string;
@@ -24,6 +26,8 @@ export type ResourceFrontmatter = {
 
 export type ResourceArticle = ResourceFrontmatter & {
   description: string;
+  /** Set from `dateModified`, `date_modified`, or `updated` frontmatter when present. */
+  dateModified?: string;
   contentHtml: string;
   faqHtml: string;
   ctaHtml: string;
@@ -121,10 +125,13 @@ async function parseResourceFile(filePath: string): Promise<ResourceArticle | nu
   const rawDate = data.date as string | Date;
   const date =
     rawDate instanceof Date ? rawDate.toISOString().slice(0, 10) : String(rawDate);
+  const record = data as Record<string, unknown>;
+  const dateModified = readSchemaDate(record.dateModified ?? record.date_modified ?? record.updated);
 
   return {
     ...frontmatter,
     date,
+    ...(dateModified ? { dateModified } : {}),
     description: resolveDescription(frontmatter),
     contentHtml,
     faqHtml,

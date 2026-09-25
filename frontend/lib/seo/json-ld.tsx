@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/lib/seo/structured-data";
 import { DEFAULT_DESCRIPTION, HONESTY_DISCLAIMER, SITE_URL } from "@/lib/seo/site";
 import type { SolutionFaq } from "@/lib/seo/solution-pages";
 
@@ -5,7 +6,7 @@ export function JsonLd({ data }: { data: Record<string, unknown> | Array<Record<
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }
