@@ -7,4 +7,6 @@ import type { Metadata } from "next";
  */
 export const NOINDEX_METADATA: Metadata = {
   robots: { index: false, follow: false },
+  // Self-canonical for this URL. Do not inherit the homepage canonical.
+  alternates: { canonical: "./" },
 };

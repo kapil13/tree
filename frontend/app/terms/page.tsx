@@ -1,5 +1,8 @@
-import { MarketingPageView } from "@/components/marketing/marketing-page-view";
+import { LegalDocumentPage } from "@/components/marketing/legal-document";
+import { getLegalDocument, legalPageMetadata } from "@/lib/content/legal";
+
+export const metadata = legalPageMetadata("terms");
 
 export default function TermsPage() {
-  return <MarketingPageView slug="terms" />;
+  return <LegalDocumentPage document={getLegalDocument("terms")} />;
 }

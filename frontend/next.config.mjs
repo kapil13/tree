@@ -13,6 +13,11 @@ const nextConfig = {
   output: "standalone",
   // Public URLs have no trailing slash. Do not set this to true.
   trailingSlash: false,
+  outputFileTracingIncludes: {
+    "/privacy": ["./content/legal/**/*"],
+    "/terms": ["./content/legal/**/*"],
+    "/data-use": ["./content/legal/**/*"],
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.cloudfront.net" },

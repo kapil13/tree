@@ -5,7 +5,8 @@ import { SITE_URL } from "@/lib/seo/site";
 /**
  * App, auth, token, and presentation routes send noindex (meta robots and
  * X-Robots-Tag). Do not Disallow them until they drop out of Google's index —
- * Google has to crawl the URL to see noindex. After they drop, disallow:
+ * Google has to crawl the URL to see noindex. Re-add Disallow once Search
+ * Console shows the pages have dropped out of the index:
  * /auth, /login, /signup, /onboarding, /verify, /impact, /p/, /dashboard,
  * /settings, /platform, /projects, /intelligence, /trees, /satellite,
  * /field-ops, /monitoring, /portfolio-health, /bioacoustic, /alerts,

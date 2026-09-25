@@ -100,7 +100,8 @@ export const ROOT_METADATA: Metadata = {
     title: DEFAULT_OG_TITLE,
     description: DEFAULT_DESCRIPTION,
   },
-  robots: { index: true, follow: true },
+  // Robots are set per route. A root `index, follow` is also emitted on the
+  // 404 page, which already injects `noindex`, so the two tags conflict.
   manifest: "/manifest.webmanifest",
   themeColor: "#052e1f",
   icons: {
