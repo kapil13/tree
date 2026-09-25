@@ -72,6 +72,8 @@ Map the same fields to [BRSR Principle 6 plantation evidence](/resources/brsr-pl
 
 **Aranyix** is a digital plantation MRV platform for Indian industrial programmes: geo-tagged registration, survival workflows, optional satellite health fusion, and structured exports. See the [plantation MRV product page](/product/mrv).
 
+For the solution workflow on one site or green-belt block, see [industrial site greening](/solutions/industrial-site-greening).
+
 Who typically starts here: oil / petrochemical EHS and EC compliance owners; construction and infra CSR / ESG teams greening campuses; and corporate CSR leads needing BRSR-adjacent working papers.
 
 Most buyers begin with a **90-day Plant → Track → Report pilot** on one live belt or campus block, then expand once the loop is proven.
