@@ -281,6 +281,104 @@ export const SOLUTION_PAGES: SolutionPage[] = [
     secondaryCta: { label: "Book a demo", href: "/demo" },
   },
   {
+    slug: "industrial-site-greening",
+    path: "/solutions/industrial-site-greening",
+    eyebrow: "Industrial sites",
+    title: "Industrial site greening",
+    description:
+      "Industrial green belt monitoring India: geo-tagged registry, survival resurveys, and exportable evidence for EC and consent green-belt compliance reports.",
+    intro:
+      "Industrial green belt monitoring in India is a compliance-evidence problem. Refineries and oil and gas sites, cement and power plants, steel works, industrial estates, and large construction or infrastructure sites commonly carry green-belt conditions in environmental clearance and consent orders. Aranyix keeps a block-wise record of plantation, survival, and replacements, and exports that evidence for compliance reports. Modeled estimates, where shown, stay labeled as estimates.",
+    sections: [
+      {
+        heading: "When clearance conditions ask for green-belt evidence",
+        paragraphs: [
+          "Clearance and consent conditions commonly require green-belt development and reporting. Half-yearly compliance reports, and inspections by the SPCB or a regional office, ask for evidence of plantation and survival: which block, what was planted, and what is still standing. Contractor albums and spreadsheets lose that chain once a crew changes or a gap is replanted.",
+          "Oil refinery green belt monitoring is a typical starting point — a perimeter belt, a consent condition, and a report someone will sample. EC green belt compliance monitoring, in this workflow, means keeping that evidence ready for the report and the inspection. It does not mean a clearance requires any particular software product.",
+          "Mines keep their own page at [mining green belt monitoring](/solutions/mining-greening). Use that workflow for lease reclamation. This page is for the other industrial sites above, so the two are not duplicated.",
+        ],
+      },
+      {
+        heading: "Plant, Track, Report for site greening",
+        paragraphs: [
+          "Plant, Track, Report is the same loop Aranyix uses for other plantation programmes, scoped to green-belt blocks on a site. Industrial site greening software here means that loop: a registry, resurveys, and an export — not a filing portal.",
+          "The longer buyer guide is [industrial green belt monitoring in India](/resources/industrial-green-belt-monitoring-india). Field practice that mining teams already use is in [mine green belt plantation monitoring](/resources/mine-green-belt-plantation-monitoring-india). When the same facts also support disclosure papers, map them to [BRSR Principle 6 plantation evidence](/resources/brsr-plantation-evidence-principle-6-india).",
+        ],
+        bullets: [
+          "Plant — a block-wise geo-tagged registry of belt segments, species, and photos, tagged to the clearance or consent condition",
+          "Track — survival resurveys and replacement tracking on those same blocks",
+          "Report — exportable evidence for half-yearly compliance reports and inspection files",
+          "Optional satellite checks to choose which blocks to visit; they guide fieldwork and do not replace ground truth",
+        ],
+      },
+      {
+        heading: "Who uses it on an industrial site",
+        paragraphs: [
+          "The site environment manager owns the block registry and the inspection file. The EHS head uses the same record for clearance and consent reporting. The greening contractor registers planting and replacements in the field, including on belts where connectivity is patchy.",
+          "Those capabilities sit on the [plantation MRV product](/product/mrv): geo-tagged registration, survival tracking, optional satellite checks, and audit-prep exports.",
+        ],
+      },
+      {
+        heading: "Scope a 90-day pilot",
+        paragraphs: [
+          "Start with one site or one green-belt block. [Book a demo](/demo) to scope a 90-day pilot — Plant, Track, Report against your reporting calendar, before a multi-site rollout.",
+          "Compliance filings stay with your organisation and the competent authority. Aranyix does not submit them, and it does not issue credits or certifications.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Does an environmental clearance require this software?",
+        answer:
+          "No. Clearance and consent conditions commonly require green-belt development and reporting. Aranyix helps you hold geo-tagged evidence of plantation and survival. Compliance filings stay with your organisation and the competent authority.",
+      },
+      {
+        question: "Is oil refinery green belt monitoring the same page as mining?",
+        answer:
+          "No. Mining green belts stay on their own page. This page covers refineries and oil and gas, cement, power, steel, industrial estates, and large construction or infrastructure sites.",
+      },
+      {
+        question: "What does EC green belt compliance monitoring mean here?",
+        answer:
+          "It means keeping plantation and survival evidence ready for half-yearly compliance reports and for SPCB or regional office inspections. The software does not itself satisfy a clearance condition.",
+      },
+      {
+        question: "Can Aranyix issue Green Credits or registry carbon credits?",
+        answer:
+          "No. Aranyix provides audit-prep evidence and modeled estimates only. It does not issue Verra, Gold Standard, or Green Credits, and it is not a registry or a certification body.",
+      },
+      {
+        question: "Who should join the first pilot?",
+        answer:
+          "The site environment manager, the EHS head, and the greening contractor, on one site or one green-belt block for 90 days.",
+      },
+      {
+        question: "Do satellite checks replace survival resurveys?",
+        answer:
+          "No. Optional satellite checks help decide where to send a crew. Survival and replacement evidence still comes from geo-tagged field resurveys.",
+      },
+    ],
+    relatedLinks: [
+      { label: "Mining green belt monitoring", href: "/solutions/mining-greening" },
+      {
+        label: "Industrial green belt monitoring in India",
+        href: "/resources/industrial-green-belt-monitoring-india",
+      },
+      {
+        label: "Mine green belt plantation monitoring",
+        href: "/resources/mine-green-belt-plantation-monitoring-india",
+      },
+      {
+        label: "BRSR Principle 6 plantation evidence",
+        href: "/resources/brsr-plantation-evidence-principle-6-india",
+      },
+      { label: "Plantation MRV product", href: "/product/mrv" },
+      { label: "Book a demo", href: "/demo" },
+    ],
+    primaryCta: { label: "Scope a 90-day pilot", href: "/demo" },
+    secondaryCta: { label: "See plantation MRV", href: "/product/mrv" },
+  },
+  {
     slug: "mrv",
     path: "/product/mrv",
     eyebrow: "Product",

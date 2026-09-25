@@ -11,6 +11,7 @@ const SOLUTION_PATHS = [
   { path: "/solutions/mining-greening", title: "Mining greening" },
   { path: "/solutions/campa-afforestation", title: "CAMPA afforestation" },
   { path: "/solutions/brsr-esg", title: "BRSR / ESG" },
+  { path: "/solutions/industrial-site-greening", title: "Industrial site greening" },
 ] as const;
 
 const INDUSTRIAL_RESOURCE = {
@@ -42,8 +43,8 @@ export function SolutionsHub() {
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-emerald-100/80 sm:text-lg">
               Geo-tagged plantation monitoring for Indian CSR programmes, mining green belts, CAMPA
-              afforestation, and BRSR evidence. Survival tracking and audit-prep exports, with modeled
-              estimates only.
+              afforestation, BRSR evidence, and industrial site greening. Survival tracking and
+              audit-prep exports, with modeled estimates only.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -67,7 +68,7 @@ export function SolutionsHub() {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-stone-900">Programme solutions</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Four live workflows. Each page explains the evidence to collect and how Aranyix supports
+            Five live workflows. Each page explains the evidence to collect and how Aranyix supports
             audit-prep reporting.
           </p>
         </div>
@@ -99,8 +100,14 @@ export function SolutionsHub() {
         <section className="mt-14 rounded-2xl border border-stone-200 bg-stone-50/80 p-6 sm:p-8">
           <h2 className="text-lg font-semibold text-stone-900">Industrial green belt guide</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Oil, construction, and campus green belts use the same evidence stack. This resource is a
-            guide, not a separate product page.
+            Oil, construction, and campus green belts use the same evidence stack as the{" "}
+            <Link
+              href="/solutions/industrial-site-greening"
+              className="font-medium text-forest-800 underline decoration-forest-200 underline-offset-2"
+            >
+              industrial site greening
+            </Link>{" "}
+            solution. This resource is the longer guide.
           </p>
           <article className="mt-5 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
             <h3 className="font-display text-xl font-semibold text-stone-900">

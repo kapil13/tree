@@ -20,6 +20,7 @@ const PUBLIC_ROUTES: Array<{
   { path: "/solutions/mining-greening", changeFrequency: "monthly", priority: 0.9 },
   { path: "/solutions/campa-afforestation", changeFrequency: "monthly", priority: 0.9 },
   { path: "/solutions/brsr-esg", changeFrequency: "monthly", priority: 0.9 },
+  { path: "/solutions/industrial-site-greening", changeFrequency: "monthly", priority: 0.9 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
   { path: "/data-use", changeFrequency: "yearly", priority: 0.3 },

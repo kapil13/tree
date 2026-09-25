@@ -23,6 +23,7 @@ const SOLUTION_CHILD_PATHS = [
   "/solutions/mining-greening",
   "/solutions/campa-afforestation",
   "/solutions/brsr-esg",
+  "/solutions/industrial-site-greening",
 ] as const;
 
 function listItems(data: Record<string, unknown>) {
