@@ -151,12 +151,12 @@
             "href": "/contact"
           },
           {
-            "label": "Sales & partnerships",
-            "href": "/contact"
-          },
-          {
             "label": "Request a demo",
             "href": "/demo"
+          },
+          {
+            "label": "Guides & resources",
+            "href": "/resources"
           },
           {
             "label": "Sign in",

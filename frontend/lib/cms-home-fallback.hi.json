@@ -151,12 +151,12 @@
             "href": "/contact"
           },
           {
-            "label": "बिक्री और साझेदारी",
-            "href": "/contact"
-          },
-          {
             "label": "डेमो का अनुरोध",
             "href": "/demo"
+          },
+          {
+            "label": "गाइड और संसाधन",
+            "href": "/resources"
           },
           {
             "label": "साइन इन",
