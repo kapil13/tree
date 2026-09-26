@@ -751,6 +751,6 @@ export function PlatformEdges() {
 export const PLATFORM_EDGES = [
   { icon: Satellite, title: "SAR + NDVI fusion", copy: "Sentinel and NISAR integrity — not greenness alone." },
   { icon: Mic, title: "BirdNET + Darwin Core", copy: "Habitat evidence most tree apps never capture." },
-  { icon: Radar, title: "India scheme rules", copy: "NHAI chainage, CAMPA, Nagar Van, DPDP, 8 languages." },
+  { icon: Radar, title: "India scheme rules", copy: "NHAI chainage, CAMPA, Nagar Van, DPDP — English and Hindi today." },
   { icon: ShieldCheck, title: "Signed audit chain", copy: "Ed25519 evidence packs. We prepare audits — we do not issue credits." },
 ] as const;

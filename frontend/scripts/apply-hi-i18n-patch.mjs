@@ -274,7 +274,7 @@ const enPatches = {
   "marketing.home.edgeBioTitle": "BirdNET + Darwin Core",
   "marketing.home.edgeBioCopy": "Habitat evidence most tree apps never capture.",
   "marketing.home.edgeIndiaTitle": "India scheme rules",
-  "marketing.home.edgeIndiaCopy": "NHAI chainage, CAMPA, Nagar Van, DPDP, 8 languages.",
+  "marketing.home.edgeIndiaCopy": "NHAI chainage, CAMPA, Nagar Van, DPDP — English and Hindi today.",
   "marketing.home.edgeAuditTitle": "Signed audit chain",
   "marketing.home.edgeAuditCopy": "Ed25519 evidence packs. We prepare audits — we do not issue credits.",
   "marketing.home.ghgEyebrow": "Project Carbon Intelligence",

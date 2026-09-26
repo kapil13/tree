@@ -340,17 +340,30 @@ CREATE INDEX audit_resource_idx ON audit_logs(resource_type, resource_id, create
 
 ## 7. Row-level security (per-organization isolation)
 
+**Status (honest):** RLS is **partially** implemented — not every tenant-scoped table
+has policies yet. Do not assume universal database-enforced isolation.
+
+Migration `0087_platform_rls_policies` enables RLS on a **subset** of tables (including
+`trees`, `planting_projects`, `organization_webhooks`, and related audit/credit tables).
+The API sets session variables per request via `app/core/rls.py`:
+
+- `byot.current_org_id`
+- `byot.current_user_id`
+- `byot.current_role` (`admin`, `service`, or org member)
+
+Celery workers set `CELERY_WORKER=1` for the `service` bypass role. Application-layer
+scoping in services and `load_project` / `load_tree` helpers remains the primary
+enforcement path for tables without RLS policies.
+
+Example policy shape (simplified):
+
 ```sql
 ALTER TABLE trees ENABLE ROW LEVEL SECURITY;
-CREATE POLICY trees_tenant_isolation
-  ON trees USING (
-    organization_id = current_setting('byot.current_org_id')::uuid
-    OR owner_user_id   = current_setting('byot.current_user_id')::uuid
-    OR current_setting('byot.current_role') = 'admin'
-  );
+CREATE POLICY trees_tenant_isolation ON trees USING (
+  organization_id = current_setting('byot.current_org_id', true)::uuid
+  OR owner_user_id = current_setting('byot.current_user_id', true)::uuid
+  OR current_setting('byot.current_role', true) IN ('admin', 'service')
+);
 ```
 
-Implemented in Alembic migration `0087_platform_rls_policies`. The API sets
-`SET LOCAL byot.current_org_id`, `byot.current_user_id`, and `byot.current_role`
-per request via `app/core/rls.py` (called from `get_db` and `get_current_user`).
-Celery workers use `CELERY_WORKER=1` for the `service` bypass role.
+For the full list of protected tables, inspect `0087_platform_rls_policies.py`.

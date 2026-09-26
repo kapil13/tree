@@ -64,6 +64,9 @@ export function ProjectFrameworkExportPanel({
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
       <p className="text-sm text-stone-600">{description}</p>
+      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        Worksheet export for audit preparation — not certification, credit issuance, or registry validation.
+      </p>
       {meta ? (
         <div className="rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 text-xs text-stone-600">
           <p>

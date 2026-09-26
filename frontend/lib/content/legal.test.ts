@@ -35,7 +35,14 @@ describe("published legal pages", () => {
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(meta.sha256);
 
       const metadata = legalPageMetadata(slug as keyof typeof expected);
-      expect(metadata.alternates).toEqual({ canonical: doc.path });
+      expect(metadata.alternates).toEqual({
+        canonical: doc.path,
+        languages: {
+          en: `https://aranyix.tech${doc.path}`,
+          hi: `https://aranyix.tech${doc.path}`,
+          "x-default": `https://aranyix.tech${doc.path}`,
+        },
+      });
       expect(metadata.description).toBe(meta.description);
       expect(metadata.openGraph).toMatchObject({
         url: `https://aranyix.tech${doc.path}`,

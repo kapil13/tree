@@ -56,10 +56,16 @@ export function buildPageMetadata({
   const canonical = canonicalPath(path);
   const url = absoluteCanonicalUrl(path);
 
+  const languages: Record<string, string> = {
+    en: url,
+    hi: url,
+    "x-default": url,
+  };
+
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: { canonical, languages },
     openGraph: {
       type: "website",
       locale: "en_IN",

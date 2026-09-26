@@ -13,6 +13,9 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
   const [parisArticle6, setParisArticle6] = useState(false);
   const [caRef, setCaRef] = useState("");
   const [activeSerial, setActiveSerial] = useState<string | null>(null);
+  const [transferSerialId, setTransferSerialId] = useState<string | null>(null);
+  const [toOrgId, setToOrgId] = useState("");
+  const [transferNotes, setTransferNotes] = useState("");
 
   const retire = useMutation({
     mutationFn: ({
@@ -36,6 +39,24 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
       setParisArticle6(false);
       setCaRef("");
       setActiveSerial(null);
+      qc.invalidateQueries({ queryKey: ["credit-ledger"] });
+    },
+  });
+
+  const transfer = useMutation({
+    mutationFn: ({
+      serialId,
+      to_org_id,
+      notes,
+    }: {
+      serialId: string;
+      to_org_id: string;
+      notes?: string;
+    }) => credits.transferSerial(serialId, { to_org_id, notes }),
+    onSuccess: () => {
+      setToOrgId("");
+      setTransferNotes("");
+      setTransferSerialId(null);
       qc.invalidateQueries({ queryKey: ["credit-ledger"] });
     },
   });
@@ -83,7 +104,43 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
               )}
             {serial.status === "available" && (
               <div className="flex flex-wrap gap-2 pt-1">
-                {activeSerial === serial.id ? (
+                {transferSerialId === serial.id ? (
+                  <>
+                    <input
+                      className="input text-xs min-w-[220px]"
+                      placeholder="Receiving organization UUID"
+                      value={toOrgId}
+                      onChange={(e) => setToOrgId(e.target.value)}
+                    />
+                    <input
+                      className="input text-xs min-w-[200px]"
+                      placeholder="Transfer notes (optional)"
+                      value={transferNotes}
+                      onChange={(e) => setTransferNotes(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary text-xs"
+                      disabled={!toOrgId.trim() || transfer.isPending}
+                      onClick={() =>
+                        transfer.mutate({
+                          serialId: serial.id,
+                          to_org_id: toOrgId.trim(),
+                          notes: transferNotes.trim() || undefined,
+                        })
+                      }
+                    >
+                      Confirm custody transfer
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary text-xs"
+                      onClick={() => setTransferSerialId(null)}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : activeSerial === serial.id ? (
                   <>
                     <input
                       className="input text-xs"
@@ -127,9 +184,18 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
                     </button>
                   </>
                 ) : (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => setActiveSerial(serial.id)}>
-                    Retire serial
-                  </button>
+                  <>
+                    <button type="button" className="btn-secondary text-xs" onClick={() => setActiveSerial(serial.id)}>
+                      Retire serial
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary text-xs"
+                      onClick={() => setTransferSerialId(serial.id)}
+                    >
+                      Transfer custody
+                    </button>
+                  </>
                 )}
               </div>
             )}
@@ -149,6 +215,9 @@ export function ProjectCreditSerialsPanel({ ledger }: { ledger: CreditLedger }) 
       </ul>
       {retire.error ? (
         <p className="text-xs text-rose-700">{errorMessage(retire.error)}</p>
+      ) : null}
+      {transfer.error ? (
+        <p className="text-xs text-rose-700">{errorMessage(transfer.error)}</p>
       ) : null}
     </div>
   );

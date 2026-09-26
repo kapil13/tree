@@ -29,21 +29,42 @@ describe("homePageMetadata", () => {
 
   it("emits a self-referencing canonical and matching og:url without query or trailing slash", () => {
     const home = homePageMetadata();
-    expect(home.alternates).toEqual({ canonical: "/" });
+    expect(home.alternates).toEqual({
+      canonical: "/",
+      languages: {
+        en: "https://aranyix.tech",
+        hi: "https://aranyix.tech",
+        "x-default": "https://aranyix.tech",
+      },
+    });
     expect(home.openGraph).toMatchObject({ url: "https://aranyix.tech" });
 
     const contact = buildPageMetadata({
       title: "Contact us",
       path: "/contact/",
     });
-    expect(contact.alternates).toEqual({ canonical: "/contact" });
+    expect(contact.alternates).toEqual({
+      canonical: "/contact",
+      languages: {
+        en: "https://aranyix.tech/contact",
+        hi: "https://aranyix.tech/contact",
+        "x-default": "https://aranyix.tech/contact",
+      },
+    });
     expect(contact.openGraph).toMatchObject({ url: "https://aranyix.tech/contact" });
 
     const withQuery = buildPageMetadata({
       title: "Auth",
       path: "/auth?mode=signin&next=/map",
     });
-    expect(withQuery.alternates).toEqual({ canonical: "/auth" });
+    expect(withQuery.alternates).toEqual({
+      canonical: "/auth",
+      languages: {
+        en: "https://aranyix.tech/auth",
+        hi: "https://aranyix.tech/auth",
+        "x-default": "https://aranyix.tech/auth",
+      },
+    });
     expect(withQuery.openGraph).toMatchObject({ url: "https://aranyix.tech/auth" });
   });
 });
