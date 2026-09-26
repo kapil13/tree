@@ -1,4 +1,4 @@
-"""Seed the database with a demo organization, user, species catalog, and trees.
+"""Seed the database with demo organizations, personas, scheme matrix, and workflow fixtures.
 
 Run inside the container:
     python -m app.scripts.seed_demo
@@ -15,10 +15,11 @@ from sqlalchemy import delete, select, update
 from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models.organization import Organization
-from app.models.planting_program import ProgramAccessRequest, UserPlantingProgram
+from app.models.planting_program import ProgramAccessRequest
 from app.models.species import Species
 from app.models.tree import Tree
 from app.models.user import User
+from app.scripts.seed_helpers import ensure_scheme_matrix, seed_workflow_fixtures
 from app.services.carbon.species_catalog import SPECIES_CATALOG
 from app.services.emissions.demo_seed import DEMO_GHG_PROJECT_CODE, ensure_demo_ghg_workspace
 from app.services.planting_programs.catalog import default_program_code
@@ -28,164 +29,170 @@ DEMO_EMAIL = "demo@byot.earth"
 DEMO_VIEWER_EMAIL = "viewer@byot.earth"
 DEMO_VERIFIER_EMAIL = "verifier@byot.earth"
 DEMO_MANAGER_EMAIL = "manager@byot.earth"
+DEMO_FIELD_WORKER_EMAIL = "fieldworker@byot.earth"
+DEMO_SUPERVISOR_EMAIL = "supervisor@byot.earth"
+DEMO_CORPORATE_EMAIL = "corporate@byot.earth"
+DEMO_NGO_EMAIL = "ngo@byot.earth"
 DEMO_PASSWORD = "byotdemo1234!"
 
 CITIZEN_TREE_TARGET = 12
 ORG_TREE_TARGET = 18
 
 
-async def _ensure_demo_user(db) -> User:
-    """Create or reset the demo citizen account (personal BYOT grove, no org)."""
-    user = (await db.execute(select(User).where(User.email == DEMO_EMAIL))).scalar_one_or_none()
+async def _ensure_user(
+    db,
+    *,
+    email: str,
+    full_name: str,
+    role: str,
+    org: Organization | None = None,
+    org_role: str | None = None,
+    is_org_admin: bool = False,
+    program_codes: list[str] | None = None,
+) -> User:
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if user is None:
         user = User(
-            email=DEMO_EMAIL,
-            full_name="Demo Citizen",
+            email=email,
+            full_name=full_name,
             hashed_password=hash_password(DEMO_PASSWORD),
-            role="user",
-            organization_id=None,
+            role=role,
+            organization_id=org.id if org else None,
+            org_role=org_role,
+            is_org_admin=is_org_admin,
             is_active=True,
             is_verified=True,
         )
         db.add(user)
         await db.flush()
     else:
-        user.full_name = "Demo Citizen"
+        user.full_name = full_name
         user.hashed_password = hash_password(DEMO_PASSWORD)
-        user.role = "user"
-        user.organization_id = None
-        user.is_org_admin = False
-        user.org_role = None
+        user.role = role
+        user.organization_id = org.id if org else None
+        user.org_role = org_role
+        user.is_org_admin = is_org_admin
         user.is_active = True
         user.is_verified = True
 
-    byot = await get_program_by_code(db, default_program_code())
-    if byot is not None:
-        await db.execute(delete(UserPlantingProgram).where(UserPlantingProgram.user_id == user.id))
-        await db.flush()
-        await set_user_programs(db, user.id, [byot.code])
+    codes = program_codes or [default_program_code()]
+    programs = []
+    for code in codes:
+        program = await get_program_by_code(db, code)
+        if program is not None:
+            programs.append(program.code)
+    if programs:
+        await set_user_programs(db, user.id, programs)
 
     await db.execute(delete(ProgramAccessRequest).where(ProgramAccessRequest.user_id == user.id))
-
     return user
 
 
+async def _ensure_demo_user(db) -> User:
+    """Citizen BYOT account (personal grove, no org)."""
+    return await _ensure_user(
+        db,
+        email=DEMO_EMAIL,
+        full_name="Demo Citizen",
+        role="user",
+        program_codes=[default_program_code()],
+    )
+
+
 async def _ensure_demo_manager(db, org: Organization) -> User:
-    """Org admin for team governance demos."""
-    user = (
-        await db.execute(select(User).where(User.email == DEMO_MANAGER_EMAIL))
-    ).scalar_one_or_none()
-    if user is None:
-        user = User(
-            email=DEMO_MANAGER_EMAIL,
-            full_name="Demo Program Manager",
-            hashed_password=hash_password(DEMO_PASSWORD),
-            role="government",
-            organization_id=org.id,
-            org_role="manager",
-            is_org_admin=True,
-            is_active=True,
-            is_verified=True,
-        )
-        db.add(user)
-        await db.flush()
-    else:
-        user.full_name = "Demo Program Manager"
-        user.hashed_password = hash_password(DEMO_PASSWORD)
-        user.role = "government"
-        user.organization_id = org.id
-        user.org_role = "manager"
-        user.is_org_admin = True
-        user.is_active = True
-        user.is_verified = True
-
+    user = await _ensure_user(
+        db,
+        email=DEMO_MANAGER_EMAIL,
+        full_name="Demo Program Manager",
+        role="government",
+        org=org,
+        org_role="manager",
+        is_org_admin=True,
+        program_codes=[default_program_code(), "government_nhai"],
+    )
     org.owner_user_id = user.id
-
-    gov = await get_program_by_code(db, "government_nhai")
-    if gov is not None:
-        await set_user_programs(db, user.id, [default_program_code(), gov.code])
-
     meta = dict(org.metadata_ or {})
     codes = list(meta.get("program_codes") or [])
-    if gov is not None and gov.code not in codes:
-        codes.append(gov.code)
+    if "government_nhai" not in codes:
+        codes.append("government_nhai")
     meta["program_codes"] = codes
     org.metadata_ = meta
     org.type = "government"
-
     return user
 
 
 async def _ensure_demo_viewer(db, org: Organization) -> User:
-    """Read-only org viewer for RBAC demos (professional nav, no mutations)."""
-    user = (
-        await db.execute(select(User).where(User.email == DEMO_VIEWER_EMAIL))
-    ).scalar_one_or_none()
-    if user is None:
-        user = User(
-            email=DEMO_VIEWER_EMAIL,
-            full_name="Demo Viewer",
-            hashed_password=hash_password(DEMO_PASSWORD),
-            role="government",
-            organization_id=org.id,
-            org_role="viewer",
-            is_org_admin=False,
-            is_active=True,
-            is_verified=True,
-        )
-        db.add(user)
-        await db.flush()
-    else:
-        user.full_name = "Demo Viewer"
-        user.hashed_password = hash_password(DEMO_PASSWORD)
-        user.role = "government"
-        user.organization_id = org.id
-        user.org_role = "viewer"
-        user.is_org_admin = False
-        user.is_active = True
-        user.is_verified = True
-
-    gov = await get_program_by_code(db, "government_nhai")
-    if gov is not None:
-        await set_user_programs(db, user.id, [default_program_code(), gov.code])
-
-    return user
+    return await _ensure_user(
+        db,
+        email=DEMO_VIEWER_EMAIL,
+        full_name="Demo Viewer",
+        role="government",
+        org=org,
+        org_role="viewer",
+        program_codes=[default_program_code(), "government_nhai"],
+    )
 
 
 async def _ensure_demo_verifier(db, org: Organization) -> User:
-    """Independent verifier for measurement attestation demos."""
-    user = (
-        await db.execute(select(User).where(User.email == DEMO_VERIFIER_EMAIL))
-    ).scalar_one_or_none()
-    if user is None:
-        user = User(
-            email=DEMO_VERIFIER_EMAIL,
-            full_name="Demo Verifier",
-            hashed_password=hash_password(DEMO_PASSWORD),
-            role="verifier",
-            organization_id=org.id,
-            org_role="verifier",
-            is_org_admin=False,
-            is_active=True,
-            is_verified=True,
-        )
-        db.add(user)
-        await db.flush()
-    else:
-        user.full_name = "Demo Verifier"
-        user.hashed_password = hash_password(DEMO_PASSWORD)
-        user.role = "verifier"
-        user.organization_id = org.id
-        user.org_role = "verifier"
-        user.is_org_admin = False
-        user.is_active = True
-        user.is_verified = True
+    return await _ensure_user(
+        db,
+        email=DEMO_VERIFIER_EMAIL,
+        full_name="Demo Verifier",
+        role="verifier",
+        org=org,
+        org_role="verifier",
+        program_codes=[default_program_code(), "government_nhai"],
+    )
 
-    gov = await get_program_by_code(db, "government_nhai")
-    if gov is not None:
-        await set_user_programs(db, user.id, [default_program_code(), gov.code])
 
-    return user
+async def _ensure_demo_field_worker(db, org: Organization) -> User:
+    return await _ensure_user(
+        db,
+        email=DEMO_FIELD_WORKER_EMAIL,
+        full_name="Demo Field Worker",
+        role="field_worker",
+        org=org,
+        org_role="worker",
+        program_codes=[default_program_code(), "government_nhai"],
+    )
+
+
+async def _ensure_demo_supervisor(db, org: Organization) -> User:
+    return await _ensure_user(
+        db,
+        email=DEMO_SUPERVISOR_EMAIL,
+        full_name="Demo Field Supervisor",
+        role="field_supervisor",
+        org=org,
+        org_role="supervisor",
+        program_codes=[default_program_code(), "government_nhai"],
+    )
+
+
+async def _ensure_demo_corporate(db, org: Organization) -> User:
+    return await _ensure_user(
+        db,
+        email=DEMO_CORPORATE_EMAIL,
+        full_name="Demo Corporate Manager",
+        role="corporate",
+        org=org,
+        org_role="manager",
+        is_org_admin=False,
+        program_codes=[default_program_code(), "corporate_esg"],
+    )
+
+
+async def _ensure_demo_ngo(db, org: Organization) -> User:
+    return await _ensure_user(
+        db,
+        email=DEMO_NGO_EMAIL,
+        full_name="Demo NGO Manager",
+        role="ngo",
+        org=org,
+        org_role="manager",
+        is_org_admin=False,
+        program_codes=[default_program_code(), "ngo_community"],
+    )
 
 
 def _tree_payload(
@@ -214,11 +221,11 @@ def _tree_payload(
         current_carbon_kg=rng.uniform(20, 150),
         satellite_verified=rng.random() < 0.7,
         status="active",
+        metadata_={"visibility_public": True},
     )
 
 
 async def _next_public_code(db, prefix: str) -> str:
-    """Return the next unused demo code for a prefix like BYOT-DEMO or NHAI-DEMO."""
     existing = (
         await db.execute(select(Tree.public_code).where(Tree.public_code.like(f"{prefix}-%")))
     ).scalars().all()
@@ -267,6 +274,10 @@ async def _rebalance_demo_portfolios(
     rng = random.Random(42)
     for index, tree in enumerate(citizen_trees):
         tree.organization_id = None
+        tree.project_id = None
+        meta = dict(tree.metadata_ or {})
+        meta["visibility_public"] = True
+        tree.metadata_ = meta
         if not tree.public_code.startswith("BYOT-DEMO-"):
             tree.public_code = f"BYOT-DEMO-{index:04d}"
 
@@ -288,7 +299,7 @@ async def _rebalance_demo_portfolios(
         (
             await db.execute(
                 select(Tree)
-                .where(Tree.organization_id == org.id)
+                .where(Tree.organization_id == org.id, Tree.project_id.is_(None))
                 .order_by(Tree.created_at.asc())
             )
         ).scalars().all()
@@ -316,103 +327,6 @@ async def _rebalance_demo_portfolios(
     stats["org_portfolio"] = len(org_trees)
     await db.flush()
     return stats
-
-
-async def _ensure_demo_scheme_projects(db, *, org: Organization, manager: User) -> dict[str, int]:
-    """Create sample Nagar Van and Sahakar Van projects for scheme onboarding demos."""
-    from app.models.planting_project import PlantingProject
-    from app.services.planting_projects.service import create_standard_from_template
-    from app.services.planting_projects.templates import template_for_segment
-    from app.services.schemes.compliance import seed_project_scheme_checklists
-    from app.services.schemes.registry import get_scheme
-    from app.services.schemes.resolution import apply_scheme_defaults
-
-    specs = [
-        {
-            "code": "DEMO-NAGAR-VAN",
-            "name": "Demo — Indore Urban Forest Block A",
-            "scheme_code": "nagar_van",
-            "program_code": "government_nhai",
-            "target_tree_count": 10000,
-            "scheme_refs": {
-                "nagar_van_project_id": "NV-MP-INDORE-DEMO",
-                "ulb_name": "Indore Municipal Corporation",
-                "urban_forest_name": "Chiman Bagh Urban Forest Block A",
-                "target_trees": 10000,
-            },
-        },
-        {
-            "code": "DEMO-SAHAKAR-VAN",
-            "name": "Demo — Sumel Sahakar Van (Jaipur)",
-            "scheme_code": "sahakar_van",
-            "program_code": "government_nhai",
-            "target_tree_count": None,
-            "scheme_refs": {
-                "sahakar_van_project_id": "SV-NCCF-RAJ-DEMO",
-                "nccf_project_ref": "NCCF/SV/2026/SUMEL",
-                "amul_union_name": "GCMMF — Amul",
-                "cooperative_society_name": "Sumel Mahila Mandal",
-                "village_name": "Sumel",
-                "district": "Jaipur",
-                "state_name": "Rajasthan",
-                "site_area_acres": 64,
-                "plantation_method": "mixed",
-                "target_trees": 50000,
-            },
-        },
-    ]
-
-    created = 0
-    existing = 0
-    for spec in specs:
-        row = (
-            await db.execute(
-                select(PlantingProject).where(
-                    PlantingProject.organization_id == org.id,
-                    PlantingProject.code == spec["code"],
-                )
-            )
-        ).scalar_one_or_none()
-        if row is not None:
-            existing += 1
-            continue
-
-        scheme = get_scheme(spec["scheme_code"])
-        if scheme is None:
-            continue
-
-        segment, compliance, template_code = apply_scheme_defaults(
-            scheme=scheme,
-            segment="general",
-            compliance_mode="guided",
-            program_code=spec["program_code"],
-            standard_template_code=None,
-        )
-        if not template_code:
-            template_code = template_for_segment(segment)["code"]
-
-        project = PlantingProject(
-            code=spec["code"],
-            name=spec["name"],
-            description=f"Demo planting project under {scheme['label']}.",
-            segment=segment,
-            compliance_mode=compliance,
-            status="active",
-            program_code=spec["program_code"],
-            scheme_code=spec["scheme_code"],
-            standard_template_code=template_code,
-            target_tree_count=spec["target_tree_count"],
-            organization_id=org.id,
-            owner_user_id=manager.id,
-            metadata_={"scheme_refs": spec["scheme_refs"], "demo": True},
-        )
-        db.add(project)
-        await db.flush()
-        await create_standard_from_template(db, project=project, template_code=template_code)
-        await seed_project_scheme_checklists(db, project)
-        created += 1
-
-    return {"created": created, "existing": existing}
 
 
 async def seed() -> None:
@@ -452,21 +366,39 @@ async def seed() -> None:
         citizen = await _ensure_demo_user(db)
         manager = await _ensure_demo_manager(db, org)
         await _ensure_demo_viewer(db, org)
-        await _ensure_demo_verifier(db, org)
+        verifier = await _ensure_demo_verifier(db, org)
+        field_worker = await _ensure_demo_field_worker(db, org)
+        supervisor = await _ensure_demo_supervisor(db, org)
+        await _ensure_demo_corporate(db, org)
+        await _ensure_demo_ngo(db, org)
 
         stats = await _rebalance_demo_portfolios(db, citizen=citizen, manager=manager, org=org)
-        scheme_stats = await _ensure_demo_scheme_projects(db, org=org, manager=manager)
+        projects = await ensure_scheme_matrix(db, org=org, manager=manager)
+        workflow_stats = await seed_workflow_fixtures(
+            db,
+            org=org,
+            manager=manager,
+            supervisor=supervisor,
+            verifier=verifier,
+            field_worker=field_worker,
+            citizen=citizen,
+            projects=projects,
+        )
         ghg_stats = await ensure_demo_ghg_workspace(db, org=org, manager=manager)
 
         await db.commit()
         print(
             f"Demo data ready. Password for all: {DEMO_PASSWORD}\n"
             f"  Citizen (personal BYOT): {DEMO_EMAIL} -> {stats['citizen_personal']} trees\n"
-            f"  Org admin (NHAI portfolio): {DEMO_MANAGER_EMAIL} -> {stats['org_portfolio']} trees\n"
-            f"  Viewer (read-only org): {DEMO_VIEWER_EMAIL}\n"
-            f"  Verifier (attest only): {DEMO_VERIFIER_EMAIL}\n"
-            f"  Scheme demo projects created: {scheme_stats['created']} "
-            f"(existing {scheme_stats['existing']})\n"
+            f"  Org admin: {DEMO_MANAGER_EMAIL} -> {stats['org_portfolio']} unassigned org trees\n"
+            f"  Field worker: {DEMO_FIELD_WORKER_EMAIL}\n"
+            f"  Field supervisor: {DEMO_SUPERVISOR_EMAIL}\n"
+            f"  Corporate manager: {DEMO_CORPORATE_EMAIL}\n"
+            f"  NGO manager: {DEMO_NGO_EMAIL}\n"
+            f"  Viewer (read-only): {DEMO_VIEWER_EMAIL}\n"
+            f"  Verifier: {DEMO_VERIFIER_EMAIL}\n"
+            f"  Scheme demo projects: {len(projects)} (13-scheme matrix)\n"
+            f"  Workflow fixtures: {workflow_stats}\n"
             f"  GHG showcase: {DEMO_GHG_PROJECT_CODE} "
             f"(project_id={ghg_stats.get('project_id', 'n/a')})\n"
             f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "
