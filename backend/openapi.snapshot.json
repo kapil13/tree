@@ -35205,6 +35205,33 @@
         ]
       }
     },
+    "/api/v1/emissions/portfolio-summary": {
+      "get": {
+        "operationId": "get_emissions_portfolio_summary_api_v1_emissions_portfolio_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Emissions Portfolio Summary Api V1 Emissions Portfolio Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Emissions Portfolio Summary",
+        "tags": [
+          "emissions"
+        ]
+      }
+    },
     "/api/v1/evidence/signing-key": {
       "get": {
         "operationId": "get_evidence_signing_key_api_v1_evidence_signing_key_get",

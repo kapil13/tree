@@ -4,11 +4,23 @@ from __future__ import annotations
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from app.services.planting_projects.field_ops import build_field_ops_priority_tasks
+
+
+def _field_ops_db_mock() -> AsyncMock:
+    db = AsyncMock()
+
+    async def fake_execute(*_args, **_kwargs):
+        result = MagicMock()
+        result.all.return_value = []
+        return result
+
+    db.execute = fake_execute
+    return db
 
 
 @pytest.mark.asyncio
@@ -48,7 +60,7 @@ async def test_build_field_ops_priority_tasks_includes_audit_and_survival(monkey
     )
 
     tasks = await build_field_ops_priority_tasks(
-        AsyncMock(),
+        _field_ops_db_mock(),
         projects,
         violation_feed=[],
         audit_due_by_project={project_id: 3},
@@ -109,7 +121,7 @@ async def test_build_field_ops_priority_tasks_includes_closure_alerts(monkeypatc
     )
 
     tasks = await build_field_ops_priority_tasks(
-        AsyncMock(),
+        _field_ops_db_mock(),
         projects,
         violation_feed=[],
         audit_due_by_project={},

@@ -456,6 +456,10 @@ async def seed() -> None:
         stats = await _rebalance_demo_portfolios(db, citizen=citizen, manager=manager, org=org)
         scheme_stats = await _ensure_demo_scheme_projects(db, org=org, manager=manager)
 
+        from app.services.emissions.demo_seed import DEMO_GHG_PROJECT_CODE, ensure_demo_ghg_workspace
+
+        ghg_stats = await ensure_demo_ghg_workspace(db, org=org, manager=manager)
+
         await db.commit()
         print(
             f"Demo data ready. Password for all: {DEMO_PASSWORD}\n"
@@ -465,6 +469,8 @@ async def seed() -> None:
             f"  Verifier (attest only): {DEMO_VERIFIER_EMAIL}\n"
             f"  Scheme demo projects created: {scheme_stats['created']} "
             f"(existing {scheme_stats['existing']})\n"
+            f"  GHG showcase: {DEMO_GHG_PROJECT_CODE} "
+            f"(project_id={ghg_stats.get('project_id', 'n/a')})\n"
             f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "
             f"created {stats['citizen_created']} citizen + {stats['org_created']} org trees"
         )
