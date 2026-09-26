@@ -3644,6 +3644,18 @@ export const credits = {
     });
     return response.data as Blob;
   },
+  async transferSerial(
+    serialId: string,
+    payload: { to_org_id: string; notes?: string },
+  ) {
+    return (
+      await api.post<{
+        serial: NonNullable<CreditLedger["serials"]>[number];
+        transfer_id: string;
+        custody_hash: string;
+      }>(`/v1/credits/serials/${serialId}/transfer`, payload)
+    ).data;
+  },
   async greenCreditEstimate(projectId: string) {
     return (await api.get<GreenCreditEstimate>(`/v1/credits/projects/${projectId}/green-credit`)).data;
   },

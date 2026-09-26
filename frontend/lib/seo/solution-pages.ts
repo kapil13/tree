@@ -206,7 +206,7 @@ export const SOLUTION_PAGES: SolutionPage[] = [
       {
         question: "Does the platform work in Hindi and regional languages?",
         answer:
-          "The web dashboard and mobile app support multiple Indian languages so field teams can work in the language they are most comfortable with.",
+          "The web dashboard and mobile app ship in English and Hindi today, with additional Indian languages planned, so field teams can work in a familiar language.",
       },
     ],
     relatedLinks: [

@@ -61,6 +61,11 @@ function applyNoindex(response: NextResponse): NextResponse {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === "/presentationa" || pathname.startsWith("/presentationa/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/presentationa/, "/presentation");
+    return NextResponse.redirect(url, 301);
+  }
   if (!isProtectedPath(pathname)) {
     if (isNoindexPath(pathname)) {
       return applyNoindex(NextResponse.next());

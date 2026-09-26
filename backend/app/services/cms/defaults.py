@@ -88,7 +88,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
             ),
             "stats": [
                 {"value": "15+", "label": "Framework mappings"},
-                {"value": "8", "label": "Indian languages"},
+                {"value": "2", "label": "Languages shipped (EN + HI)"},
                 {"value": "SAR + NDVI", "label": "Satellite fusion"},
                 {"value": "DPDP ready", "label": "Privacy controls"},
             ],
@@ -256,7 +256,7 @@ HOME_SECTIONS_DEFAULT: list[dict[str, Any]] = [
                 {"icon": "MapPin", "code": "NHAI / Govt", "title": "Public planting schemes", "description": "Geo-tagged proof for highways, urban forestry, and departmental green audits."},
                 {"icon": "Radar", "code": "CAMPA / NGT", "title": "Compensatory afforestation", "description": "Timestamped evidence packs for court-ordered and CAMPA monitoring workflows."},
                 {"icon": "Shield", "code": "Audit chain", "title": "Tamper-evident logs", "description": "Signed evidence bundles and Ed25519 verification for audit trail integrity."},
-                {"icon": "Languages", "code": "WCAG + i18n", "title": "Inclusive by design", "description": "Hindi plus seven Indian languages on web; WCAG-tested core routes."},
+                {"icon": "Languages", "code": "WCAG + i18n", "title": "Inclusive by design", "description": "English and Hindi on web and mobile today; additional Indian languages on the roadmap. WCAG-tested core routes."},
                 {"icon": "Sparkles", "code": "BYOT", "title": "Citizen stewardship", "description": "Bring Your Own Tree — public registration with complimentary AI health scans."},
             ],
         },

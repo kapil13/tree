@@ -200,6 +200,19 @@ def _to_out(tree: Tree) -> TreeOut:
 async def create_tree(
     payload: TreeCreate, request: Request, user: WriteAccess, db: DB
 ) -> TreeOut:
+    from app.services.idempotency.keys import (
+        payload_fingerprint,
+        resolve_idempotency,
+        store_idempotency,
+    )
+
+    fingerprint = payload_fingerprint(payload.model_dump(mode="json"))
+    cached = await resolve_idempotency(
+        request, scope="trees.create", payload_fingerprint=fingerprint
+    )
+    if cached is not None:
+        return TreeOut.model_validate(cached)
+
     program = await get_program_by_code(db, payload.program_code)
     if program is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="unknown_program")
@@ -506,7 +519,15 @@ async def create_tree(
     await db.commit()
     await db.refresh(tree, attribute_names=["planting_program", "risk_score"])
     await db.refresh(tree, attribute_names=["images"])
-    return _to_out(tree)
+    out = _to_out(tree)
+    await store_idempotency(
+        request,
+        scope="trees.create",
+        payload_fingerprint=fingerprint,
+        status_code=status.HTTP_201_CREATED,
+        body=out.model_dump(mode="json"),
+    )
+    return out
 
 
 @router.get("", response_model=Page[TreeListItem])

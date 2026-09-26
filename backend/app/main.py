@@ -26,6 +26,7 @@ from app.core.health_checks import (
 from app.core.http_errors import format_http_exception_detail
 from app.core.logging import configure_logging, get_logger
 from app.core.production_guards import validate_runtime_settings
+from app.middleware.api_versioning import ApiVersioningMiddleware
 from app.middleware.trace_id import TraceIdMiddleware
 from app.middleware.user_rate_limit import UserRateLimitMiddleware
 from app.schemas.common import (
@@ -128,6 +129,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Outermost: trace id + robots tag on every response.
+app.add_middleware(ApiVersioningMiddleware)
 app.add_middleware(TraceIdMiddleware)
 app.add_middleware(XRobotsTagMiddleware)
 
