@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  BarChart3,
   Building2,
   CreditCard,
   Globe2,
@@ -49,7 +50,8 @@ type NavItem = {
     | "billing"
     | "operations"
     | "satelliteHealth"
-    | "websiteCms";
+    | "websiteCms"
+    | "siteAnalytics";
   icon: typeof LayoutDashboard;
   exact?: boolean;
   visible: (user: PlatformUser) => boolean;
@@ -122,6 +124,12 @@ const NAV: NavItem[] = [
     labelKey: "websiteCms",
     icon: Globe2,
     visible: (user) => canAccessWebsiteCms(user),
+  },
+  {
+    href: "/platform/analytics",
+    labelKey: "siteAnalytics",
+    icon: BarChart3,
+    visible: (user) => canAccessWebsiteCms(user) || canAccessOpsAdmin(user),
   },
 ];
 

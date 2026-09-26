@@ -1959,6 +1959,7 @@
     "contactFooterCta": "Contact form",
     "contactHint": "Plantation programmes, MRV, and audit-ready reporting",
     "alsoKnownAs": "Also known as Araynix",
+    "visitorCount": "{count} visits",
     "contact": {
       "eyebrow": "Sales & partnerships",
       "title": "Contact Aranyix",
@@ -2639,7 +2640,8 @@
         "billing": "Billing",
         "operations": "Operations",
         "satelliteHealth": "Satellite health",
-        "websiteCms": "Website CMS"
+        "websiteCms": "Website CMS",
+        "siteAnalytics": "Site analytics"
       }
     },
     "overview": {
@@ -2751,6 +2753,22 @@
       "allStatuses": "All statuses",
       "uuidPlaceholder": "UUID",
       "devHint": " Dev hint: {hint}"
+    },
+    "analytics": {
+      "title": "Site analytics",
+      "description": "Marketing site visits with visitor IP, path, and referrer. Counts feed the public footer counter.",
+      "filterIp": "IP address",
+      "filterPath": "Path contains",
+      "filterFrom": "From",
+      "filterTo": "To",
+      "searchPlaceholder": "Path, referrer, visitor id, or IP…",
+      "empty": "No visits match this filter.",
+      "colTime": "Time",
+      "colIp": "IP",
+      "colPath": "Path",
+      "colVisitor": "Visitor",
+      "colReferrer": "Referrer",
+      "pagination": "{total} visits · page {page} of {totalPages}"
     },
     "audit": {
       "description": "Platform-wide audit trail with actor names, structured diffs, and CSV export. Filters sync to the URL for sharing and deep links.",

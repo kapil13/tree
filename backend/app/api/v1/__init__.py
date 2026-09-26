@@ -29,6 +29,7 @@ from app.api.v1 import (
     onboarding,
     organizations,
     payments,
+    public_visits,
     plantation_fences,
     plantation_reports,
     planting_programs,
@@ -80,6 +81,7 @@ api_router.include_router(evidence.router)
 api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
 api_router.include_router(contact.router)
+api_router.include_router(public_visits.public_router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)

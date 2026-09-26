@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { AranyixLogo } from "@/components/brand/aranyix-logo";
 import type { CmsPublicSite } from "@/lib/cms-api";
 import { CMS_FOOTER_FALLBACK, linkProps } from "@/lib/cms-defaults";
+import { VisitorCounter } from "@/components/marketing/visitor-counter";
+import { useSiteVisitTracker } from "@/lib/use-site-visit-tracker";
 import {
   resolveMarketingFooterLegalLinks,
   resolveMarketingFooterLinkColumns,
@@ -17,6 +19,7 @@ function resolveHref(href: string) {
 }
 
 export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: CmsPublicSite["site"]["footer"] }) {
+  useSiteVisitTracker(true);
   const t = useTranslations("marketing");
   const year = new Date().getFullYear();
   const linkColumns = resolveMarketingFooterLinkColumns(footer);
@@ -66,7 +69,10 @@ export function MarketingFooter({ footer = CMS_FOOTER_FALLBACK }: { footer?: Cms
 
         <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <p className="text-sm text-emerald-100/55">© {year} {footer.copyright}</p>
+            <p className="text-sm text-emerald-100/55">
+              © {year} {footer.copyright}
+              <VisitorCounter />
+            </p>
             {footer.legal_note ? (
               <p className="text-[11px] uppercase tracking-[0.12em] text-emerald-100/40">{footer.legal_note}</p>
             ) : null}

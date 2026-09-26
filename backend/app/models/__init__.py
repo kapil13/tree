@@ -64,6 +64,7 @@ from app.models.emission_source import (
     EmissionSource,
 )
 from app.models.messaging_delivery import MessageDeliveryReceipt, SuppressedRecipient
+from app.models.site_visit import SiteVisit
 from app.models.monitoring_job_run import MonitoringJobRun
 from app.models.monitoring_scan_target import MonitoringScanTarget
 from app.models.organization import Organization
@@ -231,6 +232,7 @@ __all__ = [
     "MessageDeliveryReceipt",
     "MonitoringJobRun",
     "MonitoringScanTarget",
+    "SiteVisit",
     "SuppressedRecipient",
     "VerificationItem",
     "VerificationSample",
