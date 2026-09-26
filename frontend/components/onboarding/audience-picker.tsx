@@ -7,6 +7,7 @@ import {
   HardHat,
   Leaf,
   Loader2,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -17,6 +18,7 @@ const AUDIENCE_ICONS: Record<PlantingAudience, LucideIcon> = {
   mining: HardHat,
   corporate_esg: BadgeCheck,
   government: Building2,
+  ngo_community: Users,
   international: Globe2,
   general: Leaf,
 };
@@ -25,6 +27,7 @@ const AUDIENCE_ACCENT: Record<PlantingAudience, string> = {
   mining: "from-amber-500/15 to-orange-600/5 ring-amber-500/25 hover:ring-amber-500/45",
   corporate_esg: "from-emerald-500/15 to-forest-600/5 ring-emerald-500/25 hover:ring-emerald-500/45",
   government: "from-sky-500/15 to-blue-600/5 ring-sky-500/25 hover:ring-sky-500/45",
+  ngo_community: "from-amber-500/15 to-orange-600/5 ring-amber-500/25 hover:ring-amber-500/45",
   international: "from-violet-500/15 to-indigo-600/5 ring-violet-500/25 hover:ring-violet-500/45",
   general: "from-stone-400/15 to-stone-500/5 ring-stone-400/25 hover:ring-stone-400/45",
 };

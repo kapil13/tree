@@ -970,6 +970,13 @@ export const audienceOnboarding = {
       "/v1/onboarding/audience-presets",
     )).data.items;
   },
+  async context() {
+    return (
+      await api.get<import("@/lib/audience-journey").AudienceContext>(
+        "/v1/onboarding/audience-context",
+      )
+    ).data;
+  },
   async select(audience: string) {
     return (await api.post<{ audience: string }>("/v1/onboarding/audience", { audience })).data;
   },

@@ -52,6 +52,25 @@ AUDIENCE_PRESETS: dict[AudienceCode, AudiencePreset] = {
         "checklist_codes": ["esg_general"],
         "dashboard_highlights": ["brsr", "portfolio", "exports"],
     },
+    "ngo_community": {
+        "code": "ngo_community",
+        "label": "NGO & community watershed",
+        "description": (
+            "Watershed development, MGNREGA convergence, MISHTI mangroves, and "
+            "community nurseries with FRA tenure tracking and survival monitoring."
+        ),
+        "recommended_program_code": "ngo_community",
+        "recommended_scheme_codes": [
+            "mgnrega_convergence",
+            "gim_restoration",
+            "mishti_mangrove",
+            "jal_shakti_riparian",
+        ],
+        "recommended_template_code": "mgnrega_convergence_v1",
+        "recommended_segment": "ngo_watershed",
+        "checklist_codes": ["fra_tenure", "esg_general"],
+        "dashboard_highlights": ["mgnrega", "community", "survival"],
+    },
     "government": {
         "code": "government",
         "label": "Government & public sector",

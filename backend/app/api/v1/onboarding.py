@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from app.api.v1.deps import DB, CurrentUser
 from app.services.auth.user_profile import user_has_professional_program
 from app.services.onboarding.audience import AudienceError, normalize_audience
+from app.services.onboarding.audience_journey import resolve_audience_context
 from app.services.onboarding.audience_presets import get_audience_preset, list_audience_presets
 from app.services.onboarding.audience_storage import set_user_planting_audience
 from app.services.planting_programs.enrollment import list_user_program_codes
@@ -38,6 +39,11 @@ class AudienceSelectIn(BaseModel):
 
 class AudienceSelectOut(BaseModel):
     audience: str
+
+
+@router.get("/audience-context")
+async def audience_context(user: CurrentUser, db: DB) -> dict:
+    return await resolve_audience_context(db, user)
 
 
 @router.get("/audience-presets", response_model=AudiencePresetListOut)

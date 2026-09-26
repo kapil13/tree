@@ -38,6 +38,7 @@ import {
   type OrgFeatureFlagKey,
 } from "@/lib/use-org-feature-flags";
 import { useOfflineTreeQueue } from "@/lib/offline/use-offline-queue";
+import { programNavBoosters } from "@/lib/program-nav";
 import { cn } from "@/lib/cn";
 
 export type NavItem = {
@@ -513,6 +514,19 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     items: filterNavTree(group.items, user, flags),
   })).filter((group) => group.items.length > 0);
 
+  const visibleHrefs = new Set<string>();
+  for (const group of groups) {
+    for (const item of group.items) {
+      visibleHrefs.add(item.href.split("?")[0]);
+      for (const child of item.children ?? []) {
+        visibleHrefs.add(child.href.split("?")[0]);
+      }
+    }
+  }
+  const programShortcuts = programNavBoosters(user).filter(
+    (item) => !visibleHrefs.has(item.href.split("?")[0]),
+  );
+
   if (adminItems.length) {
     groups.push({ id: "admin", labelKey: "platformAdmin", hideHeader: true, items: adminItems });
   }
@@ -564,6 +578,29 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         </div>
       ))}
+      {programShortcuts.length > 0 ? (
+        <div className="pt-3">
+          <p className="mb-2 px-3 text-xs font-semibold text-stone-700 dark:text-stone-200">
+            Program shortcuts
+          </p>
+          <div className="space-y-0.5">
+            {programShortcuts.map((shortcut) => (
+              <Link
+                key={shortcut.href}
+                href={shortcut.href}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-900",
+                  path === shortcut.href.split("?")[0] && "bg-forest-50 text-forest-800",
+                )}
+              >
+                <FileText className="h-4 w-4 shrink-0 opacity-70" />
+                <span className="truncate">{shortcut.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </nav>
   );
 }

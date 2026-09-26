@@ -26,6 +26,7 @@ import {
   type SchemeRefField,
 } from "@/components/projects/scheme-refs-fields";
 import {
+  audienceOnboarding,
   centralSchemes,
   errorMessage,
   plantingProjects,
@@ -106,6 +107,14 @@ export default function NewProjectPage() {
   const [createdProject, setCreatedProject] = useState<PlantingProject | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audienceApplied, setAudienceApplied] = useState(false);
+
+  const { data: audienceContext } = useQuery({
+    queryKey: ["audience-context", user?.id],
+    queryFn: () => audienceOnboarding.context(),
+    enabled: Boolean(user) && plantingAudience !== "general",
+    staleTime: 120_000,
+  });
 
   const { data: schemes = [], isLoading: schemesLoading } = useQuery({
     queryKey: ["central-schemes", showAllSchemes ? "all" : plantingAudience, location.state_code],
@@ -212,6 +221,22 @@ export default function NewProjectPage() {
     setTemplateCode(scheme.default_template_code ?? "");
     setShowAdvanced(false);
   }
+
+  useEffect(() => {
+    if (audienceApplied || plantingAudience === "general" || schemesLoading) return;
+    const recommended = audienceContext?.default_project?.scheme_code;
+    if (!recommended) return;
+    const match = schemes.find((scheme) => scheme.code === recommended);
+    if (!match) return;
+    applyScheme(match);
+    setAudienceApplied(true);
+  }, [
+    audienceApplied,
+    audienceContext?.default_project?.scheme_code,
+    plantingAudience,
+    schemes,
+    schemesLoading,
+  ]);
 
   function applyFlex(code: FlexProjectCode) {
     const flex = FLEX_PROJECT_OPTIONS.find((item) => item.code === code);
