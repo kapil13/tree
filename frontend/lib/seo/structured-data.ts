@@ -34,7 +34,10 @@ export function canonicalPath(path: string): string {
 }
 
 export function absoluteUrl(path: string): string {
-  return `${SITE_URL}${canonicalPath(path)}`;
+  const canonical = canonicalPath(path);
+  // Same form as canonical metadata and the sitemap: the site root is
+  // https://aranyix.tech with no trailing slash.
+  return canonical === "/" ? SITE_URL : `${SITE_URL}${canonical}`;
 }
 
 /**
