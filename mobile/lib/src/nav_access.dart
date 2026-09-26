@@ -1,7 +1,7 @@
 /// Role-based navigation helpers mirroring frontend/lib/nav-access.ts
 library;
 
-import 'rbac_policy.dart' show fieldWorkerRoles, professionalRoles;
+import 'rbac_policy.dart' show fieldWorkerRoles, professionalRoles, verifierRoles;
 
 typedef UserMap = Map<String, dynamic>;
 
@@ -18,6 +18,13 @@ bool isOrgAdmin(UserMap? user) {
 
 bool isOrgViewer(UserMap? user) {
   return user?['org_role'] == 'viewer';
+}
+
+bool isVerifier(UserMap? user) {
+  if (user == null) return false;
+  if (user['role'] == 'admin') return true;
+  final role = user['role'] as String?;
+  return (role != null && verifierRoles.contains(role)) || user['org_role'] == 'verifier';
 }
 
 bool canWriteInApp(UserMap? user) {
@@ -65,6 +72,7 @@ bool canSeeNavItem(
       'professional' => professional,
       'field_worker' => fieldWorker || supervisor || professional,
       'field_supervisor' => supervisor || professional,
+      'verifier' => isVerifier(user),
       'org_admin' => orgAdmin || user['role'] == 'admin',
       'can_write' => canWriteInApp(user),
       _ => true,

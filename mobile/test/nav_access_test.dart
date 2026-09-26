@@ -99,7 +99,8 @@ void main() {
 
   test('invite landing routes by org role', () {
     expect(inviteLandingRoute('worker'), '/projects');
-    expect(inviteLandingRoute('viewer'), '/trees');
+    expect(inviteLandingRoute('viewer'), '/reports');
+    expect(inviteLandingRoute('verifier'), '/projects');
   });
 
   test('map draw route requires write access', () {

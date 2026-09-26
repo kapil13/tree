@@ -2195,6 +2195,8 @@
     "sampleCompleteTitle": "नमूना पूर्ण",
     "sampleCompleteDescription": "इस नमूने के सभी पेड़ प्रमाणित हो गए हैं।",
     "pendingAttestation": "लंबित प्रमाणन",
+    "notesLabel": "प्रमाणन नोट्स (वैकल्पिक)",
+    "notesPlaceholder": "क्षेत्र की स्थिति, माप संबंधी चिंता या अस्वीकृति का कारण दर्ज करें…",
     "approve": "स्वीकृत",
     "reject": "अस्वीकृत"
   },

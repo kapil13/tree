@@ -27,8 +27,9 @@ def test_rbac_policy_copies_match_canonical() -> None:
 
 
 def test_backend_rbac_policy_loader() -> None:
-    from app.core.rbac_policy import field_worker_roles, professional_roles
+    from app.core.rbac_policy import field_worker_roles, professional_roles, verifier_roles
 
     policy = _load(CANONICAL)
     assert professional_roles() == frozenset(policy["professional_roles"])
     assert field_worker_roles() == frozenset(policy["field_worker_roles"])
+    assert verifier_roles() == frozenset(policy["verifier_roles"])

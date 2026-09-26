@@ -144,7 +144,7 @@ const NAV_GROUPS: NavGroup[] = [
         href: "/verification",
         labelKey: "verification",
         icon: ShieldCheck,
-        audience: ["professional", "field_supervisor"],
+        audience: "verifier",
       },
     ],
   },

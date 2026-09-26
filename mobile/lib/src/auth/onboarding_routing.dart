@@ -4,13 +4,20 @@ String? onboardingRedirectPath(Map<String, dynamic>? user) {
   if (user == null) return null;
   switch (user['onboarding_status'] as String?) {
     case 'profile_required':
+      if (user['audience_onboarding_required'] == true) {
+        return '/onboarding/audience';
+      }
       return '/onboarding/org-profile';
     case 'pending_approval':
     case 'rejected':
       return '/onboarding/pending';
     default:
-      return null;
+      break;
   }
+  if (user['audience_onboarding_required'] == true) {
+    return '/onboarding/audience';
+  }
+  return null;
 }
 
 /// First meaningful action for new BYOT citizens after signup.

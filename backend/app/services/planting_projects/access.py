@@ -6,13 +6,17 @@ import uuid
 
 from sqlalchemy import or_, select
 
-from app.core.security import user_can_write
+from app.core.security import Permission, has_permission, user_can_write
 from app.models.plantation_fence import PlantationFence
 from app.models.planting_project import PlantingProject
 from app.models.project_member import ProjectMember
 
 FIELD_ROLES = frozenset({"field_supervisor", "field_worker"})
 PROJECT_MANAGE_ROLES = frozenset({"field_supervisor"})
+PROJECT_VERIFIER_ROLE = "project_verifier"
+PROJECT_VIEWER_ROLE = "project_viewer"
+PROJECT_ATTEST_ROLES = frozenset({PROJECT_VERIFIER_ROLE})
+PROJECT_READ_ONLY_ROLES = frozenset({PROJECT_VIEWER_ROLE})
 
 
 async def get_project_membership(user, project_id: uuid.UUID, db) -> ProjectMember | None:
@@ -50,7 +54,25 @@ async def can_manage_project(user, project: PlantingProject, db) -> bool:
     if _is_org_member(user, project) and user.role in ("government", "corporate", "admin"):
         return True
     membership = await get_project_membership(user, project.id, db)
-    return membership is not None and membership.role in PROJECT_MANAGE_ROLES
+    if membership is None:
+        return False
+    return membership.role in PROJECT_MANAGE_ROLES
+
+
+async def can_attest_project(user, project: PlantingProject, db) -> bool:
+    if not await can_access_project(user, project, db):
+        return False
+    if has_permission(user.role, Permission.ADMIN_ALL):
+        return True
+    if has_permission(user.role, Permission.MEASUREMENT_ATTEST):
+        return True
+    membership = await get_project_membership(user, project.id, db)
+    return membership is not None and membership.role in PROJECT_ATTEST_ROLES
+
+
+async def is_project_read_only_member(user, project: PlantingProject, db) -> bool:
+    membership = await get_project_membership(user, project.id, db)
+    return membership is not None and membership.role in PROJECT_READ_ONLY_ROLES
 
 
 def can_access_work_area(user, fence: PlantationFence, membership: ProjectMember | None) -> bool:

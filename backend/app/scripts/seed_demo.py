@@ -25,6 +25,7 @@ from app.services.planting_programs.enrollment import get_program_by_code, set_u
 
 DEMO_EMAIL = "demo@byot.earth"
 DEMO_VIEWER_EMAIL = "viewer@byot.earth"
+DEMO_VERIFIER_EMAIL = "verifier@byot.earth"
 DEMO_MANAGER_EMAIL = "manager@byot.earth"
 DEMO_PASSWORD = "byotdemo1234!"
 
@@ -139,6 +140,42 @@ async def _ensure_demo_viewer(db, org: Organization) -> User:
         user.role = "government"
         user.organization_id = org.id
         user.org_role = "viewer"
+        user.is_org_admin = False
+        user.is_active = True
+        user.is_verified = True
+
+    gov = await get_program_by_code(db, "government_nhai")
+    if gov is not None:
+        await set_user_programs(db, user.id, [default_program_code(), gov.code])
+
+    return user
+
+
+async def _ensure_demo_verifier(db, org: Organization) -> User:
+    """Independent verifier for measurement attestation demos."""
+    user = (
+        await db.execute(select(User).where(User.email == DEMO_VERIFIER_EMAIL))
+    ).scalar_one_or_none()
+    if user is None:
+        user = User(
+            email=DEMO_VERIFIER_EMAIL,
+            full_name="Demo Verifier",
+            hashed_password=hash_password(DEMO_PASSWORD),
+            role="verifier",
+            organization_id=org.id,
+            org_role="verifier",
+            is_org_admin=False,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        await db.flush()
+    else:
+        user.full_name = "Demo Verifier"
+        user.hashed_password = hash_password(DEMO_PASSWORD)
+        user.role = "verifier"
+        user.organization_id = org.id
+        user.org_role = "verifier"
         user.is_org_admin = False
         user.is_active = True
         user.is_verified = True
@@ -414,6 +451,7 @@ async def seed() -> None:
         citizen = await _ensure_demo_user(db)
         manager = await _ensure_demo_manager(db, org)
         await _ensure_demo_viewer(db, org)
+        await _ensure_demo_verifier(db, org)
 
         stats = await _rebalance_demo_portfolios(db, citizen=citizen, manager=manager, org=org)
         scheme_stats = await _ensure_demo_scheme_projects(db, org=org, manager=manager)
@@ -424,6 +462,7 @@ async def seed() -> None:
             f"  Citizen (personal BYOT): {DEMO_EMAIL} -> {stats['citizen_personal']} trees\n"
             f"  Org admin (NHAI portfolio): {DEMO_MANAGER_EMAIL} -> {stats['org_portfolio']} trees\n"
             f"  Viewer (read-only org): {DEMO_VIEWER_EMAIL}\n"
+            f"  Verifier (attest only): {DEMO_VERIFIER_EMAIL}\n"
             f"  Scheme demo projects created: {scheme_stats['created']} "
             f"(existing {scheme_stats['existing']})\n"
             f"  Rebalance: detached {stats['citizen_detached_from_org']} citizen trees from org, "

@@ -23,6 +23,8 @@ export function inviteLandingPath(orgRole: string | null | undefined): string {
       return "/projects";
     case "viewer":
       return "/reports";
+    case "verifier":
+      return "/verification";
     default:
       return "/dashboard";
   }

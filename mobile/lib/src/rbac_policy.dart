@@ -10,4 +10,6 @@ const professionalRoles = <String>{
 
 const fieldWorkerRoles = <String>{'field_worker'};
 
+const verifierRoles = <String>{'verifier'};
+
 const platformAdminRole = 'admin';

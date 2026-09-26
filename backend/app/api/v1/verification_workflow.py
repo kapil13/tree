@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app.api.v1.deps import DB, CurrentUser, WriteAccess
 from app.core.security import Permission, Role, has_permission
 from app.models.planting_project import PlantingProject
+from app.models.project_member import ProjectMember
 from app.models.tree import Tree
 from app.models.verification_workflow import VerificationItem, VerificationSample
 from app.schemas.verification_workflow import (
@@ -20,6 +21,8 @@ from app.schemas.verification_workflow import (
 )
 from app.services.audit import record_audit
 from app.services.planting_projects.access import (
+    PROJECT_VERIFIER_ROLE,
+    can_attest_project,
     can_manage_project,
     load_project,
     project_list_filter,
@@ -42,10 +45,30 @@ async def _require_supervisor_or_admin(user: CurrentUser) -> None:
     raise HTTPException(status.HTTP_403_FORBIDDEN, detail="supervisor_required")
 
 
-async def _require_verifier(user: CurrentUser) -> None:
+async def _can_list_verification_samples(user: CurrentUser, db: DB) -> bool:
+    if has_permission(user.role, Permission.ADMIN_ALL):
+        return True
+    if has_permission(user.role, Permission.MEASUREMENT_ATTEST):
+        return True
+    row = (
+        await db.execute(
+            select(ProjectMember.id)
+            .where(
+                ProjectMember.user_id == user.id,
+                ProjectMember.role == PROJECT_VERIFIER_ROLE,
+            )
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    return row is not None
+
+
+async def _require_verifier(user: CurrentUser, db: DB, project: PlantingProject | None = None) -> None:
     if has_permission(user.role, Permission.ADMIN_ALL):
         return
     if has_permission(user.role, Permission.MEASUREMENT_ATTEST):
+        return
+    if project is not None and await can_attest_project(user, project, db):
         return
     raise HTTPException(status.HTTP_403_FORBIDDEN, detail="verifier_required")
 
@@ -57,7 +80,8 @@ async def list_verification_samples(
     project_id: uuid.UUID | None = None,
     pending_only: bool = False,
 ) -> list[dict]:
-    await _require_verifier(user)
+    if not await _can_list_verification_samples(user, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="verifier_required")
     stmt = (
         select(VerificationSample, PlantingProject.name, PlantingProject.code)
         .join(PlantingProject, PlantingProject.id == VerificationSample.project_id)
@@ -166,10 +190,13 @@ async def attest_sample_item(
     user: CurrentUser,
     db: DB,
 ) -> dict:
-    await _require_verifier(user)
     sample = await db.get(VerificationSample, sample_id)
     if sample is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="sample_not_found")
+    project = await load_project(sample.project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    await _require_verifier(user, db, project)
     item = (
         await db.execute(
             select(VerificationItem).where(

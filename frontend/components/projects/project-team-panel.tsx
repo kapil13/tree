@@ -17,7 +17,9 @@ export function ProjectTeamPanel({
 }) {
   const qc = useQueryClient();
   const [userId, setUserId] = useState("");
-  const [role, setRole] = useState<"field_supervisor" | "field_worker">("field_worker");
+  const [role, setRole] = useState<
+    "field_supervisor" | "field_worker" | "project_verifier" | "project_viewer"
+  >("field_worker");
   const [contractorName, setContractorName] = useState("");
   const [workAreaIds, setWorkAreaIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -96,6 +98,8 @@ export function ProjectTeamPanel({
             >
               <option value="field_supervisor">Field supervisor</option>
               <option value="field_worker">Field worker</option>
+              <option value="project_verifier">Project verifier (attest only)</option>
+              <option value="project_viewer">Project viewer (read-only)</option>
             </select>
           </div>
           <div className="sm:col-span-2">

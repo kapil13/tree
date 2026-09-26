@@ -21,3 +21,7 @@ def professional_roles() -> frozenset[str]:
 
 def field_worker_roles() -> frozenset[str]:
     return frozenset(load_rbac_policy()["field_worker_roles"])
+
+
+def verifier_roles() -> frozenset[str]:
+    return frozenset(load_rbac_policy().get("verifier_roles", []))

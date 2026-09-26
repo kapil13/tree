@@ -24,6 +24,26 @@ void main() {
       );
     });
 
+    test('audience onboarding required before org profile', () {
+      expect(
+        onboardingRedirectPath({
+          'onboarding_status': 'profile_required',
+          'audience_onboarding_required': true,
+        }),
+        '/onboarding/audience',
+      );
+    });
+
+    test('audience onboarding gates established users without audience', () {
+      expect(
+        onboardingRedirectPath({
+          'onboarding_status': 'active',
+          'audience_onboarding_required': true,
+        }),
+        '/onboarding/audience',
+      );
+    });
+
     test('BYOT post-signup lands on register tree when no programs', () {
       expect(
         postSignupLandingRoute({'onboarding_status': 'active_byot', 'enrolled_program_codes': []}),
