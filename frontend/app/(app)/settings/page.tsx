@@ -1,18 +1,99 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/settings/language-switcher";
+import { OrgCreditsSummaryPanel } from "@/components/settings/org-credits-summary-panel";
+import { AiScanUsagePanel } from "@/components/settings/ai-scan-usage-panel";
+import { SettingsSection } from "@/components/settings/settings-section";
 import { useAuth } from "@/lib/auth-store";
+import { useRoleLabels } from "@/lib/use-role-labels";
 
-export default function SettingsPage() {
+export default function SettingsGeneralPage() {
   const { user } = useAuth();
+  const ts = useTranslations("settings");
+  const { formatOrgRole, formatPlatformRole } = useRoleLabels();
+  const roleLabel = user?.org_role
+    ? formatOrgRole(user.org_role)
+    : formatPlatformRole(user?.role);
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Settings</h1>
-      <div className="card space-y-2">
-        <div className="text-sm text-stone-600">Profile</div>
-        <pre className="overflow-x-auto rounded bg-stone-900/80 p-3 text-xs text-stone-100">
-{JSON.stringify(user, null, 2)}
-        </pre>
-      </div>
+    <div className="space-y-8">
+      <SettingsSection title={ts("account")}>
+        <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-600 text-lg font-semibold text-white">
+              {(user?.full_name || "U").slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-stone-900 dark:text-stone-50">{user?.full_name}</p>
+              <p className="truncate text-sm text-stone-500">{user?.email}</p>
+              {(user?.city || user?.state) && (
+                <p className="truncate text-xs text-stone-500">
+                  {[user.city, user.state].filter(Boolean).join(", ")}
+                </p>
+              )}
+            </div>
+            <span className="ml-auto shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+              {roleLabel}
+            </span>
+          </div>
+          <Link
+            href="/settings/profile"
+            className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+          >
+            <div>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("editProfile")}</p>
+              <p className="text-sm text-stone-500">{ts("editProfileHint")}</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+          </Link>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={ts("languagePreference")} description={ts("languageHint")}>
+        <div className="card">
+          <LanguageSwitcher />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={ts("aiScansBilling")} description={ts("aiScansBillingHint")}>
+        <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
+          <div className="px-5 py-4">
+            <AiScanUsagePanel />
+          </div>
+          <Link
+            href="/settings/billing"
+            className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+          >
+            <div>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("billingScanPacks")}</p>
+              <p className="text-sm text-stone-500">{ts("billingScanPacksHint")}</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+          </Link>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={ts("carbonSection")} description={ts("carbonSectionHint")}>
+        <div className="card divide-y divide-stone-200 p-0 dark:divide-stone-800">
+          <Link
+            href="/settings/carbon"
+            className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50"
+          >
+            <div>
+              <p className="font-medium text-stone-900 dark:text-stone-50">{ts("carbonCalculator")}</p>
+              <p className="text-sm text-stone-500">{ts("carbonCalculatorHint")}</p>
+            </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+          </Link>
+          <div className="px-5 py-4">
+            <p className="mb-3 text-sm font-medium text-stone-800 dark:text-stone-200">{ts("orgCredits")}</p>
+            <OrgCreditsSummaryPanel />
+          </div>
+        </div>
+      </SettingsSection>
     </div>
   );
 }

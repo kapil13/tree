@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aranyix — Command Center</title>
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/command-center.css" />
+</head>
+<body>
+  <div id="loading" class="loading"><div class="loading-bar"></div></div>
+
+  <div class="shell">
+    <nav class="rail" id="rail" aria-label="Navigation"></nav>
+
+    <div class="canvas">
+      <header class="header">
+        <div class="header-left">
+          <span class="brand">Aranyix</span>
+          <span class="header-sep"></span>
+          <span class="header-title">Command Center</span>
+          <select id="filter-project" class="filter" aria-label="Project"><option value="all">All Projects</option></select>
+          <select id="filter-scheme" class="filter" aria-label="Programme"><option value="all">All programmes</option></select>
+          <select id="filter-time" class="filter" aria-label="Time">
+            <option value="7d">7D</option>
+            <option value="30d" selected>30D</option>
+            <option value="90d">90D</option>
+          </select>
+          <span class="live-dot">Live · <span id="live-updated">2m</span></span>
+        </div>
+        <div class="header-right">
+          <button type="button" class="notif" id="btn-alerts" aria-label="Alerts">🔔<span class="count" id="alert-badge">6</span></button>
+          <div class="avatar" id="avatar">PS</div>
+        </div>
+      </header>
+
+      <main id="main">
+        <!-- HERO: portfolio state + dominant map -->
+        <section class="hero">
+          <aside class="state-col" aria-label="Portfolio state">
+            <div>
+              <div class="state-score">
+                <span class="num" id="integrity-score">76</span>
+                <span class="delta down" id="integrity-delta">↓3</span>
+              </div>
+              <div class="state-label">Forest Integrity</div>
+            </div>
+
+            <div class="primary-signal" id="primary-signal">
+              <span class="tag">Primary signal</span>
+              <span id="primary-signal-text">KM-48 · NDVI ↓12%</span>
+            </div>
+
+            <div class="cascade" id="cascade" aria-label="Signal cascade"></div>
+
+            <div class="state-metrics">
+              <div class="state-metric"><span class="lbl">Trees</span><span class="val" id="metric-trees">14,237</span></div>
+              <div class="state-metric"><span class="lbl">Attention</span><span class="val warn" id="metric-attention">18</span></div>
+              <div class="state-metric"><span class="lbl">Alerts</span><span class="val crit" id="metric-alerts">6</span></div>
+              <div class="state-metric"><span class="lbl">Compliance</span><span class="val" id="metric-compliance">82%</span></div>
+            </div>
+          </aside>
+
+          <div class="map-stage" id="map-stage" aria-label="Live forest map">
+            <div class="map-layers" id="map-layers">
+              <button type="button" class="layer-btn on" data-layer="health">Health</button>
+              <button type="button" class="layer-btn on" data-layer="ndvi">NDVI</button>
+              <button type="button" class="layer-btn on" data-layer="alerts">Alerts</button>
+              <button type="button" class="layer-btn on" data-layer="satellite">Satellite</button>
+              <button type="button" class="layer-btn on" data-layer="bio">Bio</button>
+              <button type="button" class="layer-btn on" data-layer="field">Field</button>
+            </div>
+            <div class="map-content" id="map-content">
+              <div class="map-density" id="map-density"></div>
+              <div id="map-heats"></div>
+              <div class="map-corridor" id="map-corridor"></div>
+              <div id="map-zones"></div>
+              <div id="map-pins"></div>
+            </div>
+            <div class="map-legend" id="map-legend">
+              <strong id="legend-title">Portfolio overview</strong>
+              <span class="meta" id="legend-meta">Select a zone to focus intelligence</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Live visual signals -->
+        <section class="signal-ribbon" id="signal-ribbon" aria-label="Live signals"></section>
+
+        <!-- SAR + Threat inline -->
+        <div class="sar-inline" id="sar-inline"></div>
+        <div class="threat-inline" id="threat-inline"></div>
+
+        <!-- Analytical trends + Priority -->
+        <section class="analysis">
+          <div class="trends-canvas" id="trends-canvas">
+            <div class="chart-block" data-chart="ndvi">
+              <div class="chart-head"><span class="title">NDVI</span><span><span class="value down" id="ndvi-val">0.58</span><span class="target" id="ndvi-baseline">baseline 0.68</span></span></div>
+              <svg id="chart-ndvi" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span id="ndvi-anomaly" class="anomaly">Anomaly: Ch. 142–148</span></div>
+            </div>
+            <div class="chart-block" data-chart="integrity">
+              <div class="chart-head"><span class="title">Forest Integrity</span><span class="value" id="integrity-val">76</span></div>
+              <svg id="chart-integrity" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span id="integrity-meta">SAR composite · 78 avg</span></div>
+            </div>
+            <div class="chart-block" data-chart="carbon">
+              <div class="chart-head"><span class="title">Carbon</span><span><span class="value" id="carbon-val">284.5</span><span class="target">target 310 t</span></span></div>
+              <svg id="chart-carbon-inline" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span id="carbon-meta">On track · +1.8%</span></div>
+            </div>
+            <div class="chart-block" data-chart="survival">
+              <div class="chart-head"><span class="title">Survival</span><span class="value down" id="survival-val">88%</span></div>
+              <svg id="chart-survival" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span>16 surveys due</span></div>
+            </div>
+            <div class="chart-block" data-chart="satellite">
+              <div class="chart-head"><span class="title">Satellite Freshness</span><span class="value warn" id="sat-val">71%</span></div>
+              <svg id="chart-satellite" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span class="anomaly">5 sites stale</span></div>
+            </div>
+            <div class="chart-block" data-chart="bio">
+              <div class="chart-head"><span class="title">Bioacoustic Activity</span><span class="value" id="bio-val">82%</span></div>
+              <svg id="chart-bio" class="chart-svg" viewBox="0 0 400 120"></svg>
+              <div class="chart-meta"><span id="bio-meta">34 species · 2 threatened</span></div>
+            </div>
+          </div>
+
+          <aside class="priority-canvas" aria-label="Priority intelligence">
+            <div class="priority-head">Priority / Action</div>
+            <div id="priority-stack"></div>
+            <button type="button" class="action-primary" id="btn-action">Inspect KM-48</button>
+          </aside>
+        </section>
+
+        <!-- Operations band -->
+        <section class="ops-band">
+          <div class="ops-zone carbon-zone">
+            <div class="zone-label">Carbon Trajectory</div>
+            <div>
+              <span class="carbon-val" id="carbon-big">284.5</span>
+              <span class="carbon-target">tCO₂e · target <strong id="carbon-target">310</strong></span>
+              <span class="carbon-track on" id="carbon-track">ON TRACK</span>
+            </div>
+            <svg id="chart-carbon-full" class="carbon-chart" viewBox="0 0 360 80"></svg>
+          </div>
+
+          <div class="ops-zone">
+            <div class="zone-label">Biodiversity</div>
+            <div class="bio-visual">
+              <div class="bio-big"><span id="bio-species">34</span> <span>species</span></div>
+              <div class="bio-stats">
+                <div class="bio-stat" id="bio-obs">+2 observations</div>
+                <div class="bio-stat warn" id="bio-threat">2 threatened</div>
+                <div class="bio-stat" id="bio-chorus">Chorus 82%</div>
+              </div>
+            </div>
+            <svg id="chart-bio-bar" class="bio-chart" viewBox="0 0 280 60"></svg>
+          </div>
+
+          <div class="ops-zone">
+            <div class="zone-label">Evidence / MRV</div>
+            <div class="mrv-flow" id="mrv-flow"></div>
+            <div class="mrv-bar" id="mrv-bar"></div>
+            <div class="mrv-issues">
+              <span class="gap" id="mrv-gaps">5 gaps</span>
+              <span class="block" id="mrv-blocked">1 blocker</span>
+            </div>
+          </div>
+
+          <div class="ops-zone">
+            <div class="zone-label">Live Activity</div>
+            <div class="activity-stream" id="activity-stream"></div>
+          </div>
+        </section>
+
+        <!-- Project performance -->
+        <section class="ops-zone" style="border-top:1px solid var(--border);padding:16px 20px">
+          <div class="zone-label">Project / Programme Performance</div>
+          <div class="proj-perf" id="proj-perf"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="chart-tip" class="chart-tip" hidden></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

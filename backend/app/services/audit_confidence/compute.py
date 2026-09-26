@@ -1,0 +1,290 @@
+"""Compute and persist plantation confidence assessments."""
+
+from __future__ import annotations
+
+import uuid
+from datetime import UTC, datetime
+from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.audit_confidence import AuditConfidenceAssessment
+from app.models.audit_engagement import (
+    AuditEngagement,
+    BoundaryVersion,
+    GisValidationRun,
+    PlausibilityAssessment,
+)
+from app.models.audit_satellite import AuditSatelliteBaseline, AuditTemporalObservation
+from app.models.plantation_satellite_record import PlantationSatelliteRecord
+from app.services.audit_confidence.field_signals import field_signals_by_boundary
+from app.services.audit_confidence.fusion import fuse_block_confidence
+from app.services.satellite.sar_service import is_sar_provider_record
+
+
+async def _latest_gis_run(db: AsyncSession, engagement_id: uuid.UUID) -> GisValidationRun | None:
+    row = await db.execute(
+        select(GisValidationRun)
+        .where(GisValidationRun.engagement_id == engagement_id)
+        .order_by(GisValidationRun.run_at.desc())
+        .limit(1)
+    )
+    return row.scalar_one_or_none()
+
+
+def _gis_issues_for_block(
+    gis_run: GisValidationRun | None, boundary_id: uuid.UUID
+) -> list[dict[str, Any]]:
+    if gis_run is None:
+        return []
+    issues = gis_run.issues or []
+    bid = str(boundary_id)
+    return [
+        i
+        for i in issues
+        if bid in str(i.get("boundary_id", ""))
+        or bid in [str(x) for x in i.get("boundary_ids", [])]
+    ]
+
+
+async def _sar_integrity_score(
+    db: AsyncSession, fence_id: uuid.UUID | None
+) -> float | None:
+    if fence_id is None:
+        return None
+    rows = (
+        await db.execute(
+            select(PlantationSatelliteRecord)
+            .where(PlantationSatelliteRecord.fence_id == fence_id)
+            .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+            .limit(5)
+        )
+    ).scalars().all()
+    for rec in rows:
+        if not is_sar_provider_record(rec.provider):
+            continue
+        meta = rec.raw_metadata or {}
+        fusion = meta.get("fusion") or {}
+        score = fusion.get("forest_integrity_score")
+        if score is not None:
+            return float(score)
+    return None
+
+
+_INITIAL_STATUSES = {"analysis_ready", "confidence_mapped"}
+_FIELD_REFRESH_STATUSES = {
+    "confidence_mapped",
+    "risk_assessed",
+    "sampling_planned",
+    "field_verified",
+    "export_ready",
+}
+
+
+async def compute_confidence_map(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    *,
+    include_field_signals: bool = False,
+    created_by: uuid.UUID | None = None,
+) -> list[AuditConfidenceAssessment]:
+    from app.services.audit_cycles.run_wrapper import execute_audit_run
+    from app.services.audit_governance.engagement import (
+        require_mutable_cycle,
+        set_engagement_status,
+    )
+
+    cycle = await require_mutable_cycle(db, engagement)
+    allowed = _FIELD_REFRESH_STATUSES if include_field_signals else _INITIAL_STATUSES
+    if engagement.status not in allowed:
+        raise ValueError("analysis_not_ready" if not include_field_signals else "field_refresh_not_allowed")
+
+    async def _compute() -> list[AuditConfidenceAssessment]:
+        return await _compute_confidence_map_for_cycle(
+            db,
+            engagement,
+            cycle,
+            include_field_signals=include_field_signals,
+        )
+
+    results, _run = await execute_audit_run(
+        db,
+        cycle,
+        run_type="confidence_map",
+        created_by=created_by,
+        work=_compute,
+        parameters={"include_field_signals": include_field_signals},
+    )
+
+    if not include_field_signals:
+        await set_engagement_status(db, engagement, "confidence_mapped")
+    return results
+
+
+async def _compute_confidence_map_for_cycle(
+    db: AsyncSession,
+    engagement: AuditEngagement,
+    cycle,
+    *,
+    include_field_signals: bool,
+) -> list[AuditConfidenceAssessment]:
+    boundaries = (
+        await db.execute(
+            select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement.id)
+        )
+    ).scalars().all()
+    if not boundaries:
+        raise ValueError("no_boundaries")
+
+    plausibility_rows = (
+        await db.execute(
+            select(PlausibilityAssessment).where(
+                PlausibilityAssessment.engagement_id == engagement.id
+            )
+        )
+    ).scalars().all()
+    plausibility_map = {p.boundary_version_id: p for p in plausibility_rows}
+
+    baselines = (
+        await db.execute(
+            select(AuditSatelliteBaseline).where(
+                AuditSatelliteBaseline.cycle_id == cycle.id
+            )
+        )
+    ).scalars().all()
+    baseline_map = {b.boundary_version_id: b for b in baselines}
+
+    temporal_rows = (
+        await db.execute(
+            select(AuditTemporalObservation).where(
+                AuditTemporalObservation.cycle_id == cycle.id
+            )
+        )
+    ).scalars().all()
+    current_map: dict[uuid.UUID, AuditTemporalObservation] = {}
+    for obs in temporal_rows:
+        if obs.phase == "current":
+            current_map[obs.boundary_version_id] = obs
+
+    gis_run = await _latest_gis_run(db, engagement.id)
+    gis_status = gis_run.status if gis_run else None
+    field_by_boundary = (
+        await field_signals_by_boundary(db, engagement.id) if include_field_signals else {}
+    )
+
+    results: list[AuditConfidenceAssessment] = []
+    for bv in boundaries:
+        plaus = plausibility_map.get(bv.id)
+        baseline = baseline_map.get(bv.id)
+        current = current_map.get(bv.id)
+        sar_score = await _sar_integrity_score(db, bv.fence_id)
+        field_ctx = field_by_boundary.get(bv.id, {})
+
+        fused = fuse_block_confidence(
+            block_name=bv.name,
+            plausibility_verdict=plaus.verdict if plaus else None,
+            plausibility_signals=plaus.signals if plaus else None,
+            gis_status=gis_status,
+            gis_block_issues=_gis_issues_for_block(gis_run, bv.id),
+            t0_backfill_status=baseline.backfill_status if baseline else None,
+            t0_ndvi=float(baseline.t0_ndvi_mean) if baseline and baseline.t0_ndvi_mean else None,
+            current_ndvi=float(current.ndvi_mean) if current and current.ndvi_mean else None,
+            change_vs_t0=float(current.change_vs_t0) if current and current.change_vs_t0 else None,
+            sar_integrity_score=sar_score,
+            field_visit_count=int(field_ctx.get("visit_count") or 0),
+            field_grade=field_ctx.get("field_grade"),
+            field_signal=field_ctx.get("field_signal"),
+        )
+
+        existing = (
+            await db.execute(
+                select(AuditConfidenceAssessment).where(
+                    AuditConfidenceAssessment.cycle_id == cycle.id,
+                    AuditConfidenceAssessment.boundary_version_id == bv.id,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing:
+            row = existing
+        else:
+            row = AuditConfidenceAssessment(
+                engagement_id=engagement.id,
+                cycle_id=cycle.id,
+                boundary_version_id=bv.id,
+                fence_id=bv.fence_id,
+            )
+            db.add(row)
+
+        row.fence_id = bv.fence_id
+        row.confidence_grade = fused["confidence_grade"]
+        row.confidence_score = fused["confidence_score"]
+        row.epistemic_label = fused["epistemic_label"]
+        row.summary = fused["summary"]
+        row.signals = fused["signals"]
+        row.grid_cells = fused["grid_cells"]
+        row.computed_at = datetime.now(UTC)
+        results.append(row)
+
+    meta = dict(engagement.metadata_ or {})
+    if include_field_signals:
+        meta["confidence_refreshed_with_field_at"] = datetime.now(UTC).isoformat()
+    else:
+        meta["confidence_mapped_at"] = datetime.now(UTC).isoformat()
+    engagement.metadata_ = meta
+    await db.flush()
+    return results
+
+
+async def confidence_map_summary(
+    db: AsyncSession,
+    engagement_id: uuid.UUID,
+    *,
+    cycle_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
+    from app.services.audit_cycles.scope import resolve_read_cycle_id
+
+    scoped_cycle_id = await resolve_read_cycle_id(db, engagement_id, cycle_id=cycle_id)
+    assessment_filter = (
+        [AuditConfidenceAssessment.cycle_id == scoped_cycle_id]
+        if scoped_cycle_id
+        else [AuditConfidenceAssessment.engagement_id == engagement_id]
+    )
+    assessments = (
+        await db.execute(select(AuditConfidenceAssessment).where(*assessment_filter))
+    ).scalars().all()
+    boundaries = (
+        await db.execute(
+            select(BoundaryVersion).where(BoundaryVersion.engagement_id == engagement_id)
+        )
+    ).scalars().all()
+    name_map = {b.id: b.name for b in boundaries}
+
+    grade_counts = {"green": 0, "amber": 0, "red": 0, "grey": 0}
+    blocks: list[dict[str, Any]] = []
+    for a in assessments:
+        grade_counts[a.confidence_grade] = grade_counts.get(a.confidence_grade, 0) + 1
+        blocks.append(
+            {
+                "id": str(a.id),
+                "boundary_version_id": str(a.boundary_version_id),
+                "boundary_name": name_map.get(a.boundary_version_id),
+                "fence_id": str(a.fence_id) if a.fence_id else None,
+                "confidence_grade": a.confidence_grade,
+                "confidence_score": a.confidence_score,
+                "epistemic_label": a.epistemic_label,
+                "summary": a.summary,
+                "signals": a.signals or {},
+                "grid_cells": a.grid_cells or [],
+                "computed_at": a.computed_at.isoformat() if a.computed_at else None,
+            }
+        )
+
+    return {
+        "engagement_id": str(engagement_id),
+        "block_count": len(boundaries),
+        "assessed_count": len(assessments),
+        "grade_counts": grade_counts,
+        "blocks": blocks,
+    }

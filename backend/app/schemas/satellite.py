@@ -35,3 +35,4 @@ class SatelliteSeries(BaseModel):
     tree_id: uuid.UUID
     points: list[NDVIPoint]
     latest: SatelliteRecordOut | None
+    ndvi_image_url: str | None = None

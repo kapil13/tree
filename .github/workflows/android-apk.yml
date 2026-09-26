@@ -1,0 +1,145 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      byot_api:
+        description: "API URL baked into APK (production: https://api.aranyix.tech)"
+        required: false
+        default: "https://api.aranyix.tech"
+  push:
+    branches:
+      - main
+      - cursor/android-apk-workflow-main-f2ba
+      - cursor/android-apk-v110-beta-f2ba
+      - cursor/android-apk-build-f2ba
+      - cursor/mobile-full-app-apk-f2ba
+      - cursor/mobile-nav-redesign-f2ba
+    tags:
+      - "android-v*"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-apk.yml"
+
+jobs:
+  build-apk:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Android project present
+        run: |
+          if [ ! -f mobile/android/app/build.gradle.kts ]; then
+            echo "::error::mobile/android/ not found"
+            exit 1
+          fi
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Must match the Flutter version that generated mobile/android/ (AGP 9.x)
+          flutter-version: "3.44.8"
+          cache: true
+
+      - name: Accept Android SDK licenses
+        run: |
+          flutter --version
+          yes | flutter doctor --android-licenses || true
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "${ANDROID_KEYSTORE_BASE64}" ]; then
+            echo "No ANDROID_KEYSTORE_BASE64 secret — APK will use default release signing config."
+            exit 0
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > mobile/android/release.keystore
+          printf '%s\n' \
+            "storeFile=release.keystore" \
+            "storePassword=${ANDROID_STORE_PASSWORD}" \
+            "keyAlias=${ANDROID_KEY_ALIAS}" \
+            "keyPassword=${ANDROID_KEY_PASSWORD}" \
+            > mobile/android/keystore.properties
+          echo "Release signing configured from ANDROID_KEYSTORE_BASE64 secret."
+
+      - name: Configure Firebase (google-services.json)
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -z "${GOOGLE_SERVICES_JSON_BASE64}" ]; then
+            echo "No GOOGLE_SERVICES_JSON_BASE64 secret — FCM disabled for this build."
+            exit 0
+          fi
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > mobile/android/app/google-services.json
+          echo "google-services.json written from secret."
+
+      - name: Build release APK and Play Store AAB
+        working-directory: mobile
+        env:
+          BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          flutter pub get
+          flutter test
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          DART_DEFINES=(--dart-define="BYOT_API=${BYOT_API}")
+          if [ -n "${GOOGLE_SERVICES_JSON_BASE64}" ]; then
+            DART_DEFINES+=(--dart-define=BYOT_FCM_ENABLED=true)
+          fi
+          flutter build apk --release "${DART_DEFINES[@]}"
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "build/app/outputs/flutter-apk/aranyix-android-${VERSION}.apk"
+          flutter build appbundle --release "${DART_DEFINES[@]}"
+          cp build/app/outputs/bundle/release/app-release.aab \
+            "build/app/outputs/bundle/release/aranyix-android-${VERSION}.aab"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aranyix-android-apk
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-release.apk
+            mobile/build/app/outputs/flutter-apk/aranyix-android-*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aranyix-android-aab
+          path: |
+            mobile/build/app/outputs/bundle/release/app-release.aab
+            mobile/build/app/outputs/bundle/release/aranyix-android-*.aab
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Job summary
+        env:
+          BYOT_API: ${{ github.event.inputs.byot_api || 'https://api.aranyix.tech' }}
+        run: |
+          {
+            echo "### Aranyix Android APK + AAB built successfully"
+            echo ""
+            echo "1. Open this workflow run → **Artifacts** → download \`aranyix-android-apk\` or \`aranyix-android-aab\`"
+            echo "2. Install \`aranyix-android-*.apk\` (or \`app-release.apk\`) on your Android phone"
+            echo "3. Upload \`aranyix-android-*.aab\` to Google Play Console (internal testing or production)"
+            echo "4. API URL baked in: \`${BYOT_API}\`"
+            echo "5. Production API: https://api.aranyix.tech/health"
+            echo "6. Sign in with your org credentials (demo seed is for local dev only — see backend/app/scripts/seed_demo.py)"
+            echo "7. Release signing: requires \`ANDROID_KEYSTORE_BASE64\` + password secrets in repo settings"
+            echo "8. FCM push: requires \`GOOGLE_SERVICES_JSON_BASE64\` secret + \`BYOT_FCM_ENABLED=true\` at build time"
+          } >> "$GITHUB_STEP_SUMMARY"

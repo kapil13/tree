@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover
     redis_async = None  # type: ignore[assignment]
 
 from app.core.config import settings
+from app.core.production_guards import is_hardened_env
 
 _redis = None
 
@@ -32,8 +33,19 @@ def rate_limit(times: int, seconds: int):
             client = await _client()
         except Exception:
             client = None
+
         if client is None:
+            # Fail closed in staging/production so auth cannot be brute-forced without Redis.
+            if is_hardened_env():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "code": "rate_limit_unavailable",
+                        "message": "Rate limiting temporarily unavailable",
+                    },
+                )
             return
+
         ip = request.client.host if request.client else "anon"
         key = f"rl:{ip}:{request.url.path}:{int(time.time() // seconds)}"
         try:
@@ -41,7 +53,16 @@ def rate_limit(times: int, seconds: int):
             if count == 1:
                 await client.expire(key, seconds)
         except Exception:
+            if is_hardened_env():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "code": "rate_limit_unavailable",
+                        "message": "Rate limiting temporarily unavailable",
+                    },
+                ) from None
             return
+
         if count > times:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

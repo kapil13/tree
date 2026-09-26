@@ -1,68 +1,534 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_client.dart';
+import '../api/api_errors.dart';
+import '../auth/google_oauth.dart';
+import '../auth/login_remember.dart';
+import '../auth_session.dart';
+import '../pending_invite.dart';
 import '../providers.dart';
+import '../session.dart';
+import '../theme.dart';
+import '../widgets/auth_light_scope.dart';
+import '../widgets/auth_scaffold.dart';
+import '../widgets/mobile_auth_security.dart';
+import '../widgets/turnstile_captcha.dart';
+import '../auth/auth_messages.dart';
+import '../l10n/l10n_ext.dart';
+import 'auth_flow_screens.dart';
 
+enum _LoginMode { email, phone }
+
+/// Unified sign-in — email/password, phone OTP, Google, forgot password.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _email = TextEditingController(text: 'demo@byot.earth');
-  final _pwd = TextEditingController(text: 'byotdemo1234!');
+  _LoginMode _mode = _LoginMode.email;
+  final _email = TextEditingController();
+  final _pwd = TextEditingController();
+  final _apiUrl = TextEditingController();
+
   String? _err;
   bool _busy = false;
+  bool _loaded = false;
+  bool _inviteLoaded = false;
+  bool _showSessionExpiredBanner = false;
+  String? _invitePreview;
+  bool _rememberMe = true;
+  bool _obscurePassword = true;
 
-  Future<void> _submit() async {
+  bool _captchaEnabled = false;
+  bool _skipCaptchaForMobile = false;
+  String? _captchaSiteKey;
+  String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
+  bool get _needsCaptchaWidget => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_inviteLoaded) {
+      _inviteLoaded = true;
+      _loadInvitePreview();
+    }
+  }
+
+  Future<void> _prepareSession() async {
+    final sessionExpired =
+        GoRouterState.of(context).uri.queryParameters['session'] == 'expired';
+    if (sessionExpired) {
+      _showSessionExpiredBanner = true;
+    }
+    // Drop stale tokens so refresh failures do not block a fresh sign-in.
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession(sessionExpired: sessionExpired);
+    } catch (_) {
+      sessionController.signOut(sessionExpired: sessionExpired);
+    }
+    ref.invalidate(dashboardProvider);
+    ref.invalidate(treesProvider);
+    ref.invalidate(alertsProvider);
+    ref.invalidate(userProvider);
+    if (!mounted) return;
+    if (sessionExpired) {
+      setState(() {});
+      final uri = GoRouterState.of(context).uri;
+      if (uri.queryParameters.containsKey('session')) {
+        final params = Map<String, String>.from(uri.queryParameters);
+        params.remove('session');
+        final query = params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
+        context.replace('${uri.path}$query');
+      }
+    }
+  }
+
+  Future<void> _bootstrap() async {
+    await _prepareSession();
+    await Future.wait([_loadRemembered(), _loadApiUrl(), _loadCaptchaConfig()]);
+  }
+
+  Future<void> _loadRemembered() async {
+    final saved = await LoginRemember.load();
+    if (!mounted) return;
+    setState(() {
+      _rememberMe = saved.remember;
+      if (kDebugMode && saved.email.isEmpty) {
+        _email.text = 'demo@byot.earth';
+        _pwd.text = 'byotdemo1234!';
+      } else {
+        _email.text = saved.email;
+      }
+    });
+  }
+
+  Future<void> _loadCaptchaConfig() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final cfg = await api.captchaConfig();
+      if (!mounted) return;
+      setState(() {
+        _captchaEnabled = cfg['enabled'] == true;
+        _skipCaptchaForMobile = cfg['skip_for_mobile'] == true;
+        _captchaSiteKey = cfg['site_key'] as String?;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadApiUrl() async {
+    if (allowCustomApiBase) {
+      final url = await ApiClient.loadBaseUrl();
+      _apiUrl.text = url;
+    }
+    if (mounted) setState(() => _loaded = true);
+  }
+
+  Future<void> _loadInvitePreview() async {
+    final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+    if (inviteToken == null || inviteToken.isEmpty) return;
+    await storePendingInviteToken(inviteToken);
+    try {
+      final api = await ApiClient.create();
+      final preview = await api.previewOrgInvite(inviteToken);
+      if (mounted) {
+        setState(() {
+          _invitePreview =
+              'Invited to ${preview['organization_name']} as ${preview['org_role']}';
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _persistRememberChoice() async {
+    await LoginRemember.save(
+      remember: _rememberMe,
+      email: _email.text,
+    );
+  }
+
+  String? _postAuthNext() =>
+      GoRouterState.of(context).uri.queryParameters['next'];
+
+  Future<void> _submitEmail() async {
+    if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _err = humanizeAuthError('captcha_required'));
+      return;
+    }
     setState(() {
       _busy = true;
       _err = null;
     });
+    beginAuthExchange();
+    try {
+      if (allowCustomApiBase) {
+        try {
+          await ApiClient.saveBaseUrl(_apiUrl.text);
+        } on FormatException catch (e) {
+          setState(() => _err = e.message);
+          return;
+        }
+        ref.invalidate(apiClientProvider);
+      }
+      final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
+      final tokens = await api.login(
+        _email.text.trim(),
+        _pwd.text,
+        captchaToken: _captchaToken,
+      );
+      await api.setTokens(
+        accessToken: tokens['access_token'] as String,
+        refreshToken: tokens['refresh_token'] as String?,
+      );
+      await _persistRememberChoice();
+      if (!mounted) return;
+      final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+      final landing = await completeAuthSession(
+        ref,
+        inviteToken: inviteToken,
+        postAuthNext: _postAuthNext(),
+      );
+      if (!mounted) return;
+      context.go(landing);
+    } on InviteAcceptException catch (e) {
+      setState(() => _err = e.message);
+    } catch (e) {
+      setState(() {
+        _err = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
+    } finally {
+      endAuthExchange();
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _busy = true;
+      _err = null;
+    });
+    beginAuthExchange();
     try {
       final api = await ref.read(apiClientProvider.future);
-      final tokens = await api.login(_email.text.trim(), _pwd.text);
-      await api.setToken(tokens['access_token'] as String);
+      await api.clearLocalSession();
+      final auth = await api.googleAuthorize();
+      final url = auth['authorize_url'] as String;
       if (!mounted) return;
-      context.go('/home');
+      final tokens = await GoogleOAuthWebView.open(context, url);
+      if (tokens == null) return;
+      await api.setTokens(
+        accessToken: tokens['access_token']!,
+        refreshToken: tokens['refresh_token'],
+      );
+      if (!mounted) return;
+      final inviteToken = GoRouterState.of(context).uri.queryParameters['invite'];
+      final landing = await completeAuthSession(
+        ref,
+        inviteToken: inviteToken,
+        postAuthNext: _postAuthNext(),
+      );
+      if (!mounted) return;
+      context.go(landing);
     } catch (e) {
-      setState(() => _err = e.toString());
+      setState(() => _err = apiErrorMessage(e));
     } finally {
+      endAuthExchange();
       if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
+  void dispose() {
+    _email.dispose();
+    _pwd.dispose();
+    _apiUrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 48),
-              const Text('🌳', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 8),
-              const Text('BYOT', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const Text('Bring Your Own Tree'),
-              const SizedBox(height: 32),
-              TextField(controller: _email, decoration: const InputDecoration(labelText: 'Email')),
-              const SizedBox(height: 12),
-              TextField(controller: _pwd, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
-              const SizedBox(height: 16),
-              if (_err != null)
-                Text(_err!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _busy ? null : _submit,
-                child: Text(_busy ? 'Signing in…' : 'Sign in'),
-              ),
-            ],
-          ),
+    final sessionExpired = _showSessionExpiredBanner;
+    final l10n = context.l10n;
+    return AuthLightScope(
+      child: AuthScaffold(
+        compact: true,
+        title: l10n.welcomeBackTitle,
+        subtitle: l10n.welcomeBackSub,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _busy ? null : () => context.go('/welcome'),
         ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AuthOrDivider(),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _googleSignIn,
+              icon: const Icon(Icons.g_mobiledata, size: 28),
+              label: Text(l10n.continueWithGoogle),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _busy ? null : () => context.push('/signup'),
+              child: Text(l10n.createAccount),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (sessionExpired) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AranyixColors.warningContainer,
+                  borderRadius: BorderRadius.circular(AranyixRadii.chip),
+                  border: Border.all(color: const Color(0xFFFCD34D)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AranyixColors.warningOnContainer, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l10n.sessionExpiredBanner,
+                        style: const TextStyle(fontSize: 13, color: AranyixColors.warningOnContainer, height: 1.35),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (_invitePreview != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AranyixColors.forestLight,
+                  borderRadius: BorderRadius.circular(AranyixRadii.chip),
+                  border: Border.all(color: AranyixColors.forestMuted.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.mail_outline, color: AranyixColors.forest, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _invitePreview!,
+                        style: const TextStyle(fontSize: 14, color: AranyixColors.forestDark),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+            AuthModeTabs<_LoginMode>(
+              values: const [_LoginMode.email, _LoginMode.phone],
+              labels: [l10n.emailTab, l10n.phoneOtpTab],
+              selected: _mode,
+              onChanged: _busy ? (_) {} : (mode) => setState(() => _mode = mode),
+            ),
+            const SizedBox(height: 16),
+            if (_mode == _LoginMode.email) ...[
+              if (allowCustomApiBase) ...[
+                TextField(
+                  controller: _apiUrl,
+                  enabled: _loaded && !_busy,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'API server',
+                    hintText: 'https://api.aranyix.tech',
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Semantics(
+                label: l10n.emailLabel,
+                textField: true,
+                child: TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: l10n.emailLabel,
+                    prefixIcon: const Icon(Icons.mail_outline, size: 20),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Semantics(
+                label: l10n.passwordLabel,
+                textField: true,
+                child: TextField(
+                  controller: _pwd,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) {
+                    if (!_busy && _loaded) _submitEmail();
+                  },
+                  decoration: InputDecoration(
+                    labelText: l10n.passwordLabel,
+                  prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _busy
+                          ? null
+                          : () => setState(() => _rememberMe = !_rememberMe),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: _rememberMe,
+                                onChanged: _busy
+                                    ? null
+                                    : (v) => setState(() => _rememberMe = v ?? false),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.rememberMe,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AranyixColors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : () => context.push('/forgot-password'),
+                    child: Text(l10n.forgotPassword),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (_captchaEnabled && _skipCaptchaForMobile)
+                const MobileAuthSecurityNote()
+              else if (_needsCaptchaWidget && _captchaSiteKey != null) ...[
+                TurnstileCaptcha(
+                  key: _captchaKey,
+                  siteKey: _captchaSiteKey!,
+                  onToken: (token) => setState(() {
+                    _captchaToken = token;
+                    _err = null;
+                  }),
+                  onError: () => setState(() => _captchaToken = null),
+                  onExpired: () => setState(() => _captchaToken = null),
+                ),
+              ],
+              if (_err != null) ...[
+                const SizedBox(height: 10),
+                AuthErrorBanner(message: _err!),
+              ],
+              const SizedBox(height: 12),
+              Semantics(
+                button: true,
+                label: l10n.signIn,
+                child: FilledButton(
+                  onPressed: _busy || !_loaded ? null : _submitEmail,
+                  child: Text(_busy ? l10n.signingIn : l10n.signIn),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _LoginTrustChip(icon: Icons.gps_fixed, label: l10n.gpsVerified),
+                  _LoginTrustChip(icon: Icons.cloud_off, label: l10n.offlineSyncLabel),
+                ],
+              ),
+            ] else
+              PhoneOtpLoginPanel(
+                onSwitchToEmail: () => setState(() => _mode = _LoginMode.email),
+                captchaEnabled: _captchaEnabled,
+                skipCaptchaForMobile: _skipCaptchaForMobile,
+                captchaSiteKey: _captchaSiteKey,
+                captchaToken: _captchaToken,
+                onCaptchaToken: (token) => setState(() {
+                  _captchaToken = token;
+                  _err = null;
+                }),
+                onCaptchaError: () => setState(() => _captchaToken = null),
+                postAuthNext: _postAuthNext(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginTrustChip extends StatelessWidget {
+  const _LoginTrustChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AranyixColors.forestLight,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AranyixColors.forestMuted.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AranyixColors.forest),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AranyixColors.forestDark)),
+        ],
       ),
     );
   }

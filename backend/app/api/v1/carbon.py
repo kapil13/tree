@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteAccess
+from app.api.v1.trees import _get_owned_tree
 from app.models.carbon import CarbonCalculation
-from app.models.tree import Tree
 from app.schemas.carbon import CarbonEstimateRequest, CarbonEstimateResponse
+from app.services.audit import record_audit
 from app.services.carbon import CarbonInputs, estimate_carbon
 
 router = APIRouter(prefix="/carbon", tags=["carbon"])
@@ -31,63 +31,71 @@ async def estimate(payload: CarbonEstimateRequest) -> CarbonEstimateResponse:
             ecological_zone=payload.ecological_zone,
             price_usd_per_credit=payload.price_usd_per_credit,
             verification_tier=payload.verification_tier,
+            measurement_method=payload.measurement_method,
+            uncertainty_dbh_pct=payload.uncertainty_dbh_pct,
+            uncertainty_height_pct=payload.uncertainty_height_pct,
+            annual_mortality_pct=payload.annual_mortality_pct,
+            buffer_pct=payload.buffer_pct,
+            nprt_score=payload.nprt_score,
+            ex_post_verified=payload.ex_post_verified,
+            include_other_pools=payload.include_other_pools,
+            deadwood_ratio=payload.deadwood_ratio,
+            litter_ratio=payload.litter_ratio,
+            soc_tco2e_per_ha=payload.soc_tco2e_per_ha,
+            area_ha=payload.area_ha,
         )
     )
     return CarbonEstimateResponse(**res.__dict__)
 
 
 @router.post("/recalculate/{tree_id}", response_model=CarbonEstimateResponse)
-async def recalculate(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> CarbonEstimateResponse:
-    res = await db.execute(select(Tree).where(Tree.id == tree_id))
-    tree = res.scalar_one_or_none()
-    if tree is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
-        not user.organization_id or tree.organization_id != user.organization_id
-    ):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
+async def recalculate(
+    tree_id: uuid.UUID, request: Request, user: WriteAccess, db: DB
+) -> CarbonEstimateResponse:
+    from app.services.carbon.recalc_ops import recalculate_tree_carbon
 
-    age_years = None
-    if tree.planted_at:
-        age_years = (datetime.now(UTC).date() - tree.planted_at).days / 365.25
-
-    calc = estimate_carbon(
-        CarbonInputs(
-            species=tree.species_text or "Neem",
-            dbh_cm=float(tree.current_dbh_cm) if tree.current_dbh_cm else None,
-            height_m=float(tree.current_height_m) if tree.current_height_m else None,
-            age_years=age_years,
-        )
+    result = await recalculate_tree_carbon(db, tree_id=tree_id, user=user)
+    await record_audit(
+        db,
+        actor=user,
+        action="carbon.recalculate",
+        resource_type="tree",
+        resource_id=tree_id,
+        request=request,
+        diff={"carbon_kg": result.carbon_kg, "engine_version": result.engine_version},
     )
-    rec = CarbonCalculation(
-        tree_id=tree.id,
-        methodology=calc.methodology,
-        inputs={
-            "species": tree.species_text,
-            "dbh_cm": float(tree.current_dbh_cm) if tree.current_dbh_cm else None,
-            "height_m": float(tree.current_height_m) if tree.current_height_m else None,
-            "age_years": age_years,
-        },
-        agb_kg=calc.agb_kg,
-        bgb_kg=calc.bgb_kg,
-        total_biomass_kg=calc.total_biomass_kg,
-        carbon_kg=calc.carbon_kg,
-        co2e_kg=calc.co2e_kg,
-        annual_sequestration_kg=calc.annual_sequestration_kg,
-        lifetime_credits_tco2e=calc.lifetime_credits_tco2e,
-        estimated_revenue_usd=calc.estimated_revenue_usd,
-        price_assumption_usd=12.0,
-        confidence=calc.confidence,
-        engine_version=calc.engine_version,
-    )
-    db.add(rec)
-    tree.current_carbon_kg = calc.carbon_kg
     await db.commit()
-    return CarbonEstimateResponse(**calc.__dict__)
+    return result
+
+
+@router.post("/recalculate/{tree_id}/async", status_code=status.HTTP_202_ACCEPTED)
+async def recalculate_async(
+    tree_id: uuid.UUID, user: WriteAccess, db: DB
+) -> dict:
+    """Queue carbon recalculation on the Celery worker when available."""
+    from app.services.carbon.recalc_ops import recalculate_tree_carbon
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import recalc_carbon as recalc_carbon_task
+
+    # Access check without mutating data
+    await _get_owned_tree(tree_id, user, db)
+
+    task_id = try_enqueue(recalc_carbon_task, str(tree_id), str(user.id))
+    if task_id:
+        return {"tree_id": str(tree_id), "status": "queued", "celery_task_id": task_id}
+
+    result = await recalculate_tree_carbon(db, tree_id=tree_id, user=user)
+    return {
+        "tree_id": str(tree_id),
+        "status": "completed",
+        "carbon_kg": result.carbon_kg,
+        "synchronous": True,
+    }
 
 
 @router.get("-report/{tree_id}", name="carbon_report")
 async def carbon_report(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
+    await _get_owned_tree(tree_id, user, db)
     res = await db.execute(
         select(CarbonCalculation)
         .where(CarbonCalculation.tree_id == tree_id)
@@ -104,6 +112,14 @@ async def carbon_report(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> dict:
         "bgb_kg": float(latest.bgb_kg),
         "carbon_kg": float(latest.carbon_kg),
         "co2e_kg": float(latest.co2e_kg),
+        "co2e_kg_lower_90": float(latest.co2e_kg_lower_90 or 0),
+        "co2e_kg_upper_90": float(latest.co2e_kg_upper_90 or 0),
+        "uncertainty_pct": float(latest.uncertainty_pct or 0),
+        "verra_deduction_pct": float(latest.verra_deduction_pct or 0),
+        "creditable_co2e_kg": float(latest.creditable_co2e_kg or latest.co2e_kg),
+        "projected_lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
+        "verified_co2e_kg": float(latest.creditable_co2e_kg or latest.co2e_kg),
+        "verified_lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
         "annual_sequestration_kg": float(latest.annual_sequestration_kg or 0),
         "lifetime_credits_tco2e": float(latest.lifetime_credits_tco2e or 0),
         "estimated_revenue_usd": float(latest.estimated_revenue_usd or 0),

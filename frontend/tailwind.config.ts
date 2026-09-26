@@ -20,6 +20,7 @@ const config: Config = {
           700: "#15803d",
           800: "#166534",
           900: "#14532d",
+          950: "#0a2817",
         },
         earth: {
           50: "#fafaf9",
@@ -41,8 +42,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
     },
   },

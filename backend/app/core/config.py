@@ -40,11 +40,21 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: str = "http://localhost:3000"
+    frontend_url: str | None = None
+
+    @property
+    def app_frontend_url(self) -> str:
+        if self.frontend_url:
+            return self.frontend_url.rstrip("/")
+        first = self.cors_origins.split(",")[0].strip()
+        return first or "http://localhost:3000"
 
     # AWS / S3
     aws_region: str = "ap-south-1"
     s3_bucket_media: str = "byot-media-local"
     s3_endpoint_url: str | None = None
+    # Browser-reachable MinIO/S3 host for presigned upload/download URLs (e.g. https://aranyix.tech/media).
+    s3_public_endpoint_url: str | None = None
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
 
@@ -55,12 +65,106 @@ class Settings(BaseSettings):
     # Satellite providers
     sentinel_hub_client_id: str | None = None
     sentinel_hub_client_secret: str | None = None
+    sentinel_hub_api_url: str = "https://sh.dataspace.copernicus.eu"
+    sentinel_hub_token_url: str = (
+        "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+    )
     gee_service_account_json: str | None = None
+    sar_provider: Literal["stub", "gee", "sentinel_hub"] = "stub"
+    sar_fallback_provider: Literal["stub", "gee", "sentinel_hub"] | None = None
+    sar_enabled: bool = True
+
+    # Weather (Open-Meteo — free, no API key)
+    open_meteo_api_url: str = "https://api.open-meteo.com/v1"
+
+    # Copernicus CDS — free ERA5 reanalysis for GHG dispersion (separate from CDSE Sentinel Hub)
+    cds_api_url: str = "https://cds.climate.copernicus.eu/api"
+    cds_api_key: str | None = None
+    emission_satellite_buffer_km: float = 25.0
 
     # OAuth
     google_client_id: str | None = None
     google_client_secret: str | None = None
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
+
+    # OTP — set auth_otp_sms_enabled=true when MSG91/SNS is wired
+    auth_otp_sms_enabled: bool = False
+    # Dev-only: accept OTP 000000 and return codes in API responses.
+    # Defaults on for development/test; forced off for staging/production unless
+    # explicitly overridden (production_guards rejects True in hardened envs).
+    auth_allow_dev_otp: bool | None = None
+    # Expose Prometheus /metrics (default off in staging/production)
+    expose_metrics: bool | None = None
+    # Expose /docs /redoc /openapi.json (default off in staging/production)
+    expose_api_docs: bool | None = None
+    # Platform Foundation E2 — PostgreSQL RLS (test env bypasses via admin role).
+    rls_enabled: bool = True
+    # Platform Foundation E3 — global per-user API rate limit (1000 / 15 min default).
+    global_rate_limit_max_requests: int = Field(default=1000, ge=1)
+    global_rate_limit_window_seconds: int = Field(default=900, ge=60)
+    # Email OTP — Resend (login, signup, password reset)
+    auth_otp_email_enabled: bool = False
+    # Resend transactional email (https://resend.com)
+    resend_api_key: str | None = None
+    resend_from_email: str = "no-reply@aranyix.tech"
+    resend_from_name: str = "Aranyix"
+    contact_inquiry_to_email: str = "kapil@axentis.tech"
+    # Gmail API — legacy fallback for org invites and program-access notifications
+    gmail_sender: str | None = None
+    google_service_account_json: str | None = None
+    # Org invite notifications (independent toggles — enable when keys are ready)
+    auth_org_invite_sms_enabled: bool = False
+    auth_org_invite_email_enabled: bool = False
+    # Program access onboarding (professional signup approval queue)
+    auth_program_access_email_enabled: bool = False
+    # MSG91 (India) — https://msg91.com
+    msg91_auth_key: str | None = None
+    msg91_sender_id: str | None = None
+    msg91_otp_template_id: str | None = None
+    msg91_signup_otp_template_id: str | None = None
+    msg91_invite_template_id: str | None = None
+    # DLT template variable names in MSG91 (must match panel: ##num## login, ##numeric## signup).
+    msg91_otp_template_var: str = "num"
+    msg91_signup_otp_template_var: str = "numeric"
+
+    # CAPTCHA (Cloudflare Turnstile) — set secret to enable on login/register
+    turnstile_site_key: str | None = None
+    turnstile_secret_key: str | None = None
+
+    @property
+    def captcha_enabled(self) -> bool:
+        return bool(self.turnstile_secret_key and self.turnstile_site_key)
+
+    @property
+    def google_oauth_redirect_uri(self) -> str:
+        """OAuth callback via the app origin so Google only needs the site domain authorized."""
+        configured = self.google_redirect_uri
+        frontend = self.app_frontend_url.rstrip("/")
+        if not frontend or not configured:
+            return configured
+        api_host = configured.split("://", 1)[-1].split("/")[0]
+        if api_host.startswith("api."):
+            return f"{frontend}/api/v1/auth/google/callback"
+        return configured
+
+    @property
+    def allow_dev_otp(self) -> bool:
+        """Whether universal OTP 000000 and API OTP hints are permitted."""
+        if self.auth_allow_dev_otp is not None:
+            return self.auth_allow_dev_otp
+        return self.app_env in {"development", "test"}
+
+    @property
+    def metrics_exposed(self) -> bool:
+        if self.expose_metrics is not None:
+            return self.expose_metrics
+        return self.app_env in {"development", "test"} or self.app_debug
+
+    @property
+    def api_docs_exposed(self) -> bool:
+        if self.expose_api_docs is not None:
+            return self.expose_api_docs
+        return self.app_env in {"development", "test"} or self.app_debug
 
     # Notifications
     ses_sender: str = "no-reply@byot.earth"
@@ -73,6 +177,71 @@ class Settings(BaseSettings):
 
     # Carbon engine defaults
     default_credit_price_usd: float = Field(default=12.0)
+
+    # BYOT citizen AI scan metering (professional programs are unlimited)
+    byot_free_ai_scans: int = Field(default=5, ge=0)
+
+    # Razorpay — BYOT AI scan pack purchases (test keys in .env, never commit secrets)
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
+
+    # Bioacoustic pipeline (birdnet = production; composite adds Perch multi-taxa)
+    bioacoustic_pipeline: Literal["stub", "birdnet", "composite", "multitaxa"] = "birdnet"
+    bioacoustic_min_confidence: float = Field(default=0.15, ge=0.05, le=0.99)
+    bioacoustic_return_all_detections: bool = True
+    bioacoustic_noise_reduction: bool = False
+    bioacoustic_enable_frogs: bool = False
+    bioacoustic_enable_insects: bool = False
+    bioacoustic_enable_perch: bool = False
+    bioacoustic_perch_model_path: str | None = None
+    bioacoustic_perch_labels_path: str | None = None
+    bioacoustic_perch_min_confidence: float = Field(default=0.20, ge=0.05, le=0.99)
+    bioacoustic_perch_top_k: int = Field(default=12, ge=1, le=50)
+    bioacoustic_perch_hop_samples: int = Field(default=80_000, ge=16_000, le=160_000)
+    bioacoustic_perch_taxa: str = "amphibian,mammal,insect,reptile"
+    iucn_api_token: str | None = None
+    iucn_api_url: str = "https://api.iucnredlist.org/api/v4"
+    gbif_api_url: str = "https://api.gbif.org/v1"
+    gbif_occurrence_radius_km: float = Field(default=25.0, ge=1.0, le=100.0)
+
+    # Intelligence cache (Redis)
+    intelligence_cache_ttl_seconds: int = Field(default=600, ge=60, le=3600)
+    satellite_health_cache_ttl_seconds: int = Field(default=86400, ge=300, le=604800)
+    threat_watch_cache_ttl_seconds: int = Field(default=3600, ge=60, le=86400)
+
+    # Phase A — scheduled satellite scan quotas
+    monitoring_tree_scan_batch_limit: int = Field(default=500, ge=50, le=10000)
+    monitoring_sweep_batch_size: int = Field(default=50, ge=1, le=500)
+    monitoring_org_daily_scan_limit: int = Field(default=2000, ge=100, le=100000)
+    monitoring_tile_batch_enabled: bool = True
+
+    # Phase B — fire (FIRMS) and flood extent hazard watch
+    firms_map_key: str | None = None
+    firms_api_url: str = "https://firms.modaps.eosdis.nasa.gov"
+    hazard_fire_radius_km: float = Field(default=25.0, ge=5.0, le=100.0)
+    hazard_flood_sar_baseline_days: int = Field(default=30, ge=7, le=90)
+    # Locust feed — optional JSON URL or FAO DLIS BigQuery (best-effort)
+    locust_feed_url: str | None = None
+    fao_locust_api_url: str = "https://api.data.apps.fao.org"
+    fao_locust_feed_enabled: bool = True
+    locust_feed_radius_km: float = Field(default=400.0, ge=50.0, le=1000.0)
+
+    # ISRO Bhoonidhi (NRSC) STAC catalog — requires IP whitelist + API account
+    bhoonidhi_user_id: str | None = None
+    bhoonidhi_password: str | None = None
+    bhoonidhi_api_url: str = "https://bhoonidhi-api.nrsc.gov.in"
+    bioacoustic_review_confidence: float = Field(default=0.70, ge=0.05, le=0.99)
+    bioacoustic_spl_warning_db: float = Field(default=62.0, ge=40.0, le=90.0)
+
+    # Evidence bundle signing (Ed25519 detached signature)
+    evidence_signing_key: str | None = None  # base64-encoded 32-byte Ed25519 seed
+    evidence_tsa_enabled: bool = True
+    evidence_tsa_url: str | None = None
+    evidence_tsa_stub_label: str = "byot-dev-tsa-stub"
+
+    # MoEFCC Green Credit Programme registry (informational URL)
+    green_credit_registry_url: str = "https://greencredit.moefcc.gov.in"
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -1,0 +1,753 @@
+"""Evaluate compliance checklist responses with project auto-checks."""
+
+from __future__ import annotations
+
+import uuid
+from typing import Any
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.compliance_checklist import ProjectChecklistResponse
+from app.models.credit_ledger import ProjectCreditLedger
+from app.models.planting_compliance_violation import PlantingComplianceViolation
+from app.models.planting_project import PlantingProject
+from app.models.tree import Tree
+from app.services.compliance.checklist_engine import get_effective_checklist
+from app.services.compliance.checklists import ComplianceChecklist
+from app.services.planting_projects.service import get_active_standard
+from app.services.planting_projects.survival_survey import survey_interval_days
+
+
+def _tree_metadata_native(metadata: dict | None) -> bool:
+    """Match planting compliance native checks (is_native + species_native metadata)."""
+    meta = metadata or {}
+    for key in ("is_native", "species_native"):
+        val = meta.get(key)
+        if val in (True, "true", "yes", "1", "native"):
+            return True
+        if val in (False, "false", "no", "0", "exotic"):
+            return False
+    return False
+
+
+def _answer_value(answer: str | None) -> float | None:
+    if answer == "yes":
+        return 1.0
+    if answer == "partial":
+        return 0.5
+    if answer == "no":
+        return 0.0
+    return None
+
+
+def _resolve_answer(
+    item_id: str,
+    auto_key: str | None,
+    responses: dict[str, Any],
+    auto_signals: dict[str, str],
+) -> str | None:
+    saved = responses.get(item_id, {}).get("answer")
+    if saved:
+        return saved
+    if auto_key and auto_key in auto_signals:
+        return auto_signals[auto_key]
+    return None
+
+
+def score_checklist(
+    checklist: ComplianceChecklist,
+    responses: dict[str, Any],
+    auto_signals: dict[str, str],
+) -> dict[str, Any]:
+    required_items = [i for i in checklist.items if i.required]
+    answered_required = 0
+    weighted_scores: list[float] = []
+    gaps: list[dict[str, str]] = []
+
+    for item in checklist.items:
+        answer = _resolve_answer(item.id, item.auto_key, responses, auto_signals)
+        if item.required:
+            if answer in ("yes", "no", "partial", "na"):
+                answered_required += 1
+            if answer in ("yes", "no", "partial"):
+                value = _answer_value(answer)
+                if value is not None and answer != "na":
+                    weighted_scores.append(value)
+                    if answer in ("no", "partial"):
+                        gaps.append(
+                            {
+                                "item_id": item.id,
+                                "question": item.question,
+                                "answer": answer,
+                                "category": item.category,
+                                "auto_key": item.auto_key,
+                            }
+                        )
+
+    completion_pct = (
+        round((answered_required / len(required_items)) * 100, 1) if required_items else 0.0
+    )
+    score_pct = round((sum(weighted_scores) / len(weighted_scores)) * 100, 1) if weighted_scores else 0.0
+
+    if answered_required == 0:
+        eligibility_status = "not_started"
+    elif answered_required < len(required_items):
+        eligibility_status = "in_progress"
+    elif score_pct >= 85.0 and not any(g["answer"] == "no" for g in gaps):
+        eligibility_status = "eligible"
+    elif score_pct >= 50.0:
+        eligibility_status = "gaps_identified"
+    else:
+        eligibility_status = "not_eligible"
+
+    return {
+        "completion_pct": completion_pct,
+        "score_pct": score_pct,
+        "eligibility_status": eligibility_status,
+        "gaps": gaps,
+        "answered_required": answered_required,
+        "required_count": len(required_items),
+    }
+
+
+async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict[str, str]:
+    trees_res = await db.execute(
+        select(Tree).where(Tree.project_id == project.id, Tree.status != "removed")
+    )
+    trees = list(trees_res.scalars().all())
+    tree_count = len(trees)
+    geo_tagged = sum(1 for t in trees if t.last_geotag_at is not None)
+    satellite_verified = sum(1 for t in trees if t.satellite_verified)
+    native_count = sum(1 for t in trees if _tree_metadata_native(t.metadata_))
+
+    open_violations_res = await db.execute(
+        select(PlantingComplianceViolation).where(
+            PlantingComplianceViolation.project_id == project.id,
+            PlantingComplianceViolation.resolved_at.is_(None),
+        )
+    )
+    open_violations = list(open_violations_res.scalars().all())
+    block_open = any(v.severity == "block" for v in open_violations)
+
+    from app.models.plantation_fence import PlantationFence
+
+    work_areas = int(
+        (
+            await db.execute(
+                select(func.count()).where(PlantationFence.project_id == project.id)
+            )
+        ).scalar_one()
+        or 0
+    )
+
+    ledger_res = await db.execute(
+        select(ProjectCreditLedger).where(ProjectCreditLedger.project_id == project.id)
+    )
+    ledger = ledger_res.scalar_one_or_none()
+
+    standard = await get_active_standard(db, project)
+    survey_days = survey_interval_days(project)
+    survey_saved = (project.metadata_ or {}).get("survey_interval_days") in (15, 30)
+
+    signals: dict[str, str] = {}
+
+    signals["has_trees"] = "yes" if tree_count > 0 else "no"
+    signals["has_work_areas"] = "yes" if work_areas > 0 else "no"
+
+    from app.services.schemes.kpis import scan_coverage_metrics
+    from app.services.schemes.monitoring import is_monitoring_scheme, is_satellite_watch_enabled
+    from app.services.schemes.registry import get_scheme
+
+    if is_satellite_watch_enabled(project) and work_areas > 0:
+        fences = list(
+            (
+                await db.execute(
+                    select(PlantationFence).where(PlantationFence.project_id == project.id)
+                )
+            ).scalars().all()
+        )
+        max_days = 35
+        scheme = get_scheme(project.scheme_code) if project.scheme_code else None
+        if scheme:
+            max_days = int((scheme.get("kpi_targets") or {}).get("max_days_since_scan") or 35)
+        coverage = scan_coverage_metrics(fences, max_days_since_scan=max_days)
+        pct = coverage["scan_coverage_pct"]
+        if pct >= 80:
+            signals["work_area_scan_coverage"] = "yes"
+        elif pct >= 40:
+            signals["work_area_scan_coverage"] = "partial"
+        else:
+            signals["work_area_scan_coverage"] = "no"
+    elif work_areas > 0:
+        signals["work_area_scan_coverage"] = "partial"
+    else:
+        signals["work_area_scan_coverage"] = "no"
+
+    signals["no_block_violations"] = "no" if block_open else "yes"
+    signals["no_open_violations"] = "no" if open_violations else "yes"
+    signals["active_standard_attached"] = "yes" if standard is not None else "no"
+    if survey_saved:
+        signals["survival_survey_configured"] = "yes"
+    elif survey_days in (15, 30):
+        signals["survival_survey_configured"] = "partial"
+    else:
+        signals["survival_survey_configured"] = "no"
+    signals["credit_ledger_synced"] = "yes" if ledger and ledger.last_computed_at else "no"
+    signals["credit_ledger_active"] = "yes" if ledger and float(ledger.gross_credits_tco2e or 0) > 0 else "no"
+
+    from app.services.carbon.risk_ops import latest_risk_assessment
+
+    risk = await latest_risk_assessment(db, project.id)
+    signals["nprt_assessed"] = "yes" if risk is not None else "no"
+    signals["evidence_export"] = "yes" if tree_count > 0 else "no"
+
+    if tree_count == 0:
+        signals["geo_tagged_majority"] = "no"
+        signals["satellite_coverage"] = "no"
+        signals["native_species_tracked"] = "na"
+    else:
+        geo_pct = geo_tagged / tree_count
+        if geo_pct >= 0.8:
+            signals["geo_tagged_majority"] = "yes"
+        elif geo_pct >= 0.5:
+            signals["geo_tagged_majority"] = "partial"
+        else:
+            signals["geo_tagged_majority"] = "no"
+
+        sat_pct = satellite_verified / tree_count
+        if sat_pct >= 0.5:
+            signals["satellite_coverage"] = "yes"
+        elif sat_pct >= 0.2:
+            signals["satellite_coverage"] = "partial"
+        else:
+            signals["satellite_coverage"] = "no"
+
+        if native_count > 0:
+            signals["native_species_tracked"] = "yes"
+        else:
+            signals["native_species_tracked"] = "partial"
+
+    from app.services.compliance.safeguards import safeguard_doc_types_present
+
+    doc_types = await safeguard_doc_types_present(db, project.id)
+    for doc_type, signal_key in (
+        ("gram_sabha_resolution", "safeguards_gram_sabha"),
+        ("fpic_minutes", "safeguards_fpic"),
+        ("patta_cfr_reference", "safeguards_tenure_ref"),
+        ("stakeholder_consultation_log", "safeguards_stakeholder_log"),
+    ):
+        signals[signal_key] = "yes" if doc_type in doc_types else "no"
+
+    refs = (project.metadata_ or {}).get("scheme_refs") or {}
+    if is_monitoring_scheme(getattr(project, "scheme_code", None)):
+        required_meta = (
+            "estate_name",
+            "managing_agency",
+            "state_name",
+            "forest_type",
+            "total_area_ha",
+            "baseline_year",
+            "monitoring_objective",
+        )
+        filled = sum(
+            1 for key in required_meta if refs.get(key) not in (None, "", [])
+        )
+        if filled >= len(required_meta):
+            signals["estate_metadata_complete"] = "yes"
+        elif filled >= 3:
+            signals["estate_metadata_complete"] = "partial"
+        else:
+            signals["estate_metadata_complete"] = "no"
+    else:
+        signals["estate_metadata_complete"] = "na"
+
+    signals["land_bank_registered"] = (
+        "yes" if refs.get("green_credit_land_bank_id") else "no"
+    )
+    signals["verifier_on_file"] = "yes" if refs.get("verifier_reference") else "no"
+    signals["gcp_activity_documented"] = (
+        "yes" if refs.get("gcp_activity_type") else "no"
+    )
+
+    if getattr(project, "scheme_code", None) == "green_credit_india" or refs.get(
+        "green_credit_land_bank_id"
+    ):
+        from app.services.credits.green_credit import build_project_green_credit_summary
+
+        gc = await build_project_green_credit_summary(db, project)
+        signals["density_eligible"] = "yes" if gc.get("density_eligible") else "no"
+    else:
+        signals["density_eligible"] = "na"
+
+    nba_flagged = 0
+    nba_acknowledged = 0
+    for tree in trees:
+        meta = tree.metadata_ or {}
+        flagged = (
+            meta.get("is_exotic") in (True, "true", "yes", 1)
+            or meta.get("species_category") in ("exotic", "medicinal", "scheduled")
+            or meta.get("is_scheduled_species") in (True, "true", "yes", 1)
+        )
+        if flagged:
+            nba_flagged += 1
+            if meta.get("nba_acknowledgment_at"):
+                nba_acknowledged += 1
+    if nba_flagged == 0 or nba_acknowledged >= nba_flagged:
+        signals["nba_species_reviewed"] = "yes"
+    elif nba_acknowledged > 0:
+        signals["nba_species_reviewed"] = "partial"
+    else:
+        signals["nba_species_reviewed"] = "no"
+
+    from app.services.carbon.vm0047_ops import list_leakage
+
+    leakage_rows = await list_leakage(db, project.id)
+    if leakage_rows:
+        signals["leakage_documented"] = "yes"
+    else:
+        signals["leakage_documented"] = "no"
+
+    from app.models.plantation_fence import PlantationFence as _Fence
+    from app.models.plantation_satellite_record import PlantationSatelliteRecord
+    from app.services.satellite.sar_service import is_sar_provider_record
+
+    sar_res = await db.execute(
+        select(PlantationSatelliteRecord)
+        .join(_Fence, _Fence.id == PlantationSatelliteRecord.fence_id)
+        .where(_Fence.project_id == project.id)
+        .order_by(PlantationSatelliteRecord.scene_acquired_at.desc())
+    )
+    sar_at_risk = 0
+    sar_scored = 0
+    seen_fences: set[str] = set()
+    for rec in sar_res.scalars().all():
+        fid = str(rec.fence_id)
+        if fid in seen_fences or not is_sar_provider_record(rec.provider):
+            continue
+        seen_fences.add(fid)
+        fusion = (rec.raw_metadata or {}).get("sar_fusion") or {}
+        if fusion.get("forest_integrity_score") is not None:
+            sar_scored += 1
+        if fusion.get("integrity_grade") in {"at_risk", "critical"}:
+            sar_at_risk += 1
+
+    if sar_at_risk > 0:
+        signals["sar_permanence_risk"] = "partial"
+    elif sar_scored > 0 or risk is not None:
+        signals["sar_permanence_risk"] = "yes"
+    else:
+        signals["sar_permanence_risk"] = "no"
+
+    auth_ref = refs.get("article6_authorization_ref") or (project.metadata_ or {}).get(
+        "article6_authorization_ref"
+    )
+    signals["article6_authorization_ref"] = "yes" if auth_ref else "no"
+
+    from app.models.credit_serial import CreditSerial
+
+    serial_res = await db.execute(
+        select(CreditSerial).where(CreditSerial.project_id == project.id)
+    )
+    serials = list(serial_res.scalars().all())
+    art6_serials = [s for s in serials if s.paris_article6]
+    ca_serials = [s for s in serials if s.corresponding_adjustment_ref]
+    signals["article6_serials_present"] = "yes" if art6_serials else "no"
+    if ca_serials:
+        signals["ca_ref_documented"] = "yes"
+    elif any(s.paris_article6 and s.status == "retired" for s in serials):
+        signals["ca_ref_documented"] = "partial"
+    else:
+        signals["ca_ref_documented"] = "no"
+
+    doc_types = await safeguard_doc_types_present(db, project.id)
+    if len(doc_types) >= 4 and not open_violations:
+        signals["ses_risk_screened"] = "yes"
+    elif doc_types:
+        signals["ses_risk_screened"] = "partial"
+    else:
+        signals["ses_risk_screened"] = "no"
+
+    from app.models.bioacoustic_recording import BioacousticRecording
+
+    bio_count = int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(BioacousticRecording)
+                .join(PlantationFence, PlantationFence.id == BioacousticRecording.plantation_fence_id)
+                .where(
+                    PlantationFence.project_id == project.id,
+                    BioacousticRecording.status == "analyzed",
+                )
+            )
+        ).scalar_one()
+        or 0
+    )
+    from app.services.bioacoustic.compliance_evidence import count_export_ready_evidence
+
+    has_bio = bio_count > 0
+    linked_ready = (
+        await count_export_ready_evidence(db, project.id) if has_bio else 0
+    )
+    sat_ok = signals.get("satellite_coverage") in ("yes", "partial")
+    native_ok = signals.get("native_species_tracked") in ("yes", "partial")
+    if linked_ready >= 1 and has_bio and (native_ok or sat_ok):
+        signals["ps6_biodiversity_evidence"] = "yes"
+    elif linked_ready >= 1 or (native_ok and sat_ok and has_bio) or native_ok or sat_ok or has_bio:
+        signals["ps6_biodiversity_evidence"] = "partial"
+    else:
+        signals["ps6_biodiversity_evidence"] = "no"
+
+    meta = getattr(project, "metadata_", None) or {}
+    refs = meta.get("scheme_refs") or {}
+    supplier_ref = refs.get("supplier_ref") or refs.get("nccf_project_ref")
+    signals["supplier_ref_documented"] = "yes" if supplier_ref else "no"
+
+    if tree_count == 0:
+        signals["eudr_geo_due_diligence"] = "no"
+    elif geo_tagged >= tree_count * 0.8:
+        signals["eudr_geo_due_diligence"] = "yes"
+    elif geo_tagged > 0:
+        signals["eudr_geo_due_diligence"] = "partial"
+    else:
+        signals["eudr_geo_due_diligence"] = "no"
+
+    if tree_count > 0 and work_areas > 0:
+        signals["flag_land_boundary"] = "yes"
+        signals["flag_removals_quantified"] = "yes"
+    elif tree_count > 0 or work_areas > 0:
+        signals["flag_land_boundary"] = "partial"
+        signals["flag_removals_quantified"] = "partial"
+    else:
+        signals["flag_land_boundary"] = "no"
+        signals["flag_removals_quantified"] = "no"
+
+    signals["apv_site_documented"] = "yes" if refs.get("apv_site_id") else "no"
+    signals["nutri_site_type"] = "yes" if refs.get("site_type") else "no"
+    signals["gram_panchayat_documented"] = "yes" if refs.get("gram_panchayat") else "no"
+    if refs.get("mgnrega_job_card_ref"):
+        signals["mgnrega_convergence_ref"] = "yes"
+    elif refs.get("site_type") in ("anganwadi", "shg", "panchayat", "school"):
+        signals["mgnrega_convergence_ref"] = "partial"
+    else:
+        signals["mgnrega_convergence_ref"] = "no"
+
+    from app.services.planting_projects.compliance import _species_allowed
+    from app.services.planting_projects.rule_engine import get_effective_rules
+    from app.services.schemes.registry import get_scheme as _get_scheme
+
+    effective_rules: dict[str, Any] = {}
+    if standard is not None and getattr(standard, "template_code", None):
+        effective_rules = await get_effective_rules(db, standard, project_id=project.id)
+    min_trees_target = effective_rules.get("min_trees_project")
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = _get_scheme(scheme_code) if scheme_code else None
+    if scheme:
+        min_trees_target = (scheme.get("kpi_targets") or {}).get("min_trees") or min_trees_target
+    if min_trees_target:
+        signals["min_trees_met"] = "yes" if tree_count >= int(min_trees_target) else "no"
+    else:
+        signals["min_trees_met"] = "na"
+
+    allowed_species = effective_rules.get("allowed_species")
+    if allowed_species and tree_count > 0:
+        from app.models.species import Species
+
+        species_ids = {t.species_id for t in trees if t.species_id}
+        species_names: dict[uuid.UUID, str] = {}
+        if species_ids:
+            sp_res = await db.execute(select(Species).where(Species.id.in_(species_ids)))
+            for sp in sp_res.scalars().all():
+                species_names[sp.id] = sp.common_name or sp.scientific_name or ""
+        allowed_count = 0
+        for tree in trees:
+            name = tree.species_text or (
+                species_names.get(tree.species_id) if tree.species_id else ""
+            ) or ""
+            if _species_allowed(name, allowed_species):
+                allowed_count += 1
+        ratio = allowed_count / tree_count
+        if ratio >= 0.8:
+            signals["fruit_species_majority"] = "yes"
+        elif ratio >= 0.5:
+            signals["fruit_species_majority"] = "partial"
+        else:
+            signals["fruit_species_majority"] = "no"
+    elif allowed_species:
+        signals["fruit_species_majority"] = "no"
+    else:
+        signals["fruit_species_majority"] = "na"
+
+    block_types = effective_rules.get("block_types")
+    if block_types and work_areas > 0:
+        fences = list(
+            (
+                await db.execute(
+                    select(PlantationFence).where(PlantationFence.project_id == project.id)
+                )
+            ).scalars().all()
+        )
+        typed = [f for f in fences if f.segment_code]
+        if not typed:
+            signals["nutri_block_types_valid"] = "no"
+        elif all(f.segment_code in block_types for f in typed):
+            signals["nutri_block_types_valid"] = "yes"
+        else:
+            signals["nutri_block_types_valid"] = "partial"
+    elif block_types:
+        signals["nutri_block_types_valid"] = "no"
+    else:
+        signals["nutri_block_types_valid"] = "na"
+
+    declared_area = refs.get("site_area_ha")
+    if declared_area is not None and work_areas > 0:
+        try:
+            declared_ha = float(declared_area)
+        except (TypeError, ValueError):
+            signals["site_area_match"] = "no"
+        else:
+            fences = list(
+                (
+                    await db.execute(
+                        select(PlantationFence).where(PlantationFence.project_id == project.id)
+                    )
+                ).scalars().all()
+            )
+            mapped_ha = sum(float(f.area_ha or 0) for f in fences)
+            tolerance = max(declared_ha * 0.2, 0.02)
+            if abs(mapped_ha - declared_ha) <= tolerance:
+                signals["site_area_match"] = "yes"
+            elif mapped_ha > 0:
+                signals["site_area_match"] = "partial"
+            else:
+                signals["site_area_match"] = "no"
+    elif declared_area is not None:
+        signals["site_area_match"] = "no"
+    else:
+        signals["site_area_match"] = "na"
+
+    signals["township_rwa_documented"] = "yes" if refs.get("rwa_registration_id") else "no"
+    signals["township_layout_documented"] = "yes" if refs.get("layout_plan_ref") else "no"
+    signals["farmer_beneficiary_documented"] = "yes" if refs.get("farmer_beneficiary_id") else "no"
+    signals["land_record_documented"] = "yes" if refs.get("land_record_ref") else "no"
+    signals["agroforestry_plot_documented"] = (
+        "yes" if refs.get("agroforestry_plot_type") else "no"
+    )
+    signals["miyawaki_site_documented"] = "yes" if refs.get("miyawaki_site_id") else "no"
+    signals["ulb_documented"] = "yes" if refs.get("ulb_name") else "no"
+    signals["village_forest_committee_documented"] = "yes" if refs.get("vfc_name") else "no"
+
+    scheme_code = getattr(project, "scheme_code", None)
+    if scheme_code == "mining_reclamation":
+        from app.services.planting_projects.closure_milestones import (
+            build_mining_compliance_signals,
+        )
+
+        mining_signals = await build_mining_compliance_signals(
+            db,
+            project,
+            trees=trees,
+            open_block_violations=block_open,
+        )
+        signals.update(mining_signals)
+
+    return signals
+
+
+def _item_payload(
+    item,
+    responses: dict[str, Any],
+    auto_signals: dict[str, str],
+) -> dict[str, Any]:
+    item_id = item.id if hasattr(item, "id") else item["id"]
+    auto_key = item.auto_key if hasattr(item, "auto_key") else item.get("auto_key")
+    category = item.category if hasattr(item, "category") else item["category"]
+    question = item.question if hasattr(item, "question") else item["question"]
+    guidance = item.guidance if hasattr(item, "guidance") else item["guidance"]
+    required = item.required if hasattr(item, "required") else item["required"]
+
+    saved = responses.get(item_id, {})
+    suggested = auto_signals.get(auto_key) if auto_key else None
+    resolved = saved.get("answer") or suggested
+    source = "user" if saved.get("answer") else ("auto" if suggested else None)
+    return {
+        "id": item_id,
+        "category": category,
+        "question": question,
+        "guidance": guidance,
+        "required": required,
+        "auto_key": auto_key,
+        "answer": resolved,
+        "notes": saved.get("notes"),
+        "source": source,
+        "suggested_answer": suggested,
+    }
+
+
+def _checklist_items_for_scoring(effective: dict[str, Any]):
+    from types import SimpleNamespace
+
+    return [SimpleNamespace(**item) for item in effective["items"]]
+
+
+def _checklist_for_scoring(effective: dict[str, Any]):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(items=_checklist_items_for_scoring(effective))
+
+
+async def get_or_create_response(
+    db: AsyncSession, project: PlantingProject, checklist_code: str
+) -> ProjectChecklistResponse | None:
+    res = await db.execute(
+        select(ProjectChecklistResponse).where(
+            ProjectChecklistResponse.project_id == project.id,
+            ProjectChecklistResponse.checklist_code == checklist_code,
+        )
+    )
+    return res.scalar_one_or_none()
+
+
+async def build_project_checklist_state(
+    db: AsyncSession,
+    project: PlantingProject,
+    checklist_code: str,
+) -> dict[str, Any]:
+    effective = await get_effective_checklist(db, checklist_code)
+    if effective is None:
+        raise ValueError("unknown_checklist")
+
+    stored = await get_or_create_response(db, project, checklist_code)
+    responses = dict(stored.responses) if stored else {}
+    auto_signals = await build_auto_signals(db, project)
+    checklist_for_score = _checklist_for_scoring(effective)
+    metrics = score_checklist(checklist_for_score, responses, auto_signals)
+
+    return {
+        "checklist": {
+            "code": effective["code"],
+            "title": effective["title"],
+            "short_label": effective["short_label"],
+            "framework_reference": effective["framework_reference"],
+            "description": effective["description"],
+            "disclaimer": effective["disclaimer"],
+        },
+        "project_id": str(project.id),
+        "responses": responses,
+        "items": [
+            _item_payload(item, responses, auto_signals) for item in effective["items"]
+        ],
+        "auto_signals": auto_signals,
+        "completion_pct": metrics["completion_pct"],
+        "score_pct": metrics["score_pct"],
+        "eligibility_status": metrics["eligibility_status"],
+        "gaps": metrics["gaps"],
+        "answered_required": metrics["answered_required"],
+        "required_count": metrics["required_count"],
+        "updated_at": stored.updated_at.isoformat() if stored else None,
+    }
+
+
+async def save_project_checklist_responses(
+    db: AsyncSession,
+    project: PlantingProject,
+    checklist_code: str,
+    answers: dict[str, dict[str, Any]],
+    *,
+    actor_user_id: uuid.UUID | None,
+) -> dict[str, Any]:
+    effective = await get_effective_checklist(db, checklist_code)
+    if effective is None:
+        raise ValueError("unknown_checklist")
+
+    valid_ids = {item["id"] for item in effective["items"]}
+    cleaned: dict[str, Any] = {}
+    for item_id, payload in answers.items():
+        if item_id not in valid_ids:
+            continue
+        answer = payload.get("answer")
+        if answer not in ("yes", "no", "partial", "na", None):
+            raise ValueError(f"invalid_answer:{item_id}")
+        entry: dict[str, Any] = {}
+        if answer:
+            entry["answer"] = answer
+        notes = payload.get("notes")
+        if notes:
+            entry["notes"] = str(notes)[:2000]
+        if entry:
+            cleaned[item_id] = entry
+
+    stored = await get_or_create_response(db, project, checklist_code)
+    if stored is None:
+        stored = ProjectChecklistResponse(
+            project_id=project.id,
+            organization_id=project.organization_id,
+            checklist_code=checklist_code,
+            responses={},
+            completion_pct=0,
+            score_pct=0,
+            eligibility_status="not_started",
+            last_updated_by_user_id=actor_user_id,
+        )
+        db.add(stored)
+
+    merged = dict(stored.responses or {})
+    merged.update(cleaned)
+    stored.responses = merged
+    stored.last_updated_by_user_id = actor_user_id
+    if stored.organization_id is None:
+        stored.organization_id = project.organization_id
+
+    auto_signals = await build_auto_signals(db, project)
+    checklist_for_score = _checklist_for_scoring(effective)
+    metrics = score_checklist(checklist_for_score, merged, auto_signals)
+    stored.completion_pct = metrics["completion_pct"]
+    stored.score_pct = metrics["score_pct"]
+    stored.eligibility_status = metrics["eligibility_status"]
+
+    from app.services.schemes.compliance import notify_scheme_compliance_gaps
+
+    await notify_scheme_compliance_gaps(
+        db,
+        project,
+        checklist_code,
+        metrics["eligibility_status"],
+    )
+
+    await db.flush()
+    return await build_project_checklist_state(db, project, checklist_code)
+
+
+async def list_project_checklist_summaries(
+    db: AsyncSession, project: PlantingProject
+) -> list[dict[str, Any]]:
+    from app.services.compliance.checklists import CHECKLISTS
+
+    stored_res = await db.execute(
+        select(ProjectChecklistResponse).where(ProjectChecklistResponse.project_id == project.id)
+    )
+    by_code = {row.checklist_code: row for row in stored_res.scalars().all()}
+    auto_signals = await build_auto_signals(db, project)
+    summaries: list[dict[str, Any]] = []
+
+    for code in CHECKLISTS:
+        effective = await get_effective_checklist(db, code)
+        if effective is None:
+            continue
+        stored = by_code.get(code)
+        responses = dict(stored.responses) if stored else {}
+        checklist_for_score = _checklist_for_scoring(effective)
+        metrics = score_checklist(checklist_for_score, responses, auto_signals)
+        summaries.append(
+            {
+                "code": code,
+                "title": effective["title"],
+                "short_label": effective["short_label"],
+                "completion_pct": metrics["completion_pct"],
+                "score_pct": metrics["score_pct"],
+                "eligibility_status": metrics["eligibility_status"],
+                "updated_at": stored.updated_at.isoformat() if stored else None,
+            }
+        )
+    return summaries

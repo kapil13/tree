@@ -9,6 +9,10 @@ Implements:
 - Lifetime credits + revenue projection with methodology buffer pool
   (Verra VM0047 default 20%) and verification-tier discount.
 - Confidence score combining input completeness with species/growth confidence.
+- Monte Carlo uncertainty propagation with 90% CO₂e confidence intervals
+  and Verra VM0047 uncertainty deduction when applicable.
+- Mortality-adjusted lifetime credit projections and dynamic NPRT buffer pools.
+- Ex-ante (projected) vs ex-post (verified standing stock) credit split.
 
 The engine is pure, deterministic, and version-tagged. Inputs/outputs are
 dataclasses to keep the engine free of Pydantic/SQLAlchemy import cycles.
@@ -16,22 +20,23 @@ dataclasses to keep the engine free of Pydantic/SQLAlchemy import cycles.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Literal
 
-from app.services.carbon.species_catalog import SpeciesAllometric, by_name
+from app.services.carbon.biomass_math import (
+    agb_chave,
+    agb_ipcc_generic,
+    agb_species,
+    height_from_dbh,
+    interp_growth,
+    ipcc_root_shoot,
+)
+from app.services.carbon.species_catalog import by_name
 
-ENGINE_VERSION = "byot-carbon-1.0.0"
+ENGINE_VERSION = "byot-carbon-1.3.0"
 
-# IPCC AR6 root-shoot defaults
-IPCC_ROOT_SHOOT_DEFAULT = {
-    "tropical_moist": 0.235,
-    "tropical_dry": 0.275,
-    "temperate": 0.260,
-    "boreal": 0.320,
-    "plantation": 0.250,
-}
+# Re-export for ledger / reports (prefer buffer.resolve_buffer_pct at runtime)
+from app.services.carbon.buffer import DEFAULT_BUFFER_POOL as BUFFER_POOL  # noqa: E402, F401
 
 # Verification tier discount applied to lifetime revenue
 TIER_FACTOR = {
@@ -41,14 +46,7 @@ TIER_FACTOR = {
     "verra_issued": 1.00,
 }
 
-# Methodology buffer pools (fraction WITHHELD from lifetime credits)
-BUFFER_POOL = {
-    "IPCC_AR6": 0.0,
-    "VERRA_VM0047": 0.20,
-    "GOLD_STANDARD_LUF": 0.15,
-}
-
-
+_EX_POST_TIERS = frozenset({"verra_listed", "verra_issued"})
 Methodology = Literal["IPCC_AR6", "VERRA_VM0047", "GOLD_STANDARD_LUF"]
 ClimateZone = Literal["tropical", "subtropical", "temperate", "boreal"]
 VerificationTier = Literal["speculative", "ai_verified", "verra_listed", "verra_issued"]
@@ -66,6 +64,21 @@ class CarbonInputs:
     ecological_zone: str | None = None
     price_usd_per_credit: float = 12.0
     verification_tier: VerificationTier = "ai_verified"
+    # MRV measurement provenance (from tree_measurements when available)
+    measurement_method: str | None = None
+    uncertainty_dbh_pct: float | None = None
+    uncertainty_height_pct: float | None = None
+    # Mortality / buffer (Sprint 3–4)
+    annual_mortality_pct: float | None = None
+    buffer_pct: float | None = None
+    nprt_score: float | None = None
+    ex_post_verified: bool = False
+    # VM0047 other carbon pools (Sprint 13–14)
+    include_other_pools: bool = False
+    deadwood_ratio: float = 0.08
+    litter_ratio: float = 0.04
+    soc_tco2e_per_ha: float | None = None
+    area_ha: float | None = None
 
 
 @dataclass
@@ -82,67 +95,32 @@ class CarbonResult:
     methodology: Methodology
     engine_version: str
     notes: list[str] = field(default_factory=list)
+    co2e_kg_lower_90: float | None = None
+    co2e_kg_upper_90: float | None = None
+    uncertainty_pct: float | None = None
+    verra_deduction_pct: float | None = None
+    creditable_co2e_kg: float | None = None
+    projected_lifetime_credits_tco2e: float | None = None
+    verified_co2e_kg: float | None = None
+    verified_lifetime_credits_tco2e: float | None = None
+    buffer_pct_applied: float | None = None
+    effective_annual_mortality_pct: float | None = None
+    deadwood_kg: float | None = None
+    litter_kg: float | None = None
+    soc_carbon_kg: float | None = None
+    total_with_pools_co2e_kg: float | None = None
 
 
 # ---------------------------------------------------------------------------
-# Core math
+# Core math — delegated to biomass_math
 # ---------------------------------------------------------------------------
 
-
-def _ipcc_root_shoot(zone: ClimateZone, ecological_zone: str | None) -> float:
-    if ecological_zone == "plantation":
-        return IPCC_ROOT_SHOOT_DEFAULT["plantation"]
-    if zone in ("tropical", "subtropical"):
-        if ecological_zone == "dry_forest":
-            return IPCC_ROOT_SHOOT_DEFAULT["tropical_dry"]
-        return IPCC_ROOT_SHOOT_DEFAULT["tropical_moist"]
-    if zone == "temperate":
-        return IPCC_ROOT_SHOOT_DEFAULT["temperate"]
-    return IPCC_ROOT_SHOOT_DEFAULT["boreal"]
-
-
-def _agb_species(dbh: float, sp: SpeciesAllometric) -> float:
-    return float(sp.agb_coef_a) * (dbh ** float(sp.agb_coef_b))
-
-
-def _agb_chave(dbh: float, height: float, wd: float) -> float:
-    # Chave 2014 pan-tropical: AGB = 0.0673 * (rho * D^2 * H)^0.976
-    return 0.0673 * (wd * (dbh ** 2) * height) ** 0.976
-
-
-def _agb_ipcc_generic(dbh: float) -> float:
-    # ln(AGB) = -2.289 + 2.649 * ln(DBH) - 0.021 * (ln(DBH))^2
-    ld = math.log(max(dbh, 0.1))
-    return math.exp(-2.289 + 2.649 * ld - 0.021 * ld * ld)
-
-
-def _interp_growth(curve: dict[int, float], age: float) -> float:
-    if not curve:
-        return 0.0
-    pts = sorted(curve.items())
-    ages = [p[0] for p in pts]
-    if age <= ages[0]:
-        return pts[0][1] * (age / ages[0]) if ages[0] > 0 else pts[0][1]
-    if age >= ages[-1]:
-        return pts[-1][1]
-    from itertools import pairwise
-    for (a0, v0), (a1, v1) in pairwise(pts):
-        if a0 <= age <= a1:
-            t = (age - a0) / (a1 - a0)
-            return v0 + t * (v1 - v0)
-    return pts[-1][1]
-
-
-def _height_from_dbh(dbh: float, sp: SpeciesAllometric | None) -> float:
-    # Generic H-DBH: H = 1.3 + a*(1 - exp(-b*DBH))  (Feldpausch-style)
-    a = float(sp.max_height_m) if sp else 22.0
-    b = 0.05
-    return 1.3 + a * (1.0 - math.exp(-b * dbh))
-
-
-# ---------------------------------------------------------------------------
-# Engine
-# ---------------------------------------------------------------------------
+_agb_species = agb_species
+_agb_chave = agb_chave
+_agb_ipcc_generic = agb_ipcc_generic
+_interp_growth = interp_growth
+_height_from_dbh = height_from_dbh
+_ipcc_root_shoot = ipcc_root_shoot
 
 
 class CarbonEngine:
@@ -207,6 +185,35 @@ class CarbonEngine:
         carbon = total_biomass * cf
         co2e = carbon * (44.0 / 12.0)
 
+        deadwood_kg: float | None = None
+        litter_kg: float | None = None
+        soc_carbon_kg: float | None = None
+        total_with_pools_co2e: float | None = None
+        if inp.include_other_pools:
+            from app.services.carbon.pools import compute_carbon_pools
+
+            pools = compute_carbon_pools(
+                agb_kg=agb,
+                bgb_kg=bgb,
+                carbon_fraction=cf,
+                deadwood_ratio=inp.deadwood_ratio,
+                litter_ratio=inp.litter_ratio,
+                soc_tco2e_per_ha=inp.soc_tco2e_per_ha,
+                area_ha=inp.area_ha,
+            )
+            deadwood_kg = pools.deadwood_kg
+            litter_kg = pools.litter_kg
+            soc_carbon_kg = pools.soc_carbon_kg
+            total_with_pools_co2e = pools.total_co2e_kg
+            total_biomass = pools.total_biomass_kg
+            carbon = pools.total_carbon_kg
+            co2e = pools.total_co2e_kg
+            notes.append(
+                f"Other pools included: deadwood {inp.deadwood_ratio:.0%}, "
+                f"litter {inp.litter_ratio:.0%}"
+                + (f", SOC {inp.soc_tco2e_per_ha:.2f} tCO₂e/ha" if inp.soc_tco2e_per_ha else "")
+            )
+
         # Annual sequestration: difference vs one year prior on growth curve.
         annual_seq_kg: float | None = None
         if sp and sp.growth_curve and inp.age_years is not None and inp.age_years > 0:
@@ -219,10 +226,37 @@ class CarbonEngine:
             annual_seq_kg = max(0.0, co2e - prev_co2e)
 
         # Lifetime credits projected over species useful life (max DBH age)
+        from app.services.carbon.buffer import resolve_buffer_pct
+        from app.services.carbon.mortality import (
+            apply_mortality_to_yearly_deltas,
+            effective_annual_mortality_pct,
+        )
+
+        buffer_pct = resolve_buffer_pct(
+            inp.methodology,
+            buffer_pct=inp.buffer_pct,
+            nprt_score=inp.nprt_score,
+        )
+        mortality_pct = effective_annual_mortality_pct(
+            climate_zone=inp.climate_zone,
+            ecological_zone=inp.ecological_zone,
+            age_years=inp.age_years or 0.0,
+            annual_mortality_pct=inp.annual_mortality_pct,
+        )
+        if inp.nprt_score is not None:
+            notes.append(
+                f"Dynamic NPRT buffer: {buffer_pct * 100:.0f}% (NPRT score {inp.nprt_score:.0f})"
+            )
+        elif inp.buffer_pct is not None:
+            notes.append(f"Custom buffer pool: {buffer_pct * 100:.0f}%")
+        if mortality_pct > 0:
+            notes.append(f"Mortality-adjusted projection: {mortality_pct:.1f}% annual mortality")
+
         lifetime_credits_t: float | None = None
+        projected_lifetime_t: float | None = None
         if sp and sp.growth_curve:
             max_age = max(sp.growth_curve.keys())
-            cumulative = 0.0
+            yearly_deltas: list[float] = []
             for yr in range(1, int(max_age) + 1):
                 d_now = _interp_growth(sp.growth_curve, yr)
                 d_prev = _interp_growth(sp.growth_curve, yr - 1)
@@ -230,19 +264,17 @@ class CarbonEngine:
                 a_prev = _agb_species(d_prev, sp) if d_prev > 0 else 0.0
                 delta_biomass = (a_now - a_prev) * (1 + r)
                 delta_co2e = delta_biomass * cf * (44.0 / 12.0)
-                cumulative += max(0.0, delta_co2e)
-            lifetime_credits_t = (cumulative / 1000.0) * (
-                1.0 - BUFFER_POOL.get(inp.methodology, 0.0)
-            )
+                yearly_deltas.append(max(0.0, delta_co2e))
 
-        # Revenue
-        revenue: float | None = None
-        if lifetime_credits_t is not None:
-            revenue = (
-                lifetime_credits_t
-                * inp.price_usd_per_credit
-                * TIER_FACTOR.get(inp.verification_tier, 0.55)
+            gross_kg = apply_mortality_to_yearly_deltas(
+                yearly_deltas,
+                climate_zone=inp.climate_zone,
+                ecological_zone=inp.ecological_zone,
+                start_age_years=inp.age_years or 0.0,
+                annual_mortality_pct=inp.annual_mortality_pct,
             )
+            projected_lifetime_t = (gross_kg / 1000.0) * (1.0 - buffer_pct)
+            lifetime_credits_t = projected_lifetime_t
 
         # Confidence: input completeness + species coverage
         comp = 0.0
@@ -257,6 +289,59 @@ class CarbonEngine:
         if inp.wood_density is not None or sp is not None:
             comp += 0.10
         confidence = max(0.05, min(1.0, comp))
+
+        height_estimated = inp.height_m is None
+        from app.services.carbon.uncertainty import (
+            apply_verra_deduction_to_credits,
+            propagate_co2e_uncertainty,
+        )
+
+        uncertainty = propagate_co2e_uncertainty(
+            inp,
+            point_co2e_kg=co2e,
+            dbh_cm=dbh,
+            height_m=height,
+            wd=wd,
+            root_shoot=r,
+            carbon_fraction=cf,
+            sp=sp,
+            agb_method=agb_method,
+            derived_dbh=derived_dbh,
+            height_estimated=height_estimated,
+        )
+        if uncertainty.uncertainty_pct > 0:
+            notes.append(
+                f"90% CI CO₂e: {uncertainty.co2e_kg_lower_90:.1f}–{uncertainty.co2e_kg_upper_90:.1f} kg "
+                f"(±{uncertainty.uncertainty_pct:.1f}%)"
+            )
+        if uncertainty.verra_deduction_pct > 0:
+            notes.append(
+                f"Verra VM0047 uncertainty deduction: {uncertainty.verra_deduction_pct:.1f}% "
+                f"(threshold 15%)"
+            )
+        lifetime_credits_t = apply_verra_deduction_to_credits(
+            lifetime_credits_t, uncertainty.uncertainty_pct, inp.methodology
+        )
+        if projected_lifetime_t is not None and lifetime_credits_t is not None:
+            projected_lifetime_t = lifetime_credits_t
+
+        verified_co2e: float | None = None
+        verified_lifetime_t: float | None = None
+        is_ex_post = inp.ex_post_verified or inp.verification_tier in _EX_POST_TIERS
+        if is_ex_post:
+            verified_co2e = uncertainty.creditable_co2e_kg or co2e
+            verified_lifetime_t = round(
+                (verified_co2e / 1000.0) * (1.0 - buffer_pct), 3
+            )
+            notes.append("Ex-post verified standing stock applied to creditable quantity")
+
+        revenue: float | None = None
+        if lifetime_credits_t is not None:
+            revenue = (
+                lifetime_credits_t
+                * inp.price_usd_per_credit
+                * TIER_FACTOR.get(inp.verification_tier, 0.55)
+            )
 
         return CarbonResult(
             agb_kg=round(agb, 2),
@@ -273,6 +358,22 @@ class CarbonEngine:
             methodology=inp.methodology,
             engine_version=self.version,
             notes=notes,
+            co2e_kg_lower_90=uncertainty.co2e_kg_lower_90,
+            co2e_kg_upper_90=uncertainty.co2e_kg_upper_90,
+            uncertainty_pct=uncertainty.uncertainty_pct,
+            verra_deduction_pct=uncertainty.verra_deduction_pct,
+            creditable_co2e_kg=uncertainty.creditable_co2e_kg,
+            projected_lifetime_credits_tco2e=(
+                round(projected_lifetime_t, 3) if projected_lifetime_t is not None else None
+            ),
+            verified_co2e_kg=round(verified_co2e, 2) if verified_co2e is not None else None,
+            verified_lifetime_credits_tco2e=verified_lifetime_t,
+            buffer_pct_applied=round(buffer_pct, 4),
+            effective_annual_mortality_pct=mortality_pct,
+            deadwood_kg=deadwood_kg,
+            litter_kg=litter_kg,
+            soc_carbon_kg=soc_carbon_kg,
+            total_with_pools_co2e_kg=total_with_pools_co2e,
         )
 
 

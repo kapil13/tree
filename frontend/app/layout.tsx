@@ -1,18 +1,50 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import { Noto_Sans_Devanagari, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
+import { PwaRegister } from "@/components/pwa/pwa-register";
+import { ROOT_METADATA } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "BYOT — Bring Your Own Tree",
-  description:
-    "Register trees, monitor health, estimate carbon sequestration, and generate verifiable carbon-credit reports.",
-};
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-indic",
+  display: "swap",
+});
+
+export const metadata = ROOT_METADATA;
+
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen antialiased">
-        <Providers>{children}</Providers>
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={`${sourceSans.variable} ${sourceSerif.variable} ${notoDevanagari.variable}`}
+    >
+      <body className="min-h-screen font-sans antialiased">
+        <NextIntlClientProvider key={locale} locale={locale} messages={messages}>
+          <Providers>
+            <PwaRegister />
+            {children}
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,0 +1,293 @@
+"""Build MRV / compliance export context for planting projects."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from geoalchemy2.shape import to_shape
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.plantation_fence import PlantationFence
+from app.models.planting_compliance_violation import PlantingComplianceViolation
+from app.models.planting_project import PlantingProject
+from app.models.tree import Tree
+from app.services.planting_projects.rule_engine import get_effective_rules
+from app.services.planting_projects.service import get_active_standard
+from app.services.schemes.kpis import compute_scheme_kpis
+from app.services.schemes.registry import get_scheme
+
+
+def _segment_report(
+    segment: str,
+    work_areas: list[dict],
+    trees: list[dict],
+    native_pct: float | None,
+    scheme_refs: dict[str, Any] | None = None,
+) -> dict:
+    if segment == "nhai_highway":
+        chainage_trees = [t for t in trees if t.get("chainage_km") is not None]
+        return {
+            "type": "nhai_chainage",
+            "trees_with_chainage": len(chainage_trees),
+            "work_area_count": len(work_areas),
+        }
+    if segment == "industrial_greenbelt":
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "mine_greenbelt",
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+        }
+    if segment == "township_landscape":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        return {
+            "type": "township_blocks",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+        }
+    if segment == "nagar_van_urban":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "urban_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "scheme_tree_target": 10000,
+        }
+    if segment == "sahakar_van_coop":
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        total_acres = round(total_ha * 2.471, 2) if total_ha else None
+        density = round(len(trees) / total_ha, 1) if total_ha else None
+        return {
+            "type": "cooperative_forest_block",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "total_area_ha": round(total_ha, 2) if total_ha else None,
+            "total_area_acres": total_acres,
+            "density_per_ha": density,
+            "native_species_pct": native_pct,
+            "plantation_methods": ["miyawaki", "conventional", "mixed"],
+            "reference_site_acres": 64,
+        }
+    if segment == "nutri_garden":
+        refs = scheme_refs or {}
+        blocks = {w.get("segment_code") or w.get("name") for w in work_areas}
+        total_ha = sum(w.get("area_ha") or 0 for w in work_areas)
+        declared_ha: float | None = None
+        raw_declared = refs.get("site_area_ha")
+        if raw_declared is not None:
+            try:
+                declared_ha = float(raw_declared)
+            except (TypeError, ValueError):
+                declared_ha = None
+        block_types: dict[str, int] = {}
+        for area in work_areas:
+            code = area.get("segment_code")
+            if code:
+                block_types[str(code)] = block_types.get(str(code), 0) + 1
+        area_match_pct = None
+        if declared_ha and total_ha:
+            area_match_pct = round(100 * total_ha / declared_ha, 1)
+        target_fruit = refs.get("target_fruit_trees")
+        return {
+            "type": "nutri_garden_site",
+            "block_count": len(blocks),
+            "tree_count": len(trees),
+            "fruit_tree_count": len(trees),
+            "site_type": refs.get("site_type"),
+            "apv_site_id": refs.get("apv_site_id"),
+            "gram_panchayat": refs.get("gram_panchayat"),
+            "anganwadi_name": refs.get("anganwadi_name"),
+            "shg_name": refs.get("shg_name"),
+            "declared_site_area_ha": declared_ha,
+            "mapped_total_area_ha": round(total_ha, 4) if total_ha else None,
+            "area_match_pct": area_match_pct,
+            "target_fruit_trees": int(target_fruit) if target_fruit is not None else None,
+            "min_trees_target": 50,
+            "block_types": block_types,
+            "native_species_pct": native_pct,
+            "mgnrega_job_card_ref": refs.get("mgnrega_job_card_ref"),
+        }
+    return {"type": "general", "tree_count": len(trees)}
+
+
+async def build_project_mrv_context(
+    db: AsyncSession, project: PlantingProject
+) -> dict[str, Any]:
+    standard = await get_active_standard(db, project)
+    rules = await get_effective_rules(db, standard, project_id=project.id if project else None)
+
+    work_areas_res = await db.execute(
+        select(PlantationFence)
+        .where(PlantationFence.project_id == project.id)
+        .order_by(PlantationFence.created_at.asc())
+    )
+    work_areas = list(work_areas_res.scalars().all())
+    work_area_rows: list[dict[str, Any]] = []
+    for fence in work_areas:
+        tree_count = int(
+            (
+                await db.execute(
+                    select(func.count()).where(
+                        Tree.plantation_id == fence.id,
+                        Tree.status != "removed",
+                    )
+                )
+            ).scalar_one()
+            or 0
+        )
+        work_area_rows.append(
+            {
+                "name": fence.name,
+                "geometry_type": fence.geometry_type,
+                "segment_code": fence.segment_code,
+                "chainage_start_km": float(fence.chainage_start_km)
+                if fence.chainage_start_km is not None
+                else None,
+                "chainage_end_km": float(fence.chainage_end_km)
+                if fence.chainage_end_km is not None
+                else None,
+                "area_ha": float(fence.area_ha) if fence.area_ha is not None else None,
+                "tree_count": tree_count,
+            }
+        )
+
+    trees_res = await db.execute(
+        select(Tree)
+        .where(Tree.project_id == project.id, Tree.status != "removed")
+        .order_by(Tree.created_at.asc())
+        .limit(2000)
+    )
+    trees = list(trees_res.scalars().all())
+    tree_rows: list[dict[str, Any]] = []
+    survival_counts: dict[str, int] = {}
+    native_count = 0
+    for tree in trees:
+        meta = tree.metadata_ or {}
+        survival = str(meta.get("survival_status") or "unknown")
+        survival_counts[survival] = survival_counts.get(survival, 0) + 1
+        if meta.get("is_native") in (True, "true", "yes", "1"):
+            native_count += 1
+        pt = to_shape(tree.location)
+        tree_rows.append(
+            {
+                "public_code": tree.public_code,
+                "species": tree.species_text or "Unknown",
+                "health": tree.current_health,
+                "survival_status": survival,
+                "chainage_km": meta.get("chainage_km"),
+                "lat": round(pt.y, 6),
+                "lon": round(pt.x, 6),
+                "planted_at": tree.planted_at.isoformat() if tree.planted_at else None,
+                "last_geotag_at": tree.last_geotag_at.isoformat()
+                if tree.last_geotag_at
+                else None,
+            }
+        )
+
+    violations_res = await db.execute(
+        select(PlantingComplianceViolation)
+        .where(PlantingComplianceViolation.project_id == project.id)
+        .order_by(PlantingComplianceViolation.created_at.desc())
+        .limit(500)
+    )
+    violations = list(violations_res.scalars().all())
+    open_violations = [v for v in violations if v.resolved_at is None]
+    resolved_count = len(violations) - len(open_violations)
+
+    violation_rows = [
+        {
+            "severity": v.severity,
+            "violation_type": v.violation_type,
+            "message": v.message,
+            "tree_id": str(v.tree_id) if v.tree_id else None,
+            "resolved": v.resolved_at is not None,
+            "created_at": v.created_at.isoformat(),
+        }
+        for v in violations[:100]
+    ]
+
+    total_trees = len(trees)
+    native_pct = round((native_count / total_trees) * 100, 1) if total_trees else None
+
+    scheme_code = getattr(project, "scheme_code", None)
+    scheme = get_scheme(scheme_code) if scheme_code else None
+    meta = getattr(project, "metadata_", None) or {}
+    scheme_refs = meta.get("scheme_refs") if isinstance(meta.get("scheme_refs"), dict) else {}
+    scheme_kpis = await compute_scheme_kpis(db, project)
+
+    integrity_fusion: dict[str, Any] | None = None
+    try:
+        from app.services.integrity.export import build_integrity_fusion_export
+
+        integrity_fusion = await build_integrity_fusion_export(db, project)
+    except Exception:
+        integrity_fusion = None
+
+    return {
+        "project": {
+            "code": project.code,
+            "name": project.name,
+            "segment": project.segment,
+            "compliance_mode": project.compliance_mode,
+            "status": project.status,
+            "target_tree_count": project.target_tree_count,
+            "scheme_code": scheme_code,
+            "standard_name": standard.name if standard else None,
+            "standard_template": standard.template_code if standard else None,
+        },
+        "scheme": {
+            "code": scheme["code"] if scheme else None,
+            "label": scheme["label"] if scheme else None,
+            "ministry": scheme["ministry"] if scheme else None,
+            "refs": scheme_refs,
+            "funding_sources": meta.get("funding_sources") or [],
+            "convergence": meta.get("convergence") or [],
+            "kpi_targets": dict(scheme.get("kpi_targets") or {}) if scheme else {},
+            "kpis": scheme_kpis,
+        },
+        "rules_summary": {
+            "spacing_m": rules.get("spacing_m"),
+            "min_photos": rules.get("min_photos"),
+            "pit_size_cm": rules.get("pit_size_cm"),
+            "allowed_species": rules.get("allowed_species"),
+            "native_species_min_pct": rules.get("species_native_pct_min"),
+            "max_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("max"),
+            "min_trees_per_ha": (rules.get("planting_density_per_ha") or {}).get("min"),
+            "layout_pattern": rules.get("layout_pattern"),
+            "chainage_enabled": rules.get("chainage_enabled"),
+            "min_trees_project": rules.get("min_trees_project"),
+            "work_area_geometry": rules.get("work_area_geometry"),
+            "block_types": rules.get("block_types"),
+            "plantation_methods": rules.get("plantation_methods"),
+            "rainwater_harvest_required": rules.get("rainwater_harvest_required"),
+            "site_area_acres_reference": rules.get("site_area_acres_reference"),
+        },
+        "segment_report": _segment_report(
+            project.segment,
+            work_area_rows,
+            tree_rows,
+            native_pct,
+            scheme_refs,
+        ),
+        "summary": {
+            "work_area_count": len(work_areas),
+            "tree_count": total_trees,
+            "open_violations": len(open_violations),
+            "resolved_violations": resolved_count,
+            "native_species_pct": native_pct,
+            "survival_counts": survival_counts,
+        },
+        "work_areas": work_area_rows,
+        "trees": tree_rows,
+        "violations": violation_rows,
+        "integrity_fusion": integrity_fusion,
+    }

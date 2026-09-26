@@ -2,15 +2,99 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import alerts, analysis, auth, carbon, contact, dashboard, reports, satellite, trees
+from app.api.v1 import (
+    ai_scans,
+    alerts,
+    analysis,
+    audit,
+    audit_engagements,
+    auth,
+    bhoonidhi,
+    bioacoustic,
+    carbon,
+    citizen,
+    cms,
+    compliance,
+    contact,
+    credits,
+    dashboard,
+    devices,
+    emissions,
+    evidence,
+    health,
+    india_admin,
+    intelligence,
+    ogc,
+    onboarding,
+    organizations,
+    payments,
+    plantation_fences,
+    plantation_reports,
+    planting_programs,
+    planting_projects,
+    platform,
+    plot_monitoring,
+    privacy,
+    reporting,
+    reports,
+    sar,
+    satellite,
+    satellite_health,
+    schemes,
+    threats,
+    trees,
+    uploads,
+    verification,
+    verification_workflow,
+    weather,
+    webhooks,
+)
 
 api_router = APIRouter(prefix="/api/v1")
-api_router.include_router(contact.router)
+api_router.include_router(health.router)
+api_router.include_router(india_admin.router)
 api_router.include_router(auth.router)
+api_router.include_router(onboarding.router)
+api_router.include_router(audit.router)
+api_router.include_router(audit_engagements.router)
 api_router.include_router(trees.router)
 api_router.include_router(analysis.router)
+api_router.include_router(ai_scans.router)
+api_router.include_router(payments.router)
 api_router.include_router(satellite.router)
+api_router.include_router(sar.router)
+api_router.include_router(satellite_health.router)
+api_router.include_router(plantation_fences.router)
+api_router.include_router(planting_programs.router)
+api_router.include_router(schemes.router)
+api_router.include_router(planting_projects.router)
+api_router.include_router(plantation_reports.router)
+api_router.include_router(emissions.router)
+api_router.include_router(organizations.router)
+api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
+api_router.include_router(evidence.router)
+api_router.include_router(privacy.router)
+api_router.include_router(compliance.router)
+api_router.include_router(contact.router)
+api_router.include_router(cms.public_router)
+api_router.include_router(cms.admin_router)
+api_router.include_router(platform.router)
+api_router.include_router(plot_monitoring.router)
+api_router.include_router(credits.router)
+api_router.include_router(citizen.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(devices.router)
+api_router.include_router(intelligence.router)
 api_router.include_router(alerts.router)
+api_router.include_router(threats.router)
+api_router.include_router(uploads.router)
+api_router.include_router(bioacoustic.router)
+api_router.include_router(bhoonidhi.router)
 api_router.include_router(reports.router)
+api_router.include_router(reporting.router)
+api_router.include_router(ogc.router)
+api_router.include_router(webhooks.router)
+api_router.include_router(verification.router)
+api_router.include_router(verification.public_router)
+api_router.include_router(verification_workflow.router)

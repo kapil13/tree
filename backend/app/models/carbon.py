@@ -27,6 +27,12 @@ class CarbonCalculation(UUIDPKMixin, Base):
     carbon_kg: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     co2e_kg: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
 
+    co2e_kg_lower_90: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    co2e_kg_upper_90: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    uncertainty_pct: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    verra_deduction_pct: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    creditable_co2e_kg: Mapped[float | None] = mapped_column(Numeric(12, 2))
+
     annual_sequestration_kg: Mapped[float | None] = mapped_column(Numeric(12, 2))
     lifetime_credits_tco2e: Mapped[float | None] = mapped_column(Numeric(12, 3))
     estimated_revenue_usd: Mapped[float | None] = mapped_column(Numeric(12, 2))

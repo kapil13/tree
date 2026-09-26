@@ -1,0 +1,111 @@
+"use client";
+
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { compliance } from "@/lib/api";
+import { portfolioComplianceHref } from "@/lib/compliance-links";
+import { fieldOpsHref } from "@/lib/field-ops-links";
+import { reportTabHref, type ReportTab } from "@/lib/report-tabs";
+import { scopedKey } from "@/lib/query-keys";
+import { useAuth } from "@/lib/auth-store";
+import { cn } from "@/lib/cn";
+import { fmtNum, fmtPct } from "@/components/dashboard/format";
+
+export function CompliancePortfolioStrip({ className }: { className?: string }) {
+  const { user } = useAuth();
+  const te = useTranslations("executive");
+  const { data, isLoading } = useQuery({
+    queryKey: scopedKey(user, "compliance-portfolio-summary"),
+    queryFn: () => compliance.portfolioSummary(),
+    staleTime: 60_000,
+  });
+
+  if (isLoading || !data) return null;
+
+  const warnReadiness = data.avg_readiness_pct < 80;
+  const warnViolations = data.open_violations > 0;
+  const warnBlocking = data.blocking_violations > 0;
+  const warnSafeguards = data.safeguard_gap_count > 0;
+
+  return (
+    <section className={cn("dash-panel dash-panel--compliance", className)}>
+      <div className="dash-panel-head">
+        <div>
+          <h2 className="dash-panel-title flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-forest-600" />
+            {te("compliancePosture")}
+          </h2>
+          <p className="dash-panel-sub">
+            {te("readinessAcrossProjects", { count: data.project_count })}
+          </p>
+        </div>
+        <Link href={portfolioComplianceHref()} className="dash-link">
+          {te("portfolioCompliance")} <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          {
+            label: te("avgReadiness"),
+            value: fmtPct(data.avg_readiness_pct),
+            href: portfolioComplianceHref(),
+            icon: ShieldCheck,
+            warn: warnReadiness,
+          },
+          {
+            label: te("openViolations"),
+            value: fmtNum(data.open_violations),
+            href: portfolioComplianceHref(),
+            icon: ShieldAlert,
+            warn: warnViolations,
+          },
+          {
+            label: te("blocking"),
+            value: fmtNum(data.blocking_violations),
+            href: fieldOpsHref({ section: "attention" }),
+            icon: ShieldAlert,
+            warn: warnBlocking,
+          },
+          {
+            label: te("safeguardGaps"),
+            value: fmtNum(data.safeguard_gap_count),
+            href: portfolioComplianceHref(),
+            icon: ShieldCheck,
+            warn: warnSafeguards,
+          },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={cn("dash-command-item", item.warn && "dash-command-item--warn")}
+          >
+            <item.icon className="h-4 w-4 shrink-0 opacity-70" />
+            <div>
+              <p className="dash-command-value">{item.value}</p>
+              <p className="dash-command-label">{item.label}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-4">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+          {te("orgExports")}
+        </span>
+        {data.report_links.map((link) => (
+          <Link
+            key={link.tab}
+            href={reportTabHref(link.tab as ReportTab)}
+            className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-600 transition hover:border-forest-200 hover:text-forest-800"
+          >
+            <FileText className="h-3 w-3 opacity-60" />
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}

@@ -16,6 +16,12 @@ dist/
 # Flutter
 .dart_tool/
 build/
+.flutter/
+android-sdk/
+byot-release.apk
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/**/GeneratedPluginRegistrant.java
 
 # Terraform
 .terraform/
@@ -38,3 +44,8 @@ coverage.xml
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Local dev process files
+.dev/
+aranyix-android-*.apk
+byot-release.apk

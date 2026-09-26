@@ -1,80 +1,1042 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/signup_api.dart';
+import 'api_base_url.dart';
+import 'api_errors.dart';
+import 'upload_mime.dart';
+import '../services/certificate_pinning.dart';
+import '../session.dart';
+
+export 'api_base_url.dart' show kByotApiBase, allowCustomApiBase;
+
+/// Requests that establish credentials must not trigger refresh / session-expired handling.
+const _publicAuthPaths = {
+  '/auth/login',
+  '/auth/signup/start',
+  '/auth/signup/verify-phone',
+  '/auth/signup/send-email-otp',
+  '/auth/signup/complete',
+  '/auth/otp/request',
+  '/auth/otp/verify',
+  '/auth/password-reset/request',
+  '/auth/password-reset/confirm',
+  '/auth/refresh',
+  '/auth/google/login',
+  '/auth/captcha-config',
+  '/auth/otp-config',
+  '/citizen/signup/start',
+  '/citizen/signup/complete',
+};
+
+bool _isPublicAuthRequest(RequestOptions options) {
+  if (options.extra['skipSessionRecovery'] == true) return true;
+  final path = options.uri.path;
+  return _publicAuthPaths.any((p) => path.endsWith(p));
+}
+
+/// Suppresses session-expired side effects while credentials are being exchanged.
+bool _authExchangeInProgress = false;
+
+void beginAuthExchange() => _authExchangeInProgress = true;
+
+void endAuthExchange() => _authExchangeInProgress = false;
+
 class ApiClient {
-  ApiClient._(this._dio);
+  ApiClient._(this._dio, this._prefs, this._secure);
 
   final Dio _dio;
+  final SharedPreferences _prefs;
+  final FlutterSecureStorage _secure;
+  Future<bool>? _refreshFuture;
 
   static const _tokenKey = 'byot_access_token';
+  static const _refreshKey = 'byot_refresh_token';
   static const _baseUrlKey = 'byot_base_url';
-  static const _defaultBaseUrl = 'http://10.0.2.2:8000'; // Android emulator → host
+
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    // ignore: deprecated_member_use — task requires encryptedSharedPreferences
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  static Future<String> loadBaseUrl() async {
+    if (!allowCustomApiBase) {
+      return kByotApiBase;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_baseUrlKey) ?? kByotApiBase;
+  }
+
+  static Future<void> saveBaseUrl(String url) async {
+    final normalized = normalizeApiBaseUrl(url);
+    assertAllowedApiBaseUrl(normalized);
+    if (!allowCustomApiBase) {
+      // Release builds without BYOT_ALLOW_CUSTOM_API keep the production default.
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_baseUrlKey, normalized);
+  }
+
+  static Future<void> _migrateTokensIfNeeded(
+    SharedPreferences prefs,
+    FlutterSecureStorage secure,
+  ) async {
+    final secureAccess = await secure.read(key: _tokenKey);
+    if (secureAccess != null && secureAccess.isNotEmpty) {
+      return;
+    }
+    final legacyAccess = prefs.getString(_tokenKey);
+    if (legacyAccess == null || legacyAccess.isEmpty) {
+      return;
+    }
+    await secure.write(key: _tokenKey, value: legacyAccess);
+    final legacyRefresh = prefs.getString(_refreshKey);
+    if (legacyRefresh != null && legacyRefresh.isNotEmpty) {
+      await secure.write(key: _refreshKey, value: legacyRefresh);
+    }
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshKey);
+  }
 
   static Future<ApiClient> create() async {
     final prefs = await SharedPreferences.getInstance();
-    final base = prefs.getString(_baseUrlKey) ?? _defaultBaseUrl;
+    const secure = _secureStorage;
+    await _migrateTokensIfNeeded(prefs, secure);
+
+    final base = await loadBaseUrl();
     final dio = Dio(BaseOptions(
       baseUrl: '$base/api/v1',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {'Content-Type': 'application/json'},
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 45),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Aranyix-Client': 'mobile/1.8.0',
+      },
     ));
-    final token = prefs.getString(_tokenKey);
+    CertificatePinning.configureDio(dio);
+    final client = ApiClient._(dio, prefs, secure);
+    final token = await secure.read(key: _tokenKey);
     if (token != null) {
       dio.options.headers['Authorization'] = 'Bearer $token';
     }
-    return ApiClient._(dio);
+    dio.interceptors.add(InterceptorsWrapper(
+      onError: (error, handler) async {
+        if (error.response?.statusCode != 401) {
+          handler.next(error);
+          return;
+        }
+
+        // Login/signup 401 means bad credentials — never recycle refresh tokens or sign out.
+        if (_authExchangeInProgress || _isPublicAuthRequest(error.requestOptions)) {
+          handler.next(error);
+          return;
+        }
+
+        if (error.requestOptions.extra['retried'] == true) {
+          await client._clearSession(sessionExpired: true);
+          return handler.reject(
+            DioException(
+              requestOptions: error.requestOptions,
+              response: error.response,
+              type: DioExceptionType.badResponse,
+              error: const SessionExpiredException(),
+            ),
+          );
+        }
+
+        final refreshed = await client._refreshAccessToken();
+        if (refreshed) {
+          try {
+            final opts = error.requestOptions;
+            opts.extra['retried'] = true;
+            final access = await client._secure.read(key: _tokenKey);
+            opts.headers['Authorization'] = 'Bearer $access';
+            final response = await dio.fetch(opts);
+            return handler.resolve(response);
+          } catch (_) {
+            // fall through to sign out
+          }
+        }
+        await client._clearSession(sessionExpired: true);
+        return handler.reject(
+          DioException(
+            requestOptions: error.requestOptions,
+            response: error.response,
+            type: DioExceptionType.badResponse,
+            error: const SessionExpiredException(),
+          ),
+        );
+      },
+    ));
+    return client;
   }
 
-  Future<void> setToken(String token) async {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+  Future<bool> _refreshAccessToken() {
+    return _refreshFuture ??= _refreshAccessTokenImpl().whenComplete(() {
+      _refreshFuture = null;
+    });
   }
+
+  Future<bool> _refreshAccessTokenImpl() async {
+    final refresh = await _secure.read(key: _refreshKey);
+    if (refresh == null) return false;
+    try {
+      final r = await _dio.post(
+        '/auth/refresh',
+        data: {'refresh_token': refresh},
+        options: Options(extra: {'retried': true}),
+      );
+      final data = Map<String, dynamic>.from(r.data);
+      await setTokens(
+        accessToken: data['access_token'] as String,
+        refreshToken: data['refresh_token'] as String?,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _clearSession({bool sessionExpired = false}) async {
+    final wasAuthenticated = sessionController.authenticated;
+    _dio.options.headers.remove('Authorization');
+    await _secure.delete(key: _tokenKey);
+    await _secure.delete(key: _refreshKey);
+    // Clear any leftover legacy prefs tokens.
+    await _prefs.remove(_tokenKey);
+    await _prefs.remove(_refreshKey);
+    sessionController.signOut(sessionExpired: sessionExpired && wasAuthenticated);
+  }
+
+  /// Drops stored tokens locally without calling the logout API (e.g. before sign-in).
+  Future<void> clearLocalSession({bool sessionExpired = false}) async {
+    await _clearSession(sessionExpired: sessionExpired);
+  }
+
+  Options _publicAuthOptions() => Options(extra: const {'skipSessionRecovery': true});
+
+  Future<void> setTokens({
+    required String accessToken,
+    String? refreshToken,
+    bool markSessionAuthenticated = false,
+  }) async {
+    _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+    await _secure.write(key: _tokenKey, value: accessToken);
+    if (refreshToken != null) {
+      await _secure.write(key: _refreshKey, value: refreshToken);
+    }
+    await _prefs.remove(_tokenKey);
+    await _prefs.remove(_refreshKey);
+    if (markSessionAuthenticated) {
+      sessionController.setAuthenticated(true);
+    }
+  }
+
+  Future<void> setToken(String token) => setTokens(accessToken: token);
 
   Future<void> logout() async {
-    _dio.options.headers.remove('Authorization');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    final refresh = await _secure.read(key: _refreshKey);
+    if (refresh != null) {
+      try {
+        await _dio.post(
+          '/auth/logout',
+          data: {'refresh_token': refresh},
+          options: Options(extra: {'retried': true}),
+        );
+      } catch (_) {
+        // Best-effort revoke — still clear local session.
+      }
+    }
+    await _clearSession();
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final r = await _dio.post('/auth/login', data: {'email': email, 'password': password});
+  Future<bool> hasStoredToken() async {
+    final token = await _secure.read(key: _tokenKey);
+    return token != null && token.isNotEmpty;
+  }
+
+  String get baseUrl => _dio.options.baseUrl.replaceAll('/api/v1', '');
+
+  String publicTreeUrl(String publicCode) {
+    final host = Uri.parse(baseUrl).host;
+    if (host.startsWith('api.')) {
+      return 'https://${host.substring(4)}/p/$publicCode';
+    }
+    return '$baseUrl/p/$publicCode';
+  }
+
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/login',
+      data: {
+        'email': email,
+        'password': password,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> requestOtp({
+    String? email,
+    String? phone,
+    String? captchaToken,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/otp/request',
+      data: {
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> verifyOtp({
+    String? email,
+    String? phone,
+    required String code,
+    String? fullName,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/otp/verify',
+      data: {
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        'code': code,
+        if (fullName != null) 'full_name': fullName,
+      },
+      options: _publicAuthOptions(),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> requestPasswordReset({
+    required String email,
+    String? captchaToken,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/password-reset/request',
+      data: {
+        'email': email,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String password,
+    String? captchaToken,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/password-reset/confirm',
+      data: {
+        'email': email,
+        'code': code,
+        'password': password,
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> googleAuthorize() async {
+    final r = await _dio.get('/auth/google/login');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> submitOrgProfile(Map<String, dynamic> payload) async {
+    final r = await _dio.post('/auth/onboarding/org-profile', data: payload);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> captchaConfig() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/captcha-config')).data);
+
+  Future<SignupStartResult> signupStart({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    required String signupCategory,
+    String? captchaToken,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/start',
+      data: {
+        'full_name': fullName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'signup_category': signupCategory,
+        'client_platform': 'mobile',
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseSignupStartResponse(r.data);
+  }
+
+  Future<void> signupVerifyPhone({
+    required String signupToken,
+    required String code,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    await _dio.post(
+      '/auth/signup/verify-phone',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+      },
+      options: _publicAuthOptions(),
+    );
+  }
+
+  Future<SignupEmailOtpResult> signupSendEmailOtp(String signupToken) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/send-email-otp',
+      data: {
+        'signup_token': signupToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseSignupEmailOtpResponse(r.data);
+  }
+
+  Future<AuthTokenResult> signupComplete({
+    required String signupToken,
+    required String code,
+    required String signupCategory,
+  }) async {
+    _dio.options.headers.remove('Authorization');
+    final r = await _dio.post(
+      '/auth/signup/complete',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+        'signup_category': signupCategory,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseTokenResponse(r.data);
+  }
+
+  Future<Map<String, dynamic>> onboardingState() async =>
+      Map<String, dynamic>.from((await _dio.get('/auth/onboarding')).data);
+
+  Future<List<Map<String, dynamic>>> audiencePresets() async {
+    final r = await _dio.get('/onboarding/audience-presets');
+    final items = r.data['items'] as List<dynamic>? ?? [];
+    return items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<void> selectAudience(String audience) async {
+    await _dio.post('/onboarding/audience', data: {'audience': audience});
   }
 
   Future<Map<String, dynamic>> me() async =>
       Map<String, dynamic>.from((await _dio.get('/auth/me')).data);
 
-  Future<Map<String, dynamic>> dashboard() async =>
-      Map<String, dynamic>.from((await _dio.get('/dashboard')).data);
+  Future<Map<String, dynamic>> updateProfile({
+    required String fullName,
+    String? phone,
+    String? locale,
+    String? dateOfBirth,
+    String? dateOfMarriage,
+    String? city,
+    String? state,
+  }) async {
+    final r = await _dio.patch('/auth/me', data: {
+      'full_name': fullName,
+      'phone': phone,
+      if (locale != null) 'locale': locale,
+      'date_of_birth': dateOfBirth,
+      'date_of_marriage': dateOfMarriage,
+      'city': city,
+      'state': state,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
 
-  Future<List<dynamic>> listTrees() async {
-    final r = await _dio.get('/trees');
-    return List<dynamic>.from(r.data['items'] ?? []);
+  Future<Map<String, dynamic>> previewOrgInvite(String token) async {
+    final r = await _dio.get(
+      '/organizations/invites/preview',
+      queryParameters: {'token': token},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> acceptOrgInvite(String inviteToken) async {
+    final r = await _dio.post(
+      '/organizations/invites/accept',
+      data: {'invite_token': inviteToken},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> dashboard({String? projectId}) async {
+    final r = await _dio.get(
+      '/dashboard',
+      queryParameters: projectId != null ? {'project_id': projectId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listTrees({
+    int page = 1,
+    int pageSize = 100,
+    String? bbox,
+    String? projectId,
+  }) async {
+    final result = await listTreesPage(
+      page: page,
+      pageSize: pageSize,
+      bbox: bbox,
+      projectId: projectId,
+    );
+    return result.items;
+  }
+
+  Future<({List<dynamic> items, int total, int page, int pageSize})> listTreesPage({
+    int page = 1,
+    int pageSize = 50,
+    String? bbox,
+    String? health,
+    String? projectId,
+    String? workAreaId,
+  }) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (bbox != null && bbox.isNotEmpty) params['bbox'] = bbox;
+    if (health != null && health.isNotEmpty) params['health'] = health;
+    if (projectId != null && projectId.isNotEmpty) params['project_id'] = projectId;
+    if (workAreaId != null && workAreaId.isNotEmpty) params['work_area_id'] = workAreaId;
+    final r = await _dio.get('/trees', queryParameters: params);
+    final data = r.data as Map<String, dynamic>;
+    return (
+      items: List<dynamic>.from(data['items'] ?? []),
+      total: (data['total'] as num?)?.toInt() ?? 0,
+      page: (data['page'] as num?)?.toInt() ?? page,
+      pageSize: (data['page_size'] as num?)?.toInt() ?? pageSize,
+    );
   }
 
   Future<Map<String, dynamic>> getTree(String id) async =>
       Map<String, dynamic>.from((await _dio.get('/trees/$id')).data);
 
   Future<Map<String, dynamic>> createTree({
+    required String programCode,
     required String speciesText,
     String? plantedAt,
     required double lat,
     required double lon,
     double? altitude,
     double? accuracy,
+    List<String> photoKeys = const [],
+    Map<String, dynamic> metadata = const {},
+    String? workAreaId,
+    Map<String, dynamic>? initialMeasurement,
   }) async {
     final r = await _dio.post('/trees', data: {
+      'program_code': programCode,
       'species_text': speciesText,
       'planted_at': plantedAt,
       'latitude': lat,
       'longitude': lon,
       'altitude_m': altitude,
       'accuracy_m': accuracy,
-      'photo_keys': [],
+      'photo_keys': photoKeys,
+      'metadata': metadata,
+      if (workAreaId != null) ...{
+        'work_area_id': workAreaId,
+        'plantation_id': workAreaId,
+      },
+      if (initialMeasurement != null) 'initial_measurement': initialMeasurement,
     });
     return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> fieldOpsSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/field-ops-summary')).data);
+
+  Future<Map<String, dynamic>> auditFieldPlotQueue({String? projectId, int limit = 50}) async {
+    final r = await _dio.get(
+      '/audit-engagements/field-plot-queue',
+      queryParameters: {
+        if (projectId != null) 'project_id': projectId,
+        'limit': limit,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> recordAuditFieldVisit({
+    required String engagementId,
+    required String plotId,
+    required String treePresence,
+    required List<String> photoKeys,
+    required double visitorLat,
+    required double visitorLon,
+    int? treesObserved,
+    int? treesAlive,
+    double? canopyCoverPct,
+    String verificationOutcome = 'inconclusive',
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/field-plots/$plotId/visits',
+      data: {
+        'tree_presence': treePresence,
+        'photo_keys': photoKeys,
+        'visitor_lat': visitorLat,
+        'visitor_lon': visitorLon,
+        if (treesObserved != null) 'trees_observed': treesObserved,
+        if (treesAlive != null) 'trees_alive': treesAlive,
+        if (canopyCoverPct != null) 'canopy_cover_pct': canopyCoverPct,
+        'verification_outcome': verificationOutcome,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> auditPortfolioSummary() async {
+    final r = await _dio.get('/audit-engagements/portfolio-summary');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getAuditAttestation(String engagementId) async {
+    final r = await _dio.get('/audit-engagements/$engagementId/attestation');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> reviewAuditAnomaly({
+    required String engagementId,
+    required String anomalyId,
+    required String disposition,
+    required String rationale,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/anomalies/$anomalyId/review',
+      data: {
+        'disposition': disposition,
+        'rationale': rationale,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> signAuditAttestation({
+    required String engagementId,
+    required String verdict,
+    required String summary,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/attestation/sign',
+      data: {
+        'verdict': verdict,
+        'summary': summary,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> cosignAuditAttestation({
+    required String engagementId,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/audit-engagements/$engagementId/attestation/cosign',
+      data: {
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> createAuditVerificationLink(String engagementId) async {
+    final r = await _dio.post('/audit-engagements/$engagementId/verification-link');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> monitoringSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/monitoring-summary')).data);
+
+  Future<Map<String, dynamic>> createWorkArea(
+    String projectId, {
+    required String name,
+    required String geometryType,
+    Map<String, dynamic>? boundary,
+    Map<String, dynamic>? centerline,
+    double? bufferM,
+  }) async {
+    final r = await _dio.post('/planting-projects/$projectId/work-areas', data: {
+      'name': name,
+      'geometry_type': geometryType,
+      if (boundary != null) 'boundary': boundary,
+      if (centerline != null) 'centerline': centerline,
+      if (bufferM != null) 'buffer_m': bufferM,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listComplianceViolations(String projectId, {bool unresolvedOnly = true}) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/compliance-violations',
+      queryParameters: {'unresolved_only': unresolvedOnly},
+    );
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> resolveViolation(String projectId, String violationId) async {
+    final r = await _dio.post(
+      '/planting-projects/$projectId/compliance-violations/$violationId/resolve',
+    );
+    return Map<String, dynamic>.from(r.data is Map ? r.data : {'status': 'ok'});
+  }
+
+  Future<Map<String, dynamic>> survivalDue(String projectId) async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/$projectId/survival-due')).data);
+
+  Future<Map<String, dynamic>> regeotagTree(
+    String treeId, {
+    required double lat,
+    required double lon,
+    double? accuracy,
+    String? remarks,
+    String? survivalStatus,
+    String? photoKey,
+    double? dbhCm,
+    double? heightM,
+    double? canopyM,
+    String? method,
+    String? instrument,
+  }) async {
+    final r = await _dio.post('/trees/$treeId/regeotag', data: {
+      'latitude': lat,
+      'longitude': lon,
+      if (accuracy != null) 'accuracy_m': accuracy,
+      if (remarks != null) 'remarks': remarks,
+      if (survivalStatus != null) 'survival_status': survivalStatus,
+      if (photoKey != null) 'photo_key': photoKey,
+      if (dbhCm != null) 'dbh_cm': dbhCm,
+      if (heightM != null) 'height_m': heightM,
+      if (canopyM != null) 'canopy_m': canopyM,
+      if (method != null) 'method': method,
+      if (instrument != null) 'instrument': instrument,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> addTreeImage(
+    String treeId,
+    String s3Key, {
+    bool isPrimary = false,
+  }) async {
+    final r = await _dio.post(
+      '/trees/$treeId/images',
+      queryParameters: {
+        's3_key': s3Key,
+        'is_primary': isPrimary,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getIntegrityFusion(String projectId) async =>
+      Map<String, dynamic>.from(
+        (await _dio.get('/planting-projects/$projectId/integrity-fusion')).data,
+      );
+
+  Future<Map<String, dynamic>> listTreeMeasurements(
+    String treeId, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final r = await _dio.get('/trees/$treeId/measurements', queryParameters: {
+      'page': page,
+      'page_size': pageSize,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getAlertPreferences() async =>
+      Map<String, dynamic>.from((await _dio.get('/alerts/preferences')).data);
+
+  Future<Map<String, dynamic>> updateAlertPreferences(Map<String, dynamic> body) async {
+    final r = await _dio.patch('/alerts/preferences', data: body);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> carbonEstimate({
+    required String species,
+    double? dbhCm,
+    double? heightM,
+    double? ageYears,
+  }) async {
+    final r = await _dio.post('/carbon/estimate', data: {
+      'species': species,
+      if (dbhCm != null) 'dbh_cm': dbhCm,
+      if (heightM != null) 'height_m': heightM,
+      if (ageYears != null) 'age_years': ageYears,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> creditsSummary() async =>
+      Map<String, dynamic>.from((await _dio.get('/credits/summary')).data);
+
+  Future<Map<String, dynamic>> getProjectCreditLedger(String projectId) async =>
+      Map<String, dynamic>.from(
+        (await _dio.get('/credits/projects/$projectId')).data,
+      );
+
+  Future<List<dynamic>> listTreeAnalyses(String treeId) async {
+    final r = await _dio.get('/trees/$treeId/analyses');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>?> getSarTreeFusion(String treeId) async {
+    try {
+      final r = await _dio.get('/sar/trees/$treeId/fusion');
+      return Map<String, dynamic>.from(r.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getProjectPestIntel(
+    String projectId, {
+    String? workAreaId,
+  }) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/pest-intel',
+      queryParameters: workAreaId != null ? {'work_area_id': workAreaId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Downloads MRV compliance export to a temp file and returns the local path.
+  Future<String> downloadMrvExport({
+    required String projectId,
+    required String projectCode,
+    String format = 'pdf',
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/planting-projects/$projectId/mrv-export',
+      queryParameters: {'format': format},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final safeCode = projectCode.replaceAll('/', '-');
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/$safeCode-mrv-compliance.$ext';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
+  }
+
+  /// Downloads signed evidence bundle zip to a temp file and returns the local path.
+  Future<String> downloadEvidenceBundle({
+    required String projectId,
+    required String projectCode,
+    bool includePhotos = true,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/planting-projects/$projectId/evidence-bundle',
+      queryParameters: {'include_photos': includePhotos},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final safeCode = projectCode.replaceAll('/', '-');
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/$safeCode-evidence-bundle.zip';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
+  }
+
+  Future<List<dynamic>> listReports() async {
+    final r = await _dio.get('/reports');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> createReport({
+    required String reportType,
+    required String format,
+    String? plantationFenceId,
+  }) async {
+    final r = await _dio.post(
+      '/reports',
+      queryParameters: {
+        'kind': reportType,
+        'format': format,
+        if (plantationFenceId != null) 'plantation_fence_id': plantationFenceId,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Downloads a ready report to a temp file and returns the local path.
+  Future<String> downloadReportFile({
+    required String reportId,
+    required String kind,
+    required String format,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      '/reports/$reportId/download',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final dir = await getTemporaryDirectory();
+    final path = '${dir.path}/aranyix-$kind-$reportId.$ext';
+    await File(path).writeAsBytes(r.data ?? const []);
+    return path;
+  }
+
+  Future<Map<String, dynamic>> createPlantingProject({
+    required String code,
+    required String name,
+    String description = '',
+    String segment = 'general',
+    String complianceMode = 'guided',
+    String? programCode,
+    String? schemeCode,
+    String? standardTemplateCode,
+    int? targetTreeCount,
+    Map<String, dynamic> metadata = const {},
+  }) async {
+    final r = await _dio.post('/planting-projects', data: {
+      'code': code,
+      'name': name,
+      'description': description,
+      'segment': segment,
+      'compliance_mode': complianceMode,
+      if (programCode != null) 'program_code': programCode,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (standardTemplateCode != null) 'standard_template_code': standardTemplateCode,
+      if (targetTreeCount != null) 'target_tree_count': targetTreeCount,
+      'metadata': metadata,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listPlantingProjects({String? segment, int pageSize = 100}) async {
+    final r = await _dio.get('/planting-projects', queryParameters: {
+      'page': 1,
+      'page_size': pageSize,
+      if (segment != null) 'segment': segment,
+    });
+    return List<dynamic>.from(r.data['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getPlantingProject(String id) async =>
+      Map<String, dynamic>.from((await _dio.get('/planting-projects/$id')).data);
+
+  Future<Map<String, dynamic>> getCentralScheme(String code) async =>
+      Map<String, dynamic>.from((await _dio.get('/schemes/$code')).data);
+
+  Future<List<dynamic>> listWorkAreas(String projectId) async {
+    final r = await _dio.get('/planting-projects/$projectId/work-areas');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> complianceCheck(
+    String projectId, {
+    required String workAreaId,
+    required double lat,
+    required double lon,
+    double? accuracy,
+    String? speciesText,
+    required int photoCount,
+    Map<String, dynamic> metadata = const {},
+  }) async {
+    final r = await _dio.post('/planting-projects/$projectId/compliance-check', data: {
+      'work_area_id': workAreaId,
+      'latitude': lat,
+      'longitude': lon,
+      'accuracy_m': accuracy,
+      'species_text': speciesText,
+      'photo_count': photoCount,
+      'metadata': metadata,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> registrationContext(
+    String projectId, {
+    String? workAreaId,
+  }) async {
+    final r = await _dio.get(
+      '/planting-projects/$projectId/registration-context',
+      queryParameters: workAreaId != null ? {'work_area_id': workAreaId} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listEnrolledPlantingPrograms() async {
+    final r = await _dio.get('/planting-programs/enrolled');
+    return List<dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> plantingProgramMemberships() async {
+    final r = await _dio.get('/planting-programs/me/memberships');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> updatePlantingProgramMemberships(List<String> programCodes) async {
+    final r = await _dio.put('/planting-programs/me/memberships', data: {
+      'program_codes': programCodes,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<String> uploadImageFile(String filePath, {String? filename}) async {
+    final name = filename ?? filePath.split('/').last;
+    final contentType = mimeTypeForUploadPath(filePath);
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: name,
+        contentType: contentType != null ? DioMediaType.parse(contentType) : null,
+      ),
+    });
+    final r = await _dio.post(
+      '/uploads/image',
+      data: form,
+      options: Options(
+        sendTimeout: const Duration(seconds: 120),
+        receiveTimeout: const Duration(seconds: 120),
+      ),
+    );
+    final data = Map<String, dynamic>.from(r.data);
+    return data['s3_key'] as String;
   }
 
   Future<Map<String, dynamic>> runAnalysis(String treeId) async {
@@ -82,8 +1044,497 @@ class ApiClient {
     return Map<String, dynamic>.from(r.data);
   }
 
-  Future<Map<String, dynamic>> assistant(String prompt) async {
-    final r = await _dio.post('/assistant/query', data: {'prompt': prompt});
+  Future<Map<String, dynamic>?> getSatelliteHealthLatest(String treeId) async {
+    try {
+      final r = await _dio.get('/satellite-health/trees/$treeId/latest');
+      return Map<String, dynamic>.from(r.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> runSatelliteHealth(String treeId) async {
+    final r = await _dio.post('/satellite-health/trees/$treeId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listAlerts({bool unreadOnly = false}) async {
+    final r = await _dio.get(
+      '/alerts',
+      queryParameters: unreadOnly ? {'unread_only': true} : null,
+    );
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
+  }
+
+  Future<Map<String, dynamic>> getAlert(String alertId) async =>
+      Map<String, dynamic>.from((await _dio.get('/alerts/$alertId')).data);
+
+  Future<void> markAlertRead(String alertId) async {
+    await _dio.post('/alerts/$alertId/read');
+  }
+
+  /// Downloads a plantation MIS report export to a temp file.
+  Future<String> downloadPlantationMisReport({
+    required String path,
+    required String reportId,
+    String format = 'pdf',
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final r = await _dio.get<List<int>>(
+      path,
+      queryParameters: {
+        'format': format,
+        ...?queryParameters,
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+    final dir = await getTemporaryDirectory();
+    final filePath = '${dir.path}/aranyix-$reportId.$ext';
+    await File(filePath).writeAsBytes(r.data ?? const []);
+    return filePath;
+  }
+
+  Future<Map<String, dynamic>> assistant(String prompt, {String? treeId}) async {
+    final r = await _dio.post('/assistant/query', data: {
+      'prompt': prompt,
+      if (treeId != null && treeId.isNotEmpty) 'tree_id': treeId,
+    });
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listBioacousticRecordings() async {
+    final r = await _dio.get('/bioacoustic/recordings');
+    final data = r.data;
+    if (data is Map && data['items'] is List) {
+      return List<dynamic>.from(data['items'] as List);
+    }
+    return List<dynamic>.from(data as List);
+  }
+
+  Future<List<dynamic>> listPlantationFences() async {
+    final r = await _dio.get('/plantation-fences', queryParameters: {'page_size': 100});
+    return List<dynamic>.from(r.data['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> weatherForecast({
+    required double latitude,
+    required double longitude,
+    int days = 3,
+  }) async {
+    final r = await _dio.get(
+      '/weather/forecast',
+      queryParameters: {'latitude': latitude, 'longitude': longitude, 'days': days},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getEcosystemHealth(String fenceId) async {
+    final r = await _dio.get('/plantation-fences/$fenceId/ecosystem-health');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> uploadBioacousticRecording({
+    required String filePath,
+    required double durationSeconds,
+    required double latitude,
+    required double longitude,
+    String? plantationFenceId,
+  }) async {
+    final basename = filePath.split('/').last;
+    final filename = basename.contains('.') ? basename : 'recording.wav';
+    final contentType = mimeTypeForUploadPath(filePath) ?? 'audio/wav';
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        filePath,
+        filename: filename,
+        contentType: DioMediaType.parse(contentType),
+      ),
+      'duration_seconds': durationSeconds,
+      'latitude': latitude,
+      'longitude': longitude,
+      if (plantationFenceId != null) 'plantation_fence_id': plantationFenceId,
+    });
+    final r = await _dio.post('/bioacoustic/recordings/upload', data: form);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getBioacousticRecording(String id) async {
+    final r = await _dio.get('/bioacoustic/recordings/$id');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  /// Queues analysis without blocking on the long-running poll loop.
+  Future<Map<String, dynamic>> requestBioacousticAnalysis(String id, {bool force = false}) async {
+    final r = await _dio.post(
+      '/bioacoustic/recordings/$id/analyze',
+      queryParameters: force ? {'force': true} : null,
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> analyzeBioacousticRecording(String id, {bool force = false}) async {
+    final data = await requestBioacousticAnalysis(id, force: force);
+    final status = data['status'] as String? ?? '';
+    if (status == 'analyzed') {
+      return getBioacousticRecording(id);
+    }
+    return _pollBioacousticRecording(id);
+  }
+
+  Future<Map<String, dynamic>> _pollBioacousticRecording(String id) async {
+    for (var i = 0; i < 90; i++) {
+      await Future.delayed(const Duration(seconds: 2));
+      final rec = await getBioacousticRecording(id);
+      final status = rec['status'] as String? ?? '';
+      if (status == 'analyzed') return rec;
+      if (status == 'failed') {
+        throw DioException(
+          requestOptions: RequestOptions(path: '/bioacoustic/recordings/$id'),
+          error: rec['analysis_error'] ?? 'Bioacoustic analysis failed',
+        );
+      }
+    }
+    throw DioException(
+      requestOptions: RequestOptions(path: '/bioacoustic/recordings/$id'),
+      error: 'Bioacoustic analysis timed out',
+    );
+  }
+
+  Future<Map<String, dynamic>> bioacousticSummary() async {
+    final r = await _dio.get('/bioacoustic/summary');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> regionalFauna({
+    required double latitude,
+    required double longitude,
+    String? taxonGroup,
+  }) async {
+    final r = await _dio.get(
+      '/bioacoustic/regional-fauna',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+        if (taxonGroup != null) 'taxon_group': taxonGroup,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getTreeByPublicCode(String publicCode) async {
+    final r = await _dio.get('/trees/by-code/${Uri.encodeComponent(publicCode)}');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> registerDevice({
+    required String pushToken,
+    required String platform,
+    String? deviceLabel,
+    String? appVersion,
+  }) async {
+    await _dio.post('/devices/register', data: {
+      'push_token': pushToken,
+      'platform': platform,
+      if (deviceLabel != null) 'device_label': deviceLabel,
+      if (appVersion != null) 'app_version': appVersion,
+    });
+  }
+
+  Future<void> unregisterDevice({required String pushToken}) async {
+    await _dio.delete(
+      '/devices/register',
+      queryParameters: {'push_token': pushToken},
+    );
+  }
+
+  Future<void> postAnalyticsEvents(List<Map<String, dynamic>> events) async {
+    await _dio.post('/devices/analytics/events', data: {
+      'events': events,
+    });
+  }
+
+  Future<Map<String, dynamic>> citizenProfile() async {
+    final r = await _dio.get('/citizen/profile');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenStewardship() async {
+    final r = await _dio.get('/citizen/stewardship');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<({List<dynamic> items, int total})> listCitizenAdoptableTrees({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final r = await _dio.get(
+      '/citizen/adoptable',
+      queryParameters: {'page': page, 'page_size': pageSize},
+    );
+    final data = Map<String, dynamic>.from(r.data);
+    return (
+      items: List<dynamic>.from(data['items'] ?? []),
+      total: (data['total'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Future<Map<String, dynamic>> citizenAdoptTree(String treeId, {String? nickname}) async {
+    final r = await _dio.post(
+      '/citizen/trees/$treeId/adopt',
+      data: {if (nickname != null && nickname.isNotEmpty) 'nickname': nickname},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> citizenAdoptByCode(String publicCode, {String? nickname}) async {
+    final r = await _dio.post(
+      '/citizen/adopt-by-code',
+      data: {
+        'public_code': publicCode,
+        if (nickname != null && nickname.isNotEmpty) 'nickname': nickname,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<void> citizenRelinquishTree(String treeId) async {
+    await _dio.delete('/citizen/trees/$treeId/adopt');
+  }
+
+  Future<SignupStartResult> citizenSignupStart({
+    required String fullName,
+    required String phone,
+    required String password,
+    String? captchaToken,
+  }) async {
+    final r = await _dio.post(
+      '/citizen/signup/start',
+      data: {
+        'full_name': fullName,
+        'phone': phone,
+        'password': password,
+        if (captchaToken != null && captchaToken.isNotEmpty) 'captcha_token': captchaToken,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseSignupStartResponse(r.data);
+  }
+
+  Future<AuthTokenResult> citizenSignupComplete({
+    required String signupToken,
+    required String code,
+  }) async {
+    final r = await _dio.post(
+      '/citizen/signup/complete',
+      data: {
+        'signup_token': signupToken,
+        'code': code,
+      },
+      options: _publicAuthOptions(),
+    );
+    return parseTokenResponse(r.data);
+  }
+
+  // --- Phase F mobile parity ---
+
+  Future<List<dynamic>> listCentralSchemes({String? segment}) async {
+    final r = await _dio.get('/schemes', queryParameters: {
+      if (segment != null) 'segment': segment,
+      'page_size': 100,
+    });
+    return List<dynamic>.from(r.data['items'] ?? r.data ?? []);
+  }
+
+  Future<Map<String, dynamic>> updatePlantingProject(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    final r = await _dio.patch('/planting-projects/$id', data: data);
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> patchSchemeMetadata(
+    String projectId,
+    Map<String, dynamic> schemeRefs,
+  ) async {
+    final r = await _dio.patch(
+      '/planting-projects/$projectId/scheme-metadata',
+      data: {'scheme_refs': schemeRefs},
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanPlantationFence(String fenceId) async {
+    final r = await _dio.post('/plantation-fences/$fenceId/scan');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanWorkAreaSatellite(
+    String projectId,
+    String workAreaId,
+  ) async {
+    final r = await _dio.post(
+      '/planting-projects/$projectId/work-areas/$workAreaId/satellite-scan',
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> scanSarFence(String fenceId) async {
+    final r = await _dio.post(
+      '/sar/work-areas/$fenceId/scan',
+      options: Options(receiveTimeout: const Duration(seconds: 120)),
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getSarMonitoring(String fenceId) async {
+    final r = await _dio.get('/sar/work-areas/$fenceId/monitoring');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getSarStatus() async {
+    final r = await _dio.get('/sar/status');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getBhoonidhiStatus() async {
+    final r = await _dio.get('/bhoonidhi/status');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> getBhoonidhiCatalog(String fenceId) async {
+    final r = await _dio.get('/bhoonidhi/plantation-fences/$fenceId/catalog');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>?> getAuditEngagementForProject(String projectId) async {
+    try {
+      final r = await _dio.get('/audit-engagements/projects/$projectId');
+      return Map<String, dynamic>.from(r.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createAuditEngagement(String projectId) async {
+    final r = await _dio.post('/audit-engagements/projects/$projectId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listVerificationSamples({bool pendingOnly = true}) async {
+    final r = await _dio.get(
+      '/verification/samples',
+      queryParameters: pendingOnly ? {'pending_only': true} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> getVerificationSample(String sampleId) async {
+    final r = await _dio.get('/verification/samples/$sampleId');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> attestVerificationItem(
+    String sampleId,
+    String itemId, {
+    required String decision,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/verification/samples/$sampleId/items/$itemId/attest',
+      data: {
+        'decision': decision,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getComplianceChecklist(String projectId) async {
+    final r = await _dio.get('/compliance/projects/$projectId/checklists');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listBioacousticMonitoringPlans(String projectId) async {
+    final r = await _dio.get('/bioacoustic/projects/$projectId/monitoring-plans');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<List<dynamic>> ensureBioacousticMonitoringPlans(String projectId) async {
+    final r = await _dio.post('/bioacoustic/projects/$projectId/monitoring-plans/ensure');
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? data ?? []);
+  }
+
+  Future<List<dynamic>> listBioacousticReviewQueue({String? fenceId}) async {
+    final r = await _dio.get(
+      '/bioacoustic/review-queue',
+      queryParameters: fenceId != null ? {'plantation_fence_id': fenceId} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> submitBioacousticReview(
+    String recordingId, {
+    required String decision,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/bioacoustic/recordings/$recordingId/reviews',
+      data: {
+        'decision': decision,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<Map<String, dynamic>> getPlotMonitoringSummary(String projectId) async {
+    final r = await _dio.get('/plot-monitoring/projects/$projectId/summary');
+    return Map<String, dynamic>.from(r.data);
+  }
+
+  Future<List<dynamic>> listPlotMonitoringPlots(
+    String projectId, {
+    String? status,
+  }) async {
+    final r = await _dio.get(
+      '/plot-monitoring/projects/$projectId/plots',
+      queryParameters: status != null ? {'status': status} : null,
+    );
+    final data = r.data;
+    if (data is List) return data;
+    return List<dynamic>.from((data as Map)['items'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> recordPlotVisit(
+    String plotId, {
+    required Map<String, dynamic> observation,
+    String? notes,
+  }) async {
+    final r = await _dio.post(
+      '/plot-monitoring/plots/$plotId/visits',
+      data: {
+        'observation': observation,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
     return Map<String, dynamic>.from(r.data);
   }
 }

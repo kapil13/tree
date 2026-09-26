@@ -1,36 +1,303 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:byot_mobile/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import 'auth/post_auth_redirect.dart';
+import 'route_access.dart';
+import 'session.dart';
 import 'theme.dart';
+import 'app_bootstrap.dart';
+import 'providers.dart';
+import 'services/app_settings.dart';
 import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/signup_screen.dart';
+import 'screens/auth_flow_screens.dart';
+import 'screens/onboarding_screens.dart';
+import 'screens/org_profile_wizard_screen.dart';
+import 'screens/audience_onboarding_screen.dart';
+import 'screens/home_route_screen.dart';
 import 'screens/tree_list_screen.dart';
 import 'screens/add_tree_screen.dart';
 import 'screens/tree_detail_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/assistant_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/bioacoustic_screen.dart';
+import 'screens/bioacoustic_session_detail_screen.dart';
+import 'screens/projects_list_screen.dart';
+import 'screens/project_detail_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/profile_edit_screen.dart';
+import 'screens/field_screen.dart';
+import 'screens/monitoring_screen.dart';
+import 'screens/carbon_screen.dart';
+import 'screens/reports_screen.dart';
+import 'screens/credits_screen.dart';
+import 'screens/project_credit_ledger_screen.dart';
+import 'screens/survival_survey_screen.dart';
+import 'screens/sync_queue_screen.dart';
+import 'screens/alert_detail_screen.dart';
+import 'screens/evidence_screen.dart';
+import 'screens/biodiversity_screen.dart';
+import 'screens/audit_attestation_screen.dart';
+import 'screens/audit_plot_visit_screen.dart';
+import 'screens/audit_workspace_screen.dart';
+import 'screens/citizen_adopt_screen.dart';
+import 'screens/citizen_stewardship_screen.dart';
+import 'screens/project_wizard_screen.dart';
+import 'screens/project_setup_screen.dart';
+import 'screens/portfolio_hub_screen.dart';
+import 'screens/satellite_workspace_screen.dart';
+import 'screens/project_audit_workspace_screen.dart';
+import 'screens/verification_screen.dart';
+import 'screens/compliance_checklist_screen.dart';
+import 'screens/plot_visit_queue_screen.dart';
+import 'api/auth_redirect.dart';
+import 'api/api_errors.dart';
+import 'widgets/app_shell.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+bool _isPublicRoute(String loc) {
+  return loc == '/' ||
+      loc == '/welcome' ||
+      loc == '/login' ||
+      loc == '/signup' ||
+      loc == '/forgot-password' ||
+      loc == '/auth' ||
+      loc.startsWith('/auth/') ||
+      loc.startsWith('/p/') ||
+      loc == '/onboarding/pending' ||
+      loc == '/onboarding/audience';
+}
 
 final _routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    refreshListenable: sessionController,
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final user = sessionController.user;
+
+      if ((loc == '/onboarding/org-profile' || loc == '/onboarding/audience') &&
+          !sessionController.authenticated) {
+        return '/login';
+      }
+
+      if (!sessionController.authenticated && !_isPublicRoute(loc)) {
+        final invite = state.uri.queryParameters['invite'];
+        if (invite != null) return '/login?invite=$invite';
+        if (sessionController.consumeSessionExpired()) {
+          return loc.startsWith('/login') ? null : '/login?session=expired';
+        }
+        return '/welcome';
+      }
+
+      if (sessionController.authenticated &&
+          (loc == '/login' || loc == '/signup' || loc == '/welcome' || loc == '/forgot-password')) {
+        final next = sanitizePostAuthPath(state.uri.queryParameters['next']);
+        if (next != null && user != null && canAccessPath(user, Uri.parse(next).path)) {
+          return next;
+        }
+        return '/home';
+      }
+
+      if (loc == '/auth') {
+        final invite = state.uri.queryParameters['invite'];
+        if (invite != null) return '/login?invite=$invite';
+        return '/welcome';
+      }
+      if (sessionController.authenticated && user != null && !canAccessPath(user, loc)) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-      GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
-      GoRoute(path: '/trees/new', builder: (_, __) => const AddTreeScreen()),
+      GoRoute(
+        path: '/welcome',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (_, state) => AuthCallbackScreen(uri: state.uri),
+      ),
+      GoRoute(
+        path: '/auth',
+        redirect: (_, state) {
+          final invite = state.uri.queryParameters['invite'];
+          if (invite != null) return '/login?invite=$invite';
+          return '/welcome';
+        },
+      ),
+      GoRoute(
+        path: '/p/:code',
+        builder: (_, state) => TreeDetailDeepLinkScreen(code: state.pathParameters['code']!),
+      ),
+      GoRoute(path: '/onboarding/pending', builder: (_, __) => const OnboardingPendingScreen()),
+      GoRoute(path: '/onboarding/audience', builder: (_, __) => const AudienceOnboardingScreen()),
+      GoRoute(path: '/onboarding/org-profile', builder: (_, __) => const OrgProfileWizardScreen()),
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (_, __, child) => AppShell(child: child),
+        routes: [
+          // All tab destinations for every role so context.go() works.
+          GoRoute(path: '/home', builder: (_, __) => const HomeRouteScreen()),
+          GoRoute(path: '/trees', builder: (_, __) => const TreeListScreen()),
+          GoRoute(path: '/projects', builder: (_, __) => const ProjectsListScreen()),
+          GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+          GoRoute(
+            path: '/map',
+            builder: (_, state) => MapScreen(
+              focusTreeId: state.uri.queryParameters['tree'] ??
+                  (state.uri.queryParameters['focus'] == 'tree'
+                      ? state.uri.queryParameters['id']
+                      : null),
+              focusFenceId: state.uri.queryParameters['fence'] ??
+                  state.uri.queryParameters['work_area'] ??
+                  (state.uri.queryParameters['focus'] == 'fence'
+                      ? state.uri.queryParameters['id']
+                      : null),
+              focusLat: double.tryParse(state.uri.queryParameters['lat'] ?? ''),
+              focusLon: double.tryParse(state.uri.queryParameters['lon'] ?? ''),
+              initialDraw: state.uri.queryParameters['draw'],
+            ),
+          ),
+          GoRoute(
+            path: '/map/draw',
+            redirect: (_, state) {
+              final mode = state.uri.queryParameters['mode'];
+              if (mode == 'corridor') return '/map?draw=corridor';
+              return '/map?draw=polygon';
+            },
+          ),
+          GoRoute(path: '/field', builder: (_, __) => const FieldScreen()),
+          GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
+          GoRoute(path: '/monitoring', builder: (_, __) => const MonitoringScreen()),
+          GoRoute(path: '/bioacoustic', builder: (_, __) => const BioacousticScreen()),
+        ],
+      ),
+      GoRoute(
+        path: '/field-ops',
+        redirect: (_, __) => '/field',
+      ),
+      GoRoute(
+        path: '/trees/new',
+        builder: (_, state) => AddTreeScreen(
+          projectId: state.uri.queryParameters['project'],
+          workAreaId: state.uri.queryParameters['work_area'],
+        ),
+      ),
+      GoRoute(
+        path: '/projects/new',
+        builder: (_, __) => const ProjectWizardScreen(),
+      ),
+      GoRoute(
+        path: '/projects/:id/setup',
+        builder: (_, s) => ProjectSetupScreen(
+          projectId: s.pathParameters['id']!,
+          initialStep: int.tryParse(s.uri.queryParameters['step'] ?? '') ?? 1,
+        ),
+      ),
+      GoRoute(
+        path: '/projects/:id/compliance',
+        builder: (_, s) => ComplianceChecklistScreen(projectId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/projects/:id/audit',
+        builder: (_, s) => ProjectAuditWorkspaceScreen(
+          projectId: s.pathParameters['id']!,
+          initialPhase: s.uri.queryParameters['phase'],
+        ),
+      ),
+      GoRoute(
+        path: '/projects/:id',
+        builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/portfolio',
+        builder: (_, s) => PortfolioHubScreen(
+          initialTab: int.tryParse(s.uri.queryParameters['tab'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/satellite',
+        builder: (_, s) => SatelliteWorkspaceScreen(
+          fenceId: s.uri.queryParameters['fence'],
+          projectId: s.uri.queryParameters['project'],
+        ),
+      ),
+      GoRoute(path: '/verification', builder: (_, __) => const VerificationScreen()),
+      GoRoute(
+        path: '/plot-visits',
+        builder: (_, s) => PlotVisitQueueScreen(projectId: s.uri.queryParameters['project']),
+      ),
+      GoRoute(
+        path: '/trees/:id/survival',
+        builder: (_, s) => SurvivalSurveyScreen(treeId: s.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/trees/:id',
         builder: (_, s) => TreeDetailScreen(id: s.pathParameters['id']!),
       ),
-      GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
-      GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
-      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(path: '/carbon', builder: (_, __) => const CarbonScreen()),
+      GoRoute(path: '/citizen/adopt', builder: (_, __) => const CitizenAdoptScreen()),
+      GoRoute(path: '/citizen/stewardship', builder: (_, __) => const CitizenStewardshipScreen()),
+      GoRoute(
+        path: '/bioacoustic/:id',
+        builder: (_, s) => BioacousticSessionDetailScreen(recordingId: s.pathParameters['id']!),
+      ),
+      GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
+      GoRoute(path: '/credits', builder: (_, __) => const CreditsScreen()),
+      GoRoute(
+        path: '/credits/projects/:id',
+        builder: (_, s) => ProjectCreditLedgerScreen(projectId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/assistant',
+        builder: (_, state) => AssistantScreen(treeId: state.uri.queryParameters['tree']),
+      ),
+      GoRoute(path: '/profile/edit', builder: (_, __) => const ProfileEditScreen()),
+      GoRoute(path: '/sync-queue', builder: (_, __) => const SyncQueueScreen()),
+      GoRoute(
+        path: '/alerts/:id',
+        builder: (_, s) => AlertDetailScreen(alertId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/evidence',
+        builder: (_, state) => EvidenceScreen(projectId: state.uri.queryParameters['project']),
+      ),
+      GoRoute(path: '/biodiversity', builder: (_, __) => const BiodiversityScreen()),
+      GoRoute(path: '/audit', builder: (_, __) => const AuditWorkspaceScreen()),
+      GoRoute(
+        path: '/audit/attestation',
+        builder: (_, state) => AuditAttestationScreen(
+          engagementId: state.uri.queryParameters['engagement'] ?? '',
+        ),
+      ),
+      GoRoute(path: '/audit-plots', builder: (_, __) => const AuditPlotVisitScreen()),
     ],
   );
 });
@@ -40,12 +307,67 @@ class ByotApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(_routerProvider);
-    return MaterialApp.router(
-      title: 'BYOT',
-      debugShowCheckedModeBanner: false,
-      theme: byotLightTheme,
-      darkTheme: byotDarkTheme,
-      routerConfig: router,
+    return ListenableBuilder(
+      listenable: AppSettings.instance,
+      builder: (context, _) {
+        return AppBootstrap(
+          router: router,
+          child: MaterialApp.router(
+            title: 'Aranyix',
+            debugShowCheckedModeBanner: false,
+            theme: byotLightTheme,
+            darkTheme: byotDarkTheme,
+            themeMode: AppSettings.instance.themeMode,
+            locale: AppSettings.instance.locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        );
+      },
     );
+  }
+}
+
+/// Resolves /p/{public_code} deep links after authentication.
+class TreeDetailDeepLinkScreen extends ConsumerStatefulWidget {
+  const TreeDetailDeepLinkScreen({super.key, required this.code});
+  final String code;
+
+  @override
+  ConsumerState<TreeDetailDeepLinkScreen> createState() => _TreeDetailDeepLinkScreenState();
+}
+
+class _TreeDetailDeepLinkScreenState extends ConsumerState<TreeDetailDeepLinkScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resolve());
+  }
+
+  Future<void> _resolve() async {
+    if (!sessionController.authenticated) {
+      if (mounted) context.go('/login?next=/p/${widget.code}');
+      return;
+    }
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final tree = await api.getTreeByPublicCode(widget.code);
+      if (!mounted) return;
+      context.go('/trees/${tree['id']}');
+    } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
+      if (!mounted) return;
+      final msg = isUnauthorizedError(e)
+          ? (AppLocalizations.of(context)?.sessionExpired ?? 'Session expired.')
+          : (AppLocalizations.of(context)?.deepLinkTreeNotFound ?? 'Tree not found.');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (!isUnauthorizedError(e)) context.go('/home');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

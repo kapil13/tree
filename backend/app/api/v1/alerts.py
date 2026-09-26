@@ -1,37 +1,203 @@
-"""Alerts inbox."""
+"""Alerts inbox and notification preferences."""
 
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
+from sqlalchemy import or_, select
 
 from app.api.v1.deps import DB, CurrentUser
 from app.models.alert import Alert
+from app.schemas.cursor_page import CursorPage
+from app.services.alerts.action_links import alert_action_fields
+from app.services.alerts.defaults import (
+    DEFAULT_COMPLIANCE_PREFS,
+    DEFAULT_SATELLITE_HEALTH_PREFS,
+    DEFAULT_THREAT_WATCH_PREFS,
+    default_notification_preferences,
+)
+from app.services.alerts.service import satellite_health_prefs, threat_watch_prefs
+from app.services.pagination.cursor import CursorError, decode_cursor, encode_cursor
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
-@router.get("")
-async def list_alerts(user: CurrentUser, db: DB, unread_only: bool = False) -> list[dict]:
-    stmt = select(Alert).where(Alert.user_id == user.id).order_by(Alert.created_at.desc())
+class AlertItemOut(BaseModel):
+    id: str
+    kind: str
+    severity: str
+    title: str
+    message: str
+    is_read: bool
+    created_at: str
+    tree_id: str | None = None
+    entity_id: str | None = None
+    entity_type: str | None = None
+    recommended_action: str | None = None
+    deep_link: str | None = None
+    payload: dict[str, Any] | None = None
+
+
+class SatelliteHealthNotificationPrefs(BaseModel):
+    enabled: bool = True
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+    sms_on_critical: bool = True
+    daily_digest: bool = True
+
+
+class SurvivalSurveyNotificationPrefs(BaseModel):
+    enabled: bool = True
+    survey_interval_days: int = Field(default=30, ge=15, le=90)
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+
+
+class ThreatWatchNotificationPrefs(BaseModel):
+    enabled: bool = True
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+    sms_on_critical: bool = False
+    push_on_hazard: bool = False
+
+
+class ComplianceNotificationPrefs(BaseModel):
+    enabled: bool = True
+    channels: list[str] = Field(default_factory=lambda: ["in_app", "email"])
+    sms_on_critical: bool = False
+
+
+class NotificationPreferencesOut(BaseModel):
+    satellite_health: SatelliteHealthNotificationPrefs
+    survival_survey: SurvivalSurveyNotificationPrefs = Field(
+        default_factory=SurvivalSurveyNotificationPrefs
+    )
+    threat_watch: ThreatWatchNotificationPrefs = Field(default_factory=ThreatWatchNotificationPrefs)
+    compliance: ComplianceNotificationPrefs = Field(default_factory=ComplianceNotificationPrefs)
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    satellite_health: SatelliteHealthNotificationPrefs | None = None
+    survival_survey: SurvivalSurveyNotificationPrefs | None = None
+    threat_watch: ThreatWatchNotificationPrefs | None = None
+    compliance: ComplianceNotificationPrefs | None = None
+
+
+def _alert_to_item(a: Alert) -> AlertItemOut:
+    action = alert_action_fields(kind=a.kind, tree_id=a.tree_id, payload=a.payload)
+    return AlertItemOut(
+        id=str(a.id),
+        kind=a.kind,
+        severity=a.severity,
+        title=a.title,
+        message=a.message,
+        is_read=a.is_read,
+        created_at=a.created_at.isoformat(),
+        tree_id=str(a.tree_id) if a.tree_id else None,
+        entity_id=action["entity_id"],
+        entity_type=action["entity_type"],
+        recommended_action=action["recommended_action"],
+        deep_link=action["deep_link"],
+        payload=a.payload,
+    )
+
+
+@router.get("", response_model=CursorPage[AlertItemOut])
+async def list_alerts(
+    user: CurrentUser,
+    db: DB,
+    unread_only: bool = False,
+    project_id: uuid.UUID | None = None,
+    limit: int = Query(50, ge=1, le=100),
+    cursor: str | None = None,
+) -> CursorPage[AlertItemOut]:
+    stmt = select(Alert).where(Alert.user_id == user.id)
     if unread_only:
         stmt = stmt.where(Alert.is_read.is_(False))
-    rows = (await db.execute(stmt.limit(100))).scalars().all()
-    return [
-        {
-            "id": str(a.id),
-            "kind": a.kind,
-            "severity": a.severity,
-            "title": a.title,
-            "message": a.message,
-            "is_read": a.is_read,
-            "created_at": a.created_at.isoformat(),
-            "tree_id": str(a.tree_id) if a.tree_id else None,
-        }
-        for a in rows
-    ]
+    if cursor:
+        try:
+            cursor_at, cursor_id = decode_cursor(cursor)
+        except CursorError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid_cursor") from exc
+        stmt = stmt.where(
+            or_(
+                Alert.created_at < cursor_at,
+                (Alert.created_at == cursor_at) & (Alert.id < cursor_id),
+            )
+        )
+    stmt = stmt.order_by(Alert.created_at.desc(), Alert.id.desc()).limit(limit + 1)
+    rows = (await db.execute(stmt)).scalars().all()
+
+    items = [_alert_to_item(a) for a in rows[:limit]]
+    if project_id:
+        pid = str(project_id)
+        items = [a for a in items if (a.payload or {}).get("project_id") == pid]
+
+    next_cursor: str | None = None
+    if len(rows) > limit:
+        last = rows[limit - 1]
+        next_cursor = encode_cursor(created_at=last.created_at, row_id=last.id)
+
+    return CursorPage(items=items, next_cursor=next_cursor)
+
+
+@router.get("/preferences", response_model=NotificationPreferencesOut)
+async def get_preferences(user: CurrentUser) -> NotificationPreferencesOut:
+    sh = satellite_health_prefs(user)
+    prefs = user.notification_preferences or default_notification_preferences()
+    ss = prefs.get("survival_survey") or {}
+    tw = threat_watch_prefs(user)
+    comp = prefs.get("compliance") or {}
+    return NotificationPreferencesOut(
+        satellite_health=SatelliteHealthNotificationPrefs(**sh),
+        survival_survey=SurvivalSurveyNotificationPrefs(
+            enabled=ss.get("enabled", True),
+            survey_interval_days=ss.get("survey_interval_days", 30),
+            channels=ss.get("channels", ["in_app", "email"]),
+        ),
+        threat_watch=ThreatWatchNotificationPrefs(**tw),
+        compliance=ComplianceNotificationPrefs(
+            **{**DEFAULT_COMPLIANCE_PREFS, **comp},
+        ),
+    )
+
+
+@router.patch("/preferences", response_model=NotificationPreferencesOut)
+async def update_preferences(
+    payload: NotificationPreferencesUpdate, user: CurrentUser, db: DB
+) -> NotificationPreferencesOut:
+    prefs: dict[str, Any] = dict(user.notification_preferences or default_notification_preferences())
+    if payload.satellite_health is not None:
+        current = prefs.get("satellite_health", dict(DEFAULT_SATELLITE_HEALTH_PREFS))
+        current.update(payload.satellite_health.model_dump())
+        prefs["satellite_health"] = current
+    if payload.survival_survey is not None:
+        current = prefs.get("survival_survey", {})
+        current.update(payload.survival_survey.model_dump())
+        prefs["survival_survey"] = current
+    if payload.threat_watch is not None:
+        current = prefs.get("threat_watch", dict(DEFAULT_THREAT_WATCH_PREFS))
+        current.update(payload.threat_watch.model_dump())
+        prefs["threat_watch"] = current
+    if payload.compliance is not None:
+        current = prefs.get("compliance", dict(DEFAULT_COMPLIANCE_PREFS))
+        current.update(payload.compliance.model_dump())
+        prefs["compliance"] = current
+    user.notification_preferences = prefs
+    await db.commit()
+    await db.refresh(user)
+    return await get_preferences(user)
+
+
+@router.get("/{alert_id}", response_model=AlertItemOut)
+async def get_alert(alert_id: uuid.UUID, user: CurrentUser, db: DB) -> AlertItemOut:
+    res = await db.execute(
+        select(Alert).where(Alert.id == alert_id, Alert.user_id == user.id)
+    )
+    alert = res.scalar_one_or_none()
+    if alert is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
+    return _alert_to_item(alert)
 
 
 @router.post("/{alert_id}/read")

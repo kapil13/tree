@@ -15,7 +15,7 @@ spec:
       containers:
         - name: worker
           image: ghcr.io/byot/backend:latest
-          command: ["celery", "-A", "app.workers.celery_app", "worker", "-l", "info", "-Q", "default,ai,satellite,carbon,notifications"]
+          command: ["celery", "-A", "app.workers.celery_app", "worker", "-l", "info", "-Q", "default,ai,satellite,carbon,notifications,bioacoustic"]
           envFrom:
             - secretRef: { name: backend-secrets }
             - configMapRef: { name: backend-config }

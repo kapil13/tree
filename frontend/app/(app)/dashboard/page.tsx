@@ -1,138 +1,56 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import {
-  Area,
-  AreaChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { dashboard } from "@/lib/api";
+import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
+import { useAuth, useAuthHydrated } from "@/lib/auth-store";
+import { userHasProfessionalAccess } from "@/lib/nav-access";
 
-const COLORS = ["#16a34a", "#f59e0b", "#dc2626", "#78716c", "#0ea5e9", "#a855f7", "#0f766e"];
+const CitizenDashboard = dynamic(
+  () => import("@/components/dashboard/citizen-dashboard").then((m) => ({ default: m.CitizenDashboard })),
+  { loading: () => <DashboardLoading /> },
+);
 
-function fmt(n: number, suffix = "") {
-  return `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}${suffix}`;
+const ExecutiveDashboard = dynamic(
+  () =>
+    import("@/components/dashboard/executive-dashboard").then((m) => ({
+      default: m.ExecutiveDashboard,
+    })),
+  { loading: () => <DashboardLoading /> },
+);
+
+const FieldWorkerDashboard = dynamic(
+  () =>
+    import("@/components/dashboard/field-worker-dashboard").then((m) => ({
+      default: m.FieldWorkerDashboard,
+    })),
+  { loading: () => <DashboardLoading /> },
+);
+
+function DashboardLoading() {
+  const t = useTranslations("dashboard");
+  return <p className="text-sm text-stone-500">{t("loading")}</p>;
 }
 
 export default function DashboardPage() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: dashboard.get,
-  });
+  const hydrated = useAuthHydrated();
+  const { user } = useAuth();
+  const tc = useTranslations("common");
 
-  if (isLoading) return <div className="p-6 text-stone-600">Loading dashboard…</div>;
-  if (error)
-    return (
-      <div className="card text-rose-700">
-        Failed to load dashboard. Are you signed in and is the API reachable?
-      </div>
-    );
+  if (!hydrated) {
+    return <p className="text-sm text-stone-500">{tc("loading")}</p>;
+  }
 
-  const k = data!.kpi;
+  if (user?.role === "field_worker") {
+    return <FieldWorkerDashboard />;
+  }
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+  if (
+    user?.role === "admin" ||
+    user?.role === "field_supervisor" ||
+    userHasProfessionalAccess(user)
+  ) {
+    return <ExecutiveDashboard />;
+  }
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="Trees" value={fmt(k.total_trees)} sub="registered" />
-        <Kpi label="Biomass" value={fmt(k.total_biomass_kg / 1000, " t")} sub="dry matter" />
-        <Kpi label="CO₂e" value={fmt(k.total_co2e_kg / 1000, " t")} sub={`+${fmt(k.annual_sequestration_kg / 1000, " t/yr")}`} />
-        <Kpi label="Lifetime credits" value={fmt(k.lifetime_credits_tco2e, " tCO₂e")} sub={`$${fmt(k.estimated_revenue_usd)}`} />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-2">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Carbon growth (6 mo)</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data!.carbon_growth}>
-                <defs>
-                  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.6} />
-                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="label" stroke="#78716c" fontSize={12} />
-                <YAxis stroke="#78716c" fontSize={12} />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#16a34a"
-                  fill="url(#g)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="mb-3 text-sm font-medium text-stone-700">Health distribution</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data!.health_distribution}
-                  dataKey="value"
-                  nameKey="label"
-                  innerRadius={45}
-                  outerRadius={80}
-                  paddingAngle={3}
-                >
-                  {data!.health_distribution.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            {data!.health_distribution.map((d, i) => (
-              <span key={d.label} className="flex items-center gap-1">
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ background: COLORS[i % COLORS.length] }}
-                />
-                {d.label} ({d.value})
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 className="mb-3 text-sm font-medium text-stone-700">Top species</h2>
-        <ul className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-          {data!.species_distribution.map((d) => (
-            <li
-              key={d.label}
-              className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700"
-            >
-              <span className="truncate">{d.label}</span>
-              <span className="font-medium text-forest-700">{d.value}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="kpi">
-      <div className="kpi-label">{label}</div>
-      <div className="kpi-value">{value}</div>
-      {sub && <div className="kpi-sub">{sub}</div>}
-    </div>
-  );
+  return <CitizenDashboard />;
 }

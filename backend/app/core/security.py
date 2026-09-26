@@ -104,6 +104,9 @@ class Role(str, enum.Enum):
     NGO = "ngo"
     CORPORATE = "corporate"
     GOVERNMENT = "government"
+    FIELD_WORKER = "field_worker"
+    FIELD_SUPERVISOR = "field_supervisor"
+    VERIFIER = "verifier"
     ADMIN = "admin"
 
 
@@ -112,9 +115,15 @@ class Permission(str, enum.Enum):
     TREE_READ = "tree:read"
     TREE_UPDATE = "tree:update"
     TREE_DELETE = "tree:delete"
+    MEASUREMENT_READ = "measurement:read"
+    MEASUREMENT_ATTEST = "measurement:attest"
+    MEASUREMENT_REJECT = "measurement:reject"
     ANALYSIS_TRIGGER = "analysis:trigger"
     SATELLITE_TRIGGER = "satellite:trigger"
     REPORT_GENERATE = "report:generate"
+    AUDIT_READ = "audit:read"
+    CMS_MANAGE = "cms:manage"
+    PLATFORM_USERS_MANAGE = "platform:users:manage"
     ADMIN_ALL = "admin:*"
 
 
@@ -129,14 +138,67 @@ _BASE: set[Permission] = {
 ROLE_PERMISSIONS: dict[Role, set[Permission]] = {
     Role.USER: _BASE,
     Role.FARMER: _BASE | {Permission.SATELLITE_TRIGGER},
-    Role.NGO: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
-    Role.CORPORATE: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
-    Role.GOVERNMENT: _BASE | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE},
+    Role.NGO: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
+    Role.CORPORATE: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
+    Role.GOVERNMENT: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.TREE_DELETE, Permission.AUDIT_READ},
+    Role.FIELD_WORKER: {
+        Permission.TREE_CREATE,
+        Permission.TREE_READ,
+        Permission.TREE_UPDATE,
+    },
+    Role.FIELD_SUPERVISOR: _BASE
+    | {Permission.SATELLITE_TRIGGER, Permission.REPORT_GENERATE, Permission.AUDIT_READ},
+    Role.VERIFIER: {
+        Permission.TREE_READ,
+        Permission.MEASUREMENT_READ,
+        Permission.MEASUREMENT_ATTEST,
+        Permission.MEASUREMENT_REJECT,
+        Permission.REPORT_GENERATE,
+        Permission.AUDIT_READ,
+    },
     Role.ADMIN: {Permission.ADMIN_ALL},
 }
 
 
 def has_permission(role: Role | str, perm: Permission) -> bool:
-    role_enum = Role(role) if isinstance(role, str) else role
+    try:
+        role_enum = Role(role) if isinstance(role, str) else role
+    except ValueError:
+        return False
     perms = ROLE_PERMISSIONS.get(role_enum, set())
     return Permission.ADMIN_ALL in perms or perm in perms
+
+
+def permissions_matrix() -> dict[str, list[str]]:
+    return {
+        role.value: sorted(p.value for p in perms)
+        for role, perms in ROLE_PERMISSIONS.items()
+    }
+
+
+def all_permission_labels() -> list[str]:
+    return sorted(p.value for p in Permission if p != Permission.ADMIN_ALL)
+
+
+def permissions_for_role(role: Role | str) -> list[str]:
+    try:
+        role_enum = Role(role) if isinstance(role, str) else role
+    except ValueError:
+        return []
+    perms = ROLE_PERMISSIONS.get(role_enum, set())
+    if Permission.ADMIN_ALL in perms:
+        return sorted(p.value for p in Permission)
+    return sorted(p.value for p in perms)
+
+
+def user_is_org_viewer(user) -> bool:
+    return getattr(user, "org_role", None) == "viewer"
+
+
+def user_can_write(user) -> bool:
+    if getattr(user, "role", None) == "admin":
+        return True
+    return not user_is_org_viewer(user)

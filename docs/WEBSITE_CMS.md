@@ -1,0 +1,92 @@
+# Website CMS (Platform Admin)
+
+Platform administrators (`role = admin`) can manage the public marketing site at [aranyix.tech](https://aranyix.tech/) without redeploying code.
+
+## Admin UI
+
+- **URL:** `/platform/cms` (requires sign-in as platform admin)
+- **Settings shortcut:** Settings → Website CMS (admin only)
+- **Sidebar:** Website CMS link (admin only)
+
+### Capabilities
+
+| Area | What you can edit |
+|------|-------------------|
+| Header | Nav links, Sign in / Get started labels and URLs |
+| Footer | Description, badge, copyright, legal note, link columns |
+| **Legal** | Terms of Service, Privacy Policy, Data Use Policy (`/terms`, `/privacy`, `/data-use`) |
+| Pages | Create, publish, delete custom pages at `/p/{slug}` |
+| Homepage | Edit sections on the home page (hero, features, CTA, etc.) |
+| Sections | Add, reorder, enable/disable, edit JSON content per section |
+
+## API
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `GET /api/v1/public/site` | Public | Homepage + header/footer |
+| `GET /api/v1/public/pages/{slug}` | Public | Custom published page |
+| `GET/PUT /api/v1/platform/cms/site/{header\|footer}` | Admin | Site config |
+| `GET /api/v1/platform/cms/legal` | Admin | List legal documents |
+| `PUT /api/v1/platform/cms/legal/{terms\|privacy\|data-use}` | Admin | Update legal body/title |
+| `GET/POST/PATCH/DELETE /api/v1/platform/cms/pages` | Admin | Page CRUD |
+| `POST/PATCH/DELETE /api/v1/platform/cms/sections` | Admin | Section CRUD |
+
+## Database
+
+Migration: `0019_cms_site_content`
+
+```bash
+docker compose exec backend alembic upgrade head
+# expect: 0019_cms_site_content (head)
+```
+
+On first API access, the CMS auto-seeds with the current aranyix.tech homepage content.
+
+## Grant platform admin
+
+```bash
+cd backend
+python -m app.scripts.promote_admin you@example.com
+```
+
+Or via SQL:
+
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
+```
+
+## User roles & CMS access
+
+Platform admins can open **Website CMS → Users & roles** to:
+
+1. **CMS access by role** — toggle which workspace roles may use the CMS (`website_cms` module rule). `admin` always has access.
+2. **User roles** — assign roles to individual users (platform admin only).
+
+`/api/v1/auth/me` returns:
+
+```json
+{
+  "permissions": ["cms:manage", "..."],
+  "platform_access": {
+    "website_cms": true,
+    "users_admin": true
+  }
+}
+```
+
+Users must sign in again after role changes to refresh `platform_access`.
+
+### Platform API (admin / CMS manager)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/platform/roles` | List assignable roles |
+| `GET /api/v1/platform/users` | List users (admin only) |
+| `PATCH /api/v1/platform/users/{id}` | Change user role (admin only) |
+| `GET /api/v1/platform/modules` | Module access rules |
+| `PATCH /api/v1/platform/modules/website_cms` | Update CMS allowed roles |
+
+
+`hero`, `features`, `compliance`, `programs`, `steps`, `platform_preview`, `cta`, `rich_text`
+
+Section content is JSON — use the admin preview panel or edit fields to match the renderer in `frontend/components/marketing/cms-section-renderer.tsx`.

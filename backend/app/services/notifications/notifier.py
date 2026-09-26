@@ -1,11 +1,21 @@
-"""Multi-channel notifier: email (SES), SMS (SNS), push (FCM), in-app."""
+"""Multi-channel notifier: email (Resend), SMS (SNS), push (FCM), in-app."""
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
+try:
+    import boto3
+except Exception:  # pragma: no cover
+    boto3 = None
+
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.email.config import resend_configured
+from app.services.email.exceptions import EmailSendError
+from app.services.email.service import send_security_notification
 
 Channel = Literal["email", "sms", "push", "in_app"]
 
@@ -20,6 +30,46 @@ class NotificationResult:
 
 
 class Notifier:
+    def __init__(self) -> None:
+        self._sns = None
+        if boto3 is not None and settings.aws_access_key_id and settings.aws_secret_access_key:
+            kwargs: dict[str, Any] = {"region_name": settings.aws_region}
+            kwargs["aws_access_key_id"] = settings.aws_access_key_id
+            kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+            self._sns = boto3.client("sns", **kwargs)
+
+    async def _send_email(self, to: str, title: str, message: str) -> NotificationResult:
+        if not resend_configured():
+            log.warning("notification.email_skipped", channel="email", to=_redact(to), title=title)
+            return NotificationResult(channel="email", delivered=False, info="email_not_configured")
+        try:
+            await send_security_notification(to=to, title=title, message=message)
+            return NotificationResult(channel="email", delivered=True)
+        except EmailSendError as exc:
+            log.warning("notification.email_failed", error=exc.code)
+            return NotificationResult(channel="email", delivered=False, info=exc.code)
+        except Exception as exc:
+            log.warning("notification.email_failed", error=str(exc))
+            return NotificationResult(channel="email", delivered=False, info=str(exc))
+
+    def _send_sms_sync(self, to: str, title: str, message: str) -> NotificationResult:
+        body = f"{title}: {message}"[:1400]
+        if self._sns is None:
+            log.info("notification.send", channel="sms", to=_redact(to), title=title)
+            return NotificationResult(channel="sms", delivered=True, info="dev_stub")
+        try:
+            attrs: dict[str, Any] = {}
+            if settings.sns_sms_sender_id:
+                attrs["AWS.SNS.SMS.SenderID"] = {
+                    "DataType": "String",
+                    "StringValue": settings.sns_sms_sender_id[:11],
+                }
+            self._sns.publish(PhoneNumber=to, Message=body, MessageAttributes=attrs or None)
+            return NotificationResult(channel="sms", delivered=True)
+        except Exception as exc:
+            log.warning("notification.sms_failed", error=str(exc))
+            return NotificationResult(channel="sms", delivered=False, info=str(exc))
+
     async def send(
         self,
         *,
@@ -28,14 +78,14 @@ class Notifier:
         title: str,
         message: str,
     ) -> NotificationResult:
-        # Production: route to SES / SNS / FCM. Dev: log and pretend success.
-        log.info(
-            "notification.send",
-            channel=channel,
-            to=_redact(to),
-            title=title,
-        )
-        return NotificationResult(channel=channel, delivered=True)
+        if channel == "in_app":
+            return NotificationResult(channel="in_app", delivered=True)
+        if channel == "email":
+            return await self._send_email(to, title, message)
+        if channel == "sms":
+            return await asyncio.to_thread(self._send_sms_sync, to, title, message)
+        log.info("notification.send", channel=channel, to=_redact(to), title=title)
+        return NotificationResult(channel=channel, delivered=True, info="unsupported_channel")
 
 
 def _redact(s: str) -> str:

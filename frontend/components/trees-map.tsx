@@ -1,0 +1,661 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
+import {
+  APIProvider,
+  Map,
+  Marker,
+  useMap,
+} from "@vis.gl/react-google-maps";
+import { FileText, MapPin, Sparkles, TreePine, X } from "lucide-react";
+import { plantingProjects, trees, errorMessage, type Tree, type TreeDetail } from "@/lib/api";
+import { TREE_FOCUS_MAP_ZOOM } from "@/lib/map-links";
+import { CarbonEstimateLabel } from "@/components/carbon-estimate-label";
+import { EmptyState } from "@/components/ui/empty-state";
+import { showToast } from "@/components/toast";
+import { useAuth } from "@/lib/auth-store";
+import { useProjectContext } from "@/lib/project-context";
+import { canWriteInApp } from "@/lib/nav-access";
+import { TreeThumbnail } from "@/components/trees/tree-thumbnail";
+import { cn } from "@/lib/cn";
+
+const HEALTH_COLOR: Record<string, string> = {
+  healthy: "#16a34a",
+  moderate: "#f59e0b",
+  unhealthy: "#dc2626",
+};
+
+const HEALTH_FILTERS = [
+  { value: "all", label: "All health" },
+  { value: "healthy", label: "Healthy" },
+  { value: "moderate", label: "Moderate" },
+  { value: "unhealthy", label: "Unhealthy" },
+  { value: "unknown", label: "Unknown" },
+] as const;
+
+import { FALLBACK_MAP_CENTER } from "@/lib/map-defaults";
+import {
+  MAP_BOOTSTRAP_PAGE_SIZE,
+  MAP_FIT_PADDING,
+  MAP_MIN_ZOOM,
+  SINGLE_TREE_MAP_ZOOM,
+  boundsFromTrees,
+  clampMapZoom,
+  isBootstrapTruncated,
+  mergeTreesById,
+  treesWithValidCoords,
+} from "@/lib/map-bounds";
+const CLUSTER_ZOOM_THRESHOLD = 13;
+
+function markerIcon(color: string, size = 24): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" fill="${color}" stroke="white" stroke-width="2"/>
+  </svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function clusterIcon(count: number): string {
+  const size = count > 99 ? 44 : count > 9 ? 38 : 32;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#166534" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+    <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${size > 38 ? 13 : 12}" font-family="system-ui,sans-serif" font-weight="700">${count > 999 ? "999+" : count}</text>
+  </svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function treeColor(tree: Tree): string {
+  return HEALTH_COLOR[tree.current_health] ?? HEALTH_COLOR.healthy;
+}
+
+type BBox = { minLon: number; minLat: number; maxLon: number; maxLat: number };
+
+function boundsToBbox(bounds: google.maps.LatLngBounds): BBox {
+  const ne = bounds.getNorthEast();
+  const sw = bounds.getSouthWest();
+  return {
+    minLon: sw.lng(),
+    minLat: sw.lat(),
+    maxLon: ne.lng(),
+    maxLat: ne.lat(),
+  };
+}
+
+type Cluster = {
+  id: string;
+  lat: number;
+  lng: number;
+  count: number;
+  trees: Tree[];
+};
+
+/** Grid clustering — keeps map usable at portfolio scale without extra deps. */
+function clusterTrees(items: Tree[], zoom: number): Cluster[] {
+  if (zoom >= CLUSTER_ZOOM_THRESHOLD || items.length <= 40) {
+    return items.map((t) => ({
+      id: t.id,
+      lat: t.latitude,
+      lng: t.longitude,
+      count: 1,
+      trees: [t],
+    }));
+  }
+  // Coarser cells when zoomed out
+  const cell = zoom >= 11 ? 0.04 : zoom >= 9 ? 0.12 : zoom >= 7 ? 0.35 : 0.8;
+  const buckets = new globalThis.Map<string, Tree[]>();
+  for (const t of items) {
+    const key = `${Math.floor(t.latitude / cell)}_${Math.floor(t.longitude / cell)}`;
+    const list = buckets.get(key) ?? [];
+    list.push(t);
+    buckets.set(key, list);
+  }
+  return Array.from(buckets.entries()).map(([key, group]: [string, Tree[]]) => {
+    const lat = group.reduce((s: number, tree: Tree) => s + tree.latitude, 0) / group.length;
+    const lng = group.reduce((s: number, tree: Tree) => s + tree.longitude, 0) / group.length;
+    return { id: key, lat, lng, count: group.length, trees: group };
+  });
+}
+
+type TreesMapProps = {
+  mapType?: "roadmap" | "satellite" | "hybrid";
+  height?: string;
+  className?: string;
+  showFilters?: boolean;
+};
+
+function treeDetailToMapTree(detail: TreeDetail): Tree | null {
+  if (detail.latitude == null || detail.longitude == null) return null;
+  const primaryImage = detail.images.find((image) => image.is_primary) ?? detail.images[0];
+  return {
+    id: detail.id,
+    public_code: detail.public_code,
+    species_text: detail.species_text,
+    current_health: detail.current_health,
+    current_carbon_kg: detail.current_carbon_kg,
+    satellite_verified: detail.satellite_verified,
+    latitude: detail.latitude,
+    longitude: detail.longitude,
+    created_at: detail.registered_at,
+    program_code: detail.program_code,
+    project_id: detail.project_id,
+    primary_image_id: primaryImage?.id ?? null,
+    primary_image_url: primaryImage?.cdn_url ?? null,
+  };
+}
+
+function MapCameraFit({
+  trees,
+  fitKey,
+  enabled = true,
+}: {
+  trees: Tree[];
+  fitKey: string;
+  enabled?: boolean;
+}) {
+  const map = useMap();
+  const lastFitKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !enabled) return;
+
+    const validTrees = treesWithValidCoords(trees);
+    if (!validTrees.length) return;
+    if (lastFitKey.current === fitKey) return;
+    lastFitKey.current = fitKey;
+
+    if (validTrees.length === 1) {
+      map.setCenter({ lat: validTrees[0].latitude, lng: validTrees[0].longitude });
+      map.setZoom(SINGLE_TREE_MAP_ZOOM);
+      return;
+    }
+
+    const bounds = boundsFromTrees(validTrees);
+    if (!bounds) return;
+    map.fitBounds(bounds, MAP_FIT_PADDING);
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      const nextZoom = clampMapZoom(map.getZoom(), MAP_MIN_ZOOM);
+      if (nextZoom != null) map.setZoom(nextZoom);
+    });
+  }, [enabled, map, trees, fitKey]);
+
+  return null;
+}
+
+function MapTreeFocus({
+  tree,
+  focusKey,
+  onSelect,
+}: {
+  tree: Tree | null;
+  focusKey: string | null;
+  onSelect: (tree: Tree) => void;
+}) {
+  const map = useMap();
+  const lastFocusKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !tree || !focusKey) return;
+    if (lastFocusKey.current === focusKey) return;
+    lastFocusKey.current = focusKey;
+
+    map.setCenter({ lat: tree.latitude, lng: tree.longitude });
+    map.setZoom(TREE_FOCUS_MAP_ZOOM);
+    onSelect(tree);
+  }, [map, tree, focusKey, onSelect]);
+
+  return null;
+}
+
+function MapViewportSync({
+  onBounds,
+}: {
+  onBounds: (bbox: BBox, zoom: number) => void;
+}) {
+  const map = useMap();
+
+  const emit = useCallback(() => {
+    if (!map) return;
+    const bounds = map.getBounds();
+    if (!bounds) return;
+    onBounds(boundsToBbox(bounds), map.getZoom() ?? 12);
+  }, [map, onBounds]);
+
+  useEffect(() => {
+    if (!map) return;
+    const listener = map.addListener("idle", emit);
+    const t = window.setTimeout(emit, 300);
+    return () => {
+      window.clearTimeout(t);
+      google.maps.event.removeListener(listener);
+    };
+  }, [map, emit]);
+
+  return null;
+}
+
+export function TreesMap({
+  mapType = "roadmap",
+  height = "70vh",
+  className = "",
+  showFilters = false,
+}: TreesMapProps) {
+  const t = useTranslations("trees");
+  const tm = useTranslations("map");
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const { projectId: contextProjectId, setProjectId: setContextProjectId } = useProjectContext();
+  const canAdd = canWriteInApp(user);
+  const [selected, setSelected] = useState<Tree | null>(null);
+  const [bbox, setBbox] = useState<BBox | null>(null);
+  const [zoom, setZoom] = useState(12);
+  const [projectId, setProjectId] = useState(contextProjectId ?? "");
+  const [health, setHealth] = useState("all");
+
+  useEffect(() => {
+    setProjectId(contextProjectId ?? "");
+  }, [contextProjectId]);
+
+  const treeIdFromUrl = searchParams.get("tree");
+
+  useEffect(() => {
+    const urlProject = searchParams.get("project");
+    if (!urlProject) return;
+    setProjectId(urlProject);
+    setContextProjectId(urlProject);
+  }, [searchParams, setContextProjectId]);
+
+  const { data: focusedTreeDetail } = useQuery({
+    queryKey: ["trees-map-focus", treeIdFromUrl],
+    queryFn: () => trees.get(treeIdFromUrl!),
+    enabled: !!treeIdFromUrl,
+  });
+
+  const focusedTree = useMemo(
+    () => (focusedTreeDetail ? treeDetailToMapTree(focusedTreeDetail) : null),
+    [focusedTreeDetail],
+  );
+
+  const onBounds = useCallback((next: BBox, nextZoom: number) => {
+    setBbox(next);
+    setZoom(nextZoom);
+  }, []);
+
+  const scopeKey = `${projectId}|${health}`;
+  const bboxKey = bbox
+    ? `${bbox.minLon.toFixed(3)},${bbox.minLat.toFixed(3)},${bbox.maxLon.toFixed(3)},${bbox.maxLat.toFixed(3)}`
+    : "init";
+
+  const { data: projectsData } = useQuery({
+    queryKey: ["planting-projects"],
+    queryFn: () => plantingProjects.list(),
+    enabled: showFilters,
+  });
+  const projects = projectsData?.items ?? [];
+
+  const {
+    data: bootstrapData,
+    isLoading: bootstrapLoading,
+    error: bootstrapError,
+  } = useQuery({
+    queryKey: ["trees-map-bootstrap", scopeKey],
+    queryFn: () =>
+      trees.list({
+        page_size: MAP_BOOTSTRAP_PAGE_SIZE,
+        ...(projectId ? { project_id: projectId } : {}),
+        ...(health !== "all" ? { health } : {}),
+      }),
+  });
+
+  const {
+    data: viewportData,
+    error: viewportError,
+    isFetching: viewportFetching,
+  } = useQuery({
+    queryKey: ["trees-map-viewport", bboxKey, scopeKey],
+    queryFn: () =>
+      trees.list({
+        page_size: MAP_BOOTSTRAP_PAGE_SIZE,
+        bbox: bbox
+          ? `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`
+          : undefined,
+        ...(projectId ? { project_id: projectId } : {}),
+        ...(health !== "all" ? { health } : {}),
+      }),
+    enabled: bbox !== null,
+    placeholderData: (prev) => prev,
+  });
+
+  const bootstrapItems = bootstrapData?.items ?? [];
+  const bootstrapTotal = bootstrapData?.total ?? bootstrapItems.length;
+  const bootstrapTruncated = isBootstrapTruncated(bootstrapTotal);
+  const viewportItems = viewportData?.items ?? [];
+  const items = useMemo(() => {
+    const merged = mergeTreesById(bootstrapItems, viewportItems);
+    if (focusedTree) return mergeTreesById(merged, [focusedTree]);
+    return merged;
+  }, [bootstrapItems, viewportItems, focusedTree]);
+  const total = viewportData?.total ?? bootstrapData?.total ?? items.length;
+  const clusters = useMemo(() => clusterTrees(items, zoom), [items, zoom]);
+  const hasFilters = !!projectId || health !== "all";
+  const activeProjectName = projects.find((project) => project.id === projectId)?.name;
+  const treeOutsideProjectFilter =
+    !!treeIdFromUrl &&
+    !!focusedTree &&
+    !!projectId &&
+    focusedTree.project_id !== projectId;
+  const error = bootstrapError ?? viewportError;
+  const isLoading = bootstrapLoading && !bootstrapData;
+  const isFetching = viewportFetching;
+  const showEmptyCta =
+    !isLoading && !error && items.length === 0 && !isFetching && !focusedTree;
+  const cameraFitKey = scopeKey;
+
+  if (!apiKey) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-100 p-8 text-center text-stone-600 ${className}`}
+        style={{ height }}
+      >
+        <p>
+          Set{" "}
+          <code className="font-mono text-sm">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>{" "}
+          in <code className="font-mono text-sm">frontend/.env.local</code>
+        </p>
+      </div>
+    );
+  }
+
+  if (error && !bootstrapData && !viewportData) {
+    return (
+      <div
+        className={`rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700 ${className}`}
+        style={{ height }}
+      >
+        <p className="font-medium">Failed to load trees for the map.</p>
+        <p className="mt-1 text-sm">{errorMessage(error)}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      {showFilters ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="input max-w-xs text-sm"
+            value={projectId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setProjectId(next);
+              setContextProjectId(next || null);
+            }}
+            aria-label="Filter by project"
+          >
+            <option value="">All projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex flex-wrap gap-1.5">
+            {HEALTH_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                className={cn(
+                  "rounded-md px-2.5 py-1.5 text-xs font-medium",
+                  health === f.value
+                    ? "bg-forest-700 text-white"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200",
+                )}
+                onClick={() => setHealth(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {bootstrapTruncated && !treeIdFromUrl ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          {tm("bootstrapLimit", {
+            shown: MAP_BOOTSTRAP_PAGE_SIZE,
+            total: bootstrapTotal,
+          })}
+        </p>
+      ) : null}
+
+      {treeOutsideProjectFilter ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+          {tm("treeOutsideProjectFilter", {
+            project: activeProjectName ?? tm("activeProjectFallback"),
+          })}
+        </p>
+      ) : null}
+
+      <div
+        className="relative overflow-hidden rounded-xl border border-stone-200"
+        style={{ height }}
+      >
+        <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-stone-200/80 bg-white/95 px-3 py-1.5 text-xs text-stone-700 shadow-sm backdrop-blur">
+          {isLoading ? (
+            "Loading trees…"
+          ) : (
+            <>
+              Showing <span className="font-semibold">{items.length}</span>
+              {bbox && total > items.length ? (
+                <>
+                  {" "}
+                  of <span className="font-semibold">{total}</span> in view
+                </>
+              ) : (
+                <> trees</>
+              )}
+              {zoom < CLUSTER_ZOOM_THRESHOLD && clusters.some((c) => c.count > 1) ? (
+                <span className="text-stone-500"> · clustered</span>
+              ) : null}
+              {isFetching ? <span className="text-stone-400"> · updating</span> : null}
+            </>
+          )}
+        </div>
+
+        <APIProvider apiKey={apiKey}>
+          <Map
+            defaultCenter={FALLBACK_MAP_CENTER}
+            defaultZoom={11}
+            mapTypeId={mapType}
+            gestureHandling="greedy"
+            fullscreenControl
+            mapTypeControl={mapType !== "roadmap"}
+            streetViewControl={false}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <MapCameraFit
+              trees={bootstrapItems}
+              fitKey={cameraFitKey}
+              enabled={!treeIdFromUrl}
+            />
+            <MapTreeFocus
+              tree={focusedTree}
+              focusKey={treeIdFromUrl}
+              onSelect={setSelected}
+            />
+            <MapViewportSync onBounds={onBounds} />
+
+            {clusters.map((cluster) =>
+              cluster.count === 1 ? (
+                <Marker
+                  key={cluster.id}
+                  position={{ lat: cluster.lat, lng: cluster.lng }}
+                  title={cluster.trees[0].species_text || cluster.trees[0].public_code}
+                  icon={markerIcon(treeColor(cluster.trees[0]))}
+                  onClick={() => setSelected(cluster.trees[0])}
+                />
+              ) : (
+                <Marker
+                  key={cluster.id}
+                  position={{ lat: cluster.lat, lng: cluster.lng }}
+                  title={`${cluster.count} trees — zoom in`}
+                  icon={clusterIcon(cluster.count)}
+                  onClick={() => {
+                    setSelected(cluster.trees[0]);
+                    showToast(`${cluster.count} trees here — zoom in for each pin`);
+                  }}
+                />
+              ),
+            )}
+          </Map>
+        </APIProvider>
+
+        {showEmptyCta ? (
+          <div
+            className={cn(
+              "absolute z-10 p-3",
+              hasFilters
+                ? "inset-0 flex items-center justify-center bg-white/85 backdrop-blur-[1px]"
+                : "inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-14 sm:w-80",
+            )}
+          >
+            <EmptyState
+              icon={TreePine}
+              title={
+                hasFilters
+                  ? projectId
+                    ? tm("emptyProjectTitle", {
+                        project: activeProjectName ?? tm("activeProjectFallback"),
+                      })
+                    : tm("emptyFilterTitle")
+                  : tm("emptyNoTreesTitle")
+              }
+              description={
+                hasFilters
+                  ? projectId
+                    ? tm("emptyProjectDesc")
+                    : tm("emptyFilterDesc")
+                  : tm("emptyNoTreesDesc")
+              }
+              action={
+                hasFilters
+                  ? {
+                      label: tm("clearFilters"),
+                      onClick: () => {
+                        setProjectId("");
+                        setContextProjectId(null);
+                        setHealth("all");
+                      },
+                    }
+                  : canAdd
+                    ? { label: tm("registerFirstTree"), href: "/trees/new" }
+                    : { label: tm("browseTrees"), href: "/trees" }
+              }
+              className="max-w-md bg-white py-8 shadow-sm"
+            />
+          </div>
+        ) : null}
+
+        {selected && (
+          <TreeActionSheet tree={selected} onClose={() => setSelected(null)} />
+        )}
+      </div>
+
+      {items.length > 0 ? (
+        <section aria-label={t("mapListFallback")} className="rounded-xl border border-stone-200 bg-white p-3">
+          <p className="mb-2 text-xs text-stone-500">{t("mapListHint")}</p>
+          <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
+            {items.slice(0, 25).map((tree) => (
+              <li key={tree.id}>
+                <Link
+                  href={`/trees/${tree.id}`}
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-600"
+                >
+                  <span>{tree.species_text || tree.public_code}</span>
+                  <span className="text-xs text-stone-500">{tree.public_code}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function TreeActionSheet({ tree, onClose }: { tree: Tree; onClose: () => void }) {
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:left-auto sm:right-3 sm:top-14 sm:bottom-auto sm:w-80 sm:p-0">
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <TreeThumbnail
+            treeId={tree.id}
+            imageId={tree.primary_image_id}
+            imageUrl={tree.primary_image_url}
+            alt={tree.species_text || tree.public_code}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-stone-900">
+              {tree.species_text || "Unknown species"}
+            </p>
+            <p className="text-xs text-stone-500">{tree.public_code}</p>
+          </div>
+          <button
+            type="button"
+            className="btn-ghost shrink-0 rounded-full p-1"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-600">
+          <span className="rounded-full bg-stone-100 px-2 py-1 capitalize">
+            {tree.current_health || "unknown"}
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-1">
+            {Number(tree.current_carbon_kg).toFixed(1)} kg C
+            <CarbonEstimateLabel compact />
+          </span>
+          <span className="rounded-full bg-stone-100 px-2 py-1">
+            {tree.satellite_verified ? "Satellite verified" : "Satellite pending"}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link
+            href={`/trees/${tree.id}`}
+            className="btn-primary col-span-2 inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            Open tree
+          </Link>
+          <Link
+            href={`/trees/${tree.id}#ai-analysis`}
+            className="btn-secondary inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            AI analysis
+          </Link>
+          <Link
+            href={`/trees/${tree.id}`}
+            className="btn-secondary inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Details / passport
+          </Link>
+          <Link
+            href={`/trees/${tree.id}#survival`}
+            className="btn-secondary col-span-2 inline-flex items-center justify-center gap-1.5 text-xs"
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            Survival / re-geotag
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

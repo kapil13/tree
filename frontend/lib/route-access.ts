@@ -1,0 +1,133 @@
+import type { User } from "@/lib/api";
+import { canSeeNavItem, isOrgAdmin, type NavAudience, viewerReadOnlyMessage } from "@/lib/nav-access";
+import { canAccessPlatformPath } from "@/lib/platform-access";
+import {
+  isOrgFeatureEnabled,
+  type OrgFeatureFlagKey,
+} from "@/lib/use-org-feature-flags";
+
+type RouteRule = {
+  prefix: string;
+  audience: NavAudience | NavAudience[];
+  excludeViewers?: boolean;
+  featureFlag?: OrgFeatureFlagKey;
+};
+
+const ROUTE_RULES: RouteRule[] = [
+  { prefix: "/trees/new", audience: "can_write" },
+  {
+    prefix: "/field-ops",
+    audience: ["professional", "field_worker", "field_supervisor"],
+    excludeViewers: true,
+  },
+  { prefix: "/projects/new", audience: ["professional", "field_supervisor"] },
+  {
+    prefix: "/projects",
+    audience: ["professional", "field_supervisor", "field_worker", "verifier"],
+  },
+  {
+    prefix: "/portfolio-health",
+    audience: ["professional", "field_supervisor"],
+    featureFlag: "satellite",
+  },
+  {
+    prefix: "/monitoring",
+    audience: ["professional", "field_supervisor"],
+    featureFlag: "satellite",
+  },
+  {
+    prefix: "/intelligence",
+    audience: ["professional", "field_supervisor"],
+    featureFlag: "satellite",
+  },
+  {
+    prefix: "/satellite",
+    audience: ["professional", "field_supervisor"],
+    featureFlag: "satellite",
+  },
+  { prefix: "/bioacoustic", audience: "professional", featureFlag: "bioacoustic" },
+  { prefix: "/reports", audience: ["professional", "field_supervisor"], featureFlag: "reports" },
+  { prefix: "/assistant", audience: "all", featureFlag: "ai_scan" },
+  { prefix: "/verification", audience: "verifier" },
+  { prefix: "/settings/billing", audience: "org_admin", featureFlag: "payments" },
+  { prefix: "/settings/team", audience: "org_admin" },
+];
+
+function matchingRule(pathname: string): RouteRule | undefined {
+  return ROUTE_RULES.find(
+    (rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`),
+  );
+}
+
+export function canAccessPath(
+  user: User | null | undefined,
+  pathname: string,
+  featureFlags?: Map<OrgFeatureFlagKey, boolean>,
+): boolean {
+  if (!user) return false;
+
+  if (pathname.startsWith("/platform")) {
+    return canAccessPlatformPath(user, pathname);
+  }
+
+  const rule = matchingRule(pathname);
+  if (rule) {
+    if (!canSeeNavItem(user, rule.audience, { excludeViewers: rule.excludeViewers })) {
+      return false;
+    }
+    if (rule.featureFlag && !isOrgFeatureEnabled(featureFlags, rule.featureFlag)) {
+      return false;
+    }
+    return true;
+  }
+
+  return true;
+}
+
+export type RouteAccessMessageKey =
+  | "teamAdmin"
+  | "fieldOps"
+  | "platform"
+  | "default"
+  | "treesNew"
+  | "projectsNew"
+  | "featureDisabled";
+
+export function routeAccessDeniedKey(pathname: string): RouteAccessMessageKey {
+  if (pathname.startsWith("/settings/team")) return "teamAdmin";
+  if (pathname.startsWith("/trees/new")) return "treesNew";
+  if (pathname.startsWith("/projects/new")) return "projectsNew";
+  if (pathname.startsWith("/field-ops")) return "fieldOps";
+  if (pathname.startsWith("/platform")) return "platform";
+  return "default";
+}
+
+export function routeAccessDeniedFeatureKey(
+  pathname: string,
+  featureFlags?: Map<OrgFeatureFlagKey, boolean>,
+): OrgFeatureFlagKey | undefined {
+  const rule = matchingRule(pathname);
+  if (!rule?.featureFlag) return undefined;
+  if (isOrgFeatureEnabled(featureFlags, rule.featureFlag)) return undefined;
+  return rule.featureFlag;
+}
+
+/** @deprecated Use routeAccessDeniedKey with useTranslations("access") in UI */
+export function routeAccessDeniedMessage(pathname: string): string {
+  if (pathname.startsWith("/settings/team")) {
+    return "Organization admin access is required to manage your team.";
+  }
+  if (pathname.startsWith("/trees/new")) {
+    return viewerReadOnlyMessage("trees");
+  }
+  if (pathname.startsWith("/projects/new")) {
+    return "Project creation is limited to supervisors and professional accounts. Ask your supervisor to create a project.";
+  }
+  if (pathname.startsWith("/field-ops")) {
+    return "Field operations are available to field workers, supervisors, and professional accounts.";
+  }
+  if (pathname.startsWith("/platform")) {
+    return "Platform administration access is required.";
+  }
+  return "Your role does not include access to this section.";
+}

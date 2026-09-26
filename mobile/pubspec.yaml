@@ -1,7 +1,7 @@
 name: byot_mobile
-description: BYOT — Bring Your Own Tree (Flutter Android + iOS)
+description: BYOT — Bring Your Own Tree (Flutter Android; iOS deferred)
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.8.0+12
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.6
 
   # State & routing
@@ -27,16 +30,34 @@ dependencies:
   camera: ^0.11.0
   image_picker: ^1.1.2
   permission_handler: ^11.3.1
+  record: ^6.0.0
+  path_provider: ^2.1.4
+  path: ^1.9.0
+  sqflite: ^2.3.3
+  connectivity_plus: ^6.0.5
 
-  # Map
-  mapbox_maps_flutter: ^2.2.0
+  # Map (OpenStreetMap tiles — no API key required)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   # Charts
   fl_chart: ^0.68.0
   # Auth
   google_sign_in: ^6.2.1
+  webview_flutter: ^4.10.0
+  url_launcher: ^6.3.1
   # Misc UI
   cached_network_image: ^3.3.1
   qr_flutter: ^4.1.0
+  flutter_secure_storage: ^10.3.1
+  share_plus: ^10.0.0
+  app_links: ^6.3.2
+  local_auth: ^2.3.0
+  package_info_plus: ^8.0.2
+  google_fonts: ^8.2.1
+  firebase_core: ^3.8.1
+  firebase_messaging: ^15.1.6
+  crypto: ^3.0.6
+  asn1lib: ^1.6.5
 
 dev_dependencies:
   flutter_test:
@@ -48,5 +69,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
-    - assets/icons/
+    - assets/brand/aranyix-logo.png
+    - assets/brand/aranyix-app-icon.png

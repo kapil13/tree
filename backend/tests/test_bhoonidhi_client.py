@@ -1,0 +1,132 @@
+"""Tests for Bhoonidhi STAC client."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from app.services.satellite.bhoonidhi_client import (
+    BhoonidhiClient,
+    build_polygon_search_body,
+    normalize_search_geometry,
+    polygon_bbox_wgs84,
+    summarize_stac_features,
+)
+
+
+def test_polygon_bbox():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+    assert polygon_bbox_wgs84(geo) == [78.0, 17.0, 79.0, 18.0]
+
+
+def test_normalize_search_geometry_strips_z():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0, 0.0], [79.0, 17.0, 0.0], [79.0, 18.0, 0.0], [78.0, 18.0, 0.0], [78.0, 17.0, 0.0]]],
+    }
+    out = normalize_search_geometry(geo)
+    assert out == {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+
+
+def test_build_polygon_search_body_uses_intersects_only():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+    body = build_polygon_search_body(geo, days_back=30, limit=5, online_only=True)
+    assert "intersects" in body
+    assert "bbox" not in body
+    assert body["limit"] == 5
+    assert body["filter-lang"] == "cql2-json"
+
+
+def test_build_polygon_search_body_bbox_mode():
+    geo = {
+        "type": "Polygon",
+        "coordinates": [[[78.0, 17.0], [79.0, 17.0], [79.0, 18.0], [78.0, 18.0], [78.0, 17.0]]],
+    }
+    body = build_polygon_search_body(geo, spatial_mode="bbox", online_only=False)
+    assert "bbox" in body
+    assert "intersects" not in body
+    assert "filter" not in body
+
+
+def test_summarize_stac_features():
+    payload = {
+        "features": [
+            {
+                "id": "scene-1",
+                "collection": "ResourceSat-2A_LISS3_BOA",
+                "properties": {"datetime": "2024-06-01T00:00:00Z", "Online": "Y"},
+            }
+        ]
+    }
+    rows = summarize_stac_features(payload)
+    assert len(rows) == 1
+    assert rows[0]["id"] == "scene-1"
+
+
+def test_proxy_download_path_uses_aranyix_api_not_nrsc():
+    client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://bhoonidhi-api.nrsc.gov.in")
+    path = client.proxy_download_path(
+        item_id="RA314AUG2026050256009500052PSANSTUCSRHTDF",
+        collection="ResourceSat-2A_LISS3_BOA",
+    )
+    assert path.startswith("/v1/bhoonidhi/download?")
+    assert "bhoonidhi-api.nrsc.gov.in" not in path
+    assert "RA314AUG2026050256009500052PSANSTUCSRHTDF" in path
+
+
+@pytest.mark.asyncio
+async def test_download_product_uses_bearer_token():
+    client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://example.test")
+    client._access_token = "tok"
+    client._token_expires_at = 9999999999.0
+
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.content = b"zip-bytes"
+    mock_resp.headers = {"content-type": "application/zip"}
+
+    with patch.object(client, "_request", new=AsyncMock(return_value=mock_resp)) as mock_request:
+        resp = await client.download_product(
+            item_id="scene-1",
+            collection="ResourceSat-2A_LISS3_BOA",
+        )
+
+    assert resp.content == b"zip-bytes"
+    mock_request.assert_awaited_once_with(
+        "GET",
+        "/download",
+        params={"id": "scene-1", "collection": "ResourceSat-2A_LISS3_BOA"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_authenticate_stores_token():
+    client = BhoonidhiClient(user_id="u", password="p", api_base_url="https://example.test")
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = {
+        "access_token": "tok",
+        "refresh_token": "ref",
+        "expires_in": 1200,
+    }
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        mock_client.post.return_value = mock_resp
+        mock_client_cls.return_value = mock_client
+        await client.authenticate()
+
+    assert client._access_token == "tok"
+    assert client._refresh_token == "ref"

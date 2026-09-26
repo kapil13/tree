@@ -2,8 +2,8 @@
 
 > A production-grade ClimateTech SaaS platform that lets individuals, farmers,
 > NGOs, corporates, and government agencies **register trees, monitor health,
-> estimate carbon sequestration, validate plantations via satellite + AI, and
-> generate carbon-credit-ready reports** at planetary scale.
+> model carbon sequestration, validate plantations via satellite + AI, and
+> generate MRV and audit-prep reports** for plantation programmes at scale.
 
 [![Backend CI](https://img.shields.io/badge/backend-FastAPI-009688)](./backend)
 [![Frontend](https://img.shields.io/badge/frontend-Next.js%2015-black)](./frontend)
@@ -16,11 +16,12 @@
 ## 1. Vision
 
 BYOT (Bring Your Own Tree) is the operating system for distributed
-reforestation. Anyone — from a homeowner with a single neem tree to a
+reforestation MRV. Anyone — from a homeowner with a single neem tree to a
 government running a million-hectare afforestation program — can register
 trees, prove they exist with satellite + computer-vision evidence, watch them
-grow over time, and convert that growth into IPCC / Verra / Gold Standard
-quality carbon credits.
+grow over time, and export **modeled carbon estimates and compliance evidence**
+mapped to IPCC / Verra VM0047 / Gold Standard frameworks for third-party review.
+Aranyix does **not** issue Verra VCU or other registry credits on its own.
 
 **Design targets**
 

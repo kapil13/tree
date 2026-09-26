@@ -1,0 +1,650 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../api/api_errors.dart';
+import '../auth/auth_messages.dart';
+import '../auth/phone_utils.dart';
+import '../auth/signup_catalog.dart';
+import '../auth_session.dart';
+import '../providers.dart';
+import '../theme.dart';
+import '../widgets/auth_light_scope.dart';
+import '../widgets/auth_scaffold.dart';
+import '../widgets/mobile_auth_security.dart';
+import '../widgets/otp_input.dart';
+import '../widgets/turnstile_captcha.dart';
+import '../l10n/l10n_ext.dart';
+
+enum _SignupStep { account, verifyPhone, verifyEmail }
+
+const _otpLength = 6;
+
+/// Lightweight registration — account details → phone OTP → email OTP.
+class SignupScreen extends ConsumerStatefulWidget {
+  const SignupScreen({super.key});
+
+  @override
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends ConsumerState<SignupScreen> {
+  _SignupStep _step = _SignupStep.account;
+  bool _busy = false;
+  String? _error;
+  String? _devHint;
+
+  String _category = 'byot';
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  bool _acceptedTerms = false;
+  bool _obscurePassword = true;
+
+  String _signupToken = '';
+  String _phoneOtp = '';
+  String _emailOtp = '';
+
+  bool _captchaEnabled = false;
+  bool _skipCaptchaForMobile = false;
+  String? _captchaSiteKey;
+  String? _captchaToken;
+  final _captchaKey = GlobalKey<TurnstileCaptchaState>();
+
+  bool get _needsCaptchaWidget => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _needsCaptchaToken => _captchaEnabled && !_skipCaptchaForMobile;
+
+  bool get _isCitizenFast => _category == 'byot';
+
+  int get _totalSignupSteps => _isCitizenFast ? 2 : 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCaptchaConfig();
+  }
+
+  Future<void> _loadCaptchaConfig() async {
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final cfg = await api.captchaConfig();
+      if (!mounted) return;
+      setState(() {
+        _captchaEnabled = cfg['enabled'] == true;
+        _skipCaptchaForMobile = cfg['skip_for_mobile'] == true;
+        _captchaSiteKey = cfg['site_key'] as String?;
+      });
+    } catch (_) {}
+  }
+
+  double get _progress {
+    if (_isCitizenFast) {
+      return switch (_step) {
+        _SignupStep.account => 0.5,
+        _SignupStep.verifyPhone => 1.0,
+        _SignupStep.verifyEmail => 1.0,
+      };
+    }
+    return switch (_step) {
+      _SignupStep.account => 0.34,
+      _SignupStep.verifyPhone => 0.67,
+      _SignupStep.verifyEmail => 1.0,
+    };
+  }
+
+  String _stepLabel(AppLocalizations l10n) {
+    return switch (_step) {
+      _SignupStep.account => l10n.addTreeStepOf(1, _totalSignupSteps),
+      _SignupStep.verifyPhone => l10n.addTreeStepOf(2, _totalSignupSteps),
+      _SignupStep.verifyEmail => l10n.addTreeStepOf(_totalSignupSteps, _totalSignupSteps),
+    };
+  }
+
+  Future<void> _startSignup() async {
+    final l10n = context.l10n;
+    if (_name.text.trim().length < 2) {
+      setState(() => _error = l10n.fullNameValidation);
+      return;
+    }
+    if (!_isCitizenFast && !_email.text.contains('@')) {
+      setState(() => _error = l10n.signupValidEmail);
+      return;
+    }
+    if (!isValidIndianMobile(_phone.text)) {
+      setState(() => _error = humanizeAuthError('invalid_phone'));
+      return;
+    }
+    final minPassword = _isCitizenFast ? 8 : 12;
+    if (_password.text.length < minPassword) {
+      setState(() => _error = l10n.signupPasswordMinChars(minPassword));
+      return;
+    }
+    if (!_acceptedTerms) {
+      setState(() => _error = l10n.signupAcceptTerms);
+      return;
+    }
+    if (_needsCaptchaToken && (_captchaToken == null || _captchaToken!.isEmpty)) {
+      setState(() => _error = humanizeAuthError('captcha_required'));
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+      _devHint = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      await api.clearLocalSession();
+      final res = _isCitizenFast
+          ? await api.citizenSignupStart(
+              fullName: _name.text.trim(),
+              phone: phoneForApi(_phone.text),
+              password: _password.text,
+              captchaToken: _captchaToken,
+            )
+          : await api.signupStart(
+              fullName: _name.text.trim(),
+              email: _email.text.trim(),
+              phone: phoneForApi(_phone.text),
+              password: _password.text,
+              signupCategory: _category,
+              captchaToken: _captchaToken,
+            );
+      setState(() {
+        _signupToken = res.signupToken;
+        if (kDebugMode) {
+          _devHint = res.devHint;
+        }
+        _phoneOtp = '';
+        _step = _SignupStep.verifyPhone;
+      });
+    } catch (e) {
+      setState(() {
+        _error = apiErrorMessage(e);
+        _captchaToken = null;
+      });
+      _captchaKey.currentState?.reset();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _verifyPhone() async {
+    if (_signupToken.isEmpty) {
+      setState(() => _error = humanizeAuthError('signup_session_expired'));
+      return;
+    }
+    if (_phoneOtp.length != _otpLength) {
+      setState(() => _error = context.l10n.signupEnterPhoneOtp);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      if (_isCitizenFast) {
+        final tokens = await api.citizenSignupComplete(
+          signupToken: _signupToken,
+          code: _phoneOtp,
+        );
+        await api.setTokens(
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        );
+        final landing = await completeAuthSession(ref, afterSignup: true);
+        if (!mounted) return;
+        context.go(landing);
+        return;
+      }
+      await api.signupVerifyPhone(signupToken: _signupToken, code: _phoneOtp);
+    } catch (e) {
+      setState(() => _error = apiErrorMessage(e));
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final emailRes = await api.signupSendEmailOtp(_signupToken);
+      setState(() {
+        if (kDebugMode && emailRes.devHint != null && !emailRes.emailEnabled) {
+          _devHint = emailRes.devHint;
+        } else {
+          _devHint = null;
+        }
+        _step = _SignupStep.verifyEmail;
+        _emailOtp = '';
+      });
+    } catch (e) {
+      setState(() => _error = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _completeSignup() async {
+    if (_emailOtp.length != _otpLength) {
+      setState(() => _error = context.l10n.signupEnterEmailOtp);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final tokens = await api.signupComplete(
+        signupToken: _signupToken,
+        code: _emailOtp,
+        signupCategory: _category,
+      );
+      await api.setTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
+      final landing = await completeAuthSession(ref, afterSignup: true);
+      if (!mounted) return;
+      context.go(landing);
+    } catch (e) {
+      setState(() => _error = apiErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AuthLightScope(
+      child: AuthScaffold(
+        compact: true,
+        title: switch (_step) {
+          _SignupStep.account => l10n.createAccount,
+          _SignupStep.verifyPhone => l10n.verifyPhone,
+          _SignupStep.verifyEmail => l10n.verifyEmail,
+        },
+        subtitle: switch (_step) {
+          _SignupStep.account => l10n.signupAccountSubtitle,
+          _SignupStep.verifyPhone => l10n.codeSentToPhone(formatPhoneDisplay(_phone.text)),
+          _SignupStep.verifyEmail => l10n.codeSentToEmail(_email.text.trim()),
+        },
+        stepLabel: _stepLabel(l10n),
+        stepProgress: _progress,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _busy
+              ? null
+              : () {
+                  if (_step == _SignupStep.account) {
+                    context.pop();
+                  } else {
+                    setState(() {
+                      _error = null;
+                      _step = switch (_step) {
+                        _SignupStep.verifyPhone => _SignupStep.account,
+                        _SignupStep.verifyEmail => _SignupStep.verifyPhone,
+                        _ => _SignupStep.account,
+                      };
+                    });
+                  }
+                },
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_step == _SignupStep.account) ...[
+              _buildAccountStep(),
+              const SizedBox(height: 12),
+              if (_captchaEnabled && _skipCaptchaForMobile)
+                const MobileAuthSecurityNote()
+              else if (_needsCaptchaWidget && _captchaSiteKey != null)
+                TurnstileCaptcha(
+                  key: _captchaKey,
+                  siteKey: _captchaSiteKey!,
+                  onToken: (token) => setState(() {
+                    _captchaToken = token;
+                    _error = null;
+                  }),
+                  onError: () => setState(() => _captchaToken = null),
+                  onExpired: () => setState(() => _captchaToken = null),
+                ),
+            ],
+            if (_step == _SignupStep.verifyPhone) _buildOtpStep(isPhone: true),
+            if (_step == _SignupStep.verifyEmail) _buildOtpStep(isPhone: false),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              AuthErrorBanner(message: _error!),
+            ],
+            if (_devHint != null && kDebugMode) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.devHint(_devHint!),
+                style: const TextStyle(fontSize: 12, color: AranyixColors.onSurfaceMuted),
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (_step == _SignupStep.account)
+              Semantics(
+                button: true,
+                label: l10n.continueBtn,
+                child: FilledButton(
+                  onPressed: _busy ? null : _startSignup,
+                  child: Text(_busy ? l10n.creating : l10n.continueBtn),
+                ),
+              )
+            else if (_step == _SignupStep.verifyPhone)
+              Semantics(
+                button: true,
+                label: _isCitizenFast ? l10n.finishSignup : l10n.verifyPhone,
+                child: FilledButton(
+                  onPressed: _busy ? null : _verifyPhone,
+                  child: Text(
+                    _busy
+                        ? l10n.verifying
+                        : _isCitizenFast
+                            ? l10n.finish
+                            : l10n.verifyPhone,
+                  ),
+                ),
+              )
+            else
+              Semantics(
+                button: true,
+                label: l10n.finishSignup,
+                child: FilledButton(
+                  onPressed: _busy ? null : _completeSignup,
+                  child: Text(_busy ? l10n.finishing : l10n.finish),
+                ),
+              ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _busy ? null : () => context.go('/login'),
+              child: Text(l10n.alreadyHaveAccountSignIn),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountStep() {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.joiningAs,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AranyixColors.onSurfaceMuted,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.35,
+          children: [
+            for (final cat in signupCategories)
+              _CategoryChip(
+                category: cat,
+                selected: _category == cat.code,
+                onTap: () => setState(() => _category = cat.code),
+              ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Semantics(
+          label: l10n.fullNameFieldLabel,
+          textField: true,
+          child: TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.fullNameFieldLabel,
+              prefixIcon: const Icon(Icons.person_outline, size: 20),
+            ),
+          ),
+        ),
+        if (!_isCitizenFast) ...[
+          const SizedBox(height: 10),
+          Semantics(
+            label: l10n.emailLabel,
+            textField: true,
+            child: TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l10n.emailLabel,
+                prefixIcon: const Icon(Icons.mail_outline, size: 20),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Semantics(
+          label: l10n.mobilePhoneLabel,
+          textField: true,
+          child: TextField(
+            controller: _phone,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.mobileLabel,
+              prefixText: '+91  ',
+              hintText: '98765 43210',
+              prefixIcon: const Icon(Icons.phone_iphone, size: 20),
+            ),
+            onChanged: (v) {
+              final d = sanitizePhoneDigits(v);
+              if (d != v) {
+                _phone.value = TextEditingValue(
+                  text: d,
+                  selection: TextSelection.collapsed(offset: d.length),
+                );
+              }
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        Semantics(
+          label: l10n.passwordLabel,
+          textField: true,
+          child: TextField(
+            controller: _password,
+            obscureText: _obscurePassword,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: l10n.passwordLabel,
+              helperText: _isCitizenFast ? l10n.passwordMin8 : l10n.passwordMin12,
+              helperMaxLines: 1,
+              prefixIcon: const Icon(Icons.lock_outline, size: 20),
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () => setState(() => _acceptedTerms = !_acceptedTerms),
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.acceptTermsPrivacy,
+                    style: const TextStyle(fontSize: 13.5, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtpStep({required bool isPhone}) {
+    final l10n = context.l10n;
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AranyixColors.forestLight,
+            borderRadius: BorderRadius.circular(AranyixRadii.card),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                isPhone ? Icons.sms_outlined : Icons.mark_email_read_outlined,
+                color: AranyixColors.forest,
+                size: 36,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isPhone ? l10n.otpSmsPrompt : l10n.otpEmailPrompt,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AranyixColors.forestDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        OtpInput(
+          length: _otpLength,
+          enabled: !_busy,
+          onChanged: (v) => setState(() {
+            if (isPhone) {
+              _phoneOtp = v;
+            } else {
+              _emailOtp = v;
+            }
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SignupCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AranyixColors.forestLight : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? AranyixColors.forest : AranyixColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                category.icon,
+                size: 18,
+                color: selected ? AranyixColors.forest : AranyixColors.onSurfaceMuted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: selected ? AranyixColors.forestDark : AranyixColors.onSurface,
+                      ),
+                    ),
+                    Text(
+                      category.hint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: selected
+                            ? AranyixColors.forest.withValues(alpha: 0.85)
+                            : AranyixColors.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.core.rate_limit import rate_limit
 from app.schemas.contact import ContactInquiryCreate, ContactInquiryOut
-from app.services.contact.email import ContactEmailError, send_contact_inquiry_email
+from app.services.contact.inquiry import ContactInquiryError, deliver_contact_inquiry
 
 router = APIRouter(prefix="/contact", tags=["contact"])
 
@@ -19,8 +19,8 @@ router = APIRouter(prefix="/contact", tags=["contact"])
 )
 async def submit_contact_inquiry(payload: ContactInquiryCreate) -> ContactInquiryOut:
     try:
-        await send_contact_inquiry_email(payload)
-    except ContactEmailError as exc:
+        await deliver_contact_inquiry(payload)
+    except ContactInquiryError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={

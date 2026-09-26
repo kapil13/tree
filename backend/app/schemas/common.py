@@ -30,6 +30,19 @@ class HealthResponse(BaseModel):
     version: str
     env: str
     db: str = "unknown"
+    redis: str = "unknown"
+
+
+class LivenessResponse(BaseModel):
+    status: str = "ok"
+    version: str
+
+
+class WorkerHealthResponse(BaseModel):
+    status: str
+    celery: dict
+    recent_jobs: list[dict]
+    failed_job_count: int
 
 
 class IDResponse(BaseModel):

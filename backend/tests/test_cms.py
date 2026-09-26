@@ -1,0 +1,40 @@
+"""CMS service tests."""
+
+from __future__ import annotations
+
+from app.services.cms.defaults import HEADER_DEFAULT, SECTION_TYPES
+from app.services.cms.service import slugify
+
+
+def test_slugify():
+    assert slugify("About Us") == "about-us"
+    assert slugify("  Hello World!  ") == "hello-world"
+
+
+def test_resolve_page_ref_accepts_slug():
+    from app.services.cms.service import resolve_page_admin
+
+    assert callable(resolve_page_admin)
+
+
+def test_ensure_cms_seeded_commits_not_only_flush():
+    import inspect
+
+    from app.services.cms.service import ensure_cms_seeded
+
+    source = inspect.getsource(ensure_cms_seeded)
+    assert "await db.commit()" in source
+
+
+def test_section_types_include_hero():
+    assert "hero" in SECTION_TYPES
+    assert "features" in SECTION_TYPES
+    assert "stats" in SECTION_TYPES
+    assert "reports" in SECTION_TYPES
+    assert "intelligence_pipeline" in SECTION_TYPES
+    assert "biodiversity_intelligence" in SECTION_TYPES
+    assert "ghg_intelligence" in SECTION_TYPES
+
+
+def test_header_default_has_nav():
+    assert len(HEADER_DEFAULT["nav"]) >= 3

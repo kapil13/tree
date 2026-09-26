@@ -29,10 +29,14 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     species_text: Mapped[str | None] = mapped_column(String(255))
 
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    verification_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="registered"
+    )
     planted_at: Mapped[date | None] = mapped_column(Date)
     registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )
+    last_geotag_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Geography
     location: Mapped[Any] = mapped_column(
@@ -40,7 +44,15 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     )
     altitude_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
     accuracy_m: Mapped[float | None] = mapped_column(Numeric(8, 2))
-    plantation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    plantation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plantation_fences.id", ondelete="SET NULL")
+    )
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_projects.id", ondelete="SET NULL")
+    )
+    program_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("planting_programs.id", ondelete="SET NULL")
+    )
 
     # Cached metrics
     current_height_m: Mapped[float | None] = mapped_column(Numeric(6, 2))
@@ -59,6 +71,9 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     owner = relationship("User", back_populates="trees", foreign_keys=[owner_user_id])
     organization = relationship("Organization", back_populates="trees")
     species = relationship("Species")
+    planting_program = relationship("PlantingProgram", back_populates="trees")
+    work_area = relationship("PlantationFence", foreign_keys=[plantation_id])
+    project = relationship("PlantingProject", foreign_keys=[project_id])
     images = relationship(
         "TreeImage", back_populates="tree", cascade="all, delete-orphan"
     )
@@ -68,8 +83,23 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
     carbon_records = relationship(
         "CarbonCalculation", back_populates="tree", cascade="all, delete-orphan"
     )
+    stewards = relationship(
+        "TreeSteward", back_populates="tree", cascade="all, delete-orphan"
+    )
     satellite_records = relationship(
         "SatelliteRecord", back_populates="tree", cascade="all, delete-orphan"
+    )
+    measurements = relationship(
+        "TreeMeasurement",
+        back_populates="tree",
+        cascade="all, delete-orphan",
+        order_by="TreeMeasurement.measured_at.desc()",
+    )
+    risk_score = relationship(
+        "TreeRiskScore",
+        back_populates="tree",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     __table_args__ = (
@@ -79,4 +109,7 @@ class Tree(UUIDPKMixin, TimestampMixin, Base):
         Index("trees_species_idx", "species_id"),
         Index("trees_status_idx", "status"),
         Index("trees_health_idx", "current_health"),
+        Index("trees_program_idx", "program_id"),
+        Index("trees_plantation_idx", "plantation_id"),
+        Index("trees_project_idx", "project_id"),
     )

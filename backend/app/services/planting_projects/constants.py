@@ -1,0 +1,63 @@
+"""Shared constants for planting projects, work areas, and compliance."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+ProjectSegment = Literal[
+    "nhai_highway",
+    "industrial_greenbelt",
+    "township_landscape",
+    "nagar_van_urban",
+    "sahakar_van_coop",
+    "ngo_watershed",
+    "nutri_garden",
+    "estate_monitoring",
+    "general",
+]
+
+ComplianceMode = Literal["open", "guided", "strict"]
+
+WorkAreaGeometryType = Literal["polygon", "corridor"]
+
+ProjectStatus = Literal["planning", "active", "completed", "archived"]
+
+ViolationSeverity = Literal["block", "warn", "audit"]
+
+ViolationType = Literal[
+    "outside_boundary",
+    "work_area_required",
+    "spacing_too_close",
+    "duplicate_coordinate",
+    "duplicate_photo",
+    "gps_accuracy_poor",
+    "species_not_allowed",
+    "density_out_of_range",
+    "pit_size_missing",
+]
+
+SEGMENT_LABELS: dict[str, str] = {
+    "nhai_highway": "NHAI / Highway",
+    "industrial_greenbelt": "Industrial / Mine green belt",
+    "township_landscape": "Township / Society landscape",
+    "nagar_van_urban": "Nagar Van / Urban forest",
+    "sahakar_van_coop": "Sahakar Van / Cooperative forest",
+    "ngo_watershed": "NGO / Watershed",
+    "nutri_garden": "Nutri-garden / Poshan Vatika",
+    "estate_monitoring": "Estate / forest monitoring",
+    "general": "General plantation",
+}
+
+PROGRAM_DEFAULT_SEGMENT: dict[str, str] = {
+    "government_nhai": "nhai_highway",
+    "corporate_esg": "industrial_greenbelt",
+    "ngo_community": "ngo_watershed",
+    "byot": "general",
+}
+
+PROGRAM_DEFAULT_COMPLIANCE: dict[str, ComplianceMode] = {
+    "government_nhai": "strict",
+    "corporate_esg": "strict",
+    "ngo_community": "guided",
+    "byot": "open",
+}

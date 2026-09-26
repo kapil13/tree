@@ -4,10 +4,13 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.tree_measurement import MeasurementMethod, TreeInitialMeasurement
 
 
 class TreeCreate(BaseModel):
+    program_code: str = Field(default="byot", max_length=64)
     species_id: uuid.UUID | None = None
     species_text: str | None = Field(default=None, max_length=255)
     planted_at: date | None = None
@@ -15,9 +18,28 @@ class TreeCreate(BaseModel):
     longitude: float = Field(..., ge=-180, le=180)
     altitude_m: float | None = None
     accuracy_m: float | None = Field(default=None, ge=0)
-    plantation_id: uuid.UUID | None = None
+    plantation_id: uuid.UUID | None = Field(
+        default=None, description="Work area (plantation fence) UUID"
+    )
+    work_area_id: uuid.UUID | None = Field(
+        default=None, description="Alias for plantation_id"
+    )
     photo_keys: list[str] = Field(default_factory=list, max_length=10)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    initial_measurement: TreeInitialMeasurement | None = None
+
+    @field_validator("planted_at", mode="before")
+    @classmethod
+    def normalize_planted_at(cls, value: Any) -> date | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str) and "T" in value:
+            return date.fromisoformat(value.split("T", 1)[0])
+        return value
 
 
 class TreeUpdate(BaseModel):
@@ -28,6 +50,33 @@ class TreeUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class TreeImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tree_id: uuid.UUID
+    s3_key: str
+    cdn_url: str | None
+    is_primary: bool
+    created_at: datetime
+    taken_at: datetime | None = None
+
+
+class TreeRiskOut(BaseModel):
+    gps_photo_match: bool
+    duplicate_photo: bool
+    duplicate_coordinate: bool
+    ai_confidence_low: bool
+    regeotag_mismatch: bool
+    composite_risk: float
+    field_score: float | None = None
+    satellite_score: float | None = None
+    fusion_score: float | None = None
+    credit_eligible: bool = False
+    fusion_details: dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
 class TreeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,9 +84,12 @@ class TreeOut(BaseModel):
     public_code: str
     owner_user_id: uuid.UUID
     organization_id: uuid.UUID | None
+    program_id: uuid.UUID | None = None
+    program_code: str | None = None
     species_id: uuid.UUID | None
     species_text: str | None
     status: str
+    verification_status: str = "registered"
     planted_at: date | None
     registered_at: datetime
     latitude: float | None = None
@@ -52,6 +104,12 @@ class TreeOut(BaseModel):
     satellite_verified: bool
     last_analysis_at: datetime | None
     last_satellite_at: datetime | None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    images: list[TreeImageOut] = Field(default_factory=list)
+    risk_score: TreeRiskOut | None = None
+    plantation_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    last_geotag_at: datetime | None = None
     created_at: datetime
 
 
@@ -65,6 +123,47 @@ class TreeListItem(BaseModel):
     latitude: float
     longitude: float
     created_at: datetime
+    program_code: str | None = None
+    project_id: uuid.UUID | None = None
+    work_area_id: uuid.UUID | None = None
+    work_area_name: str | None = None
+    last_geotag_at: datetime | None = None
+    survival_status: str | None = None
+    chainage_km: str | None = None
+    primary_image_id: uuid.UUID | None = None
+    primary_image_url: str | None = None
+
+
+class TreeRegeotag(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0)
+    altitude_m: float | None = None
+    photo_key: str | None = Field(
+        default=None,
+        description="Optional survey photo S3 key (camera capture with GPS for strict projects).",
+    )
+    survival_status: str | None = Field(
+        default=None, description="live | stressed | dead | replaced"
+    )
+    remarks: str | None = None
+    dbh_cm: float | None = Field(default=None, ge=0, le=500)
+    height_m: float | None = Field(default=None, ge=0, le=200)
+    canopy_m: float | None = Field(default=None, ge=0, le=200)
+    method: MeasurementMethod | None = Field(default="tape")
+    instrument: str | None = Field(default=None, max_length=64)
+
+
+class RegeotagComplianceOut(BaseModel):
+    passed: bool
+    mode: str
+    chainage_km: float | None = None
+    issues: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class TreeRegeotagOut(TreeOut):
+    compliance: RegeotagComplianceOut | None = None
+    gamification: dict[str, Any] | None = None
 
 
 class TreePassport(BaseModel):
@@ -79,14 +178,3 @@ class TreePassport(BaseModel):
     satellite_verified: bool
     qr_url: str
     passport_pdf_url: str
-
-
-class TreeImageOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    tree_id: uuid.UUID
-    s3_key: str
-    cdn_url: str | None
-    is_primary: bool
-    created_at: datetime

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models._mixins import TimestampMixin, UUIDPKMixin
+from app.services.alerts.defaults import default_notification_preferences
 
 
 class User(UUIDPKMixin, TimestampMixin, Base):
@@ -23,11 +24,31 @@ class User(UUIDPKMixin, TimestampMixin, Base):
     hashed_password: Mapped[str | None] = mapped_column(String(255))
     google_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
+    org_role: Mapped[str | None] = mapped_column(String(32))
+    is_org_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sessions_invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notification_preferences: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=default_notification_preferences
+    )
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_of_marriage: Mapped[date | None] = mapped_column(Date, nullable=True)
+    city: Mapped[str | None] = mapped_column(String(128))
+    state: Mapped[str | None] = mapped_column(String(128))
 
-    organization = relationship("Organization", back_populates="users")
+    organization = relationship(
+        "Organization", back_populates="users", foreign_keys=[organization_id]
+    )
     trees = relationship("Tree", back_populates="owner", foreign_keys="Tree.owner_user_id")
+    planting_programs = relationship("UserPlantingProgram", back_populates="user")
+    ai_scan_wallet = relationship("UserAiScanWallet", back_populates="user", uselist=False)
+    payment_orders = relationship("PaymentOrder", back_populates="user")
+    tree_stewards = relationship("TreeSteward", back_populates="user")
+    citizen_profile = relationship("CitizenProfile", back_populates="user", uselist=False)
 
     __table_args__ = (Index("users_org_idx", "organization_id"),)

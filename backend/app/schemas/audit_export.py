@@ -1,0 +1,149 @@
+"""Schemas for Estate Watch Phase 6 audit export."""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class ExportSectionOut(BaseModel):
+    id: str
+    label: str
+    met: bool
+    detail: str | None = None
+
+
+class ExportReadinessOut(BaseModel):
+    engagement_id: str
+    cycle_id: str | None = None
+    status: str
+    block_count: int
+    ready: bool
+    exportable: bool
+    sections: list[ExportSectionOut] = Field(default_factory=list)
+    last_export_sha256: str | None = None
+    exported_at: str | None = None
+    reconciliation_aligned_count: int = 0
+    reconciliation_mismatch_count: int = 0
+    reconciliation_no_field_count: int = 0
+
+
+class ReconciliationBlockOut(BaseModel):
+    boundary_version_id: str
+    boundary_name: str | None = None
+    confidence_grade: str | None = None
+    confidence_score: int | None = None
+    field_grade: str | None = None
+    field_signal: str | None = None
+    visit_count: int = 0
+    tree_presence_counts: dict[str, int] = Field(default_factory=dict)
+    outcome_counts: dict[str, int] = Field(default_factory=dict)
+    reconciliation: str
+    aligned: bool | None = None
+
+
+class ReconciliationOut(BaseModel):
+    engagement_id: str
+    block_count: int
+    aligned_count: int
+    mismatch_count: int
+    no_field_data_count: int
+    blocks: list[ReconciliationBlockOut] = Field(default_factory=list)
+
+
+class ExportSummaryOut(BaseModel):
+    engagement_id: str
+    cycle_id: str | None = None
+    export_id: str | None = None
+    project_id: str
+    project_code: str
+    file_count: int
+    bundle_sha256: str
+    content_manifest_hash: str | None = None
+    unsigned_bundle_hash: str | None = None
+    package_sha256: str | None = None
+    zip_size_bytes: int
+    signed: bool
+    signature_key_id: str | None = None
+    status: str
+
+
+class AuditExportCreateOut(BaseModel):
+    export_id: str
+    cycle_id: str
+    engagement_id: str
+    content_manifest_hash: str
+    unsigned_bundle_hash: str
+    package_sha256: str
+    file_count: int
+    zip_size_bytes: int
+    signed: bool
+    signature_key_id: str | None = None
+    status: str
+
+
+class AuditExportListItemOut(BaseModel):
+    export_id: str
+    cycle_id: str
+    engagement_id: str
+    status: str
+    export_version: str
+    methodology_version: str | None = None
+    content_manifest_hash: str
+    unsigned_bundle_hash: str
+    package_sha256: str
+    file_count: int
+    zip_size_bytes: int
+    signature_key_id: str | None = None
+    signed: bool
+    frozen_at: str | None = None
+    generated_at: str | None = None
+
+
+class AuditExportDetailOut(AuditExportListItemOut):
+    files: list[dict] = Field(default_factory=list)
+
+
+class AuditExportVerificationOut(BaseModel):
+    export_id: str
+    valid: bool
+    verified_at: str
+    details: dict = Field(default_factory=dict)
+
+
+class AuditMethodologyOut(BaseModel):
+    version: str
+    name: str
+    description: str
+    status: str
+    effective_from: str | None = None
+
+
+class AuditMethodologyBundleOut(BaseModel):
+    version: str
+    name: str
+    description: str
+    status: str
+    effective_from: str | None = None
+    rules: list[dict] = Field(default_factory=list)
+    threshold_sets: list[dict] = Field(default_factory=list)
+
+
+class AuditMethodologyBindingOut(BaseModel):
+    engagement_id: str
+    methodology_version: str
+    threshold_overrides: dict = Field(default_factory=dict)
+
+
+class AuditMethodologyBindingUpdate(BaseModel):
+    methodology_version: str
+    threshold_overrides: dict = Field(default_factory=dict)
+    reason: str = ""
+
+
+class AuditMethodologyChangeLogOut(BaseModel):
+    id: str
+    engagement_id: str
+    from_version: str | None = None
+    to_version: str
+    reason: str
+    changed_at: str

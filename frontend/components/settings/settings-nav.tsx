@@ -1,0 +1,141 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Calculator, CreditCard, Globe2, ScrollText, Settings2, Shield, Sprout, User, UserCheck, Users, Webhook } from "lucide-react";
+import { useAuth } from "@/lib/auth-store";
+import { isOrgAdmin, canGenerateReports } from "@/lib/nav-access";
+import { canAccessWebsiteCms, canManagePlatformUsers } from "@/lib/platform-access";
+import { cn } from "@/lib/cn";
+
+type NavItem = {
+  href: string;
+  labelKey: string;
+  icon: typeof Settings2;
+  match?: (path: string) => boolean;
+};
+
+function baseItems(showTeam: boolean, showAudit: boolean, showWebhooks: boolean): NavItem[] {
+  const items: NavItem[] = [
+    {
+      href: "/settings",
+      labelKey: "general",
+      icon: Settings2,
+      match: (path) => path === "/settings",
+    },
+    {
+      href: "/settings/profile",
+      labelKey: "profile",
+      icon: User,
+      match: (path) => path.startsWith("/settings/profile"),
+    },
+    {
+      href: "/settings/programs",
+      labelKey: "programs",
+      icon: Sprout,
+      match: (path) => path.startsWith("/settings/programs"),
+    },
+    {
+      href: "/settings/billing",
+      labelKey: "billing",
+      icon: CreditCard,
+      match: (path) => path.startsWith("/settings/billing"),
+    },
+  ];
+  if (showTeam) {
+    items.push({
+      href: "/settings/team",
+      labelKey: "team",
+      icon: Users,
+      match: (p) => p.startsWith("/settings/team"),
+    });
+  }
+  items.push(
+    {
+      href: "/settings/carbon",
+      labelKey: "carbonCalculator",
+      icon: Calculator,
+      match: (path) => path.startsWith("/settings/carbon"),
+    },
+    {
+      href: "/settings/privacy",
+      labelKey: "privacy",
+      icon: Shield,
+      match: (path) => path.startsWith("/settings/privacy"),
+    },
+  );
+  if (showAudit) {
+    items.push({
+      href: "/settings/audit",
+      labelKey: "auditTrail",
+      icon: ScrollText,
+      match: (path) => path.startsWith("/settings/audit"),
+    });
+  }
+  if (showWebhooks) {
+    items.push({
+      href: "/settings/webhooks",
+      labelKey: "webhooks",
+      icon: Webhook,
+      match: (path) => path.startsWith("/settings/webhooks"),
+    });
+  }
+  return items;
+}
+
+export function SettingsNav() {
+  const path = usePathname();
+  const { user } = useAuth();
+  const t = useTranslations("settingsNav");
+
+  const adminItems: NavItem[] = [];
+  if (canAccessWebsiteCms(user)) {
+    adminItems.push({
+      href: "/platform/cms",
+      labelKey: "websiteCms",
+      icon: Globe2,
+      match: (p: string) => p.startsWith("/platform/cms"),
+    });
+  }
+  if (canManagePlatformUsers(user)) {
+    adminItems.push({
+      href: "/platform/program-access",
+      labelKey: "programAccess",
+      icon: UserCheck,
+      match: (p: string) => p.startsWith("/platform/program-access"),
+    });
+  }
+
+  const orgAdmin = isOrgAdmin(user);
+  const items = [
+    ...baseItems(orgAdmin, orgAdmin || canGenerateReports(user), orgAdmin),
+    ...adminItems,
+  ];
+
+  return (
+    <nav aria-label={t("ariaLabel")} className="lg:w-52 lg:shrink-0">
+      <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+        {items.map(({ href, labelKey, icon: Icon, match }) => {
+          const active = match ? match(path ?? "") : path === href;
+          return (
+            <li key={href} className="shrink-0 lg:shrink">
+              <Link
+                href={href}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition",
+                  active
+                    ? "bg-forest-100 text-forest-900 dark:bg-forest-950/50 dark:text-forest-200"
+                    : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100",
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {t(labelKey)}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}

@@ -6,14 +6,22 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 
-from app.api.v1.deps import DB, CurrentUser
+from app.api.v1.deps import DB, CurrentUser, WriteProfessional
+from app.core.security import Permission, has_permission
 from app.models.satellite import SatelliteRecord
 from app.models.tree import Tree
 from app.schemas.satellite import NDVIPoint, SatelliteRecordOut, SatelliteSeries
+from app.services.data_scope import can_access_tree
+from app.services.monitoring.satellite_sweep import (
+    maybe_alert_tree_ndvi_decline,
+)
+from app.services.platform.governance import assert_org_feature_enabled
 from app.services.satellite import get_satellite_service
+from app.services.satellite.ndvi_image import render_ndvi_png
 
 router = APIRouter(prefix="/satellite", tags=["satellite"])
 
@@ -23,18 +31,27 @@ async def _load_tree(tree_id: uuid.UUID, user, db) -> Tree:
     tree = res.scalar_one_or_none()
     if tree is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="tree_not_found")
-    if user.role != "admin" and tree.owner_user_id != user.id and (
-        not user.organization_id or tree.organization_id != user.organization_id
-    ):
+    if not await can_access_tree(db, user, tree):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     return tree
 
 
 @router.post("/scan", response_model=SatelliteRecordOut)
-async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecordOut:
+async def scan(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> SatelliteRecordOut:
+    await assert_org_feature_enabled(db, user, "satellite")
+    if not has_permission(user.role, Permission.SATELLITE_TRIGGER):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
     tree = await _load_tree(tree_id, user, db)
     pt = to_shape(tree.location)
     sample = await get_satellite_service().sample(pt.y, pt.x)
+    change = sample.change_vs_baseline
+    if sample.ndvi_mean is not None:
+        from app.services.monitoring.satellite_sweep import _tree_baseline_ndvi_change
+
+        computed = await _tree_baseline_ndvi_change(db, tree.id, float(sample.ndvi_mean))
+        if computed != 0.0:
+            change = computed
+
     rec = SatelliteRecord(
         tree_id=tree.id,
         provider=sample.provider,
@@ -46,20 +63,63 @@ async def scan(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> SatelliteRecord
         ndvi_min=sample.ndvi_min,
         evi_mean=sample.evi_mean,
         presence_confirmed=sample.presence_confirmed,
-        change_vs_baseline=sample.change_vs_baseline,
+        change_vs_baseline=change,
     )
     db.add(rec)
     tree.satellite_verified = bool(sample.presence_confirmed)
     tree.last_satellite_at = datetime.now(UTC)
+    await db.flush()
+
+    from app.services.integrity.refresh import refresh_tree_integrity
+
+    await refresh_tree_integrity(db, tree)
+
+    await maybe_alert_tree_ndvi_decline(
+        db,
+        tree=tree,
+        user=user,
+        sample=sample,
+        change=float(change or 0.0),
+    )
     await db.commit()
     await db.refresh(rec)
+
+    try:
+        from app.services.ai.satellite_health_ops import analyze_tree_satellite_health
+
+        await analyze_tree_satellite_health(db, tree.id, user.id, species_hint=tree.species_text)
+    except Exception:
+        pass
+
     return SatelliteRecordOut.model_validate(rec)
+
+
+@router.post("/scan/async", status_code=status.HTTP_202_ACCEPTED)
+async def scan_async(tree_id: uuid.UUID, user: WriteProfessional, db: DB) -> dict:
+    """Queue NDVI satellite scan on the Celery worker when available."""
+    await assert_org_feature_enabled(db, user, "satellite")
+    from app.services.workers.enqueue import try_enqueue
+    from app.workers.tasks import run_satellite_scan
+
+    await _load_tree(tree_id, user, db)
+    task_id = try_enqueue(run_satellite_scan, str(tree_id))
+    if task_id:
+        return {"tree_id": str(tree_id), "status": "queued", "celery_task_id": task_id}
+
+    rec = await scan(tree_id, user, db)
+    return {
+        "tree_id": str(tree_id),
+        "status": "completed",
+        "ndvi_mean": float(rec.ndvi_mean or 0),
+        "synchronous": True,
+    }
 
 
 @router.get("-monitoring/{tree_id}", response_model=SatelliteSeries, name="series")
 async def get_series(
     tree_id: uuid.UUID, user: CurrentUser, db: DB, months: int = 12
 ) -> SatelliteSeries:
+    await assert_org_feature_enabled(db, user, "satellite")
     tree = await _load_tree(tree_id, user, db)
     res = await db.execute(
         select(SatelliteRecord)
@@ -104,4 +164,36 @@ async def get_series(
         tree_id=tree.id,
         points=points,
         latest=SatelliteRecordOut.model_validate(latest) if latest else None,
+        ndvi_image_url=f"/api/v1/satellite/ndvi-image/{tree.id}",
+    )
+
+
+@router.get("/ndvi-image/{tree_id}")
+async def ndvi_image(tree_id: uuid.UUID, user: CurrentUser, db: DB) -> Response:
+    """False-color NDVI chip (10 m, Sentinel-2 resolution) centred on the tree. Requires auth."""
+    await assert_org_feature_enabled(db, user, "satellite")
+    tree = await _load_tree(tree_id, user, db)
+    pt = to_shape(tree.location)
+    lat, lon = pt.y, pt.x
+
+    res = await db.execute(
+        select(SatelliteRecord)
+        .where(SatelliteRecord.tree_id == tree.id)
+        .order_by(SatelliteRecord.scene_acquired_at.desc())
+        .limit(1)
+    )
+    latest = res.scalar_one_or_none()
+    if latest and latest.ndvi_mean is not None:
+        ndvi = float(latest.ndvi_mean)
+        label = f"NDVI {ndvi:.2f} · {latest.provider}"
+    else:
+        sample = await get_satellite_service().sample(lat, lon)
+        ndvi = sample.ndvi_mean
+        label = f"NDVI {ndvi:.2f} · {sample.provider}"
+
+    png = render_ndvi_png(lat, lon, ndvi, label=label)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=3600"},
     )

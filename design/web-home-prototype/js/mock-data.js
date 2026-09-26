@@ -1,0 +1,245 @@
+/**
+ * Aranyix Command Center — mock data (production API shapes)
+ */
+
+const MOCK_USER = {
+  full_name: "Priya Sharma",
+  organization_name: "NHAI Regional Plantation Cell",
+};
+
+const MOCK_SCHEMES = [
+  { id: "all", label: "All programmes" },
+  { id: "nhai", label: "NHAI Greenbelt" },
+  { id: "campa", label: "CAMPA" },
+  { id: "nagar", label: "Nagar Van" },
+];
+
+const MOCK_PROJECTS = [
+  {
+    id: "p1",
+    schemeId: "nhai",
+    name: "KM-48 Greenbelt",
+    shortName: "KM-48",
+    trees: 4821,
+    targetTrees: 6000,
+    openViolations: 2,
+    survivalDue: 0,
+    integrityScore: 76,
+    integrityTrend: -5,
+    progressPct: 80,
+    ndvi: 0.52,
+    ndviDelta: -12,
+    mapZone: { left: 22, top: 38, width: 42, height: 24 },
+  },
+  {
+    id: "p2",
+    schemeId: "campa",
+    name: "CAMPA Block A",
+    shortName: "CAMPA A",
+    trees: 9104,
+    targetTrees: 10000,
+    openViolations: 0,
+    survivalDue: 4,
+    integrityScore: 82,
+    integrityTrend: 1,
+    progressPct: 91,
+    ndvi: 0.71,
+    ndviDelta: 2,
+    mapZone: { left: 62, top: 24, width: 28, height: 22 },
+  },
+  {
+    id: "p3",
+    schemeId: "nagar",
+    name: "Nagar Van Ph.2",
+    shortName: "Nagar Van",
+    trees: 312,
+    targetTrees: 500,
+    openViolations: 1,
+    survivalDue: 12,
+    integrityScore: 68,
+    integrityTrend: -2,
+    progressPct: 62,
+    ndvi: 0.55,
+    ndviDelta: -5,
+    mapZone: { left: 18, top: 54, width: 24, height: 20 },
+  },
+];
+
+const MOCK_DASHBOARD = {
+  statusLabel: "Follow-up needed",
+  updatedAt: "2 min ago",
+  forestIntegrity: { score: 76, trend: -3, prevScore: 79 },
+  kpi: {
+    total_trees: 14237,
+    trees_delta: 3,
+    total_co2e_kg: 284500,
+    co2e_delta_pct: 1.8,
+    pct_healthy: 84.2,
+    pct_satellite_verified: 71.5,
+    annual_sequestration_kg: 19915,
+    lifetime_credits_tco2e: 1564.75,
+    trees_attention: 18,
+    trees_attention_delta: 4,
+  },
+  fieldOps: { open_violations: 3, survival_due: 16 },
+  monitoring: {
+    stale_satellite_work_areas: 5,
+    sar_at_risk_work_areas: 1,
+    anomaly_count: 7,
+    anomaly_delta: 2,
+  },
+  compliance: {
+    avg_readiness_pct: 82.4,
+    evidence_verified: 847,
+    evidence_pending: 23,
+    evidence_gaps: 5,
+    blocking_violations: 1,
+  },
+  bioacoustic: {
+    total_species_detected: 34,
+    species_delta: 1,
+    avg_health_score: 73,
+    avg_shannon_index: 2.14,
+    threatened_species_count: 2,
+    chorus_activity_pct: 82,
+    chorus_delta: -18,
+  },
+  threatWatch: { fire_detections: 3 },
+  unreadAlerts: 3,
+  health_distribution: [
+    { label: "Healthy", pct: 84, color: "#5c7a6e" },
+    { label: "Stressed", pct: 13, color: "#b8956b" },
+    { label: "Dead", pct: 2, color: "#c4705a" },
+    { label: "Unknown", pct: 1, color: "#c4b8a8" },
+  ],
+  risk_distribution: [
+    { label: "Low", pct: 58, color: "#5c7a6e" },
+    { label: "Moderate", pct: 28, color: "#b8956b" },
+    { label: "High", pct: 11, color: "#c4705a" },
+    { label: "Critical", pct: 3, color: "#a85a48" },
+  ],
+  carbon_trajectory: {
+    historical: [
+      { label: "Jan", value: 228 },
+      { label: "Feb", value: 234 },
+      { label: "Mar", value: 241 },
+      { label: "Apr", value: 248 },
+      { label: "May", value: 255 },
+      { label: "Jun", value: 263 },
+      { label: "Jul", value: 271 },
+      { label: "Aug", value: 278 },
+      { label: "Sep", value: 284.5 },
+    ],
+    projected: [
+      { label: "Oct", value: 291 },
+      { label: "Nov", value: 298 },
+      { label: "Dec", value: 305 },
+    ],
+    target: 310,
+    on_track: true,
+  },
+  ndvi_series: [
+    { label: "W1", value: 0.68 },
+    { label: "W2", value: 0.66 },
+    { label: "W3", value: 0.64 },
+    { label: "W4", value: 0.62 },
+    { label: "W5", value: 0.61 },
+    { label: "W6", value: 0.58 },
+  ],
+  canopy_series: [
+    { label: "W1", value: 86 },
+    { label: "W2", value: 85 },
+    { label: "W3", value: 85 },
+    { label: "W4", value: 84 },
+    { label: "W5", value: 84 },
+    { label: "W6", value: 84 },
+  ],
+  survival_series: [
+    { label: "W1", value: 92 },
+    { label: "W2", value: 91 },
+    { label: "W3", value: 91 },
+    { label: "W4", value: 90 },
+    { label: "W5", value: 89 },
+    { label: "W6", value: 88 },
+  ],
+  satellite_freshness: [
+    { label: "W1", value: 92 },
+    { label: "W2", value: 88 },
+    { label: "W3", value: 85 },
+    { label: "W4", value: 78 },
+    { label: "W5", value: 74 },
+    { label: "W6", value: 71 },
+  ],
+  anomaly_series: [
+    { label: "W1", value: 3 },
+    { label: "W2", value: 4 },
+    { label: "W3", value: 4 },
+    { label: "W4", value: 5 },
+    { label: "W5", value: 6 },
+    { label: "W6", value: 7 },
+  ],
+  bio_activity_series: [
+    { label: "W1", value: 94 },
+    { label: "W2", value: 91 },
+    { label: "W3", value: 90 },
+    { label: "W4", value: 88 },
+    { label: "W5", value: 85 },
+    { label: "W6", value: 82 },
+  ],
+  bio_observations: [
+    { label: "Mon", value: 6 },
+    { label: "Tue", value: 4 },
+    { label: "Wed", value: 8 },
+    { label: "Thu", value: 5 },
+    { label: "Fri", value: 7 },
+    { label: "Sat", value: 9 },
+    { label: "Sun", value: 3 },
+  ],
+  mrv_pipeline: [
+    { stage: "Capture", pct: 100, status: "done", pending: 0, gaps: 0 },
+    { stage: "Evidence", pct: 97, status: "done", pending: 12, gaps: 0 },
+    { stage: "Verify", pct: 82, status: "active", pending: 23, gaps: 5 },
+    { stage: "MRV", pct: 45, status: "pending", pending: 0, gaps: 0 },
+    { stage: "Report", pct: 12, status: "pending", pending: 0, gaps: 0 },
+  ],
+  kpi_sparklines: {
+    trees: [13800, 13950, 14020, 14100, 14180, 14237],
+    co2e: [268, 272, 276, 279, 282, 284.5],
+    alerts: [1, 1, 2, 2, 3, 3],
+    violations: [2, 2, 3, 3, 3, 3],
+  },
+};
+
+const MOCK_MAP_HOTSPOTS = [
+  { id: "h1", type: "alert", projectId: "p1", name: "Ch. 142–148", left: 38, top: 44, ndvi: 0.52, delta: -12, severity: "critical" },
+  { id: "h2", type: "stale", projectId: "p1", name: "Ch. 148–155", left: 58, top: 48, ndvi: 0.61, delta: 0, severity: "medium", staleDays: 16 },
+  { id: "h3", type: "tree", projectId: "p2", name: "Comp. 3", left: 72, top: 32, ndvi: 0.71, delta: 2, severity: "ok" },
+  { id: "h4", type: "tree", projectId: "p3", name: "Zone B", left: 28, top: 62, ndvi: 0.55, delta: -5, severity: "high" },
+  { id: "h5", type: "bio", projectId: "p3", name: "Bio station", left: 32, top: 58, ndvi: null, delta: -18, severity: "medium" },
+  { id: "h6", type: "field", projectId: "p1", name: "Field team", left: 42, top: 50, ndvi: null, delta: 0, severity: "info" },
+];
+
+const MOCK_ALERTS = [
+  { id: "a1", severity: "critical", title: "NDVI drop", location: "Ch. 142–148", trend: "down", action: "Inspect", due: "48h", projectId: "p1", status: "open" },
+  { id: "a2", severity: "high", title: "18 trees attention", location: "Portfolio", trend: "up", action: "Registry", due: "Today", projectId: "all", status: "open" },
+  { id: "a3", severity: "high", title: "Fire watch", location: "KM-48", trend: "flat", action: "Monitor", due: "Active", projectId: "p1", status: "open" },
+  { id: "a4", severity: "medium", title: "Stale satellite", location: "5 sites", trend: "down", action: "Refresh", due: "Overdue", projectId: "all", status: "overdue" },
+  { id: "a5", severity: "medium", title: "Evidence gap", location: "CAMPA A", trend: "flat", action: "Resolve", due: "3d", projectId: "p2", status: "open" },
+  { id: "a6", severity: "low", title: "Surveys due", location: "Zone B", trend: "flat", action: "Survey", due: "Week", projectId: "p3", status: "open" },
+  { id: "a7", severity: "low", title: "Scan completed", location: "Comp. 3", trend: "up", action: "—", due: "Done", projectId: "p2", status: "completed" },
+];
+
+const MOCK_ACTIVITY = [
+  { id: "act1", type: "tree", label: "Tree registered", meta: "ARX-NH-004822", time: "1h", offset: 8 },
+  { id: "act2", type: "alert", label: "NDVI alert", meta: "Ch. 142–148", time: "2h", offset: 22 },
+  { id: "act3", type: "evidence", label: "Evidence verified", meta: "CAMPA A", time: "5h", offset: 38 },
+  { id: "act4", type: "bio", label: "Bio analyzed", meta: "Zone B · 8 sp.", time: "8h", offset: 55 },
+  { id: "act5", type: "satellite", label: "SAR scan", meta: "KM-48", time: "1d", offset: 78 },
+];
+
+const NAV_GROUPS = [
+  { label: "Overview", items: [{ id: "dashboard", label: "Dashboard", icon: "◫", active: true }, { id: "stewardship", label: "Stewardship", icon: "◎" }] },
+  { label: "Plantation", items: [{ id: "projects", label: "Projects", icon: "▤" }, { id: "trees", label: "Trees", icon: "♣" }, { id: "map", label: "Map", icon: "⊞" }, { id: "field", label: "Field ops", icon: "⚑" }] },
+  { label: "Intelligence", items: [{ id: "portfolio", label: "Portfolio health", icon: "◉" }, { id: "satellite", label: "Satellite", icon: "◌" }, { id: "biodiversity", label: "Biodiversity", icon: "∞" }, { id: "alerts", label: "Alerts", icon: "!" }] },
+  { label: "Reports", items: [{ id: "reports", label: "Reports", icon: "≡" }, { id: "assistant", label: "AI Assistant", icon: "✦" }] },
+];

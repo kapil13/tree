@@ -1,0 +1,162 @@
+import 'package:byot_mobile/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../api/api_errors.dart';
+import '../api/auth_redirect.dart';
+import '../providers.dart';
+import '../theme.dart';
+import '../widgets/shell_scaffold.dart';
+import '../widgets/stack_route_scaffold.dart';
+
+class CreditsScreen extends ConsumerStatefulWidget {
+  const CreditsScreen({super.key});
+
+  @override
+  ConsumerState<CreditsScreen> createState() => _CreditsScreenState();
+}
+
+class _CreditsScreenState extends ConsumerState<CreditsScreen> {
+  Map<String, dynamic>? _summary;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final api = await ref.read(apiClientProvider.future);
+      final summary = await api.creditsSummary();
+      if (mounted) {
+        setState(() {
+          _summary = summary;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (maybeRedirectUnauthorized(ref, context, e)) return;
+      if (mounted) {
+        setState(() {
+          _error = apiErrorMessage(e);
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  String _num(dynamic v) {
+    if (v is num) return v.toStringAsFixed(3);
+    return v?.toString() ?? '0';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final s = _summary;
+    final byStatus = Map<String, dynamic>.from(s?['by_status'] ?? {});
+    final projectsAsync = ref.watch(plantingProjectsProvider);
+
+    return stackRouteScaffold(
+      location: '/credits',
+      appBar: ShellTopBar(title: AppLocalizations.of(context)!.navCredits, menuWithBack: true),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton(onPressed: _load, child: Text(l10n.retry)),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  color: AranyixColors.forest,
+                  onRefresh: _load,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Text(
+                        l10n.creditsSummaryHint,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AranyixColors.onSurfaceMuted,
+                            ),
+                      ),
+                      const SizedBox(height: 16),
+                      _row(l10n.projects, '${s?['project_count'] ?? 0}'),
+                      _row(l10n.grossCredits, _num(s?['total_gross_credits_tco2e'])),
+                      _row(l10n.bufferWithheld, _num(s?['total_buffer_withheld_tco2e'])),
+                      _row(l10n.netCredits, _num(s?['total_net_credits_tco2e'])),
+                      _row(l10n.issuedCredits, _num(s?['total_issued_credits_tco2e'])),
+                      if (byStatus.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        Text(l10n.byStatus, style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        for (final e in byStatus.entries)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(e.key),
+                            trailing: Text('${e.value}'),
+                          ),
+                      ],
+                      const SizedBox(height: 20),
+                      Text(l10n.projectLedgers, style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      projectsAsync.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, _) => Text(apiErrorMessage(e)),
+                        data: (projects) {
+                          if (projects.isEmpty) {
+                            return Text(
+                              l10n.noProjectsYet,
+                              style: const TextStyle(color: AranyixColors.onSurfaceMuted),
+                            );
+                          }
+                          return Column(
+                            children: projects.map((raw) {
+                              final p = raw as Map<String, dynamic>;
+                              final id = p['id'] as String;
+                              return Card(
+                                child: ListTile(
+                                  title: Text(p['name'] as String? ?? l10n.projectFallback),
+                                  subtitle: Text('${p['code']} · ${p['segment'] ?? ''}'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => context.push('/credits/projects/$id'),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _row(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(color: AranyixColors.onSurfaceMuted))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,5497 @@
+[
+  {
+    "state_code": "35",
+    "code": "638",
+    "lgd": 603,
+    "name": "Nicobars",
+    "state_name": "Andaman & Nicobar"
+  },
+  {
+    "state_code": "35",
+    "code": "639",
+    "lgd": 632,
+    "name": "North And Middle Andaman",
+    "state_name": "Andaman & Nicobar"
+  },
+  {
+    "state_code": "35",
+    "code": "640",
+    "lgd": 602,
+    "name": "South Andamans",
+    "state_name": "Andaman & Nicobar"
+  },
+  {
+    "state_code": "37",
+    "code": "805",
+    "lgd": 745,
+    "name": "Alluri Sitharama Raju",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "804",
+    "lgd": 744,
+    "name": "Anakapalli",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "553",
+    "lgd": 502,
+    "name": "Anantapur",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "813",
+    "lgd": 753,
+    "name": "Annamayya",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "810",
+    "lgd": 750,
+    "name": "Bapatla",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "554",
+    "lgd": 503,
+    "name": "Chittoor",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "545",
+    "lgd": 505,
+    "name": "East Godavari",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "808",
+    "lgd": 748,
+    "name": "Eluru",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "548",
+    "lgd": 506,
+    "name": "Guntur",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "806",
+    "lgd": 746,
+    "name": "Kakinada",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "807",
+    "lgd": 747,
+    "name": "Konaseema",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "547",
+    "lgd": 510,
+    "name": "Krishna",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "552",
+    "lgd": 511,
+    "name": "Kurnool",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "815",
+    "lgd": 755,
+    "name": "Nandyal",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "809",
+    "lgd": 749,
+    "name": "Ntr",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "811",
+    "lgd": 751,
+    "name": "Palnadu",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "803",
+    "lgd": 743,
+    "name": "Parvathipuram Manyam",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "549",
+    "lgd": 517,
+    "name": "Prakasam",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "550",
+    "lgd": 515,
+    "name": "Spsr Nellore",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "814",
+    "lgd": 754,
+    "name": "Sri Sathya Sai",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "542",
+    "lgd": 519,
+    "name": "Srikakulam",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "812",
+    "lgd": 752,
+    "name": "Tirupati",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "544",
+    "lgd": 520,
+    "name": "Visakhapatanam",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "543",
+    "lgd": 521,
+    "name": "Vizianagaram",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "546",
+    "lgd": 523,
+    "name": "West Godavari",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "37",
+    "code": "551",
+    "lgd": 504,
+    "name": "Y.S.R.",
+    "state_name": "Andhra Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "260",
+    "lgd": 628,
+    "name": "Anjaw",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "253",
+    "lgd": 229,
+    "name": "Changlang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "257",
+    "lgd": 230,
+    "name": "Dibang Valley",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "247",
+    "lgd": 231,
+    "name": "East Kameng",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "251",
+    "lgd": 232,
+    "name": "East Siang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "826",
+    "lgd": 766,
+    "name": "Itanagar capital complex",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "778",
+    "lgd": 718,
+    "name": "Kamle",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "763",
+    "lgd": 677,
+    "name": "Kra Daadi",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "256",
+    "lgd": 233,
+    "name": "Kurung Kumey",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "784",
+    "lgd": 724,
+    "name": "Leparada",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "259",
+    "lgd": 234,
+    "name": "Lohit",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "761",
+    "lgd": 666,
+    "name": "Longding",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "258",
+    "lgd": 235,
+    "name": "Lower Dibang Valley",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "779",
+    "lgd": 719,
+    "name": "Lower Siang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "255",
+    "lgd": 236,
+    "name": "Lower Subansiri",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "762",
+    "lgd": 678,
+    "name": "Namsai",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "783",
+    "lgd": 723,
+    "name": "Pakke Kessang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "248",
+    "lgd": 237,
+    "name": "Papum Pare",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "785",
+    "lgd": 725,
+    "name": "Shi Yomi",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "764",
+    "lgd": 679,
+    "name": "Siang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "245",
+    "lgd": 238,
+    "name": "Tawang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "254",
+    "lgd": 239,
+    "name": "Tirap",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "252",
+    "lgd": 240,
+    "name": "Upper Siang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "249",
+    "lgd": 241,
+    "name": "Upper Subansiri",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "246",
+    "lgd": 242,
+    "name": "West Kameng",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "12",
+    "code": "250",
+    "lgd": 243,
+    "name": "West Siang",
+    "state_name": "Arunachal Pradesh"
+  },
+  {
+    "state_code": "18",
+    "code": "799",
+    "lgd": 739,
+    "name": "Bajali",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "324",
+    "lgd": 616,
+    "name": "Baksa",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "303",
+    "lgd": 280,
+    "name": "Barpeta",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "756",
+    "lgd": 705,
+    "name": "Biswanath",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "319",
+    "lgd": 281,
+    "name": "Bongaigaon",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "316",
+    "lgd": 282,
+    "name": "Cachar",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "755",
+    "lgd": 708,
+    "name": "Charaideo",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "320",
+    "lgd": 612,
+    "name": "Chirang",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "325",
+    "lgd": 283,
+    "name": "Darrang",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "308",
+    "lgd": 284,
+    "name": "Dhemaji",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "301",
+    "lgd": 285,
+    "name": "Dhubri",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "310",
+    "lgd": 286,
+    "name": "Dibrugarh",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "315",
+    "lgd": 299,
+    "name": "Dima Hasao",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "302",
+    "lgd": 287,
+    "name": "Goalpara",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "313",
+    "lgd": 288,
+    "name": "Golaghat",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "318",
+    "lgd": 289,
+    "name": "Hailakandi",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "757",
+    "lgd": 709,
+    "name": "Hojai",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "312",
+    "lgd": 290,
+    "name": "Jorhat",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "321",
+    "lgd": 291,
+    "name": "Kamrup",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "322",
+    "lgd": 618,
+    "name": "Kamrup Metro",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "314",
+    "lgd": 292,
+    "name": "Karbi Anglong",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "317",
+    "lgd": 293,
+    "name": "Karimganj",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "300",
+    "lgd": 294,
+    "name": "Kokrajhar",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "307",
+    "lgd": 295,
+    "name": "Lakhimpur",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "760",
+    "lgd": 706,
+    "name": "Majuli",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "304",
+    "lgd": 296,
+    "name": "Marigaon",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "305",
+    "lgd": 297,
+    "name": "Nagaon",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "323",
+    "lgd": 298,
+    "name": "Nalbari",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "311",
+    "lgd": 300,
+    "name": "Sivasagar",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "306",
+    "lgd": 301,
+    "name": "Sonitpur",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "758",
+    "lgd": 707,
+    "name": "South Salmara Mancachar",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "816",
+    "lgd": 756,
+    "name": "Tamulpur",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "309",
+    "lgd": 302,
+    "name": "Tinsukia",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "326",
+    "lgd": 617,
+    "name": "Udalguri",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "18",
+    "code": "759",
+    "lgd": 710,
+    "name": "West Karbi Anglong",
+    "state_name": "Assam"
+  },
+  {
+    "state_code": "10",
+    "code": "209",
+    "lgd": 188,
+    "name": "Araria",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "240",
+    "lgd": 611,
+    "name": "Arwal",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "235",
+    "lgd": 189,
+    "name": "Aurangabad",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "225",
+    "lgd": 190,
+    "name": "Banka",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "222",
+    "lgd": 191,
+    "name": "Begusarai",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "224",
+    "lgd": 192,
+    "name": "Bhagalpur",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "231",
+    "lgd": 193,
+    "name": "Bhojpur",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "232",
+    "lgd": 194,
+    "name": "Buxar",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "215",
+    "lgd": 195,
+    "name": "Darbhanga",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "236",
+    "lgd": 196,
+    "name": "Gaya",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "217",
+    "lgd": 197,
+    "name": "Gopalganj",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "238",
+    "lgd": 198,
+    "name": "Jamui",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "239",
+    "lgd": 199,
+    "name": "Jehanabad",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "233",
+    "lgd": 200,
+    "name": "Kaimur (Bhabua)",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "212",
+    "lgd": 201,
+    "name": "Katihar",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "223",
+    "lgd": 202,
+    "name": "Khagaria",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "210",
+    "lgd": 203,
+    "name": "Kishanganj",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "227",
+    "lgd": 204,
+    "name": "Lakhisarai",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "213",
+    "lgd": 205,
+    "name": "Madhepura",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "207",
+    "lgd": 206,
+    "name": "Madhubani",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "226",
+    "lgd": 207,
+    "name": "Munger",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "216",
+    "lgd": 208,
+    "name": "Muzaffarpur",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "229",
+    "lgd": 209,
+    "name": "Nalanda",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "237",
+    "lgd": 210,
+    "name": "Nawada",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "203",
+    "lgd": 211,
+    "name": "Pashchim Champaran",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "230",
+    "lgd": 212,
+    "name": "Patna",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "204",
+    "lgd": 213,
+    "name": "Purbi Champaran",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "211",
+    "lgd": 214,
+    "name": "Purnia",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "234",
+    "lgd": 215,
+    "name": "Rohtas",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "214",
+    "lgd": 216,
+    "name": "Saharsa",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "221",
+    "lgd": 217,
+    "name": "Samastipur",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "219",
+    "lgd": 218,
+    "name": "Saran",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "228",
+    "lgd": 219,
+    "name": "Sheikhpura",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "205",
+    "lgd": 220,
+    "name": "Sheohar",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "206",
+    "lgd": 221,
+    "name": "Sitamarhi",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "218",
+    "lgd": 222,
+    "name": "Siwan",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "208",
+    "lgd": 223,
+    "name": "Supaul",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "10",
+    "code": "220",
+    "lgd": 224,
+    "name": "Vaishali",
+    "state_name": "Bihar"
+  },
+  {
+    "state_code": "04",
+    "code": "055",
+    "lgd": 44,
+    "name": "Chandigarh",
+    "state_name": "Chandigarh"
+  },
+  {
+    "state_code": "22",
+    "code": "719",
+    "lgd": 646,
+    "name": "Balod",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "721",
+    "lgd": 644,
+    "name": "Baloda Bazar",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "716",
+    "lgd": 649,
+    "name": "Balrampur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "414",
+    "lgd": 374,
+    "name": "Bastar",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "718",
+    "lgd": 650,
+    "name": "Bemetara",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "417",
+    "lgd": 636,
+    "name": "Bijapur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "406",
+    "lgd": 375,
+    "name": "Bilaspur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "416",
+    "lgd": 376,
+    "name": "Dantewada",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "412",
+    "lgd": 377,
+    "name": "Dhamtari",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "409",
+    "lgd": 378,
+    "name": "Durg",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "720",
+    "lgd": 645,
+    "name": "Gariyaband",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "791",
+    "lgd": 734,
+    "name": "Gaurella Pendra Marwahi",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "405",
+    "lgd": 379,
+    "name": "Janjgir-Champa",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "402",
+    "lgd": 380,
+    "name": "Jashpur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "407",
+    "lgd": 382,
+    "name": "Kabirdham",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "413",
+    "lgd": 381,
+    "name": "Kanker",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "821",
+    "lgd": 759,
+    "name": "Khairgarh Chhuikhadan Gandai",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "722",
+    "lgd": 643,
+    "name": "Kondagaon",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "404",
+    "lgd": 383,
+    "name": "Korba",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "400",
+    "lgd": 384,
+    "name": "Korea",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "411",
+    "lgd": 385,
+    "name": "Mahasamund",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "822",
+    "lgd": 760,
+    "name": "Manendragarh Chirimiri Bharatpur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "823",
+    "lgd": 761,
+    "name": "Mohla Manpur Ambagarh Chouki",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "717",
+    "lgd": 647,
+    "name": "Mungeli",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "415",
+    "lgd": 637,
+    "name": "Narayanpur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "403",
+    "lgd": 386,
+    "name": "Raigarh",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "410",
+    "lgd": 387,
+    "name": "Raipur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "408",
+    "lgd": 388,
+    "name": "Rajnandgaon",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "824",
+    "lgd": 762,
+    "name": "Sakti",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "825",
+    "lgd": 763,
+    "name": "Sarangarh Bilaigarh",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "723",
+    "lgd": 642,
+    "name": "Sukma",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "715",
+    "lgd": 648,
+    "name": "Surajpur",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "22",
+    "code": "401",
+    "lgd": 389,
+    "name": "Surguja",
+    "state_name": "Chhattisgarh"
+  },
+  {
+    "state_code": "39",
+    "code": "496",
+    "lgd": 465,
+    "name": "Dadra And Nagar Haveli",
+    "state_name": "Dadra,Nagar Haveli,Daman & Diu"
+  },
+  {
+    "state_code": "39",
+    "code": "495",
+    "lgd": 463,
+    "name": "Daman",
+    "state_name": "Dadra,Nagar Haveli,Daman & Diu"
+  },
+  {
+    "state_code": "39",
+    "code": "494",
+    "lgd": 464,
+    "name": "Diu",
+    "state_name": "Dadra,Nagar Haveli,Daman & Diu"
+  },
+  {
+    "state_code": "07",
+    "code": "095",
+    "lgd": 77,
+    "name": "Central",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "093",
+    "lgd": 78,
+    "name": "East",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "094",
+    "lgd": 79,
+    "name": "New Delhi",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "091",
+    "lgd": 80,
+    "name": "North",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "092",
+    "lgd": 81,
+    "name": "North East",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "090",
+    "lgd": 82,
+    "name": "North West",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "702",
+    "lgd": 671,
+    "name": "Shahdara",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "098",
+    "lgd": 83,
+    "name": "South",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "703",
+    "lgd": 670,
+    "name": "South East",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "097",
+    "lgd": 84,
+    "name": "South West",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "07",
+    "code": "096",
+    "lgd": 85,
+    "name": "West",
+    "state_name": "Delhi"
+  },
+  {
+    "state_code": "30",
+    "code": "585",
+    "lgd": 551,
+    "name": "North Goa",
+    "state_name": "Goa"
+  },
+  {
+    "state_code": "30",
+    "code": "586",
+    "lgd": 552,
+    "name": "South Goa",
+    "state_name": "Goa"
+  },
+  {
+    "state_code": "24",
+    "code": "474",
+    "lgd": 438,
+    "name": "Ahmadabad",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "480",
+    "lgd": 439,
+    "name": "Amreli",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "482",
+    "lgd": 440,
+    "name": "Anand",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "725",
+    "lgd": 672,
+    "name": "Arvalli",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "469",
+    "lgd": 441,
+    "name": "Banas Kantha",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "488",
+    "lgd": 442,
+    "name": "Bharuch",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "481",
+    "lgd": 443,
+    "name": "Bhavnagar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "726",
+    "lgd": 676,
+    "name": "Botad",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "731",
+    "lgd": 668,
+    "name": "Chhotaudepur",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "489",
+    "lgd": 444,
+    "name": "Dang",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "728",
+    "lgd": 674,
+    "name": "Devbhumi Dwarka",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "485",
+    "lgd": 445,
+    "name": "Dohad",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "473",
+    "lgd": 446,
+    "name": "Gandhinagar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "729",
+    "lgd": 675,
+    "name": "Gir Somnath",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "477",
+    "lgd": 447,
+    "name": "Jamnagar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "479",
+    "lgd": 448,
+    "name": "Junagadh",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "468",
+    "lgd": 449,
+    "name": "Kachchh",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "483",
+    "lgd": 450,
+    "name": "Kheda",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "471",
+    "lgd": 451,
+    "name": "Mahesana",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "730",
+    "lgd": 669,
+    "name": "Mahisagar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "727",
+    "lgd": 673,
+    "name": "Morbi",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "487",
+    "lgd": 452,
+    "name": "Narmada",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "490",
+    "lgd": 453,
+    "name": "Navsari",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "484",
+    "lgd": 454,
+    "name": "Panch Mahals",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "470",
+    "lgd": 455,
+    "name": "Patan",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "478",
+    "lgd": 456,
+    "name": "Porbandar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "476",
+    "lgd": 457,
+    "name": "Rajkot",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "472",
+    "lgd": 458,
+    "name": "Sabar Kantha",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "492",
+    "lgd": 459,
+    "name": "Surat",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "475",
+    "lgd": 460,
+    "name": "Surendranagar",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "493",
+    "lgd": 641,
+    "name": "Tapi",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "486",
+    "lgd": 461,
+    "name": "Vadodara",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "24",
+    "code": "491",
+    "lgd": 462,
+    "name": "Valsad",
+    "state_name": "Gujarat"
+  },
+  {
+    "state_code": "06",
+    "code": "070",
+    "lgd": 58,
+    "name": "Ambala",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "081",
+    "lgd": 59,
+    "name": "Bhiwani",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "765",
+    "lgd": 701,
+    "name": "Charki Dadri",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "088",
+    "lgd": 60,
+    "name": "Faridabad",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "078",
+    "lgd": 61,
+    "name": "Fatehabad",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "086",
+    "lgd": 62,
+    "name": "Gurugram",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "080",
+    "lgd": 63,
+    "name": "Hisar",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "083",
+    "lgd": 64,
+    "name": "Jhajjar",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "077",
+    "lgd": 65,
+    "name": "Jind",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "073",
+    "lgd": 66,
+    "name": "Kaithal",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "074",
+    "lgd": 67,
+    "name": "Karnal",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "072",
+    "lgd": 68,
+    "name": "Kurukshetra",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "084",
+    "lgd": 69,
+    "name": "Mahendragarh",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "087",
+    "lgd": 604,
+    "name": "Nuh",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "089",
+    "lgd": 619,
+    "name": "Palwal",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "069",
+    "lgd": 70,
+    "name": "Panchkula",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "075",
+    "lgd": 71,
+    "name": "Panipat",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "085",
+    "lgd": 72,
+    "name": "Rewari",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "082",
+    "lgd": 73,
+    "name": "Rohtak",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "079",
+    "lgd": 74,
+    "name": "Sirsa",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "076",
+    "lgd": 75,
+    "name": "Sonipat",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "06",
+    "code": "071",
+    "lgd": 76,
+    "name": "Yamunanagar",
+    "state_name": "Haryana"
+  },
+  {
+    "state_code": "02",
+    "code": "030",
+    "lgd": 15,
+    "name": "Bilaspur",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "023",
+    "lgd": 16,
+    "name": "Chamba",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "028",
+    "lgd": 17,
+    "name": "Hamirpur",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "024",
+    "lgd": 18,
+    "name": "Kangra",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "034",
+    "lgd": 19,
+    "name": "Kinnaur",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "026",
+    "lgd": 20,
+    "name": "Kullu",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "025",
+    "lgd": 21,
+    "name": "Lahul And Spiti",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "027",
+    "lgd": 22,
+    "name": "Mandi",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "033",
+    "lgd": 23,
+    "name": "Shimla",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "032",
+    "lgd": 24,
+    "name": "Sirmaur",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "031",
+    "lgd": 25,
+    "name": "Solan",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "02",
+    "code": "029",
+    "lgd": 26,
+    "name": "Una",
+    "state_name": "Himachal Pradesh"
+  },
+  {
+    "state_code": "01",
+    "code": "014",
+    "lgd": 1,
+    "name": "Anantnag",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "009",
+    "lgd": 623,
+    "name": "Bandipora",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "008",
+    "lgd": 3,
+    "name": "Baramulla",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "002",
+    "lgd": 2,
+    "name": "Budgam",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "016",
+    "lgd": 4,
+    "name": "Doda",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "011",
+    "lgd": 626,
+    "name": "Ganderbal",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "021",
+    "lgd": 5,
+    "name": "Jammu",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "007",
+    "lgd": 7,
+    "name": "Kathua",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "018",
+    "lgd": 620,
+    "name": "Kishtwar",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "015",
+    "lgd": 622,
+    "name": "Kulgam",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "001",
+    "lgd": 8,
+    "name": "Kupwara",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "991",
+    "lgd": 0,
+    "name": "Mirpur",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "992",
+    "lgd": 0,
+    "name": "Muzaffarabad",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "005",
+    "lgd": 10,
+    "name": "Poonch",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "012",
+    "lgd": 11,
+    "name": "Pulwama",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "006",
+    "lgd": 12,
+    "name": "Rajouri",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "017",
+    "lgd": 621,
+    "name": "Ramban",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "020",
+    "lgd": 627,
+    "name": "Reasi",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "022",
+    "lgd": 624,
+    "name": "Samba",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "013",
+    "lgd": 625,
+    "name": "Shopian",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "010",
+    "lgd": 13,
+    "name": "Srinagar",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "01",
+    "code": "019",
+    "lgd": 14,
+    "name": "Udhampur",
+    "state_name": "Jammu & Kashmir"
+  },
+  {
+    "state_code": "20",
+    "code": "355",
+    "lgd": 322,
+    "name": "Bokaro",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "347",
+    "lgd": 323,
+    "name": "Chatra",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "350",
+    "lgd": 324,
+    "name": "Deoghar",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "354",
+    "lgd": 325,
+    "name": "Dhanbad",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "362",
+    "lgd": 326,
+    "name": "Dumka",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "357",
+    "lgd": 327,
+    "name": "East Singhbum",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "346",
+    "lgd": 328,
+    "name": "Garhwa",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "349",
+    "lgd": 329,
+    "name": "Giridih",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "351",
+    "lgd": 330,
+    "name": "Godda",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "366",
+    "lgd": 331,
+    "name": "Gumla",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "360",
+    "lgd": 332,
+    "name": "Hazaribagh",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "363",
+    "lgd": 333,
+    "name": "Jamtara",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "365",
+    "lgd": 606,
+    "name": "Khunti",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "348",
+    "lgd": 334,
+    "name": "Koderma",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "359",
+    "lgd": 335,
+    "name": "Latehar",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "356",
+    "lgd": 336,
+    "name": "Lohardaga",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "353",
+    "lgd": 337,
+    "name": "Pakur",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "358",
+    "lgd": 338,
+    "name": "Palamu",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "361",
+    "lgd": 607,
+    "name": "Ramgarh",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "364",
+    "lgd": 339,
+    "name": "Ranchi",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "352",
+    "lgd": 340,
+    "name": "Sahebganj",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "369",
+    "lgd": 341,
+    "name": "Saraikela Kharsawan",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "367",
+    "lgd": 342,
+    "name": "Simdega",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "20",
+    "code": "368",
+    "lgd": 343,
+    "name": "West Singhbhum",
+    "state_name": "Jharkhand"
+  },
+  {
+    "state_code": "29",
+    "code": "556",
+    "lgd": 524,
+    "name": "Bagalkote",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "565",
+    "lgd": 528,
+    "name": "Ballari",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "555",
+    "lgd": 527,
+    "name": "Belagavi",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "583",
+    "lgd": 526,
+    "name": "Bengaluru Rural",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "572",
+    "lgd": 525,
+    "name": "Bengaluru Urban",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "558",
+    "lgd": 529,
+    "name": "Bidar",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "578",
+    "lgd": 531,
+    "name": "Chamarajanagara",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "582",
+    "lgd": 630,
+    "name": "Chikkaballapura",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "570",
+    "lgd": 532,
+    "name": "Chikkamagaluru",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "566",
+    "lgd": 533,
+    "name": "Chitradurga",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "575",
+    "lgd": 534,
+    "name": "Dakshina Kannada",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "567",
+    "lgd": 535,
+    "name": "Davangere",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "562",
+    "lgd": 536,
+    "name": "Dharwad",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "561",
+    "lgd": 537,
+    "name": "Gadag",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "574",
+    "lgd": 539,
+    "name": "Hassan",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "564",
+    "lgd": 540,
+    "name": "Haveri",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "579",
+    "lgd": 538,
+    "name": "Kalaburagi",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "576",
+    "lgd": 541,
+    "name": "Kodagu",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "581",
+    "lgd": 542,
+    "name": "Kolar",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "560",
+    "lgd": 543,
+    "name": "Koppal",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "573",
+    "lgd": 544,
+    "name": "Mandya",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "577",
+    "lgd": 545,
+    "name": "Mysuru",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "559",
+    "lgd": 546,
+    "name": "Raichur",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "584",
+    "lgd": 631,
+    "name": "Ramanagara",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "568",
+    "lgd": 547,
+    "name": "Shivamogga",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "571",
+    "lgd": 548,
+    "name": "Tumakuru",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "569",
+    "lgd": 549,
+    "name": "Udupi",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "563",
+    "lgd": 550,
+    "name": "Uttara Kannada",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "798",
+    "lgd": 738,
+    "name": "Vijayanagar",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "557",
+    "lgd": 530,
+    "name": "Vijayapura",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "29",
+    "code": "580",
+    "lgd": 635,
+    "name": "Yadgir",
+    "state_name": "Karnataka"
+  },
+  {
+    "state_code": "32",
+    "code": "598",
+    "lgd": 554,
+    "name": "Alappuzha",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "595",
+    "lgd": 555,
+    "name": "Ernakulam",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "596",
+    "lgd": 556,
+    "name": "Idukki",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "589",
+    "lgd": 557,
+    "name": "Kannur",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "588",
+    "lgd": 558,
+    "name": "Kasaragod",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "600",
+    "lgd": 559,
+    "name": "Kollam",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "597",
+    "lgd": 560,
+    "name": "Kottayam",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "591",
+    "lgd": 561,
+    "name": "Kozhikode",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "592",
+    "lgd": 562,
+    "name": "Malappuram",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "593",
+    "lgd": 563,
+    "name": "Palakkad",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "599",
+    "lgd": 564,
+    "name": "Pathanamthitta",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "601",
+    "lgd": 565,
+    "name": "Thiruvananthapuram",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "594",
+    "lgd": 566,
+    "name": "Thrissur",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "32",
+    "code": "590",
+    "lgd": 567,
+    "name": "Wayanad",
+    "state_name": "Kerala"
+  },
+  {
+    "state_code": "38",
+    "code": "004",
+    "lgd": 6,
+    "name": "Kargil",
+    "state_name": "Ladakh"
+  },
+  {
+    "state_code": "38",
+    "code": "003",
+    "lgd": 9,
+    "name": "Leh Ladakh",
+    "state_name": "Ladakh"
+  },
+  {
+    "state_code": "31",
+    "code": "587",
+    "lgd": 553,
+    "name": "Lakshadweep District",
+    "state_name": "Lakshadweep"
+  },
+  {
+    "state_code": "23",
+    "code": "724",
+    "lgd": 667,
+    "name": "Agar Malwa",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "465",
+    "lgd": 639,
+    "name": "Alirajpur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "461",
+    "lgd": 390,
+    "name": "Anuppur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "459",
+    "lgd": 391,
+    "name": "Ashoknagar",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "457",
+    "lgd": 392,
+    "name": "Balaghat",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "441",
+    "lgd": 393,
+    "name": "Barwani",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "447",
+    "lgd": 394,
+    "name": "Betul",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "420",
+    "lgd": 395,
+    "name": "Bhind",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "444",
+    "lgd": 396,
+    "name": "Bhopal",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "467",
+    "lgd": 397,
+    "name": "Burhanpur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "425",
+    "lgd": 398,
+    "name": "Chhatarpur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "455",
+    "lgd": 399,
+    "name": "Chhindwara",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "428",
+    "lgd": 400,
+    "name": "Damoh",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "422",
+    "lgd": 401,
+    "name": "Datia",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "437",
+    "lgd": 402,
+    "name": "Dewas",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "438",
+    "lgd": 403,
+    "name": "Dhar",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "453",
+    "lgd": 404,
+    "name": "Dindori",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "466",
+    "lgd": 405,
+    "name": "East Nimar",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "458",
+    "lgd": 406,
+    "name": "Guna",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "421",
+    "lgd": 407,
+    "name": "Gwalior",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "448",
+    "lgd": 408,
+    "name": "Harda",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "439",
+    "lgd": 410,
+    "name": "Indore",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "451",
+    "lgd": 411,
+    "name": "Jabalpur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "464",
+    "lgd": 412,
+    "name": "Jhabua",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "450",
+    "lgd": 413,
+    "name": "Katni",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "440",
+    "lgd": 414,
+    "name": "Khargone",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "454",
+    "lgd": 415,
+    "name": "Mandla",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "433",
+    "lgd": 416,
+    "name": "Mandsaur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "419",
+    "lgd": 417,
+    "name": "Morena",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "449",
+    "lgd": 409,
+    "name": "Narmadapuram",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "452",
+    "lgd": 418,
+    "name": "Narsinghpur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "432",
+    "lgd": 419,
+    "name": "Neemuch",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "782",
+    "lgd": 722,
+    "name": "Niwari",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "426",
+    "lgd": 420,
+    "name": "Panna",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "446",
+    "lgd": 421,
+    "name": "Raisen",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "442",
+    "lgd": 422,
+    "name": "Rajgarh",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "434",
+    "lgd": 423,
+    "name": "Ratlam",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "430",
+    "lgd": 424,
+    "name": "Rewa",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "427",
+    "lgd": 425,
+    "name": "Sagar",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "429",
+    "lgd": 426,
+    "name": "Satna",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "445",
+    "lgd": 427,
+    "name": "Sehore",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "456",
+    "lgd": 428,
+    "name": "Seoni",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "460",
+    "lgd": 429,
+    "name": "Shahdol",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "436",
+    "lgd": 430,
+    "name": "Shajapur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "418",
+    "lgd": 431,
+    "name": "Sheopur",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "423",
+    "lgd": 432,
+    "name": "Shivpuri",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "462",
+    "lgd": 433,
+    "name": "Sidhi",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "463",
+    "lgd": 638,
+    "name": "Singrauli",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "424",
+    "lgd": 434,
+    "name": "Tikamgarh",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "435",
+    "lgd": 435,
+    "name": "Ujjain",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "431",
+    "lgd": 436,
+    "name": "Umaria",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "23",
+    "code": "443",
+    "lgd": 437,
+    "name": "Vidisha",
+    "state_name": "Madhya Pradesh"
+  },
+  {
+    "state_code": "27",
+    "code": "522",
+    "lgd": 466,
+    "name": "Ahmednagar",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "501",
+    "lgd": 467,
+    "name": "Akola",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "503",
+    "lgd": 468,
+    "name": "Amravati",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "515",
+    "lgd": 469,
+    "name": "Aurangabad",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "523",
+    "lgd": 470,
+    "name": "Beed",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "506",
+    "lgd": 471,
+    "name": "Bhandara",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "500",
+    "lgd": 472,
+    "name": "Buldhana",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "509",
+    "lgd": 473,
+    "name": "Chandrapur",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "498",
+    "lgd": 474,
+    "name": "Dhule",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "508",
+    "lgd": 475,
+    "name": "Gadchiroli",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "507",
+    "lgd": 476,
+    "name": "Gondia",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "512",
+    "lgd": 477,
+    "name": "Hingoli",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "499",
+    "lgd": 478,
+    "name": "Jalgaon",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "514",
+    "lgd": 479,
+    "name": "Jalna",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "530",
+    "lgd": 480,
+    "name": "Kolhapur",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "524",
+    "lgd": 481,
+    "name": "Latur",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "519",
+    "lgd": 482,
+    "name": "Mumbai",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "518",
+    "lgd": 483,
+    "name": "Mumbai Suburban",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "505",
+    "lgd": 484,
+    "name": "Nagpur",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "511",
+    "lgd": 485,
+    "name": "Nanded",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "497",
+    "lgd": 486,
+    "name": "Nandurbar",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "516",
+    "lgd": 487,
+    "name": "Nashik",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "525",
+    "lgd": 488,
+    "name": "Osmanabad",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "732",
+    "lgd": 665,
+    "name": "Palghar",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "513",
+    "lgd": 489,
+    "name": "Parbhani",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "521",
+    "lgd": 490,
+    "name": "Pune",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "520",
+    "lgd": 491,
+    "name": "Raigad",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "528",
+    "lgd": 492,
+    "name": "Ratnagiri",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "531",
+    "lgd": 493,
+    "name": "Sangli",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "527",
+    "lgd": 494,
+    "name": "Satara",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "529",
+    "lgd": 495,
+    "name": "Sindhudurg",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "526",
+    "lgd": 496,
+    "name": "Solapur",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "517",
+    "lgd": 497,
+    "name": "Thane",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "504",
+    "lgd": 498,
+    "name": "Wardha",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "502",
+    "lgd": 499,
+    "name": "Washim",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "27",
+    "code": "510",
+    "lgd": 500,
+    "name": "Yavatmal",
+    "state_name": "Maharashtra"
+  },
+  {
+    "state_code": "14",
+    "code": "275",
+    "lgd": 252,
+    "name": "Bishnupur",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "280",
+    "lgd": 253,
+    "name": "Chandel",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "274",
+    "lgd": 254,
+    "name": "Churachandpur",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "278",
+    "lgd": 255,
+    "name": "Imphal East",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "277",
+    "lgd": 256,
+    "name": "Imphal West",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "766",
+    "lgd": 713,
+    "name": "Jiribam",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "768",
+    "lgd": 711,
+    "name": "Kakching",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "770",
+    "lgd": 717,
+    "name": "Kamjong",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "767",
+    "lgd": 712,
+    "name": "Kangpokpi",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "771",
+    "lgd": 714,
+    "name": "Noney",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "772",
+    "lgd": 715,
+    "name": "Pherzawl",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "272",
+    "lgd": 257,
+    "name": "Senapati",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "273",
+    "lgd": 258,
+    "name": "Tamenglong",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "769",
+    "lgd": 716,
+    "name": "Tengnoupal",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "276",
+    "lgd": 259,
+    "name": "Thoubal",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "14",
+    "code": "279",
+    "lgd": 260,
+    "name": "Ukhrul",
+    "state_name": "Manipur"
+  },
+  {
+    "state_code": "17",
+    "code": "294",
+    "lgd": 273,
+    "name": "East Garo Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "714",
+    "lgd": 657,
+    "name": "East Jaintia Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "298",
+    "lgd": 274,
+    "name": "East Khasi Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "800",
+    "lgd": 740,
+    "name": "Eastern West Khasi Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "712",
+    "lgd": 656,
+    "name": "North Garo Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "297",
+    "lgd": 276,
+    "name": "Ri Bhoi",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "295",
+    "lgd": 277,
+    "name": "South Garo Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "711",
+    "lgd": 663,
+    "name": "South West Garo Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "713",
+    "lgd": 658,
+    "name": "South West Khasi Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "293",
+    "lgd": 278,
+    "name": "West Garo Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "299",
+    "lgd": 275,
+    "name": "West Jaintia Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "17",
+    "code": "296",
+    "lgd": 279,
+    "name": "West Khasi Hills",
+    "state_name": "Meghalaya"
+  },
+  {
+    "state_code": "15",
+    "code": "283",
+    "lgd": 261,
+    "name": "Aizawl",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "284",
+    "lgd": 262,
+    "name": "Champhai",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "793",
+    "lgd": 726,
+    "name": "Hnahthial",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "795",
+    "lgd": 728,
+    "name": "Khawzawl",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "282",
+    "lgd": 263,
+    "name": "Kolasib",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "287",
+    "lgd": 264,
+    "name": "Lawngtlai",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "286",
+    "lgd": 265,
+    "name": "Lunglei",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "281",
+    "lgd": 266,
+    "name": "Mamit",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "288",
+    "lgd": 267,
+    "name": "Saiha",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "794",
+    "lgd": 727,
+    "name": "Saitual",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "15",
+    "code": "285",
+    "lgd": 268,
+    "name": "Serchhip",
+    "state_name": "Mizoram"
+  },
+  {
+    "state_code": "13",
+    "code": "818",
+    "lgd": 758,
+    "name": "Chumoukedima",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "265",
+    "lgd": 244,
+    "name": "Dimapur",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "269",
+    "lgd": 614,
+    "name": "Kiphire",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "270",
+    "lgd": 245,
+    "name": "Kohima",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "268",
+    "lgd": 615,
+    "name": "Longleng",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "262",
+    "lgd": 246,
+    "name": "Mokokchung",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "261",
+    "lgd": 247,
+    "name": "Mon",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "819",
+    "lgd": 764,
+    "name": "Niuland",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "792",
+    "lgd": 736,
+    "name": "Noklak",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "271",
+    "lgd": 613,
+    "name": "Peren",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "266",
+    "lgd": 248,
+    "name": "Phek",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "820",
+    "lgd": 765,
+    "name": "Shamator",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "817",
+    "lgd": 757,
+    "name": "Tseminyu",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "267",
+    "lgd": 249,
+    "name": "Tuensang",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "264",
+    "lgd": 250,
+    "name": "Wokha",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "13",
+    "code": "263",
+    "lgd": 251,
+    "name": "Zunheboto",
+    "state_name": "Nagaland"
+  },
+  {
+    "state_code": "21",
+    "code": "384",
+    "lgd": 344,
+    "name": "Anugul",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "393",
+    "lgd": 345,
+    "name": "Balangir",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "377",
+    "lgd": 346,
+    "name": "Baleshwar",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "370",
+    "lgd": 347,
+    "name": "Bargarh",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "378",
+    "lgd": 348,
+    "name": "Bhadrak",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "391",
+    "lgd": 349,
+    "name": "Boudh",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "381",
+    "lgd": 350,
+    "name": "Cuttack",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "373",
+    "lgd": 351,
+    "name": "Deogarh",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "383",
+    "lgd": 352,
+    "name": "Dhenkanal",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "389",
+    "lgd": 353,
+    "name": "Gajapati",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "388",
+    "lgd": 354,
+    "name": "Ganjam",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "380",
+    "lgd": 355,
+    "name": "Jagatsinghapur",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "382",
+    "lgd": 356,
+    "name": "Jajapur",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "371",
+    "lgd": 357,
+    "name": "Jharsuguda",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "395",
+    "lgd": 358,
+    "name": "Kalahandi",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "390",
+    "lgd": 359,
+    "name": "Kandhamal",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "379",
+    "lgd": 360,
+    "name": "Kendrapara",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "375",
+    "lgd": 361,
+    "name": "Kendujhar",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "386",
+    "lgd": 362,
+    "name": "Khordha",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "398",
+    "lgd": 363,
+    "name": "Koraput",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "399",
+    "lgd": 364,
+    "name": "Malkangiri",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "376",
+    "lgd": 365,
+    "name": "Mayurbhanj",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "397",
+    "lgd": 366,
+    "name": "Nabarangpur",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "385",
+    "lgd": 367,
+    "name": "Nayagarh",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "394",
+    "lgd": 368,
+    "name": "Nuapada",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "387",
+    "lgd": 369,
+    "name": "Puri",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "396",
+    "lgd": 370,
+    "name": "Rayagada",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "372",
+    "lgd": 371,
+    "name": "Sambalpur",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "392",
+    "lgd": 372,
+    "name": "Sonepur",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "21",
+    "code": "374",
+    "lgd": 373,
+    "name": "Sundargarh",
+    "state_name": "Odisha"
+  },
+  {
+    "state_code": "34",
+    "code": "637",
+    "lgd": 598,
+    "name": "Karaikal",
+    "state_name": "Puducherry"
+  },
+  {
+    "state_code": "34",
+    "code": "636",
+    "lgd": 599,
+    "name": "Mahe",
+    "state_name": "Puducherry"
+  },
+  {
+    "state_code": "34",
+    "code": "635",
+    "lgd": 600,
+    "name": "Pondicherry",
+    "state_name": "Puducherry"
+  },
+  {
+    "state_code": "34",
+    "code": "634",
+    "lgd": 601,
+    "name": "Yanam",
+    "state_name": "Puducherry"
+  },
+  {
+    "state_code": "03",
+    "code": "049",
+    "lgd": 27,
+    "name": "Amritsar",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "054",
+    "lgd": 605,
+    "name": "Barnala",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "046",
+    "lgd": 28,
+    "name": "Bathinda",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "045",
+    "lgd": 29,
+    "name": "Faridkot",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "040",
+    "lgd": 30,
+    "name": "Fatehgarh Sahib",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "701",
+    "lgd": 651,
+    "name": "Fazilka",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "043",
+    "lgd": 31,
+    "name": "Ferozepur",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "035",
+    "lgd": 32,
+    "name": "Gurdaspur",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "038",
+    "lgd": 33,
+    "name": "Hoshiarpur",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "037",
+    "lgd": 34,
+    "name": "Jalandhar",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "036",
+    "lgd": 35,
+    "name": "Kapurthala",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "041",
+    "lgd": 36,
+    "name": "Ludhiana",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "797",
+    "lgd": 737,
+    "name": "Malerkotla",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "047",
+    "lgd": 37,
+    "name": "Mansa",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "042",
+    "lgd": 38,
+    "name": "Moga",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "773",
+    "lgd": 662,
+    "name": "Pathankot",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "048",
+    "lgd": 41,
+    "name": "Patiala",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "051",
+    "lgd": 42,
+    "name": "Rupnagar",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "052",
+    "lgd": 608,
+    "name": "S.A.S Nagar",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "053",
+    "lgd": 43,
+    "name": "Sangrur",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "039",
+    "lgd": 40,
+    "name": "Shahid Bhagat Singh Nagar",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "044",
+    "lgd": 39,
+    "name": "Sri Muktsar Sahib",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "03",
+    "code": "050",
+    "lgd": 609,
+    "name": "Tarn Taran",
+    "state_name": "Punjab"
+  },
+  {
+    "state_code": "08",
+    "code": "119",
+    "lgd": 86,
+    "name": "Ajmer",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "104",
+    "lgd": 87,
+    "name": "Alwar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "836",
+    "lgd": 776,
+    "name": "Anoopgarh",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "835",
+    "lgd": 775,
+    "name": "Balotra",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "125",
+    "lgd": 88,
+    "name": "Banswara",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "128",
+    "lgd": 89,
+    "name": "Baran",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "115",
+    "lgd": 90,
+    "name": "Barmer",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "834",
+    "lgd": 774,
+    "name": "Beawar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "105",
+    "lgd": 91,
+    "name": "Bharatpur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "122",
+    "lgd": 92,
+    "name": "Bhilwara",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "101",
+    "lgd": 93,
+    "name": "Bikaner",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "121",
+    "lgd": 94,
+    "name": "Bundi",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "126",
+    "lgd": 95,
+    "name": "Chittorgarh",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "102",
+    "lgd": 96,
+    "name": "Churu",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "109",
+    "lgd": 97,
+    "name": "Dausa",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "827",
+    "lgd": 767,
+    "name": "Deeg",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "106",
+    "lgd": 98,
+    "name": "Dholpur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "828",
+    "lgd": 768,
+    "name": "Didwana Kuchaman",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "829",
+    "lgd": 769,
+    "name": "Dudu",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "124",
+    "lgd": 99,
+    "name": "Dungarpur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "099",
+    "lgd": 100,
+    "name": "Ganganagar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "831",
+    "lgd": 771,
+    "name": "Gangapurcity",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "100",
+    "lgd": 101,
+    "name": "Hanumangarh",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "110",
+    "lgd": 102,
+    "name": "Jaipur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "843",
+    "lgd": 783,
+    "name": "Jaipur Gramin",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "114",
+    "lgd": 103,
+    "name": "Jaisalmer",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "116",
+    "lgd": 104,
+    "name": "Jalore",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "129",
+    "lgd": 105,
+    "name": "Jhalawar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "103",
+    "lgd": 106,
+    "name": "Jhunjhunu",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "113",
+    "lgd": 107,
+    "name": "Jodhpur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "838",
+    "lgd": 778,
+    "name": "Jodhpur Gramin",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "107",
+    "lgd": 108,
+    "name": "Karauli",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "841",
+    "lgd": 781,
+    "name": "Kekri",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "830",
+    "lgd": 770,
+    "name": "Khairthal-Tijara",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "127",
+    "lgd": 109,
+    "name": "Kota",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "842",
+    "lgd": 782,
+    "name": "Kotputli-Behror",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "112",
+    "lgd": 110,
+    "name": "Nagaur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "833",
+    "lgd": 773,
+    "name": "Neem Ka Thana",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "118",
+    "lgd": 111,
+    "name": "Pali",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "832",
+    "lgd": 772,
+    "name": "Phalodi",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "131",
+    "lgd": 629,
+    "name": "Pratapgarh",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "123",
+    "lgd": 112,
+    "name": "Rajsamand",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "837",
+    "lgd": 777,
+    "name": "Salumbar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "839",
+    "lgd": 779,
+    "name": "Sanchor",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "108",
+    "lgd": 113,
+    "name": "Sawai Madhopur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "840",
+    "lgd": 780,
+    "name": "Shahpura",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "111",
+    "lgd": 114,
+    "name": "Sikar",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "117",
+    "lgd": 115,
+    "name": "Sirohi",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "120",
+    "lgd": 116,
+    "name": "Tonk",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "08",
+    "code": "130",
+    "lgd": 117,
+    "name": "Udaipur",
+    "state_name": "Rajasthan"
+  },
+  {
+    "state_code": "11",
+    "code": "244",
+    "lgd": 225,
+    "name": "Gangtok",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "11",
+    "code": "242",
+    "lgd": 228,
+    "name": "Gyalshing",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "11",
+    "code": "241",
+    "lgd": 226,
+    "name": "Mangan",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "11",
+    "code": "243",
+    "lgd": 227,
+    "name": "Namchi",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "11",
+    "code": "801",
+    "lgd": 741,
+    "name": "Pakyong",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "11",
+    "code": "802",
+    "lgd": 742,
+    "name": "Soreng",
+    "state_name": "Sikkim"
+  },
+  {
+    "state_code": "33",
+    "code": "616",
+    "lgd": 610,
+    "name": "Ariyalur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "787",
+    "lgd": 730,
+    "name": "Chengalpattu",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "603",
+    "lgd": 568,
+    "name": "Chennai",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "632",
+    "lgd": 569,
+    "name": "Coimbatore",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "617",
+    "lgd": 570,
+    "name": "Cuddalore",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "630",
+    "lgd": 571,
+    "name": "Dharmapuri",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "612",
+    "lgd": 572,
+    "name": "Dindigul",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "610",
+    "lgd": 573,
+    "name": "Erode",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "789",
+    "lgd": 729,
+    "name": "Kallakurichi",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "604",
+    "lgd": 574,
+    "name": "Kanchipuram",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "629",
+    "lgd": 575,
+    "name": "Kanniyakumari",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "613",
+    "lgd": 576,
+    "name": "Karur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "631",
+    "lgd": 577,
+    "name": "Krishnagiri",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "623",
+    "lgd": 578,
+    "name": "Madurai",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "796",
+    "lgd": 735,
+    "name": "Mayiladuthurai",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "618",
+    "lgd": 579,
+    "name": "Nagapattinam",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "609",
+    "lgd": 580,
+    "name": "Namakkal",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "615",
+    "lgd": 581,
+    "name": "Perambalur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "621",
+    "lgd": 582,
+    "name": "Pudukkottai",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "626",
+    "lgd": 583,
+    "name": "Ramanathapuram",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "786",
+    "lgd": 731,
+    "name": "Ranipet",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "608",
+    "lgd": 584,
+    "name": "Salem",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "622",
+    "lgd": 585,
+    "name": "Sivaganga",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "790",
+    "lgd": 733,
+    "name": "Tenkasi",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "620",
+    "lgd": 586,
+    "name": "Thanjavur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "611",
+    "lgd": 587,
+    "name": "The Nilgiris",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "624",
+    "lgd": 588,
+    "name": "Theni",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "602",
+    "lgd": 589,
+    "name": "Thiruvallur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "619",
+    "lgd": 590,
+    "name": "Thiruvarur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "614",
+    "lgd": 591,
+    "name": "Tiruchirappalli",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "628",
+    "lgd": 592,
+    "name": "Tirunelveli",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "788",
+    "lgd": 732,
+    "name": "Tirupathur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "633",
+    "lgd": 634,
+    "name": "Tiruppur",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "606",
+    "lgd": 593,
+    "name": "Tiruvannamalai",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "627",
+    "lgd": 594,
+    "name": "Tuticorin",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "605",
+    "lgd": 595,
+    "name": "Vellore",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "607",
+    "lgd": 596,
+    "name": "Villupuram",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "33",
+    "code": "625",
+    "lgd": 597,
+    "name": "Virudhunagar",
+    "state_name": "Tamil Nadu"
+  },
+  {
+    "state_code": "36",
+    "code": "532",
+    "lgd": 501,
+    "name": "Adilabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "753",
+    "lgd": 690,
+    "name": "Bhadradri Kothagudem",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "749",
+    "lgd": 686,
+    "name": "Hanumakonda",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "536",
+    "lgd": 507,
+    "name": "Hyderabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "737",
+    "lgd": 681,
+    "name": "Jagitial",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "752",
+    "lgd": 689,
+    "name": "Jangoan",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "750",
+    "lgd": 687,
+    "name": "Jayashankar Bhupalapally",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "744",
+    "lgd": 695,
+    "name": "Jogulamba Gadwal",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "736",
+    "lgd": 685,
+    "name": "Kamareddy",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "534",
+    "lgd": 508,
+    "name": "Karimnagar",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "541",
+    "lgd": 509,
+    "name": "Khammam",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "733",
+    "lgd": 699,
+    "name": "Kumuram Bheem Asifabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "751",
+    "lgd": 688,
+    "name": "Mahabubabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "538",
+    "lgd": 512,
+    "name": "Mahabubnagar",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "735",
+    "lgd": 684,
+    "name": "Mancherial",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "535",
+    "lgd": 513,
+    "name": "Medak",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "742",
+    "lgd": 700,
+    "name": "Medchal Malkajgiri",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "780",
+    "lgd": 720,
+    "name": "Mulugu",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "746",
+    "lgd": 694,
+    "name": "Nagarkurnool",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "539",
+    "lgd": 514,
+    "name": "Nalgonda",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "781",
+    "lgd": 721,
+    "name": "Narayanpet",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "734",
+    "lgd": 680,
+    "name": "Nirmal",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "533",
+    "lgd": 516,
+    "name": "Nizamabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "738",
+    "lgd": 682,
+    "name": "Peddapalli",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "739",
+    "lgd": 683,
+    "name": "Rajanna Sircilla",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "537",
+    "lgd": 518,
+    "name": "Ranga Reddy",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "740",
+    "lgd": 691,
+    "name": "Sangareddy",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "741",
+    "lgd": 692,
+    "name": "Siddipet",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "748",
+    "lgd": 696,
+    "name": "Suryapet",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "743",
+    "lgd": 698,
+    "name": "Vikarabad",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "745",
+    "lgd": 693,
+    "name": "Wanaparthy",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "540",
+    "lgd": 522,
+    "name": "Warangal",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "36",
+    "code": "747",
+    "lgd": 697,
+    "name": "Yadadri Bhuvanagiri",
+    "state_name": "Telangana"
+  },
+  {
+    "state_code": "16",
+    "code": "291",
+    "lgd": 269,
+    "name": "Dhalai",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "709",
+    "lgd": 654,
+    "name": "Gomati",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "708",
+    "lgd": 652,
+    "name": "Khowai",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "292",
+    "lgd": 270,
+    "name": "North Tripura",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "707",
+    "lgd": 653,
+    "name": "Sepahijala",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "290",
+    "lgd": 271,
+    "name": "South Tripura",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "710",
+    "lgd": 655,
+    "name": "Unakoti",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "16",
+    "code": "289",
+    "lgd": 272,
+    "name": "West Tripura",
+    "state_name": "Tripura"
+  },
+  {
+    "state_code": "09",
+    "code": "146",
+    "lgd": 118,
+    "name": "Agra",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "143",
+    "lgd": 119,
+    "name": "Aligarh",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "178",
+    "lgd": 121,
+    "name": "Ambedkar Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "706",
+    "lgd": 640,
+    "name": "Amethi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "137",
+    "lgd": 154,
+    "name": "Amroha",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "162",
+    "lgd": 122,
+    "name": "Auraiya",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "177",
+    "lgd": 140,
+    "name": "Ayodhya",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "191",
+    "lgd": 123,
+    "name": "Azamgarh",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "139",
+    "lgd": 124,
+    "name": "Baghpat",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "180",
+    "lgd": 125,
+    "name": "Bahraich",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "193",
+    "lgd": 126,
+    "name": "Ballia",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "182",
+    "lgd": 127,
+    "name": "Balrampur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "170",
+    "lgd": 128,
+    "name": "Banda",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "176",
+    "lgd": 129,
+    "name": "Barabanki",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "150",
+    "lgd": 130,
+    "name": "Bareilly",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "185",
+    "lgd": 131,
+    "name": "Basti",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "198",
+    "lgd": 179,
+    "name": "Bhadohi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "134",
+    "lgd": 132,
+    "name": "Bijnor",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "149",
+    "lgd": 133,
+    "name": "Budaun",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "142",
+    "lgd": 134,
+    "name": "Bulandshahr",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "196",
+    "lgd": 135,
+    "name": "Chandauli",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "171",
+    "lgd": 136,
+    "name": "Chitrakoot",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "190",
+    "lgd": 137,
+    "name": "Deoria",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "201",
+    "lgd": 138,
+    "name": "Etah",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "161",
+    "lgd": 139,
+    "name": "Etawah",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "159",
+    "lgd": 141,
+    "name": "Farrukhabad",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "172",
+    "lgd": 142,
+    "name": "Fatehpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "147",
+    "lgd": 143,
+    "name": "Firozabad",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "141",
+    "lgd": 144,
+    "name": "Gautam Buddha Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "140",
+    "lgd": 145,
+    "name": "Ghaziabad",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "195",
+    "lgd": 146,
+    "name": "Ghazipur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "183",
+    "lgd": 147,
+    "name": "Gonda",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "188",
+    "lgd": 148,
+    "name": "Gorakhpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "168",
+    "lgd": 149,
+    "name": "Hamirpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "705",
+    "lgd": 661,
+    "name": "Hapur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "155",
+    "lgd": 150,
+    "name": "Hardoi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "144",
+    "lgd": 163,
+    "name": "Hathras",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "165",
+    "lgd": 151,
+    "name": "Jalaun",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "194",
+    "lgd": 152,
+    "name": "Jaunpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "166",
+    "lgd": 153,
+    "name": "Jhansi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "160",
+    "lgd": 155,
+    "name": "Kannauj",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "163",
+    "lgd": 156,
+    "name": "Kanpur Dehat",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "164",
+    "lgd": 157,
+    "name": "Kanpur Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "202",
+    "lgd": 633,
+    "name": "Kasganj",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "174",
+    "lgd": 158,
+    "name": "Kaushambi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "153",
+    "lgd": 159,
+    "name": "Kheri",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "189",
+    "lgd": 160,
+    "name": "Kushi Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "167",
+    "lgd": 161,
+    "name": "Lalitpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "157",
+    "lgd": 162,
+    "name": "Lucknow",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "187",
+    "lgd": 164,
+    "name": "Maharajganj",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "169",
+    "lgd": 165,
+    "name": "Mahoba",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "148",
+    "lgd": 166,
+    "name": "Mainpuri",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "145",
+    "lgd": 167,
+    "name": "Mathura",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "192",
+    "lgd": 168,
+    "name": "Mau",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "138",
+    "lgd": 169,
+    "name": "Meerut",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "199",
+    "lgd": 170,
+    "name": "Mirzapur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "135",
+    "lgd": 171,
+    "name": "Moradabad",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "133",
+    "lgd": 172,
+    "name": "Muzaffarnagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "151",
+    "lgd": 173,
+    "name": "Pilibhit",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "173",
+    "lgd": 174,
+    "name": "Pratapgarh",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "175",
+    "lgd": 120,
+    "name": "Prayagraj",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "158",
+    "lgd": 175,
+    "name": "Rae Bareli",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "136",
+    "lgd": 176,
+    "name": "Rampur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "132",
+    "lgd": 177,
+    "name": "Saharanpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "754",
+    "lgd": 659,
+    "name": "Sambhal",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "186",
+    "lgd": 178,
+    "name": "Sant Kabeer Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "152",
+    "lgd": 180,
+    "name": "Shahjahanpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "704",
+    "lgd": 660,
+    "name": "Shamli",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "181",
+    "lgd": 181,
+    "name": "Shravasti",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "184",
+    "lgd": 182,
+    "name": "Siddharth Nagar",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "154",
+    "lgd": 183,
+    "name": "Sitapur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "200",
+    "lgd": 184,
+    "name": "Sonbhadra",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "179",
+    "lgd": 185,
+    "name": "Sultanpur",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "156",
+    "lgd": 186,
+    "name": "Unnao",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "09",
+    "code": "197",
+    "lgd": 187,
+    "name": "Varanasi",
+    "state_name": "Uttar Pradesh"
+  },
+  {
+    "state_code": "05",
+    "code": "064",
+    "lgd": 45,
+    "name": "Almora",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "063",
+    "lgd": 46,
+    "name": "Bageshwar",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "057",
+    "lgd": 47,
+    "name": "Chamoli",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "065",
+    "lgd": 48,
+    "name": "Champawat",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "060",
+    "lgd": 49,
+    "name": "Dehradun",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "068",
+    "lgd": 50,
+    "name": "Haridwar",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "066",
+    "lgd": 51,
+    "name": "Nainital",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "061",
+    "lgd": 52,
+    "name": "Pauri Garhwal",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "062",
+    "lgd": 53,
+    "name": "Pithoragarh",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "058",
+    "lgd": 54,
+    "name": "Rudra Prayag",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "059",
+    "lgd": 55,
+    "name": "Tehri Garhwal",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "067",
+    "lgd": 56,
+    "name": "Udam Singh Nagar",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "05",
+    "code": "056",
+    "lgd": 57,
+    "name": "Uttar Kashi",
+    "state_name": "Uttarakhand"
+  },
+  {
+    "state_code": "19",
+    "code": "337",
+    "lgd": 303,
+    "name": "24 Paraganas North",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "343",
+    "lgd": 304,
+    "name": "24 Paraganas South",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "774",
+    "lgd": 664,
+    "name": "Alipurduar",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "339",
+    "lgd": 305,
+    "name": "Bankura",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "334",
+    "lgd": 307,
+    "name": "Birbhum",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "329",
+    "lgd": 308,
+    "name": "Coochbehar",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "327",
+    "lgd": 309,
+    "name": "Darjeeling",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "331",
+    "lgd": 310,
+    "name": "Dinajpur Dakshin",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "330",
+    "lgd": 311,
+    "name": "Dinajpur Uttar",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "338",
+    "lgd": 312,
+    "name": "Hooghly",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "341",
+    "lgd": 313,
+    "name": "Howrah",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "328",
+    "lgd": 314,
+    "name": "Jalpaiguri",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "776",
+    "lgd": 703,
+    "name": "Jhargram",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "775",
+    "lgd": 702,
+    "name": "Kalimpong",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "342",
+    "lgd": 315,
+    "name": "Kolkata",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "332",
+    "lgd": 316,
+    "name": "Maldah",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "345",
+    "lgd": 317,
+    "name": "Medinipur East",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "344",
+    "lgd": 318,
+    "name": "Medinipur West",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "333",
+    "lgd": 319,
+    "name": "Murshidabad",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "336",
+    "lgd": 320,
+    "name": "Nadia",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "777",
+    "lgd": 704,
+    "name": "Paschim Bardhaman",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "335",
+    "lgd": 306,
+    "name": "Purba Bardhaman",
+    "state_name": "West Bengal"
+  },
+  {
+    "state_code": "19",
+    "code": "340",
+    "lgd": 321,
+    "name": "Purulia",
+    "state_name": "West Bengal"
+  }
+]

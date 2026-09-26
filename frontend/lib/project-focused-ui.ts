@@ -1,0 +1,135 @@
+import { AUDIT_PHASES, type AuditPhase } from "@/lib/audit-workspace";
+
+/** Sprint D: focused project page — secondary sections as sub-routes. */
+export const PROJECT_SECONDARY_TABS = [
+  "compliance",
+  "credits",
+  "team",
+  "settings",
+] as const;
+
+export type ProjectSecondaryTab = (typeof PROJECT_SECONDARY_TABS)[number];
+
+export type ProjectWorkspaceSection = "overview" | "audit" | ProjectSecondaryTab;
+
+export function parseProjectSecondaryTab(
+  value: string | null,
+): ProjectSecondaryTab | null {
+  if (!value) return null;
+  return PROJECT_SECONDARY_TABS.includes(value as ProjectSecondaryTab)
+    ? (value as ProjectSecondaryTab)
+    : null;
+}
+
+export function parseProjectSecondarySegment(
+  segment: string | null | undefined,
+): ProjectSecondaryTab | null {
+  return parseProjectSecondaryTab(segment ?? null);
+}
+
+export function projectOverviewHref(projectId: string): string {
+  return `/projects/${projectId}`;
+}
+
+export function parseAuditPhase(value: string | null): AuditPhase | null {
+  if (!value) return null;
+  return AUDIT_PHASES.includes(value as AuditPhase) ? (value as AuditPhase) : null;
+}
+
+export function projectAuditHref(projectId: string, phase?: AuditPhase): string {
+  const base = `/projects/${projectId}/audit`;
+  return phase ? `${base}?phase=${phase}` : base;
+}
+
+export function projectSetupHref(projectId: string, step?: 1 | 2 | 3 | 4): string {
+  const base = `/projects/${projectId}/setup`;
+  return step ? `${base}?step=${step}` : base;
+}
+
+export function projectSecondaryHref(
+  projectId: string,
+  tab: ProjectSecondaryTab,
+): string {
+  return `/projects/${projectId}/${tab}`;
+}
+
+/** Map legacy ?tab= values to sub-routes (overview/trees → main page). */
+export function resolveLegacyProjectTabHref(
+  projectId: string,
+  tab: string | null,
+): string | null {
+  const secondary = parseProjectSecondaryTab(tab);
+  if (secondary) return projectSecondaryHref(projectId, secondary);
+  if (tab === "overview" || tab === "trees") return projectOverviewHref(projectId);
+  return null;
+}
+
+export const PROJECT_SECONDARY_LABELS: Record<ProjectSecondaryTab, string> = {
+  compliance: "Compliance",
+  credits: "Credits & reports",
+  team: "Team & work areas",
+  settings: "Project admin",
+};
+
+/** Short labels for compact sub-nav on small screens. */
+export const PROJECT_SECONDARY_SHORT_LABELS: Record<ProjectSecondaryTab, string> = {
+  compliance: "Compliance",
+  credits: "Credits",
+  team: "Team",
+  settings: "Settings",
+};
+
+export const PROJECT_WORKSPACE_NAV: Array<{
+  id: ProjectWorkspaceSection;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: "overview", label: "Overview", shortLabel: "Overview" },
+  {
+    id: "compliance",
+    label: PROJECT_SECONDARY_LABELS.compliance,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.compliance,
+  },
+  {
+    id: "credits",
+    label: PROJECT_SECONDARY_LABELS.credits,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.credits,
+  },
+  {
+    id: "team",
+    label: PROJECT_SECONDARY_LABELS.team,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.team,
+  },
+  {
+    id: "settings",
+    label: PROJECT_SECONDARY_LABELS.settings,
+    shortLabel: PROJECT_SECONDARY_SHORT_LABELS.settings,
+  },
+];
+
+const MONITORING_CREDITS_LABEL = "Reports & sampling";
+const MONITORING_CREDITS_SHORT = "Reports";
+
+const AUDIT_NAV_ITEM = {
+  id: "audit" as const,
+  label: "Audit",
+  shortLabel: "Audit",
+};
+
+/** Project sub-nav tuned for estate monitoring vs planting programmes. */
+export function getProjectWorkspaceNav(
+  monitoringMode = false,
+): Array<{ id: ProjectWorkspaceSection; label: string; shortLabel: string }> {
+  const base = monitoringMode
+    ? PROJECT_WORKSPACE_NAV.map((item) =>
+        item.id === "credits"
+          ? { ...item, label: MONITORING_CREDITS_LABEL, shortLabel: MONITORING_CREDITS_SHORT }
+          : item,
+      )
+    : [...PROJECT_WORKSPACE_NAV];
+  if (!monitoringMode) return base;
+  return [base[0], AUDIT_NAV_ITEM, ...base.slice(1)];
+}
+
+/** Marker string embedded in the focused layout for deploy verification. */
+export const PROJECT_FOCUSED_LAYOUT_MARKER = "project-focused-layout-v3";

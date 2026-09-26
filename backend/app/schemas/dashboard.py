@@ -8,6 +8,9 @@ class KPI(BaseModel):
     total_biomass_kg: float
     total_carbon_kg: float
     total_co2e_kg: float
+    co2e_kg_lower_90: float | None = None
+    co2e_kg_upper_90: float | None = None
+    uncertainty_pct: float | None = None
     annual_sequestration_kg: float
     lifetime_credits_tco2e: float
     estimated_revenue_usd: float
@@ -20,8 +23,17 @@ class SeriesPoint(BaseModel):
     value: float
 
 
+class BioacousticDashboardKpi(BaseModel):
+    total_recordings: int = 0
+    avg_health_score: float = 0.0
+    avg_shannon_index: float = 0.0
+    avg_simpson_index: float = 0.0
+    total_species_detected: int = 0
+
+
 class DashboardResponse(BaseModel):
     kpi: KPI
     carbon_growth: list[SeriesPoint]
     health_distribution: list[SeriesPoint]
     species_distribution: list[SeriesPoint]
+    bioacoustic: BioacousticDashboardKpi = BioacousticDashboardKpi()

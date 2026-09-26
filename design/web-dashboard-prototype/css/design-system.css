@@ -1,0 +1,73 @@
+/* Aranyix Command Center — design tokens */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --forest-deep: #2d4a3e;
+  --eucalyptus: #5c7a6e;
+  --sage: #7a8f7a;
+  --moss: #6b7f5e;
+  --stone: #e8e2d8;
+  --ivory: #f8f6f2;
+  --surface: #fdfcfa;
+  --surface-2: #f1efe9;
+  --surface-3: #eae6df;
+
+  --text: #2a2f2c;
+  --text-2: #5c645f;
+  --text-3: #8a918c;
+
+  --warn: #b8956b;
+  --crit: #c4705a;
+  --crit-deep: #a85a48;
+  --ok: #5c7a6e;
+  --spatial: #5a8a94;
+  --spatial-light: #eef4f5;
+
+  --border: rgba(42, 47, 44, 0.08);
+  --border-strong: rgba(42, 47, 44, 0.14);
+
+  --nav-w: 56px;
+  --header-h: 48px;
+  --signal-h: 52px;
+
+  --font: "DM Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", monospace;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--ivory);
+  color: var(--text);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button, select { font: inherit; cursor: pointer; border: none; background: none; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes mapPulse { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.15);opacity:1} }
+
+.loading {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 999;
+  display: grid; place-items: center; transition: opacity .5s var(--ease);
+}
+.loading.hidden { opacity: 0; pointer-events: none; }
+.loading-bar { width: 120px; height: 2px; background: var(--surface-3); border-radius: 1px; overflow: hidden; }
+.loading-bar::after { content:""; display:block; width:40%; height:100%; background:var(--eucalyptus); animation: loadSlide 1.2s infinite var(--ease); }
+@keyframes loadSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(60px);
+  background: var(--forest-deep); color: var(--ivory); padding: 8px 16px; border-radius: 6px;
+  font-size: 12px; z-index: 900; transition: transform .3s var(--ease);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.chart-tip {
+  position: fixed; background: var(--forest-deep); color: var(--ivory);
+  font-size: 11px; padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 800;
+}
