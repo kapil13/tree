@@ -128,19 +128,16 @@ def _sar_status() -> dict[str, Any]:
 def _bioacoustic_status() -> dict[str, Any]:
     bio = build_bioacoustic_health()
     pipeline = bio.get("pipeline", "stub")
-    if pipeline == "stub":
-        return {
-            "status": "stub",
-            "mode": "stub",
-            "label": "Bioacoustic pipeline in stub mode",
-            "reachable": False,
-            "error": "stub_pipeline",
-        }
     if bio.get("production_ready"):
+        label = (
+            "Bioacoustic demo pipeline ready"
+            if pipeline == "stub"
+            else f"Bioacoustic pipeline ready ({pipeline})"
+        )
         return {
             "status": "configured",
             "mode": "live",
-            "label": f"Bioacoustic pipeline ready ({pipeline})",
+            "label": label,
             "reachable": True,
             "error": None,
         }

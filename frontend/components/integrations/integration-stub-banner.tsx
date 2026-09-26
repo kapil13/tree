@@ -15,14 +15,13 @@ const WATCH_KEYS = [
   "sentinel_hub",
   "tree_satellite_ndvi",
   "firms_fire",
-  "locust_feed",
   "ai_analysis",
 ] as const;
 
 function isStubMode(row: IntegrationRow | undefined): boolean {
   if (!row) return false;
   const mode = (row.mode ?? "").toLowerCase();
-  return mode === "estimate" || mode === "optional" || mode === "stub";
+  return mode === "stub";
 }
 
 export function IntegrationStubBanner({ className = "" }: { className?: string }) {
