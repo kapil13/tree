@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 
 from app.api.v1.deps import DB, CurrentUser, require_write_perm
+from app.core.rate_limit import rate_limit
 from app.core.security import Permission
 from app.models.organization import Organization
 from app.models.report import Report
@@ -63,7 +64,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 ReportGenerateAccess = Annotated[User, require_write_perm(Permission.REPORT_GENERATE)]
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[rate_limit(30, 3600)])
 async def create_report(
     kind: str,
     format: str,
@@ -279,7 +280,7 @@ async def update_brsr_profile(
     return BrsrProfileOut.model_validate(out)
 
 
-@router.post("/brsr")
+@router.post("/brsr", dependencies=[rate_limit(20, 3600)])
 async def export_brsr_report(
     payload: BrsrExportRequest,
     request: Request,

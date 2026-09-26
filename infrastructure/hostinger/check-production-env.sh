@@ -39,6 +39,20 @@ else
   echo "  OK: AUTH_ALLOW_DEV_OTP not enabled"
 fi
 
+if [[ "${EXPOSE_API_DOCS:-false}" == "true" ]]; then
+  echo "  INVALID: EXPOSE_API_DOCS=true (OpenAPI must not be public in production)"
+  _fail=1
+else
+  echo "  OK: EXPOSE_API_DOCS not enabled"
+fi
+
+if [[ "${EXPOSE_METRICS:-false}" == "true" ]]; then
+  echo "  INVALID: EXPOSE_METRICS=true (Prometheus /metrics must not be public)"
+  _fail=1
+else
+  echo "  OK: EXPOSE_METRICS not enabled"
+fi
+
 if [[ -n "${JWT_SECRET:-}" ]] && [[ ${#JWT_SECRET} -lt 32 ]]; then
   echo "  INVALID: JWT_SECRET must be at least 32 characters"
   _fail=1

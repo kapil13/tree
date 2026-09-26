@@ -145,6 +145,19 @@ else
   exit 1
 fi
 
+echo "==> Pre-migrate backup (Platform Foundation E1)..."
+if [[ -x "${REPO_ROOT}/scripts/backup/pg-dump.sh" ]]; then
+  BACKUP_DIR="${BACKUP_DIR:-/var/backups/byot/postgres/pre-migrate}" \
+    COMPOSE_FILE="${SCRIPT_DIR}/${COMPOSE_FILE}" \
+    ENV_FILE="${SCRIPT_DIR}/${ENV_FILE}" \
+    "${REPO_ROOT}/scripts/backup/pg-dump.sh" || {
+      echo "ERROR: pre-migrate backup failed — aborting migration"
+      exit 1
+    }
+else
+  echo "WARN: scripts/backup/pg-dump.sh not found — skipping pre-migrate backup"
+fi
+
 echo "==> Running database migrations..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T backend alembic upgrade head
 

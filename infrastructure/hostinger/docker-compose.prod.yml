@@ -194,6 +194,7 @@ services:
       - .env.production
     environment:
       APP_ENV: production
+      CELERY_WORKER: "1"
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-byot}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-byot}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0

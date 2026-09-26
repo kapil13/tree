@@ -1,0 +1,14 @@
+title = "BYOT gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "ignore known safe patterns"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.production\.example$''',
+  '''package-lock\.json$''',
+  '''openapi\.snapshot\.json$''',
+  '''cms-home-fallback''',
+]
