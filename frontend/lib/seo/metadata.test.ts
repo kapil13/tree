@@ -9,6 +9,7 @@ import {
   homePageMetadata,
   NOT_FOUND_METADATA,
   ROOT_METADATA,
+  withoutCanonical,
 } from "./metadata";
 import { DEFAULT_DESCRIPTION } from "./site";
 
@@ -69,5 +70,26 @@ describe("not-found metadata", () => {
     const source = readFileSync(path.join(__dirname, "../../app/not-found.tsx"), "utf8");
     expect(source).toContain('import { NOT_FOUND_METADATA } from "@/lib/seo/metadata"');
     expect(source).toContain("export const metadata = NOT_FOUND_METADATA");
+  });
+
+  it("strips a self-canonical from notFound() metadata without changing title or robots", () => {
+    expect(withoutCanonical()).toEqual({ alternates: { canonical: null } });
+
+    const resource = withoutCanonical({
+      ...buildPageMetadata({
+        title: "Resource not found",
+        description: "The requested guide could not be found.",
+        path: "/resources/campa-afforestation-monitoring-india",
+      }),
+      robots: { index: false, follow: false },
+    });
+
+    expect(resource.alternates).toEqual({ canonical: null });
+    expect(resource.title).toBe("Resource not found");
+    expect(resource.description).toBe("The requested guide could not be found.");
+    expect(resource.robots).toEqual({ index: false, follow: false });
+    expect(resource.openGraph).toMatchObject({
+      url: "https://aranyix.tech/resources/campa-afforestation-monitoring-india",
+    });
   });
 });

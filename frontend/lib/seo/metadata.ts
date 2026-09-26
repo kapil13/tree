@@ -90,6 +90,19 @@ export const NOT_FOUND_METADATA: Metadata = {
   alternates: { canonical: null },
 };
 
+/**
+ * Metadata for a `notFound()` branch inside `generateMetadata`.
+ * An empty object still inherits the root layout canonical, and Next includes
+ * that resolved page metadata in the 404 flight payload. `canonical: null`
+ * replaces it. Titles and robots on the object are left as passed in.
+ */
+export function withoutCanonical(metadata: Metadata = {}): Metadata {
+  return {
+    ...metadata,
+    alternates: { canonical: null },
+  };
+}
+
 export const ROOT_METADATA: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {

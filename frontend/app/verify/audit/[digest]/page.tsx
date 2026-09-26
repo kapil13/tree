@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { lookupPublicPath } from "@/lib/public-resource";
+import { withoutCanonical } from "@/lib/seo/metadata";
 import { NOINDEX_METADATA } from "@/lib/seo/noindex";
 
 import PublicAuditVerifyPage from "./audit-verify-client";
@@ -16,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ digest: string }>;
 }): Promise<Metadata> {
   const { digest } = await params;
-  if ((await auditLookup(digest)) === "missing") return {};
+  if ((await auditLookup(digest)) === "missing") return withoutCanonical();
   return NOINDEX_METADATA;
 }
 
