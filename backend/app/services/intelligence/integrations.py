@@ -125,6 +125,44 @@ def _sar_status() -> dict[str, Any]:
     }
 
 
+def _locust_feed_status() -> dict[str, Any]:
+    """Locust watch can use a custom feed, FAO DLIS, or seasonal corridor heuristics."""
+    custom_feed = has_locust_feed()
+    fao_enabled = settings.fao_locust_feed_enabled
+    source = locust_feed_source()
+
+    if custom_feed:
+        label = "Configured locust observation feed"
+        status = "configured"
+        mode = "live"
+    elif fao_enabled:
+        label = (
+            "FAO locust feed active with seasonal corridor fallback"
+            if source == "fao_feed"
+            else "FAO locust feed enabled; seasonal corridor fallback until observations load"
+        )
+        status = "configured"
+        mode = "live"
+    else:
+        label = "Locust watch uses seasonal corridor model only"
+        status = "seasonal_fallback"
+        mode = "estimate"
+
+    return {
+        "status": status,
+        "mode": mode,
+        "label": label,
+        "reachable": custom_feed or fao_enabled,
+        "error": None if (custom_feed or fao_enabled) else "feed_disabled",
+        "source": source,
+        "setup_hint": (
+            "Set LOCUST_FEED_URL for a custom feed, or keep FAO locust feed enabled (default)"
+            if not custom_feed and not fao_enabled
+            else None
+        ),
+    }
+
+
 def _bioacoustic_status() -> dict[str, Any]:
     bio = build_bioacoustic_health()
     pipeline = bio.get("pipeline", "stub")
@@ -141,12 +179,26 @@ def _bioacoustic_status() -> dict[str, Any]:
             "reachable": True,
             "error": None,
         }
+
+    missing: list[str] = []
+    if pipeline in {"birdnet", "composite", "multitaxa"} and not bio.get("birdnet_available"):
+        missing.append("birdnetlib/ffmpeg")
+    if settings.bioacoustic_enable_perch and not bio.get("perch_available"):
+        missing.append("perch model")
+
+    setup_hint = (
+        "Set BIOACOUSTIC_PIPELINE=stub for demo mode without ML, or start the bioacoustic worker "
+        "(COMPOSE_PROFILES=bioacoustic docker compose up -d) with INSTALL_BIOACOUSTIC=1"
+    )
     return {
         "status": "degraded",
         "mode": "stub",
-        "label": "Bioacoustic ML dependencies missing on worker",
+        "label": (
+            f"Bioacoustic ML dependencies missing ({', '.join(missing) or 'worker packages'})"
+        ),
         "reachable": False,
         "error": "dependencies_missing",
+        "setup_hint": setup_hint,
     }
 
 
@@ -209,22 +261,7 @@ async def build_integrations_health(*, ping_remote: bool = True) -> dict[str, An
             "error": None if has_firms_credentials() else "missing_credentials",
             "setup_hint": "Set FIRMS_MAP_KEY in backend environment (free at firms.modaps.eosdis.nasa.gov)",
         },
-        "locust_feed": {
-            "status": (
-                "configured"
-                if has_locust_feed() or locust_feed_source() == "fao_feed"
-                else "seasonal_fallback"
-            ),
-            "mode": "live" if has_locust_feed() or locust_feed_source() == "fao_feed" else "estimate",
-            "label": (
-                "FAO / configured locust observation feed"
-                if has_locust_feed() or locust_feed_source() == "fao_feed"
-                else "Locust watch uses seasonal corridor model until LOCUST_FEED_URL is set"
-            ),
-            "reachable": has_locust_feed(),
-            "error": None if has_locust_feed() else "missing_credentials",
-            "source": locust_feed_source(),
-        },
+        "locust_feed": _locust_feed_status(),
         "sar_monitoring": _sar_status(),
         "bioacoustic": _bioacoustic_status(),
     }

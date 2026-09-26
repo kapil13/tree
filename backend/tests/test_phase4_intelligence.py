@@ -83,6 +83,38 @@ async def test_build_integrations_health_fast_skips_ping():
     assert result["status"] == "ok"
 
 
+@pytest.mark.asyncio
+async def test_locust_feed_configured_when_fao_enabled_without_custom_url(monkeypatch):
+    monkeypatch.setattr("app.services.intelligence.integrations.has_locust_feed", lambda: False)
+    monkeypatch.setattr(
+        "app.services.intelligence.integrations.settings.fao_locust_feed_enabled",
+        True,
+    )
+    result = await build_integrations_health(ping_remote=False)
+    locust = result["integrations"]["locust_feed"]
+    assert locust["status"] == "configured"
+    assert locust["error"] is None
+    assert locust["mode"] == "live"
+
+
+@pytest.mark.asyncio
+async def test_bioacoustic_degraded_when_birdnet_deps_missing(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.intelligence.integrations.build_bioacoustic_health",
+        lambda: {
+            "pipeline": "birdnet",
+            "production_ready": False,
+            "birdnet_available": False,
+            "perch_available": False,
+        },
+    )
+    result = await build_integrations_health(ping_remote=False)
+    bio = result["integrations"]["bioacoustic"]
+    assert bio["status"] == "degraded"
+    assert bio["error"] == "dependencies_missing"
+    assert bio.get("setup_hint")
+
+
 def test_portfolio_context_includes_intelligence_field():
     portfolio = PortfolioContext(intelligence={"highest_risk": "moderate"})
     data = portfolio.to_dict()

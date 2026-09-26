@@ -341,6 +341,9 @@ export default function PlatformOpsPage() {
                         {"error" in info && info.error ? (
                           <p className="mt-1 text-xs text-red-600">{String(info.error)}</p>
                         ) : null}
+                        {"setup_hint" in info && info.setup_hint ? (
+                          <p className="mt-1 text-xs text-stone-500">{String(info.setup_hint)}</p>
+                        ) : null}
                       </div>
                     ))}
                   </div>
