@@ -196,6 +196,57 @@ class SchemeKpiOut(BaseModel):
     metrics: dict[str, Any] = Field(default_factory=dict)
     checks: dict[str, bool] = Field(default_factory=dict)
     status: str
+    closure_milestones: dict[str, Any] | None = None
+
+
+class ClosureDeliverableOut(BaseModel):
+    key: str
+    status: str
+
+
+class ClosurePhaseOut(BaseModel):
+    code: str
+    label: str
+    order: int
+    status: str
+    is_current: bool
+    typical_months_from_plan: int
+    target_year: int | None = None
+    deliverables: list[ClosureDeliverableOut] = Field(default_factory=list)
+
+
+class ClosureAlertOut(BaseModel):
+    kind: str
+    phase_code: str
+    message: str
+
+
+class GreenBeltComplianceOut(BaseModel):
+    applicable: bool
+    status: str
+    reason: str | None = None
+    ec_green_belt_pct_required: float | None = None
+    lease_area_ha: float | None = None
+    required_green_belt_ha: float | None = None
+    mapped_green_belt_ha: float | None = None
+    coverage_pct: float | None = None
+    shortfall_ha: float | None = None
+
+
+class ClosureMilestonesOut(BaseModel):
+    applicable: bool
+    status: str
+    reason: str | None = None
+    current_phase: str | None = None
+    closure_plan_year: int | None = None
+    ibm_closure_plan_ref: str | None = None
+    fmcp_reference: str | None = None
+    phases: list[ClosurePhaseOut] = Field(default_factory=list)
+    green_belt: GreenBeltComplianceOut | None = None
+    native_species_pct: float | None = None
+    native_species_target_pct: float | None = None
+    scan_coverage_pct: float | None = None
+    alerts: list[ClosureAlertOut] = Field(default_factory=list)
 
 
 class InheritedStandardOut(BaseModel):

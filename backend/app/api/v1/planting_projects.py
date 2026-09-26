@@ -22,6 +22,7 @@ from app.schemas.common import Page
 from app.schemas.plantation_fence import GeoJsonPolygon
 from app.schemas.planting_project import (
     ClimateZoneOut,
+    ClosureMilestonesOut,
     ComplianceCheckOut,
     ComplianceCheckRequest,
     ComplianceIssueOut,
@@ -579,7 +580,7 @@ async def list_projects(
 
 @router.post("", response_model=PlantingProjectOut, status_code=status.HTTP_201_CREATED)
 async def create_project(
-    payload: PlantingProjectCreate, request: Request, user: WriteAccess, db: DB
+    payload: PlantingProjectCreate, request: Request, user: WriteProfessional, db: DB
 ) -> PlantingProjectOut:
     scheme = validate_scheme_selection(
         scheme_code=payload.scheme_code,
@@ -982,6 +983,20 @@ async def get_scheme_kpis(
     if project is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
     return SchemeKpiOut.model_validate(await compute_scheme_kpis(db, project))
+
+
+@router.get("/{project_id}/closure-milestones", response_model=ClosureMilestonesOut)
+async def get_closure_milestones(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    db: DB,
+) -> ClosureMilestonesOut:
+    project = await load_project(project_id, user, db)
+    if project is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
+    from app.services.planting_projects.closure_milestones import compute_closure_milestones
+
+    return ClosureMilestonesOut.model_validate(await compute_closure_milestones(db, project))
 
 
 @router.get("/{project_id}/work-areas", response_model=list[WorkAreaOut])

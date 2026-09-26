@@ -1363,7 +1363,49 @@ export const plantingProjects = {
         metrics: Record<string, number>;
         checks: Record<string, boolean>;
         status: string;
+        closure_milestones?: {
+          status: string;
+          current_phase: string | null;
+          alert_count: number;
+        };
       }>(`/v1/planting-projects/${id}/scheme-kpis`)
+    ).data;
+  },
+  async closureMilestones(id: string) {
+    return (
+      await api.get<{
+        applicable: boolean;
+        status: string;
+        reason?: string;
+        current_phase?: string | null;
+        closure_plan_year?: number | null;
+        ibm_closure_plan_ref?: string | null;
+        fmcp_reference?: string | null;
+        phases: Array<{
+          code: string;
+          label: string;
+          order: number;
+          status: string;
+          is_current: boolean;
+          typical_months_from_plan: number;
+          target_year?: number | null;
+          deliverables: Array<{ key: string; status: string }>;
+        }>;
+        green_belt?: {
+          applicable: boolean;
+          status: string;
+          ec_green_belt_pct_required?: number;
+          lease_area_ha?: number;
+          required_green_belt_ha?: number;
+          mapped_green_belt_ha?: number;
+          coverage_pct?: number;
+          shortfall_ha?: number;
+        };
+        native_species_pct?: number | null;
+        native_species_target_pct?: number | null;
+        scan_coverage_pct?: number | null;
+        alerts: Array<{ kind: string; phase_code: string; message: string }>;
+      }>(`/v1/planting-projects/${id}/closure-milestones`)
     ).data;
   },
   async workAreas(projectId: string) {

@@ -527,6 +527,20 @@ async def build_auto_signals(db: AsyncSession, project: PlantingProject) -> dict
     else:
         signals["site_area_match"] = "na"
 
+    scheme_code = getattr(project, "scheme_code", None)
+    if scheme_code == "mining_reclamation":
+        from app.services.planting_projects.closure_milestones import (
+            build_mining_compliance_signals,
+        )
+
+        mining_signals = await build_mining_compliance_signals(
+            db,
+            project,
+            trees=trees,
+            open_block_violations=block_open,
+        )
+        signals.update(mining_signals)
+
     return signals
 
 
