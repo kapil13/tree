@@ -197,6 +197,37 @@ final plantationFencesProvider = FutureProvider.autoDispose((ref) async {
   return api.listPlantationFences();
 });
 
+/// Unvisited stratified plots for Tier-4 field sampling (Phase F).
+final plotVisitQueueProvider = FutureProvider.autoDispose.family<List<dynamic>, String?>((ref, projectId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  if (projectId != null && projectId.isNotEmpty) {
+    final summary = await api.getPlotMonitoringSummary(projectId);
+    if (summary['has_design'] != true) return [];
+    final plots = await api.listPlotMonitoringPlots(projectId, status: 'pending');
+    return plots.where((p) => (p as Map)['status'] != 'visited').toList();
+  }
+  final projects = await api.listPlantingProjects();
+  final due = <dynamic>[];
+  for (final raw in projects) {
+    final pid = (raw as Map)['id'] as String?;
+    if (pid == null) continue;
+    try {
+      final summary = await api.getPlotMonitoringSummary(pid);
+      if (summary['has_design'] != true) continue;
+      final plots = await api.listPlotMonitoringPlots(pid);
+      for (final plot in plots) {
+        if ((plot as Map)['status'] != 'visited') due.add(plot);
+      }
+    } catch (_) {}
+  }
+  return due;
+});
+
+final bioacousticReviewQueueProvider = FutureProvider.autoDispose.family<List<dynamic>, String?>((ref, fenceId) async {
+  final api = await ref.watch(apiClientProvider.future);
+  return api.listBioacousticReviewQueue(fenceId: fenceId);
+});
+
 final regionalFaunaProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, key) async {
   final parts = key.split(',');
   if (parts.length != 2) {

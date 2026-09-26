@@ -46,6 +46,14 @@ class AppDrawer extends ConsumerWidget {
       'map' => l10n.map,
       'fieldOps' => l10n.fieldOps,
       'profile' => l10n.profile,
+      'navPortfolio' => 'Portfolio health',
+      'navPlotVisits' => 'Plot visits',
+      'navSatellite' => 'Satellite workspace',
+      'navVerification' => 'Verification queue',
+      'navSectionStewardship' => 'Stewardship',
+      'navStewardship' => 'My stewardship',
+      'navAdoptTree' => 'Adopt a tree',
+      'navAudienceOnboarding' => 'Audience setup',
       _ => key,
     };
   }

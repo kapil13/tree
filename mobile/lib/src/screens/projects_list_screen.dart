@@ -26,7 +26,7 @@ class ProjectsListScreen extends ConsumerWidget {
       appBar: ShellTopBar(title: l10n.projects),
       floatingActionButton: canCreate
           ? FloatingActionButton.extended(
-              onPressed: () => showCreateProjectSheet(context, ref),
+              onPressed: () => context.push('/projects/new'),
               backgroundColor: const Color(0xFF15803D),
               icon: const Icon(Icons.add),
               label: Text(l10n.newProject),

@@ -140,6 +140,41 @@ void main() {
     expect(canAccessPath(viewer, '/audit/attestation'), isFalse);
   });
 
+  test('Phase F professional routes are role-gated', () {
+    final supervisor = {
+      'role': 'government',
+      'org_role': 'supervisor',
+      'has_professional_program': true,
+    };
+    final worker = {
+      'role': 'field_worker',
+      'org_role': 'worker',
+      'has_professional_program': false,
+    };
+    final verifier = {
+      'role': 'verifier',
+      'has_professional_program': true,
+    };
+    expect(canAccessPath(supervisor, '/portfolio'), isTrue);
+    expect(canAccessPath(supervisor, '/satellite'), isTrue);
+    expect(canAccessPath(supervisor, '/verification'), isTrue);
+    expect(canAccessPath(verifier, '/verification'), isTrue);
+    expect(canAccessPath(worker, '/plot-visits'), isTrue);
+    expect(canAccessPath(worker, '/portfolio'), isFalse);
+    expect(canAccessPath(worker, '/satellite'), isFalse);
+    expect(canAccessPath(worker, '/verification'), isFalse);
+  });
+
+  test('stewardship and audience onboarding are open to citizens', () {
+    final citizen = {
+      'role': 'citizen',
+      'has_professional_program': false,
+    };
+    expect(canAccessPath(citizen, '/citizen/stewardship'), isTrue);
+    expect(canAccessPath(citizen, '/citizen/adopt'), isTrue);
+    expect(canAccessPath(citizen, '/onboarding/audience'), isTrue);
+  });
+
   test('evidence and biodiversity routes are role-gated', () {
     final supervisor = {
       'role': 'government',

@@ -64,6 +64,18 @@ class MonitoringScreen extends ConsumerWidget {
         onMenu: () => openAppDrawer(context),
         alertCount: unread,
         onAlerts: () => context.go('/notifications'),
+        actions: [
+          IconButton(
+            tooltip: 'Portfolio health',
+            icon: const Icon(Icons.dashboard_outlined),
+            onPressed: () => context.push('/portfolio?tab=1'),
+          ),
+          IconButton(
+            tooltip: 'Satellite workspace',
+            icon: const Icon(Icons.satellite_alt_outlined),
+            onPressed: () => context.push('/satellite'),
+          ),
+        ],
       ),
       body: summaryAsync.when(
         loading: () => const Padding(

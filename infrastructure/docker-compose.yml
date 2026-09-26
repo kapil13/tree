@@ -32,6 +32,17 @@ services:
     volumes:
       - minio-data:/data
 
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 byotadmin byotadmin123; do sleep 2; done;
+      mc mb --ignore-existing local/byot-media;
+      exit 0;
+      "
+
   backend:
     build:
       context: ../backend
