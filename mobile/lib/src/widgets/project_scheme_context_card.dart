@@ -7,10 +7,12 @@ class ProjectSchemeContextCard extends StatelessWidget {
     super.key,
     required this.scheme,
     required this.project,
+    this.programHints,
   });
 
   final Map<String, dynamic>? scheme;
   final Map<String, dynamic> project;
+  final List<dynamic>? programHints;
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +68,53 @@ class ProjectSchemeContextCard extends StatelessWidget {
                   ),
                 ),
             ],
+            if (programHints != null && programHints!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Field tips', style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 6),
+              for (final hint in programHints!)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        _hintIcon(hint is Map ? hint['kind'] as String? : null),
+                        size: 16,
+                        color: Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          hint is Map ? '${hint['message'] ?? ''}' : '$hint',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+IconData _hintIcon(String? kind) {
+  switch (kind) {
+    case 'species':
+      return Icons.park_outlined;
+    case 'density':
+      return Icons.grid_on_outlined;
+    case 'chainage':
+      return Icons.route_outlined;
+    case 'photo':
+      return Icons.photo_camera_outlined;
+    case 'guard':
+      return Icons.shield_outlined;
+    default:
+      return Icons.lightbulb_outline;
   }
 }
 
@@ -112,6 +157,24 @@ List<_MetadataRow> _metadataRows(String? schemeCode, Map refs, Map? metadata) {
   if (refs['pca_number'] != null) generic.add(_MetadataRow('PCA number', '${refs['pca_number']}'));
   if (refs['nagar_van_project_id'] != null) {
     generic.add(_MetadataRow('Nagar Van ID', '${refs['nagar_van_project_id']}'));
+  }
+  if (schemeCode == 'mining_reclamation') {
+    if (refs['mine_lease_number'] != null) {
+      generic.insert(0, _MetadataRow('Mine lease', '${refs['mine_lease_number']}'));
+    }
+    if (refs['ibm_closure_plan_ref'] != null) {
+      generic.add(_MetadataRow('PMCP ref', '${refs['ibm_closure_plan_ref']}'));
+    }
+    if (refs['reclamation_block_type'] != null) {
+      generic.add(
+        _MetadataRow('Block type', '${refs['reclamation_block_type']}'.replaceAll('_', ' ')),
+      );
+    }
+    if (refs['closure_phase'] != null) {
+      generic.add(
+        _MetadataRow('Closure phase', '${refs['closure_phase']}'.replaceAll('_', ' ')),
+      );
+    }
   }
   return generic;
 }

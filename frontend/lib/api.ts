@@ -1965,6 +1965,15 @@ export const plantingProjects = {
           tree_id: string | null;
           created_at: string | null;
         }>;
+        priority_tasks?: Array<{
+          id: string;
+          kind: "violation" | "survival" | "project" | "audit" | "closure" | "workflow";
+          title: string;
+          detail: string;
+          href: string;
+          tone: "critical" | "warning" | "info";
+          project_id?: string;
+        }>;
       }>("/v1/planting-projects/field-ops-summary")
     ).data;
   },
@@ -4916,12 +4925,16 @@ export type ComplianceWorkflow = {
   project_id: string;
   segment: string;
   compliance_mode: string;
+  monitoring_mode?: boolean;
+  mining_mode?: boolean;
   recommended_checklist: ChecklistCode;
   recommended_checklist_label: string;
   steps: ComplianceWorkflowStep[];
   progress: { done: number; partial: number; total: number; pct: number };
   auto_signals: Record<string, string>;
   checklist_summaries: ChecklistSummary[];
+  closure_status?: string;
+  current_closure_phase?: string | null;
 };
 
 export type CompliancePortfolioProjectRow = {

@@ -166,6 +166,107 @@ async def test_build_monitoring_compliance_workflow(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_build_mining_compliance_workflow(monkeypatch):
+    project = SimpleNamespace(
+        id=uuid.uuid4(),
+        segment="industrial_greenbelt",
+        scheme_code="mining_reclamation",
+        compliance_mode="strict",
+        metadata_={
+            "scheme_refs": {
+                "mine_lease_number": "ML-TEST-001",
+                "ibm_closure_plan_ref": "IBM/PCP/2025/TEST",
+            }
+        },
+        organization_id=uuid.uuid4(),
+    )
+
+    async def fake_auto_signals(db, proj):
+        return {
+            "mine_lease_linked": "yes",
+            "closure_plan_on_file": "yes",
+            "has_work_areas": "partial",
+            "reclamation_block_documented": "no",
+            "ec_green_belt_compliant": "partial",
+            "has_trees": "no",
+            "native_stocking_target": "no",
+            "satellite_mrv_active": "no",
+            "no_block_violations": "yes",
+        }
+
+    async def fake_summaries(db, proj):
+        return [
+            {
+                "code": "mining_reclamation",
+                "title": "Mining",
+                "short_label": "Mining",
+                "completion_pct": 10,
+                "score_pct": 10,
+                "eligibility_status": "in_progress",
+                "updated_at": None,
+            }
+        ]
+
+    async def fake_metrics(db, proj):
+        return {
+            "tree_count": 0,
+            "geo_tagged_count": 0,
+            "satellite_verified_count": 0,
+            "open_violations": 0,
+            "blocking_violations": 0,
+            "work_area_count": 1,
+        }
+
+    async def fake_closure(db, proj):
+        return {
+            "applicable": True,
+            "status": "in_progress",
+            "current_phase": "phase_i_dump_stabilization",
+            "green_belt": {
+                "applicable": True,
+                "status": "partial",
+                "mapped_green_belt_ha": 5.0,
+                "required_green_belt_ha": 16.5,
+                "coverage_pct": 30.3,
+            },
+            "native_species_pct": 0.0,
+            "native_species_target_pct": 80.0,
+        }
+
+    monkeypatch.setattr(
+        "app.services.compliance.workflow.build_auto_signals",
+        fake_auto_signals,
+    )
+    monkeypatch.setattr(
+        "app.services.compliance.workflow.list_project_checklist_summaries",
+        fake_summaries,
+    )
+    monkeypatch.setattr(
+        "app.services.compliance.workflow._project_metrics",
+        fake_metrics,
+    )
+    monkeypatch.setattr(
+        "app.services.planting_projects.closure_milestones.compute_closure_milestones",
+        fake_closure,
+    )
+    monkeypatch.setattr(
+        "app.services.compliance.workflow.is_satellite_watch_enabled",
+        lambda project: False,
+    )
+
+    result = await build_compliance_workflow(AsyncMock(), project)
+
+    assert result["mining_mode"] is True
+    assert result["recommended_checklist"] == "mining_reclamation"
+    step_ids = [s["id"] for s in result["steps"]]
+    assert "mine_lease_pmcp" in step_ids
+    assert "ec_green_belt" in step_ids
+    assert "review_checklist" in step_ids
+    lease_step = next(s for s in result["steps"] if s["id"] == "mine_lease_pmcp")
+    assert lease_step["status"] == "done"
+
+
+@pytest.mark.asyncio
 async def test_build_auto_signals_survival_saved():
     from app.services.compliance.evaluator import build_auto_signals
 

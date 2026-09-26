@@ -872,7 +872,11 @@ class _AddTreeScreenState extends ConsumerState<AddTreeScreen> {
           ),
           if (_scheme != null) ...[
             const SizedBox(height: 8),
-            ProjectSchemeContextCard(scheme: _scheme, project: _project!),
+            ProjectSchemeContextCard(
+              scheme: _scheme,
+              project: _project!,
+              programHints: _registrationContext?['program_hints'] as List<dynamic>?,
+            ),
           ],
           const SizedBox(height: 4),
         ],

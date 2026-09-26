@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from app.services.geo import point_at_chainage_km
 from app.services.planting_projects.registration_context import (
+    _program_hints,
     format_chainage_display,
     format_chainage_label,
     inherited_standard_from_rules,
@@ -56,6 +59,20 @@ def test_merge_standard_does_not_override_existing_metadata():
     )
     assert merged["pit_size_cm"] == "45×45×45"
     assert merged["spacing_m"] == "3"
+
+
+def test_program_hints_for_mining_reclamation():
+    project = SimpleNamespace(
+        scheme_code="mining_reclamation",
+        metadata_={"scheme_refs": {"reclamation_block_type": "overburden_dump"}},
+    )
+    hints = _program_hints(project, {"species_native_pct_min": 80, "guard_type_required": True})
+    kinds = {hint["kind"] for hint in hints}
+    assert "species" in kinds
+    assert "block" in kinds
+    assert "density" in kinds
+    assert "guard" in kinds
+    assert any("native" in hint["message"].lower() for hint in hints)
 
 
 def test_point_at_chainage_km():

@@ -1,8 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { plantingProjects } from "@/lib/api";
+import {
+  closureDeliverableHref,
+  closureDeliverableLabel,
+  type ClosureDeliverableKey,
+} from "@/lib/closure-deliverable-links";
 import { cn } from "@/lib/cn";
 
 function statusIcon(status: string) {
@@ -123,6 +129,38 @@ export function ProjectClosureMilestonesPanel({ projectId }: { projectId: string
             </div>
             {phase.target_year != null && (
               <p className="mt-1 text-xs text-stone-500">Target year: {phase.target_year}</p>
+            )}
+            {phase.deliverables.length > 0 && (
+              <ul className="mt-2 space-y-1.5">
+                {phase.deliverables.map((deliverable) => {
+                  const pending =
+                    deliverable.status === "pending" || deliverable.status === "partial";
+                  const key = deliverable.key as ClosureDeliverableKey;
+                  return (
+                    <li
+                      key={`${phase.code}-${deliverable.key}`}
+                      className="flex items-center justify-between gap-2 text-xs"
+                    >
+                      <span className="flex items-center gap-2 text-stone-700">
+                        {statusIcon(deliverable.status)}
+                        <span className="capitalize">{deliverable.key.replaceAll("_", " ")}</span>
+                      </span>
+                      {pending ? (
+                        <Link
+                          href={closureDeliverableHref(projectId, key)}
+                          className="font-medium text-forest-700 hover:underline"
+                        >
+                          {closureDeliverableLabel(key)}
+                        </Link>
+                      ) : (
+                        <span className="text-stone-500 capitalize">
+                          {deliverable.status.replaceAll("_", " ")}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </li>
         ))}

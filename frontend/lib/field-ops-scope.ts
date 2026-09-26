@@ -15,6 +15,16 @@ export type FieldOpsProjectRow = {
   progress_pct: number | null;
 };
 
+export type FieldOpsPriorityTask = {
+  id: string;
+  kind: "violation" | "survival" | "project" | "audit" | "closure" | "workflow";
+  title: string;
+  detail: string;
+  href: string;
+  tone: "critical" | "warning" | "info";
+  project_id?: string;
+};
+
 export type FieldOpsSummaryData = {
   project_count: number;
   tree_count: number;
@@ -24,6 +34,7 @@ export type FieldOpsSummaryData = {
   by_segment: Record<string, number>;
   by_scheme: Record<string, number>;
   projects: FieldOpsProjectRow[];
+  priority_tasks?: FieldOpsPriorityTask[];
   recent_violations: Array<{
     id: string;
     project_id: string;
@@ -61,6 +72,10 @@ export function scopeFieldOpsSummary(
     by_segment[project.segment] = 1;
   }
 
+  const priority_tasks = (raw.priority_tasks ?? []).filter(
+    (task) => !task.project_id || task.project_id === projectId,
+  );
+
   return {
     ...raw,
     projects,
@@ -72,5 +87,6 @@ export function scopeFieldOpsSummary(
     by_segment,
     by_scheme: {},
     recent_violations,
+    priority_tasks,
   };
 }

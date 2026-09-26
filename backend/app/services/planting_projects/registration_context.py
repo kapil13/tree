@@ -108,6 +108,118 @@ _SEGMENT_LEGAL: dict[str, tuple[str, str]] = {
 }
 
 
+def _program_hints(
+    project: PlantingProject,
+    rules: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Field-registration hints tailored to the project's scheme/program."""
+    hints: list[dict[str, str]] = []
+    scheme_code = getattr(project, "scheme_code", None)
+    refs = (project.metadata_ or {}).get("scheme_refs") or {}
+    if not isinstance(refs, dict):
+        refs = {}
+
+    if scheme_code == "mining_reclamation":
+        native_min = rules.get("species_native_pct_min")
+        native_label = f"{int(float(native_min))}%" if native_min is not None else "70–80%"
+        block = refs.get("reclamation_block_type")
+        hints.append(
+            {
+                "kind": "species",
+                "message": (
+                    f"Prioritize native species — target {native_label} native stocking "
+                    "for mine green belts and overburden dumps."
+                ),
+            }
+        )
+        if block:
+            hints.append(
+                {
+                    "kind": "block",
+                    "message": (
+                        f"Register trees inside the mapped {str(block).replace('_', ' ')} "
+                        "work area so closure milestones stay aligned."
+                    ),
+                }
+            )
+        else:
+            hints.append(
+                {
+                    "kind": "block",
+                    "message": (
+                        "Select the reclamation block work area before registering so "
+                        "PMCP/FMCP deliverables track the correct polygon."
+                    ),
+                }
+            )
+        hints.append(
+            {
+                "kind": "density",
+                "message": (
+                    "Green-belt blocks typically target 400–1,200 trees/ha; "
+                    "match pit size and spacing from the mining template."
+                ),
+            }
+        )
+    elif scheme_code == "nhai_highway":
+        hints.append(
+            {
+                "kind": "chainage",
+                "message": (
+                    "Capture LHS/RHS side, guard type, and chainage so NHAI compliance "
+                    "checks can validate corridor spacing."
+                ),
+            }
+        )
+    elif scheme_code == "nagar_van":
+        hints.append(
+            {
+                "kind": "urban",
+                "message": (
+                    "Record ward or ULB reference in site zone metadata for Nagar Van "
+                    "urban greening audits."
+                ),
+            }
+        )
+    elif scheme_code == "raj_amrit_poshan_vatika":
+        hints.append(
+            {
+                "kind": "nutrition",
+                "message": (
+                    "Prefer fruit-bearing species suited to the Anganwadi or SHG nutri-garden "
+                    "site and note beneficiary households when available."
+                ),
+            }
+        )
+    elif scheme_code in ("sahakar_van",):
+        hints.append(
+            {
+                "kind": "cooperative",
+                "message": (
+                    "Link cooperative society and village references so Sahakar Van "
+                    "convergence reports stay traceable."
+                ),
+            }
+        )
+
+    if rules.get("guard_type_required"):
+        hints.append(
+            {
+                "kind": "guard",
+                "message": "Tree guards are required for this planting standard.",
+            }
+        )
+    if rules.get("require_pit_photo"):
+        hints.append(
+            {
+                "kind": "photo",
+                "message": "Include a pit photo before saving — the project standard requires it.",
+            }
+        )
+
+    return hints
+
+
 def _apply_legal_land_fallbacks(merged: dict[str, Any], project: PlantingProject) -> None:
     """Fill legal_basis + land_category from plantation category or project segment."""
     meta = project.metadata_ or {}
@@ -355,9 +467,11 @@ async def build_registration_context(
     return {
         "project_id": str(project.id),
         "program_code": project.program_code,
+        "scheme_code": project.scheme_code,
         "compliance_mode": project.compliance_mode,
         "inherited_standard": inherited,
         "standard_name": standard.name if standard else None,
+        "program_hints": _program_hints(project, rules),
         "progress": {
             "tree_count": summary["tree_count"],
             "target_tree_count": summary["target_tree_count"],

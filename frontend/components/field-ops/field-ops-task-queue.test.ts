@@ -47,4 +47,43 @@ describe("buildFieldOpsTasks", () => {
       "/trees?project=p1&category=geotag_due",
     );
   });
+
+  it("uses server priority tasks when provided", () => {
+    const tasks = buildFieldOpsTasks({
+      projects: [],
+      recent_violations: [],
+      priority_tasks: [
+        {
+          id: "closure-p1-alert",
+          kind: "closure",
+          title: "Mine belt",
+          detail: "EC green belt shortfall",
+          href: "/projects/p1",
+          tone: "critical",
+        },
+      ],
+    });
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.kind).toBe("closure");
+    expect(tasks[0]?.detail).toContain("EC green belt");
+  });
+
+  it("includes audit plot tasks in client fallback mode", () => {
+    const tasks = buildFieldOpsTasks({
+      projects: [
+        {
+          id: "p3",
+          name: "Estate watch",
+          code: "EST-1",
+          open_violations: 0,
+          survival_due: 0,
+          audit_plots_due: 2,
+        },
+      ],
+      recent_violations: [],
+    });
+
+    expect(tasks.some((task) => task.kind === "audit")).toBe(true);
+  });
 });

@@ -100,7 +100,7 @@ export default function FieldOpsPage() {
   }
 
   const needsAttention = data.projects.filter(
-    (p) => p.open_violations > 0 || p.survival_due > 0,
+    (p) => p.open_violations > 0 || p.survival_due > 0 || (p.audit_plots_due ?? 0) > 0,
   );
 
   const canCreateProject = user?.role !== "field_worker";
@@ -158,7 +158,7 @@ export default function FieldOpsPage() {
       />
 
       <MetricGrid
-        columns={4}
+        columns={5}
         metrics={[
           {
             label: "Projects",
@@ -181,6 +181,12 @@ export default function FieldOpsPage() {
             value: fmtNum(data.survival_due),
             hint: projectId ? "In selected project" : "Geotag / survival checks",
             tone: data.survival_due > 0 ? "warning" : "default",
+          },
+          {
+            label: "Audit plots due",
+            value: fmtNum(data.audit_plots_due),
+            hint: projectId ? "In selected project" : "Estate Watch field visits",
+            tone: data.audit_plots_due > 0 ? "warning" : "default",
           },
         ]}
       />
@@ -344,6 +350,7 @@ type FieldProject = {
   target_tree_count: number | null;
   open_violations: number;
   survival_due: number;
+  audit_plots_due?: number;
 };
 
 function ProjectActionCard({
@@ -407,7 +414,16 @@ function ProjectActionCard({
             {p.survival_due} survival due
           </Link>
         )}
-        {p.open_violations === 0 && p.survival_due === 0 && (
+        {(p.audit_plots_due ?? 0) > 0 && (
+          <Link
+            href="/field-ops?section=audit"
+            className="inline-flex items-center gap-1 rounded-lg bg-violet-100 px-2.5 py-1.5 text-xs font-medium text-violet-950"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            {p.audit_plots_due} audit plot{(p.audit_plots_due ?? 0) === 1 ? "" : "s"} due
+          </Link>
+        )}
+        {p.open_violations === 0 && p.survival_due === 0 && (p.audit_plots_due ?? 0) === 0 && (
           <span className="rounded-lg bg-forest-50 px-2.5 py-1.5 text-xs font-medium text-forest-800">
             On track
           </span>

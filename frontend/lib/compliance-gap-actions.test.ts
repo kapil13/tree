@@ -42,4 +42,22 @@ describe("compliance-gap-actions", () => {
     );
     expect(action.href).toBe("/projects/proj-1/compliance?section=issues");
   });
+
+  it("routes mining lease gaps to project settings", () => {
+    const action = resolveComplianceGapAction(
+      { item_id: "mine_lease_linked", auto_key: "mine_lease_linked" },
+      ctx,
+    );
+    expect(action.label).toBe("Add mine lease number");
+    expect(action.href).toBe("/projects/proj-1/settings");
+  });
+
+  it("routes EC green belt gaps to work-area setup", () => {
+    const action = resolveComplianceGapAction(
+      { item_id: "ec_green_belt_met", auto_key: "ec_green_belt_compliant" },
+      ctx,
+    );
+    expect(action.label).toBe("Map green belt areas");
+    expect(action.href).toBe("/projects/proj-1/setup?step=4");
+  });
 });

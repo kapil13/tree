@@ -108,13 +108,19 @@ export function ProjectComplianceWorkflowPanel({
           <div className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-forest-700" />
             <h2 className="text-lg font-semibold text-stone-900">
-              {monitoringMode ? "Estate watch readiness" : "Compliance readiness"}
+              {monitoringMode
+                ? "Estate watch readiness"
+                : data.mining_mode
+                  ? "PMCP / FMCP closure readiness"
+                  : "Compliance readiness"}
             </h2>
           </div>
           <p className="mt-1 text-sm text-stone-600">
             {monitoringMode
               ? "Satellite scan coverage, SAR integrity, and checklist steps for this estate watch programme."
-              : `${data.progress.done} of ${data.progress.total} required steps complete`}
+              : data.mining_mode
+                ? "Mine lease, reclamation blocks, EC green belt, and progressive closure checklist steps."
+                : `${data.progress.done} of ${data.progress.total} required steps complete`}
             {!monitoringMode && data.progress.partial > 0
               ? ` · ${data.progress.partial} in progress`
               : monitoringMode
