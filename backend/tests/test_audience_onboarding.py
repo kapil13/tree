@@ -18,7 +18,7 @@ from app.services.onboarding.audience_storage import (
 def test_infer_audience_from_org_type_maps_known_types():
     assert infer_audience_from_org_type("government") == "government"
     assert infer_audience_from_org_type("corporate") == "corporate_esg"
-    assert infer_audience_from_org_type("ngo") == "general"
+    assert infer_audience_from_org_type("ngo") == "ngo_community"
     assert infer_audience_from_org_type("individual") is None
 
 

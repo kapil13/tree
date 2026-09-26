@@ -2,6 +2,7 @@ export type PlantingAudience =
   | "mining"
   | "corporate_esg"
   | "government"
+  | "ngo_community"
   | "international"
   | "general";
 
@@ -21,6 +22,7 @@ export const PLANTING_AUDIENCE_LABEL: Record<PlantingAudience, string> = {
   mining: "Mining & industrial reclamation",
   corporate_esg: "Corporate ESG",
   government: "Government & public sector",
+  ngo_community: "NGO & community watershed",
   international: "International carbon & standards",
   general: "General plantation",
 };
@@ -32,6 +34,7 @@ export function resolvePlantingAudience(
     audience === "mining" ||
     audience === "corporate_esg" ||
     audience === "government" ||
+    audience === "ngo_community" ||
     audience === "international"
   ) {
     return audience;
@@ -58,6 +61,12 @@ export function audienceQuickLinks(audience: PlantingAudience): { label: string;
         { label: "New scheme project", href: "/projects/new" },
         { label: "Plantation reports", href: "/reports/plantation/project-wise" },
         { label: "Field operations", href: "/field-ops" },
+      ];
+    case "ngo_community":
+      return [
+        { label: "MGNREGA convergence project", href: "/projects/new" },
+        { label: "District rollups", href: "/reports/plantation/district-wise" },
+        { label: "Survival surveys", href: "/field-ops" },
       ];
     case "international":
       return [

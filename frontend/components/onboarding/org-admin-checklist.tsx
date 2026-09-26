@@ -8,6 +8,11 @@ import { useAuth } from "@/lib/auth-store";
 import { isOrgAdmin } from "@/lib/nav-access";
 import { plantingProjects, webhooks } from "@/lib/api";
 import { organizations } from "@/lib/organizations-api";
+import {
+  audienceOnboardingStepHref,
+  audienceOnboardingStepLabel,
+} from "@/lib/audience-journey";
+import { resolvePlantingAudience } from "@/lib/audience";
 import { cn } from "@/lib/cn";
 
 const DISMISS_KEY = "aranyix_org_admin_onboarding_dismissed";
@@ -39,6 +44,10 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
     enabled: Boolean(user && isOrgAdmin(user)),
   });
 
+  const audience = resolvePlantingAudience(user?.audience);
+  const audienceStepHref = audienceOnboardingStepHref(audience);
+  const audienceStepLabel = audienceOnboardingStepLabel(audience);
+
   if (!user || !isOrgAdmin(user) || dismissed) return null;
 
   const memberCount = membersData?.members.length ?? 1;
@@ -46,6 +55,8 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
   const teamDone = memberCount > 1 || pendingInvites > 0;
   const projectsDone = (projectsData?.items.length ?? 0) > 0;
   const webhooksDone = (webhooksData?.length ?? 0) > 0;
+
+  const audienceStepDone = projectsDone;
 
   const steps = [
     {
@@ -56,6 +67,18 @@ export function OrgAdminChecklist({ compact = false }: { compact?: boolean }) {
       href: "/settings/team",
       icon: Users,
     },
+    ...(audienceStepHref && audienceStepLabel
+      ? [
+          {
+            id: "audience",
+            done: audienceStepDone,
+            title: audienceStepLabel,
+            description: "Align your first project with your planting audience focus.",
+            href: audienceStepHref,
+            icon: CheckCircle2,
+          },
+        ]
+      : []),
     {
       id: "projects",
       done: projectsDone,

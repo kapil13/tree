@@ -1756,6 +1756,8 @@
     "plantingFocusDesc": "आपके कार्यक्रम के लिए दर्शक-विशिष्ट शॉर्टकट",
     "districtRollup": "जिला वृक्षारोपण रोलअप",
     "districtRollupDesc": "योजना वितरण, उत्तरजीविता और जियो-टैग कवरेज",
+    "programJourney": "कार्यक्रम यात्रा",
+    "programJourneyDesc": "आपके वृक्षारोपण फोकस के अनुसार शॉर्टकट और रोलअप",
     "dataTrustDesc": "AI विश्लेषण, NDVI और Sentinel Hub के लिए एकीकरण मोड",
     "orgSetup": "संगठन सेटअप",
     "orgSetupDesc": "टीम निमंत्रण, परियोजनाएं और वेबहुक",

@@ -59,7 +59,14 @@ def test_scheme_matches_audience_uses_tags():
 def test_audience_presets_include_all_codes():
     presets = list_audience_presets()
     codes = {preset["code"] for preset in presets}
-    assert codes == {"mining", "corporate_esg", "government", "international", "general"}
+    assert codes == {
+        "mining",
+        "corporate_esg",
+        "government",
+        "ngo_community",
+        "international",
+        "general",
+    }
     mining = get_audience_preset("mining")
     assert mining is not None
     assert mining["recommended_template_code"] == "mining_reclamation_v1"

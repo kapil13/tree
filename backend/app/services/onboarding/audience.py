@@ -6,12 +6,20 @@ from typing import Literal
 
 from app.services.schemes.types import CentralSchemeDefinition
 
-AudienceCode = Literal["mining", "corporate_esg", "government", "international", "general"]
+AudienceCode = Literal[
+    "mining",
+    "corporate_esg",
+    "government",
+    "ngo_community",
+    "international",
+    "general",
+]
 
 AUDIENCE_CODES: tuple[AudienceCode, ...] = (
     "mining",
     "corporate_esg",
     "government",
+    "ngo_community",
     "international",
     "general",
 )
@@ -20,6 +28,7 @@ AUDIENCE_PROGRAM_CODES: dict[AudienceCode, list[str]] = {
     "mining": ["corporate_esg"],
     "corporate_esg": ["corporate_esg"],
     "government": ["government_nhai", "ngo_community"],
+    "ngo_community": ["ngo_community", "ngo_watershed"],
     "international": ["corporate_esg", "government_nhai", "ngo_community"],
     "general": [],
 }
@@ -27,12 +36,12 @@ AUDIENCE_PROGRAM_CODES: dict[AudienceCode, list[str]] = {
 # Scheme-level tags for finer filtering within program overlap.
 SCHEME_AUDIENCE_TAGS: dict[str, list[AudienceCode]] = {
     "campa_ca": ["government", "international"],
-    "gim_restoration": ["government", "international"],
-    "mishti_mangrove": ["government", "international"],
+    "gim_restoration": ["government", "ngo_community", "international"],
+    "mishti_mangrove": ["government", "ngo_community", "international"],
     "nagar_van": ["government"],
     "nhai_highway": ["government", "international"],
-    "mgnrega_convergence": ["government"],
-    "jal_shakti_riparian": ["government", "international"],
+    "mgnrega_convergence": ["government", "ngo_community"],
+    "jal_shakti_riparian": ["government", "ngo_community", "international"],
     "green_credit_india": ["mining", "corporate_esg", "international"],
     "mining_reclamation": ["mining", "corporate_esg", "international"],
     "sahakar_van": ["government", "international"],
@@ -44,7 +53,7 @@ SCHEME_AUDIENCE_TAGS: dict[str, list[AudienceCode]] = {
 ORG_TYPE_DEFAULT_AUDIENCE: dict[str, AudienceCode] = {
     "government": "government",
     "corporate": "corporate_esg",
-    "ngo": "general",
+    "ngo": "ngo_community",
 }
 
 

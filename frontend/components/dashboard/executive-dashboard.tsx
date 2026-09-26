@@ -29,8 +29,8 @@ import {
   type MrvStage,
 } from "@/components/dashboard/command-center-ops-band";
 import { AudienceDashboardStrip } from "@/components/dashboard/audience-dashboard-strip";
+import { AudienceHighlightPanels } from "@/components/dashboard/audience-highlight-panels";
 import { ProjectPerformancePanel } from "@/components/dashboard/project-performance-panel";
-import { GovernmentRollupPanel } from "@/components/dashboard/government-rollup-panel";
 import { useTranslations, useLocale } from "next-intl";
 import {
   Cell,
@@ -127,7 +127,7 @@ export function ExecutiveDashboard() {
   const canReport = canGenerateReports(user);
   const audience = resolvePlantingAudience(user?.audience);
   const showPlantingFocus = Boolean(user?.audience) && audience !== "general";
-  const showDistrictRollup = audience === "government";
+  const showAudienceHighlights = Boolean(user?.audience) && audience !== "general";
 
   const [dashQ, alertsQ, treesQ, fencesQ, bioQ, fieldOpsQ, monitoringQ] = useQueries({
     queries: [
@@ -822,9 +822,9 @@ export function ExecutiveDashboard() {
         </CommandCenterEvidence>
       ) : null}
 
-      {showDistrictRollup ? (
-        <CommandCenterEvidence title={te("districtRollup")} description={te("districtRollupDesc")}>
-          <GovernmentRollupPanel embedded />
+      {showAudienceHighlights ? (
+        <CommandCenterEvidence title={te("programJourney")} description={te("programJourneyDesc")}>
+          <AudienceHighlightPanels />
         </CommandCenterEvidence>
       ) : null}
 

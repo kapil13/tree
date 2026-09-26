@@ -1756,6 +1756,8 @@
     "plantingFocusDesc": "Audience-specific shortcuts for your programme",
     "districtRollup": "District plantation rollup",
     "districtRollupDesc": "Scheme delivery, survival, and geo-tag coverage",
+    "programJourney": "Program journey",
+    "programJourneyDesc": "Shortcuts and rollups tailored to your planting audience",
     "dataTrustDesc": "Integration modes for AI analysis, NDVI, and Sentinel Hub",
     "orgSetup": "Org setup",
     "orgSetupDesc": "Team invites, projects, and webhooks",
