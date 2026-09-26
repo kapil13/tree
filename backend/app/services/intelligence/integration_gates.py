@@ -12,7 +12,7 @@ from app.services.satellite.bhoonidhi_client import has_bhoonidhi_credentials
 from app.services.satellite.plantation import has_sentinel_credentials
 from app.services.satellite.sar_service import has_sar_credentials
 from app.services.threats.firms_client import has_firms_credentials
-from app.services.threats.locust_feed import has_locust_feed, locust_feed_source
+from app.services.threats.locust_feed import has_locust_feed
 
 
 @dataclass
@@ -38,8 +38,6 @@ def integration_modes() -> dict[str, str]:
     sar_live = settings.sar_enabled and has_sar_credentials()
     bhoonidhi_live = has_bhoonidhi_credentials()
     firms_live = has_firms_credentials()
-    locust_live = has_locust_feed() or locust_feed_source() == "fao_feed"
-
     if not settings.sar_enabled:
         sar_mode = "disabled"
     elif sar_live:
@@ -47,18 +45,17 @@ def integration_modes() -> dict[str, str]:
     else:
         sar_mode = "stub"
 
-    if bio.get("pipeline") == "stub":
-        bio_mode = "stub"
-    elif bio.get("production_ready"):
-        bio_mode = "live"
-    else:
-        bio_mode = "stub"
+    bio_mode = "live" if bio.get("production_ready") else "stub"
+
+    locust_mode = (
+        "live" if has_locust_feed() or settings.fao_locust_feed_enabled else "estimate"
+    )
 
     return {
         "optical_ndvi": "live" if optical_live else "stub",
         "sar": sar_mode,
         "firms": "live" if firms_live else "stub",
-        "locust": "live" if locust_live else "stub",
+        "locust": locust_mode,
         "ai": "live" if ai.get("mode") == "live" else "stub",
         "bioacoustic": bio_mode,
         "bhoonidhi": "live" if bhoonidhi_live else "stub",

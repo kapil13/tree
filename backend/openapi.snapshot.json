@@ -14566,6 +14566,37 @@
         "title": "Page[PlatformAuditLogOut]",
         "type": "object"
       },
+      "Page_PlatformSiteVisitOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformSiteVisitOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "default": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 50,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "Page[PlatformSiteVisitOut]",
+        "type": "object"
+      },
       "Page_TreeListItem_": {
         "properties": {
           "items": {
@@ -16686,6 +16717,83 @@
           "iucn_configured"
         ],
         "title": "PlatformSettingsOut",
+        "type": "object"
+      },
+      "PlatformSiteVisitOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "referrer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          },
+          "visitor_id": {
+            "title": "Visitor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "visitor_id",
+          "path",
+          "ip",
+          "user_agent",
+          "referrer",
+          "locale",
+          "created_at"
+        ],
+        "title": "PlatformSiteVisitOut",
         "type": "object"
       },
       "PlausibilityAssessmentOut": {
@@ -21444,6 +21552,75 @@
           "composite_risk"
         ],
         "title": "SiteThreatWatchOut",
+        "type": "object"
+      },
+      "SiteVisitCreate": {
+        "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "path": {
+            "default": "/",
+            "maxLength": 512,
+            "title": "Path",
+            "type": "string"
+          },
+          "visitor_id": {
+            "maxLength": 36,
+            "minLength": 8,
+            "title": "Visitor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "visitor_id"
+        ],
+        "title": "SiteVisitCreate",
+        "type": "object"
+      },
+      "SiteVisitRecordedOut": {
+        "properties": {
+          "recorded": {
+            "title": "Recorded",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "recorded"
+        ],
+        "title": "SiteVisitRecordedOut",
+        "type": "object"
+      },
+      "SiteVisitStatsOut": {
+        "properties": {
+          "today": {
+            "title": "Today",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unique_today": {
+            "title": "Unique Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "today",
+          "unique_today"
+        ],
+        "title": "SiteVisitStatsOut",
         "type": "object"
       },
       "SourceFusionDetailOut": {
@@ -35205,6 +35382,33 @@
         ]
       }
     },
+    "/api/v1/emissions/portfolio-summary": {
+      "get": {
+        "operationId": "get_emissions_portfolio_summary_api_v1_emissions_portfolio_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Emissions Portfolio Summary Api V1 Emissions Portfolio Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Emissions Portfolio Summary",
+        "tags": [
+          "emissions"
+        ]
+      }
+    },
     "/api/v1/evidence/signing-key": {
       "get": {
         "operationId": "get_evidence_signing_key_api_v1_evidence_signing_key_get",
@@ -48778,6 +48982,149 @@
         ]
       }
     },
+    "/api/v1/platform/visits": {
+      "get": {
+        "operationId": "platform_site_visits_api_v1_platform_visits_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ip",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ip"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PlatformSiteVisitOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Platform Site Visits",
+        "tags": [
+          "platform-admin"
+        ]
+      }
+    },
     "/api/v1/plot-monitoring/plots/{plot_id}/visits": {
       "post": {
         "operationId": "create_plot_visit_api_v1_plot_monitoring_plots__plot_id__visits_post",
@@ -49496,6 +49843,68 @@
           }
         },
         "summary": "Public Verify",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/visits": {
+      "post": {
+        "operationId": "record_public_visit_api_v1_public_visits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteVisitCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteVisitRecordedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Public Visit",
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/api/v1/public/visits/stats": {
+      "get": {
+        "operationId": "public_visit_stats_api_v1_public_visits_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteVisitStatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Public Visit Stats",
         "tags": [
           "public"
         ]

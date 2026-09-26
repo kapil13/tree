@@ -4,6 +4,7 @@ import { fieldOpsHref } from "./field-ops-links";
 import {
   portfolioAuditHref,
   portfolioComplianceHref,
+  portfolioEmissionsHref,
   portfolioHealthHref,
   portfolioMonitoringHref,
   portfolioThreatsHref,
@@ -17,6 +18,10 @@ describe("nav phase C link helpers", () => {
     expect(portfolioComplianceHref()).toBe("/portfolio-health?tab=compliance");
     expect(portfolioComplianceHref("proj-1")).toBe(
       "/portfolio-health?tab=compliance&project=proj-1",
+    );
+    expect(portfolioEmissionsHref()).toBe("/portfolio-health?tab=emissions");
+    expect(portfolioEmissionsHref("proj-1")).toBe(
+      "/portfolio-health?tab=emissions&project=proj-1",
     );
     expect(portfolioMonitoringHref()).toBe("/portfolio-health?tab=monitoring");
     expect(portfolioMonitoringHref("proj-1")).toBe(

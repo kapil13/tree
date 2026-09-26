@@ -48,8 +48,8 @@ export function hasAnyPlatformAccess(user: PlatformUser) {
 
 export function canAccessPlatformPath(user: PlatformUser, pathname: string) {
   if (!user) return false;
-  if (pathname.startsWith("/platform/cms")) {
-    return canAccessWebsiteCms(user);
+  if (pathname.startsWith("/platform/cms") || pathname.startsWith("/platform/analytics")) {
+    return canAccessWebsiteCms(user) || canAccessOpsAdmin(user);
   }
   if (pathname === "/platform" || pathname === "/platform/") {
     return hasAnyPlatformAccess(user);

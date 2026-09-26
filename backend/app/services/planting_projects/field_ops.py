@@ -20,6 +20,7 @@ from app.services.planting_projects.survival_survey import survival_due_summary
 _TASK_TONE_BY_KIND = {
     "violation": "critical",
     "closure": "critical",
+    "emission": "warning",
     "workflow": "warning",
     "audit": "warning",
     "survival": "warning",
@@ -29,6 +30,7 @@ _TASK_TONE_BY_KIND = {
 _TASK_PRIORITY = {
     "violation": 10,
     "closure": 20,
+    "emission": 25,
     "workflow": 30,
     "audit": 40,
     "survival": 50,
@@ -131,6 +133,41 @@ async def build_field_ops_priority_tasks(
                     "tone": _task_tone("violation"),
                     "project_id": project_id,
                     "priority": _TASK_PRIORITY["violation"] + 1,
+                }
+            )
+
+    from app.models.emission_source import EmissionFusionAssessment
+    from app.models.plantation_fence import PlantationFence
+
+    for project in projects[:12]:
+        fusion_rows = (
+            await db.execute(
+                select(EmissionFusionAssessment, PlantationFence)
+                .join(
+                    PlantationFence,
+                    PlantationFence.id == EmissionFusionAssessment.work_area_id,
+                )
+                .where(
+                    EmissionFusionAssessment.project_id == project.id,
+                    EmissionFusionAssessment.verdict == "misaligned",
+                    EmissionFusionAssessment.status == "complete",
+                )
+                .order_by(EmissionFusionAssessment.created_at.desc())
+                .limit(2)
+            )
+        ).all()
+        for fusion, fence in fusion_rows:
+            project_id = str(project.id)
+            tasks.append(
+                {
+                    "id": f"emission-{fusion.id}",
+                    "kind": "emission",
+                    "title": row_by_id.get(project_id, {}).get("name") or project.name,
+                    "detail": f"CH₄ fusion misaligned at {fence.name}",
+                    "href": f"/emissions?project={project_id}&workArea={fence.id}",
+                    "tone": _task_tone("emission"),
+                    "project_id": project_id,
+                    "priority": _TASK_PRIORITY["emission"],
                 }
             )
 

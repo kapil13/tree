@@ -62,6 +62,24 @@ def test_assert_compliance_export_blocks_stub_ai(monkeypatch):
         assert_compliance_export_integrations()
 
 
+def test_locust_and_bioacoustic_not_stub_when_operational(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.intelligence.integration_gates.has_locust_feed",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "app.services.intelligence.integration_gates.settings.fao_locust_feed_enabled",
+        True,
+    )
+    monkeypatch.setattr(
+        "app.services.intelligence.integration_gates.build_bioacoustic_health",
+        lambda: {"pipeline": "stub", "production_ready": True},
+    )
+    modes = integration_modes()
+    assert modes["locust"] == "live"
+    assert modes["bioacoustic"] == "live"
+
+
 def test_integration_gate_summary_shape(monkeypatch):
     monkeypatch.setattr(
         "app.services.intelligence.integration_gates.integration_modes",

@@ -5,7 +5,10 @@ import { ROOT_METADATA } from "@/lib/seo/metadata";
 import { getSolutionPage } from "@/lib/seo/solution-pages";
 import { SITE_URL } from "@/lib/seo/site";
 
+import { homePageJsonLd } from "@/lib/seo/json-ld";
+
 import {
+  absoluteUrl,
   articleJsonLd,
   breadcrumbListJsonLd,
   inLanguageFromOpenGraphLocale,
@@ -43,7 +46,7 @@ describe("solution breadcrumbs", () => {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
         { "@type": "ListItem", position: 2, name: "Solutions", item: `${SITE_URL}/solutions` },
       ],
     });
@@ -58,7 +61,7 @@ describe("solution breadcrumbs", () => {
 
       const data = solutionPageBreadcrumbJsonLd({ name: page!.title, path: page!.path });
       expect(listItems(data!)).toEqual([
-        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
         { "@type": "ListItem", position: 2, name: "Solutions", item: `${SITE_URL}/solutions` },
         { "@type": "ListItem", position: 3, name: page!.title, item: `${SITE_URL}${path}` },
       ]);
@@ -92,7 +95,7 @@ describe("resource breadcrumbs", () => {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
         { "@type": "ListItem", position: 2, name: "Resources", item: `${SITE_URL}/resources` },
       ],
     });
@@ -105,7 +108,7 @@ describe("resource breadcrumbs", () => {
     });
 
     expect(listItems(data).map((item) => [item.position, item.name, item.item])).toEqual([
-      [1, "Home", `${SITE_URL}/`],
+      [1, "Home", SITE_URL],
       [2, "Resources", `${SITE_URL}/resources`],
       [
         3,
@@ -223,9 +226,38 @@ describe("published resource guides", () => {
         "Resources",
         article.title,
       ]);
+      expect(listItems(breadcrumbLd).map((item) => item.item)).toEqual([
+        SITE_URL,
+        `${SITE_URL}/resources`,
+        `${SITE_URL}/resources/${article.slug}`,
+      ]);
       expect(JSON.parse(serializeJsonLd(articleLd))).toEqual(articleLd);
       expect(JSON.parse(serializeJsonLd(breadcrumbLd))).toEqual(breadcrumbLd);
     }
+  });
+});
+
+describe("canonical absolute URLs", () => {
+  it("matches the sitemap root, with no trailing slash", () => {
+    expect(absoluteUrl("/")).toBe(SITE_URL);
+    expect(absoluteUrl("/")).toBe("https://aranyix.tech");
+    expect(absoluteUrl("/solutions/")).toBe(`${SITE_URL}/solutions`);
+    expect(absoluteUrl("/resources/guide?utm=1")).toBe(`${SITE_URL}/resources/guide`);
+  });
+
+  it("keeps Organization and SoftwareApplication URLs on the bare site origin", () => {
+    const graph = homePageJsonLd();
+    const types = graph.map((node) => node["@type"]);
+    expect(types).toEqual(["Organization", "SoftwareApplication"]);
+    expect(types).not.toContain("WebSite");
+
+    for (const node of graph) {
+      expect(node.url).toBe(SITE_URL);
+    }
+    expect(graph[0]?.parentOrganization).toMatchObject({
+      "@type": "Organization",
+      url: "https://www.axentis.tech",
+    });
   });
 });
 

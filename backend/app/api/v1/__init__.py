@@ -20,6 +20,7 @@ from app.api.v1 import (
     dashboard,
     devices,
     emissions,
+    emissions_portfolio,
     evidence,
     health,
     india_admin,
@@ -35,6 +36,7 @@ from app.api.v1 import (
     platform,
     plot_monitoring,
     privacy,
+    public_visits,
     reporting,
     reports,
     resend_webhooks,
@@ -71,6 +73,7 @@ api_router.include_router(schemes.router)
 api_router.include_router(planting_projects.router)
 api_router.include_router(plantation_reports.router)
 api_router.include_router(emissions.router)
+api_router.include_router(emissions_portfolio.router)
 api_router.include_router(organizations.router)
 api_router.include_router(weather.router)
 api_router.include_router(carbon.router)
@@ -78,6 +81,7 @@ api_router.include_router(evidence.router)
 api_router.include_router(privacy.router)
 api_router.include_router(compliance.router)
 api_router.include_router(contact.router)
+api_router.include_router(public_visits.public_router)
 api_router.include_router(cms.public_router)
 api_router.include_router(cms.admin_router)
 api_router.include_router(platform.router)

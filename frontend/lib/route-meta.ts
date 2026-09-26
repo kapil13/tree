@@ -42,6 +42,11 @@ const ROUTE_KEYS: Record<string, RouteKeyMeta> = {
     sectionKey: "sectionIntelligence",
     breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbPortfolio" }],
   },
+  "/emissions": {
+    titleKey: "routeEmissionsWorkspace",
+    sectionKey: "sectionIntelligence",
+    breadcrumbs: [{ labelKey: "sectionIntelligence" }, { labelKey: "breadcrumbEmissions" }],
+  },
   "/satellite": {
     titleKey: "routeSatelliteMonitoring",
     sectionKey: "sectionIntelligence",

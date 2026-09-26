@@ -31,6 +31,11 @@ const ROUTE_RULES: RouteRule[] = [
     featureFlag: "satellite",
   },
   {
+    prefix: "/emissions",
+    audience: ["professional", "field_supervisor"],
+    featureFlag: "satellite",
+  },
+  {
     prefix: "/monitoring",
     audience: ["professional", "field_supervisor"],
     featureFlag: "satellite",

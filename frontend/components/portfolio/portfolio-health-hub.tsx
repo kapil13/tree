@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Activity, Bird, ClipboardSignature, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Activity, Bird, Cloud, ClipboardSignature, LayoutGrid, ShieldAlert, ShieldCheck } from "lucide-react";
 import { PageHeader, SectionNav } from "@/components/ui";
 import {
   parsePortfolioHealthTab,
@@ -16,6 +16,7 @@ import { PortfolioBiodiversityTab } from "./portfolio-biodiversity-tab";
 import { PortfolioComplianceTab } from "./portfolio-compliance-tab";
 import { PortfolioMonitoringTab } from "./portfolio-monitoring-tab";
 import { PortfolioOverviewTab } from "./portfolio-overview-tab";
+import { PortfolioEmissionsTab } from "./portfolio-emissions-tab";
 import { PortfolioThreatsTab } from "./portfolio-threats-tab";
 
 export type { PortfolioHealthTab } from "@/lib/portfolio-health-links";
@@ -32,6 +33,7 @@ export function PortfolioHealthHub() {
     { id: "overview" as const, label: tp("tabOverview"), shortLabel: tp("tabOverview"), icon: LayoutGrid },
     { id: "audit" as const, label: tp("tabAudit"), shortLabel: tp("tabAuditShort"), icon: ClipboardSignature },
     { id: "compliance" as const, label: tp("tabCompliance"), shortLabel: tp("tabCompliance"), icon: ShieldCheck },
+    { id: "emissions" as const, label: tp("tabEmissions"), shortLabel: tp("tabEmissionsShort"), icon: Cloud },
     { id: "threats" as const, label: tp("tabThreats"), shortLabel: tp("tabThreatsShort"), icon: ShieldAlert },
     { id: "monitoring" as const, label: tp("tabMonitoring"), shortLabel: tp("tabMonitorShort"), icon: Activity },
     { id: "biodiversity" as const, label: tp("tabBiodiversity"), shortLabel: tp("tabBioShort"), icon: Bird },
@@ -81,6 +83,7 @@ export function PortfolioHealthHub() {
       {tab === "compliance" && (
         <PortfolioComplianceTab projectId={projectId} projectName={projectName} />
       )}
+      {tab === "emissions" && <PortfolioEmissionsTab projectId={projectId} />}
       {tab === "threats" && (
         <PortfolioThreatsTab projectId={projectId} projectName={projectName} />
       )}

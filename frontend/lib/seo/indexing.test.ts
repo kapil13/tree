@@ -23,6 +23,7 @@ const NOINDEX_PREFIXES = [
   "/field-ops",
   "/monitoring",
   "/portfolio-health",
+  "/emissions",
   "/bioacoustic",
   "/alerts",
   "/assistant",
@@ -52,6 +53,9 @@ describe("search indexing hygiene", () => {
     expect(urls).toContain(`${SITE_URL}/privacy`);
     expect(urls).not.toContain(
       `${SITE_URL}/resources/campa-afforestation-monitoring-india`,
+    );
+    expect(urls).not.toContain(
+      `${SITE_URL}/resources/half-yearly-ec-compliance-report-green-belt-india`,
     );
 
     for (const url of urls) {
