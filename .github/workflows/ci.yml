@@ -109,10 +109,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: pip-audit
-        working-directory: backend
-        run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt
+        run: bash scripts/ci/pip-audit.sh
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
