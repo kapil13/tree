@@ -53,6 +53,9 @@ describe("search indexing hygiene", () => {
     expect(urls).not.toContain(
       `${SITE_URL}/resources/campa-afforestation-monitoring-india`,
     );
+    expect(urls).not.toContain(
+      `${SITE_URL}/resources/half-yearly-ec-compliance-report-green-belt-india`,
+    );
 
     for (const url of urls) {
       expect(url.startsWith("https://aranyix.tech")).toBe(true);
