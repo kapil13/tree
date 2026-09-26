@@ -11,9 +11,13 @@ type StripItem = {
   mode: string;
 };
 
+const EXPORT_CRITICAL_KEYS = new Set(["optical_ndvi", "sar", "ai"]);
+
 const MODE_STYLES: Record<string, string> = {
   live: "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-100",
   stub: "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100",
+  estimate:
+    "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100",
   disabled:
     "border-stone-200 bg-stone-100 text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400",
 };
@@ -21,6 +25,7 @@ const MODE_STYLES: Record<string, string> = {
 function modeLabel(mode: string): string {
   if (mode === "live") return "Live";
   if (mode === "disabled") return "Disabled";
+  if (mode === "estimate") return "Estimate";
   return "Stub";
 }
 
@@ -32,10 +37,13 @@ export function GlobalIntegrationStrip({ className = "" }: { className?: string 
   });
 
   const items = (data?.integrations ?? []) as StripItem[];
-  if (!items.length) return null;
-
-  const stubCount = items.filter((item) => item.mode !== "live").length;
-  if (stubCount === 0) return null;
+  const blockingStubs = items.filter(
+    (item) => EXPORT_CRITICAL_KEYS.has(item.key) && item.mode === "stub",
+  );
+  const exportBlocked = Boolean(
+    data && (!data.audit_export_ready || !data.compliance_export_ready),
+  );
+  if (blockingStubs.length === 0 && !exportBlocked) return null;
 
   return (
     <div
@@ -51,7 +59,7 @@ export function GlobalIntegrationStrip({ className = "" }: { className?: string 
           Integration honesty
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {items.map((item) => (
+          {blockingStubs.map((item) => (
             <span
               key={item.key}
               title={`${item.label}: ${modeLabel(item.mode)}`}
