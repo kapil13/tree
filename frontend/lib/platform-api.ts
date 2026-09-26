@@ -326,6 +326,24 @@ export type PlatformAuditPage = {
   page_size: number;
 };
 
+export type PlatformSiteVisit = {
+  id: string;
+  visitor_id: string;
+  path: string;
+  ip: string | null;
+  user_agent: string | null;
+  referrer: string | null;
+  locale: string | null;
+  created_at: string;
+};
+
+export type PlatformSiteVisitPage = {
+  items: PlatformSiteVisit[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
 export type OrgMemberAdmin = {
   id: string;
   email: string;
@@ -551,6 +569,17 @@ export const platformAdmin = {
   },
   async settings() {
     return (await api.get<PlatformSettings>("/v1/platform/settings")).data;
+  },
+  async siteVisits(params?: {
+    page?: number;
+    page_size?: number;
+    ip?: string;
+    path?: string;
+    date_from?: string;
+    date_to?: string;
+    search?: string;
+  }) {
+    return (await api.get<PlatformSiteVisitPage>("/v1/platform/visits", { params })).data;
   },
   async auditLogs(params?: {
     page?: number;

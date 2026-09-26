@@ -86,6 +86,8 @@ from app.schemas.platform import (
     UserRoleUpdate,
     WebhookDeliveryAdminOut,
 )
+from app.schemas.site_visit import PlatformSiteVisitOut
+from app.services.analytics.site_visits import query_site_visits
 from app.services.audit import record_audit
 from app.services.organizations.members import OrgMemberError, transfer_org_ownership
 from app.services.organizations.onboarding import (
@@ -448,6 +450,48 @@ async def platform_ops_trigger_job(
 @router.get("/settings", response_model=PlatformSettingsOut)
 async def platform_settings(_admin: OpsModuleAdmin) -> PlatformSettingsOut:
     return PlatformSettingsOut.model_validate(build_platform_settings())
+
+
+@router.get("/visits", response_model=Page[PlatformSiteVisitOut])
+async def platform_site_visits(
+    _admin: CmsManager,
+    db: DB,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    ip: str | None = None,
+    path: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    search: str | None = None,
+) -> Page[PlatformSiteVisitOut]:
+    rows, total = await query_site_visits(
+        db,
+        page=page,
+        page_size=page_size,
+        ip=ip,
+        path=path,
+        date_from=date_from,
+        date_to=date_to,
+        search=search,
+    )
+    return Page(
+        items=[
+            PlatformSiteVisitOut(
+                id=str(row.id),
+                visitor_id=row.visitor_id,
+                path=row.path,
+                ip=str(row.ip) if row.ip else None,
+                user_agent=row.user_agent,
+                referrer=row.referrer,
+                locale=row.locale,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/audit/logs", response_model=Page[PlatformAuditLogOut])

@@ -1951,6 +1951,7 @@
     "contactTitle": "हमारी टीम से बात करें",
     "contactFooterCta": "संपर्क फ़ॉर्म",
     "alsoKnownAs": "Araynix के नाम से भी जाना जाता है",
+    "visitorCount": "{count} विज़िट",
     "contactHint": "वृक्षारोपण कार्यक्रम, MRV और ऑडिट-तैयार रिपोर्टिंग",
     "contact": {
       "eyebrow": "बिक्री और साझेदारी",
@@ -2639,7 +2640,8 @@
         "billing": "बिलिंग",
         "operations": "संचालन",
         "satelliteHealth": "उपग्रह स्वास्थ्य",
-        "websiteCms": "वेबसाइट CMS"
+        "websiteCms": "वेबसाइट CMS",
+        "siteAnalytics": "साइट एनालिटिक्स"
       }
     },
     "overview": {
@@ -2751,6 +2753,22 @@
       "allStatuses": "सभी स्थितियाँ",
       "uuidPlaceholder": "UUID",
       "devHint": " Dev संकेत: {hint}"
+    },
+    "analytics": {
+      "title": "साइट एनालिटिक्स",
+      "description": "विज़िटर IP, पथ और रेफ़रर के साथ मार्केटिंग साइट विज़िट। गिनती सार्वजनिक फ़ुटर काउंटर में दिखती है।",
+      "filterIp": "IP पता",
+      "filterPath": "पथ में शामिल",
+      "filterFrom": "से",
+      "filterTo": "तक",
+      "searchPlaceholder": "पथ, रेफ़रर, विज़िटर id, या IP…",
+      "empty": "इस फ़िल्टर से कोई विज़िट मेल नहीं खाती।",
+      "colTime": "समय",
+      "colIp": "IP",
+      "colPath": "पथ",
+      "colVisitor": "विज़िटर",
+      "colReferrer": "रेफ़रर",
+      "pagination": "{total} विज़िट · पृष्ठ {page} / {totalPages}"
     },
     "audit": {
       "description": "अभिनेता नाम, संरचित diff और CSV निर्यात के साथ प्लेटफ़ॉर्म-व्यापी ऑडिट ट्रेल। फ़िल्टर साझा करने और गहरे लिंक के लिए URL से सिंक होते हैं।",
