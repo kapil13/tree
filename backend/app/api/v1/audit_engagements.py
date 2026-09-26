@@ -1735,7 +1735,10 @@ async def create_audit_export(
     except PermissionError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
-    from app.services.intelligence.integration_gates import IntegrationGateError, assert_audit_export_integrations
+    from app.services.intelligence.integration_gates import (
+        IntegrationGateError,
+        assert_audit_export_integrations,
+    )
 
     try:
         assert_audit_export_integrations()
@@ -1797,7 +1800,10 @@ async def download_audit_export(
     if project is None or not await can_manage_project(user, project, db):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="forbidden")
 
-    from app.services.intelligence.integration_gates import IntegrationGateError, assert_audit_export_integrations
+    from app.services.intelligence.integration_gates import (
+        IntegrationGateError,
+        assert_audit_export_integrations,
+    )
 
     try:
         assert_audit_export_integrations()

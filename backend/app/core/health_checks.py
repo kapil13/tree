@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import __version__
 from app.core.config import settings
 from app.core.production_guards import is_hardened_env
-from app import __version__
 from app.schemas.common import HealthResponse, SyntheticHealthResponse
 
 

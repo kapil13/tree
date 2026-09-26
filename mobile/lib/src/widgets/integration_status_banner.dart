@@ -28,7 +28,7 @@ class IntegrationStatusBanner extends ConsumerWidget {
       case 'live':
         return const Color(0xFF166534);
       case 'disabled':
-        return PrototypeColors.textMuted;
+        return PrototypeColors.textSecondary;
       default:
         return const Color(0xFFB45309);
     }

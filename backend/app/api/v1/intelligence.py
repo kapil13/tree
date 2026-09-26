@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends, Query
 from app.api.v1.deps import DB, CurrentUser, require_satellite_feature
 from app.schemas.intelligence import (
     ExecutiveBriefOut,
-    IntegrationStripOut,
     IntegrationsHealthOut,
+    IntegrationStripOut,
     IntelligenceSummaryOut,
     SatelliteFusionSummaryOut,
 )
-from app.services.intelligence.integration_gates import integration_gate_summary
 from app.services.intelligence.brief import build_executive_brief
+from app.services.intelligence.integration_gates import integration_gate_summary
 from app.services.intelligence.integrations import build_integrations_health
 from app.services.intelligence.satellite_fusion import build_portfolio_satellite_fusion
 from app.services.intelligence.summary import build_intelligence_summary
