@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, Leaf, MapPin, Satellite, ShieldCheck } from "lucide-react";
+import { ProjectClosureMilestonesPanel } from "@/components/projects/project-closure-milestones-panel";
 import { ProjectModuleLinks } from "@/components/projects/project-module-links";
 import { ProjectSetupChecklist } from "@/components/projects/project-setup-checklist";
 import { ProjectTreesByArea } from "@/components/projects/project-trees-by-area";
@@ -612,6 +613,10 @@ export function ProjectFocusedOverview({
           </div>
         )}
       </div>
+
+      {project.scheme_code === "mining_reclamation" && (
+        <ProjectClosureMilestonesPanel projectId={projectId} />
+      )}
 
       {monitoringMode && setupStatus?.setupComplete && workAreaCount > 0 && (
         <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">

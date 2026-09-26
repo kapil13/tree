@@ -354,6 +354,14 @@ SCHEME_METADATA_FIELDS: dict[str, list[FormField]] = {
             ],
         },
         {
+            "key": "fmcp_reference",
+            "label": "Final mine closure plan (FMCP) reference",
+            "type": "text",
+            "required": False,
+            "placeholder": "IBM/FMCP/2028/RJ/012",
+            "help_text": "Approved final mine closure plan reference when the lease enters FMCP.",
+        },
+        {
             "key": "state_mining_dept_ref",
             "label": "State mining department reference",
             "type": "text",

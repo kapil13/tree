@@ -243,6 +243,148 @@ def _campa_ca_rules() -> dict[str, Any]:
     }
 
 
+def _gim_restoration_rules() -> dict[str, Any]:
+    return {
+        **_campa_ca_rules(),
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "degraded_forest",
+            "open_forest",
+            "scrubland",
+            "grassland",
+            "nursery_bed",
+            "community_zone",
+        ],
+        "species_native_pct_min": 80,
+        "gim_sub_mission_tracking": True,
+        "native_species_examples": [
+            "Sal",
+            "Teak",
+            "Bamboo",
+            "Mahua",
+            "Palash",
+            "Jamun",
+            "Arjun",
+            "Neem",
+            "Karanj",
+        ],
+    }
+
+
+def _mishti_mangrove_rules() -> dict[str, Any]:
+    return {
+        "spacing_m": {"min": 2.0, "warn_below": 1.5},
+        "pit_size_cm": {"length": 30, "width": 30, "depth": 30},
+        "max_gps_accuracy_m": 15.0,
+        "min_photos": 3,
+        "guard_type_required": False,
+        "layout_pattern": "cluster",
+        "allowed_species": [
+            "Avicennia marina",
+            "Rhizophora mucronata",
+            "Sonneratia apetala",
+            "Bruguiera cylindrica",
+            "Ceriops tagal",
+            "Aegiceras corniculatum",
+        ],
+        "species_native_pct_min": 90,
+        "planting_density_per_ha": {"min": 1000, "max": 5000},
+        "require_pit_photo": True,
+        "chainage_enabled": False,
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "mangrove_restoration",
+            "coastal_buffer",
+            "intertidal_flat",
+            "creek_mouth",
+            "community_nursery",
+        ],
+        "coastal_crz_aware": True,
+        "saline_tolerant_required": True,
+        "native_species_examples": [
+            "Avicennia marina",
+            "Rhizophora mucronata",
+            "Sonneratia apetala",
+        ],
+    }
+
+
+def _mgnrega_convergence_rules() -> dict[str, Any]:
+    return {
+        **_ngo_rules(),
+        "work_area_geometry": "polygon",
+        "block_types": [
+            "farm_boundary",
+            "community_land",
+            "panchayat_plot",
+            "watershed_ridge",
+            "farm_forestry_strip",
+        ],
+        "mgnrega_convergence_required": True,
+        "person_days_tracking": True,
+        "gram_panchayat_required": True,
+        "species_native_pct_min": 70,
+        "planting_density_per_ha": {"min": 200, "max": 800},
+        "native_species_examples": [
+            "Neem",
+            "Ber",
+            "Babool",
+            "Jamun",
+            "Mahua",
+            "Khejri",
+            "Arjun",
+        ],
+    }
+
+
+def _jal_shakti_riparian_rules() -> dict[str, Any]:
+    return {
+        **_ngo_rules(),
+        "spacing_m": {"min": 3.0, "warn_below": 2.5},
+        "work_area_geometry": "polygon",
+        "layout_pattern": "riparian_buffer",
+        "block_types": [
+            "riverbank_strip",
+            "floodplain_buffer",
+            "gully_plug",
+            "check_dam_catchment",
+            "community_nursery",
+        ],
+        "riparian_buffer_m_min": 30,
+        "species_native_pct_min": 75,
+        "planting_density_per_ha": {"min": 300, "max": 1200},
+        "river_name_required": True,
+        "native_species_examples": [
+            "Bamboo",
+            "Neem",
+            "Jamun",
+            "Arjun",
+            "Karanj",
+            "Mahua",
+            "Peepal",
+        ],
+    }
+
+
+def _dfi_green_corridor_rules() -> dict[str, Any]:
+    return {
+        **_nhai_rules(),
+        "safeguard_profiles": ["world_bank_esf", "undp_ses"],
+        "dfi_lender_reporting": True,
+        "stakeholder_consultation_required": True,
+        "environmental_screening_required": True,
+        "min_photos": 3,
+        "species_native_pct_min": 80,
+        "block_types": [
+            "highway_corridor",
+            "median_strip",
+            "service_road",
+            "community_offset",
+            "nursery_bed",
+        ],
+    }
+
+
 def _mining_reclamation_rules() -> dict[str, Any]:
     return {
         **_industrial_rules(),
@@ -280,6 +422,7 @@ def _mining_reclamation_rules() -> dict[str, Any]:
         "dump_density_per_ha": {"min": 300, "max": 800},
         "satellite_scan_cadence_days": 30,
         "progressive_closure_tracking": True,
+        "ec_green_belt_pct_min": 33.0,
         "native_species_examples": [
             "Khejri",
             "Neem",
@@ -474,6 +617,66 @@ STANDARD_TEMPLATES: dict[str, StandardTemplate] = {
         "compliance_mode": "guided",
         "recommended_program_codes": ["government_nhai", "ngo_community"],
         "rules": _nutri_garden_rules(),
+    },
+    "gim_restoration_v1": {
+        "code": "gim_restoration_v1",
+        "name": "Green India Mission — Eco Restoration",
+        "segment": "general",
+        "description": (
+            "NAPCC Green India Mission afforestation on degraded forest and non-forest "
+            "land with native stocking, compartment polygons, and JFMC convergence."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _gim_restoration_rules(),
+    },
+    "mishti_mangrove_v1": {
+        "code": "mishti_mangrove_v1",
+        "name": "MISHTI Mangrove Restoration",
+        "segment": "ngo_watershed",
+        "description": (
+            "Coastal mangrove and shoreline habitat restoration with saline-tolerant "
+            "native species, CRZ-aware block layout, and intertidal monitoring."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _mishti_mangrove_rules(),
+    },
+    "mgnrega_convergence_v1": {
+        "code": "mgnrega_convergence_v1",
+        "name": "MGNREGA Farm Forestry Convergence",
+        "segment": "ngo_watershed",
+        "description": (
+            "Farm and community forestry converged with MGNREGA wage employment — "
+            "gram panchayat linkage, person-day tracking, and flexible cluster layout."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _mgnrega_convergence_rules(),
+    },
+    "jal_shakti_riparian_v1": {
+        "code": "jal_shakti_riparian_v1",
+        "name": "Jal Shakti Riparian Plantation",
+        "segment": "ngo_watershed",
+        "description": (
+            "Riverbank and riparian buffer greening along major rivers — minimum buffer "
+            "width, native species stocking, and watershed block layout."
+        ),
+        "compliance_mode": "guided",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _jal_shakti_riparian_rules(),
+    },
+    "dfi_green_corridor_v1": {
+        "code": "dfi_green_corridor_v1",
+        "name": "DFI Green Corridor — NHAI / CAMPA",
+        "segment": "nhai_highway",
+        "description": (
+            "Development-finance-backed highway green corridor with NHAI chainage rules, "
+            "World Bank ESF and UNDP SES safeguard expectations, and stakeholder consultation."
+        ),
+        "compliance_mode": "strict",
+        "recommended_program_codes": ["government_nhai", "ngo_community"],
+        "rules": _dfi_green_corridor_rules(),
     },
 }
 

@@ -259,4 +259,25 @@ async def compute_scheme_kpis(db: AsyncSession, project: PlantingProject) -> dic
             if watch["max_days_since_scan"] is not None:
                 result["checks"]["scan_freshness"] = watch["max_days_since_scan"] <= 35
 
+    if scheme_code == "mining_reclamation":
+        from app.services.planting_projects.closure_milestones import (
+            compute_closure_milestones,
+            compute_green_belt_compliance,
+        )
+
+        green_belt = await compute_green_belt_compliance(db, project)
+        if green_belt.get("applicable"):
+            result["metrics"] = {**result["metrics"], **green_belt}
+            result["checks"] = {
+                **result["checks"],
+                "ec_green_belt": green_belt.get("status") == "compliant",
+            }
+        closure = await compute_closure_milestones(db, project)
+        if closure.get("applicable"):
+            result["closure_milestones"] = {
+                "status": closure.get("status"),
+                "current_phase": closure.get("current_phase"),
+                "alert_count": len(closure.get("alerts") or []),
+            }
+
     return result
